@@ -1,6 +1,6 @@
 # ReadMe
 
-Welcome to this repository of AI Platform Notebbooks.  The purpose of these notebooks is to showcase using AI Platform resources for efficiency of ML operations.  These notebook use a BigQuery table as a data source and use a very simple model training method.  The goal is to focus on options available for operations rather than get buried in the details of modeling.   
+Welcome to this repository of AI Platform Notebooks.  The purpose of these notebooks is to showcase using AI Platform resources for efficiency of ML operations.  These notebook use a BigQuery table as a data source and train a very simple model in multiple ways (BQML, TensorFlow Keras).  The goal is to focus on options available for operations rather than get buried in the details of modeling.   
 
 These notebooks span from external models, like BigQuery ML and TensorFlow, to managed pipelines of TFX managed TensorFlow.  
 
