@@ -1,28 +1,62 @@
-# ReadMe
+# Vertex AI for Machine Learning Operations
 
-Welcome to this repository of [Vertex AI](https://cloud.google.com/vertex-ai) Notebooks.  
+## 👋 I'm Mike
 
-New to Vetex AI? I suggest starting [here](https://cloud.google.com/architecture/ml-on-gcp-best-practices).
+I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/start/introduction-unified-platform) from [Google Cloud](https://cloud.google.com/vertex-ai) with you.  The goal here is to share a comprehensive set of end-to-end workflows for machine learning that each cover the range of data to model to serving and managing - even automating the flow.  Regardless of your data type, skill level or framework preferences you will find something helpful here. 
 
-The purpose of these [notebooks](https://cloud.google.com/vertex-ai/docs/general/notebooks) is to showcase using Vertex AI platform core functionality for efficiency of ML operations.  These notebooks use a [BigQuery table](https://cloud.google.com/bigquery/docs/tables-intro) as a data source and train a very simple model in multiple ways ([BQML](https://cloud.google.com/bigquery-ml/docs/introduction), [AutoML](https://cloud.google.com/vertex-ai/docs/start/automl-users), [TensorFlow Keras](https://www.tensorflow.org/api_docs/python/tf/keras)).  The goal is to focus on options available for operations rather than get into the details of modeling.   
+## Considerations
 
-These notebooks span from external models, like BigQuery ML and TensorFlow, to managed pipelines of TFX and KFP orchestrated TensorFlow.  
+### Data Type
 
----
+-  Tables: Tabular, structured data in rows and columns
+-  Language: Text for translation and/or understanding
+-  Vision: Images
+-  Video
 
-## Get Started
-These are the GCP resources needed to get started:
-- A GCP Project.
-    - These examples use `PROJECT_ID='statmike-mlops'` which can be updated at the top of each notebook.
-- An [Vertex AI Notebook Instance](https://cloud.google.com/vertex-ai/docs/general/notebooks).
-    - These examples are not compute intensive and it is suggested that you use TensorFlow 2.4 without GPU's with all extentions enabled.
+### Convenience Level
 
----
+-  Use Pre-Trained APIs
+-  Automate building Custom Models
+-  End-to-end Custom ML with core tools in the framework of your choice
 
-## How to Use These Files:
-- Open JupyterLab for your Notebook Instance:
-    - Clone this repository to your notebook instance
-        - https://github.com/statmike/vertex-ai-mlops.git
+### Framework Preferences
 
----     
-     
+-  [Scikit-learn](https://scikit-learn.org/stable/index.html)
+-  [XGBoost](https://xgboost.readthedocs.io/en/latest/)
+-  [Tensorflow](https://www.tensorflow.org/)
+-  [Pytorch](https://pytorch.org/)
+-  More!
+
+## Overview
+
+This is a series of workflow demonstrations that use the same data source to build and deploy the same machine learning model with different levels of skill and automation.  These are meant to help get started in understanding and learning Vertex AI and provide starting points for new projects.  
+
+The demonstrations focus on workflows and don't delve into the specifics of ML frameworks other than how to integrate and automate with Vertex AI. Let me know if you have ideas for more workflows or details to include!
+
+## Setup
+
+The demonstrations are presented in a series of JupyterLab notebooks. These can be reviewed directly in [this repository on GitHub](https://github.com/statmike/vertex-ai-mlops) or cloned to your Jupyter instance.
+
+### Option 1: Review files directly
+
+Select the files and review them directly.  This can be helpful for general understanding and selecting sections to copy/paste to your project.
+
+### Option 2: Clone the repository
+
+1. Create a notebook instance in Vertex AI
+   1. [Introduction to Notebooks](https://cloud.google.com/notebooks/docs/introduction) - pre-installed suites of ML software with selectable machine types (CPUs and RAM) and accelerators (GPUs)
+   1. [Create a Notebooks Instance](https://cloud.google.com/notebooks/docs/create-new) (JupyterLab)
+      1. Recommended settings for this repository:
+         1. Tensorflow 2.5+ without GPUs
+         1. Machine type of n1-standard-4
+
+1. [Open ](https://cloud.google.com/notebooks/docs/create-new#open_the_notebook_2)JupyterLab for your notebooks instance
+   1. In the Git menu, select "Clone a Repository"
+   1. Provide the Clone URI of this repository: [https://github.com/statmike/vertex-ai-mlops.git](https://github.com/statmike/vertex-ai-mlops.git)
+   1. In the File Browser you will now have the folder "vertex-ai-mlops" that contains the files from this repository
+
+## More Resources Like This
+
+This is my personal repository of demonstrations I use for learning and sharing Vertex AI.  There are many more resources available.  Within each notebook I have included a resources section and a related training section. 
+
+-  GitHub [GoogleCloudPlatform/vertex-ai-samples](https://github.com/GoogleCloudPlatform/vertex-ai-samples)
