@@ -47,7 +47,7 @@ Select the files and review them directly.  This can be helpful for general unde
    1. [Introduction to Notebooks](https://cloud.google.com/notebooks/docs/introduction) - pre-installed suites of ML software with selectable machine types (CPUs and RAM) and accelerators (GPUs)
    1. [Create a Notebooks Instance](https://cloud.google.com/notebooks/docs/create-new) (JupyterLab)
       1. Recommended settings for this repository:
-         1. Tensorflow 2.5+ without GPUs
+         1. Tensorflow 2.3 without GPUs
          1. Machine type of n1-standard-4
 
 1. [Open ](https://cloud.google.com/notebooks/docs/create-new#open_the_notebook_2)JupyterLab for your notebooks instance
