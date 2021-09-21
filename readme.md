@@ -33,6 +33,12 @@ This is a series of workflow demonstrations that use the same data source to bui
 
 The demonstrations focus on workflows and don't delve into the specifics of ML frameworks other than how to integrate and automate with Vertex AI. Let me know if you have ideas for more workflows or details to include!
 
+## Vetex AI
+
+Vetex AI is a platform for end-to-end model development.  It consist of core components that make the processes of MLOps possible for design patterns of all types.
+
+<img src="architectures/slides/slide_01.png">
+
 ## Setup
 
 The demonstrations are presented in a series of JupyterLab notebooks. These can be reviewed directly in [this repository on GitHub](https://github.com/statmike/vertex-ai-mlops) or cloned to your Jupyter instance.
