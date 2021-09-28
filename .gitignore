@@ -1,3 +1,4 @@
 *-checkpoint.*
 .gitignore-checkpoint
 temp
+.DS_Store
