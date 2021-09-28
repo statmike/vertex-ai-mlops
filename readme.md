@@ -34,7 +34,7 @@ This is a series of workflow demonstrations that use the same data source to bui
 The demonstrations focus on workflows and don't delve into the specifics of ML frameworks other than how to integrate and automate with Vertex AI. Let me know if you have ideas for more workflows or details to include!
 
 <p align="center" width="100%">
-   <a href="https://www.youtube.com/watch?v=dAIhCP0_WOA">
+   <a href="https://www.youtube.com/watch?v=dAIhCP0_WOA" target="_blank" rel="noopener noreferrer">
       <img width="50%" src="https://img.youtube.com/vi/dAIhCP0_WOA/mqdefault.jpg">
    </a>
 </p>
