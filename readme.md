@@ -38,6 +38,7 @@ The demonstrations focus on workflows and don't delve into the specifics of ML f
       <img width="50%" src="architectures/thumbnails/introduction.png">
    </a>
 </p>
+<p align="center">Click to watch on YouTube</p>
 
 ## Vetex AI
 
