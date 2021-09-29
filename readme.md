@@ -35,7 +35,7 @@ The demonstrations focus on workflows and don't delve into the specifics of ML f
 
 <p align="center" width="100%">
    <a href="https://www.youtube.com/watch?v=dAIhCP0_WOA" target="_blank" rel="noopener noreferrer">
-      <img width="50%" src="architectures/thumbnails/playbutton/tn_01.png">
+      <kbd><img width="50%" src="architectures/thumbnails/playbutton/tn_01.png"></kbd>
    </a>
 </p>
 <p align="center">Click to watch on YouTube</p>
