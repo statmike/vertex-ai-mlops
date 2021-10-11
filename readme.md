@@ -54,21 +54,45 @@ The demonstrations are presented in a series of JupyterLab notebooks. These can 
 
 Select the files and review them directly.  This can be helpful for general understanding and selecting sections to copy/paste to your project.
 
-### Option 2: Clone the repository
+### Option 2: Run These Notebooks in Vertex AI
 
-1. Create a notebook instance in Vertex AI
-   1. [Introduction to Notebooks](https://cloud.google.com/notebooks/docs/introduction) - pre-installed suites of ML software with selectable machine types (CPUs and RAM) and accelerators (GPUs)
-   1. [Create a Notebooks Instance](https://cloud.google.com/notebooks/docs/create-new) (JupyterLab)
-      1. Recommended settings for this repository:
-         1. Tensorflow 2.3 without GPUs
-         1. Machine type of n1-standard-4
-
-1. [Open ](https://cloud.google.com/notebooks/docs/create-new#open_the_notebook_2)JupyterLab for your notebooks instance
-   1. In the Git menu, select "Clone a Repository"
+1. Create a Project
+   1. [Link](https://console.cloud.google.com/cloud-resource-manager), Alternatively, go to: Console > IAM & Admin > Manage Resources
+   1. Click "+ Create Project"
+   1. Provide: name, billing account, organization, location
+   1. Click "Create"
+1. Enable Vertex AI API
+   1. [Link](https://console.cloud.google.com/flows/enableapi?apiid=aiplatform.googleapis.com), Alternatively, go to: Console > Vertex AI
+   1. Make sure you are in the new project
+   1. Click to Enable Vertex AI API
+1. Enable Notebooks API:
+   1. [Link](https://console.cloud.google.com/flows/enableapi?apiid=notebooks.googleapis.com), Alternatively, go to: [Console > Vertex AI > Notebooks](https://console.cloud.google.com/vertex-ai/notebooks)
+   1. Make sure you are in the new project
+   1. Click to Enable Notebooks API
+1. Create A Notebook Instance
+   1. [Link](https://console.cloud.google.com/vertex-ai/notebooks), Alternatively, go to: [Console > Vertex AI > Notebooks](https://console.cloud.google.com/vertex-ai/notebooks)
+   1. Click Instances
+   1. Click "+ Create Notebook" or "+ New Notebook"
+   1. Select Tensorflow Enterprise > Tensorflow Enterprise 2.3 > Without GPUs
+   1. Provide: name, region = us-central1, machine type = n1-standard-4
+      1. some options may be under "Advanced Options"
+   1. Click "Create"
+1. Open JupyterLab Notebook Instance
+   1. Once the Notebook Instance is started click the "Open JupyterLab" link
+1. Clone This Repository
+   1. Use the Git Menu at the top or on the left navigation bar to select "Clone a Repository"
    1. Provide the Clone URI of this repository: [https://github.com/statmike/vertex-ai-mlops.git](https://github.com/statmike/vertex-ai-mlops.git)
    1. In the File Browser you will now have the folder "vertex-ai-mlops" that contains the files from this repository
 
-## More Resources Like This
+Resources on these items:
+- [Google Cloud Projects](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
+- [Vertex AI environment](https://cloud.google.com/vertex-ai/docs/start/cloud-environment)
+- [Introduction to Notebooks](https://cloud.google.com/notebooks/docs/introduction)
+- [Create a Notebooks Instance](https://cloud.google.com/notebooks/docs/create-new)
+- [Open Notebooks](https://cloud.google.com/notebooks/docs/create-new#open_the_notebook_2)
+
+
+## More Resources Like This Repository
 
 This is my personal repository of demonstrations I use for learning and sharing Vertex AI.  There are many more resources available.  Within each notebook I have included a resources section and a related training section. 
 
