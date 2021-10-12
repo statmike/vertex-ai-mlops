@@ -81,6 +81,9 @@ Select the files and review them directly.  This can be helpful for general unde
       1. Use the Git Menu at the top or on the left navigation bar to select "Clone a Repository"
       1. Provide the Clone URI of this repository: [https://github.com/statmike/vertex-ai-mlops.git](https://github.com/statmike/vertex-ai-mlops.git)
       1. In the File Browser you will now have the folder "vertex-ai-mlops" that contains the files from this repository
+1. Setup the Notebook Environment
+   1. Open the notebook vertex-ai-mlops/00 - Environment Setup
+   1. Follow the instructions and run the cells
 
 Resources on these items:
 - [Google Cloud Projects](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
