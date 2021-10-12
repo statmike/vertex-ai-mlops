@@ -61,28 +61,26 @@ Select the files and review them directly.  This can be helpful for general unde
    1. Click "+ Create Project"
    1. Provide: name, billing account, organization, location
    1. Click "Create"
-1. Enable Vertex AI API
-   1. [Link](https://console.cloud.google.com/flows/enableapi?apiid=aiplatform.googleapis.com), Alternatively, go to: Console > Vertex AI
-   1. Make sure you are in the new project
-   1. Click to Enable Vertex AI API
-1. Enable Notebooks API:
-   1. [Link](https://console.cloud.google.com/flows/enableapi?apiid=notebooks.googleapis.com), Alternatively, go to: [Console > Vertex AI > Notebooks](https://console.cloud.google.com/vertex-ai/notebooks)
-   1. Make sure you are in the new project
-   1. Click to Enable Notebooks API
+1. Enable the APIs: Vertex AI API and Notebooks API
+   1. [Link](https://console.cloud.google.com/flows/enableapi?apiid=aiplatform.googleapis.com,notebooks.googleapis.com)
+      1. Alternatively, go to: 
+         1. Console > Vertex AI, then enable API
+         1. Then Console > Vertex AI > Notebooks, then enable API
 1. Create A Notebook Instance
    1. [Link](https://console.cloud.google.com/vertex-ai/notebooks), Alternatively, go to: [Console > Vertex AI > Notebooks](https://console.cloud.google.com/vertex-ai/notebooks)
    1. Click Instances
    1. Click "+ Create Notebook" or "+ New Notebook"
-   1. Select Tensorflow Enterprise > Tensorflow Enterprise 2.3 > Without GPUs
-   1. Provide: name, region = us-central1, machine type = n1-standard-4
+   1. Selections:
+      1. Tensorflow Enterprise > Tensorflow Enterprise 2.3 > Without GPUs
+      1. Provide: name, region = us-central1, machine type = n1-standard-4
       1. some options may be under "Advanced Options"
    1. Click "Create"
 1. Open JupyterLab Notebook Instance
    1. Once the Notebook Instance is started click the "Open JupyterLab" link
-1. Clone This Repository
-   1. Use the Git Menu at the top or on the left navigation bar to select "Clone a Repository"
-   1. Provide the Clone URI of this repository: [https://github.com/statmike/vertex-ai-mlops.git](https://github.com/statmike/vertex-ai-mlops.git)
-   1. In the File Browser you will now have the folder "vertex-ai-mlops" that contains the files from this repository
+   1. Clone This Repository to the Notebook Instance
+      1. Use the Git Menu at the top or on the left navigation bar to select "Clone a Repository"
+      1. Provide the Clone URI of this repository: [https://github.com/statmike/vertex-ai-mlops.git](https://github.com/statmike/vertex-ai-mlops.git)
+      1. In the File Browser you will now have the folder "vertex-ai-mlops" that contains the files from this repository
 
 Resources on these items:
 - [Google Cloud Projects](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
