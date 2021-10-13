@@ -48,13 +48,13 @@ Vetex AI is a platform for end-to-end model development.  It consist of core com
 
 ## Setup
 
-The demonstrations are presented in a series of JupyterLab notebooks. These can be reviewed directly in [this repository on GitHub](https://github.com/statmike/vertex-ai-mlops) or cloned to your Jupyter instance.
+The demonstrations are presented in a series of JupyterLab notebooks. These can be reviewed directly in [this repository on GitHub](https://github.com/statmike/vertex-ai-mlops) or cloned to your Jupyter instance on [Vertex AI Workbench](https://cloud.google.com/vertex-ai/docs/workbench/notebook-solution).
 
 ### Option 1: Review files directly
 
-Select the files and review them directly.  This can be helpful for general understanding and selecting sections to copy/paste to your project.
+Select the files and review them directly in the browser or IDE of your choice.  This can be helpful for general understanding and selecting sections to copy/paste to your project.
 
-### Option 2: Run These Notebooks in Vertex AI
+### Option 2: Run These Notebooks in a Vertex AI Workbench based Notebook 
 
 1. Create a Project
    1. [Link](https://console.cloud.google.com/cloud-resource-manager), Alternatively, go to: Console > IAM & Admin > Manage Resources
@@ -65,10 +65,10 @@ Select the files and review them directly.  This can be helpful for general unde
    1. [Link](https://console.cloud.google.com/flows/enableapi?apiid=aiplatform.googleapis.com,notebooks.googleapis.com)
       1. Alternatively, go to: 
          1. Console > Vertex AI, then enable API
-         1. Then Console > Vertex AI > Notebooks, then enable API
-1. Create A Notebook Instance
-   1. [Link](https://console.cloud.google.com/vertex-ai/notebooks), Alternatively, go to: [Console > Vertex AI > Notebooks](https://console.cloud.google.com/vertex-ai/notebooks)
-   1. Click Instances
+         1. Then Console > Vertex AI > Workbench, then enable API
+1. Create A Notebook
+   1. [Link](https://console.cloud.google.com/vertex-ai/workbench), Alternatively, go to: Console > Vertex AI > Workbench
+   1. Click User-Managed Notebooks
    1. Click "+ Create Notebook" or "+ New Notebook"
    1. Selections:
       1. Tensorflow Enterprise > Tensorflow Enterprise 2.3 > Without GPUs
@@ -81,7 +81,7 @@ Select the files and review them directly.  This can be helpful for general unde
       1. Use the Git Menu at the top or on the left navigation bar to select "Clone a Repository"
       1. Provide the Clone URI of this repository: [https://github.com/statmike/vertex-ai-mlops.git](https://github.com/statmike/vertex-ai-mlops.git)
       1. In the File Browser you will now have the folder "vertex-ai-mlops" that contains the files from this repository
-1. Setup the Notebook Environment
+1. Setup the Notebook Environment for these workflows
    1. Open the notebook vertex-ai-mlops/00 - Environment Setup
    1. Follow the instructions and run the cells
 
@@ -97,4 +97,6 @@ Resources on these items:
 
 This is my personal repository of demonstrations I use for learning and sharing Vertex AI.  There are many more resources available.  Within each notebook I have included a resources section and a related training section. 
 
--  GitHub [GoogleCloudPlatform/vertex-ai-samples](https://github.com/GoogleCloudPlatform/vertex-ai-samples)
+- GitHub [GoogleCloudPlatform/vertex-ai-samples](https://github.com/GoogleCloudPlatform/vertex-ai-samples)
+- GitHub [GoogleCloudPlatform/mlops-with-vertex-ai](https://github.com/GoogleCloudPlatform/mlops-with-vertex-ai)
+- [Overview of Data Science on Google Cloud](https://cloud.google.com/data-science)
