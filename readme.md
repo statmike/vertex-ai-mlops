@@ -25,6 +25,7 @@ I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/s
 -  [XGBoost](https://xgboost.readthedocs.io/en/latest/)
 -  [Tensorflow](https://www.tensorflow.org/)
 -  [Pytorch](https://pytorch.org/)
+-  [Spark MLlib](https://spark.apache.org/docs/latest/ml-guide.html)
 -  More!
 
 ## Overview
