@@ -36,7 +36,7 @@ The demonstrations focus on workflows and don't delve into the specifics of ML f
 
 <p align="center" width="100%">
    <a href="https://www.youtube.com/watch?v=dAIhCP0_WOA" target="_blank" rel="noopener noreferrer">
-      <kbd><img width="50%" src="architectures/thumbnails/playbutton/tn_01.png"></kbd>
+      <kbd><img width="50%" src="architectures/thumbnails/playbutton/readme.png"></kbd>
    </a>
 </p>
 <p align="center">Click to watch on YouTube</p>
@@ -45,7 +45,10 @@ The demonstrations focus on workflows and don't delve into the specifics of ML f
 
 Vetex AI is a platform for end-to-end model development.  It consist of core components that make the processes of MLOps possible for design patterns of all types.
 
-<img src="architectures/slides/slide_01.png">
+<img src="architectures/slides/readme_arch.png">
+
+<img src="architectures/slides/readme_console.png">
+
 
 ## Setup
 
