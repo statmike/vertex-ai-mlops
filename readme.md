@@ -4,6 +4,13 @@
 
 I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/start/introduction-unified-platform) from [Google Cloud](https://cloud.google.com/vertex-ai) with you.  The goal here is to share a comprehensive set of end-to-end workflows for machine learning that each cover the range of data to model to serving and managing - even automating the flow.  Regardless of your data type, skill level or framework preferences you will find something helpful here. 
 
+<p align="center" width="100%">
+   <a href="https://www.youtube.com/watch?v=dAIhCP0_WOA" target="_blank" rel="noopener noreferrer">
+      <kbd><img width="50%" src="architectures/thumbnails/playbutton/readme.png"></kbd>
+   </a>
+</p>
+<p align="center">Click to watch on YouTube</p>
+
 ## Considerations
 
 ### Data Type
@@ -34,12 +41,9 @@ This is a series of workflow demonstrations that use the same data source to bui
 
 The demonstrations focus on workflows and don't delve into the specifics of ML frameworks other than how to integrate and automate with Vertex AI. Let me know if you have ideas for more workflows or details to include!
 
-<p align="center" width="100%">
-   <a href="https://www.youtube.com/watch?v=dAIhCP0_WOA" target="_blank" rel="noopener noreferrer">
-      <kbd><img width="50%" src="architectures/thumbnails/playbutton/readme.png"></kbd>
-   </a>
+<p align="center">
+  <img alt="Overview" src="architectures/vertex-ai-mlops.png">
 </p>
-<p align="center">Click to watch on YouTube</p>
 
 ## Vetex AI
 
