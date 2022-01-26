@@ -113,7 +113,7 @@ I often get asked "How do I learn about ML?".  There are lots of good answers.  
    2. [Essence of linear algebra](https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab) playlist
    3. [Essence of calculus](https://www.youtube.com/playlist?list=PLZHQObOWTQDMsr9K-rj53DwVRMYO3t5Yr) playlist
 
-This is a good review order: 1, 3.1, 3.2, 3.3, 2, 3.1 (again!).  When done with this, remember you are beginner so begin, have fun, make mistakes and keep optimizing your cost function to boost your knowledge!
+This is a good review order: 1, 3.1, 3.2, 3.3, 2, 3.1 (again!).  When done with this, remember you are a beginner so begin, have fun, make mistakes and keep optimizing your cost function to boost your knowledge!
 
 ## More Resources Like This Repository
 
