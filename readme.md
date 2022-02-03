@@ -115,6 +115,8 @@ I often get asked "How do I learn about ML?".  There are lots of good answers.  
 
 This is a good review order: 1, 3.1, 3.2, 3.3, 2, 3.1 (again!).  When done with this, remember you are a beginner so begin, have fun, make mistakes and keep optimizing your cost function to boost your knowledge!
 
+A good next step is to use the [curriculums curated by the Tensorflow community](https://www.tensorflow.org/resources/learn-ml).  These are great at balancing coding, math & stats, theory, and project based learning.
+
 ## More Resources Like This Repository
 
 This is my personal repository of demonstrations I use for learning and sharing Vertex AI.  There are many more resources available.  Within each notebook I have included a resources section and a related training section. 
