@@ -54,11 +54,11 @@ This work focuses on cases where you have training date:
 
 | Overview |
 :-------------------------:
-![](./architectures/overview/High%20Level.png)
+![](./architectures/overview/High_Level.png)
 
 |AutoML|BigQuery ML|Vertex AI|
 :---:|:---:|:---:
-![](./architectures/overview/02%20Overview.png)|![](./architectures/overview/03%20Overview.png)|![](./architectures/overview/05%20Overview.png)
+![](./architectures/overview/02_Overview.png)|![](./architectures/overview/03_Overview.png)|![](./architectures/overview/05_Overview.png)
 
 ## Vetex AI
 
