@@ -34,17 +34,31 @@ I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/s
 -  [Tensorflow](https://www.tensorflow.org/)
 -  [Pytorch](https://pytorch.org/)
 -  [Spark MLlib](https://spark.apache.org/docs/latest/ml-guide.html)
+-  [R](https://www.r-project.org/)
+-  [Julia](https://julialang.org/)
 -  More!
 
 ## Overview
 
-This is a series of workflow demonstrations that use the same data source to build and deploy the same machine learning model with different levels of skill and automation.  These are meant to help get started in understanding and learning Vertex AI and provide starting points for new projects.  
+This is a series of workflow demonstrations that use the same data source to build and deploy the same machine learning model with different frameworks and automation.  These are meant to help get started in understanding and learning Vertex AI and provide starting points for new projects.  
 
 The demonstrations focus on workflows and don't delve into the specifics of ML frameworks other than how to integrate and automate with Vertex AI. Let me know if you have ideas for more workflows or details to include!
 
-<p align="center">
-  <img alt="Overview" src="architectures/vertex-ai-mlops.png">
-</p>
+To understand the contents of this repository, the following charts uncover the groupings of the content.
+
+| Direction |
+:-------------------------:
+![](./architectures/overview/Decision.png)
+
+This work focuses on cases where you have training date:
+
+| Overview |
+:-------------------------:
+![](./architectures/overview/High%20Level.png)
+
+|AutoML|BigQuery ML|Vertex AI|
+:---:|:---:|:---:
+![](./architectures/overview/02%20Overview.png)|![](./architectures/overview/03%20Overview.png)|![](./architectures/overview/05%20Overview.png)
 
 ## Vetex AI
 
