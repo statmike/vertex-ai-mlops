@@ -56,9 +56,9 @@ This work focuses on cases where you have training date:
 :-------------------------:
 ![](./architectures/overview/High_Level.png)
 
-|AutoML|BigQuery ML|Vertex AI|
-:---:|:---:|:---:
-![](./architectures/overview/02_Overview.png)|![](./architectures/overview/03_Overview.png)|![](./architectures/overview/05_Overview.png)
+|AutoML|BigQuery ML|Vertex AI| Forecasting with AutoML, BigQuery ML, OSS Prophet |
+:---:|:---:|:---:|:---:
+![](./architectures/overview/02_Overview.png)|![](./architectures/overview/03_Overview.png)|![](./architectures/overview/05_Overview.png)|![](./architectures/overview/04_Overview.png)
 
 ## Vetex AI
 
