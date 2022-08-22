@@ -174,3 +174,87 @@ This is my personal repository of demonstrations I use for learning and sharing 
 - GitHub [GoogleCloudPlatform/vertex-ai-samples](https://github.com/GoogleCloudPlatform/vertex-ai-samples)
 - GitHub [GoogleCloudPlatform/mlops-with-vertex-ai](https://github.com/GoogleCloudPlatform/mlops-with-vertex-ai)
 - [Overview of Data Science on Google Cloud](https://cloud.google.com/data-science)
+
+---
+## Vertex AI For ML Training
+
+Add these:
+ - tensorboard
+ - experiment
+ - worker pool
+
+```mermaid
+sequenceDiagram
+   actor User
+   participant Training Code
+   participant API
+   participant Training Job
+   Participant Custom Job
+   Participant Hyperparameter Tuning Job
+   Note over Training Job, Hyperparameter Tuning Job: Vertex AI Training
+
+   rect rgb(154, 160, 166)
+      note right of User: Vertex AI Workbench / Notebook
+      Training Code ->> Training Code: Inside
+   end
+   rect rgb(234, 67, 53)
+      note right of User: Python Script
+      rect rgb(66, 133, 244)
+         note right of Training Code: a
+         Training Code ->> API: customJob = aiplatform.CustomJob.from_local_script()
+         API ->> Custom Job: customJob.run()
+      end
+      rect rgb(251, 188, 4)
+         note right of Training Code: d
+         Training Code ->> API: trainingJob = aiplatform.CustomTrainingJob()
+         API ->> Training Job: model = trainingJob.run()
+         Training Job -->> Custom Job: creates backing custom job
+      end
+      rect rgb(52, 168, 83)
+         note right of Training Code: g
+         Training Code ->> API: customJob = aiplatform.CustomJob.from_local_script()
+         Training Code ->> API: tuningJob = aiplatform.HyperparameterTuningJob(customJob)
+         API ->> Hyperparameter Tuning Job: tuningJob.run()
+      end
+   end
+   rect rgb(234, 67, 53)
+      note right of User: Python Source Distribution
+      rect rgb(66, 133, 244)
+         note right of Training Code: b
+         Training Code ->> API: customJob = aiplatform.CustomJob()
+         API ->> Custom Job: customJob.run()
+      end
+      rect rgb(251, 188, 4)
+         note right of Training Code: e
+         Training Code ->> API: trainingJob = aiplatform.CustomPythonPackageTrainingJob()
+         API ->> Training Job: model = trainingJob.run()
+         Training Job -->> Custom Job: creates backing custom job
+      end
+      rect rgb(52, 168, 83)
+         note right of Training Code: h
+         Training Code ->> API: customJob = aiplatform.CustomJob
+         Training Code ->> API: tuningJob = aiplatform.HyperparameterTuningJob(customJob)
+         API ->> Hyperparameter Tuning Job: tuningJob.run()
+      end
+   end
+   rect rgb(234, 67, 53)
+      note right of User: Custom Container
+      rect rgb(66, 133, 244)
+         note right of Training Code: c
+         Training Code ->> API: customJob = aiplatform.CustomJob()
+         API ->> Custom Job: customJob.run()
+      end
+      rect rgb(251, 188, 4)
+         note right of Training Code: f
+         Training Code ->> API: trainingJob = aiplatform.CustomContainerTrainingJob()
+         API ->> Training Job: model = trainingJob.run()
+         Training Job -->> Custom Job: creates backing custom job
+      end
+      rect rgb(52, 168, 83)
+         note right of Training Code: i
+         Training Code ->> API: customJob = aiplatform.CustomJob()
+         Training Code ->> API: tuningJob = aiplatform.HyperparameterTuningJob(customJob)
+         API ->> Hyperparameter Tuning Job: tuningJob.run()
+      end
+   end
+```
