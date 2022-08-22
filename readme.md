@@ -12,6 +12,7 @@ I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/s
 <p align="center">Click to watch on YouTube</p>
 <p align="center">Click <a href="https://youtube.com/playlist?list=PLgxF613RsGoUuEjJJxJW2JYyZ8g1qOUou" target="_blank" rel="noopener noreferrer">here</a> to see full playlist for this repository</p>
 
+---
 ## Considerations
 
 ### Data Type
@@ -38,6 +39,7 @@ I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/s
 -  [Julia](https://julialang.org/)
 -  More!
 
+---
 ## Overview
 
 This is a series of workflow demonstrations that use the same data source to build and deploy the same machine learning model with different frameworks and automation.  These are meant to help get started in understanding and learning Vertex AI and provide starting points for new projects.  
@@ -60,6 +62,7 @@ This work focuses on cases where you have training date:
 :---:|:---:|:---:|:---:
 ![](./architectures/overview/02_Overview.png)|![](./architectures/overview/03_Overview.png)|![](./architectures/overview/05_Overview.png)|![](./architectures/overview/04_Overview.png)
 
+---
 ## Vetex AI
 
 Vetex AI is a platform for end-to-end model development.  It consist of core components that make the processes of MLOps possible for design patterns of all types.
@@ -70,7 +73,34 @@ Vetex AI is a platform for end-to-end model development.  It consist of core com
   <img alt="Console" src="architectures/slides/readme_console.png" width="45%">
 </p>
 
+---
+## Interacting with Vertex AI
+Many Vertex AI resources can be viewed and monitored directly in the [GCP Console](https://console.cloud.google.com/vertex-ai).  Vertex AI resources are primarily created, modified, with the [Vertex AI API](https://cloud.google.com/vertex-ai/docs/reference).  The API is accessible from the command line with [`gcloud ai`](https://cloud.google.com/sdk/gcloud/reference/ai), [REST](https://cloud.google.com/vertex-ai/docs/reference/rest), [gRPC](https://cloud.google.com/vertex-ai/docs/reference/rpc), or the [client libraries](https://cloud.google.com/vertex-ai/docs/start/client-libraries) (built on top of gRPC) for [Python](https://cloud.google.com/python/docs/reference/aiplatform/latest), [Java](https://cloud.google.com/java/docs/reference/google-cloud-aiplatform/latest/overview), and [Node.js](https://cloud.google.com/nodejs/docs/reference/aiplatform/latest).  
 
+There are additional [API versions](https://cloud.google.com/vertex-ai/docs/reference#versions) available: v1: stable, v1beta: latest preview features. The Vertex AI Python client library is called the [Vertex AI SDK for Python](https://googleapis.dev/python/aiplatform/latest/index.html).
+
+The notebooks in this repository primarily use the Python client with first preference being the `aiplatform` library and occasional use of `aiplatform_v1` and `aiplatform_v1beta1`.  
+
+**Install the Vertex AI Python Client**
+```python
+pip install google-cloud-aiplatform
+```
+
+**Import Vertex AI Python Client versions**
+```python
+from google.cloud import aiplatform
+from google.cloud import aiplatform_v1
+from google.cloud import aiplatform_v1beta1
+```
+
+**Recommendation**
+When reviewing the code in this repository it is recommended to first consult the [Python Client Reference](https://cloud.google.com/python/docs/reference/aiplatform/latest) and the look for futher details in the [Vertex AI SDK for Python](https://googleapis.dev/python/aiplatform/latest/index.html).
+
+**More on using Python with Google Cloud**
+- A complete list of [Google Cloud Python Client Libraries](https://github.com/googleapis/google-cloud-python)
+- [Getting started with Python](https://cloud.google.com/python/docs/getting-started) in Google Cloud
+
+---
 ## Setup
 
 The demonstrations are presented in a series of JupyterLab notebooks. These can be reviewed directly in [this repository on GitHub](https://github.com/statmike/vertex-ai-mlops) or cloned to your Jupyter instance on [Vertex AI Workbench](https://cloud.google.com/vertex-ai/docs/workbench/notebook-solution).
@@ -80,6 +110,11 @@ The demonstrations are presented in a series of JupyterLab notebooks. These can 
 Select the files and review them directly in the browser or IDE of your choice.  This can be helpful for general understanding and selecting sections to copy/paste to your project.
 
 ### Option 2: Run These Notebooks in a Vertex AI Workbench based Notebook 
+
+TL;DR
+> In Google Cloud Console, Select/Create a Project then go to Vertex AI > Workbench > User-Managed Notebooks
+> - Create a new notebook and Open JupyterLab
+> - Clone this repository using Git Menu, Open and run `00 - Environment Setup.ipynb`
 
 1. Create a Project
    1. [Link](https://console.cloud.google.com/cloud-resource-manager), Alternatively, go to: Console > IAM & Admin > Manage Resources
@@ -117,7 +152,7 @@ Resources on these items:
 - [Create a Notebooks Instance](https://cloud.google.com/notebooks/docs/create-new)
 - [Open Notebooks](https://cloud.google.com/notebooks/docs/create-new#open_the_notebook_2)
 
-
+---
 ## Learning Machine Learning
 I often get asked "How do I learn about ML?".  There are lots of good answers.  I do have a preferred answer that is offered here.  I believe in a broad understanding of the topic, terminology, problem framing and method selection while also building up fundamental understandings of how everything actually works.  
 1. Good overview with terminology, methods, problem framing, and tips for using APIs from TensorFlow.  The [Machine Learning Crash Course](https://developers.google.com/machine-learning/crash-course)
@@ -131,6 +166,7 @@ This is a good review order: 1, 3.1, 3.2, 3.3, 2, 3.1 (again!).  When done with 
 
 A good next step is to use the [curriculums curated by the Tensorflow community](https://www.tensorflow.org/resources/learn-ml).  These are great at balancing coding, math & stats, theory, and project based learning.
 
+---
 ## More Resources Like This Repository
 
 This is my personal repository of demonstrations I use for learning and sharing Vertex AI.  There are many more resources available.  Within each notebook I have included a resources section and a related training section. 
