@@ -50,17 +50,17 @@ To understand the contents of this repository, the following charts uncover the 
 
 | Direction |
 :-------------------------:
-![](./architectures/overview/Decision.png)
+![](./architectures/overview/decision.png)
 
 This work focuses on cases where you have training date:
 
 | Overview |
 :-------------------------:
-![](./architectures/overview/High_Level.png)
+![](./architectures/overview/high_level.png)
 
 |AutoML|BigQuery ML|Vertex AI| Forecasting with AutoML, BigQuery ML, OSS Prophet |
 :---:|:---:|:---:|:---:
-![](./architectures/overview/02_Overview.png)|![](./architectures/overview/03_Overview.png)|![](./architectures/overview/05_Overview.png)|![](./architectures/overview/04_Overview.png)
+![](./architectures/overview/02_overview.png)|![](./architectures/overview/03_overview.png)|![](./architectures/overview/05_overview.png)|![](./architectures/overview/forecasting_overview.png)
 
 ---
 ## Vetex AI
