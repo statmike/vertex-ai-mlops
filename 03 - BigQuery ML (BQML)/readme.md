@@ -17,9 +17,9 @@
 - Each of the notebooks=experiments `03a` through `03f` create a model in BigQuery with BQML and register the model in Vertex AI Model Registry.  Rerunning the notebook will create a new model version in the Vertex AI Model Registry.  All version of the model persist in BigQuery and a timestamp is used to maintain naming uniqueness in BigQuery.
 - `03Tools - Prediction` allow you to specify any experiments in this series and it will upload the latest version of the model to a Vertex AI Endpoint and demonstrate requesting predictions with Python, REST, and the GCLOUD CLI.
 - Each of the `03Tools Pipelines ...` notebooks demonstrate an ML Workflow with Vertex AI Pipelines
-    - `Example 1`:
-    - `Example 2`:
-    - `Example 3`:
+    - `Example 1`: Deploy The Best Model To An Endpoint
+    - `Example 2`: Conditionally Update Endpoint
+    - `Example 3`: Retraining Tournament
 
 ## Additional BQML techniques are explored throughout this repository:
 - Applied Forecasting/
