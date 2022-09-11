@@ -1,4 +1,5 @@
-# BigQuery Machine Learning (BQML)
+# 03 - BigQuery ML (BQML)
+Machine Learning with SQL using [BigQuery ML (BQML)](https://cloud.google.com/bigquery-ml/docs/introduction).
 
 ## This series of notebooks will introduce BigQuery ML (BQML) with a focus on classification methods.  
 - 03 - Introduction to BigQuery ML (BQML)
@@ -23,5 +24,6 @@
 
 ## Additional BQML techniques are explored throughout this repository:
 - Applied Forecasting/
-    - 1 - Time Series Forecasting - Data Review in BigQuery
+    - 1 - BigQuery Time Series Forecasting Data Review and Preparation
     - 2 - BQML Univariate Forecasting with ARIMA+
+    - 8 - Vertex AI Pipelien - Forecasting Tournament - BQML + AutoML + Prophet
