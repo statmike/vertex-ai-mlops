@@ -153,7 +153,7 @@ Resources on these items:
 - [Open Notebooks](https://cloud.google.com/notebooks/docs/create-new#open_the_notebook_2)
 
 ---
-## Learning Machine Learning
+## [Learning Machine Learning](./Learn ML/readme.md)
 I often get asked "How do I learn about ML?".  There are lots of good answers.  I do have a preferred answer that is offered here.  I believe in a broad understanding of the topic, terminology, problem framing and method selection while also building up fundamental understandings of how everything actually works.  
 1. Good overview with terminology, methods, problem framing, and tips for using APIs from TensorFlow.  The [Machine Learning Crash Course](https://developers.google.com/machine-learning/crash-course)
 2. Strong Introduction to Fundamentals with Andrew Ng offered by Stanford on Coursera.  [Machine Learning](https://www.coursera.org/learn/machine-learning)
