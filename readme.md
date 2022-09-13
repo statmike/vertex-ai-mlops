@@ -154,7 +154,7 @@ Resources on these items:
 
 ---
 # Helpful Sections
-- [Learning Machine Learning](./Learn ML/readme.md)
+- [Learning Machine Learning](./Learn%20ML/readme.md)
     - I often get asked "How do I learn about ML?".  There are lots of good answers. ....
 - [Explorations](./Explorations/readme.md)
     - This is a series of projects for exploring new, new-to-me, and emerging tools in the ML world!
