@@ -16,11 +16,23 @@ Well, if `Autograd` and `XLA` met, hit it off, decided they like each other, bec
 
 In the words of the developers 'JAX is Autograd and XLA, brought together for high-performance machine learning research.'.
 
-Resources:
+## Resources:
 - [JAX](https://github.com/google/jax)
 - [XLA](https://www.tensorflow.org/xla)
 - [Autograd](https://github.com/hips/autograd)
 - [NumPy](https://numpy.org/)
+
+
+
+## A Developing Ecosystem On Top of JAX:
+- [Haiku](https://github.com/deepmind/dm-haiku)
+    - a library to simplify the construction of neural network architectures
+    - Haiku is to JAX what [Sonnet](https://github.com/deepmind/sonnet) is to TensorFlow 2
+- [Flax](https://github.com/google/flax)
+    - a libarary for flexible user experience with building neural networks with JAX
+- [Equinox](https://github.com/patrick-kidger/equinox)
+    - a library for JAX that represents neural networks as PyTrees
+    
 
 
 
