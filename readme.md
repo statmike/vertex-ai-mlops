@@ -52,7 +52,7 @@ To understand the contents of this repository, the following charts uncover the 
 :-------------------------:
 ![](./architectures/overview/decision.png)
 
-This work focuses on cases where you have training date:
+This work focuses on cases where you have training data:
 
 | Overview |
 :-------------------------:
