@@ -16,9 +16,9 @@
 - [Python Client for GCS](./Python%20Client%20for%20GCS.ipynb)
     - tips for interacting with GCS storage from Python, Vertex AI
 - [Python Packages](./Python%20Packages.ipynb)
-    - prepare ML training code a file (modules), folders, packages, distributions (source distribution and built distribution)
-- [Python Client for Cloud Build](./Python%20Client%20for%20Cloud%20Build.ipynb)
-    - tips for building derivative containers
+    - prepare ML training code with a file (modules), folders, packages, distributions (source distribution and built distribution) and storing in custom repositories with Artifact Registry
+- [Python Custom Containers](./Python%20Custom%20Containers.ipynb)
+    - tips for building derivative containers with Cloud Build and Artifact Registry
 
 ## Additional Tips
 - Tips for working with the Python Client for BigQuery can be found here:
