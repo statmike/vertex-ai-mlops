@@ -1,0 +1,8 @@
+pyproject.toml
+src/tips_trainer/__init__.py
+src/tips_trainer/train.py
+src/tips_trainer.egg-info/PKG-INFO
+src/tips_trainer.egg-info/SOURCES.txt
+src/tips_trainer.egg-info/dependency_links.txt
+src/tips_trainer.egg-info/requires.txt
+src/tips_trainer.egg-info/top_level.txt

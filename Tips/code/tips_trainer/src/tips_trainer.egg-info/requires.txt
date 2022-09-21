@@ -1,0 +1,3 @@
+tensorflow_io
+google-cloud-aiplatform>=1.17.0
+protobuf==3.19.4

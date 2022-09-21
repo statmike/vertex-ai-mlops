@@ -1,0 +1,10 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = 'tips_trainer'
+version = '0.1'
+dependencies = ['tensorflow_io', 'google-cloud-aiplatform>=1.17.0', 'protobuf==3.19.4']
+description = 'Training Package'
+authors = [{name = 'statmike'}]
