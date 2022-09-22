@@ -12,13 +12,16 @@
 - [Python Multiprocessing](./Python%20Multiprocessing.ipynb)
     - tips for executing multiple tasks at the same time
 - [Python Job Parameters](./Python%20Job%20Parameters.ipynb)
-    - tips for passing values to programs from the command line or with files
+    - tips for passing values to programs from the command line (argparse, docopt, click) or with files (JSON, YAML, pickle)
 - [Python Client for GCS](./Python%20Client%20for%20GCS.ipynb)
     - tips for interacting with GCS storage from Python, Vertex AI
 - [Python Packages](./Python%20Packages.ipynb)
     - prepare ML training code with a file (modules), folders, packages, distributions (source distribution and built distribution) and storing in custom repositories with Artifact Registry
 - [Python Custom Containers](./Python%20Custom%20Containers.ipynb)
     - tips for building derivative containers with Cloud Build and Artifact Registry
+- [Python Training](./Python%20Training.ipynb)
+    - move training code out of a notebook and into Vertex AI Training Custom Jobs
+    - This demonstrates many workflows for directly using the code formats created in [Python Packages](./Python%20Packages.ipynb) and for the custom container workflows created in [Python Custom Containers](./Python%20Custom%20Containers.ipynb)
 
 ## Additional Tips
 - Tips for working with the Python Client for BigQuery can be found here:
