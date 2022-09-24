@@ -166,7 +166,7 @@ Resources on these items:
 - [Explorations](./Explorations/readme.md)
     - This is a series of projects for exploring new, new-to-me, and emerging tools in the ML world!
 - [Tips](./Tips/readme.md)
-    - Tips for using the repository and notebooks with examples of core skills like building containers, parameterizing jobs and interacting with other GCP services.
+    - Tips for using the repository and notebooks with examples of core skills like building containers, parameterizing jobs and interacting with other GCP services. These tips help with scaling jobs and developing them with a focus on CI/CD.
 ---
 ## More Resources Like This Repository
 
