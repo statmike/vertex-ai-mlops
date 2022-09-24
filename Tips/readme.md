@@ -1,4 +1,5 @@
 # Tips
+A collection of tips for scaling jobs, generalizing jobs for flexibility, and developing ML training jobs that are portable.  Think of this as DevOps for ML training jobs.  The tips will show how to do multiple tasks in parallel within your code, pass parameters to jobs from the command line and input files, package training code, build custom containers with training code, and deploy training code on Vertex AI Training to take advantage of scalable managed infrastructure at the job level.
 
 ## Using This Repository
 - Each notebook that has a parameter defined as `BUCKET = PROJECT_ID` can be customized:
@@ -8,7 +9,7 @@
 - [`aiplatform` Python Client](./aiplatform_notes.md)
     - All about the Vertex AI Python Client: versions (`aiplatform_v1` and `aiplatform_v1beta`) and layers (`aiplatform` and `aiplatform.gapic`).  Includes the deeper details and examples of using each.
 
-## Notebooks on Skills
+## Notebooks on Skills For ML Training Jobs and Tasks
 - [Python Multiprocessing](./Python%20Multiprocessing.ipynb)
     - tips for executing multiple tasks at the same time
 - [Python Job Parameters](./Python%20Job%20Parameters.ipynb)
