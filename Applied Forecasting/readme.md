@@ -14,6 +14,13 @@ This series of notebooks highlights the use of Vertex AI for forecasting workflo
 **Notes**
 
 
+TODO:
+- full update pass to bring this project up to standards of 05 and others
+- parameterize examples with consideration for use case where dataset may have too many time series to plot - subset
+- Turn 8 into solution: register component to artifact registry and build pipelines
+- add Bokeh plot to each example
+
+
 
 
 

@@ -28,3 +28,12 @@ Machine Learning with SQL using [BigQuery ML (BQML)](https://cloud.google.com/bi
     - [1 - BigQuery Time Series Forecasting Data Review and Preparation](../Applied%20Forecasting/1%20-%20BigQuery%20Time%20Series%20Forecasting%20Data%20Review%20and%20Preparation.ipynb)
     - [2 - BQML Univariate Forecasting with ARIMA+](../Applied%20Forecasting/2%20-%20BQML%20Univariate%20Forecasting%20with%20ARIMA+.ipynb)
     - [8 - Vertex AI Pipelines - Forecasting Tournament - BQML + AutoML + Prophet](../Applied%20Forecasting/8%20-%20Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20-%20BQML%20+%20AutoML%20+%20Prophet.ipynb)
+
+
+TODO:
+- Hyperlinks to prediction
+- Split intro notebook into a BQ tip?
+- Add Experiment tracking
+- New version of pipeline 1 that uses experiment tracking
+- update pipeline 2
+- create pipeline 3
