@@ -8,8 +8,6 @@ from google.cloud import aiplatform
 import argparse
 import os
 import sys
-import hypertune
-from tensorboard.plugins.hparams import api as hp
 
 # import argument to local variables
 parser = argparse.ArgumentParser()
@@ -27,29 +25,15 @@ parser.add_argument('--experiment', dest = 'experiment', type=str)
 parser.add_argument('--series', dest = 'series', type=str)
 parser.add_argument('--experiment_name', dest = 'experiment_name', type=str)
 parser.add_argument('--run_name', dest = 'run_name', type=str)
-# hyperparameters
-parser.add_argument('--lr', dest='learning_rate', required=True, type=float, help='Learning Rate')
-parser.add_argument('--m', dest='momentum', required=True, type=float, help='Momentum')
 args = parser.parse_args()
-
-# setup tensorboard hparams
-HP_LEARNING_RATE = hp.HParam('learning_rate', hp.RealInterval(0.0, 1.0))
-HP_MOMENTUM = hp.HParam('momentum', hp.RealInterval(0.0,1.0))
-hparams = {
-    HP_LEARNING_RATE: args.learning_rate,
-    HP_MOMENTUM: args.momentum
-}
 
 # clients
 bigquery = bigquery.Client(project = args.project_id)
 aiplatform.init(project = args.project_id, location = args.region)
-hpt = hypertune.HyperTune()
-args.run_name = f'{args.run_name}-{hpt.trial_id}'
 
 # Vertex AI Experiment
 expRun = aiplatform.ExperimentRun.create(run_name = args.run_name, experiment = args.experiment_name)
 expRun.log_params({'experiment': args.experiment, 'series': args.series, 'project_id': args.project_id})
-expRun.log_params({'hyperparameter.learning_rate': args.learning_rate, 'hyperparameter.momentum': args.momentum})
 
 # get schema from bigquery source
 query = f"SELECT * FROM {args.bq_project}.{args.bq_dataset}.INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{args.bq_table}'"
@@ -120,7 +104,7 @@ model = tf.keras.Model(
     outputs = layers,
     name = args.experiment
 )
-opt = tf.keras.optimizers.SGD(learning_rate = args.learning_rate, momentum = args.momentum) #SGD or Adam
+opt = tf.keras.optimizers.SGD() #SGD or Adam
 loss = tf.keras.losses.CategoricalCrossentropy()
 model.compile(
     optimizer = opt,
@@ -130,9 +114,8 @@ model.compile(
 
 # setup tensorboard logs and train
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=os.environ['AIP_TENSORBOARD_LOG_DIR'], histogram_freq=1)
-hparams_callback = hp.KerasCallback(os.environ['AIP_TENSORBOARD_LOG_DIR'] + 'train/', hparams, trial_id = args.run_name)
-history = model.fit(train, epochs = args.epochs, callbacks = [tensorboard_callback, hparams_callback], validation_data = validate)
-expRun.log_params({'epochs': history.params['epochs']})
+history = model.fit(train, epochs = args.epochs, callbacks = [tensorboard_callback], validation_data = validate)
+expRun.log_params({'training.epochs': history.params['epochs']})
 for e in range(0, history.params['epochs']):
     expRun.log_time_series_metrics(
         {
@@ -145,11 +128,15 @@ for e in range(0, history.params['epochs']):
         }
     )
 
-# evaluations:
+# test evaluations:
 loss, accuracy, auprc = model.evaluate(test)
 expRun.log_metrics({'test_loss': loss, 'test_accuracy': accuracy, 'test_auprc': auprc})
+
+# val evaluations:
 loss, accuracy, auprc = model.evaluate(validate)
 expRun.log_metrics({'val_loss': loss, 'val_accuracy': accuracy, 'val_auprc': auprc})
+
+# training evaluations:
 loss, accuracy, auprc = model.evaluate(train)
 expRun.log_metrics({'train_loss': loss, 'train_accuracy': accuracy, 'train_auprc': auprc})
 
@@ -157,8 +144,3 @@ expRun.log_metrics({'train_loss': loss, 'train_accuracy': accuracy, 'train_auprc
 model.save(os.getenv("AIP_MODEL_DIR"))
 expRun.log_params({'model.save': os.getenv("AIP_MODEL_DIR")})
 expRun.end_run()
-
-# report hypertune info back to Vertex AI Training > Hyperparamter Tuning Job
-hpt.report_hyperparameter_tuning_metric(
-    hyperparameter_metric_tag = 'auprc',
-    metric_value = history.history['auprc'][-1])
