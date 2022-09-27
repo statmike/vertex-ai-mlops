@@ -41,7 +41,7 @@ hparams = {
 }
 
 # clients
-bigquery = bigquery.Client(project = args.project_id)
+bq = bigquery.Client(project = args.project_id)
 aiplatform.init(project = args.project_id, location = args.region)
 hpt = hypertune.HyperTune()
 args.run_name = f'{args.run_name}-{hpt.trial_id}'
@@ -53,10 +53,10 @@ expRun.log_params({'hyperparameter.learning_rate': args.learning_rate, 'hyperpar
 
 # get schema from bigquery source
 query = f"SELECT * FROM {args.bq_project}.{args.bq_dataset}.INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{args.bq_table}'"
-schema = bigquery.query(query).to_dataframe()
+schema = bq.query(query).to_dataframe()
 
 # get number of classes from bigquery source
-nclasses = bigquery.query(query = f'SELECT DISTINCT {args.var_target} FROM {args.bq_project}.{args.bq_dataset}.{args.bq_table} WHERE {args.var_target} is not null').to_dataframe()
+nclasses = bq.query(query = f'SELECT DISTINCT {args.var_target} FROM {args.bq_project}.{args.bq_dataset}.{args.bq_table} WHERE {args.var_target} is not null').to_dataframe()
 nclasses = nclasses.shape[0]
 expRun.log_params({'data_source': f'bq://{args.bq_project}.{args.bq_dataset}.{args.bq_table}', 'nclasses': nclasses, 'var_split': 'splits', 'var_target': args.var_target})
 
