@@ -1,6 +1,8 @@
 # 05 - Custom Models: TensorFlow
 This series of notebooks highlights the use of Vertex AI for machine learning workflows with [TensorFlow](https://www.tensorflow.org/).  The same simple model specification is used for all examples with the focus put on workflows for different ML workflows and operational tasks.  The goal is to provide a starting point that can be used with the model architecture you already have.
 
+>**NOTE:** The notebook in the `05 - TensorFlow` series demonstrate training, serving and operations for TensorFlow models and take advantage of [Vertex AI TensorBoard](https://cloud.google.com/vertex-ai/docs/experiments/tensorboard-overview) to track training across experiments.  Running these notebooks will create a Vertex AI TensorBoard instance which has a user-based montly pricing that is different than other services that charge by usage.  This cost is $300 per user - [Vertex AI Pricing](https://cloud.google.com/vertex-ai/pricing#tensorboard).
+
 <p align="center" width="100%">
     <img src="../architectures/overview/training.png" width="45%">
     &nbsp; &nbsp; &nbsp; &nbsp;
@@ -32,7 +34,7 @@ This series of notebooks highlights the use of Vertex AI for machine learning wo
 - [05Tools - Prediction - Online.ipynb](./05Tools%20-%20Prediction%20-%20Online.ipynb)
 - [05Tools - Prediction - Batch.ipynb](./05Tools%20-%20Prediction%20-%20Batch.ipynb)
 - [05Tools - Prediction - Local.ipynb](./05Tools%20-%20Prediction%20-%20Local.ipynb)
-- [05Tools - Prediction - Cloud Run.ipynb](./05Tools%20-%20Prediction%20-%20Cloud%20Run.ipynb)
+- [05Tools - Prediction - Custom.ipynb](./05Tools%20-%20Prediction%20-%20Custom.ipynb)
 
 **Notes:**
 - Vertex AI Training > Custom Jobs run ML training code in a serverless environment:
@@ -65,15 +67,15 @@ ToDo:
 - [X] modify tools notebook to match a-i update
 - [X] split explainability into two notebooks
     - [ ] add example-based to explainability
-- [X] split predictions: online, batch, local, cloud run
-    - [ ] fix local and cloud run notebooks - tensorflow/serving container issue
+- [X] split predictions: online, batch, local, custom
+    - [X] fix local and cloud run notebooks - tensorflow/serving container issue
     - [ ] add deployment pools example
     - [ ] add CPR example
 - [ ] distributed training examples: GPU and multi worker
 - [ ] complete monitoring migration from 06a to here
 - [ ] ML Metadata - add throughout
 - [ ] pipeline - make a tournament that uses experiments to pick a winner and deploy to endpoint
-
+- [ ] trigger services: cloud function, cloud schedule, pub/sub
 
 
 
