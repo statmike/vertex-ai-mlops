@@ -9,3 +9,19 @@ Vertex AI AutoML accelerate the workflow of creating an ML model by preprocessin
 - 02c - Vertex AI > Pipelines - AutoML with clients (code) in automated pipeline.ipynb
 
 **Notes:**
+
+
+
+
+---
+ToDo:
+- [ ] Update notebook naming
+    - [ ] Update links in YouTube Video descriptions
+- [ ] Update readme with hyperlinks
+- [ ] Update Notebooks with refinement pass: formatting, resources named after SERIES and EXPERIMENT including in GCS, BQ, add links to console for review
+    - [ ] 02a
+    - [ ] 02b
+    - [ ] 02c
+- [ ] Add Multi-AutoML model example
+- [ ] Add AutoML Workflow examples
+- [ ] Add TabNet example
