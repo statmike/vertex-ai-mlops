@@ -8,4 +8,8 @@ A Series of notebooks to prepare data for the ML projects in this repository.
     
 ---
 ToDo:
-- [ ] Update format to match series
+- [X] add prereq to readme
+- [X] Update format to match series
+- [X] add data creation here (from 00)
+- [X] add links to GCS and to Python Client for GCS Tips Notebook
+

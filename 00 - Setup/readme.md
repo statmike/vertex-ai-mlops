@@ -1,6 +1,6 @@
 # 00 - Setup
 
-This initial notebooks is used to do essential `pip install ...`, create a GCS storage bucket, and save a datasource to GCS.  The setup up the main resources for the notebooks used in tutorials with this repository.
+This initial notebook is used to do essential `pip install ...`, create a GCS storage bucket, and save a datasource to GCS.  This sets up the main resources for the notebooks used in tutorials with this repository.
 
 ## Setting Up the Environment
 - 00 - Environment Setup.ipynb
@@ -8,7 +8,7 @@ This initial notebooks is used to do essential `pip install ...`, create a GCS s
 
 ---
 ToDo:
-- [ ] Move Plotly install to notebooks that use it
-- [ ] Update formating to match series
-- [ ] Detect and modify Service Account to have GCS Admin access for Pipelines
-
+- [X] Move Plotly install to notebooks that use it
+- [X] Update formating to match series
+- [IP] Detect and modify Service Account to have GCS Admin access for Pipelines
+- [X] Move Dataset creation to 01 Series
