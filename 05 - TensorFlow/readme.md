@@ -9,6 +9,10 @@ This series of notebooks highlights the use of Vertex AI for machine learning wo
     <img src="../architectures/overview/training2.png" width="45%">
 </p>
 
+**Prerequisites**
+- [00 - Setup.ipynb](../00%20-%20Setup/00%20-%20Environment%20Setup.ipynb)
+- [01 - BigQuery - Table Data Source.ipynb](../01%20-%20Data%20Sources/01%20-%20BigQuery%20-%20Table%20Data%20Source.ipynb)
+
 ## Notebooks:
 - [05 - Vertex AI Custom Model - TensorFlow - in Notebook.ipynb](./05%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20in%20Notebook.ipynb)
 - [05 - Vertex AI Custom Model - TensorFlow - Notebook to Script.ipynb](./05%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Notebook%20to%20Script.ipynb)
@@ -60,7 +64,8 @@ This series of notebooks highlights the use of Vertex AI for machine learning wo
 ---
 
 ToDo:
-- [IP] add prereq to readme
+- [X] add prereq to readme
+- [X] Update references to Service Account and check for permissions - reference the 00 notebooks new section for correct setup
 - [IP] fix references to data in GCS in the Tools - Predictions notebook (and others = search): bucket/series/experiment
 - [X] 05 script creation notebooks
     - [IP] add narrative

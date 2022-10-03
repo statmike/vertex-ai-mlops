@@ -1,6 +1,9 @@
 # Applied Forecasting
 This series of notebooks highlights the use of Vertex AI for forecasting workflows.  These use techniques in BigQuery ML (BQML), Vertex AI AutoML Forecasting, and custom methods like OSS Prophet.
 
+**Prerequisites**
+- [00 - Setup.ipynb](../00%20-%20Setup/00%20-%20Environment%20Setup.ipynb)
+
 ## Notebooks:
 - [1 - BigQuery Time Series Forecasting Data Review and Preparation](./1%20-%20BigQuery%20Time%20Series%20Forecasting%20Data%20Review%20and%20Preparation.ipynb)
 - [2 - BQML Univariate Forecasting with ARIMA+](./2%20-%20BQML%20Univariate%20Forecasting%20with%20ARIMA+.ipynb)
@@ -15,7 +18,8 @@ This series of notebooks highlights the use of Vertex AI for forecasting workflo
 
 ---
 ToDo:
-- [IP] add prereq to readme
+- [X] add prereq to readme
+- [X] Update references to Service Account and check for permissions - reference the 00 notebooks new section for correct setup
 - [IP] Describe the data source in the readme file
 - [IP] full update pass to bring this project up to standards of 05 and others:
     - formatting, links to console for review, setup (installs), gcs and bq naming follows SERIES, EXPERIMENT

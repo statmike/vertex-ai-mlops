@@ -24,8 +24,8 @@ I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/s
 
 
 ---
-## Considerations
 <a id = 'considerations'></a>
+## Considerations
 
 ### Data Type
 
@@ -52,8 +52,8 @@ I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/s
 -  More!
 
 ---
-## Overview
 <a id = 'overview'></a>
+## Overview
 
 This is a series of workflow demonstrations that use the same data source to build and deploy the same machine learning model with different frameworks and automation.  These are meant to help get started in understanding and learning Vertex AI and provide starting points for new projects.  
 
@@ -84,8 +84,8 @@ This work focuses on cases where you have training data:
 </p>
 
 ---
-## Vetex AI
 <a id = 'vertex'></a>
+## Vetex AI
 
 Vetex AI is a platform for end-to-end model development.  It consist of core components that make the processes of MLOps possible for design patterns of all types.
 
@@ -96,8 +96,8 @@ Vetex AI is a platform for end-to-end model development.  It consist of core com
 </p>
 
 ---
-## Interacting with Vertex AI
 <a id = 'vertexsdk'></a>
+## Interacting with Vertex AI
 Many Vertex AI resources can be viewed and monitored directly in the [GCP Console](https://console.cloud.google.com/vertex-ai).  Vertex AI resources are primarily created, and modified with the [Vertex AI API](https://cloud.google.com/vertex-ai/docs/reference).  
 
 The API is accessible from:
@@ -131,8 +131,8 @@ model_list = aiplatform.Model.list()
 ```
 
 ---
-## Setup
 <a id = 'setup'></a>
+## Setup
 
 The demonstrations are presented in a series of JupyterLab notebooks. These can be reviewed directly in [this repository on GitHub](https://github.com/statmike/vertex-ai-mlops) or cloned to your Jupyter instance on [Vertex AI Workbench](https://cloud.google.com/vertex-ai/docs/workbench/notebook-solution).
 
@@ -184,8 +184,8 @@ Resources on these items:
 - [Open Notebooks](https://cloud.google.com/notebooks/docs/create-new#open_the_notebook_2)
 
 ---
-## Helpful Sections
 <a id = 'helpful'></a>
+## Helpful Sections
 - [Learning Machine Learning](./Learn%20ML/readme.md)
     - I often get asked "How do I learn about ML?".  There are lots of good answers. ....
 - [Explorations](./Explorations/readme.md)
@@ -194,8 +194,8 @@ Resources on these items:
     - Tips for using the repository and notebooks with examples of core skills like building containers, parameterizing jobs and interacting with other GCP services. These tips help with scaling jobs and developing them with a focus on CI/CD.
 
 ---
-## More Resources Like This Repository
 <a id = 'resources'></a>
+## More Resources Like This Repository
 
 This is my personal repository of demonstrations I use for learning and sharing Vertex AI.  There are many more resources available.  Within each notebook I have included a resources section and a related training section. 
 
