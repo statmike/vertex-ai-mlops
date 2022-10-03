@@ -66,10 +66,10 @@ This series of notebooks highlights the use of Vertex AI for machine learning wo
 ToDo:
 - [X] add prereq to readme
 - [X] Update references to Service Account and check for permissions - reference the 00 notebooks new section for correct setup
-- [IP] fix references to data in GCS in the Tools - Predictions notebook (and others = search): bucket/series/experiment
+- [X] fix references to data in GCS in the Tools - Predictions notebook (and others = search): bucket/series/experiment
 - [X] 05 script creation notebooks
-    - [IP] add narrative
-    - [IP] add section for testing code
+    - [X] add narrative
+    - [X] add section for testing code
 - [X] update/rework/modify a-i (done=abcdefghi)
 - [X] modify tools notebook to match a-i update
 - [X] split explainability into two notebooks
