@@ -15,6 +15,7 @@ Vertex AI AutoML accelerate the workflow of creating an ML model by preprocessin
 
 ---
 ToDo:
+- [IP] add prereq to readme
 - [ ] Update notebook naming
     - [ ] Update links in YouTube Video descriptions
 - [ ] Update readme with hyperlinks

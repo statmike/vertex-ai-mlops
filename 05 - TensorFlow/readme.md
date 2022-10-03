@@ -60,9 +60,11 @@ This series of notebooks highlights the use of Vertex AI for machine learning wo
 ---
 
 ToDo:
+- [IP] add prereq to readme
+- [IP] fix references to data in GCS in the Tools - Predictions notebook (and others = search): bucket/series/experiment
 - [X] 05 script creation notebooks
-    - [ ] add narrative
-    - [ ] add section for testing code
+    - [IP] add narrative
+    - [IP] add section for testing code
 - [X] update/rework/modify a-i (done=abcdefghi)
 - [X] modify tools notebook to match a-i update
 - [X] split explainability into two notebooks
@@ -71,8 +73,11 @@ ToDo:
     - [X] fix local and cloud run notebooks - tensorflow/serving container issue
     - [ ] add deployment pools example
     - [ ] add CPR example
+    - [ ] cloud functions example - with keras serving
+    - [ ] BigQuery Remote Function: with cloud functions and cloud run
+        - Vertex AI Endpoint, Cloud Run Endpoint, Cloud Function  (with Keras)
 - [ ] distributed training examples: GPU and multi worker
-- [ ] complete monitoring migration from 06a to here
+- [IP] complete monitoring migration from 06a to here
 - [ ] ML Metadata - add throughout
 - [ ] pipeline - make a tournament that uses experiments to pick a winner and deploy to endpoint
 - [ ] trigger services: cloud function, cloud schedule, pub/sub

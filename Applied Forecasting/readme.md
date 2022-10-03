@@ -15,11 +15,21 @@ This series of notebooks highlights the use of Vertex AI for forecasting workflo
 
 ---
 ToDo:
-- [ ] Describe the data source in the readme file
-- [ ] full update pass to bring this project up to standards of 05 and others: formatting, links to console for review, setup (installs), gcs and bq naming follows SERIES, EXPERIMENT
-- [ ] parameterize examples with consideration for use case where dataset may have too many time series to plot - subset of total with parameter
+- [IP] add prereq to readme
+- [IP] Describe the data source in the readme file
+- [IP] full update pass to bring this project up to standards of 05 and others:
+    - formatting, links to console for review, setup (installs), gcs and bq naming follows SERIES, EXPERIMENT
+    - parameterize examples with consideration for use cases where dataset may have too many time series to plot individually - subset of total with parameter and user specified series as a list
+    - add Bokeh plot to each example
+    - [ ] 1
+    - [ ] 2
+    - [ ] 3
+    - [ ] 4
+    - [ ] 5
+    - [ ] 6
+    - [ ] 7
+    - [ ] 8
 - [ ] Turn 8 into solution: register components to artifact registry and build pipelines dynamically
-- [ ] add Bokeh plot to each example
 
 
 
