@@ -28,3 +28,6 @@ A collection of tips for scaling jobs, generalizing jobs for flexibility, and de
 - Tips for working with the Python Client for BigQuery can be found here:
     - [03 - Introduction to BigQuery ML (BQML)](../03%20-%20BigQuery%20ML%20(BQML)/03%20-%20Introduction%20to%20BigQuery%20ML%20(BQML).ipynb)
     
+---
+ToDo:
+- [ ] Add Python Client for BigQuery tip
