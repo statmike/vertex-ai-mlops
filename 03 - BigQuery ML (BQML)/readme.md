@@ -42,6 +42,6 @@ ToDo:
 - [ ] Add Experiment tracking
 - [ ] update pipeline examples
     - [ ] New version of pipeline 1 that uses experiment tracking - call it 1b
-    - [ ] update pipeline 2 - same flow but updated to match the series
+    - [X] update pipeline 2 - same flow but updated to match the series
     - [ ] create pipeline 3
 - [ ] add kmeans, pca, autoencoder for anomaly detection using fraud data (maybe in applied section)
