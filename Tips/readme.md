@@ -31,3 +31,4 @@ A collection of tips for scaling jobs, generalizing jobs for flexibility, and de
 ---
 ToDo:
 - [ ] Add Python Client for BigQuery tip
+- [ ] Add R for BigQuery tip
