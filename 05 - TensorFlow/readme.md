@@ -82,7 +82,9 @@ ToDo:
     - [ ] BigQuery Remote Function: with cloud functions and cloud run
         - Vertex AI Endpoint, Cloud Run Endpoint, Cloud Function  (with Keras)
 - [ ] distributed training examples: GPU and multi worker
-- [IP] complete monitoring migration from 06a to here
+- [X] complete monitoring migration from 06a to here
+    - [ ] add batch job monitoring
+    - [ ] feature attribution monitoring - requires .explain instead of .predict?
 - [ ] ML Metadata - add throughout
 - [ ] pipeline - make a tournament that uses experiments to pick a winner and deploy to endpoint
 - [ ] trigger services: cloud function, cloud schedule, pub/sub
