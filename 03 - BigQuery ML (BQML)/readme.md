@@ -44,4 +44,15 @@ ToDo:
     - [ ] New version of pipeline 1 that uses experiment tracking - call it 1b
     - [X] update pipeline 2 - same flow but updated to match the series
     - [ ] create pipeline 3
-- [ ] add kmeans, pca, autoencoder for anomaly detection using fraud data (maybe in applied section)
+- [IP] add unsupervised anomaly detection using fraud data (maybe in applied section)
+    - [IP] PCA
+    - [IP] K-Means
+    - [IP] Autoencoder
+- [ ] Update Pass
+    - 03 notebook add calculation of count and % for fraud (Class = 1) in each split
+    - For each section of each notebook include a link to the BQML doc page for the ML. function used
+    - Link back to the 01 notebook when mentioned within the training section of each notebook
+    - Add a method description in the notebook overview
+        - High: Classification, Supervised, Unsupervised 
+        - Low: The method
+        
