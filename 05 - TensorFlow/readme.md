@@ -76,14 +76,16 @@ ToDo:
     - [ ] add example-based to explainability
 - [X] split predictions: online, batch, local, custom
     - [X] fix local and cloud run notebooks - tensorflow/serving container issue
+    - [IP] add BQ input/output example for Batch Predictions
     - [ ] add deployment pools example
     - [ ] add CPR example
     - [ ] cloud functions example - with keras serving
     - [ ] BigQuery Remote Function: with cloud functions and cloud run
         - Vertex AI Endpoint, Cloud Run Endpoint, Cloud Function  (with Keras)
+- [IP] Pipeline for Hyperparameter Tuning with Vizier example - multiple metrics
 - [ ] distributed training examples: GPU and multi worker
 - [X] complete monitoring migration from 06a to here
-    - [ ] add batch job monitoring
+    - [IP] add batch job monitoring
     - [ ] feature attribution monitoring - requires .explain instead of .predict?
 - [ ] ML Metadata - add throughout
 - [ ] pipeline - make a tournament that uses experiments to pick a winner and deploy to endpoint
