@@ -10,4 +10,8 @@ This series of notebooks will feature Google Cloud Pre-Trained APIs:
 - [Cloud Inference API](https://cloud.google.com/inference/docs)
 - [Cloud Data Loss Prevention](https://cloud.google.com/dlp/docs/concepts)
 
-## This series is in development
+## Notebooks
+- [api-fun-demo.ipynb](./api-fun-demo.ipynb)
+    - a full circle demonstration most of the Vertex AI based pre-trained APIs
+    
+    
