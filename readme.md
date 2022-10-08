@@ -1,4 +1,4 @@
-# Vertex AI for Machine Learning Operations
+# ![Vertex AI](https://fonts.gstatic.com/s/i/gcpiconscolors/vertexai/v1/web-32dp/colors_vertexai_color_2x_web_32dp.png) Vertex AI for Machine Learning Operations
 
 ## 👋 I'm Mike
 
