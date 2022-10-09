@@ -1,17 +1,22 @@
-![Vertex AI](https://fonts.gstatic.com/s/i/gcpiconscolors/vertexai/v1/web-32dp/colors_vertexai_color_2x_web_32dp.png)
+|![Vertex AI](https://fonts.gstatic.com/s/i/gcpiconscolors/vertexai/v1/web-32dp/colors_vertexai_color_2x_web_32dp.png)|
+|:--:|
+|Vertex AI|
+
 # Vertex AI for Machine Learning Operations
 
 ## 👋 I'm Mike
 
 I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/start/introduction-unified-platform) from [Google Cloud](https://cloud.google.com/vertex-ai) with you.  The goal here is to share a comprehensive set of end-to-end workflows for machine learning that each cover the range of data to model to serving and managing - even automating the flow.  Regardless of your data type, skill level or framework preferences you will find something helpful here. 
 
-<p align="center" width="100%">
-   <a href="https://youtu.be/snUEwsft1wY" target="_blank" rel="noopener noreferrer">
-      <kbd><img width="50%" src="architectures/thumbnails/playbutton/readme.png"></kbd>
-   </a>
-</p>
-<p align="center">Click to watch on YouTube</p>
-<p align="center">Click <a href="https://youtube.com/playlist?list=PLgxF613RsGoUuEjJJxJW2JYyZ8g1qOUou" target="_blank" rel="noopener noreferrer">here</a> to see current playlist for this repository</p>
+<table><tr><td style='text-align:center'>
+    <figure>
+           <a href="https://youtu.be/snUEwsft1wY" target="_blank" rel="noopener noreferrer">
+              <img width="50%" src="architectures/thumbnails/playbutton/readme.png">
+           </a>
+        <figcaption>Click to watch on YouTube</figcaption>
+        <figcaption>Click <a href="https://youtube.com/playlist?list=PLgxF613RsGoUuEjJJxJW2JYyZ8g1qOUou" target="_blank" rel="noopener noreferrer">here</a> to see current playlist for this repository</figcaption>
+    </figure>
+</td></tr></table>
 
 ---
 ## Table of Contents
@@ -22,7 +27,6 @@ I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/s
 - [Setup](#setup)
 - [Helpful Sections](#helpful)
 - [More Resources](#resources)
-
 
 ---
 <a id = 'considerations'></a>
@@ -67,10 +71,9 @@ To understand the contents of this repository, the following charts uncover the 
 ![](./architectures/overview/decision.png)
 
 ### Pre-Trained APIs
-
 <table>
     <tr>
-        <th colspan='4'>Pre-Trainined Models</th>
+        <th colspan='4'>Pre-Trained Models</th>
         <th rowspan='2'>
             <figure>
                 <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl/v1/32px.svg">
@@ -201,6 +204,130 @@ To understand the contents of this repository, the following charts uncover the 
                 <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_video_intelligence/v1/32px.svg">
                 <figcaption>AutoML Video</figcaption>
             </figure>
+        </td>
+    </tr>
+</table>
+
+
+### AutoML
+<table>
+    <tr>
+        <th colspan='3'>AutoML</th>
+    </tr>
+    <tr>
+        <th>Data Type</th>
+        <th>
+            <figure>
+                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl/v1/32px.svg">
+                <figcaption>AutoML</figcaption>
+            </figure>
+        </th>
+        <th>Prediction Types</th>
+    </tr>
+    <tr>
+        <td style='text-align:center'>
+            <figure>
+                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/table/default/48px.svg">
+                <figcaption>Table</figcaption>
+            </figure>
+        </td>
+        <td style='text-align:center'>
+            <figure>
+                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_tables/v1/32px.svg">
+                <figcaption>AutoML Tables</figcaption>
+            </figure>
+        </td>
+        <td style='text-align:left'>
+            <dl>
+                <dt>Classification</dt>
+                    <dd>Binary</dd>
+                    <dd>Multi-class</dd>
+                <dt>Regression</dt>
+                <dt>Forecasting</dt>
+            </dl>
+        </td>
+    </tr>
+    <tr>
+        <td style='text-align:center'>
+            <figure>
+                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/image/default/48px.svg">
+                <figcaption>Image</figcaption>
+            </figure>
+        </td>
+        <td style='text-align:center'>
+            <figure>
+                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_vision/v1/32px.svg">
+                <figcaption>AutoML Image</figcaption>
+            </figure>
+        </td>
+        <td style='text-align:left'>
+            <dl>
+                <dt>Classification</dt>
+                    <dd>Single-label</dd>
+                    <dd>Multi-label</dd>
+                <dt>Object Detection</dt>
+            </dl>
+        </td>
+    </tr>
+    <tr>
+        <td style='text-align:center'>
+            <figure>
+                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/videocam/default/48px.svg">
+                <figcaption>Video</figcaption>
+            </figure>
+        </td>
+        <td style='text-align:center'>
+            <figure>
+                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_video_intelligence/v1/32px.svg">
+                <figcaption>AutoML Video</figcaption>
+            </figure>
+        </td>
+        <td style='text-align:left'>
+            <dl>
+                <dt>Classification</dt>
+                <dt>Object Detection</dt>
+                <dt>Action Recognition</dt>
+            </dl>
+        </td>
+    </tr>
+    <tr>
+        <td style='text-align:center'>
+            <figure>
+                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/48px.svg">
+                <figcaption>Text</figcaption>
+            </figure>
+        </td>
+        <td style='text-align:center'>
+            <figure>
+                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_natural_language/v1/32px.svg">
+                <figcaption>AutoML Text</figcaption>
+            </figure>
+        </td>
+        <td style='text-align:left'>
+            <dl>
+                <dt>Classification</dt>
+                    <dd>Single-label</dd>
+                    <dd>Multi-label</dd>
+                <dt>Entity Extraction</dt>
+                <dt>Sentiment Analysis</dt>
+            </dl>
+        </td>
+    </tr>
+    <tr>
+        <td style='text-align:center'>
+            <figure>
+                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/48px.svg">
+                <figcaption>Text</figcaption>
+            </figure>
+        </td>
+        <td style='text-align:center'>
+            <figure>
+                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_translation/v1/32px.svg">
+                <figcaption>AutoML Translation</figcaption>
+            </figure>
+        </td>
+        <td style='text-align:center'>
+            Translation
         </td>
     </tr>
 </table>
