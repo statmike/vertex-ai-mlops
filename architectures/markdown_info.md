@@ -45,13 +45,13 @@ OR
 
 ## Data Type ICONS
 
-- Document: ![Document](https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/description/default/48px.svg)
-- Table: ![Table](https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/table/default/48px.svg)
-- Text: ![Text](https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/48px.svg)
-- Image: ![Image](https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/image/default/48px.svg)
-- Video: ![Video](https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/videocam/default/48px.svg)
-- Audio: ![Audio](https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/mic/default/48px.svg)
-- Media: ![Media](https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/play_arrow/default/48px.svg)
+- Document: ![Document](https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/description/default/40px.svg)
+- Table: ![Table](https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/table/default/40px.svg)
+- Text: ![Text](https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg)
+- Image: ![Image](https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/image/default/40px.svg)
+- Video: ![Video](https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/videocam/default/40px.svg)
+- Audio: ![Audio](https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/mic/default/40px.svg)
+- Media: ![Media](https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/play_arrow/default/40px.svg)
 
 ---
 
