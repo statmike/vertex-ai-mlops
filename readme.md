@@ -11,7 +11,7 @@ I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/s
 <table><tr><td style='text-align:center'>
     <figure>
            <a href="https://youtu.be/snUEwsft1wY" target="_blank" rel="noopener noreferrer">
-              <img width="50%" src="architectures/thumbnails/playbutton/readme.png">
+              <kbd><img width="50%" src="architectures/thumbnails/playbutton/readme.png"></kbd>
            </a>
         <figcaption>Click to watch on YouTube</figcaption>
         <figcaption>Click <a href="https://youtube.com/playlist?list=PLgxF613RsGoUuEjJJxJW2JYyZ8g1qOUou" target="_blank" rel="noopener noreferrer">here</a> to see current playlist for this repository</figcaption>
