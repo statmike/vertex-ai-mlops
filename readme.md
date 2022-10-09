@@ -88,7 +88,7 @@ To understand the contents of this repository, the following charts uncover the 
     <tr>
         <td style='text-align:center' rowspan='2'>
             <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/48px.svg">
+                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
                 <figcaption>Text</figcaption>
             </figure>
         </td>
@@ -122,7 +122,12 @@ To understand the contents of this repository, the following charts uncover the 
                 <td style='text-align:center'>
                     Entities (Identify and label), Sentiment, Entity Sentiment, Syntax, Content Classification
                 </td>
-                <td></td>
+                <td style='text-align:center'>
+                    <figure>
+                        <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/healthcare_nlp_api/v1/32px.svg">
+                        <figcaption>Healthceare Natural Language API</figcaption>
+                    </figure>
+                </td>
                 <td style='text-align:center'>
                     <figure>
                         <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_natural_language/v1/32px.svg">
@@ -132,7 +137,7 @@ To understand the contents of this repository, the following charts uncover the 
     <tr>
         <td style='text-align:center'>
             <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/image/default/48px.svg">
+                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/image/default/40px.svg">
                 <figcaption>Image</figcaption>
             </figure>
         </td>
@@ -161,7 +166,7 @@ To understand the contents of this repository, the following charts uncover the 
     <tr>
         <td style='text-align:center'>
             <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/mic/default/48px.svg">
+                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/mic/default/40px.svg">
                 <figcaption>Audio</figcaption>
             </figure>
         </td>
@@ -183,7 +188,7 @@ To understand the contents of this repository, the following charts uncover the 
     <tr>
         <td style='text-align:center'>
             <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/videocam/default/48px.svg">
+                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/videocam/default/40px.svg">
                 <figcaption>Video</figcaption>
             </figure>
         </td>
@@ -225,7 +230,7 @@ To understand the contents of this repository, the following charts uncover the 
     <tr>
         <td style='text-align:center'>
             <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/table/default/48px.svg">
+                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/table/default/40px.svg">
                 <figcaption>Table</figcaption>
             </figure>
         </td>
@@ -248,7 +253,7 @@ To understand the contents of this repository, the following charts uncover the 
     <tr>
         <td style='text-align:center'>
             <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/image/default/48px.svg">
+                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/image/default/40px.svg">
                 <figcaption>Image</figcaption>
             </figure>
         </td>
@@ -270,7 +275,7 @@ To understand the contents of this repository, the following charts uncover the 
     <tr>
         <td style='text-align:center'>
             <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/videocam/default/48px.svg">
+                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/videocam/default/40px.svg">
                 <figcaption>Video</figcaption>
             </figure>
         </td>
@@ -291,7 +296,7 @@ To understand the contents of this repository, the following charts uncover the 
     <tr>
         <td style='text-align:center'>
             <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/48px.svg">
+                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
                 <figcaption>Text</figcaption>
             </figure>
         </td>
@@ -314,7 +319,7 @@ To understand the contents of this repository, the following charts uncover the 
     <tr>
         <td style='text-align:center'>
             <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/48px.svg">
+                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
                 <figcaption>Text</figcaption>
             </figure>
         </td>
@@ -329,6 +334,7 @@ To understand the contents of this repository, the following charts uncover the 
         </td>
     </tr>
 </table>
+
 
 ### With Training Data
 
