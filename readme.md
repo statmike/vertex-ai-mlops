@@ -1,6 +1,6 @@
-|![Vertex AI](https://fonts.gstatic.com/s/i/gcpiconscolors/vertexai/v1/web-32dp/colors_vertexai_color_2x_web_32dp.png)|
-|:--:|
-|Vertex AI|
+<p align="center" width="100%">
+    <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/vertexai/v1/web-32dp/colors_vertexai_color_2x_web_32dp.png">
+</p>
 
 # Vertex AI for Machine Learning Operations
 
@@ -8,17 +8,13 @@
 
 I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/start/introduction-unified-platform) from [Google Cloud](https://cloud.google.com/vertex-ai) with you.  The goal here is to share a comprehensive set of end-to-end workflows for machine learning that each cover the range of data to model to serving and managing - even automating the flow.  Regardless of your data type, skill level or framework preferences you will find something helpful here. 
 
-<table><tr><td style='text-align:center'>
-    <p align="center" width="100%">
-        <figure>
-               <a href="https://youtu.be/snUEwsft1wY" target="_blank" rel="noopener noreferrer">
-                  <kbd><img width="50%" src="architectures/thumbnails/playbutton/readme.png"></kbd>
-               </a>
-            <figcaption>Click to watch on YouTube</figcaption>
-            <figcaption>Click <a href="https://youtube.com/playlist?list=PLgxF613RsGoUuEjJJxJW2JYyZ8g1qOUou" target="_blank" rel="noopener noreferrer">here</a> to see current playlist for this repository</figcaption>
-        </figure>
-    </p>
-</td></tr></table>
+<p align="center" width="100%">
+    <a href="https://youtu.be/snUEwsft1wY" target="_blank" rel="noopener noreferrer">
+      <kbd><img width="50%" src="architectures/thumbnails/playbutton/readme.png"></kbd>
+    </a>
+</p>
+<p align="center">Click to watch on YouTube</p>
+<p align="center">Click <a href="https://youtube.com/playlist?list=PLgxF613RsGoUuEjJJxJW2JYyZ8g1qOUou" target="_blank" rel="noopener noreferrer">here</a> to see current playlist for this repository</p>
 
 ---
 ## Table of Contents
