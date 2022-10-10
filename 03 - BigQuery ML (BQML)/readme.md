@@ -49,12 +49,12 @@ ToDo:
     - [IP] K-Means
     - [IP] Autoencoder
 - [IP] Update Pass
-    - 03 notebook add calculation of count and % for fraud (Class = 1) in each split
-    - add data review section to beginning
-    - add custom metrics section with sklearn at end
-    - For each section of each notebook include a link to the BQML doc page for the ML. function used
-    - Link back to the 01 notebook when mentioned within the training section of each notebook
-    - Add a method description in the notebook overview
+    - [X] 03 notebook add calculation of count and % for fraud (Class = 1) in each split - incrementally build logic over the methods presented
+    - [X] add data review section to beginning of each model_type
+    - [X] add custom metrics section with sklearn at end
+    - [ ] For each section of each notebook include a link to the BQML doc page for the ML. function used
+    - [X] Link back to the 01 notebook when mentioned within the training section of each notebook
+    - [X] Add a method description in the notebook overview
         - High: Classification, Supervised, Unsupervised 
         - Low: The method
         
