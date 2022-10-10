@@ -44,14 +44,14 @@ ToDo:
     - [ ] New version of pipeline 1 that uses experiment tracking - call it 1b
     - [X] update pipeline 2 - same flow but updated to match the series
     - [ ] create pipeline 3
-- [IP] add unsupervised anomaly detection using fraud data (maybe in applied section)
-    - [IP] PCA
+- [X] add unsupervised anomaly detection using fraud data (maybe in applied section)
+    - [X] PCA
         - [X] Export and Register in Vertex AI Model Registry
         - [ ] Test Predictions
-    - [IP] K-Means
+    - [X] K-Means
         - [X] Export and Register in Vertex AI Model Registry
         - [ ] Test Predictions
-    - [IP] Autoencoder
+    - [X] Autoencoder
         - [X] Export and Register in Vertex AI Model Registry
         - [ ] Test Predictions
 - [IP] Update Pass
