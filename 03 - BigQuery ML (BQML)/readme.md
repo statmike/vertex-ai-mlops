@@ -46,8 +46,14 @@ ToDo:
     - [ ] create pipeline 3
 - [IP] add unsupervised anomaly detection using fraud data (maybe in applied section)
     - [IP] PCA
+        - [X] Export and Register in Vertex AI Model Registry
+        - [ ] Test Predictions
     - [IP] K-Means
+        - [X] Export and Register in Vertex AI Model Registry
+        - [ ] Test Predictions
     - [IP] Autoencoder
+        - [X] Export and Register in Vertex AI Model Registry
+        - [ ] Test Predictions
 - [IP] Update Pass
     - [X] 03 notebook add calculation of count and % for fraud (Class = 1) in each split - incrementally build logic over the methods presented
     - [X] add data review section to beginning of each model_type
