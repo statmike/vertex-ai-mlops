@@ -39,28 +39,43 @@ ToDo:
 - [X] Hyperlinks to prediction notebook in each of 03a-03f
 - [X] export model: GCS and Vertex AI Model Registry use series_experiment naming convention and storage locations
 - [X] fix references to data in GCS in the Tools - Predictions notebook: bucket/series/experiment
-- [ ] Add Experiment tracking
-- [ ] update pipeline examples
-    - [ ] New version of pipeline 1 that uses experiment tracking - call it 1b
-    - [X] update pipeline 2 - same flow but updated to match the series
-    - [ ] create pipeline 3
 - [X] add unsupervised anomaly detection using fraud data (maybe in applied section)
     - [X] PCA
         - [X] Export and Register in Vertex AI Model Registry
-        - [ ] Test Predictions
+        - [X] Test Predictions
     - [X] K-Means
         - [X] Export and Register in Vertex AI Model Registry
-        - [ ] Test Predictions
+        - [X] Test Predictions
     - [X] Autoencoder
         - [X] Export and Register in Vertex AI Model Registry
-        - [ ] Test Predictions
+        - [X] Test Predictions
 - [IP] Update Pass
     - [X] 03 notebook add calculation of count and % for fraud (Class = 1) in each split - incrementally build logic over the methods presented
     - [X] add data review section to beginning of each model_type
     - [X] add custom metrics section with sklearn at end
-    - [ ] For each section of each notebook include a link to the BQML doc page for the ML. function used
+    - [IP] For each section of each notebook include a link to the BQML doc page for the ML. function used
     - [X] Link back to the 01 notebook when mentioned within the training section of each notebook
     - [X] Add a method description in the notebook overview
         - High: Classification, Supervised, Unsupervised 
         - Low: The method
-        
+    - [IP] Move Predictions into the individual notebooks, sharing endpoint for series
+- [ ] Next Update Pass
+    - [ ] rename experiment in 03g, h, i to match notebook name
+    - [ ] add experiment tracking
+- [ ] Experiments
+- [ ] update pipeline examples
+    - [ ] New version of pipeline 1 that uses experiment tracking - call it 1b
+    - [X] update pipeline 2 - same flow but updated to match the series
+    - [ ] create pipeline 3
+- [ ] Predictions
+    - [ ] Online Predictions notebooks like 05
+    - [ ] Batch Predictions In Vertex
+    - [ ] Cloud Run
+    - [ ] Local
+- [ ] Monitoring: online and batch in vertex
+- [ ] LIT
+- [ ] WIT
+- [ ] Custom Explainability in Vertex
+    - [ ] Feature Based
+    - [ ] Example Based
+
