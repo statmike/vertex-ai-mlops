@@ -58,7 +58,7 @@ ToDo:
     - [X] Add a method description in the notebook overview
         - High: Classification, Supervised, Unsupervised 
         - Low: The method
-    - [IP] Move Predictions into the individual notebooks, sharing endpoint for series
+    - [X] Move Predictions into the individual notebooks, sharing endpoint for series
 - [ ] unstructured methods in 03g, 03h, 03i, try to reproduce anomaly_detection methods
 - [ ] Next Update Pass
     - [ ] rename experiment in 03g, h, i to match notebook name
@@ -66,6 +66,7 @@ ToDo:
     - [ ] directly register BQML models in Vertex AI [link](https://cloud.google.com/bigquery-ml/docs/managing-models-vertex)
 - [ ] Experiments
 - [ ] update pipeline examples
+    - [ ] pipelines 1 and 2 break if models form 03g, 03h, or 03i are deployed - unsupervised methods
     - [ ] New version of pipeline 1 that uses experiment tracking - call it 1b
     - [X] update pipeline 2 - same flow but updated to match the series
     - [ ] create pipeline 3

@@ -69,6 +69,12 @@ Ideas - link to:
 All Python Client Libraries: https://cloud.google.com/python/docs/reference
 All Python SDK: https://github.com/googleapis/google-cloud-python
 
+- Pipelines:
+    - [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction)
+        - [Kubeflow](https://www.kubeflow.org/docs/components/pipelines/v2/author-a-pipeline/)
+            - [Install the Kubeflow Pipelines SDK](https://www.kubeflow.org/docs/components/pipelines/v1/sdk/install-sdk/)
+        - [Google Cloud Pre-Built Pipeline Components](https://cloud.google.com/vertex-ai/docs/pipelines/gcpc-list)
+            - [SDK Reference](https://google-cloud-pipeline-components.readthedocs.io)
 - [BigQuery](https://cloud.google.com/bigquery)
     - ICON: https://fonts.gstatic.com/s/i/gcpiconscolors/bigquery/v1/32px.svg
     - [Documentation:](https://cloud.google.com/bigquery/docs/query-overview)
@@ -76,7 +82,6 @@ All Python SDK: https://github.com/googleapis/google-cloud-python
         - [Clients](https://cloud.google.com/bigquery/docs/reference/libraries)
             - [Python SDK:](https://github.com/googleapis/python-bigquery)
             - [Python Library Reference:](https://cloud.google.com/python/docs/reference/bigquery/latest)
-
 - [Vertex AI](https://cloud.google.com/vertex-ai)
     - ICON: https://fonts.gstatic.com/s/i/gcpiconscolors/vertexai/v1/32px.svg
     - [Documentation:](https://cloud.google.com/vertex-ai/docs/start/introduction-unified-platform)
