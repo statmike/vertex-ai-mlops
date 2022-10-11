@@ -90,6 +90,7 @@ ToDo:
 - [ ] ML Metadata - add throughout
 - [ ] pipeline - make a tournament that uses experiments to pick a winner and deploy to endpoint
 - [ ] trigger services: cloud function, cloud schedule, pub/sub
+- [ ] Model Evaluation - where to add into workflows or standalone?
 
 
 

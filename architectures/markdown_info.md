@@ -66,9 +66,24 @@ Ideas - link to:
 - Python Client
 - Python Library
 
+All Python Client Libraries: https://cloud.google.com/python/docs/reference
+All Python SDK: https://github.com/googleapis/google-cloud-python
+
+- [BigQuery](https://cloud.google.com/bigquery)
+    - ICON: https://fonts.gstatic.com/s/i/gcpiconscolors/bigquery/v1/32px.svg
+    - [Documentation:](https://cloud.google.com/bigquery/docs/query-overview)
+    - [API:](https://cloud.google.com/bigquery/docs/reference/libraries-overview)
+        - [Clients](https://cloud.google.com/bigquery/docs/reference/libraries)
+            - [Python SDK:](https://github.com/googleapis/python-bigquery)
+            - [Python Library Reference:](https://cloud.google.com/python/docs/reference/bigquery/latest)
+
 - [Vertex AI](https://cloud.google.com/vertex-ai)
     - ICON: https://fonts.gstatic.com/s/i/gcpiconscolors/vertexai/v1/32px.svg
-    - URL: https://cloud.google.com/vertex-ai/docs/start/introduction-unified-platform
+    - [Documentation:](https://cloud.google.com/vertex-ai/docs/start/introduction-unified-platform)
+    - [API:](https://cloud.google.com/vertex-ai/docs/reference)
+        - [Clients:](https://cloud.google.com/vertex-ai/docs/start/client-libraries)
+            - [Python SDK:](https://github.com/googleapis/python-aiplatform)
+            - [Python Library Reference:](https://cloud.google.com/python/docs/reference/aiplatform/latest)
     - [AutoML](https://cloud.google.com/automl)
         - ICON: https://fonts.gstatic.com/s/i/gcpiconscolors/automl/v1/32px.svg
         - URL: https://cloud.google.com/vertex-ai/docs/beginner/beginners-guide

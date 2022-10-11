@@ -33,3 +33,4 @@ ToDo:
 - [ ] Add Python Client for BigQuery tip
 - [ ] Add R for BigQuery tip
 - [ ] Add Git workflow tip
+- [ ] add KFP tip, include [component authoring](https://www.kubeflow.org/docs/components/pipelines/v2/author-a-pipeline/components/#author-a-component)
