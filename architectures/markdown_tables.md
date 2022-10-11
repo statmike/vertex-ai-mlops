@@ -7,8 +7,8 @@
         <th colspan='4'>Pre-Trained Models</th>
         <th rowspan='2'>
             <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl/v1/32px.svg">
-                <br><figcaption>AutoML</figcaption>
+                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl/v1/32px.svg" align="center">
+                <figcaption>AutoML</figcaption>
             </figure>
         </th>
     </tr>
@@ -21,27 +21,27 @@
     <tr>
         <td style='text-align:center' rowspan='2'>
             <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
-                <br><figcaption>Text</figcaption>
+                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg" align="center">
+                <figcaption>Text</figcaption>
             </figure>
         </td>
         <td style='text-align:center'>
             <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_translation_api/v1/32px.svg">
-                <br><figcaption>Cloud Translation API</figcaption>
+                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_translation_api/v1/32px.svg" align="center">
+                <figcaption>Cloud Translation API</figcaption>
             </figure>
         </td>
         <td style='text-align:center'>Detect, Translate</td>
         <td style='text-align:center'>
             <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/text-to-speech/v1/32px.svg">
-                <br><figcaption>Cloud Text-to-Speech</figcaption>
+                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/text-to-speech/v1/32px.svg" align="center">
+                <figcaption>Cloud Text-to-Speech</figcaption>
             </figure>
         </td>
         <td style='text-align:center'>
             <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_translation/v1/32px.svg">
-                <br><figcaption>AutoML Translation</figcaption>
+                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_translation/v1/32px.svg" align="center">
+                <figcaption>AutoML Translation</figcaption>
             </figure>
         </td>
     </tr>
