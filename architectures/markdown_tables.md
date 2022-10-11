@@ -8,7 +8,7 @@
         <th rowspan='2'>
             <figure>
                 <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl/v1/32px.svg">
-                <figcaption>AutoML</figcaption>
+                <br><figcaption>AutoML</figcaption>
             </figure>
         </th>
     </tr>
@@ -22,26 +22,26 @@
         <td style='text-align:center' rowspan='2'>
             <figure>
                 <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
-                <figcaption>Text</figcaption>
+                <br><figcaption>Text</figcaption>
             </figure>
         </td>
         <td style='text-align:center'>
             <figure>
                 <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_translation_api/v1/32px.svg">
-                <figcaption>Cloud Translation API</figcaption>
+                <br><figcaption>Cloud Translation API</figcaption>
             </figure>
         </td>
         <td style='text-align:center'>Detect, Translate</td>
         <td style='text-align:center'>
             <figure>
                 <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/text-to-speech/v1/32px.svg">
-                <figcaption>Cloud Text-to-Speech</figcaption>
+                <br><figcaption>Cloud Text-to-Speech</figcaption>
             </figure>
         </td>
         <td style='text-align:center'>
             <figure>
                 <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_translation/v1/32px.svg">
-                <figcaption>AutoML Translation</figcaption>
+                <br><figcaption>AutoML Translation</figcaption>
             </figure>
         </td>
     </tr>
