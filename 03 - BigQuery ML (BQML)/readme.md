@@ -13,13 +13,17 @@ Machine Learning with SQL using [BigQuery ML (BQML)](https://cloud.google.com/bi
 - [03d - BQML Deep Neural Network (DNN)](03d%20-%20BQML%20Deep%20Neural%20Network%20(DNN).ipynb)
 - [03e - BQML Wide-And-Deep Networks](03e%20-%20BQML%20Wide-And-Deep%20Networks.ipynb)
 - [03f - BQML Logistic Regression With Hyperparameter Tuning](03f%20-%20BQML%20Logistic%20Regression%20With%20Hyperparameter%20Tuning.ipynb)
+- [03g - BQML - PCA with Anomaly Detection](03g%20-%20BQML%20-%20PCA%20with%20Anomaly%20Detection.ipynb)
+- [03h - BQML k-means with Anomaly Detection](03h%20-%20BQML%20k-means%20with%20Anomaly%20Detection.ipynb)
+- [03i - BQML Autoencoder with Anomaly Detection](03i%20-%20BQML%20Autoencoder%20with%20Anomaly%20Detection.ipynb)
 - [03Tools - Predictions](03Tools%20-%20Predictions.ipynb)
 - [03Tools - Pipelines Example 1](03Tools%20-%20Pipelines%20Example%201.ipynb)
 - [03Tools - Pipelines Example 2](03Tools%20-%20Pipelines%20Example%202.ipynb)
 - [03Tools - Pipelines Example 3](03Tools%20-%20Pipelines%20Example%203.ipynb)
 
 **Notes:**
-- Each of the notebooks=experiments `03a` through `03f` create a model in BigQuery with BQML and register the model in Vertex AI Model Registry.  Rerunning the notebook will create a new model version in the Vertex AI Model Registry.  All versions of the model persist in BigQuery and a timestamp is used to maintain naming uniqueness in BigQuery.
+- Each of the notebooks=experiments `03a` through `03i` create a model in BigQuery with BQML and register the model in Vertex AI Model Registry.  Rerunning the notebook will create a new model version in the Vertex AI Model Registry.  All versions of the model persist in BigQuery and a timestamp is used to maintain naming uniqueness in BigQuery.
+    - This recent integration between BQML models and Vertex AI Model Registry will result in an update to this work.
 - `03Tools - Prediction` allows you to specify any experiment in this series and it will upload the latest version of the model to a Vertex AI Endpoint and demonstrate requesting predictions with Python, REST, and the GCLOUD CLI.
 - Each of the `03Tools Pipelines ...` notebooks demonstrate an ML Workflow using BQML models with Vertex AI Pipelines
     - `Example 1`: Deploy The Best Model To An Endpoint
