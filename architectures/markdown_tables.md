@@ -2,14 +2,12 @@
 
 
 ### Pre-Trained APIs
-<table style='text-align:center'>
+<table style='text-align:center' width="100%">
     <tr>
         <th colspan='4'>Pre-Trained Models</th>
         <th rowspan='2'>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl/v1/32px.svg">
-                <br><figcaption>AutoML</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl/v1/32px.svg">
+            <br>AutoML
         </th>
     </tr>
     <tr>
