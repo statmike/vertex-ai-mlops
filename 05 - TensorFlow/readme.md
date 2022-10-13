@@ -84,6 +84,7 @@ ToDo:
         - Vertex AI Endpoint, Cloud Run Endpoint, Cloud Function  (with Keras)
 - [IP] Pipeline for Hyperparameter Tuning with Vizier example - multiple metrics
 - [ ] distributed training examples: GPU and multi worker
+    - [good codelab](https://codelabs.developers.google.com/vertex_multiworker_training#7)
 - [X] complete monitoring migration from 06a to here
     - [IP] add batch job monitoring
     - [ ] feature attribution monitoring - requires .explain instead of .predict?
@@ -91,7 +92,7 @@ ToDo:
 - [ ] pipeline - make a tournament that uses experiments to pick a winner and deploy to endpoint
 - [ ] trigger services: cloud function, cloud schedule, pub/sub
 - [ ] Model Evaluation - where to add into workflows or standalone?
-
+- [ ] incorporate example of using console to launch training job (custom container)
 
 
 
