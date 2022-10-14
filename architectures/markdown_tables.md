@@ -18,126 +18,92 @@
     </tr>
     <tr>
         <td rowspan='2'>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
-                <br><figcaption>Text</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
+            <br>Text
         </td>
         <td>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_translation_api/v1/32px.svg">
-                <br><figcaption>Cloud Translation API</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_translation_api/v1/32px.svg">
+            <br>Cloud Translation API
         </td>
         <td>Detect, Translate</td>
         <td>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/text-to-speech/v1/32px.svg">
-                <br><figcaption>Cloud Text-to-Speech</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/text-to-speech/v1/32px.svg">
+            <br>Cloud Text-to-Speech
         </td>
         <td>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_translation/v1/32px.svg">
-                <br><figcaption>AutoML Translation</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_translation/v1/32px.svg">
+            <br>AutoML Translation
         </td>
     </tr>
             <tr>
                 <td>
-                    <figure>
-                        <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_natural_language_api/v1/32px.svg">
-                        <figcaption>Cloud Natural Language API</figcaption>
-                    </figure>
+                   <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_natural_language_api/v1/32px.svg">
+                   <br>Cloud Natural Language API
                 </td>
                 <td>
                     Entities (Identify and label), Sentiment, Entity Sentiment, Syntax, Content Classification
                 </td>
                 <td>
-                    <figure>
-                        <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/healthcare_nlp_api/v1/32px.svg">
-                        <figcaption>Healthceare Natural Language API</figcaption>
-                    </figure>
+                    <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/healthcare_nlp_api/v1/32px.svg">
+                    <br>Healthceare Natural Language API
                 </td>
                 <td>
-                    <figure>
-                        <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_natural_language/v1/32px.svg">
-                        <figcaption>AutoML Text</figcaption>
-                    </figure>
+                    <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_natural_language/v1/32px.svg">
+                    <br>AutoML Text
             </tr>
     <tr>
         <td>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/image/default/40px.svg">
-                <figcaption>Image</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/image/default/40px.svg">
+            <br>Image
         </td>
         <td>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_vision_api/v1/32px.svg">
-                <figcaption>Cloud Vision API</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_vision_api/v1/32px.svg">
+            <br>Cloud Vision API
         </td>
         <td>
             Crop Hint, OCR, Face Detect, Image Properties, Label Detect, Landmark Detect, Logo Detect, Object Localization, Safe Search, Web Detect
         </td>
         <td>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/document_ai/v1/32px.svg">
-                <figcaption>Document AI</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/document_ai/v1/32px.svg">
+            <br>Document AI
         </td>
         <td>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_vision/v1/32px.svg">
-                <figcaption>AutoML Image</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_vision/v1/32px.svg">
+            <br>AutoML Image
         </td>
     </tr>
     <tr>
         <td>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/mic/default/40px.svg">
-                <figcaption>Audio</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/mic/default/40px.svg">
+            <br>Audio
         </td>
         <td>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/media_translation_api/v1/32px.svg">
-                <figcaption>Cloud Media Translation API</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/media_translation_api/v1/32px.svg">
+            <br>Cloud Media Translation API
         </td>
         <td></td>
         <td>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/speech-to-text/v1/32px.svg">
-                <figcaption>Cloud Speech-to-Text</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/speech-to-text/v1/32px.svg">
+            <br>Cloud Speech-to-Text
         </td>
         <td></td>
     </tr>
     <tr>
         <td>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/videocam/default/40px.svg">
-                <figcaption>Video</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/videocam/default/40px.svg">
+            <br>Video
         </td>
         <td>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/video_intelligence_api/v1/32px.svg">
-                <figcaption>Cloud Video Intelligence API</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/video_intelligence_api/v1/32px.svg">
+            <br>Cloud Video Intelligence API
         </td>
         <td>
             Label Detect*, Shot Detect*, Explicit Content Detect*, Speech Transcription, Object Tracking*, Text Detect, Logo Detect, Face Detect, Person Detect, Celebrity Recognition
         </td>
         <td></td>
         <td>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_video_intelligence/v1/32px.svg">
-                <figcaption>AutoML Video</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_video_intelligence/v1/32px.svg">
+            <br>AutoML Video
         </td>
     </tr>
 </table>
@@ -151,25 +117,19 @@
     <tr>
         <th>Data Type</th>
         <th>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl/v1/32px.svg">
-                <figcaption>AutoML</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl/v1/32px.svg">
+            <br>AutoML
         </th>
         <th>Prediction Types</th>
     </tr>
     <tr>
         <td style='text-align:center'>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/table/default/40px.svg">
-                <figcaption>Table</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/table/default/40px.svg">
+            <br>Table
         </td>
         <td style='text-align:center'>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_tables/v1/32px.svg">
-                <figcaption>AutoML Tables</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_tables/v1/32px.svg">
+            <br>AutoML Tables
         </td>
         <td style='text-align:left'>
             <dl>
@@ -183,16 +143,12 @@
     </tr>
     <tr>
         <td style='text-align:center'>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/image/default/40px.svg">
-                <figcaption>Image</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/image/default/40px.svg">
+            <br>Image
         </td>
         <td style='text-align:center'>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_vision/v1/32px.svg">
-                <figcaption>AutoML Image</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_vision/v1/32px.svg">
+            <br>AutoML Image
         </td>
         <td style='text-align:left'>
             <dl>
@@ -205,16 +161,12 @@
     </tr>
     <tr>
         <td style='text-align:center'>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/videocam/default/40px.svg">
-                <figcaption>Video</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/videocam/default/40px.svg">
+            <br>Video
         </td>
         <td style='text-align:center'>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_video_intelligence/v1/32px.svg">
-                <figcaption>AutoML Video</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_video_intelligence/v1/32px.svg">
+            <br>AutoML Video
         </td>
         <td style='text-align:left'>
             <dl>
@@ -226,16 +178,12 @@
     </tr>
     <tr>
         <td style='text-align:center'>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
-                <figcaption>Text</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
+            <br>Text
         </td>
         <td style='text-align:center'>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_natural_language/v1/32px.svg">
-                <figcaption>AutoML Text</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_natural_language/v1/32px.svg">
+            <br>AutoML Text
         </td>
         <td style='text-align:left'>
             <dl>
@@ -249,16 +197,12 @@
     </tr>
     <tr>
         <td style='text-align:center'>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
-                <figcaption>Text</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
+            <br>Text
         </td>
         <td style='text-align:center'>
-            <figure>
-                <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_translation/v1/32px.svg">
-                <figcaption>AutoML Translation</figcaption>
-            </figure>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_translation/v1/32px.svg">
+            <br>AutoML Translation
         </td>
         <td style='text-align:center'>
             Translation
