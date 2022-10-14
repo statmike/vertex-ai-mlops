@@ -10,44 +10,44 @@
             <br>AutoML
         </th>
     </tr>
-    <tr style='text-align:center'>
-        <th>Data Type</th>
-        <th>Pre-Trained Model</th>
-        <th>Prediction Types</th>
-        <th>Related Solutions</th>
+    <tr>
+        <th style='text-align:center'>Data Type</th>
+        <th style='text-align:center'>Pre-Trained Model</th>
+        <th style='text-align:center'>Prediction Types</th>
+        <th> style='text-align:center'Related Solutions</th>
     </tr>
-    <tr style='text-align:center'>
-        <td rowspan='2'>
+    <tr>
+        <td rowspan='2' style='text-align:center'>
             <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
             <br>Text
         </td>
-        <td>
+        <td style='text-align:center'>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_translation_api/v1/32px.svg">
             <br>Cloud Translation API
         </td>
-        <td>Detect, Translate</td>
-        <td>
+        <td style='text-align:center'>Detect, Translate</td>
+        <td style='text-align:center'>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/text-to-speech/v1/32px.svg">
             <br>Cloud Text-to-Speech
         </td>
-        <td>
+        <td style='text-align:center'>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_translation/v1/32px.svg">
             <br>AutoML Translation
         </td>
     </tr style='text-align:center'>
             <tr>
-                <td>
+                <td style='text-align:center'>
                    <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_natural_language_api/v1/32px.svg">
                    <br>Cloud Natural Language API
                 </td>
-                <td>
+                <td style='text-align:center'>
                     Entities (Identify and label), Sentiment, Entity Sentiment, Syntax, Content Classification
                 </td>
-                <td>
+                <td style='text-align:center'>
                     <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/healthcare_nlp_api/v1/32px.svg">
                     <br>Healthceare Natural Language API
                 </td>
-                <td>
+                <td style='text-align:center'>
                     <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_natural_language/v1/32px.svg">
                     <br>AutoML Text
             </tr>
