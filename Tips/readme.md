@@ -28,9 +28,18 @@ A collection of tips for scaling jobs, generalizing jobs for flexibility, and de
 - Tips for working with the Python Client for BigQuery can be found here:
     - [03 - Introduction to BigQuery ML (BQML)](../03%20-%20BigQuery%20ML%20(BQML)/03%20-%20Introduction%20to%20BigQuery%20ML%20(BQML).ipynb)
     
+## Notebooks on Skills For BigQuery
+- New series will go here (see todo)
+
+
 ---
 ToDo:
-- [ ] Add Python Client for BigQuery tip
-- [ ] Add R for BigQuery tip
-- [ ] Add Git workflow tip
-- [ ] add KFP tip, include [component authoring](https://www.kubeflow.org/docs/components/pipelines/v2/author-a-pipeline/components/#author-a-component)
+- [IP] BigQuery Tips:
+    - [IP] BigQuery - Python Clients
+    - [IP] BigQuery - R
+    - [IP] BigQuery - Data Types
+    - [ ] BigQuery - Tables
+    - [ ] BigQuery - UDF
+    - [ ] BigQuery - Remote Functions
+- [ ] Add Git workflow tip - how to clone with PAT
+- [DEV] add KFP tip, include [component authoring](https://www.kubeflow.org/docs/components/pipelines/v2/author-a-pipeline/components/#author-a-component)
