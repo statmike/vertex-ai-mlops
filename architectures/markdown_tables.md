@@ -3,7 +3,7 @@
 
 ### Pre-Trained APIs
 <table style='text-align:center' width="100%">
-    <tr style='text-align:center'>
+    <tr>
         <th colspan='4'>Pre-Trained Models</th>
         <th rowspan='2'>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl/v1/32px.svg">
@@ -11,43 +11,43 @@
         </th>
     </tr>
     <tr>
-        <th style='text-align:center'>Data Type</th>
-        <th style='text-align:center'>Pre-Trained Model</th>
-        <th style='text-align:center'>Prediction Types</th>
+        <th>Data Type</th>
+        <th>Pre-Trained Model</th>
+        <th>Prediction Types</th>
         <th> style='text-align:center'Related Solutions</th>
     </tr>
     <tr>
-        <td rowspan='2' style='text-align:center'>
+        <td rowspan='2'>
             <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
             <br>Text
         </td>
-        <td style='text-align:center'>
+        <td>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_translation_api/v1/32px.svg">
             <br>Cloud Translation API
         </td>
-        <td style='text-align:center'>Detect, Translate</td>
-        <td style='text-align:center'>
+        <td>Detect, Translate</td>
+        <td>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/text-to-speech/v1/32px.svg">
             <br>Cloud Text-to-Speech
         </td>
-        <td style='text-align:center'>
+        <td>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_translation/v1/32px.svg">
             <br>AutoML Translation
         </td>
-    </tr style='text-align:center'>
+    </tr>
             <tr>
-                <td style='text-align:center'>
+                <td>
                    <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_natural_language_api/v1/32px.svg">
                    <br>Cloud Natural Language API
                 </td>
-                <td style='text-align:center'>
+                <td>
                     Entities (Identify and label), Sentiment, Entity Sentiment, Syntax, Content Classification
                 </td>
-                <td style='text-align:center'>
+                <td>
                     <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/healthcare_nlp_api/v1/32px.svg">
                     <br>Healthceare Natural Language API
                 </td>
-                <td style='text-align:center'>
+                <td>
                     <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_natural_language/v1/32px.svg">
                     <br>AutoML Text
             </tr>
@@ -110,7 +110,7 @@
 
 
 ### AutoML
-<table>
+<table style='text-align:center'>
     <tr>
         <th colspan='3'>AutoML</th>
     </tr>
@@ -123,15 +123,15 @@
         <th>Prediction Types</th>
     </tr>
     <tr>
-        <td style='text-align:center'>
+        <td>
             <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/table/default/40px.svg">
             <br>Table
         </td>
-        <td style='text-align:center'>
+        <td>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_tables/v1/32px.svg">
             <br>AutoML Tables
         </td>
-        <td style='text-align:left'>
+        <td>
             <dl>
                 <dt>Classification</dt>
                     <dd>Binary</dd>
@@ -142,15 +142,15 @@
         </td>
     </tr>
     <tr>
-        <td style='text-align:center'>
+        <td>
             <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/image/default/40px.svg">
             <br>Image
         </td>
-        <td style='text-align:center'>
+        <td>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_vision/v1/32px.svg">
             <br>AutoML Image
         </td>
-        <td style='text-align:left'>
+        <td>
             <dl>
                 <dt>Classification</dt>
                     <dd>Single-label</dd>
@@ -160,15 +160,15 @@
         </td>
     </tr>
     <tr>
-        <td style='text-align:center'>
+        <td>
             <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/videocam/default/40px.svg">
             <br>Video
         </td>
-        <td style='text-align:center'>
+        <td>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_video_intelligence/v1/32px.svg">
             <br>AutoML Video
         </td>
-        <td style='text-align:left'>
+        <td>
             <dl>
                 <dt>Classification</dt>
                 <dt>Object Detection</dt>
@@ -177,15 +177,15 @@
         </td>
     </tr>
     <tr>
-        <td style='text-align:center'>
+        <td>
             <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
             <br>Text
         </td>
-        <td style='text-align:center'>
+        <td>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_natural_language/v1/32px.svg">
             <br>AutoML Text
         </td>
-        <td style='text-align:left'>
+        <td>
             <dl>
                 <dt>Classification</dt>
                     <dd>Single-label</dd>
@@ -196,15 +196,15 @@
         </td>
     </tr>
     <tr>
-        <td style='text-align:center'>
+        <td>
             <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
             <br>Text
         </td>
-        <td style='text-align:center'>
+        <td>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_translation/v1/32px.svg">
             <br>AutoML Translation
         </td>
-        <td style='text-align:center'>
+        <td>
             Translation
         </td>
     </tr>
