@@ -16,7 +16,7 @@
         <th>Prediction Types</th>
         <th>Related Solutions</th>
     </tr>
-    <tr>
+    <tr style='text-align:center !important;'>
         <td rowspan='2'>
             <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
             <br>Text
