@@ -3,20 +3,20 @@
 
 ### Pre-Trained APIs
 <table style='text-align:center' width="100%">
-    <tr>
+    <tr style='text-align:center'>
         <th colspan='4'>Pre-Trained Models</th>
         <th rowspan='2'>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl/v1/32px.svg">
             <br>AutoML
         </th>
     </tr>
-    <tr>
+    <tr style='text-align:center'>
         <th>Data Type</th>
         <th>Pre-Trained Model</th>
         <th>Prediction Types</th>
         <th>Related Solutions</th>
     </tr>
-    <tr>
+    <tr style='text-align:center'>
         <td rowspan='2'>
             <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
             <br>Text
@@ -34,7 +34,7 @@
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_translation/v1/32px.svg">
             <br>AutoML Translation
         </td>
-    </tr>
+    </tr style='text-align:center'>
             <tr>
                 <td>
                    <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_natural_language_api/v1/32px.svg">
