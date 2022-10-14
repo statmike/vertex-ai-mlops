@@ -2,7 +2,7 @@
 
 
 ### Pre-Trained APIs
-<table style='text-align:center !important;' width="100%" cellpadding="1" cellspacing="0">
+<table style='text-align:center;vertical-align:middle' width="100%" cellpadding="1" cellspacing="0">
     <tr>
         <th colspan='4'>Pre-Trained Models</th>
         <th rowspan='2'>
@@ -16,21 +16,21 @@
         <th>Prediction Types</th>
         <th>Related Solutions</th>
     </tr>
-    <tr style='text-align:center !important;'>
-        <td rowspan='2'>
+    <tr>
+        <td rowspan='2' style='text-align:center;vertical-align:middle'>
             <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
             <br>Text
         </td>
-        <td>
+        <td style='text-align:center;vertical-align:middle'>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_translation_api/v1/32px.svg">
             <br>Cloud Translation API
         </td>
         <td>Detect, Translate</td>
-        <td>
+        <td style='text-align:center;vertical-align:middle'>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/text-to-speech/v1/32px.svg">
             <br>Cloud Text-to-Speech
         </td>
-        <td>
+        <td style='text-align:center;vertical-align:middle'>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_translation/v1/32px.svg">
             <br>AutoML Translation
         </td>
