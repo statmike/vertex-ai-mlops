@@ -2,7 +2,7 @@
 
 
 ### Pre-Trained APIs
-<table style='text-align:center' width="100%">
+<table style='text-align:center' width="100%" cellpadding="1" cellspacing="0">
     <tr>
         <th colspan='4'>Pre-Trained Models</th>
         <th rowspan='2'>
@@ -14,7 +14,7 @@
         <th>Data Type</th>
         <th>Pre-Trained Model</th>
         <th>Prediction Types</th>
-        <th> style='text-align:center'Related Solutions</th>
+        <th>Related Solutions</th>
     </tr>
     <tr>
         <td rowspan='2'>
@@ -110,7 +110,7 @@
 
 
 ### AutoML
-<table style='text-align:center'>
+<table style='text-align:center' width="100%" cellpadding="1" cellspacing="0">
     <tr>
         <th colspan='3'>AutoML</th>
     </tr>
