@@ -2,7 +2,7 @@
 
 
 ### Pre-Trained APIs
-<table style='text-align:center' width="100%" cellpadding="1" cellspacing="0">
+<table style='text-align:center !important;' width="100%" cellpadding="1" cellspacing="0">
     <tr>
         <th colspan='4'>Pre-Trained Models</th>
         <th rowspan='2'>
