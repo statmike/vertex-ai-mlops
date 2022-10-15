@@ -11,6 +11,7 @@ To add R:
 
 ## Notebooks:
 - [08 - Vertex AI Custom Model - R - in Notebook](./08%20-%20Vertex%20AI%20Custom%20Model%20-%20R%20-%20in%20Notebook.ipynb)
+- [08 - Vertex Ai Custom Model - R - Notebook to Script](08%20-%20Vertex%20AI%20Custom%20Model%20-%20R%20-%20Notebook%20to%20Script.ipynb)
 - [08a - Vertex AI Custom Model - R - Training Pipeline With Custom Container](./08a%20-%20Vertex%20AI%20Custom%20Model%20-%20R%20-%20Training%20Pipeline%20With%20Custom%20Container.ipynb)
 
 
@@ -34,4 +35,5 @@ Quick Notes
  gcloud container images list --repository="gcr.io/deeplearning-platform-release"
  
  FROM gcr.io/deeplearning-platform-release/r-cpu.4-1:latest
+ 
  ```
