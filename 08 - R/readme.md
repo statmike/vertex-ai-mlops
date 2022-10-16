@@ -23,17 +23,19 @@ ToD0
 ---
 Quick Notes
 ```
-
+# installs
  R -e 'install.packages(c("randomForest"), repos = "https://cran.rstudio.com/")'
  R -e 'install.packages(c("lme4"), repos = "https://cran.rstudio.com/")'
  R -e 'install.packages(c("bigrquery"), repos = "https://cran.rstudio.com/")'
  R -e 'install.packages(c("DBI"), repos = "https://cran.rstudio.com/")'
  R -e 'install.packages(c("dplyr"), repos = "https://cran.rstudio.com/")'
  
+ # containers
  https://cloud.google.com/deep-learning-containers/docs/choosing-container
  OR
  gcloud container images list --repository="gcr.io/deeplearning-platform-release"
  
+ # dockerfile
  FROM gcr.io/deeplearning-platform-release/r-cpu.4-1:latest
  
  ```
