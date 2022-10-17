@@ -93,7 +93,11 @@ ToDo:
 - [ ] pipeline - make a tournament that uses experiments to pick a winner and deploy to endpoint
 - [ ] Model Evaluation - where to add into workflows or standalone?
 - [ ] incorporate example of using console to launch training job (custom container)
-
+- [ ] for next cleaning path
+    - update docker repository to be the one named for the project_id without -docker
+    - add link to console for repo
+    - see the flow in 08f for the artifact registry
+    - a-i shorten the model = trainingJob.run - see 08f and the 03 series
 
 
 
