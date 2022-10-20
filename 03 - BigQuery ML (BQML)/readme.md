@@ -69,6 +69,7 @@ ToDo:
     - [ ] add experiment tracking
     - [ ] directly register BQML models in Vertex AI [link](https://cloud.google.com/bigquery-ml/docs/managing-models-vertex)
     - [ ] create an example of ML.PREDICT for patial dependence plot
+- [X] Add condition to evaluation component in 03Tools Pipeline Ex2 that returns auPRC =0 when no model is on the endpoint
 - [ ] Experiments
 - [ ] update pipeline examples
     - [ ] pipelines 1 and 2 break if models form 03g, 03h, or 03i are deployed - unsupervised methods
