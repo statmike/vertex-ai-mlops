@@ -68,6 +68,7 @@ ToDo:
     - [ ] rename experiment in 03g, h, i to match notebook name
     - [ ] add experiment tracking
     - [ ] directly register BQML models in Vertex AI [link](https://cloud.google.com/bigquery-ml/docs/managing-models-vertex)
+    - [ ] create an example of ML.PREDICT for patial dependence plot
 - [ ] Experiments
 - [ ] update pipeline examples
     - [ ] pipelines 1 and 2 break if models form 03g, 03h, or 03i are deployed - unsupervised methods
