@@ -2,3 +2,7 @@
 .gitignore-checkpoint
 temp
 .DS_Store
+terraform.tfstate
+.terraform/
+terraform.tfstate.backup
+.terraform.lock.hcl
