@@ -1,7 +1,6 @@
 # Scripting
 Automation options for setting up Vertex AI with this repository.
 
-
 ## Using gcloud command to create an user managed notebook in Vertex AI
 
 If you have a GCP Project with Vertex AI enabled and Workbench enabled then these command line commands will help automate the create of user managed workbench instance and clone this repository into the `home/jupyter` folder:
