@@ -94,14 +94,42 @@ ToDo:
 - [ ] Model Evaluation - where to add into workflows or standalone?
 - [ ] incorporate example of using console to launch training job (custom container)
 - [ ] for next cleaning path
-    - update docker repository to be the one named for the project_id without -docker
-    - add link to console for repo
+    - [X] c,f,i - update docker repository to be the one named for the project_id without -docker
+    - c,f,i - add link to console for repo
     - see the flow in 08f for the artifact registry
-    - a-i shorten the model = trainingJob.run - see 08f and the 03 series
+    - [X] a-i shorten the model = trainingJob.run - see 08f and the 03 series
+    - [X] simplify model for logistic regression example
+    - modify training code to check for experiment run: if not the .create, else initiate to existing
 
+---
+Quick Thoughts
 
+```
 
+# logistic - using softmax activation to nclasses
+logistic = tf.keras.layers.Dense(nclasses, activation = tf.nn.softmax, name = 'logistic')(normalized)
 
+# embedding with a three layer encoder
+embedding = tf.keras.layers.Dense(64, activation = 'relu', name = 'encode_layer_1')(normalized)
+embedding = tf.keras.layers.Dropout(0.2)(embedding)
+embedding = tf.keras.layers.Dense(32, activation = 'relu', name = 'encode_layer_2')(embedding)
+embedding = tf.keras.layers.Dropout(0.2)(embedding)
+embedding = tf.keras.layers.Dense(16, activation = 'relu', name = 'embedding')(embedding)
+
+# the model
+model = tf.keras.Model(
+    inputs = feature_layer_inputs,
+    outputs = logistic,
+    name = EXPERIMENT
+)
+
+# compile
+model.compile(
+    optimizer = tf.keras.optimizers.SGD(), #SGD or Adam
+    loss = {'logistic': tf.keras.losses.CategoricalCrossentropy()},
+    metrics = {'logistic': ['accuracy', tf.keras.metrics.AUC(curve = 'PR', name = 'auprc')]}
+)
+```
 
 
 
