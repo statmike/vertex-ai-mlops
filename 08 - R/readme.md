@@ -25,6 +25,8 @@ To add R:
 ToDo
 - [ ] finish writeup for 08f
 - [ ] 08Tools predictions online
+- [IP] 08Tools predictions custom
+- [ ] 08Tools predictions local
 - [ ] 08Tools predictions batch
 - [ ] 08c Custom Container Workflow with a Custom Job
 - [ ] 08i Custom Conatiner Workflow with Hyperparameter tuning job (l2, or elastic net)
