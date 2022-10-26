@@ -82,7 +82,7 @@ ToDo:
     - [ ] cloud functions example - with keras serving
     - [ ] BigQuery Remote Function: with cloud functions and cloud run
         - Vertex AI Endpoint, Cloud Run Endpoint, Cloud Function  (with Keras)
-- [IP] Pipeline for Hyperparameter Tuning with Vizier example - multiple metrics
+- [ ] Pipeline for Hyperparameter Tuning with Vizier example - multiple metrics
 - [IP] trigger services: cloud function, cloud schedule, pub/sub
 - [ ] distributed training examples: GPU and multi worker
     - [good codelab](https://codelabs.developers.google.com/vertex_multiworker_training#7)
@@ -95,11 +95,12 @@ ToDo:
 - [ ] incorporate example of using console to launch training job (custom container)
 - [ ] for next cleaning path
     - [X] c,f,i - update docker repository to be the one named for the project_id without -docker
-    - c,f,i - add link to console for repo
-    - see the flow in 08f for the artifact registry
+    - [ ] c,f,i - add link to console for repo
+    - [ ] see the flow in 08f for the artifact registry
     - [X] a-i shorten the model = trainingJob.run - see 08f and the 03 series
     - [X] simplify model for logistic regression example
-    - modify training code to check for experiment run: if not the .create, else initiate to existing
+    - [ ] modify training code to check for experiment run: if not the .create, else initiate to existing
+    - [ ] simplify model registry lookup from `if f'{PROJECT_ID}' == repo.name.split('/')[-1]:` to `repo.name.endswith(PROJECT_ID)`
 
 ---
 Quick Thoughts
