@@ -20,16 +20,23 @@ To add R:
 - [08f - Vertex AI Custom Model - R - Training Pipeline With Custom Container](./08f%20-%20Vertex%20AI%20Custom%20Model%20-%20R%20-%20Training%20Pipeline%20With%20Custom%20Container.ipynb)
     - uses a Python kernel to create a Vertex AI Training job to run the R script and deploy for online and batch serving of predictions
 - [08Tools - Prediction - Custom](./08Tools%20-%20Prediction%20-%20Custom.ipynb)
+    - use the custom container created in 08f to create a custom model server: testing locally in the notebook environment, and production with Cloud Run
 
 ---
 ToDo
-- [ ] finish writeup for 08f
-- [ ] 08Tools predictions online
-- [IP] 08Tools predictions custom
+- [IP] 08Tools predictions online
+    - waiting on bug fix
+- [X] 08Tools predictions custom
     - [X] serve with cloud run
-    - [ ] serve locally with docker
-- [ ] 08Tools predictions local
-- [ ] 08Tools predictions batch
-- [ ] 08c Custom Container Workflow with a Custom Job
-- [ ] 08i Custom Conatiner Workflow with Hyperparameter tuning job (l2, or elastic net)
-- [ ] Link to Tips for BigQuery with R
+    - [X] serve locally with docker
+- [ ] finish writeups for round 1 of development
+    - [ ] 08 notebook
+    - [ ] 08 notebook to script
+    - [ ] 08f custom container training job
+    - [ ] 08Tools Prediction Custom
+- Planning
+    - [ ] 08Tools predictions local
+    - [ ] 08Tools predictions batch
+    - [ ] 08c Custom Container Workflow with a Custom Job
+    - [ ] 08i Custom Conatiner Workflow with Hyperparameter tuning job (l2, or elastic net)
+    - [ ] Link to Tips for BigQuery with R

@@ -23,25 +23,30 @@ ToDo:
 - [X] add prereq to readme
 - [X] Update references to Service Account and check for permissions - reference the 00 notebooks new section for correct setup
 - [X] Describe the data source in the readme file
-- [X] 01 Data review in BigQuery
-    - [X] Move BigQuery client examples to Tips/BigQuery - Python Client
-    - [X] format overview section like 03/05 and others (not using headers)
-    - [X] parameterize SERIES and EXPERIMENT to replace DATANAME and NOTEBOOK
-    - [X] reformat query to not use bq_runner, just simple bq.query(query)
-    - [X] add input `viz_limit = 12` and use throughout to limit visuzlization (and pandas) number of time_series displayed
-    - [X] parameterize time series variables like 8: TIME_COLULMN, TARGET_COLUMN, SERIES_COLUMN
-    - [ ] add bokeh plot
-- [IP] 02 BQML Univariate Forecasting
-    - [X] format overview section like 03/05 and others (not using headers)
-    - [X] parameterize SERIES and EXPERIMENT to replace DATANAME and NOTEBOOK
-    - [X] reformat query to not use bq_runner, just simple bq.query(query)
-    - [X] add input `viz_limit = 12` and use throughout to limit visuzlization (and pandas) number of time_series displayed
-    - [X] parameterize time series variables like 8: TIME_COLULMN, TARGET_COLUMN, SERIES_COLUMN
-    - [ ] add bokeh plot
-- [IP] full update pass to bring this project up to standards of 05 and others:
-    - [ ] formatting, links to console for review, setup (installs), gcs and bq naming follows SERIES, EXPERIMENT
-    - [ ] parameterize examples with consideration for use cases where dataset may have too many time series to plot individually - subset of total with parameter and user specified series as a list
-    - [ ] add Bokeh plot to each example
+- [IP] full update pass to bring this project up to standards of 05, 03, and others:
+    - [X] 1 Data review in BigQuery
+        - [X] Move BigQuery client examples to Tips/BigQuery - Python Client
+        - [X] format overview section like 03/05 and others (not using headers)
+        - [X] parameterize SERIES and EXPERIMENT to replace DATANAME and NOTEBOOK
+        - [X] reformat query to not use bq_runner, just simple bq.query(query)
+        - [X] add input `viz_limit = 12` and use throughout to limit visuzlization (and pandas) number of time_series displayed
+        - [X] parameterize time series variables like 8: TIME_COLULMN, TARGET_COLUMN, SERIES_COLUMN
+        - [X] parameterize queries and move editable part to top of notebook - ease of customization for new data sources
+        - [IP] add bokeh plot
+    - [X] 2 BQML Univariate Forecasting
+        - [X] format overview section like 03/05 and others (not using headers)
+        - [X] parameterize SERIES and EXPERIMENT to replace DATANAME and NOTEBOOK
+        - [X] reformat query to not use bq_runner, just simple bq.query(query)
+        - [X] add input `viz_limit = 12` and use throughout to limit visuzlization (and pandas) number of time_series displayed
+        - [X] parameterize time series variables like 8: TIME_COLULMN, TARGET_COLUMN, SERIES_COLUMN
+        - [X] parameterize queries and move editable part to top of notebook - ease of customization for new data sources
+        - [IP] add bokeh plot
+    - [ ] 3 AutoML Console
+    - [ ] 4 AutoML Python Client
+    - [ ] 5 AutoML Python Client for multiple scenarios
+    - [ ] 6 Prophet in notebook
+    - [ ] 7 Prophet in Custom Job
+    - [ ] 8 Tournament
 - [ ] Turn 8 into solution: register components to artifact registry and build pipelines dynamically
 
 
