@@ -39,6 +39,8 @@ This series of notebooks highlights the use of Vertex AI for machine learning wo
 - [05Tools - Prediction - Batch.ipynb](./05Tools%20-%20Prediction%20-%20Batch.ipynb)
 - [05Tools - Prediction - Local.ipynb](./05Tools%20-%20Prediction%20-%20Local.ipynb)
 - [05Tools - Prediction - Custom.ipynb](./05Tools%20-%20Prediction%20-%20Custom.ipynb)
+- [05 Tools - Automation](./05Tools%20-%20Automation.ipynb)
+
 
 **Notes:**
 - Vertex AI Training > Custom Jobs run ML training code in a serverless environment:
@@ -73,7 +75,12 @@ ToDo:
 - [X] update/rework/modify a-i (done=abcdefghi)
 - [X] modify tools notebook to match a-i update
 - [X] split explainability into two notebooks
-    - [ ] add example-based to explainability
+    - [IP] add example-based to explainability
+- [IP] trigger services: cloud function, cloud schedule, pub/sub
+    - [ ] Cloud Function with Pub/Sub Trigger
+    - [ ] manual > pub/sub
+    - [ ] Cloud Scheduler > pub/sub
+    - [ ] logging > pub/sub
 - [X] split predictions: online, batch, local, custom
     - [X] fix local and cloud run notebooks - tensorflow/serving container issue
     - [X] add BQ input/output example for Batch Predictions
@@ -83,7 +90,6 @@ ToDo:
     - [ ] BigQuery Remote Function: with cloud functions and cloud run
         - Vertex AI Endpoint, Cloud Run Endpoint, Cloud Function  (with Keras)
 - [ ] Pipeline for Hyperparameter Tuning with Vizier example - multiple metrics
-- [IP] trigger services: cloud function, cloud schedule, pub/sub
 - [ ] distributed training examples: GPU and multi worker
     - [good codelab](https://codelabs.developers.google.com/vertex_multiworker_training#7)
 - [X] complete monitoring migration from 06a to here
