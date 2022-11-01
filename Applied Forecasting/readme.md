@@ -48,6 +48,7 @@ ToDo:
     - [ ] 7 Prophet in Custom Job
     - [ ] 8 Tournament
 - [ ] Turn 8 into solution: register components to artifact registry and build pipelines dynamically
+- Price optimization example like: https://cloud.google.com/blog/products/ai-machine-learning/price-optimization-using-vertex-ai-forecast
 
 
 
