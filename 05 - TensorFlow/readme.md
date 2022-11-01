@@ -76,11 +76,12 @@ ToDo:
 - [X] modify tools notebook to match a-i update
 - [X] split explainability into two notebooks
     - [IP] add example-based to explainability
-- [IP] trigger services: cloud function, cloud schedule, pub/sub
-    - [ ] Cloud Function with Pub/Sub Trigger
-    - [ ] manual > pub/sub
-    - [ ] Cloud Scheduler > pub/sub
-    - [ ] logging > pub/sub
+- [IP] 05Tools - Automation: trigger services: cloud function, cloud schedule, pub/sub
+    - [X] Cloud Function with Pub/Sub Trigger
+    - [X] manual > pub/sub
+    - [X] Cloud Scheduler > pub/sub
+    - [IP] writeup and annotate
+    - [ ] logging > pub/sub (left an opportunity for this in the cloud function)
 - [X] split predictions: online, batch, local, custom
     - [X] fix local and cloud run notebooks - tensorflow/serving container issue
     - [X] add BQ input/output example for Batch Predictions
