@@ -30,6 +30,6 @@ ToDo:
     - [ ] 02a
     - [ ] 02b
     - [ ] 02c
-- [ ] Add Multi-AutoML model example
+- [ ] Add Multiple AutoML in parallel model example
 - [ ] Add AutoML Workflow examples
 - [ ] Add TabNet example

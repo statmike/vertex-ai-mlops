@@ -39,6 +39,8 @@ This series of notebooks highlights the use of Vertex AI for machine learning wo
 - [05Tools - Prediction - Batch.ipynb](./05Tools%20-%20Prediction%20-%20Batch.ipynb)
 - [05Tools - Prediction - Local.ipynb](./05Tools%20-%20Prediction%20-%20Local.ipynb)
 - [05Tools - Prediction - Custom.ipynb](./05Tools%20-%20Prediction%20-%20Custom.ipynb)
+- [05 Tools - Automation](./05Tools%20-%20Automation.ipynb)
+
 
 **Notes:**
 - Vertex AI Training > Custom Jobs run ML training code in a serverless environment:
@@ -73,25 +75,69 @@ ToDo:
 - [X] update/rework/modify a-i (done=abcdefghi)
 - [X] modify tools notebook to match a-i update
 - [X] split explainability into two notebooks
-    - [ ] add example-based to explainability
+    - [IP] add example-based to explainability
+- [IP] 05Tools - Automation: trigger services: cloud function, cloud schedule, pub/sub
+    - [X] Cloud Function with Pub/Sub Trigger
+    - [X] manual > pub/sub
+    - [X] Cloud Scheduler > pub/sub
+    - [IP] writeup and annotate
+    - [ ] logging > pub/sub (left an opportunity for this in the cloud function)
 - [X] split predictions: online, batch, local, custom
     - [X] fix local and cloud run notebooks - tensorflow/serving container issue
+    - [X] add BQ input/output example for Batch Predictions
     - [ ] add deployment pools example
-    - [ ] add CPR example
+    - [ ] add CPR example used in batch and online - link to/from the batch prediction notebook
     - [ ] cloud functions example - with keras serving
     - [ ] BigQuery Remote Function: with cloud functions and cloud run
         - Vertex AI Endpoint, Cloud Run Endpoint, Cloud Function  (with Keras)
+- [ ] Pipeline for Hyperparameter Tuning with Vizier example - multiple metrics
 - [ ] distributed training examples: GPU and multi worker
-- [IP] complete monitoring migration from 06a to here
+    - [good codelab](https://codelabs.developers.google.com/vertex_multiworker_training#7)
+- [X] complete monitoring migration from 06a to here
+    - [ ] add batch job monitoring
+    - [ ] feature attribution monitoring - requires .explain instead of .predict?
 - [ ] ML Metadata - add throughout
 - [ ] pipeline - make a tournament that uses experiments to pick a winner and deploy to endpoint
-- [ ] trigger services: cloud function, cloud schedule, pub/sub
+- [ ] Model Evaluation - where to add into workflows or standalone?
+- [ ] incorporate example of using console to launch training job (custom container)
+- [ ] for next cleaning path
+    - [X] c,f,i - update docker repository to be the one named for the project_id without -docker
+    - [ ] c,f,i - add link to console for repo
+    - [ ] see the flow in 08f for the artifact registry
+    - [X] a-i shorten the model = trainingJob.run - see 08f and the 03 series
+    - [X] simplify model for logistic regression example
+    - [ ] modify training code to check for experiment run: if not the .create, else initiate to existing
+    - [ ] simplify model registry lookup from `if f'{PROJECT_ID}' == repo.name.split('/')[-1]:` to `repo.name.endswith(PROJECT_ID)`
 
+---
+Quick Thoughts
 
+```
 
+# logistic - using softmax activation to nclasses
+logistic = tf.keras.layers.Dense(nclasses, activation = tf.nn.softmax, name = 'logistic')(normalized)
 
+# embedding with a three layer encoder
+embedding = tf.keras.layers.Dense(64, activation = 'relu', name = 'encode_layer_1')(normalized)
+embedding = tf.keras.layers.Dropout(0.2)(embedding)
+embedding = tf.keras.layers.Dense(32, activation = 'relu', name = 'encode_layer_2')(embedding)
+embedding = tf.keras.layers.Dropout(0.2)(embedding)
+embedding = tf.keras.layers.Dense(16, activation = 'relu', name = 'embedding')(embedding)
 
+# the model
+model = tf.keras.Model(
+    inputs = feature_layer_inputs,
+    outputs = logistic,
+    name = EXPERIMENT
+)
 
+# compile
+model.compile(
+    optimizer = tf.keras.optimizers.SGD(), #SGD or Adam
+    loss = {'logistic': tf.keras.losses.CategoricalCrossentropy()},
+    metrics = {'logistic': ['accuracy', tf.keras.metrics.AUC(curve = 'PR', name = 'auprc')]}
+)
+```
 
 
 
