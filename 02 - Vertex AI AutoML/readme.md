@@ -23,13 +23,15 @@ Vertex AI AutoML accelerate the workflow of creating an ML model by preprocessin
 ToDo:
 - [X] add prereq to readme
 - [X] Update references to Service Account and check for permissions - reference the 00 notebooks new section for correct setup
-- [ ] Update notebook naming
-    - [ ] Update links in YouTube Video descriptions
-- [ ] Update readme with hyperlinks
-- [ ] Update Notebooks with refinement pass: formatting, resources named after SERIES and EXPERIMENT including in GCS, BQ, add links to console for review
+- [ ] Add TabNet example
+- [ ] Add TabNet with Hyperparameter Tuning Example
+- [ ] Refinement+Update Pass
+    - General
+        - [ ] Update readme with hyperlinks
+        - [ ] Update notebook naming
+            - [ ] Update links in YouTube Video descriptions        
     - [ ] 02a
     - [ ] 02b
-    - [ ] 02c
-- [ ] Add Multiple AutoML in parallel model example
+    - [ ] 02c    
+- [ ] Add Multiple AutoML in parallel model example - see applied forecasting
 - [ ] Add AutoML Workflow examples
-- [ ] Add TabNet example
