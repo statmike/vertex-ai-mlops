@@ -44,3 +44,13 @@ cm <- table(results)
 
 # save model to file
 saveRDS(model, "model.rds")
+
+path <- sub('gs://', '/gcs/', Sys.getenv('AIP_MODEL_DIR'))
+#saveRDS(
+#    model,
+#    sprintf('%smodel.rds', path)
+#)
+
+# use Vertex AI Training Pre-Defined Environment Variables to Write to GCS
+#system2('gsutil', c('cp', 'model.rds', Sys.getenv('AIP_MODEL_DIR')))
+system2('cp', c('model.rds', path))
