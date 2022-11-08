@@ -10,3 +10,5 @@ ToDo:
 - AE with TensorFlow and NAS including serving
 - VAE with serving
 - use VAE for streaming new features into FS
+- Resources
+    - https://blog.keras.io/building-autoencoders-in-keras.html
