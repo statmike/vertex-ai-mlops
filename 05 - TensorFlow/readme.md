@@ -90,6 +90,7 @@ ToDo:
     - [ ] cloud functions example - with keras serving
     - [ ] BigQuery Remote Function: with cloud functions and cloud run
         - Vertex AI Endpoint, Cloud Run Endpoint, Cloud Function  (with Keras)
+    - [ ] dataflow example like: https://beam.apache.org/documentation/sdks/python-machine-learning/
 - [ ] Pipeline for Hyperparameter Tuning with Vizier example - multiple metrics
 - [ ] distributed training examples: GPU and multi worker
     - [good codelab](https://codelabs.developers.google.com/vertex_multiworker_training#7)
@@ -109,35 +110,6 @@ ToDo:
     - [ ] modify training code to check for experiment run: if not the .create, else initiate to existing
     - [ ] simplify model registry lookup from `if f'{PROJECT_ID}' == repo.name.split('/')[-1]:` to `repo.name.endswith(PROJECT_ID)`
 
----
-Quick Thoughts
-
-```
-
-# logistic - using softmax activation to nclasses
-logistic = tf.keras.layers.Dense(nclasses, activation = tf.nn.softmax, name = 'logistic')(normalized)
-
-# embedding with a three layer encoder
-embedding = tf.keras.layers.Dense(64, activation = 'relu', name = 'encode_layer_1')(normalized)
-embedding = tf.keras.layers.Dropout(0.2)(embedding)
-embedding = tf.keras.layers.Dense(32, activation = 'relu', name = 'encode_layer_2')(embedding)
-embedding = tf.keras.layers.Dropout(0.2)(embedding)
-embedding = tf.keras.layers.Dense(16, activation = 'relu', name = 'embedding')(embedding)
-
-# the model
-model = tf.keras.Model(
-    inputs = feature_layer_inputs,
-    outputs = logistic,
-    name = EXPERIMENT
-)
-
-# compile
-model.compile(
-    optimizer = tf.keras.optimizers.SGD(), #SGD or Adam
-    loss = {'logistic': tf.keras.losses.CategoricalCrossentropy()},
-    metrics = {'logistic': ['accuracy', tf.keras.metrics.AUC(curve = 'PR', name = 'auprc')]}
-)
-```
 
 
 
