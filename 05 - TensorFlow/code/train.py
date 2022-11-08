@@ -92,24 +92,24 @@ feature_layer_inputs = {header: tf.keras.layers.Input(shape = (1,), name = heade
 # feature columns to a Dense Feature Layer
 feature_layer_outputs = tf.keras.layers.DenseFeatures(feature_columns.values(), name = 'feature_layer')(feature_layer_inputs)
 
-# batch normalization then Dense with softmax activation to nclasses
-layers = tf.keras.layers.BatchNormalization(name = 'batch_normalization_layer')(feature_layer_outputs)
-layers = tf.keras.layers.Dense(64, activation = 'relu', name = 'hidden_layer')(layers)
-layers = tf.keras.layers.Dense(32, activation = 'relu', name = 'embedding_layer')(layers)
-layers = tf.keras.layers.Dense(nclasses, activation = tf.nn.softmax, name = 'prediction_layer')(layers)
+# batch normalization of inputs
+normalized = tf.keras.layers.BatchNormalization(name = 'batch_normalization_layer')(feature_layer_outputs)
+
+# logistic - using softmax activation to nclasses
+logistic = tf.keras.layers.Dense(nclasses, activation = tf.nn.softmax, name = 'logistic')(normalized)
 
 # the model
 model = tf.keras.Model(
     inputs = feature_layer_inputs,
-    outputs = layers,
+    outputs = logistic,
     name = args.experiment
 )
-opt = tf.keras.optimizers.SGD() #SGD or Adam
-loss = tf.keras.losses.CategoricalCrossentropy()
+
+# compile
 model.compile(
-    optimizer = opt,
-    loss = loss,
-    metrics = ['accuracy', tf.keras.metrics.AUC(curve='PR', name = 'auprc')]
+    optimizer = tf.keras.optimizers.SGD(), #SGD or Adam
+    loss = tf.keras.losses.CategoricalCrossentropy(),
+    metrics = ['accuracy', tf.keras.metrics.AUC(curve = 'PR', name = 'auprc')]
 )
 
 # setup tensorboard logs and train

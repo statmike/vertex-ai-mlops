@@ -25,9 +25,9 @@ There are [versions](https://cloud.google.com/vertex-ai/docs/reference#versions)
 **Python**
 
 The [Google Cloud Python Client](https://github.com/googleapis/google-cloud-python) has a library for Vertex AI called [aiplatform](https://github.com/googleapis/python-aiplatform) which is called the Vertex AI SDK for Python.
-- [Python Cloud Client Libraries](https://cloud.google.com/python/docs/reference)
-    - [google-cloud-aiplatform](https://cloud.google.com/python/docs/reference/aiplatform/latest)
-        - [`aiplatform` package](https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform)
+- All [Python Cloud Client Libraries](https://cloud.google.com/python/docs/reference)
+    - Vertex AI: [google-cloud-aiplatform](https://cloud.google.com/python/docs/reference/aiplatform/latest)
+        - Package: [`aiplatform` package](https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform)
 - Another helpful version of the Vertex AI SDK for Python documentation can be [found here](https://googleapis.dev/python/aiplatform/latest/index.html#)
 - Also helpful: [Getting started with Python](https://cloud.google.com/python/docs/getting-started) in Google Cloud
 

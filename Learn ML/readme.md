@@ -14,7 +14,12 @@ This is a good review order: 1, 3.1, 3.2, 3.3, 2, 3.1 (again!).  When done with 
 
 A good next step is to use the [curriculums curated by the Tensorflow community](https://www.tensorflow.org/resources/learn-ml).  These are great at balancing coding, math & stats, theory, and project based learning.
 
-# My Attempt!
-I like to teach ML with a bit of statistics.  Here I will uncover the journey to through statistics to machine learning using an essential technique: regression.
+## My Attempt!
+I like to teach ML with a bit of statistics.  Here I will uncover the journey through statistics and into machine learning using an essential technique: regression.
 
 Plan: migrate and expand content at [this repository](https://github.com/statmike/Logistic-Regression).
+
+## Certification
+
+The official Google Cloud [Professional Machine Learning Engineer](https://cloud.google.com/certification/machine-learning-engineer) certification:
+- The [Learning Path](https://cloud.google.com/training/machinelearning-ai#data-scientist-learning-path) contains a series of courses and labs that are excellent
