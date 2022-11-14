@@ -82,6 +82,8 @@ ToDo:
     - [X] Cloud Scheduler > pub/sub
     - [IP] writeup and annotate
     - [ ] logging > pub/sub (left an opportunity for this in the cloud function)
+- [ ] Model Evaluation - where to add into workflows or standalone?
+    - wait on SDK: https://cloud.google.com/vertex-ai/docs/evaluation/using-model-evaluation#create_an_evaluation
 - [X] split predictions: online, batch, local, custom
     - [X] fix local and cloud run notebooks - tensorflow/serving container issue
     - [X] add BQ input/output example for Batch Predictions
@@ -94,12 +96,12 @@ ToDo:
 - [ ] Pipeline for Hyperparameter Tuning with Vizier example - multiple metrics
 - [ ] distributed training examples: GPU and multi worker
     - [good codelab](https://codelabs.developers.google.com/vertex_multiworker_training#7)
+- [ ] add model card example [using](https://www.tensorflow.org/responsible_ai/model_card_toolkit/guide)
 - [X] complete monitoring migration from 06a to here
     - [ ] add batch job monitoring
     - [ ] feature attribution monitoring - requires .explain instead of .predict?
 - [ ] ML Metadata - add throughout
 - [ ] pipeline - make a tournament that uses experiments to pick a winner and deploy to endpoint
-- [ ] Model Evaluation - where to add into workflows or standalone?
 - [ ] incorporate example of using console to launch training job (custom container)
 - [ ] for next cleaning path
     - [X] c,f,i - update docker repository to be the one named for the project_id without -docker
