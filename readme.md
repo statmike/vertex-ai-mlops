@@ -1,4 +1,4 @@
-![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&dt=readme.md&dl=statmike%2Fvertex-ai-mlops)
+![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dt=readme.md&dl=statmike%2Fvertex-ai-mlops)
 
 <p align="center" width="100%">
     <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/vertexai/v1/web-32dp/colors_vertexai_color_2x_web_32dp.png">
