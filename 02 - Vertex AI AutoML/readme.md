@@ -1,4 +1,5 @@
 ![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2F02+-+Vertex+AI+AutoML&dt=readme.md)
+
 # 02 - Vertex AI AutoML
 Accelerated ML with [Vertex AI AutoML](https://cloud.google.com/vertex-ai/docs/start/automl-model-types)
 
