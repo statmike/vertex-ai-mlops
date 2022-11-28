@@ -1,3 +1,4 @@
+![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2FApplied+Pre-Trained+APIs&dt=readme.md)
 # Applied Pre-Trained APIs
 This series of notebooks will feature Google Cloud Pre-Trained APIs:
 - [Media Translation](https://cloud.google.com/translate/media/docs/streaming)

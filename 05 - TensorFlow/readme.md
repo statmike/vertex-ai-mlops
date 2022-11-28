@@ -1,3 +1,4 @@
+![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2F05+-+TensorFlow&dt=readme.md)
 # 05 - Custom Models: TensorFlow
 This series of notebooks highlights the use of Vertex AI for machine learning workflows with [TensorFlow](https://www.tensorflow.org/).  The same simple model specification is used for all examples with the focus put on workflows for different ML workflows and operational tasks.  The goal is to provide a starting point that can be used with the model architecture you already have.
 
