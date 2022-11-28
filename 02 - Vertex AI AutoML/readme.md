@@ -23,8 +23,10 @@ Vertex AI AutoML accelerate the workflow of creating an ML model by preprocessin
 ToDo:
 - [X] add prereq to readme
 - [X] Update references to Service Account and check for permissions - reference the 00 notebooks new section for correct setup
-- [ ] Add TabNet example
-- [ ] Add TabNet with Hyperparameter Tuning Example
+- [IP] Add TabNet example
+    - [IP] Include TabNet with Hyperparameter Tuning Example
+    - [IP] Online and Batch Predictions
+    - [IP] Explainability with feature masks
 - [ ] Refinement+Update Pass
     - General
         - [ ] Update readme with hyperlinks
