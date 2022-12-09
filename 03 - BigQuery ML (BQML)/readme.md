@@ -65,14 +65,15 @@ ToDo:
         - High: Classification, Supervised, Unsupervised 
         - Low: The method
     - [X] Move Predictions into the individual notebooks, sharing endpoint for series
-- [ ] unstructured methods in 03g, 03h, 03i, try to reproduce anomaly_detection methods
+- [IP] unstructured methods in 03g, 03h, 03i, try to reproduce anomaly_detection methods
+- [ ] Feature Engineering Notebook (from DEV)
 - [ ] Next Update Pass
+    - [ ] add colab link and code
     - [ ] rename experiment in 03g, h, i to match notebook name
     - [ ] add experiment tracking
     - [ ] directly register BQML models in Vertex AI [link](https://cloud.google.com/bigquery-ml/docs/managing-models-vertex)
     - [ ] create an example of ML.PREDICT for patial dependence plot
 - [X] Add condition to evaluation component in 03Tools Pipeline Ex2 that returns auPRC =0 when no model is on the endpoint
-- [ ] Experiments
 - [ ] update pipeline examples
     - [ ] pipelines 1 and 2 break if models form 03g, 03h, or 03i are deployed - unsupervised methods
     - [ ] New version of pipeline 1 that uses experiment tracking - call it 1b

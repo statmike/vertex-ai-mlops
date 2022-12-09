@@ -109,6 +109,10 @@ ToDo:
     - [X] c,f,i - update docker repository to be the one named for the project_id without -docker
     - [ ] c,f,i - add link to console for repo
     - [ ] see the flow in 08f for the artifact registry
+    - [ ] fix parent= logic
+    - [ ] simplify predictions like 02D
+    - [ ] prediction raw=True when in GA for SDK
+    - [ ] figure out relationship between TF and TFIO versions
     - [X] a-i shorten the model = trainingJob.run - see 08f and the 03 series
     - [X] simplify model for logistic regression example
     - [ ] modify training code to check for experiment run: if not the .create, else initiate to existing
