@@ -66,6 +66,8 @@ ToDo:
         - Low: The method
     - [X] Move Predictions into the individual notebooks, sharing endpoint for series
 - [IP] unstructured methods in 03g, 03h, 03i, try to reproduce anomaly_detection methods
+    - [ ] update 03i ML.DETECT_ANOMALIES to use TRAIN_FRAUD_PCT like 03g an d03h
+    - [ ] add graphics for kmeans
 - [ ] Feature Engineering Notebook (from DEV)
 - [ ] Next Update Pass
     - [ ] add colab link and code
