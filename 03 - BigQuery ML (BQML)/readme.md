@@ -68,11 +68,13 @@ ToDo:
     - [X] Move Predictions into the individual notebooks, sharing endpoint for series
 - [IP] unstructured methods in 03g, 03h, 03i, try to reproduce anomaly_detection methods
     - [ ] update 03i ML.DETECT_ANOMALIES to use TRAIN_FRAUD_PCT like 03g an d03h
-    - [ ] add graphics for kmeans (PCA then Scatterplot?)
+    - [ ] add graphics for kmeans (PCA then Scatterplot - or pairwise plot with color gradiant)
 - [X] Feature Engineering Notebook (from DEV)
 - [ ] Next Update Pass
     - [ ] add colab link and code
+    - [ ] add code to lookup existing model to each notebook so it can be run without retraining
     - [ ] rename experiment in 03g, h, i to match notebook name
+    - [ ] 03h kmeans add silhouette plot
     - [ ] add experiment tracking
     - [ ] directly register BQML models in Vertex AI [link](https://cloud.google.com/bigquery-ml/docs/managing-models-vertex)
     - [ ] create an example of ML.PREDICT for patial dependence plot

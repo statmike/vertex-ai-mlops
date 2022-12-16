@@ -91,6 +91,7 @@ ToDo:
     - [X] add BQ input/output example for Batch Predictions
     - [ ] add deployment pools example
     - [ ] add CPR example used in batch and online - link to/from the batch prediction notebook
+    - [IP] add nvidia triton server example with multiple models
     - [ ] cloud functions example - with keras serving
     - [ ] BigQuery Remote Function: with cloud functions and cloud run
         - Vertex AI Endpoint, Cloud Run Endpoint, Cloud Function  (with Keras)
