@@ -19,6 +19,11 @@ I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/s
 <p align="center">Click <a href="https://youtube.com/playlist?list=PLgxF613RsGoUuEjJJxJW2JYyZ8g1qOUou" target="_blank" rel="noopener noreferrer">here</a> to see current playlist for this repository</p>
 
 ---
+## Tracking
+
+To better understand which content is most helpful to users this repository uses tracking pixels in each markdown (.md) and notebook (.ipynb) file.  No user or location information gets captured as this is set to use a dummy client and session of 1 to protect privacy.  The only information captured is that the content was rendered/viewed which gives us a daily count of usage.  Please share any concerns you have with this in [repositories discussion board](https://github.com/statmike/vertex-ai-mlops/discussions) and I am happy to also provide a branch without tracking.
+
+---
 ## Table of Contents
 - [Considerations](#considerations)
 - [Overview](#overview)
@@ -425,3 +430,4 @@ This is my personal repository of demonstrations I use for learning and sharing 
 See individual todo list in the readme within each folder of the repository 
 - [ ] for each notebook add a list of api's, roles, perimission used
 - [ ] use virtualenv throughout
+- [ ] move all setup of apis into the 00 folder and reference them as prerequisites
