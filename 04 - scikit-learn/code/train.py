@@ -6,7 +6,11 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn import metrics
 
+<<<<<<< Updated upstream
 import joblib
+=======
+import pickle
+>>>>>>> Stashed changes
 import pandas as pd 
 import numpy as np 
 
@@ -17,6 +21,11 @@ import argparse
 import os
 import sys
 
+<<<<<<< Updated upstream
+=======
+print('complete pkg imports')
+
+>>>>>>> Stashed changes
 # import argument to local variables
 parser = argparse.ArgumentParser()
 # the passed param, dest: a name for the param, default: if absent fetch this param from the OS, type: type to convert to, help: description of argument
@@ -39,16 +48,34 @@ parser.add_argument('--blob', dest = 'blob', type=str)
 parser.add_argument('--timestamp', dest = 'timestamp', type=str)
 args = parser.parse_args()
 
+<<<<<<< Updated upstream
 VAR_OMIT = str(args.var_omit).split(' ')
+=======
+VAR_OMIT = str(args.var_omit).split('-')
+VAR_TARGET = str(args.var_target)
+VAR_OMIT_CLEAN = VAR_OMIT.append(VAR_TARGET)
+
+print('complete args')
+>>>>>>> Stashed changes
 
 # clients
 bq = bigquery.Client(project = args.project_id)
 aiplatform.init(project = args.project_id, location = args.region)
 
+<<<<<<< Updated upstream
+=======
+print('complete clients')
+
+>>>>>>> Stashed changes
 # Vertex AI Experiment
 expRun = aiplatform.ExperimentRun.create(run_name = args.run_name, experiment = args.experiment_name)
 expRun.log_params({'experiment': args.experiment, 'series': args.series, 'project_id': args.project_id})
 
+<<<<<<< Updated upstream
+=======
+print('complete init exp log')
+
+>>>>>>> Stashed changes
 # get schema from bigquery source
 query = f"SELECT * FROM {args.bq_project}.{args.bq_dataset}.INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{args.bq_table}'"
 schema = bq.query(query).to_dataframe()
@@ -58,6 +85,7 @@ nclasses = bq.query(query = f'SELECT DISTINCT {args.var_target} FROM {args.bq_pr
 nclasses = nclasses.shape[0]
 expRun.log_params({'data_source': f'bq://{args.bq_project}.{args.bq_dataset}.{args.bq_table}', 'nclasses': nclasses, 'var_split': 'splits', 'var_target': args.var_target})
 
+<<<<<<< Updated upstream
 train_query = f"SELECT * FROM {args.bq_project}.{args.bq_dataset}.{args.bq_table} WHERE splits = 'TRAIN'"
 train = bq.query(train_query).to_dataframe()
 X_train = train.loc[:, ~train.columns.isin(VAR_OMIT)]
@@ -72,6 +100,26 @@ test_query = f"SELECT * FROM {args.bq_project}.{args.bq_dataset}.{args.bq_table}
 test = bq.query(test_query).to_dataframe()
 X_test = test.loc[:, ~test.columns.isin(VAR_OMIT)]
 y_test = test[args.var_target]
+=======
+print('complete bq classes')
+
+train_query = f"SELECT * FROM {args.bq_project}.{args.bq_dataset}.{args.bq_table} WHERE splits = 'TRAIN'"
+train = bq.query(train_query).to_dataframe()
+X_train = train.loc[:, ~train.columns.isin(VAR_OMIT_CLEAN)]
+y_train = train[VAR_TARGET].astype('int')
+
+val_query = f"SELECT * FROM {args.bq_project}.{args.bq_dataset}.{args.bq_table} WHERE splits = 'VALIDATE'"
+val = bq.query(val_query).to_dataframe()
+X_val = val.loc[:, ~val.columns.isin(VAR_OMIT_CLEAN)]
+y_val = val[VAR_TARGET].astype('int')
+
+test_query = f"SELECT * FROM {args.bq_project}.{args.bq_dataset}.{args.bq_table} WHERE splits = 'TEST'"
+test = bq.query(test_query).to_dataframe()
+X_test = test.loc[:, ~test.columns.isin(VAR_OMIT_CLEAN)]
+y_test = test[VAR_TARGET].astype('int')
+
+print('complete training datasets')
+>>>>>>> Stashed changes
 
 # Logistic Regression
 # instantiate the model 
@@ -82,12 +130,22 @@ scaler = StandardScaler()
 
 expRun.log_params({'solver': args.solver, 'penalty': args.penalty})
 
+<<<<<<< Updated upstream
+=======
+print('complete model definition')
+
+>>>>>>> Stashed changes
 # define pipeline
 pipe = Pipeline(steps=[("scaler", scaler), ("logistic", logistic)])
 
 # define grid search model
 model = pipe.fit(X_train, y_train)
 
+<<<<<<< Updated upstream
+=======
+print('complete model training')
+
+>>>>>>> Stashed changes
 # test evaluations:
 y_pred = model.predict(X_test)
 test_acc = metrics.accuracy_score(y_test, y_pred) 
@@ -113,12 +171,26 @@ training_rocauc = metrics.roc_auc_score(y_train, y_pred_training)
 expRun.log_metrics({'training_accuracy': training_acc, 'training_precision':training_prec, 'training_recall': training_rec, 'training_roc_auc': training_rocauc})
 
 # output the model save files
+<<<<<<< Updated upstream
 joblib.dump(model, 'model.joblib') # the model needs to be named model.joblib is order for model upload to be successful
+=======
+with open('model.pkl','wb') as f:
+    pickle.dump(model,f)
+>>>>>>> Stashed changes
 
 # Upload the model to GCS
 bucket = storage.Client().bucket(args.bucket)
 blob = bucket.blob(args.blob)
+<<<<<<< Updated upstream
 blob.upload_from_filename('model.joblib')
 
 expRun.log_params({'model.save': f'{args.uri}/models/{args.timestamp}/model'})
 expRun.end_run()
+=======
+blob.upload_from_filename('model.pkl')
+
+expRun.log_params({'model.save': f'{args.uri}/models/{args.timestamp}/model'})
+expRun.end_run()
+
+print('complete model upload')
+>>>>>>> Stashed changes
