@@ -428,6 +428,7 @@ This is my personal repository of demonstrations I use for learning and sharing 
 ## ToDo
 
 See individual todo list in the readme within each folder of the repository 
+- [ ] add python script to this folder to enable users to remove tracking pixels for cloned copies of the repository
 - [ ] for each notebook add a list of api's, roles, perimission used
 - [ ] use virtualenv throughout
 - [ ] move all setup of apis into the 00 folder and reference them as prerequisites
