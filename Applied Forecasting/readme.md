@@ -25,6 +25,7 @@ ToDo:
 - [X] add prereq to readme
 - [X] Update references to Service Account and check for permissions - reference the 00 notebooks new section for correct setup
 - [X] Describe the data source in the readme file
+- [ ] BQML: Add ARIMA_PLUS_XREG example
 - [IP] full update pass to bring this project up to standards of 05, 03, and others:
     - [X] 1 Data review in BigQuery
         - [X] Move BigQuery client examples to Tips/BigQuery - Python Client
