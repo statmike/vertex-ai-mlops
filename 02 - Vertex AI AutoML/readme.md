@@ -39,5 +39,6 @@ ToDo:
     - [ ] 02c    
 - [ ] Add Multiple AutoML in parallel model example - see applied forecasting
 - [ ] Add AutoML Workflow examples
-- [ ] 02d - add fetching logs to see which models were tried to create the final model
+- [ ] 02d - add fetching logs to see which models were tried to create the final model: all tries, pick 20, ensemble....
+    - export, load, and inspect layers to see final model - see activation functions?
 - [ ] show how to interpret log of AutoML jobs: https://cloud.google.com/vertex-ai/docs/tabular-data/classification-regression/logging
