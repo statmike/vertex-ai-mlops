@@ -1,3 +1,5 @@
+![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2Farchitectures&dt=readme.md)
+
 # architectures
 
 This folder contains the graphics used throughout the repository and the notebooks that process the graphics.
@@ -21,3 +23,11 @@ Sources:
     - A Lucid Chart Document
     - Images are expored (file > export > png > select all) to PNG and saved in ./overview/
 
+## Tracking
+Two types of tracking data:
+- GA4 tracking of repository documents without any identifying information:
+    - [./tracking/tracking_ga4.ipynb](./tracking/tracking_ga4.ipynb)
+    - This data gets written to BQ each night: vertex-ai-mlops-369716
+- GitHub API for Traffic Information
+    - [./tracking/tracking_github.ipynb](./tracking/tracking_github.ipynb)
+    - This information gets written to BigQuery each night: vertex-ai-mlops-369716

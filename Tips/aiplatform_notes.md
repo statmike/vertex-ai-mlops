@@ -1,3 +1,5 @@
+![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2FTips&dt=aiplatform_notes.md)
+
 ## Interacting with Vertex AI
 Many Vertex AI resources can be viewed and monitored directly in the [GCP Console](https://console.cloud.google.com/vertex-ai).  Vertex AI resources are primarily created, and modified with the [Vertex AI API](https://cloud.google.com/vertex-ai/docs/reference).  
 
@@ -25,9 +27,9 @@ There are [versions](https://cloud.google.com/vertex-ai/docs/reference#versions)
 **Python**
 
 The [Google Cloud Python Client](https://github.com/googleapis/google-cloud-python) has a library for Vertex AI called [aiplatform](https://github.com/googleapis/python-aiplatform) which is called the Vertex AI SDK for Python.
-- [Python Cloud Client Libraries](https://cloud.google.com/python/docs/reference/aiplatform/latest)
-    - [google-cloud-aiplatform](https://cloud.google.com/python/docs/reference/aiplatform/latest)
-        - `aiplatform` [package](https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform)
+- All [Python Cloud Client Libraries](https://cloud.google.com/python/docs/reference)
+    - Vertex AI: [google-cloud-aiplatform](https://cloud.google.com/python/docs/reference/aiplatform/latest)
+        - Package: [`aiplatform` package](https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform)
 - Another helpful version of the Vertex AI SDK for Python documentation can be [found here](https://googleapis.dev/python/aiplatform/latest/index.html#)
 - Also helpful: [Getting started with Python](https://cloud.google.com/python/docs/getting-started) in Google Cloud
 

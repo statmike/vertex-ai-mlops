@@ -1,3 +1,9 @@
+![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops&dt=readme.md)
+
+<p align="center" width="100%">
+    <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/vertexai/v1/web-32dp/colors_vertexai_color_2x_web_32dp.png">
+</p>
+
 # Vertex AI for Machine Learning Operations
 
 ## 👋 I'm Mike
@@ -5,14 +11,30 @@
 I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/start/introduction-unified-platform) from [Google Cloud](https://cloud.google.com/vertex-ai) with you.  The goal here is to share a comprehensive set of end-to-end workflows for machine learning that each cover the range of data to model to serving and managing - even automating the flow.  Regardless of your data type, skill level or framework preferences you will find something helpful here. 
 
 <p align="center" width="100%">
-   <a href="https://youtu.be/snUEwsft1wY" target="_blank" rel="noopener noreferrer">
+    <a href="https://youtu.be/snUEwsft1wY" target="_blank" rel="noopener noreferrer">
       <kbd><img width="50%" src="architectures/thumbnails/playbutton/readme.png"></kbd>
-   </a>
+    </a>
 </p>
 <p align="center">Click to watch on YouTube</p>
-<p align="center">Click <a href="https://youtube.com/playlist?list=PLgxF613RsGoUuEjJJxJW2JYyZ8g1qOUou" target="_blank" rel="noopener noreferrer">here</a> to see full playlist for this repository</p>
+<p align="center">Click <a href="https://youtube.com/playlist?list=PLgxF613RsGoUuEjJJxJW2JYyZ8g1qOUou" target="_blank" rel="noopener noreferrer">here</a> to see current playlist for this repository</p>
 
 ---
+## Tracking
+
+To better understand which content is most helpful to users this repository uses tracking pixels in each markdown (.md) and notebook (.ipynb) file.  No user or location information gets captured as this is set to use a dummy client and session of 1 to protect privacy.  The only information captured is that the content was rendered/viewed which gives us a daily count of usage.  Please share any concerns you have with this in [repositories discussion board](https://github.com/statmike/vertex-ai-mlops/discussions) and I am happy to also provide a branch without tracking.
+
+---
+## Table of Contents
+- [Considerations](#considerations)
+- [Overview](#overview)
+- [Vertex AI](#vertex)
+- [Interacting With Vertex AI](#vertexsdk)
+- [Setup](#setup)
+- [Helpful Sections](#helpful)
+- [More Resources](#resources)
+
+---
+<a id = 'considerations'></a>
 ## Considerations
 
 ### Data Type
@@ -40,6 +62,7 @@ I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/s
 -  More!
 
 ---
+<a id = 'overview'></a>
 ## Overview
 
 This is a series of workflow demonstrations that use the same data source to build and deploy the same machine learning model with different frameworks and automation.  These are meant to help get started in understanding and learning Vertex AI and provide starting points for new projects.  
@@ -52,6 +75,217 @@ To understand the contents of this repository, the following charts uncover the 
 :-------------------------:
 ![](./architectures/overview/decision.png)
 
+### Pre-Trained APIs
+<table style='text-align:center;vertical-align:middle' width="100%" cellpadding="1" cellspacing="0">
+    <tr>
+        <th colspan='4'>Pre-Trained Models</th>
+        <th rowspan='2'>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl/v1/32px.svg">
+            <a href="https://cloud.google.com/vertex-ai/docs/beginner/beginners-guide" target="_blank">AutoML</a>
+        </th>
+    </tr>
+    <tr>
+        <th>Data Type</th>
+        <th>Pre-Trained Model</th>
+        <th>Prediction Types</th>
+        <th>Related Solutions</th>
+    </tr>
+    <tr>
+        <td rowspan='2'>
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
+            <br>Text
+        </td>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_translation_api/v1/32px.svg">
+            <br><a href="https://cloud.google.com/translate/docs/overview" target="_blank">Cloud Translation API</a>
+        </td>
+        <td>Detect, Translate</td>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/text-to-speech/v1/32px.svg">
+            <br><a href="https://cloud.google.com/text-to-speech/docs/basics" target="_blank">Cloud Text-to-Speech</a>
+        </td>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_translation/v1/32px.svg">
+            <br><a href="https://cloud.google.com/translate/automl/docs" target="_blank">AutoML Translation</a>
+        </td>
+    </tr>
+            <tr>
+                <td>
+                   <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_natural_language_api/v1/32px.svg">
+                   <br><a href="https://cloud.google.com/natural-language/docs/quickstarts" target="_blank">Cloud Natural Language API</a>
+                </td>
+                <td>
+                    Entities (Identify and label), Sentiment, Entity Sentiment, Syntax, Content Classification
+                </td>
+                <td>
+                    <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/healthcare_nlp_api/v1/32px.svg">
+                    <br><a href="https://cloud.google.com/healthcare-api/docs/how-tos/nlp" target="_blank">Healthceare Natural Language API</a>
+                </td>
+                <td>
+                    <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_natural_language/v1/32px.svg">
+                    <br><a href="https://cloud.google.com/vertex-ai/docs/training-overview#text_data" target="_blank">AutoML Text</a>
+            </tr>
+    <tr>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/image/default/40px.svg">
+            <br>Image
+        </td>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_vision_api/v1/32px.svg">
+            <br><a href="https://cloud.google.com/vision/docs/features-list" target="_blank">Cloud Vision API</a>
+        </td>
+        <td>
+            Crop Hint, OCR, Face Detect, Image Properties, Label Detect, Landmark Detect, Logo Detect, Object Localization, Safe Search, Web Detect
+        </td>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/document_ai/v1/32px.svg">
+            <br><a href="https://cloud.google.com/document-ai/docs/processors-list" target="_blank">Document AI</a>
+        </td>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_vision/v1/32px.svg">
+            <br><a href="https://cloud.google.com/vertex-ai/docs/training-overview#image_data" target="_blank">AutoML Image</a>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/mic/default/40px.svg">
+            <br>Audio
+        </td>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/media_translation_api/v1/32px.svg">
+            <br><a href="https://cloud.google.com/media-translation" target="_blank">Cloud Media Translation API</a>
+        </td>
+        <td>Real-time speech translation</td>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/speech-to-text/v1/32px.svg">
+            <br><a href="https://cloud.google.com/speech-to-text/docs/basics" target="_blank">Cloud Speech-to-Text</a>
+        </td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/videocam/default/40px.svg">
+            <br>Video
+        </td>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/video_intelligence_api/v1/32px.svg">
+            <br><a href="https://cloud.google.com/video-intelligence/docs/quickstarts" target="_blank">Cloud Video Intelligence API</a>
+        </td>
+        <td>
+            Label Detect*, Shot Detect*, Explicit Content Detect*, Speech Transcription, Object Tracking*, Text Detect, Logo Detect, Face Detect, Person Detect, Celebrity Recognition
+        </td>
+        <td></td>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_video_intelligence/v1/32px.svg">
+            <br><a href="https://cloud.google.com/vertex-ai/docs/training-overview#video_data" target="_blank">AutoML Video</a>
+        </td>
+    </tr>
+</table>
+
+
+### AutoML
+<table style='text-align:center;vertical-align:middle' width="100%" cellpadding="1" cellspacing="0">
+    <tr>
+        <th colspan='3'>AutoML</th>
+    </tr>
+    <tr>
+        <th>Data Type</th>
+        <th>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl/v1/32px.svg">
+            <br><a href="https://cloud.google.com/vertex-ai/docs/beginner/beginners-guide" target="_blank">AutoML</a>
+        </th>
+        <th>Prediction Types</th>
+    </tr>
+    <tr>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/table/default/40px.svg">
+            <br>Table
+        </td>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_tables/v1/32px.svg">
+            <br><a href="https://cloud.google.com/vertex-ai/docs/training-overview#tabular_data" target="_blank">AutoML Tables</a>
+        </td>
+        <td>
+            <dl>
+                <dt>Classification</dt>
+                    <dd>Binary</dd>
+                    <dd>Multi-class</dd>
+                <dt>Regression</dt>
+                <dt>Forecasting</dt>
+            </dl>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/image/default/40px.svg">
+            <br>Image
+        </td>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_vision/v1/32px.svg">
+            <br><a href="https://cloud.google.com/vertex-ai/docs/training-overview#image_data" target="_blank">AutoML Image</a>
+        </td>
+        <td>
+            <dl>
+                <dt>Classification</dt>
+                    <dd>Single-label</dd>
+                    <dd>Multi-label</dd>
+                <dt>Object Detection</dt>
+            </dl>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/videocam/default/40px.svg">
+            <br>Video
+        </td>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_video_intelligence/v1/32px.svg">
+            <br><a href="https://cloud.google.com/vertex-ai/docs/training-overview#video_data" target="_blank">AutoML Video</a>
+        </td>
+        <td>
+            <dl>
+                <dt>Classification</dt>
+                <dt>Object Detection</dt>
+                <dt>Action Recognition</dt>
+            </dl>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
+            <br>Text
+        </td>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_natural_language/v1/32px.svg">
+            <br><a href="https://cloud.google.com/vertex-ai/docs/training-overview#text_data" target="_blank">AutoML Text</a>
+        </td>
+        <td>
+            <dl>
+                <dt>Classification</dt>
+                    <dd>Single-label</dd>
+                    <dd>Multi-label</dd>
+                <dt>Entity Extraction</dt>
+                <dt>Sentiment Analysis</dt>
+            </dl>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
+            <br>Text
+        </td>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_translation/v1/32px.svg">
+            <br><a href="https://cloud.google.com/translate/automl/docs" target="_blank">AutoML Translation</a>
+        </td>
+        <td>
+            Translation
+        </td>
+    </tr>
+</table>
+
+### With Training Data
+
 This work focuses on cases where you have training data:
 
 | Overview |
@@ -62,7 +296,16 @@ This work focuses on cases where you have training data:
 :---:|:---:|:---:|:---:
 ![](./architectures/overview/02_overview.png)|![](./architectures/overview/03_overview.png)|![](./architectures/overview/05_overview.png)|![](./architectures/overview/forecasting_overview.png)
 
+### Vertex AI For ML Training
+
+<p align="center" width="100%">
+    <img src="./architectures/overview/training.png" width="45%">
+    &nbsp; &nbsp; &nbsp; &nbsp;
+    <img src="./architectures/overview/training2.png" width="45%">
+</p>
+
 ---
+<a id = 'vertex'></a>
 ## Vetex AI
 
 Vetex AI is a platform for end-to-end model development.  It consist of core components that make the processes of MLOps possible for design patterns of all types.
@@ -74,6 +317,7 @@ Vetex AI is a platform for end-to-end model development.  It consist of core com
 </p>
 
 ---
+<a id = 'vertexsdk'></a>
 ## Interacting with Vertex AI
 Many Vertex AI resources can be viewed and monitored directly in the [GCP Console](https://console.cloud.google.com/vertex-ai).  Vertex AI resources are primarily created, and modified with the [Vertex AI API](https://cloud.google.com/vertex-ai/docs/reference).  
 
@@ -108,6 +352,7 @@ model_list = aiplatform.Model.list()
 ```
 
 ---
+<a id = 'setup'></a>
 ## Setup
 
 The demonstrations are presented in a series of JupyterLab notebooks. These can be reviewed directly in [this repository on GitHub](https://github.com/statmike/vertex-ai-mlops) or cloned to your Jupyter instance on [Vertex AI Workbench](https://cloud.google.com/vertex-ai/docs/workbench/notebook-solution).
@@ -160,14 +405,17 @@ Resources on these items:
 - [Open Notebooks](https://cloud.google.com/notebooks/docs/create-new#open_the_notebook_2)
 
 ---
-# Helpful Sections
+<a id = 'helpful'></a>
+## Helpful Sections
 - [Learning Machine Learning](./Learn%20ML/readme.md)
     - I often get asked "How do I learn about ML?".  There are lots of good answers. ....
 - [Explorations](./Explorations/readme.md)
     - This is a series of projects for exploring new, new-to-me, and emerging tools in the ML world!
 - [Tips](./Tips/readme.md)
-    - Tips for using the repository and notebooks with examples of core skills like building containers, parameterizing jobs and interacting with other GCP services.
+    - Tips for using the repository and notebooks with examples of core skills like building containers, parameterizing jobs and interacting with other GCP services. These tips help with scaling jobs and developing them with a focus on CI/CD.
+
 ---
+<a id = 'resources'></a>
 ## More Resources Like This Repository
 
 This is my personal repository of demonstrations I use for learning and sharing Vertex AI.  There are many more resources available.  Within each notebook I have included a resources section and a related training section. 
@@ -177,85 +425,10 @@ This is my personal repository of demonstrations I use for learning and sharing 
 - [Overview of Data Science on Google Cloud](https://cloud.google.com/data-science)
 
 ---
-## Vertex AI For ML Training
+## ToDo
 
-Add these:
- - tensorboard
- - experiment
- - worker pool
-
-```mermaid
-sequenceDiagram
-   actor User
-   participant Training Code
-   participant API
-   participant Training Job
-   Participant Custom Job
-   Participant Hyperparameter Tuning Job
-   Note over Training Job, Hyperparameter Tuning Job: Vertex AI Training
-
-   rect rgb(154, 160, 166)
-      note right of User: Vertex AI Workbench / Notebook
-      Training Code ->> Training Code: Inside
-   end
-   rect rgb(234, 67, 53)
-      note right of User: Python Script
-      rect rgb(66, 133, 244)
-         note right of Training Code: a
-         Training Code ->> API: customJob = aiplatform.CustomJob.from_local_script()
-         API ->> Custom Job: customJob.run()
-      end
-      rect rgb(251, 188, 4)
-         note right of Training Code: d
-         Training Code ->> API: trainingJob = aiplatform.CustomTrainingJob()
-         API ->> Training Job: model = trainingJob.run()
-         Training Job -->> Custom Job: creates backing custom job
-      end
-      rect rgb(52, 168, 83)
-         note right of Training Code: g
-         Training Code ->> API: customJob = aiplatform.CustomJob.from_local_script()
-         Training Code ->> API: tuningJob = aiplatform.HyperparameterTuningJob(customJob)
-         API ->> Hyperparameter Tuning Job: tuningJob.run()
-      end
-   end
-   rect rgb(234, 67, 53)
-      note right of User: Python Source Distribution
-      rect rgb(66, 133, 244)
-         note right of Training Code: b
-         Training Code ->> API: customJob = aiplatform.CustomJob()
-         API ->> Custom Job: customJob.run()
-      end
-      rect rgb(251, 188, 4)
-         note right of Training Code: e
-         Training Code ->> API: trainingJob = aiplatform.CustomPythonPackageTrainingJob()
-         API ->> Training Job: model = trainingJob.run()
-         Training Job -->> Custom Job: creates backing custom job
-      end
-      rect rgb(52, 168, 83)
-         note right of Training Code: h
-         Training Code ->> API: customJob = aiplatform.CustomJob
-         Training Code ->> API: tuningJob = aiplatform.HyperparameterTuningJob(customJob)
-         API ->> Hyperparameter Tuning Job: tuningJob.run()
-      end
-   end
-   rect rgb(234, 67, 53)
-      note right of User: Custom Container
-      rect rgb(66, 133, 244)
-         note right of Training Code: c
-         Training Code ->> API: customJob = aiplatform.CustomJob()
-         API ->> Custom Job: customJob.run()
-      end
-      rect rgb(251, 188, 4)
-         note right of Training Code: f
-         Training Code ->> API: trainingJob = aiplatform.CustomContainerTrainingJob()
-         API ->> Training Job: model = trainingJob.run()
-         Training Job -->> Custom Job: creates backing custom job
-      end
-      rect rgb(52, 168, 83)
-         note right of Training Code: i
-         Training Code ->> API: customJob = aiplatform.CustomJob()
-         Training Code ->> API: tuningJob = aiplatform.HyperparameterTuningJob(customJob)
-         API ->> Hyperparameter Tuning Job: tuningJob.run()
-      end
-   end
-```
+See individual todo list in the readme within each folder of the repository 
+- [ ] add python script to this folder to enable users to remove tracking pixels for cloned copies of the repository
+- [ ] for each notebook add a list of api's, roles, perimission used
+- [ ] use virtualenv throughout
+- [ ] move all setup of apis into the 00 folder and reference them as prerequisites
