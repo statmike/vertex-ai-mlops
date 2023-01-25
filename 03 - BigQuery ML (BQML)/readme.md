@@ -89,6 +89,7 @@ ToDo:
     - [ ] Batch Predictions In Vertex
     - [ ] Cloud Run
     - [ ] Local
+    - [ ] DataFlow
 - [ ] Monitoring: online and batch in vertex
 - [ ] LIT
 - [ ] WIT
