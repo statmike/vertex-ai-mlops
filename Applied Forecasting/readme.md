@@ -11,7 +11,7 @@ This series will use bike Citibike rentals in New York city. The bike stations n
 ## Notebooks:
 - [1 - BigQuery Time Series Forecasting Data Review and Preparation](./1%20-%20BigQuery%20Time%20Series%20Forecasting%20Data%20Review%20and%20Preparation.ipynb)
 - [2 - BQML Univariate Forecasting with ARIMA+](./2%20-%20BQML%20Univariate%20Forecasting%20with%20ARIMA+.ipynb)
-- [BQML Multivariate Forecasting with ARIMA+ including external regressors]()
+- [BQML Multivariate Forecasting with ARIMA+ with XREG](./2%20-%20BQML%20Multivariate%20Forecasting%20with%20ARIMA+%20XREG.ipynb)
 - [3 - Vertex AI AutoML Forecasting - GCP Console (no code)](./3%20-%20Vertex%20AI%20AutoML%20Forecasting%20-%20GCP%20Console%20(no%20code).ipynb)
 - [4 - Vertex AI AutoML Forecasting - Python client](./4%20-%20Vertex%20AI%20AutoML%20Forecasting%20-%20Python%20client.ipynb)
 - [5 - Vertex AI AutoML Forecasting - multiple scenarios](./5%20-%20Vertex%20AI%20AutoML%20Forecasting%20-%20multiple%20scenarios.ipynb)
