@@ -37,6 +37,9 @@ A collection of tips for scaling jobs, generalizing jobs for flexibility, and de
 - [BQ Tools | CMEK and Cross-Region Move](https://gist.github.com/statmike/6a8dedb32c50829a5d2a4763dfab7754)
 - [BQ TOOL | LOCF Time Series](https://gist.github.com/statmike/ad1bc97a95bc50ab076a9e8b1b234506)
 
+## Tools
+- Google Colaboratory for Notebooks: [Colab](./colab.md)
+
 ## Additional Tips
 - Tips for working with the Python Client for BigQuery can be found here:
     - [03 - Introduction to BigQuery ML (BQML)](../03%20-%20BigQuery%20ML%20(BQML)/03%20-%20Introduction%20to%20BigQuery%20ML%20(BQML).ipynb)
