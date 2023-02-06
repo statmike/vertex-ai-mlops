@@ -34,6 +34,8 @@ Machine Learning with SQL using [BigQuery ML (BQML)](https://cloud.google.com/bi
     - `Example 3`: Retraining Tournament
 
 ## Additional BQML techniques are explored throughout this repository:
+- [AutoML](../02%20-%20Vertex%20AI%20AutoML)/
+    - [BQML AutoML](../02%20-%20Vertex%20AI%20AutoML/BQML%20AutoML.ipynb)
 - [Applied Forecasting](../Applied%20Forecasting/readme.md)/
     - [1 - BigQuery Time Series Forecasting Data Review and Preparation](../Applied%20Forecasting/1%20-%20BigQuery%20Time%20Series%20Forecasting%20Data%20Review%20and%20Preparation.ipynb)
     - [2 - BQML Univariate Forecasting with ARIMA+](../Applied%20Forecasting/2%20-%20BQML%20Univariate%20Forecasting%20with%20ARIMA+.ipynb)
@@ -71,6 +73,7 @@ ToDo:
     - [ ] add graphics for kmeans (PCA then Scatterplot - or pairwise plot with color gradiant)
 - [X] Feature Engineering Notebook (from DEV)
 - [ ] Next Update Pass
+    - [ ] correct language for 'This Run' sections print statment: with > will
     - [ ] add colab link and code
     - [ ] add code to lookup existing model to each notebook so it can be run without retraining
     - [ ] rename experiment in 03g, h, i to match notebook name
