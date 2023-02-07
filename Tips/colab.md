@@ -119,9 +119,9 @@ PROJECT_ID = 'statmike-mlops-349915' # replace with project ID
 !gcloud config set project {PROJECT_ID}
 ```
 
-Now, if you want to use any of the [Python clients for Google Cloud](https://cloud.google.com/python/docs/reference) all you need to do is make sure the are installed and setup them up.  Here are examples for BigQuery:
+Now, if you want to use any of the [Python clients for Google Cloud](https://cloud.google.com/python/docs/reference) all you need to do is make sure they are installed and setup them up.  Here are examples for BigQuery:
 
-Install the [BigQuery Python Client](https://cloud.google.com/python/docs/reference/bigquery/latest#installation) if needed, it is actuall pre-installed:
+Install the [BigQuery Python Client](https://cloud.google.com/python/docs/reference/bigquery/latest#installation) if needed, it is actually pre-installed:
 ```
 !pip install --upgrade google-cloud-bigquery -q
 ```
@@ -150,6 +150,7 @@ query = f"""
 bq.query(query = query).to_dataframe()
 ```
 
+For more ways to use BigQuery from a notebook see the notebook: [vertex-ai-mlops/03 - BigQuery ML (BQML)/03 - Introduction to BigQuery ML (BQML).ipynb](../03%20-%20BigQuery%20ML%20(BQML)/03%20-%20Introduction%20to%20BigQuery%20ML%20(BQML).ipynb)
 
 
 
