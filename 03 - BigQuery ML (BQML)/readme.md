@@ -40,6 +40,7 @@ Machine Learning with SQL using [BigQuery ML (BQML)](https://cloud.google.com/bi
 - [Applied Forecasting](../Applied%20Forecasting/readme.md)/
     - [1 - BigQuery Time Series Forecasting Data Review and Preparation](../Applied%20Forecasting/1%20-%20BigQuery%20Time%20Series%20Forecasting%20Data%20Review%20and%20Preparation.ipynb)
     - [2 - BQML Univariate Forecasting with ARIMA+](../Applied%20Forecasting/2%20-%20BQML%20Univariate%20Forecasting%20with%20ARIMA+.ipynb)
+    - [BQML Multivariate Forecasting with ARIMA+ XREG](../Applied%20Forecasting/BQML%20Multivariate%20Forecasting%20with%20ARIMA+%20XREG.ipynb)
     - [8 - Vertex AI Pipelines - Forecasting Tournament - BQML + AutoML + Prophet](../Applied%20Forecasting/8%20-%20Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20-%20BQML%20+%20AutoML%20+%20Prophet.ipynb)
 
 ---
@@ -75,7 +76,7 @@ ToDo:
 - [X] Feature Engineering Notebook (from DEV)
 - [ ] Next Update Pass
     - [ ] correct language for 'This Run' sections print statment: with > will
-    - [ ] add colab link and code
+    - [ ] add colab link and code - update bq client to set project for colab use
     - [ ] add code to lookup existing model to each notebook so it can be run without retraining
     - [ ] rename experiment in 03g, h, i to match notebook name
     - [ ] 03h kmeans add silhouette plot
