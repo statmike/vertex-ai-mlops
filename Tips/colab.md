@@ -105,6 +105,8 @@ Custom Runtimes are available as well:
 
 
 ## Use Colab With A Google Cloud Project
+
+### Authenticate to Google Cloud
 From a Colab notebook you can autenticate your Google Cloud login which will allow your notebook to work with Google Cloud using the scope of your permissions.  This is because the Google Cloud CLI tool `gcloud` is installed.  Using the following code in a cell within your notebook will prompt you to login and authenticate.  This process will be needed each time you run your notebook.
 
 ```python
@@ -112,6 +114,7 @@ from google.colab import auth
 auth.authenticate_user()
 ```
 
+### Set The Current Project
 Once you are authenticated you can set your Google Cloud Project with the `gcloud` cli:
 
 ```
@@ -119,11 +122,26 @@ PROJECT_ID = 'statmike-mlops-349915' # replace with project ID
 !gcloud config set project {PROJECT_ID}
 ```
 
+### Use BigQuery Magic
+The BigQuery magics are already setup to use in Colab.  Note that they need the project for the query to be set which can be done by passing the `PROJECT_ID` variable set above - note the use of `$`.
+
+```
+%%bigquery --project=$PROJECT_ID
+SELECT
+    input_column,
+    CAST((input_column - AVG(input_column) OVER()) / STDDEV(input_column) OVER() AS FLOAT64) AS manual_column,
+    ML.STANDARD_SCALER(input_column) OVER() AS feature_column
+FROM
+    UNNEST([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) as input_column
+ORDER BY input_column
+```
+
+### Use Python Client For BigQuery
 Now, if you want to use any of the [Python clients for Google Cloud](https://cloud.google.com/python/docs/reference) all you need to do is make sure they are installed and setup them up.  Here are examples for BigQuery:
 
-Install the [BigQuery Python Client](https://cloud.google.com/python/docs/reference/bigquery/latest#installation) if needed, it is actually pre-installed:
+Install the [BigQuery Python Client](https://cloud.google.com/python/docs/reference/bigquery/latest#installation) if needed, it is actually pre-installed and updated regularly:
 ```
-!pip install --upgrade google-cloud-bigquery -q
+!pip install --upgrade google-cloud-bigquery -q -U
 ```
 
 Setup and use the client to submit a query:
@@ -146,11 +164,23 @@ query = f"""
         UNNEST([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) as input_column
     ORDER BY input_column
 """
-
 bq.query(query = query).to_dataframe()
 ```
 
+### More ways to Use BigQuery from a Notebook
 For more ways to use BigQuery from a notebook see the notebook: [vertex-ai-mlops/03 - BigQuery ML (BQML)/03 - Introduction to BigQuery ML (BQML).ipynb](../03%20-%20BigQuery%20ML%20(BQML)/03%20-%20Introduction%20to%20BigQuery%20ML%20(BQML).ipynb)
+
+### Link From BigQuery Console to Colab
+There is a BigQuery [preview feature](https://cloud.google.com/bigquery/docs/explore-data-colab) that offers a direct link to Colab from any query result in the BigQuery Console:
+
+<p align="center" width="100%">
+    <center>
+    <img src="../architectures/notebooks/Tips/bq_explore_in_colab.png" width = '50%'>
+    </center>
+</p>
+
+This opens a new Colab notebook with the code to authenticate and setup the BigQuery client.  This even fills in the current project and location information.  It also fills in the job id for the query results you were viewing and recalls those to load to a Pandas dataframe!
+
 
 
 
