@@ -7,6 +7,9 @@ A collection of tips for scaling jobs, generalizing jobs for flexibility, and de
 - Each notebook that has a parameter defined as `BUCKET = PROJECT_ID` can be customized:
     - change this to `BUCKET = PROJECT_ID + 'suffix'` if you already have a GCS bucket with the same name as the project.  
 
+## Tools
+- Google Colaboratory for Notebooks: [Colab](./colab.md)
+
 ## Notes
 - [`aiplatform` Python Client](./aiplatform_notes.md)
     - All about the Vertex AI Python Client: versions (`aiplatform_v1` and `aiplatform_v1beta`) and layers (`aiplatform` and `aiplatform.gapic`).  Includes the deeper details and examples of using each.
@@ -36,9 +39,6 @@ A collection of tips for scaling jobs, generalizing jobs for flexibility, and de
 - [BQ Tools | Logging Sink](https://gist.github.com/statmike/79d91989c4caa76957b523db30bb1a81)
 - [BQ Tools | CMEK and Cross-Region Move](https://gist.github.com/statmike/6a8dedb32c50829a5d2a4763dfab7754)
 - [BQ TOOL | LOCF Time Series](https://gist.github.com/statmike/ad1bc97a95bc50ab076a9e8b1b234506)
-
-## Tools
-- Google Colaboratory for Notebooks: [Colab](./colab.md)
 
 ## Additional Tips
 - Tips for working with the Python Client for BigQuery can be found here:
