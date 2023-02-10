@@ -106,18 +106,23 @@ ToDo:
 - [ ] ML Metadata - add throughout
 - [ ] pipeline - make a tournament that uses experiments to pick a winner and deploy to endpoint
 - [ ] incorporate example of using console to launch training job (custom container)
+- [IP] Mini Update Pass
+    - [ ] add project=PROJECT_ID to bigquery client setup
+    - [ ] add logic to look up existing experiment run before creating new one
+    - [ ] add links to console for experiment and experiment run
+    - [ ] update model registration: parent_model = parent_model
+    - [ ] update predictions section to show multiple instances, and be simpler to read
 - [ ] for next cleaning path
     - [X] c,f,i - update docker repository to be the one named for the project_id without -docker
     - [ ] c,f,i - add link to console for repo
     - [ ] see the flow in 08f for the artifact registry
-    - [ ] fix parent= logic
-    - [ ] simplify predictions like 02D
+    - [ ] update logic for experiment run to attach to previous run of same name
+        - [ ] test rerunning with same run name for experiment - if previous marked state of complete will this work?
     - [ ] prediction raw=True when in GA for SDK
     - [ ] figure out relationship between TF and TFIO versions
     - [X] a-i shorten the model = trainingJob.run - see 08f and the 03 series
     - [X] simplify model for logistic regression example
-    - [ ] modify training code to check for experiment run: if not the .create, else initiate to existing
-    - [ ] simplify model registry lookup from `if f'{PROJECT_ID}' == repo.name.split('/')[-1]:` to `repo.name.endswith(PROJECT_ID)`
+    - [ ] (NO LONGER NEEDED) simplify model registry lookup from `if f'{PROJECT_ID}' == repo.name.split('/')[-1]:` to `repo.name.endswith(PROJECT_ID)`
 
 
 

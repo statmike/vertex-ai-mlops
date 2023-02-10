@@ -32,7 +32,10 @@ bq = bigquery.Client(project = args.project_id)
 aiplatform.init(project = args.project_id, location = args.region)
 
 # Vertex AI Experiment
-expRun = aiplatform.ExperimentRun.create(run_name = args.run_name, experiment = args.experiment_name)
+if args.run_name in [run.name for run in aiplatform.ExperimentRun.list(experiment = args.experiment_name)]:
+    expRun = aiplatform.ExperimentRun(run_name = args.run_name, experiment = args.experiment_name)
+else:
+    expRun = aiplatform.ExperimentRun.create(run_name = args.run_name, experiment = args.experiment_name)
 expRun.log_params({'experiment': args.experiment, 'series': args.series, 'project_id': args.project_id})
 
 # get schema from bigquery source
