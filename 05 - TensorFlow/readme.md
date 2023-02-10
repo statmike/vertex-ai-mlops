@@ -112,13 +112,14 @@ ToDo:
     - [ ] add links to console for experiment and experiment run
     - [ ] update model registration: parent_model = parent_model
     - [ ] update predictions section to show multiple instances, and be simpler to read
+    - [ ] prediction raw=True when in GA for SDK
+        - [X] confirmed in 05Tools - Prediction - Online notebook
 - [ ] for next cleaning path
     - [X] c,f,i - update docker repository to be the one named for the project_id without -docker
     - [ ] c,f,i - add link to console for repo
     - [ ] see the flow in 08f for the artifact registry
     - [ ] update logic for experiment run to attach to previous run of same name
         - [ ] test rerunning with same run name for experiment - if previous marked state of complete will this work?
-    - [ ] prediction raw=True when in GA for SDK
     - [ ] figure out relationship between TF and TFIO versions
     - [X] a-i shorten the model = trainingJob.run - see 08f and the 03 series
     - [X] simplify model for logistic regression example
