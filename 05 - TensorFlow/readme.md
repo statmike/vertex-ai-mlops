@@ -106,13 +106,13 @@ ToDo:
 - [ ] ML Metadata - add throughout
 - [ ] pipeline - make a tournament that uses experiments to pick a winner and deploy to endpoint
 - [ ] incorporate example of using console to launch training job (custom container)
-- [IP] Mini Update Pass
-    - [ ] add project=PROJECT_ID to bigquery client setup
-    - [ ] add logic to look up existing experiment run before creating new one
-    - [ ] add links to console for experiment and experiment run
-    - [ ] update model registration: parent_model = parent_model
-    - [ ] update predictions section to show multiple instances, and be simpler to read
-    - [ ] prediction raw=True when in GA for SDK
+- [IP] Mini Update Pass [X]n, [X]a, [X]b, [X]c, [X]d, [X]e, [X]f, []g, []h, []i
+    - [X] add project=PROJECT_ID to bigquery client setup
+    - [X] add logic to look up existing experiment run before creating new one
+    - [X] add links to console for experiment and experiment run
+    - [X] update model registration: parent_model = parent_model
+    - [X] update predictions section to show multiple instances, and be simpler to read
+    - [X] prediction raw=True when in GA for SDK
         - [X] confirmed in 05Tools - Prediction - Online notebook
 - [ ] for next cleaning path
     - [X] c,f,i - update docker repository to be the one named for the project_id without -docker
