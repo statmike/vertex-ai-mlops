@@ -84,6 +84,7 @@ ToDo:
     - [X] Cloud Scheduler > pub/sub
     - [IP] writeup and annotate
     - [ ] logging > pub/sub (left an opportunity for this in the cloud function)
+- [ ] Add TF Profiler - https://cloud.google.com/vertex-ai/docs/experiments/tensorboard-profiler
 - [ ] Model Evaluation - where to add into workflows or standalone?
     - wait on SDK: https://cloud.google.com/vertex-ai/docs/evaluation/using-model-evaluation#create_an_evaluation
 - [X] split predictions: online, batch, local, custom
@@ -102,11 +103,11 @@ ToDo:
 - [ ] add model card example [using](https://www.tensorflow.org/responsible_ai/model_card_toolkit/guide)
 - [X] complete monitoring migration from 06a to here
     - [ ] add batch job monitoring
-    - [ ] feature attribution monitoring - requires .explain instead of .predict?
+    - [IP] feature attribution monitoring - requires .explain instead of .predict?
 - [ ] ML Metadata - add throughout
 - [ ] pipeline - make a tournament that uses experiments to pick a winner and deploy to endpoint
 - [ ] incorporate example of using console to launch training job (custom container)
-- [IP] Mini Update Pass [X]n, [X]a, [X]b, [X]c, [X]d, [X]e, [X]f, []g, []h, []i
+- [X] Mini Update Pass [X]n, [X]a, [X]b, [X]c, [X]d, [X]e, [X]f, [X]g, [X]h, [X]i
     - [X] add project=PROJECT_ID to bigquery client setup
     - [X] add logic to look up existing experiment run before creating new one
     - [X] add links to console for experiment and experiment run
