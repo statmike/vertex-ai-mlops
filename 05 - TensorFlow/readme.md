@@ -84,6 +84,7 @@ ToDo:
     - [X] Cloud Scheduler > pub/sub
     - [IP] writeup and annotate
     - [ ] logging > pub/sub (left an opportunity for this in the cloud function)
+- [ ] Add TF Profiler - https://cloud.google.com/vertex-ai/docs/experiments/tensorboard-profiler
 - [ ] Model Evaluation - where to add into workflows or standalone?
     - wait on SDK: https://cloud.google.com/vertex-ai/docs/evaluation/using-model-evaluation#create_an_evaluation
 - [X] split predictions: online, batch, local, custom
@@ -102,22 +103,28 @@ ToDo:
 - [ ] add model card example [using](https://www.tensorflow.org/responsible_ai/model_card_toolkit/guide)
 - [X] complete monitoring migration from 06a to here
     - [ ] add batch job monitoring
-    - [ ] feature attribution monitoring - requires .explain instead of .predict?
+    - [IP] feature attribution monitoring - requires .explain instead of .predict?
 - [ ] ML Metadata - add throughout
 - [ ] pipeline - make a tournament that uses experiments to pick a winner and deploy to endpoint
 - [ ] incorporate example of using console to launch training job (custom container)
+- [X] Mini Update Pass [X]n, [X]a, [X]b, [X]c, [X]d, [X]e, [X]f, [X]g, [X]h, [X]i
+    - [X] add project=PROJECT_ID to bigquery client setup
+    - [X] add logic to look up existing experiment run before creating new one
+    - [X] add links to console for experiment and experiment run
+    - [X] update model registration: parent_model = parent_model
+    - [X] update predictions section to show multiple instances, and be simpler to read
+    - [X] prediction raw=True when in GA for SDK
+        - [X] confirmed in 05Tools - Prediction - Online notebook
 - [ ] for next cleaning path
     - [X] c,f,i - update docker repository to be the one named for the project_id without -docker
     - [ ] c,f,i - add link to console for repo
     - [ ] see the flow in 08f for the artifact registry
-    - [ ] fix parent= logic
-    - [ ] simplify predictions like 02D
-    - [ ] prediction raw=True when in GA for SDK
+    - [ ] update logic for experiment run to attach to previous run of same name
+        - [ ] test rerunning with same run name for experiment - if previous marked state of complete will this work?
     - [ ] figure out relationship between TF and TFIO versions
     - [X] a-i shorten the model = trainingJob.run - see 08f and the 03 series
     - [X] simplify model for logistic regression example
-    - [ ] modify training code to check for experiment run: if not the .create, else initiate to existing
-    - [ ] simplify model registry lookup from `if f'{PROJECT_ID}' == repo.name.split('/')[-1]:` to `repo.name.endswith(PROJECT_ID)`
+    - [ ] (NO LONGER NEEDED) simplify model registry lookup from `if f'{PROJECT_ID}' == repo.name.split('/')[-1]:` to `repo.name.endswith(PROJECT_ID)`
 
 
 

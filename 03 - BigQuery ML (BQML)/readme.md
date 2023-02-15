@@ -23,6 +23,8 @@ Machine Learning with SQL using [BigQuery ML (BQML)](https://cloud.google.com/bi
 - [03Tools - Pipelines Example 2](03Tools%20-%20Pipelines%20Example%202.ipynb)
 - [03Tools - Pipelines Example 3](03Tools%20-%20Pipelines%20Example%203.ipynb)
 - [BQML Feature Engineering](BQML%20Feature%20Engineering.ipynb)
+- [BQML Cross-validation Example](BQML%20Cross-validation%20Example.ipynb)
+- [BQML Ensemble Example](BQML%20Ensemble%20Example.ipynb)
 
 **Notes:**
 - Each of the notebooks=experiments `03a` through `03i` create a model in BigQuery with BQML and register the model in Vertex AI Model Registry.  Rerunning the notebook will create a new model version in the Vertex AI Model Registry.  All versions of the model persist in BigQuery and a timestamp is used to maintain naming uniqueness in BigQuery.
@@ -34,9 +36,12 @@ Machine Learning with SQL using [BigQuery ML (BQML)](https://cloud.google.com/bi
     - `Example 3`: Retraining Tournament
 
 ## Additional BQML techniques are explored throughout this repository:
+- [AutoML](../02%20-%20Vertex%20AI%20AutoML)/
+    - [BQML AutoML](../02%20-%20Vertex%20AI%20AutoML/BQML%20AutoML.ipynb)
 - [Applied Forecasting](../Applied%20Forecasting/readme.md)/
     - [1 - BigQuery Time Series Forecasting Data Review and Preparation](../Applied%20Forecasting/1%20-%20BigQuery%20Time%20Series%20Forecasting%20Data%20Review%20and%20Preparation.ipynb)
     - [2 - BQML Univariate Forecasting with ARIMA+](../Applied%20Forecasting/2%20-%20BQML%20Univariate%20Forecasting%20with%20ARIMA+.ipynb)
+    - [BQML Multivariate Forecasting with ARIMA+ XREG](../Applied%20Forecasting/BQML%20Multivariate%20Forecasting%20with%20ARIMA+%20XREG.ipynb)
     - [8 - Vertex AI Pipelines - Forecasting Tournament - BQML + AutoML + Prophet](../Applied%20Forecasting/8%20-%20Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20-%20BQML%20+%20AutoML%20+%20Prophet.ipynb)
 
 ---
@@ -70,8 +75,12 @@ ToDo:
     - [ ] update 03i ML.DETECT_ANOMALIES to use TRAIN_FRAUD_PCT like 03g an d03h
     - [ ] add graphics for kmeans (PCA then Scatterplot - or pairwise plot with color gradiant)
 - [X] Feature Engineering Notebook (from DEV)
+- [ ] Example to Create
+    - [X] Cross Validation
+    - [X] Ensemble Models - stacking
 - [ ] Next Update Pass
-    - [ ] add colab link and code
+    - [ ] correct language for 'This Run' sections print statment: with > will
+    - [ ] add colab link and code - update bq client to set project for colab use
     - [ ] add code to lookup existing model to each notebook so it can be run without retraining
     - [ ] rename experiment in 03g, h, i to match notebook name
     - [ ] 03h kmeans add silhouette plot
@@ -89,6 +98,7 @@ ToDo:
     - [ ] Batch Predictions In Vertex
     - [ ] Cloud Run
     - [ ] Local
+    - [ ] DataFlow
 - [ ] Monitoring: online and batch in vertex
 - [ ] LIT
 - [ ] WIT

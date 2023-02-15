@@ -21,7 +21,9 @@ I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/s
 ---
 ## Tracking
 
-To better understand which content is most helpful to users this repository uses tracking pixels in each markdown (.md) and notebook (.ipynb) file.  No user or location information gets captured as this is set to use a dummy client and session of 1 to protect privacy.  The only information captured is that the content was rendered/viewed which gives us a daily count of usage.  Please share any concerns you have with this in [repositories discussion board](https://github.com/statmike/vertex-ai-mlops/discussions) and I am happy to also provide a branch without tracking.
+To better understand which content is most helpful to users, this repository uses tracking pixels in each markdown (.md) and notebook (.ipynb) file.  No user or location information gets captured as this is set to use a dummy client and session of 1 to protect privacy.  The only information captured is that the content was rendered/viewed which gives us a daily count of usage.  Please share any concerns you have with this in [repositories discussion board](https://github.com/statmike/vertex-ai-mlops/discussions) and I am happy to also provide a branch without tracking.  
+
+A script is provided to remove this tracking from your local copy of this repository in the file [ga4_remove.py](./ga4_remove.py).
 
 ---
 ## Table of Contents
@@ -428,7 +430,6 @@ This is my personal repository of demonstrations I use for learning and sharing 
 ## ToDo
 
 See individual todo list in the readme within each folder of the repository 
-- [ ] add python script to this folder to enable users to remove tracking pixels for cloned copies of the repository
 - [ ] for each notebook add a list of api's, roles, perimission used
 - [ ] use virtualenv throughout
 - [ ] move all setup of apis into the 00 folder and reference them as prerequisites

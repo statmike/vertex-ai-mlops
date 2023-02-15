@@ -29,6 +29,9 @@ ToDo:
     - [IP] Include TabNet with Hyperparameter Tuning Example
     - [IP] Online and Batch Predictions
     - [IP] Explainability with feature masks
+- [IP] BQML AutoML
+    - [ ] Which container serves the exported model?
+        - https://cloud.google.com/vertex-ai/docs/export/export-model-tabular#export_process
 - [ ] Refinement+Update Pass
     - General
         - [ ] Update readme with hyperlinks
@@ -41,4 +44,5 @@ ToDo:
 - [ ] Add AutoML Workflow examples
 - [ ] 02d - add fetching logs to see which models were tried to create the final model: all tries, pick 20, ensemble....
     - export, load, and inspect layers to see final model - see activation functions?
-- [ ] show how to interpret log of AutoML jobs: https://cloud.google.com/vertex-ai/docs/tabular-data/classification-regression/logging
+- [IP] show how to interpret log of AutoML jobs: https://cloud.google.com/vertex-ai/docs/tabular-data/classification-regression/logging
+    - [ ] Export Model and Show Model Graph?
