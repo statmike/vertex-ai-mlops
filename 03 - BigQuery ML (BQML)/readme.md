@@ -24,6 +24,7 @@ Machine Learning with SQL using [BigQuery ML (BQML)](https://cloud.google.com/bi
 - [03Tools - Pipelines Example 3](03Tools%20-%20Pipelines%20Example%203.ipynb)
 - [BQML Feature Engineering](BQML%20Feature%20Engineering.ipynb)
 - [BQML Cross-validation Example](BQML%20Cross-validation%20Example.ipynb)
+- [BQML Ensemble Example](BQML%20Ensemble%20Example.ipynb)
 
 **Notes:**
 - Each of the notebooks=experiments `03a` through `03i` create a model in BigQuery with BQML and register the model in Vertex AI Model Registry.  Rerunning the notebook will create a new model version in the Vertex AI Model Registry.  All versions of the model persist in BigQuery and a timestamp is used to maintain naming uniqueness in BigQuery.
@@ -74,6 +75,9 @@ ToDo:
     - [ ] update 03i ML.DETECT_ANOMALIES to use TRAIN_FRAUD_PCT like 03g an d03h
     - [ ] add graphics for kmeans (PCA then Scatterplot - or pairwise plot with color gradiant)
 - [X] Feature Engineering Notebook (from DEV)
+- [ ] Example to Create
+    - [X] Cross Validation
+    - [X] Ensemble Models - stacking
 - [ ] Next Update Pass
     - [ ] correct language for 'This Run' sections print statment: with > will
     - [ ] add colab link and code - update bq client to set project for colab use
