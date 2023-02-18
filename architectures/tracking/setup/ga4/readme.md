@@ -1,3 +1,5 @@
+![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2Farchitectures%2Ftracking%2Fsetup%2Fga4&dt=readme.md)
+
 # /architectures/tracking/setup/ga4/readme.md
 
 Setup Google Analytics for tracking document touches in this repository.
