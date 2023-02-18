@@ -6,6 +6,11 @@ This folder contains the notebooks used to setup GCP services to read from APIs,
 
 >Great care is taken to not use user identifying information.  The goal is understanding document popularity relative the the total contents of the repository and overall.  Google Analytics Measurement Protocol is used to log `page_view` events without user identification or client identification - just a count of views.
 
+## Direction
+The setup of tracking involves 2 parts:
+- 1. **data source setup**: retrieving each source into its own BigQuery dataset as a series of tables with inputs from the sources.  Jobs are designed, mostly with cloud functions, to populate these tables initially and then incrementally.
+- 2. **data preparation**: setting up scheduled ETL jobs to transform each source into reporting tables in a single BigQuery dataset called `reporting`
+
 ## Sources
 Each data source has a subfolder of notebooks specific to their setup:
 - [/ga4](./ga4/readme.md)

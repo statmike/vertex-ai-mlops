@@ -8,6 +8,18 @@ Setup Google Analytics for tracking document touches in this repository.
 
 ## Notebooks and Scripts In This Folder:
 
+Notebooks For Setup and Reporting of GA4 Data:
+- [GA4 Setup.ipynb](./GA4%20Setup.ipynb)
+    - Full walkthrough of setting up
+        - Google Analytics
+        - Tracking with Measurement Protocol
+        - Exporting GA4 to BigQuery
+        - Data Layout in BigQuery
+        - Review Data in BigQuery
+- [GA4 Reporting.ipynb](./GA4%20Reporting.ipynb)
+    - Walkthrough of setting up a scheduled query to prepare GA4 data for reporting
+
+Add/Remove Tracking In Files (`.md` and `.ipynb`):
 - [tracking_ga4_add.ipynb](./tracking_ga4_add.ipynb)
     - Use the techniques from [../../tracking_ga4.ipynb](../../tracking_ga4.ipynb) to add the tracking links to all documents of type `.md` and `.ipynb`
 - [ga4_list.py](./ga4_list.py)
@@ -17,3 +29,4 @@ Setup Google Analytics for tracking document touches in this repository.
 - [ga4_remove.py](./ga4_remove.py)
     - Use this script to remove all the tracking in this repository for a local clone
     - run the script with `python ga4_remove.py` in this folder location
+    
