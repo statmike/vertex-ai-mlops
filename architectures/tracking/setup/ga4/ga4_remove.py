@@ -1,3 +1,6 @@
+# this file, ga4_remove.py, will remove the tracking from files in the repository
+# to see files this will impact first run ga4_list.py
+
 import os
 import json
 import urllib.parse
