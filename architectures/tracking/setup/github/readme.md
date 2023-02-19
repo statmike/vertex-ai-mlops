@@ -7,5 +7,6 @@ Setup the data reads from the GitHub API
 
 ## Notebooks For Gathering and Processing Information:
 - [GitHub Metrics - 1 - Initial Creation](./GitHub%20Metrics%20-%201%20-%20Initial%20Creation.ipynb)
+    - Building the tables `commits` and `commits_files` in the BigQuery dataset `github_metrics`
 - [GitHub Metrics - 2 - Incremental Update Cloud Function](./GitHub%20Metrics%20-%202%20-%20Incremental%20Update%20Cloud%20Function.ipynb)
 - [GitHub Metrics - 3 - Reporting Scheduled Query](./GitHub%20Metrics%20-%203%20-%20Reporting%20Scheduled%20Query.ipynb)
