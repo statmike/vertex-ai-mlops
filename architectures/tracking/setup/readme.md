@@ -50,5 +50,6 @@ Each data source has a subfolder of notebooks specific to their setup:
         - commit changes
         - push to GitHub
         - update local clone by pulling changes
+        - delete old copy in Google Drive
         
 
