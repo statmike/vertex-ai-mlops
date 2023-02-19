@@ -17,7 +17,11 @@ Notebooks For Setup and Reporting of GA4 Data:
         - Data Layout in BigQuery
         - Review Data in BigQuery
 - [GA4 Reporting.ipynb](./GA4%20Reporting.ipynb)
-    - Walkthrough of setting up a scheduled query to prepare GA4 data for reporting
+    - Walkthrough of
+        - exploring the tables
+        - setting up an initial table
+        - create a query to incrementally update the table
+        - setting up a scheduled query to run the incremental update
 
 Add/Remove Tracking In Files (`.md` and `.ipynb`):
 - [tracking_ga4_add.ipynb](./tracking_ga4_add.ipynb)
