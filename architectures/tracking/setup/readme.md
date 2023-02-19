@@ -40,4 +40,15 @@ Each data source has a subfolder of notebooks specific to their setup:
 ## Notes
 - These notebooks are designed to run in the project `vertex-ai-mlops-369716`
 - recommendation is logging into that account with chrome, visit this repository on GitHub, click the open in colab links within the notebooks
+    - my process - need a better way for editing Colab and saving back to GitHub:
+        - Update local machines clone of repository
+        - open repository in finder
+        - drag a copy of the notebooks to Google Drive of the account running them
+        - open notebooks in Colab, edit, save
+        - download notebooks from Google Drive
+        - drag from download to JupyterLab Explorer and overwrite previous version
+        - commit changes
+        - push to GitHub
+        - update local clone by pulling changes
+        
 
