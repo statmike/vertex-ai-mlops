@@ -37,6 +37,18 @@ Each data source has a subfolder of notebooks specific to their setup:
     - includes notebooks that:
         - Walkthrough and schedule the ETL process to combine data from multiple sources for reporting
 
+## Overview of Data Pipeline
+
+| Overview |
+:-------------------------:
+![](../../overview/tracking_overview.png)
+
+
+| Detail of Data Pipeline |
+:-------------------------:
+![](../../overview/tracking_detail.png)
+
+
 ## Notes
 - These notebooks are designed to run in the project `vertex-ai-mlops-369716`
 - recommendation is logging into that account with chrome, visit this repository on GitHub, click the open in colab links within the notebooks
