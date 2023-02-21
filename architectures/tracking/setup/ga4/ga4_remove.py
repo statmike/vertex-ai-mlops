@@ -1,8 +1,12 @@
+# this file, ga4_remove.py, will remove the tracking from files in the repository
+# to see files this will impact first run ga4_list.py
+
 import os
 import json
 import urllib.parse
 
-for root, dirs, files in os.walk('.'):
+# this file is in: /vertex-ai-mlops/architectures/tracking/setup/ga4/ga4_remove.py
+for root, dirs, files in os.walk('../../../../.'):
     for file in files:
         if file.endswith(('.md', '.ipynb')) and not root.endswith('.ipynb_checkpoints'):
             print('evaluating: ', os.path.join(root, file))
