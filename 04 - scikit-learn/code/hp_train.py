@@ -135,11 +135,6 @@ import os
 # output the model save files
 with open('model.pkl','wb') as f:
     pickle.dump(model,f)
-     
-# Upload the model to GCS
-#bucket = storage.Client().bucket(args.bucket)
-#blob = bucket.blob(args.blob)
-#blob.upload_from_filename('model.pkl')
 
 # Upload model artifact to Cloud Storage
 model_directory = os.environ['AIP_MODEL_DIR']

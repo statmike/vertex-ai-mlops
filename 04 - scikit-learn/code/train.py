@@ -117,14 +117,18 @@ training_rec = metrics.recall_score(y_train, y_pred_training)
 training_rocauc = metrics.roc_auc_score(y_train, y_pred_training)
 expRun.log_metrics({'training_accuracy': training_acc, 'training_precision':training_prec, 'training_recall': training_rec, 'training_roc_auc': training_rocauc})
 
+import os
+
 # output the model save files
 with open('model.pkl','wb') as f:
     pickle.dump(model,f)
-    
-# Upload the model to GCS
-bucket = storage.Client().bucket(args.bucket)
-blob = bucket.blob(args.blob)
+
+# Upload model artifact to Cloud Storage
+model_directory = os.environ['AIP_MODEL_DIR']
+storage_path = os.path.join(model_directory, 'model.pkl')
+blob = storage.blob.Blob.from_string(storage_path, client=storage.Client())
 blob.upload_from_filename('model.pkl')
 
-expRun.log_params({'model.save': f'{args.uri}/models/{args.timestamp}/model'})
+#expRun.log_params({'model.save': f'{args.uri}/models/{args.timestamp}/model'})
+expRun.log_params({'model.save': os.getenv('AIP_MODEL_DIR')})
 expRun.end_run()
