@@ -9,6 +9,7 @@ A collection of tips for scaling jobs, generalizing jobs for flexibility, and de
 
 ## Tools
 - Google Colaboratory for Notebooks: [Colab](./colab.md)
+- Secret Manager: [Secret Manager](./Secret%20Manager.ipynb)
 
 ## Notes
 - [`aiplatform` Python Client](./aiplatform_notes.md)
@@ -63,3 +64,5 @@ ToDo:
     - [ ] BigQuery - Remote Functions
 - [ ] Add Git workflow tip - how to clone with PAT
 - [DEV] add KFP tip, include [component authoring](https://www.kubeflow.org/docs/components/pipelines/v2/author-a-pipeline/components/#author-a-component)
+- [IP] secret manager tip
+- [ ] IDE's: colab, VSCode local, VSCode Remote, Jupyter, ....
