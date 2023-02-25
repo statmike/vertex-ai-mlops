@@ -67,7 +67,7 @@ Each data source has a subfolder of notebooks specific to their setup:
 
 ---
 ## TODO
-- [ ] Add GitHub Traffic and Engagement
+- [IP] Add GitHub Traffic and Engagement
 - [ ] Add YouTube measurement
     - [ ] link associated notebooks
 - [ ] move GA4 BQ Schedule Job to Cloud Function (daily)

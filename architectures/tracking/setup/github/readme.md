@@ -9,7 +9,7 @@ Setup the data reads from the GitHub API
 - [GitHub Metrics - 1 - Commits - Initial Creation](./GitHub%20Metrics%20-%201%20-%20Commits%20-%20Initial%20Creation.ipynb)
     - Building the tables `commits` and `commits_files` in the BigQuery dataset `github_metrics`
 - [GitHub Metrics - 1 - Traffic - Initial Creation](./GitHub%20Metrics%20-%201%20-%20Traffic%20-%20Initial%20Creation.ipynb)
-    - Building the tables TBD
+    - Building the tables `traffic_clones`, `traffic_popular_paths`, `traffic_popular_referrers`, `traffic_views`, `stargazers`, `forks`, `subscribers` in BigQuery dataset `github_metrics`
 - [GitHub Metrics - 2 - Incremental Update Cloud Function](./GitHub%20Metrics%20-%202%20-%20Incremental%20Update%20Cloud%20Function.ipynb)
-    - Create Cloud Function that automates the incremental updates
+    - Create Cloud Function that automates the incremental updates for the stage 1 notebooks above
 - [GitHub Metrics - 3 - Commits - Reporting Scheduled Query](./GitHub%20Metrics%20-%203%20-%20Commits%20-%20Reporting%20Scheduled%20Query.ipynb)
