@@ -1,6 +1,7 @@
 ![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2FApplied+Forecasting&dt=readme.md)
 
-# Applied Forecasting
+# /Applied Forecasting/readme.md
+
 This series of notebooks highlights the use of Vertex AI for forecasting workflows.  These use techniques in BigQuery ML (BQML), Vertex AI AutoML Forecasting, and custom methods like OSS Prophet.
 
 This series will use bike Citibike rentals in New York city. The bike stations near central park will be selected and the daily number bike trips that orignate from these stations will be followed over time. This will be complicated as new stations are introduced over time and some stations only have the most recent few months, or just weeks of data.  The data are found in the BigQuery Public datasets at: `bigquery-public-data.new_york.citibike_trips`.

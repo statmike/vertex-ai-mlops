@@ -1,6 +1,7 @@
 ![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2F05+-+TensorFlow&dt=readme.md)
 
-# 05 - Custom Models: TensorFlow
+# /05 - TensorFlow/readme.md
+
 This series of notebooks highlights the use of Vertex AI for machine learning workflows with [TensorFlow](https://www.tensorflow.org/).  The same simple model specification is used for all examples with the focus put on workflows for different ML workflows and operational tasks.  The goal is to provide a starting point that can be used with the model architecture you already have.
 
 >**NOTE:** The notebooks in the `05 - TensorFlow` series demonstrate training, serving and operations for TensorFlow models and take advantage of [Vertex AI TensorBoard](https://cloud.google.com/vertex-ai/docs/experiments/tensorboard-overview) to track training across experiments.  Running these notebooks will create a Vertex AI TensorBoard instance which has a user-based montly pricing that is different than other services that charge by usage.  This cost is $300 per user - [Vertex AI Pricing](https://cloud.google.com/vertex-ai/pricing#tensorboard).
@@ -76,8 +77,9 @@ ToDo:
     - [X] add section for testing code
 - [X] update/rework/modify a-i (done=abcdefghi)
 - [X] modify tools notebook to match a-i update
-- [X] split explainability into two notebooks
-    - [IP] add example-based to explainability
+- [X] split explainability into two notebooks: feature-based, example-based
+- [IP] complete example-based notebook
+    - [ ] figure out dataformat for tablular
 - [IP] 05Tools - Automation: trigger services: cloud function, cloud schedule, pub/sub
     - [X] Cloud Function with Pub/Sub Trigger
     - [X] manual > pub/sub

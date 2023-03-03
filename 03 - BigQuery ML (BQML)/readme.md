@@ -1,6 +1,7 @@
 ![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2F03+-+BigQuery+ML+%28BQML%29&dt=readme.md)
 
-# 03 - BigQuery ML (BQML)
+# /03 - BigQuery ML (BQML)/readme.md
+
 Machine Learning with SQL using [BigQuery ML (BQML)](https://cloud.google.com/bigquery-ml/docs/introduction).
 
 **Prerequisites**

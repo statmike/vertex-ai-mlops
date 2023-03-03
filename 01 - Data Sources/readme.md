@@ -1,6 +1,6 @@
 ![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2F01+-+Data+Sources&dt=readme.md)
 
-# 01 - Data Sources
+# /01 - Data Sources/readme.md
 
 A Series of notebooks to prepare data for the ML projects in this repository.
 
