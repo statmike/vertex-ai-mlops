@@ -24,7 +24,7 @@ Notebooks For Setup and Reporting of GA4 Data:
         - setting up a scheduled query to run the incremental update
 
 Add/Remove Tracking In Files (`.md` and `.ipynb`):
-- [tracking_ga4_add.ipynb](./tracking_ga4_add.ipynb)
+- [ga4_add.ipynb](./ga4_add.ipynb)
     - Use the techniques from [../../tracking_ga4.ipynb](../../tracking_ga4.ipynb) to add the tracking links to all documents of type `.md` and `.ipynb`
 - [ga4_list.py](./ga4_list.py)
     - Use this script to list all the files with tracking in this repository
