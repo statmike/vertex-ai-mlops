@@ -32,15 +32,17 @@ A collection of tips for scaling jobs, generalizing jobs for flexibility, and de
     - This demonstrates many workflows for directly using the code formats created in [Python Packages](./Python%20Packages.ipynb) and for the custom container workflows created in [Python Custom Containers](./Python%20Custom%20Containers.ipynb)
 
 ## BigQuery: Notebooks on BigQuery Topics
-- [BQML | Slots for ML_EXTERNAL Jobs](https://gist.github.com/statmike/c3175a9cc138588c55bfbcef2a9e81b1)
-- [BQ Tools | Divide A Query - Async](https://gist.github.com/statmike/d93bfc3dc68ed119a0d2b74303c1ad7a)
-- [BQ Explained | Columns](https://gist.github.com/statmike/c72ae34045adfe84b33143ee8e403d22)
-- [BQ Tools | UDF](https://gist.github.com/statmike/e36c7abfcab834d74f860c850cac1837)
-- [BQ Explained | Tables](https://gist.github.com/statmike/627567e509d57970cc1927c5ba03d0d0)
-- [Information Schema Example](https://gist.github.com/statmike/8f1fc48700bd57026c68cd0f3fcc4b64)
-- [BQ Tools | Logging Sink](https://gist.github.com/statmike/79d91989c4caa76957b523db30bb1a81)
-- [BQ Tools | CMEK and Cross-Region Move](https://gist.github.com/statmike/6a8dedb32c50829a5d2a4763dfab7754)
-- [BQ TOOL | LOCF Time Series](https://gist.github.com/statmike/ad1bc97a95bc50ab076a9e8b1b234506)
+- [BigQuery ML and Slots](./BigQuery%20ML%20and%20Slots.ipynb)
+- GitHub Gist Based Content:
+    - [BQML | Slots for ML_EXTERNAL Jobs](https://gist.github.com/statmike/c3175a9cc138588c55bfbcef2a9e81b1)
+    - [BQ Tools | Divide A Query - Async](https://gist.github.com/statmike/d93bfc3dc68ed119a0d2b74303c1ad7a)
+    - [BQ Explained | Columns](https://gist.github.com/statmike/c72ae34045adfe84b33143ee8e403d22)
+    - [BQ Tools | UDF](https://gist.github.com/statmike/e36c7abfcab834d74f860c850cac1837)
+    - [BQ Explained | Tables](https://gist.github.com/statmike/627567e509d57970cc1927c5ba03d0d0)
+    - [Information Schema Example](https://gist.github.com/statmike/8f1fc48700bd57026c68cd0f3fcc4b64)
+    - [BQ Tools | Logging Sink](https://gist.github.com/statmike/79d91989c4caa76957b523db30bb1a81)
+    - [BQ Tools | CMEK and Cross-Region Move](https://gist.github.com/statmike/6a8dedb32c50829a5d2a4763dfab7754)
+    - [BQ TOOL | LOCF Time Series](https://gist.github.com/statmike/ad1bc97a95bc50ab076a9e8b1b234506)
 
 ## Additional Tips
 - Tips for working with the Python Client for BigQuery can be found here:
