@@ -128,7 +128,12 @@ All GCloud CLI: https://cloud.google.com/sdk/gcloud/reference
         - AutoML Video:
             - ICON: https://fonts.gstatic.com/s/i/gcpiconscolors/automl_video_intelligence/v1/32px.svg
             - URL: https://cloud.google.com/vertex-ai/docs/training-overview#video_data
-
+    - [Visual Inspection AI](https://cloud.google.com/solutions/visual-inspection-ai)
+        - ICON: https://fonts.gstatic.com/s/i/gcpiconscolors/visual_inspection/v1/32px.svg 
+        - URL:
+    - [Vertex AI Vision](https://cloud.google.com/vertex-ai-vision)
+        - ICON (same as cloud vision api?): https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_vision_api/v1/32px.svg
+        - URL: https://cloud.google.com/vision-ai/docs/overview
 
 
 - Related:
