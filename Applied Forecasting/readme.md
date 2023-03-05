@@ -27,9 +27,9 @@ ToDo:
 - [X] add prereq to readme
 - [X] Update references to Service Account and check for permissions - reference the 00 notebooks new section for correct setup
 - [X] Describe the data source in the readme file
-- [IP] BQML: Add ARIMA_PLUS_XREG example
-    - add covariate creation to notebook 1
-    - update plots to also show covariates over time
+- [X] BQML: Add ARIMA_PLUS_XREG example
+    - [X] add covariate creation to notebook 1
+    - [X] update plots to also show covariates over time
 - [IP] full update pass to bring this project up to standards of 05, 03, and others:
     - [X] 1 Data review in BigQuery
         - [X] Move BigQuery client examples to Tips/BigQuery - Python Client
@@ -55,6 +55,13 @@ ToDo:
     - [ ] 7 Prophet in Custom Job
     - [ ] 8 Tournament
 - [ ] Turn 8 into solution: register components to artifact registry and build pipelines dynamically
+- 08 Update
+    - [ ] add ARIMA_PLUS_XREG - wait for GA and time_series_id parameter
+    - [ ] add more open source methods - a dask based would be good
+        - sktime
+        - StatsForecast (use Fugue?)
+        - GluonTS
+        - Darts
 - Price optimization example like: https://cloud.google.com/blog/products/ai-machine-learning/price-optimization-using-vertex-ai-forecast
 
 
