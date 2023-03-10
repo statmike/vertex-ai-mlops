@@ -6,6 +6,8 @@ How do you want to work? What is your development workflow?
 
 Regardless of the answer, Vertex AI and Google Cloud make it possible to configure the workflow you are seeking.
 
+Customer are alway right about what they want!
+
 **IDE** The core point where "work" happens in is the box on the screen!
 
 **Code** THe "work" is typing code, instructions, for softare - Python, Julia, R for instance.
