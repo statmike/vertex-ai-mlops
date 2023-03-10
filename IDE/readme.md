@@ -2,7 +2,9 @@
 
 # /IDE/readme.md
 
-How do you want to work? What is your development workflow?
+How do you want to work? What is your development workflow? 
+
+Regardless of the answer, Vertex AI and Google Cloud make it possible to configure the workflow you are seeking.
 
 **IDE** The core point where "work" happens in is the box on the screen!
 
