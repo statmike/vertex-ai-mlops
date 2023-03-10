@@ -2,7 +2,7 @@
 
 # /IDE/readme.md
 
-How do you want to work?
+How do you want to work? What is your development workflow?
 
 **IDE** The core point where "work" happens in is the box on the screen!
 
