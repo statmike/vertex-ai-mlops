@@ -8,8 +8,10 @@ A collection of tips for scaling jobs, generalizing jobs for flexibility, and de
 - Each notebook that has a parameter defined as `BUCKET = PROJECT_ID` can be customized:
     - change this to `BUCKET = PROJECT_ID + 'suffix'` if you already have a GCS bucket with the same name as the project.  
 
+## IDEs
+For more details around setting up working environment in a variety of IDE's beyond just JupyterLap please checkout the [IDE folder](../IDE/readme.md).
+
 ## Tools
-- Google Colaboratory for Notebooks: [Colab](./colab.md)
 - Secret Manager: [Secret Manager](./Secret%20Manager.ipynb)
 
 ## Notes
