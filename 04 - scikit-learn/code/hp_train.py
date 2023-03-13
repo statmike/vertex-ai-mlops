@@ -17,7 +17,6 @@ import argparse
 import os
 import sys
 import hypertune
-#from google.cloud.aiplatform import hyperparameter_tuning as hpt
 
 # import argument to local variables
 parser = argparse.ArgumentParser()
@@ -34,10 +33,6 @@ parser.add_argument('--experiment', dest = 'experiment', type=str)
 parser.add_argument('--series', dest = 'series', type=str)
 parser.add_argument('--experiment_name', dest = 'experiment_name', type=str)
 parser.add_argument('--run_name', dest = 'run_name', type=str)
-parser.add_argument('--bucket', dest = 'bucket', type=str)
-parser.add_argument('--uri', dest = 'uri', type=str)
-parser.add_argument('--blob', dest = 'blob', type=str)
-parser.add_argument('--timestamp', dest = 'timestamp', type=str)
 
 # hyperparameters
 parser.add_argument('--solver', dest = 'solver', type = str, help = 'Logistic regression solver')
@@ -130,18 +125,16 @@ hpt.report_hyperparameter_tuning_metric(
     hyperparameter_metric_tag = 'roc_auc',
     metric_value = val_rocauc)
 
-import os
+file_name = 'model.pkl'
 
-# output the model save files
-with open('model.pkl','wb') as f:
+# Use predefined environment variable to establish model directory
+model_directory = os.environ['AIP_MODEL_DIR']
+storage_path = f'/gcs/{model_directory[5:]}' + file_name
+os.makedirs(os.path.dirname(storage_path), exist_ok=True)
+
+# output the model save files directly to GCS destination
+with open(storage_path,'wb') as f:
     pickle.dump(model,f)
 
-# Upload model artifact to Cloud Storage
-model_directory = os.environ['AIP_MODEL_DIR']
-storage_path = os.path.join(model_directory, 'model.pkl')
-blob = storage.blob.Blob.from_string(storage_path, client=storage.Client())
-blob.upload_from_filename('model.pkl')
-
-#expRun.log_params({'model.save': f'{args.uri}/models/{args.timestamp}/model'})
-expRun.log_params({'model.save': os.getenv('AIP_MODEL_DIR')})
+expRun.log_params({'model.save': storage_path})
 expRun.end_run()
