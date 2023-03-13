@@ -2,6 +2,7 @@
 
 ## Overview
 
+These are the tables developed for the main readme.md file:
 
 ### Pre-Trained APIs
 <table style='text-align:center;vertical-align:middle' width="100%" cellpadding="1" cellspacing="0">
@@ -66,8 +67,18 @@
             Crop Hint, OCR, Face Detect, Image Properties, Label Detect, Landmark Detect, Logo Detect, Object Localization, Safe Search, Web Detect
         </td>
         <td>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/document_ai/v1/32px.svg">
-            <br><a href="https://cloud.google.com/document-ai/docs/processors-list" target="_blank">Document AI</a>
+            <table>
+                <tr>
+                    <td>
+                        <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/document_ai/v1/32px.svg">
+                        <br><a href="https://cloud.google.com/document-ai/docs/processors-list" target="_blank">Document AI</a>
+                    </td>
+                    <td>
+                        <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/visual_inspection/v1/32px.svg">
+                        <br><a href="" taget="_blank">Visual Inspection AI</a>
+                    </td>
+                </tr>
+            </table>
         </td>
         <td>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_vision/v1/32px.svg">
@@ -102,7 +113,10 @@
         <td>
             Label Detect*, Shot Detect*, Explicit Content Detect*, Speech Transcription, Object Tracking*, Text Detect, Logo Detect, Face Detect, Person Detect, Celebrity Recognition
         </td>
-        <td></td>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_vision_api/v1/32px.svg">
+            <br><a href="https://cloud.google.com/vision-ai/docs/overview" target="_blank">Vertex AI Vision</a>
+        </td>
         <td>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_video_intelligence/v1/32px.svg">
             <br><a href="https://cloud.google.com/vertex-ai/docs/training-overview#video_data" target="_blank">AutoML Video</a>

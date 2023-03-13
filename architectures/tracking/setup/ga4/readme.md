@@ -22,6 +22,14 @@ Notebooks For Setup and Reporting of GA4 Data:
         - setting up an initial table
         - create a query to incrementally update the table
         - setting up a scheduled query to run the incremental update
+- [GA4 Forecasting.ipynb](./GA4%20Forecasting.ipynb)
+    - Add forecast data to the reporting table created by `GA4 Reporting.ipynb`
+    - This alters the table and scheduled query from the `GA4 Reporting.ipynb` notebook
+    - Adds rows to the table for forecasting 2 weeks out
+    - Schedules a weekly, Mon at 3AM EST, job that update the forecast for the current week and the next week but preserves the forecast from last week
+    - Included in dashboard this will show an expected target value for the current week while it accumulates throughout the week.
+    - Forecast is done a the daily level
+    - Row in the reporting table are separated by column `row_type` which has values 'forecast' and 'actual'
 
 Add/Remove Tracking In Files (`.md` and `.ipynb`):
 - [ga4_add.ipynb](./ga4_add.ipynb)

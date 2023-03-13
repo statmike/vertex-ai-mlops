@@ -10,13 +10,14 @@
 
 I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/start/introduction-unified-platform) from [Google Cloud](https://cloud.google.com/vertex-ai) with you.  The goal here is to share a comprehensive set of end-to-end workflows for machine learning that each cover the range of data to model to serving and managing - even automating the flow.  Regardless of your data type, skill level or framework preferences you will find something helpful here. 
 
-<p align="center" width="100%">
+<p align="center" width="100%"><center>
     <a href="https://youtu.be/snUEwsft1wY" target="_blank" rel="noopener noreferrer">
       <kbd><img width="50%" src="architectures/thumbnails/playbutton/readme.png"></kbd>
     </a>
-</p>
+</center></p>
 <p align="center">Click to watch on YouTube</p>
 <p align="center">Click <a href="https://youtube.com/playlist?list=PLgxF613RsGoUuEjJJxJW2JYyZ8g1qOUou" target="_blank" rel="noopener noreferrer">here</a> to see current playlist for this repository</p>
+
 
 ---
 ## Tracking
@@ -140,8 +141,18 @@ To understand the contents of this repository, the following charts uncover the 
             Crop Hint, OCR, Face Detect, Image Properties, Label Detect, Landmark Detect, Logo Detect, Object Localization, Safe Search, Web Detect
         </td>
         <td>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/document_ai/v1/32px.svg">
-            <br><a href="https://cloud.google.com/document-ai/docs/processors-list" target="_blank">Document AI</a>
+            <table>
+                <tr>
+                    <td>
+                        <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/document_ai/v1/32px.svg">
+                        <br><a href="https://cloud.google.com/document-ai/docs/processors-list" target="_blank">Document AI</a>
+                    </td>
+                    <td>
+                        <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/visual_inspection/v1/32px.svg">
+                        <br><a href="" taget="_blank">Visual Inspection AI</a>
+                    </td>
+                </tr>
+            </table>
         </td>
         <td>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_vision/v1/32px.svg">
@@ -176,7 +187,10 @@ To understand the contents of this repository, the following charts uncover the 
         <td>
             Label Detect*, Shot Detect*, Explicit Content Detect*, Speech Transcription, Object Tracking*, Text Detect, Logo Detect, Face Detect, Person Detect, Celebrity Recognition
         </td>
-        <td></td>
+        <td>
+            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_vision_api/v1/32px.svg">
+            <br><a href="https://cloud.google.com/vision-ai/docs/overview" target="_blank">Vertex AI Vision</a>
+        </td>
         <td>
             <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_video_intelligence/v1/32px.svg">
             <br><a href="https://cloud.google.com/vertex-ai/docs/training-overview#video_data" target="_blank">AutoML Video</a>
@@ -433,3 +447,6 @@ See individual todo list in the readme within each folder of the repository
 - [ ] for each notebook add a list of api's, roles, perimission used
 - [ ] use virtualenv throughout
 - [ ] move all setup of apis into the 00 folder and reference them as prerequisites
+- [ ] add colab link in all notebooks (if possible)
+- [ ] remove numbering from frameworks
+- [ ] New folder MLOps that pull all dev tools and workflows together
