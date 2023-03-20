@@ -4,15 +4,15 @@
 # {IN DRAFT DEVELOPMENT}
 
 **Notes For Development**
-- https://www.tensorflow.org/text/tutorials/classify_text_with_bert
-- large BERT model: bert_en_cased_L-12_H-768_A-12
-- (Modified it last layer activation function to sigmoid so that it can generate scores between 0-1)
-- deploy it with n1-standard-4 CPU (autoscaling 1-10)
-- It took around 40min to run on 10K dataset with batch size 64
-- Try T4 GPU to train and serve
+- [X] https://www.tensorflow.org/text/tutorials/classify_text_with_bert
+- [X] large BERT model: bert_en_cased_L-12_H-768_A-12
+- [X] (Modified it last layer activation function to sigmoid so that it can generate scores between 0-1)
+- [X] deploy it with n1-standard-4 CPU (autoscaling 1-10)
+- [X] It took around 40min to run on 10K dataset with batch size 64
+- [X] Try T4 GPU to train and serve
 - Next Draft
     - use bigquery public.imdb.reviews for serving demo
-    - make sections: setup, create model, deploy on vertex, BQ Remote Model
+    - [X] make sections: setup, create model, deploy on vertex, BQ Remote Model
     - for setup: actually bring step in from other tutorials
     - move bq remote connection setup into BQ Remote Model setup
     - Make parameters for Project, region, using colab
@@ -29,64 +29,98 @@ This can be incredibly helpful when a model is too large to import into BigQuery
 
 ## Tutorial
 
-This tutorial will build a custom sentiment analysis model by fine-tuning a BERT model in plain-text IMDB movie reviews.  The resulting model take text as input and return sentiment scores between (0, 1).  The model will be registered in Vertex AI Model Registry and served on a Vertex AI Prediction Endpoint.  From there model will be added to BigQuery as a remote model.  Finally, within BigQuery we will use the model to get sentiment predictions for a text column.
+This tutorial uses a customized sentiment analysis model by fine-tuning a BERT model with plain-text IMDB movie reviews.  The resulting model uses text input (movie reviews) and returns sentiment scores between (0, 1).  The model will be registered in Vertex AI Model Registry and served on a Vertex AI Prediction Endpoint.  From there the model will be added to BigQuery as a remote model.  Within BigQuery we will use the remote model to get sentiment predictions for a text column.
 
-## Before You Begin
-This tutorial will use the following billable components of Google cloud: Google Cloud Storage, Vertex AI, BigQuery and and a BigQuery Cloud Resource Connection.  Set these up if they are not already prepared:
+Contents:
+- [Tutorial Setup](#Tutorial-Setup)
+- [Create Model](#Create-Model)
+- [Deploy Model on Vertex AI](#Deploy-Model-on-Vertex-AI)
+- [BigQuery ML Remote Model](#BigQuery-ML-Remote-Model)
+- [Clean Up](#Clean-Up)
 
-1. Vertex AI: Ensure that tasks 1-3 are completed from [Set up a Google Cloud Project and development environment](https://cloud.google.com/vertex-ai/docs/pipelines/configure-project#project)
-2. Google Cloud Storage: Create a Bucket in the default `US` multi-region [following these instructions](https://cloud.google.com/storage/docs/creating-buckets)
-3. BigQuery: Create a dataset for this tutorial [following these instructions](https://cloud.google.com/bigquery/docs/datasets#create-dataset)
-4. BigQuery Cloud Resource Connection: Follow the instuctions for [Create and setup a Cloud resource connection](https://cloud.google.com/bigquery/docs/create-cloud-resource-connection)
-    - When you get to the step for [Grant access to the service account](https://cloud.google.com/bigquery/docs/create-cloud-resource-connection#access-storage) assign the [Vertex AI User IAM role](https://cloud.google.com/vertex-ai/docs/general/access-control#aiplatform.user) (`roles/aiplatform.user`)
+### Tutorial Setup
+This tutorial will use the following billable components of Google Cloud: Google Cloud Storage, Vertex AI, BigQuery and BigQuery Cloud Resource Connection.  At then end of the tutorial the billable components will be removed.
 
-## Step 1: Classify Text with BERT
+1. Click [here to Enable APIs](https://console.cloud.google.com/flows/enableapi?apiid=aiplatform.googleapis.com,storage-component.googleapis.com,bigqueryconnection.googleapis.com) for Vertex AI, Google Cloud Storage, and BigQuery Cloud Resource Connections.
+2. Vertex AI: Ensure that tasks 1-3 are completed from [Set up a Google Cloud Project and development environment](https://cloud.google.com/vertex-ai/docs/pipelines/configure-project#project)
+3. Google Cloud Storage: Create a Bucket in the default `US` multi-region [following these instructions](https://cloud.google.com/storage/docs/creating-buckets)
 
-TensorFlow tutorials include a sentiment analysis prediction model created by [fine-tuning a BERT model](https://www.tensorflow.org/text/tutorials/classify_text_with_bert) with a classification layer.  Start by going to this tutorials [notebook on GitHub](https://github.com/tensorflow/text/blob/master/docs/tutorials/classify_text_with_bert.ipynb) and clicking Run in Google Colab - or directly here [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/tensorflow/text/blob/master/docs/tutorials/classify_text_with_bert.ipynb).
 
-Proceed with the tutorial and make modification and additions as indicated in this tutorial:
-- Before starting to run the cells change the compute
-    - On the 'Runtime' menu select 'View Resources'
-    - In the 'Resources' tab that appears select 'Change runtime type'
-    - In the menu that appears change 'Hardware accelerator' from `None` to `GPU`
-    - Click `Save`
-    - Proceed with running the cells of the notebook
-- In the section "Choose a BERT model to fine-tune" use the dropdown to change the selection to `bert_en_cased_L-12_H-768_A-12`.  This version:
-    - has 12 hidden layers (L)
-    - creates an encoding with length 768 (H)
-    - and 12 attention heads (the core of BERT) to have 12 unique attention patterns for each input
-- In the section "Define your model" change the last layer to better map the output to a probability (0, 1):
-    - from `net = tf.keras.layers.Dense(1, activation=None, name='classifier')(net)`
-    - to `net = tf.keras.layers.Dense(1, activation='sigmoid', name='classifier')(net)`.
-    
-Note that training and evaluation will take about 1 hour.  The results achieve > 87% accuracy.
+### Create Model
 
-## Step 2: Move the model to Google Cloud Storage (GCS)
+**Classify Text with BERT**
 
-**Prerequisites**
+TensorFlow tutorials include a sentiment analysis prediction model created by [fine-tuning a BERT model](https://www.tensorflow.org/text/tutorials/classify_text_with_bert) while adding a classification layer.  Start by going to this tutorials [notebook on GitHub](https://github.com/tensorflow/text/blob/master/docs/tutorials/classify_text_with_bert.ipynb) and clicking 'Run in Google Colab' - or directly here [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/tensorflow/text/blob/master/docs/tutorials/classify_text_with_bert.ipynb).
 
-Add the bottom of the notebook the model is saved to the disk of the Colab notebook.  In this step we will add code cells to the notebook to authenticate to Google Cloud and copy the model to a storage bucket.
+**Two Options:**
+1. Use a pre-saved result of this tutorial to continue without recreating the model (skip to [Deploy Model on Vertex AI](#Deploy-Model-on-Vertex-AI))
+2. Run the tutorial with modification described here - it takes about an hour to run
+    - Proceed with the tutorial and make modification and additions as indicated in this tutorial:
+        - Before starting to run the cells change the compute
+            - On the 'Runtime' menu select 'View Resources'
+            - In the 'Resources' tab that appears select 'Change runtime type'
+            - In the menu that appears change 'Hardware accelerator' from `None` to `GPU`
+            - Click `Save`
+            - Proceed with running the cells of the notebook
+        - In the section "Choose a BERT model to fine-tune" use the dropdown to change the selection to `bert_en_cased_L-12_H-768_A-12`.  This version:
+            - has 12 hidden layers (L)
+            - creates an encoding with length 768 (H)
+            - and 12 attention heads (the core of BERT) to have 12 unique attention patterns for each input
+        - In the section "Define your model" change the last layer to better map the output to a probability (0, 1):
+            - from `net = tf.keras.layers.Dense(1, activation=None, name='classifier')(net)`
+            - to `net = tf.keras.layers.Dense(1, activation='sigmoid', name='classifier')(net)`.
+        - In the section "Export for inference" the lines that create results need to be modified now that the activation function has been changed:
+            - from:
+                - `reloaded_results = tf.sigmoid(reloaded_model(tf.constant(examples)))`
+                - `original_results = tf.sigmoid(classifier_model(tf.constant(examples)))`
+            - to:
+                - `reloaded_results = reloaded_model(tf.constant(examples))`
+                - `original_results = classifier_model(tf.constant(examples))`
+    - Note that training and evaluation will take about 1 hour.  The results achieve > 87% accuracy.
 
-View the size of the model:
+### Deploy Model on Vertex AI
+
+At the bottom of the notebook the model is saved to the disk of the Colab notebook.  In these steps we will add code cell to the bottom of the notebook to (step 1) move the saved model to Google Cloud Storage, (step 2) register the model in the Vertex AI Model Registry and (step 3) deploy the model to a Vertex AI Prediction Endpoint.
+
+First, install Vertex AI SDK and restart kernel:
 ```python
-# review model size
-!du -sh $saved_model_path
+# install Vertex AI SDK and restart kernel
+!pip install google.cloud.aiplatform -q -U
+
+import IPython
+
+app = IPython.Application.instance()
+app.kernel.do_shutdown(True)
 ```
-Shows the final model is around 433MB.
 
-Authenticate to Google Cloud:
+Second, add a new code cell that defines parameters:
+```
+# Define parameters
+REGION = 'us-central1'
+PROJECT_ID = 'statmike-mlops-349915'
+BUCKET = PROJECT_ID
+saved_model_path = './imdb_bert' # redefine due to kernel restart
+```
+
+Then, add a code cell that authenticates to Google Cloud:
 ```python
-# authenticate to Google Cloud
+# authenticate to Google Cloud and set project
 from google.colab import auth
 auth.authenticate_user()
-```
-
-Set The Google Cloud Project:
-```python
-# set the Google Cloud Project
-PROJECT_ID = 'statmike-mlops-349915'
 !gcloud config set project {PROJECT_ID}
 ```
+
+#### Step 1: Move the model to Google Cloud Storage (GCS)
+
+If you chose to skip running the notebook and use a pre-built version of the model then the next step is to add this code cell:
+
+Copy the model to Google Cloud Storage:
+```python
+# copy the model files to GCS
+!gsutil cp -r gs://bucket/path/to/prebuilt/model gs://$PROJECT_ID/bqml/remote_model_tutorial
+```
+
+If you ran the tutorial notebook and created a model then continue by adding these code cells:
 
 Copy the model to Google Cloud Storage:
 ```python
@@ -94,20 +128,13 @@ Copy the model to Google Cloud Storage:
 !gsutil cp -r $saved_model_path gs://$PROJECT_ID/bqml/remote_model_tutorial
 ```
 
-## Step 3: Register the Model In Vertex AI Model Registry
+#### Step 2: Register the Model In Vertex AI Model Registry
 
 This step will register the model in the [Vertex AI Model Registry](https://cloud.google.com/vertex-ai/docs/model-registry/introduction).
-
-**DOES THIS NEED RUNTIME RESTART - IF YES, THEN WHAT IS IMPACT TO RUNNING FOLLOWING CODE - any prereqs?**
-Install Vertex AI SDK:
-```python
-!pip install google.cloud.aiplatform -q
-```
 
 Import and Initialize the Vertex AI SDK:
 ```python
 # initialize Vertex AI SDK
-REGION = 'us-central1'
 from google.cloud import aiplatform
 aiplatform.init(project = PROJECT_ID, location=REGION)
 ```
@@ -128,7 +155,7 @@ Review the models Information:
 model.display_name, model.name, model.uri
 ```
 
-## Step 4: Deploy the Model to Vertex AI Prediction Endpoint
+#### Step 3: Deploy the Model to Vertex AI Prediction Endpoint
 
 This step will deploy the model from the Vertex AI Model Registry (Step 3) to a [Vertex AI Prediction Endpoint](https://cloud.google.com/vertex-ai/docs/predictions/get-predictions#get_online_predictions).
 
@@ -146,12 +173,48 @@ endpoint = model.deploy(
 ```
 
 ```python
-# test endpoint
-endpoint.predict(instances = examples)
+# redefine the examples from tutorial
+examples = [
+    'this is such an amazing movie!',  # this is the same sentence tried earlier
+    'The movie was great!',
+    'The movie was meh.',
+    'The movie was okish.',
+    'The movie was terrible...'
+]
 ```
 
+```python
+# test endpoint with examples
+endpoint.predict(instances = examples).predictions
+```
 
-## Step 5: Create A Remote Model in BigQuery
+### BigQuery ML Remote Model
+
+Creating a BigQuery ML Remote Model has two components: a BigQuery Cloud Resource Connection and a remote model that uses the connection.
+
+#### Step 1: Create a BigQuery Cloud Resource Connection
+
+```python
+# create BigQuery Cloud Resource Connection
+!bq mk --connection --location={REGION[0:2]} --project_id={PROJECT_ID} --connection_type=CLOUD_RESOURCE bqml_remote_model_tutorial
+```
+
+```python
+# retrieve the service account for the BigQuery Cloud Resource Connection
+import json
+
+bqml_connection = !bq show --format prettyjson --connection {PROJECT_ID}.{REGION[0:2]}.bqml_remote_model_tutorial
+bqml_connection = json.loads(''.join(bqml_connection))
+service_account = bqml_connection['cloudResource']['serviceAccountId']
+service_account
+```
+
+```python
+# assign vertex ai user role to the service account of the BigQuery Cloud Resource Connection
+!gcloud projects add-iam-policy-binding {PROJECT_ID} --member=serviceAccount:{service_account} --role=roles/aiplatform.user
+```
+
+#### Step 2: Create a BigQuery Dataset and Remote Model
 
 Import and Initialize BigQuery Client
 ```python
@@ -160,14 +223,26 @@ from google.cloud import bigquery
 bq = bigquery.Client(project = PROJECT_ID)
 ```
 
+Create a BigQuery Dataset:
+```python
+# Create A BigQuery Dataset
+query = f"""
+CREATE SCHEMA IF NOT EXISTS `{PROJECT_ID}.bqml_remote_model_tutorial`
+    OPTIONS(location = '{REGION[0:2]}')
+"""
+job = bq.query(query = query)
+job.result()
+job.state
+```
+
 Create Model Using Remote Connection
 ```python
 # Create Remote Model In BigQuery
 query = f"""
-CREATE OR REPLACE MODEL `{PROJECT_ID}.bert_sentiment.bert_sentiment` AS
-    INPUT (test STRING)
-    OUTPUT(sentiment FLOAT64)
-    REMOTE WITH CONNECTION `{PROJECT_ID}.US.vertex_connect`
+CREATE OR REPLACE MODEL `{PROJECT_ID}.bqml_remote_model_tutorial.bert_sentiment`
+    INPUT (text STRING)
+    OUTPUT(classifier FLOAT64)
+    REMOTE WITH CONNECTION `{PROJECT_ID}.{REGION[0:2]}.bqml_remote_model_tutorial`
     OPTIONS(endpoint = 'https://{REGION}-aiplatform.googleapis.com/v1/{endpoint.resource_name}')
 """
 job = bq.query(query = query)
@@ -175,29 +250,59 @@ job.result()
 job.state
 ```
 
-## Step 6: Get Predictions!
+#### Step 3: Get Predictions with BigQuery ML.PREDICT
 
 ```python
 query = f"""
-
+SELECT *
+FROM ML.PREDICT (
+    MODEL `{PROJECT_ID}.bqml_remote_model_tutorial.bert_sentiment`,
+    (
+        SELECT review as text
+        FROM `bigquery-public-data.imdb.reviews`
+        LIMIT 10
+    )
+)
 """
-bq.query(query = query)
+bq.query(query = query).to_dataframe()
 ```
 
-## Step 7: Clean Up
+
+```python
+query = f"""
+SELECT *
+FROM ML.PREDICT (
+    MODEL `{PROJECT_ID}.bqml_remote_model_tutorial.bert_sentiment`,
+    (
+        SELECT review as text
+        FROM `bigquery-public-data.imdb.reviews`
+        LIMIT 10000
+    )
+)
+"""
+job = bq.query(query = query)
+```
+About 5.5 Minutes, scales up to 2 nodes at peak
+
+
+
+### Clean Up
 
 To avoid incurring ongoing charges to your Google Cloud account for the resoruces used in this tutorial, either delete the project that contains the resources, or keep the project and delete the individual resources.
 
-- endpoint
-- model
-- gcs
-- bq dataset
-- bq connection
-
 ```python
+# remove Vertex AI Prediction Endpoint
 endpoint.delete(force = True)
+
+# remove model in Vertex AI Model Registry
 model.delete()
+
+# remove model files in GCS
 #!gsutil rm -r gs://$PROJECT_ID/bqml/remote_model_tutorial
+
+# remove BigQuery Dataset (holds model definition)
 # bq data
-# bq connection
+
+# remove BigQuery Cloud Resource Connection
+!bq rm --connection {PROJECT_ID}.{REGION[0:2]}.bqml_remote_model_tutorial
 ```
