@@ -16,12 +16,12 @@ from google.cloud import storage
 import argparse
 import os
 import sys
+import hypertune
 
 # import argument to local variables
 parser = argparse.ArgumentParser()
 # the passed param, dest: a name for the param, default: if absent fetch this param from the OS, type: type to convert to, help: description of argument
 parser.add_argument('--penalty', dest = 'penalty', default = 'l2', type = str, help = 'Penalty term')
-parser.add_argument('--solver', dest = 'solver', default = 'newton-cg', type = str, help = 'Logistic regression solver')
 parser.add_argument('--var_target', dest = 'var_target', type=str)
 parser.add_argument('--var_omit', dest = 'var_omit', type=str)
 parser.add_argument('--project_id', dest = 'project_id', type=str)
@@ -33,6 +33,10 @@ parser.add_argument('--experiment', dest = 'experiment', type=str)
 parser.add_argument('--series', dest = 'series', type=str)
 parser.add_argument('--experiment_name', dest = 'experiment_name', type=str)
 parser.add_argument('--run_name', dest = 'run_name', type=str)
+
+# hyperparameters
+parser.add_argument('--solver', dest = 'solver', type = str, help = 'Logistic regression solver')
+parser.add_argument('--C', dest = 'C', type=float)
 args = parser.parse_args()
 
 # Model Training
@@ -42,6 +46,8 @@ VAR_OMIT = str(args.var_omit).split('-')
 # clients
 bq = bigquery.Client(project = args.project_id)
 aiplatform.init(project = args.project_id, location = args.region)
+hpt = hypertune.HyperTune()
+args.run_name = f'{args.run_name}-{hpt.trial_id}'
 
 # Vertex AI Experiment
 if args.run_name in [run.name for run in aiplatform.ExperimentRun.list(experiment = args.experiment_name)]:
@@ -49,6 +55,7 @@ if args.run_name in [run.name for run in aiplatform.ExperimentRun.list(experimen
 else:
     expRun = aiplatform.ExperimentRun.create(run_name = args.run_name, experiment = args.experiment_name)
 expRun.log_params({'experiment': args.experiment, 'series': args.series, 'project_id': args.project_id})
+expRun.log_params({'hyperparameter.C': args.C})
 
 # get schema from bigquery source
 query = f"SELECT * FROM {args.bq_project}.{args.bq_dataset}.INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{args.bq_table}'"
@@ -76,12 +83,12 @@ y_test = test[VAR_TARGET].astype('int')
 
 # Logistic Regression
 # instantiate the model 
-logistic = LogisticRegression(solver=args.solver, penalty=args.penalty)
+logistic = LogisticRegression(solver=args.solver, penalty=args.penalty, C=args.C)
 
 # Define a Standard Scaler to normalize inputs
 scaler = StandardScaler()
 
-expRun.log_params({'solver': args.solver, 'penalty': args.penalty})
+expRun.log_params({'solver': args.solver, 'penalty': args.penalty, 'C':args.C})
 
 # define pipeline
 pipe = Pipeline(steps=[("scaler", scaler), ("logistic", logistic)])
@@ -112,6 +119,11 @@ training_prec = metrics.precision_score(y_train, y_pred_training)
 training_rec = metrics.recall_score(y_train, y_pred_training)
 training_rocauc = metrics.roc_auc_score(y_train, y_pred_training)
 expRun.log_metrics({'training_accuracy': training_acc, 'training_precision':training_prec, 'training_recall': training_rec, 'training_roc_auc': training_rocauc})
+
+# report hypertune info back to Vertex AI Training > Hyperparamter Tuning Job
+hpt.report_hyperparameter_tuning_metric(
+    hyperparameter_metric_tag = 'roc_auc',
+    metric_value = val_rocauc)
 
 file_name = 'model.pkl'
 
