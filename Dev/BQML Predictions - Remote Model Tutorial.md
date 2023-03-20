@@ -9,9 +9,15 @@
 - (Modified it last layer activation function to sigmoid so that it can generate scores between 0-1)
 - deploy it with n1-standard-4 CPU (autoscaling 1-10)
 - It took around 40min to run on 10K dataset with batch size 64
-- Try T4 GPU to train and server
-
-
+- Try T4 GPU to train and serve
+- Next Draft
+    - use bigquery public.imdb.reviews for serving demo
+    - make sections: setup, create model, deploy on vertex, BQ Remote Model
+    - for setup: actually bring step in from other tutorials
+    - move bq remote connection setup into BQ Remote Model setup
+    - Make parameters for Project, region, using colab
+    - 128 is default batch size - just note this in description
+    - Make adaptable so user could start tutorial with model already saved in GCS
 
 ## Overview
 
