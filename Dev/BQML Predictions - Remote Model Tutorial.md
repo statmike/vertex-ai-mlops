@@ -1,35 +1,18 @@
 ![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2FDev&dt=BQML+Predictions+-+Remote+Model+Tutorial.md)
 
 # BQML Remote Model Tutorial
-# {IN DRAFT DEVELOPMENT}
-
-**Notes For Development**
-- [X] https://www.tensorflow.org/text/tutorials/classify_text_with_bert
-- [X] large BERT model: bert_en_cased_L-12_H-768_A-12
-- [X] (Modified it last layer activation function to sigmoid so that it can generate scores between 0-1)
-- [X] deploy it with n1-standard-4 CPU (autoscaling 1-10)
-- [X] It took around 40min to run on 10K dataset with batch size 64
-- [X] Try T4 GPU to train and serve
-- Next Draft
-    - use bigquery public.imdb.reviews for serving demo
-    - [X] make sections: setup, create model, deploy on vertex, BQ Remote Model
-    - for setup: actually bring step in from other tutorials
-    - move bq remote connection setup into BQ Remote Model setup
-    - Make parameters for Project, region, using colab
-    - 128 is default batch size - just note this in description
-    - Make adaptable so user could start tutorial with model already saved in GCS
 
 ## Overview
 
-BigQuery ML (BQML) allows you to use `SQL` to constuct an ML workflow.  This is a great leap in productivity and flexibility when the data source is BigQuery and users are already familiar with `SQL`. Using just `SQL` multiple techniques can be used for model training and even include hyperparameter tuning.  Predictions can be served directly in BigQuery which also include explainability. Models can be exported or even directly registered to Vertex AI model registry for online predictions on Vertex AI Endpoints.
+BigQuery ML (BQML) allows you to use `SQL` to constuct an ML workflow.  This is a great leap in productivity and flexibility when the data source is BigQuery and users are already familiar with `SQL`. Using just `SQL`, multiple techniques can be used for model training and even include hyperparameter tuning.  Predictions can be served directly in BigQuery which also includes explainability. Models can be exported or even directly registered to Vertex AI model registry for online predictions on Vertex AI Prediction Endpoints.
 
-BigQuery ML has had the capability to import TensorFlow models for inference within BigQuery.  Now you can register remote models and serve prediction within BigQuery.  This means a Vertex AI Prediction endpoint can be registered as a remote model and called directly from BigQuery with ML.Predict!
+BigQuery ML has had the capability to import TensorFlow models for inference within BigQuery.  Now you can also register remote models and serve prediction within BigQuery.  This means a Vertex AI Prediction endpoint can be registered as a remote model and called directly from BigQuery with [`ML.Predict`](https://cloud.google.com/bigquery-ml/docs/reference/standard-sql/bigqueryml-syntax-predict).
 
-This can be incredibly helpful when a model is too large to import into BigQuery, you want to use a single point of inference for online, batch, and micro-batches.  
+This can be incredibly helpful when a model is too large to import into BigQuery or when you want to use a single point of inference for online, batch, and micro-batches.  
 
 ## Tutorial
 
-This tutorial uses a customized sentiment analysis model by fine-tuning a BERT model with plain-text IMDB movie reviews.  The resulting model uses text input (movie reviews) and returns sentiment scores between (0, 1).  The model will be registered in Vertex AI Model Registry and served on a Vertex AI Prediction Endpoint.  From there the model will be added to BigQuery as a remote model.  Within BigQuery we will use the remote model to get sentiment predictions for a text column.
+This tutorial uses a customized sentiment analysis model by fine-tuning a BERT model with plain-text IMDB movie reviews.  The resulting model uses text input (movie reviews) and returns sentiment scores between (0, 1).  The model will be registered in [Vertex AI Model Registry](https://cloud.google.com/vertex-ai/docs/model-registry/introduction) and served on a [Vertex AI Prediction Endpoint](https://cloud.google.com/vertex-ai/docs/predictions/get-predictions#deploy_a_model_to_an_endpoint).  From there the model will be added to BigQuery as a remote model.  Within BigQuery we will use the remote model to get sentiment predictions for a text column (reviews of movies from the 100,000 row table `bigquery-public-data.imdb.reviews`.
 
 Contents:
 - [Tutorial Setup](#Tutorial-Setup)
@@ -39,11 +22,10 @@ Contents:
 - [Clean Up](#Clean-Up)
 
 ### Tutorial Setup
-This tutorial will use the following billable components of Google Cloud: Google Cloud Storage, Vertex AI, BigQuery and BigQuery Cloud Resource Connection.  At then end of the tutorial the billable components will be removed.
+This tutorial will use the following billable components of Google Cloud: Google Cloud Storage, Vertex AI, BigQuery, and BigQuery Cloud Resource Connection.  At then end of the tutorial the billable components will be removed.
 
 1. Click [here to Enable APIs](https://console.cloud.google.com/flows/enableapi?apiid=aiplatform.googleapis.com,storage-component.googleapis.com,bigqueryconnection.googleapis.com) for Vertex AI, Google Cloud Storage, and BigQuery Cloud Resource Connections.
-2. Vertex AI: Ensure that tasks 1-3 are completed from [Set up a Google Cloud Project and development environment](https://cloud.google.com/vertex-ai/docs/pipelines/configure-project#project)
-3. Google Cloud Storage: Create a Bucket in the default `US` multi-region [following these instructions](https://cloud.google.com/storage/docs/creating-buckets)
+2. Google Cloud Storage: Create a Bucket in the default `US` multi-region [following these instructions](https://cloud.google.com/storage/docs/creating-buckets)
 
 
 ### Create Model
@@ -53,8 +35,8 @@ This tutorial will use the following billable components of Google Cloud: Google
 TensorFlow tutorials include a sentiment analysis prediction model created by [fine-tuning a BERT model](https://www.tensorflow.org/text/tutorials/classify_text_with_bert) while adding a classification layer.  Start by going to this tutorials [notebook on GitHub](https://github.com/tensorflow/text/blob/master/docs/tutorials/classify_text_with_bert.ipynb) and clicking 'Run in Google Colab' - or directly here [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/tensorflow/text/blob/master/docs/tutorials/classify_text_with_bert.ipynb).
 
 **Two Options:**
-1. Use a pre-saved result of this tutorial to continue without recreating the model (skip to [Deploy Model on Vertex AI](#Deploy-Model-on-Vertex-AI))
-2. Run the tutorial with modification described here - it takes about an hour to run
+1. Use a pre-saved result of this tutorial (or another model altogether) to continue without recreating the model (skip to [Deploy Model on Vertex AI](#Deploy-Model-on-Vertex-AI))
+2. Run the tutorial with modification described here - **it takes about an hour to run**
     - Proceed with the tutorial and make modification and additions as indicated in this tutorial:
         - Before starting to run the cells change the compute
             - On the 'Runtime' menu select 'View Resources'
@@ -67,9 +49,9 @@ TensorFlow tutorials include a sentiment analysis prediction model created by [f
             - creates an encoding with length 768 (H)
             - and 12 attention heads (the core of BERT) to have 12 unique attention patterns for each input
         - In the section "Define your model" change the last layer to better map the output to a probability (0, 1):
-            - from `net = tf.keras.layers.Dense(1, activation=None, name='classifier')(net)`
-            - to `net = tf.keras.layers.Dense(1, activation='sigmoid', name='classifier')(net)`.
-        - In the section "Export for inference" the lines that create results need to be modified now that the activation function has been changed:
+            - from: `net = tf.keras.layers.Dense(1, activation=None, name='classifier')(net)`
+            - to: `net = tf.keras.layers.Dense(1, activation='sigmoid', name='classifier')(net)`.
+        - In the section "Export for inference" the lines that create results need to be modified now that the activation function has been changed above:
             - from:
                 - `reloaded_results = tf.sigmoid(reloaded_model(tf.constant(examples)))`
                 - `original_results = tf.sigmoid(classifier_model(tf.constant(examples)))`
@@ -81,6 +63,8 @@ TensorFlow tutorials include a sentiment analysis prediction model created by [f
 ### Deploy Model on Vertex AI
 
 At the bottom of the notebook the model is saved to the disk of the Colab notebook.  In these steps we will add code cell to the bottom of the notebook to (step 1) move the saved model to Google Cloud Storage, (step 2) register the model in the Vertex AI Model Registry and (step 3) deploy the model to a Vertex AI Prediction Endpoint.
+
+#### Step 1: Setup Environment and Connect to GCP
 
 First, install Vertex AI SDK and restart kernel:
 ```python
@@ -94,7 +78,7 @@ app.kernel.do_shutdown(True)
 ```
 
 Second, add a new code cell that defines parameters:
-```
+```python
 # Define parameters
 REGION = 'us-central1'
 PROJECT_ID = 'statmike-mlops-349915'
@@ -110,7 +94,7 @@ auth.authenticate_user()
 !gcloud config set project {PROJECT_ID}
 ```
 
-#### Step 1: Move the model to Google Cloud Storage (GCS)
+#### Step 2: Move the model to Google Cloud Storage (GCS)
 
 If you chose to skip running the notebook and use a pre-built version of the model then the next step is to add this code cell:
 
@@ -128,7 +112,7 @@ Copy the model to Google Cloud Storage:
 !gsutil cp -r $saved_model_path gs://$PROJECT_ID/bqml/remote_model_tutorial
 ```
 
-#### Step 2: Register the Model In Vertex AI Model Registry
+#### Step 3: Register the Model In Vertex AI Model Registry
 
 This step will register the model in the [Vertex AI Model Registry](https://cloud.google.com/vertex-ai/docs/model-registry/introduction).
 
@@ -155,23 +139,23 @@ Review the models Information:
 model.display_name, model.name, model.uri
 ```
 
-#### Step 3: Deploy the Model to Vertex AI Prediction Endpoint
+#### Step 4: Deploy the Model to Vertex AI Prediction Endpoint
 
 This step will deploy the model from the Vertex AI Model Registry (Step 3) to a [Vertex AI Prediction Endpoint](https://cloud.google.com/vertex-ai/docs/predictions/get-predictions#get_online_predictions).
 
-Deploy the model using the Vertex AI Python SDK [Model.deploy](https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform.Model#google_cloud_aiplatform_Model_deploy) method:
-
+Deploy the model using the Vertex AI Python SDK [Model.deploy](https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform.Model#google_cloud_aiplatform_Model_deploy) method.  Here the replica counts are specified in a range of 1 (minimum) to 3 (maximum) and will scale based on traffic volumes and latency.
 ```python
 # Deploy model to new endpoint
 endpoint = model.deploy(
     min_replica_count = 1,
-    max_replica_count = 5,
+    max_replica_count = 3,
     accelerator_type = 'NVIDIA_TESLA_T4',
     accelerator_count = 1,
     machine_type = 'n1-standard-4'
 )
 ```
 
+Define the same examples from the tutorial above:
 ```python
 # redefine the examples from tutorial
 examples = [
@@ -183,22 +167,27 @@ examples = [
 ]
 ```
 
+Request predictions for the examples:
 ```python
 # test endpoint with examples
 endpoint.predict(instances = examples).predictions
 ```
 
+Compare to the result from the tutorial above and note that they are the same since they are served from the same model that has been relocated and deployed in Vertex AI Prediction Endpoints.
+
 ### BigQuery ML Remote Model
 
-Creating a BigQuery ML Remote Model has two components: a BigQuery Cloud Resource Connection and a remote model that uses the connection.
+Creating a BigQuery ML Remote Model has two components: a [BigQuery Cloud Resource Connection](https://cloud.google.com/bigquery/docs/create-cloud-resource-connection) and a BigQuery Remote Model that uses the connection.
 
 #### Step 1: Create a BigQuery Cloud Resource Connection
 
+Create the cloud resource connection:
 ```python
 # create BigQuery Cloud Resource Connection
 !bq mk --connection --location={REGION[0:2]} --project_id={PROJECT_ID} --connection_type=CLOUD_RESOURCE bqml_remote_model_tutorial
 ```
 
+Retrieve the service account associated with the cloud resource connection:
 ```python
 # retrieve the service account for the BigQuery Cloud Resource Connection
 import json
@@ -209,6 +198,7 @@ service_account = bqml_connection['cloudResource']['serviceAccountId']
 service_account
 ```
 
+Assign the service account [Vertex AI user role](https://cloud.google.com/vertex-ai/docs/general/access-control#aiplatform.user):
 ```python
 # assign vertex ai user role to the service account of the BigQuery Cloud Resource Connection
 !gcloud projects add-iam-policy-binding {PROJECT_ID} --member=serviceAccount:{service_account} --role=roles/aiplatform.user
@@ -216,7 +206,7 @@ service_account
 
 #### Step 2: Create a BigQuery Dataset and Remote Model
 
-Import and Initialize BigQuery Client
+Import and initialize a BigQuery Client:
 ```python
 # BigQuery Client
 from google.cloud import bigquery
@@ -233,6 +223,12 @@ CREATE SCHEMA IF NOT EXISTS `{PROJECT_ID}.bqml_remote_model_tutorial`
 job = bq.query(query = query)
 job.result()
 job.state
+```
+
+To see the input and output specification for the TensorFlow model use the [SavedModel CLI](https://www.tensorflow.org/guide/saved_model#details_of_the_savedmodel_command_line_interface):
+```python
+# Inspect model inputs and outpus with SavedModel CLI
+!saved_model_cli show --dir {model.uri} --all
 ```
 
 Create Model Using Remote Connection
@@ -252,6 +248,8 @@ job.state
 
 #### Step 3: Get Predictions with BigQuery ML.PREDICT
 
+Get predictions from the remote model within BigQuery using the `ML.PREDICT` function.  This sened records from the query statment to the remote model for serving prediction back to BigQuery as a single function call.
+
 ```python
 query = f"""
 SELECT *
@@ -268,6 +266,7 @@ bq.query(query = query).to_dataframe()
 ```
 
 
+Use the remote model to server a large batch of prediction.  Here 10k records are selected and sent for prediction.  The remote model defaults to a batch size of 128 instances for its requests.
 ```python
 query = f"""
 SELECT *
@@ -281,10 +280,9 @@ FROM ML.PREDICT (
 )
 """
 job = bq.query(query = query)
+job.result()
+print(job.state, f'in {(job.ended-job.started).total_minutes()/60} minutes')
 ```
-About 5.5 Minutes, scales up to 2 nodes at peak
-
-
 
 ### Clean Up
 
@@ -301,8 +299,8 @@ model.delete()
 #!gsutil rm -r gs://$PROJECT_ID/bqml/remote_model_tutorial
 
 # remove BigQuery Dataset (holds model definition)
-# bq data
+# bq rm -r -f -d {PROJECT_ID}.bqml_remote_model_tutorial
 
 # remove BigQuery Cloud Resource Connection
-!bq rm --connection {PROJECT_ID}.{REGION[0:2]}.bqml_remote_model_tutorial
+#!bq rm --connection {PROJECT_ID}.{REGION[0:2]}.bqml_remote_model_tutorial
 ```
