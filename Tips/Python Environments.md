@@ -99,6 +99,8 @@ pip install virtualenv
 
 ### Define a `virtualenv`
 
+This will create a folder in the local directory with the name `<name-env>`.
+
 ```
 virtualenv <name-env>
 ```
@@ -109,6 +111,18 @@ Once activated, the current version on Python will run with this virtual environ
 
 ```
 source <name-env>/bin/activate
+```
+
+### Check For Currently Activated `virtualenv`
+
+```
+echo $VIRTUAL_ENV
+```
+
+or, note the active install location for `pip` with:
+
+```
+pip -V
 ```
 
 ### Install Packages in `virtualenv`
