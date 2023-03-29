@@ -8,8 +8,8 @@ This series will use bike Citibike rentals in New York city. The bike stations n
 
 <p align="center" width="100%">
     <img src="../architectures/notebooks/applied/forecasting/citibike_central_park_s_6_ave.jpg" width="25%">
+    <h3 align="center">Central Park S & 6th Avenue</h3>
 </p>
-<center>Central Park S & 6th Avenue</center>
 
 **Prerequisites**
 - [00 - Setup.ipynb](../00%20-%20Setup/00%20-%20Environment%20Setup.ipynb)
