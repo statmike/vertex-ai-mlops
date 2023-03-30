@@ -7,7 +7,7 @@ This series of notebooks highlights the use of Vertex AI for forecasting workflo
 This series will use bike Citibike rentals in New York city. The bike stations near central park will be selected and the daily number bike trips that orignate from these stations will be followed over time. This will be complicated as new stations are introduced over time and some stations only have the most recent few months, or just weeks of data.  The data are found in the BigQuery Public datasets at: `bigquery-public-data.new_york.citibike_trips`.
 
 <p align="center" width="100%">
-    <img src="../architectures/notebooks/applied/forecasting/citibike_central_park_s_6_ave.jpg" width="25%">
+    <center><img src="../architectures/notebooks/applied/forecasting/citibike_central_park_s_6_ave.jpg" width="25%"></center>
     <h4 align="center">Central Park S & 6th Avenue</h4>
 </p>
 
