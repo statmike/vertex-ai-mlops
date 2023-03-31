@@ -7,7 +7,7 @@ This series of notebooks highlights the use of Vertex AI for forecasting workflo
 This series will use bike Citibike rentals in New York city. The bike stations near central park will be selected and the daily number bike trips that orignate from these stations will be followed over time. This will be complicated as new stations are introduced over time and some stations only have the most recent few months, or just weeks of data.  The data are found in the BigQuery Public datasets at: `bigquery-public-data.new_york.citibike_trips`.
 
 <p align="center" width="100%">
-    <center><img src="../architectures/notebooks/applied/forecasting/citibike_central_park_s_6_ave.jpg" width="25%"></center>
+    <img src="../architectures/notebooks/applied/forecasting/citibike_central_park_s_6_ave.jpg" width="25%">
     <h4 align="center">Central Park S & 6th Avenue</h4>
 </p>
 
@@ -15,7 +15,7 @@ This series will use bike Citibike rentals in New York city. The bike stations n
 - [00 - Setup.ipynb](../00%20-%20Setup/00%20-%20Environment%20Setup.ipynb)
 
 ## Notebooks:
-- [1 - BigQuery Time Series Forecasting Data Review and Preparation](./1%20-%20BigQuery%20Time%20Series%20Forecasting%20Data%20Review%20and%20Preparation.ipynb)
+- [BigQuery Time Series Forecasting Data Review and Preparation](./BigQuery%20Time%20Series%20Forecasting%20Data%20Review%20and%20Preparation.ipynb)
 - [2 - BQML Univariate Forecasting with ARIMA+](./2%20-%20BQML%20Univariate%20Forecasting%20with%20ARIMA+.ipynb)
 - [BQML Multivariate Forecasting with ARIMA+ with XREG](./BQML%20Multivariate%20Forecasting%20with%20ARIMA+%20XREG.ipynb)
 - [BQML Regression Based Forecasting](./BQML%20Regression%20Based%20Forecasting.ipynb)
