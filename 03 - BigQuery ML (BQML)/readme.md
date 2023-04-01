@@ -41,8 +41,9 @@ Machine Learning with SQL using [BigQuery ML (BQML)](https://cloud.google.com/bi
     - [BQML AutoML](../02%20-%20Vertex%20AI%20AutoML/BQML%20AutoML.ipynb)
 - [Applied Forecasting](../Applied%20Forecasting/readme.md)/
     - [BigQuery Time Series Forecasting Data Review and Preparation](../Applied%20Forecasting/BigQuery%20Time%20Series%20Forecasting%20Data%20Review%20and%20Preparation.ipynb)
-    - [2 - BQML Univariate Forecasting with ARIMA+](../Applied%20Forecasting/2%20-%20BQML%20Univariate%20Forecasting%20with%20ARIMA+.ipynb)
+    - [BQML Univariate Forecasting with ARIMA+](../Applied%20Forecasting/BQML%20Univariate%20Forecasting%20with%20ARIMA+.ipynb)
     - [BQML Multivariate Forecasting with ARIMA+ XREG](../Applied%20Forecasting/BQML%20Multivariate%20Forecasting%20with%20ARIMA+%20XREG.ipynb)
+    - [BQML Regression Based Forecasting](../Applied%20Forecasting/BQML%20Regression%20Based%20Forecasting.ipynb)
     - [8 - Vertex AI Pipelines - Forecasting Tournament - BQML + AutoML + Prophet](../Applied%20Forecasting/8%20-%20Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20-%20BQML%20+%20AutoML%20+%20Prophet.ipynb)
 
 ---
