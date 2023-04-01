@@ -2,9 +2,13 @@
 
 # /Applied Forecasting/readme.md
 
-This series of notebooks highlights the use of Vertex AI for forecasting workflows.  These use techniques in BigQuery ML (BQML), Vertex AI AutoML Forecasting, and custom methods like OSS Prophet.
+**Series Introduction: Applied Forecasting**
 
-This series will use bike Citibike rentals in New York city. The bike stations near central park will be selected and the daily number bike trips that orignate from these stations will be followed over time. This will be complicated as new stations are introduced over time and some stations only have the most recent few months, or just weeks of data.  The data are found in the BigQuery Public datasets at: `bigquery-public-data.new_york.citibike_trips`.
+This series explores forecasting with Vertex AI, BigQuery ML, and additional open source frameworks.  Forecasting consist of following a measurement over time and exploring trends, the impact of seasonality (years, months, days, etc), holidays, and special events with the hope of using these insights to forecast into the near future.  Some method also incoporate observable measurements that impact demand to understand the relationships and make forecasting more accurate.
+
+**Data Source: Citibike rentals in New York City**
+
+This series will use Citibike rentals in New York city.  The bike stations near central park will be selected and the daily number bike trips that orignate from these stations will be followed over time.  This will illustrate some common forecasting issues due to new stations being introduced over time and some stations only have the most recent few months, or just weeks of data.  The data are found in the BigQuery Public datasets at: `bigquery-public-data.new_york.citibike_trips`.
 
 <p align="center" width="100%">
     <img src="../architectures/notebooks/applied/forecasting/citibike_central_park_s_6_ave.jpg" width="25%">
@@ -12,9 +16,11 @@ This series will use bike Citibike rentals in New York city. The bike stations n
 </p>
 
 **Prerequisites**
-- [00 - Setup.ipynb](../00%20-%20Setup/00%20-%20Environment%20Setup.ipynb)
+- Environment Setup with: [00 - Setup.ipynb](../00%20-%20Setup/00%20-%20Environment%20Setup.ipynb)
 
 ## Notebooks:
+This list is in the suggest order of review for anyone getting an overview and learning about forecasting approaches throughout GCP.  It is also ok to pick an particular notebook of interest and if there are dependencies on prior notebooks they will be listed in the **prerequisites** section at the top of the notebook.
+
 - 1 - [BigQuery Time Series Forecasting Data Review and Preparation](./BigQuery%20Time%20Series%20Forecasting%20Data%20Review%20and%20Preparation.ipynb)
 - [2 - BQML Univariate Forecasting with ARIMA+](./2%20-%20BQML%20Univariate%20Forecasting%20with%20ARIMA+.ipynb)
 - [BQML Multivariate Forecasting with ARIMA+ with XREG](./BQML%20Multivariate%20Forecasting%20with%20ARIMA+%20XREG.ipynb)
@@ -28,13 +34,26 @@ This series will use bike Citibike rentals in New York city. The bike stations n
 - Vertex AI - Pipeline - Prophet Forecasting
 - [6 - Vertex AI Custom Model - Forecasting with Prophet - In Notebook](./6%20-%20Vertex%20AI%20Custom%20Model%20-%20Forecasting%20with%20Prophet%20-%20In%20Notebook.ipynb)
 - [7 - Vertex AI Custom Model - Forecasting with Prophet - Custom Job With Custom Container](./7%20-%20Vertex%20AI%20Custom%20Model%20-%20Forecasting%20with%20Prophet%20-%20Custom%20Job%20With%20Custom%20Container.ipynb)
-- [8 - Vertex AI Pipelines - Forecasting Tournament - BQML + AutoML + Prophet](./8%20-%20Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20-%20BQML%20+%20AutoML%20+%20Prophet.ipynb)
 
-## Forecasting Pipelines
+
+**Forecasting Pipelines**
 For more details starting point using Pipelines for forecasting I highly recomment [this repository](https://github.com/tottenjordan/vertex-forecas-repo) from coworker Jordan Totten!
 
+- [8 - Vertex AI Pipelines - Forecasting Tournament - BQML + AutoML + Prophet](./8%20-%20Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20-%20BQML%20+%20AutoML%20+%20Prophet.ipynb)
 
 **Notes**
+
+
+
+
+
+
+
+
+
+
+
+
 
 ---
 ToDo:

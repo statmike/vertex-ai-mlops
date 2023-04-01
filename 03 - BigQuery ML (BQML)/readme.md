@@ -9,7 +9,7 @@ Machine Learning with SQL using [BigQuery ML (BQML)](https://cloud.google.com/bi
 - [01 - BigQuery - Table Data Source.ipynb](../01%20-%20Data%20Sources/01%20-%20BigQuery%20-%20Table%20Data%20Source.ipynb)
 
 ## This series of notebooks will introduce BigQuery ML (BQML) with a focus on classification methods.
-- [03 - Introduction to BigQuery ML (BQML)](03%20-%20Introduction%20to%20BigQuery%20ML%20(BQML).ipynb)
+- 1 - [Introduction to BigQuery ML (BQML)](Introduction%20to%20BigQuery%20ML%20(BQML).ipynb)
 - [03a - BQML Logistic Regression](03a%20-%20BQML%20Logistic%20Regression.ipynb)
 - [03b - BQML Boosted Trees](03b%20-%20BQML%20Boosted%20Trees.ipynb)
 - [03c - BQML Random Forest](03c%20-%20BQML%20Random%20Forest.ipynb)
