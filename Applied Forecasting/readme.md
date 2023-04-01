@@ -21,25 +21,29 @@ This series will use Citibike rentals in New York city.  The bike stations near 
 ## Notebooks:
 This list is in the suggest order of review for anyone getting an overview and learning about forecasting approaches throughout GCP.  It is also ok to pick an particular notebook of interest and if there are dependencies on prior notebooks they will be listed in the **prerequisites** section at the top of the notebook.
 
-- 1 - [BigQuery Time Series Forecasting Data Review and Preparation](./BigQuery%20Time%20Series%20Forecasting%20Data%20Review%20and%20Preparation.ipynb)
-- 2 - [BQML Univariate Forecasting with ARIMA+](./BQML%20Univariate%20Forecasting%20with%20ARIMA+.ipynb)
-- 3 - [BQML Multivariate Forecasting with ARIMA+ XREG](./BQML%20Multivariate%20Forecasting%20with%20ARIMA+%20XREG.ipynb)
-- 4 - [BQML Regression Based Forecasting](./BQML%20Regression%20Based%20Forecasting.ipynb)
-- [3 - Vertex AI AutoML Forecasting - GCP Console (no code)](./3%20-%20Vertex%20AI%20AutoML%20Forecasting%20-%20GCP%20Console%20(no%20code).ipynb)
-- [4 - Vertex AI AutoML Forecasting - Python client](./4%20-%20Vertex%20AI%20AutoML%20Forecasting%20-%20Python%20client.ipynb)
-- [5 - Vertex AI AutoML Forecasting - multiple scenarios](./5%20-%20Vertex%20AI%20AutoML%20Forecasting%20-%20multiple%20scenarios.ipynb)
-- Vertex AI - Seq2Seq+ Forecasting
-- Vertex AI - Temporal Fusion Transformer Forecasting
-- Vertex AI - Pipeline - BQML ARIMA+ Forecasting
-- Vertex AI - Pipeline - Prophet Forecasting
-- [6 - Vertex AI Custom Model - Forecasting with Prophet - In Notebook](./6%20-%20Vertex%20AI%20Custom%20Model%20-%20Forecasting%20with%20Prophet%20-%20In%20Notebook.ipynb)
-- [7 - Vertex AI Custom Model - Forecasting with Prophet - Custom Job With Custom Container](./7%20-%20Vertex%20AI%20Custom%20Model%20-%20Forecasting%20with%20Prophet%20-%20Custom%20Job%20With%20Custom%20Container.ipynb)
+- Data Source:
+    - 1 - [BigQuery Time Series Forecasting Data Review and Preparation](./BigQuery%20Time%20Series%20Forecasting%20Data%20Review%20and%20Preparation.ipynb)
+- BigQuery ML:
+    - 2 - [BQML Univariate Forecasting with ARIMA+](./BQML%20Univariate%20Forecasting%20with%20ARIMA+.ipynb)
+    - 3 - [BQML Multivariate Forecasting with ARIMA+ XREG](./BQML%20Multivariate%20Forecasting%20with%20ARIMA+%20XREG.ipynb)
+    - 4 - [BQML Regression Based Forecasting](./BQML%20Regression%20Based%20Forecasting.ipynb)
+- Vertex AI AutoML:
+    - [3 - Vertex AI AutoML Forecasting - GCP Console (no code)](./3%20-%20Vertex%20AI%20AutoML%20Forecasting%20-%20GCP%20Console%20(no%20code).ipynb)
+    - [4 - Vertex AI AutoML Forecasting - Python client](./4%20-%20Vertex%20AI%20AutoML%20Forecasting%20-%20Python%20client.ipynb)
+    - [5 - Vertex AI AutoML Forecasting - multiple scenarios](./5%20-%20Vertex%20AI%20AutoML%20Forecasting%20-%20multiple%20scenarios.ipynb)
+- Vertex AI Other:
+    - Vertex AI - Seq2Seq+ Forecasting
+    - Vertex AI - Temporal Fusion Transformer Forecasting
+- Vertex AI Custom Models:
+    - [6 - Vertex AI Custom Model - Forecasting with Prophet - In Notebook](./6%20-%20Vertex%20AI%20Custom%20Model%20-%20Forecasting%20with%20Prophet%20-%20In%20Notebook.ipynb)
+    - [7 - Vertex AI Custom Model - Forecasting with Prophet - Custom Job With Custom Container](./7%20-%20Vertex%20AI%20Custom%20Model%20-%20Forecasting%20with%20Prophet%20-%20Custom%20Job%20With%20Custom%20Container.ipynb)
+- Vertex AI Pipelines:
+    - Vertex AI - Pipeline - BQML ARIMA+ Forecasting
+    - Vertex AI - Pipeline - Prophet Forecasting
+    - [8 - Vertex AI Pipelines - Forecasting Tournament - BQML + AutoML + Prophet](./8%20-%20Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20-%20BQML%20+%20AutoML%20+%20Prophet.ipynb)
+    - **Forecasting Pipelines** For more detailed starting points using Pipelines for forecasting I highly recomment [this repository](https://github.com/tottenjordan/vertex-forecas-repo) from coworker Jordan Totten!
 
 
-**Forecasting Pipelines**
-For more details starting point using Pipelines for forecasting I highly recomment [this repository](https://github.com/tottenjordan/vertex-forecas-repo) from coworker Jordan Totten!
-
-- [8 - Vertex AI Pipelines - Forecasting Tournament - BQML + AutoML + Prophet](./8%20-%20Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20-%20BQML%20+%20AutoML%20+%20Prophet.ipynb)
 
 **Notes**
 
