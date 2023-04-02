@@ -15,6 +15,12 @@ Vertex AI AutoML accelerate the workflow of creating an ML model by preprocessin
 - 02b - Vertex AI - AutoML with clients (code).ipynb
 - 02c - Vertex AI > Pipelines - AutoML with clients (code) in automated pipeline.ipynb
 
+## Additional AutoML techniques are explored throughout this repository:
+- AutoML Forecasting:
+    - [Vertex AI AutoML Forecasting - GCP Console (no code)](../Applied%20Forecasting/Vertex%20AI%20AutoML%20Forecasting%20-%20GCP%20Console%20(no%20code).ipynb)
+    - [Vertex AI AutoML Forecasting - Python client](../Applied%20Forecasting/Vertex%20AI%20AutoML%20Forecasting%20-%20Python%20client.ipynb)
+    - [Vertex AI AutoML Forecasting - multiple simultaneously](../Applied%20Forecasting/Vertex%20AI%20AutoML%20Forecasting%20-%20multiple%20simultaneously.ipynb)  
+
 **Notes:**
 
 
