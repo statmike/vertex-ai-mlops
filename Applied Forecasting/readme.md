@@ -19,7 +19,9 @@ This series will use Citibike rentals in New York city.  The bike stations near 
 - Environment Setup with: [00 - Setup.ipynb](../00%20-%20Setup/00%20-%20Environment%20Setup.ipynb)
 
 ## Notebooks:
-This list is in the suggest order of review for anyone getting an overview and learning about forecasting approaches throughout GCP.  It is also ok to pick an particular notebook of interest and if there are dependencies on prior notebooks they will be listed in the **prerequisites** section at the top of the notebook.
+This list is in the suggested order of review for anyone getting an overview and learning about forecasting approaches throughout GCP.  It is also ok to pick a particular notebook of interest and if there are dependencies on prior notebooks they will be listed in the **prerequisites** section at the top of the notebook.  
+
+>The notebooks are designed to be editable for trying with other data sources.  The same parameter names are used across the notebooks to also help when trying multiple methods on a custom data source.
 
 - Data Source:
     - 1 - [BigQuery Time Series Forecasting Data Review and Preparation](./BigQuery%20Time%20Series%20Forecasting%20Data%20Review%20and%20Preparation.ipynb)
@@ -35,12 +37,12 @@ This list is in the suggest order of review for anyone getting an overview and l
     - 8 - [Vertex AI Seq2Seq+ Forecasting - Python client](./Vertex%20AI%20Seq2Seq+%20Forecasting%20-%20Python%20client.ipynb)
     - 9 - [Vertex AI Temporal Fusion Transformer Forecasting - Python client](./Vertex%20AI%20Temporal%20Fusion%20Transformer%20Forecasting%20-%20Python%20client.ipynb)
 - Vertex AI Custom Models:
-    - [Vertex AI Custom Model - Prophet - In Notebook](./Vertex%20AI%20Custom%20Model%20-%20Prophet%20-%20In%20Notebook.ipynb)
-    - [Vertex AI Custom Model - Prophet - Custom Job With Custom Container](./Vertex%20AI%20Custom%20Model%20-%20Prophet%20-%20Custom%20Job%20With%20Custom%20Container.ipynb)
+    - 10 - [Vertex AI Custom Model - Prophet - In Notebook](./Vertex%20AI%20Custom%20Model%20-%20Prophet%20-%20In%20Notebook.ipynb)
+    - 11 - [Vertex AI Custom Model - Prophet - Custom Job With Custom Container](./Vertex%20AI%20Custom%20Model%20-%20Prophet%20-%20Custom%20Job%20With%20Custom%20Container.ipynb)
 - Vertex AI Pipelines:
-    - [Vertex AI Pipelines - BQML ARIMA+](./Vertex%20AI%20Pipelines%20-%20BQML%20ARIMA+.ipynb)
-    - [Vertex AI Pipelines - Prophet](./Vertex%20AI%20Pipelines%20-%20Prophet.ipynb)
-    - [Vertex AI Pipelines - Forecasting Tournament with Kubeflow Pipelines (KFP)](./Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20with%20Kubeflow%20Pipelines%20(KFP).ipynb)
+    - 12 - [Vertex AI Pipelines - BQML ARIMA+](./Vertex%20AI%20Pipelines%20-%20BQML%20ARIMA+.ipynb)
+    - 13 - [Vertex AI Pipelines - Prophet](./Vertex%20AI%20Pipelines%20-%20Prophet.ipynb)
+    - 14 - [Vertex AI Pipelines - Forecasting Tournament with Kubeflow Pipelines (KFP)](./Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20with%20Kubeflow%20Pipelines%20(KFP).ipynb)
     - **Forecasting Pipelines** For more detailed starting points using Pipelines for forecasting I highly recomment [this repository](https://github.com/tottenjordan/vertex-forecas-repo) from coworker Jordan Totten!
 
 
@@ -48,51 +50,24 @@ This list is in the suggest order of review for anyone getting an overview and l
 **Notes**
 
 
-
-
-
-
-
-
-
-
-
-
-
 ---
 ToDo:
-- [X] add prereq to readme
-- [X] Update references to Service Account and check for permissions - reference the 00 notebooks new section for correct setup
-- [X] Describe the data source in the readme file
-- [X] BQML: Add ARIMA_PLUS_XREG example
-    - [X] add covariate creation to notebook 1
-    - [X] update plots to also show covariates over time
-- [IP] full update pass to bring this project up to standards of 05, 03, and others:
-    - [X] 1 Data review in BigQuery
-        - [X] Move BigQuery client examples to Tips/BigQuery - Python Client
-        - [X] format overview section like 03/05 and others (not using headers)
-        - [X] parameterize SERIES and EXPERIMENT to replace DATANAME and NOTEBOOK
-        - [X] reformat query to not use bq_runner, just simple bq.query(query)
-        - [X] add input `viz_limit = 12` and use throughout to limit visuzlization (and pandas) number of time_series displayed
-        - [X] parameterize time series variables like 8: TIME_COLULMN, TARGET_COLUMN, SERIES_COLUMN
-        - [X] parameterize queries and move editable part to top of notebook - ease of customization for new data sources
-        - [IP] add bokeh plot
-    - [X] 2 BQML Univariate Forecasting
-        - [X] format overview section like 03/05 and others (not using headers)
-        - [X] parameterize SERIES and EXPERIMENT to replace DATANAME and NOTEBOOK
-        - [X] reformat query to not use bq_runner, just simple bq.query(query)
-        - [X] add input `viz_limit = 12` and use throughout to limit visuzlization (and pandas) number of time_series displayed
-        - [X] parameterize time series variables like 8: TIME_COLULMN, TARGET_COLUMN, SERIES_COLUMN
-        - [X] parameterize queries and move editable part to top of notebook - ease of customization for new data sources
-        - [IP] add bokeh plot
-    - [ ] 3 AutoML Console
-    - [ ] 4 AutoML Python Client
-    - [ ] 5 AutoML Python Client for multiple scenarios
-    - [ ] 6 Prophet in notebook
-    - [ ] 7 Prophet in Custom Job
-    - [ ] 8 Tournament
-- [ ] Turn 8 into solution: register components to artifact registry and build pipelines dynamically
-- 08 Update
+- [X] Finish 13
+- [X] Finish 12
+- parameter updates for
+    - [X] 1
+    - [ ] 2
+    - [ ] 3
+    - [ ] 4
+- [ ] full update for 6
+- [ ] full update for 7
+- [ ] create 8 based on 6
+- [ ] create 9 based on 6
+- [ ] full update for 5
+- [ ] full update for 10
+- [ ] full update for 11
+- [ ] Turn 14 into solution: register components to artifact registry and build pipelines dynamically
+- 14 Update
     - [ ] add ARIMA_PLUS_XREG - wait for GA and time_series_id parameter
     - [ ] add more open source methods - a dask based would be good
         - sktime
@@ -100,7 +75,7 @@ ToDo:
         - GluonTS
         - Darts
 - Price optimization example like: https://cloud.google.com/blog/products/ai-machine-learning/price-optimization-using-vertex-ai-forecast
-
+---
 
 
 
