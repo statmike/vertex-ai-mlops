@@ -56,9 +56,9 @@ ToDo:
 - [X] Finish 12
 - parameter updates for
     - [X] 1
-    - [ ] 2
-    - [ ] 3
-    - [ ] 4
+    - [X] 2
+    - [X] 3
+    - [X] 4
 - [ ] full update for 6
 - [ ] full update for 7
 - [ ] create 8 based on 6
