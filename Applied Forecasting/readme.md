@@ -59,14 +59,21 @@ ToDo:
     - [X] 2
     - [X] 3
     - [X] 4
-- [ ] full update for 6
+- [X] full update for 6
 - [ ] full update for 7
-- [ ] create 8 based on 6
-- [ ] create 9 based on 6
+- [X] create 8 based on 6
+- [X] create 9 based on 6
 - [ ] full update for 5
 - [ ] full update for 10
 - [ ] full update for 11
 - [ ] Turn 14 into solution: register components to artifact registry and build pipelines dynamically
+- Issues To Investigate:
+    - 11 complete when bug is fixed
+    - 12 and 13 - Clean up link to bucket, staging bucket for GCS. Understand what goes where.
+    - 1,2,3,4 Consider pring all BQ query's out so they can be copy/pasted to console. 
+    - 5 through 9 - Batch predictions - carry down known covariates into horizon
+    - 5 through 9 - explanations?
+    - 5 through 9 - get evaluations from Model Registry
 - 14 Update
     - [ ] add ARIMA_PLUS_XREG - wait for GA and time_series_id parameter
     - [ ] add more open source methods - a dask based would be good
