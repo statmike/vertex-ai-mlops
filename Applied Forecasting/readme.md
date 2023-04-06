@@ -63,7 +63,7 @@ ToDo:
 - [ ] full update for 7
 - [X] create 8 based on 6
 - [X] create 9 based on 6
-- [ ] full update for 5
+- [X] full update for 5
 - [ ] full update for 10
 - [ ] full update for 11
 - [ ] Turn 14 into solution: register components to artifact registry and build pipelines dynamically
