@@ -60,7 +60,7 @@ ToDo:
     - [X] 3
     - [X] 4
 - [X] full update for 6
-- [ ] full update for 7
+- [X] full update for 7
 - [X] create 8 based on 6
 - [X] create 9 based on 6
 - [X] full update for 5
@@ -71,6 +71,7 @@ ToDo:
     - 11 complete when bug is fixed
     - 12 and 13 - Clean up link to bucket, staging bucket for GCS. Understand what goes where.
     - 1,2,3,4 Consider pring all BQ query's out so they can be copy/pasted to console. 
+    - 4 address horizon predictions and related challenges
     - 5 through 9 - Batch predictions - carry down known covariates into horizon
     - 5 through 9 - explanations?
     - 5 through 9 - get evaluations from Model Registry
