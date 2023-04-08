@@ -43,7 +43,7 @@ This list is in the suggested order of review for anyone getting an overview and
     - 12 - [Vertex AI Pipelines - BQML ARIMA+](./Vertex%20AI%20Pipelines%20-%20BQML%20ARIMA+.ipynb)
     - 13 - [Vertex AI Pipelines - Prophet](./Vertex%20AI%20Pipelines%20-%20Prophet.ipynb)
     - 14 - [Vertex AI Pipelines - Forecasting Tournament with Kubeflow Pipelines (KFP)](./Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20with%20Kubeflow%20Pipelines%20(KFP).ipynb)
-    - **Forecasting Pipelines** For more detailed starting points using Pipelines for forecasting I highly recomment [this repository](https://github.com/tottenjordan/vertex-forecas-repo) from coworker Jordan Totten!
+    - **Forecasting Pipelines** For more detailed starting points using Pipelines for forecasting I highly recommend [this repository](https://github.com/tottenjordan/vertex-forecas-repo) from coworker Jordan Totten!
 
 
 
@@ -52,36 +52,32 @@ This list is in the suggested order of review for anyone getting an overview and
 
 ---
 ToDo:
-- [X] Finish 13
-- [X] Finish 12
-- parameter updates for
-    - [X] 1
-    - [X] 2
-    - [X] 3
-    - [X] 4
-- [X] full update for 6
-- [X] full update for 7
-- [X] create 8 based on 6
-- [X] create 9 based on 6
-- [X] full update for 5
 - [ ] full update for 10
 - [ ] full update for 11
-- [ ] Turn 14 into solution: register components to artifact registry and build pipelines dynamically
+- [ ] full update for 14
+    - [ ] Turn into solution: register components to artifact registry and build pipelines dynamically
+    - [ ] add 3 ARIMA_PLUS_XREG - wait for GA and time_series_id parameter
+    - [ ] add 4
+    - [ ] add 8
+    - [ ] add 9
+- Additions to make
+    - 3 update after preview -> GA
+        - add comparison to 2: make it optional
+    - more methods in the custom models section?
+        - XGBoost like 4
+        - sktime
+        - StatsForecast with Fugue
+        - GluonTS
+        - Darts
 - Issues To Investigate:
     - 11 complete when bug is fixed
     - 12 and 13 - Clean up link to bucket, staging bucket for GCS. Understand what goes where.
-    - 1,2,3,4 Consider pring all BQ query's out so they can be copy/pasted to console. 
+    - 1,2,3,4 Consider printing all BQ query's out so they can be copy/pasted to console. 
     - 4 address horizon predictions and related challenges
     - 5 through 9 - Batch predictions - carry down known covariates into horizon
     - 5 through 9 - explanations?
     - 5 through 9 - get evaluations from Model Registry
-- 14 Update
-    - [ ] add ARIMA_PLUS_XREG - wait for GA and time_series_id parameter
-    - [ ] add more open source methods - a dask based would be good
-        - sktime
-        - StatsForecast (use Fugue?)
-        - GluonTS
-        - Darts
+    - 10 and 11 - add evaluations to model registry (see 05 series)
 - Price optimization example like: https://cloud.google.com/blog/products/ai-machine-learning/price-optimization-using-vertex-ai-forecast
 ---
 
