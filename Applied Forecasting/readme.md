@@ -10,10 +10,23 @@ This series explores forecasting with Vertex AI, BigQuery ML, and additional ope
 
 This series will use Citibike rentals in New York city.  The bike stations near central park will be selected and the daily number bike trips that orignate from these stations will be followed over time.  This will illustrate some common forecasting issues due to new stations being introduced over time and some stations only have the most recent few months, or just weeks of data.  The data are found in the BigQuery Public datasets at: `bigquery-public-data.new_york.citibike_trips`.
 
-<p align="center" width="100%">
-    <img src="../architectures/notebooks/applied/forecasting/citibike_central_park_s_6_ave.jpg" width="25%">
-    <h4 align="center">Central Park S & 6th Avenue</h4>
-</p>
+<table style='text-align:center;vertical-align:middle' width="75%" cellpadding="1" cellspacing="0">
+    <tr>
+        <th colspan='2'>Citibike Stations</th>
+    </tr>
+    <tr>
+        <td>
+            <a href="https://www.google.com/maps/search/central+park+citibike+stations/@40.7794305,-73.9733652,14z" target="_blank">
+                <img src="../architectures/notebooks/applied/forecasting/citibike_central_park.png" width="100%">
+                <h4 align="center">Central Park Stations</h4>
+            </a>
+        </td>
+        <td>
+            <img src="../architectures/notebooks/applied/forecasting/citibike_central_park_s_6_ave.jpg" width="75%">
+            <h4 align="center">Central Park S & 6th Avenue</h4>
+        </td>
+    </tr>
+</table>
 
 **Prerequisites**
 - Environment Setup with: [00 - Setup.ipynb](../00%20-%20Setup/00%20-%20Environment%20Setup.ipynb)
