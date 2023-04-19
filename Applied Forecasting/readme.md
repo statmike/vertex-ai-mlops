@@ -67,6 +67,7 @@ This list is in the suggested order of review for anyone getting an overview and
 ToDo:
 - [ ] full update for 10
 - [ ] full update for 11
+- [ ] 13 waiting on fix to complete update
 - [ ] full update for 14
     - [ ] Turn into solution: register components to artifact registry and build pipelines dynamically
     - [ ] add 3 ARIMA_PLUS_XREG - wait for GA and time_series_id parameter
@@ -91,7 +92,8 @@ ToDo:
     - 5 through 9 - explanations?
     - 5 through 9 - get evaluations from Model Registry
     - 10 and 11 - add evaluations to model registry (see 05 series)
-- Price optimization example like: https://cloud.google.com/blog/products/ai-machine-learning/price-optimization-using-vertex-ai-forecast
+- thoughts:
+    - Price optimization example like: https://cloud.google.com/blog/products/ai-machine-learning/price-optimization-using-vertex-ai-forecast
 ---
 
 
