@@ -51,25 +51,25 @@ else:
 expRun.log_params({'experiment': args.experiment, 'series': args.series, 'project_id': args.project_id})
 
 # get schema from bigquery source
-query = f"SELECT * FROM {args.bq_project}.{args.bq_dataset}.INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{args.bq_table}'"
+query = f"SELECT * FROM `{args.bq_project}.{args.bq_dataset}.INFORMATION_SCHEMA.COLUMNS` WHERE TABLE_NAME = '{args.bq_table}'"
 schema = bq.query(query).to_dataframe()
 
 # get number of classes from bigquery source
-nclasses = bq.query(query = f'SELECT DISTINCT {VAR_TARGET} FROM {args.bq_project}.{args.bq_dataset}.{args.bq_table} WHERE {VAR_TARGET} is not null').to_dataframe()
+nclasses = bq.query(query = f'SELECT DISTINCT {VAR_TARGET} FROM `{args.bq_project}.{args.bq_dataset}.{args.bq_table}` WHERE {VAR_TARGET} is not null').to_dataframe()
 nclasses = nclasses.shape[0]
 expRun.log_params({'data_source': f'bq://{args.bq_project}.{args.bq_dataset}.{args.bq_table}', 'nclasses': nclasses, 'var_split': 'splits', 'var_target': VAR_TARGET})
 
-train_query = f"SELECT * FROM {args.bq_project}.{args.bq_dataset}.{args.bq_table} WHERE splits = 'TRAIN'"
+train_query = f"SELECT * FROM `{args.bq_project}.{args.bq_dataset}.{args.bq_table}` WHERE splits = 'TRAIN'"
 train = bq.query(train_query).to_dataframe()
 X_train = train.loc[:, ~train.columns.isin(VAR_OMIT)]
 y_train = train[VAR_TARGET].astype('int')
 
-val_query = f"SELECT * FROM {args.bq_project}.{args.bq_dataset}.{args.bq_table} WHERE splits = 'VALIDATE'"
+val_query = f"SELECT * FROM `{args.bq_project}.{args.bq_dataset}.{args.bq_table}` WHERE splits = 'VALIDATE'"
 val = bq.query(val_query).to_dataframe()
 X_val = val.loc[:, ~val.columns.isin(VAR_OMIT)]
 y_val = val[VAR_TARGET].astype('int')
 
-test_query = f"SELECT * FROM {args.bq_project}.{args.bq_dataset}.{args.bq_table} WHERE splits = 'TEST'"
+test_query = f"SELECT * FROM `{args.bq_project}.{args.bq_dataset}.{args.bq_table}` WHERE splits = 'TEST'"
 test = bq.query(test_query).to_dataframe()
 X_test = test.loc[:, ~test.columns.isin(VAR_OMIT)]
 y_test = test[VAR_TARGET].astype('int')
