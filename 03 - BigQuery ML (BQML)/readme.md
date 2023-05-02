@@ -36,6 +36,13 @@ This list is in the suggested order of review for anyone getting an overview and
 - Enhanced Examples - more than one model
     - [BQML Cross-validation Example](BQML%20Cross-validation%20Example.ipynb)
     - [BQML Ensemble Example](BQML%20Ensemble%20Example.ipynb)
+- Import Models
+    - [BQML Import Model - scikit-learn](BQML%20Import%20Model%20-%20scikit-learn.ipynb)
+    - [BQML Import Model - TensorFlow](BQML%20Import%20Model%20-%20TensorFlow.ipynb)
+- Use Remote Models
+    - [BQML Remote Model on Vertex AI Endpoint](BQML%20Remote%20Model%20on%20Vertex%20AI%20Endpoint.ipynb)
+    - [BQML Remote Model Tutorial](BQML%20Remote%20Model%20Tutorial.md)
+        - [BQML Remote Model Tutorial - Notebook](BQML%20Remote%20Model%20Tutorial -%20Notebook.ipynb)
 - Other Topics
     - [03Tools - Predictions](03Tools%20-%20Predictions.ipynb)
     - [03Tools - Pipelines Example 1](03Tools%20-%20Pipelines%20Example%201.ipynb)
