@@ -248,7 +248,7 @@ job.state
 
 #### Step 3: Get Predictions with BigQuery ML.PREDICT
 
-Get predictions from the remote model within BigQuery using the `ML.PREDICT` function.  This sened records from the query statment to the remote model for serving prediction back to BigQuery as a single function call.
+Get predictions from the remote model within BigQuery using the `ML.PREDICT` function.  This sends records from the query statment to the remote model for serving prediction back to BigQuery as a single function call.
 
 ```python
 query = f"""
