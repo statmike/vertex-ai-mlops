@@ -34,9 +34,11 @@ This tutorial will use the following billable components of Google Cloud: Google
 
 TensorFlow tutorials include a sentiment analysis prediction model created by [fine-tuning a BERT model](https://www.tensorflow.org/text/tutorials/classify_text_with_bert) while adding a classification layer.  Start by going to this tutorials [notebook on GitHub](https://github.com/tensorflow/text/blob/master/docs/tutorials/classify_text_with_bert.ipynb) and clicking 'Run in Google Colab' - or directly here [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/tensorflow/text/blob/master/docs/tutorials/classify_text_with_bert.ipynb).
 
+**To view an already modified version of this notebook [click here](./BQML%20Remote%20Model%20Tutorial%20-%20Notebook.ipynb).**
+
 **Two Options:**
 1. Use a pre-saved result of this tutorial (or another model altogether) to continue without recreating the model (skip to [Deploy Model on Vertex AI](#Deploy-Model-on-Vertex-AI))
-2. Run the tutorial with modification described here - **it takes about an hour to run**
+2. Run the tutorial with modifications described here - **it takes about an hour to run**
     - Proceed with the tutorial and make modification and additions as indicated in this tutorial:
         - Before starting to run the cells change the compute
             - On the 'Runtime' menu select 'View Resources'
