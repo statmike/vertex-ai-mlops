@@ -2,6 +2,8 @@
 
 # BQML Remote Model Tutorial
 
+This tutorial is also part of the BigQuery Documentations Tutorials section - [view here](https://cloud.google.com/bigquery/docs/bigquery-ml-remote-model-tutorial).  In this repository there is also a pre-completed version of the notebook modifications described below.
+
 ## Overview
 
 BigQuery ML (BQML) allows you to use `SQL` to constuct an ML workflow.  This is a great leap in productivity and flexibility when the data source is BigQuery and users are already familiar with `SQL`. Using just `SQL`, multiple techniques can be used for model training and even include hyperparameter tuning.  Predictions can be served directly in BigQuery which also includes explainability. Models can be exported or even directly registered to Vertex AI model registry for online predictions on Vertex AI Prediction Endpoints.
