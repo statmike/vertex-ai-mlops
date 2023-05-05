@@ -42,7 +42,7 @@ This list is in the suggested order of review for anyone getting an overview and
 - Use Remote Models
     - [BQML Remote Model on Vertex AI Endpoint](BQML%20Remote%20Model%20on%20Vertex%20AI%20Endpoint.ipynb)
     - [BQML Remote Model Tutorial](BQML%20Remote%20Model%20Tutorial.md)
-        - [BQML Remote Model Tutorial - Notebook](BQML%20Remote%20Model%20Tutorial -%20Notebook.ipynb)
+        - [BQML Remote Model Tutorial - Notebook](BQML%20Remote%20Model%20Tutorial%20-%20Notebook.ipynb)
 - Other Topics
     - [03Tools - Predictions](03Tools%20-%20Predictions.ipynb)
     - [03Tools - Pipelines Example 1](03Tools%20-%20Pipelines%20Example%201.ipynb)
@@ -71,39 +71,8 @@ This list is in the suggested order of review for anyone getting an overview and
     - [8 - Vertex AI Pipelines - Forecasting Tournament - BQML + AutoML + Prophet](../Applied%20Forecasting/8%20-%20Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20-%20BQML%20+%20AutoML%20+%20Prophet.ipynb)
 
 ---
+
 ToDo:
-- [X] add prereq to readme
-- [X] Update references to Service Account and check for permissions - reference the 00 notebooks new section for correct setup
-- [X] Hyperlinks to prediction notebook in each of 03a-03f
-- [X] export model: GCS and Vertex AI Model Registry use series_experiment naming convention and storage locations
-- [X] fix references to data in GCS in the Tools - Predictions notebook: bucket/series/experiment
-- [X] add unsupervised anomaly detection using fraud data (maybe in applied section)
-    - [X] PCA
-        - [X] Export and Register in Vertex AI Model Registry
-        - [X] Test Predictions
-    - [X] K-Means
-        - [X] Export and Register in Vertex AI Model Registry
-        - [X] Test Predictions
-    - [X] Autoencoder
-        - [X] Export and Register in Vertex AI Model Registry
-        - [X] Test Predictions
-- [X] Update Pass
-    - [X] 03 notebook add calculation of count and % for fraud (Class = 1) in each split - incrementally build logic over the methods presented
-    - [X] add data review section to beginning of each model_type
-    - [X] add custom metrics section with sklearn at end
-    - [X] For each section of each notebook include a link to the BQML doc page for the ML. function used
-    - [X] Link back to the 01 notebook when mentioned within the training section of each notebook
-    - [X] Add a method description in the notebook overview
-        - High: Classification, Supervised, Unsupervised 
-        - Low: The method
-    - [X] Move Predictions into the individual notebooks, sharing endpoint for series
-- [IP] unstructured methods in 03g, 03h, 03i, try to reproduce anomaly_detection methods
-    - [ ] update 03i ML.DETECT_ANOMALIES to use TRAIN_FRAUD_PCT like 03g an d03h
-    - [ ] add graphics for kmeans (PCA then Scatterplot - or pairwise plot with color gradiant)
-- [X] Feature Engineering Notebook (from DEV)
-- [ ] Example to Create
-    - [X] Cross Validation
-    - [X] Ensemble Models - stacking
 - [ ] Next Update Pass
     - [ ] correct language for 'This Run' sections print statment: with > will
     - [ ] add colab link and code - update bq client to set project for colab use
@@ -113,7 +82,6 @@ ToDo:
     - [ ] add experiment tracking
     - [ ] directly register BQML models in Vertex AI [link](https://cloud.google.com/bigquery-ml/docs/managing-models-vertex)
     - [ ] create an example of ML.PREDICT for patial dependence plot
-- [X] Add condition to evaluation component in 03Tools Pipeline Ex2 that returns auPRC =0 when no model is on the endpoint
 - [ ] update pipeline examples
     - [ ] pipelines 1 and 2 break if models form 03g, 03h, or 03i are deployed - unsupervised methods
     - [ ] New version of pipeline 1 that uses experiment tracking - call it 1b
@@ -125,10 +93,4 @@ ToDo:
     - [ ] Cloud Run
     - [ ] Local
     - [ ] DataFlow
-- [ ] Monitoring: online and batch in vertex
-- [ ] LIT
-- [ ] WIT
-- [ ] Custom Explainability in Vertex
-    - [ ] Feature Based
-    - [ ] Example Based
 
