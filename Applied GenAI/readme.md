@@ -1,3 +1,5 @@
+![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2FApplied+GenAI&dt=readme.md)
+
 # /Applied GenAI/readme.md
 
 This series of notebooks highlights the use over Vertex AI Generative AI for workflows that include using Google's large generative AI models.  Read more about these exciting new features of Vertex AI [here](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/overview).
