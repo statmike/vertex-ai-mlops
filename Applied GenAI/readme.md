@@ -9,4 +9,5 @@ This series of notebooks highlights the use over Vertex AI Generative AI for wor
 These notebook include direct installs of several supporting packages.  The Vertex AI [Python Client](https://cloud.google.com/python/docs/reference/aiplatform/latest) will need to be updated to at least the 1.25.0 release.
 
 ## Notebooks:
+Document Q&A Examples: Ask complex scenario based questions and get text generated answers with references to relative sections of the documents.
 - [Vertex AI GenAI For Document Q&A - MLB Rules](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20MLB%20Rules.ipynb)
