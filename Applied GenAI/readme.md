@@ -20,6 +20,25 @@ import google.cloud.aiplatform as aiplatform
 aiplatform.__version__
 ```
 
+**Authorization**
+
+If you are in a Vertex AI Workbench instance then you are already authenticated to a GCP project.  You can retrive the current project into a variable using:
+
+```Python
+project = !gcloud config get-value project
+PROJECT_ID = project[0]
+PROJECT_ID
+```
+
+If you need to first authenticate to your GCP project from a Colab, use the following:
+
+```Python
+from google.colab import auth
+
+auth.authenticate_user()
+!gcloud config set project {PROJECT_ID}
+```
+
 **Setup**
 
 ```Python
