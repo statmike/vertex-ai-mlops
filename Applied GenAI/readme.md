@@ -42,7 +42,7 @@ auth.authenticate_user()
 **Setup**
 
 ```Python
-PROJECT = 'your project here'
+PROJECT_ID = 'your project here'
 REGION = 'us-central1'
 
 import vertexai.preview.language_models
