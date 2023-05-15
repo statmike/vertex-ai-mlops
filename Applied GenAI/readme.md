@@ -83,10 +83,10 @@ Ask complex scenario based questions and get text generated answers with referen
     - creates a function to generate Generative AI prompts with document contexts retrieved by vector search of the question (embedding) and the documents elements
     - Saves the document parsing and embeddings to GCS and/or BigQuery for retrieval on future runs - saves repeat cost and time
 - [Vertex AI Matching Engine For Document Q&A](./Vertex%20AI%20Matching%20Engine%20For%20Document%20Q&A.ipynb)
-- coming soon - Use Vertex AI Matching Engine for stateful, low latency, vector searches
-    - Use Vertex AI Matchng Engine to Create and Deploy an index
-    - Perform online queries with hosted index
-    - Recreate the document bot from [Vertex AI GenAI For Document Q&A - MLB Rules](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20MLB%20Rules.ipynb) using online queries
+    - Use [Vertex AI Matching Engine](https://cloud.google.com/vertex-ai/docs/matching-engine/overview) for stateful, low latency, vector searches
+        - Create and Deploy an index
+        - Perform online queries with hosted index
+        - Recreate the document bot from [Vertex AI GenAI For Document Q&A - MLB Rules](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20MLB%20Rules.ipynb) using online queries
 - coming soon - A Cloud Function for running our document bot
 
 ## More Resources
