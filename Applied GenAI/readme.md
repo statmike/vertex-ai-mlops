@@ -74,11 +74,11 @@ textgen_model.predict('What are the rules of baseball?')
 These notebook include direct installs of several supporting packages.  
 
 **Document Q&A Examples**:
-    - These parse a PDF document from GCS or URL into the documents elements: tables, paragraphs
-    - gets embeddings for the elements
-    - creates a local vector search function with ScaNN
-    - creates a function to generate Generative AI prompts with document contexts retrieved by vector search of the question (embedding) and the documents elements
-    - Saves the document parsing and embeddings to GCS and/or BigQuery for retrieval on future runs - saves repeat cost and time
+- These parse a PDF document from GCS or URL into the documents elements: tables, paragraphs
+- gets embeddings for the elements
+- creates a local vector search function with ScaNN
+- creates a function to generate Generative AI prompts with document contexts retrieved by vector search of the question (embedding) and the documents elements
+- Saves the document parsing and embeddings to GCS and/or BigQuery for retrieval on future runs - saves repeat cost and time
     
 Ask complex scenario based questions and get text generated answers with references to relative sections of the documents.
 - [Vertex AI GenAI For Document Q&A - MLB Rules](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20MLB%20Rules.ipynb)
@@ -91,6 +91,10 @@ Use Vertex AI Matching Engine to host low-latency vector search:
         - Perform online queries with hosted index
         - Recreate the document bot from [Vertex AI GenAI For Document Q&A - MLB Rules](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20MLB%20Rules.ipynb) using online queries
         - Rerunning for multiple `EXPERIMENT` values will deploy multiple indexes to the same index endpoint
+
+<p><center>
+    <img alt="Overview Chart" src="../architectures/notebooks/applied/genai/doc_qa.png" width="45%">
+</center><p>
 
 ## More Resources
 - Examples for Prompt Design and Tuning of Foundational Models: [github.com/GoogleCloudPlatform/generative-ai](https://github.com/GoogleCloudPlatform/generative-ai)
