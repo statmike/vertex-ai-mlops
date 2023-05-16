@@ -85,6 +85,8 @@ Second, add a new code cell that defines parameters:
 ```python
 # Define parameters
 REGION = 'us-central1'
+EXPERIMENT = 'remote-model-tutorial'
+SERIES = 'bqml'
 PROJECT_ID = 'statmike-mlops-349915'
 BUCKET = PROJECT_ID
 saved_model_path = './imdb_bert' # redefine due to kernel restart
@@ -105,7 +107,7 @@ If you chose to skip running the notebook and use a pre-built version of the mod
 Copy the model to Google Cloud Storage:
 ```python
 # copy the model files to GCS
-!gsutil cp -r gs://bucket/path/to/prebuilt/model gs://$PROJECT_ID/bqml/remote_model_tutorial
+!gsutil cp -r gs://bucket/path/to/prebuilt/model gs://{PROJECT_ID}/{SERIES}/{EXPERIMENT}
 ```
 
 If you ran the tutorial notebook and created a model then continue by adding these code cells:
@@ -113,7 +115,7 @@ If you ran the tutorial notebook and created a model then continue by adding the
 Copy the model to Google Cloud Storage:
 ```python
 # copy the model files to GCS
-!gsutil cp -r $saved_model_path gs://$PROJECT_ID/bqml/remote_model_tutorial
+!gsutil cp -r $saved_model_path gs://{PROJECT_ID}/{SERIES}/{EXPERIMENT}
 ```
 
 #### Step 3: Register the Model In Vertex AI Model Registry
@@ -131,9 +133,9 @@ Register the model in the [Vertex AI Model Registry](https://cloud.google.com/ve
 ```python
 # Register Model in Vertex AI Model Registry
 model = aiplatform.Model.upload(
-    display_name = 'BERT Sentiment',
+    display_name = f'{SERIES}_{EXPERIMENT}',
     serving_container_image_uri = 'us-docker.pkg.dev/vertex-ai-restricted/prediction/tf_opt-gpu.nightly:latest',
-    artifact_uri = f'gs://{PROJECT_ID}/bqml/remote_model_tutorial'        
+    artifact_uri = f'gs://{PROJECT_ID}/{SERIES}/{EXPERIMENT}'        
 )
 ```
 
@@ -188,7 +190,7 @@ Creating a BigQuery ML Remote Model has two components: a [BigQuery Cloud Resour
 Create the cloud resource connection:
 ```python
 # create BigQuery Cloud Resource Connection
-!bq mk --connection --location={REGION[0:2]} --project_id={PROJECT_ID} --connection_type=CLOUD_RESOURCE bqml_remote_model_tutorial
+!bq mk --connection --location={REGION[0:2]} --project_id={PROJECT_ID} --connection_type=CLOUD_RESOURCE {SERIES}_{EXPERIMENT}
 ```
 
 Retrieve the service account associated with the cloud resource connection:
@@ -196,8 +198,8 @@ Retrieve the service account associated with the cloud resource connection:
 # retrieve the service account for the BigQuery Cloud Resource Connection
 import json
 
-bqml_connection = !bq show --format prettyjson --connection {PROJECT_ID}.{REGION[0:2]}.bqml_remote_model_tutorial
-bqml_connection = json.loads(''.join(bqml_connection))
+bqml_connection = !bq show --format prettyjson --connection {PROJECT_ID}.{REGION[0:2]}.{SERIES}_{EXPERIMENT}
+bqml_connection = json.loads(''.join(bqml_connection[[r for r, row in enumerate(bqml_connection) if row == '{'][0]:]))
 service_account = bqml_connection['cloudResource']['serviceAccountId']
 service_account
 ```
@@ -221,7 +223,7 @@ Create a BigQuery Dataset:
 ```python
 # Create A BigQuery Dataset
 query = f"""
-CREATE SCHEMA IF NOT EXISTS `{PROJECT_ID}.bqml_remote_model_tutorial`
+CREATE SCHEMA IF NOT EXISTS `{PROJECT_ID}.{SERIES}`
     OPTIONS(location = '{REGION[0:2]}')
 """
 job = bq.query(query = query)
@@ -239,10 +241,10 @@ Create Model Using Remote Connection
 ```python
 # Create Remote Model In BigQuery
 query = f"""
-CREATE OR REPLACE MODEL `{PROJECT_ID}.bqml_remote_model_tutorial.bert_sentiment`
+CREATE OR REPLACE MODEL `{PROJECT_ID}.{SERIES}.{EXPERIMENT.replace('-', '_')}`
     INPUT (text STRING)
-    OUTPUT(classifier FLOAT64)
-    REMOTE WITH CONNECTION `{PROJECT_ID}.{REGION[0:2]}.bqml_remote_model_tutorial`
+    OUTPUT(classifier ARRAY<FLOAT64>)
+    REMOTE WITH CONNECTION `{PROJECT_ID}.{REGION[0:2]}.{SERIES}_{EXPERIMENT}`
     OPTIONS(endpoint = 'https://{REGION}-aiplatform.googleapis.com/v1/{endpoint.resource_name}')
 """
 job = bq.query(query = query)
@@ -258,7 +260,7 @@ Get predictions from the remote model within BigQuery using the `ML.PREDICT` fun
 query = f"""
 SELECT *
 FROM ML.PREDICT (
-    MODEL `{PROJECT_ID}.bqml_remote_model_tutorial.bert_sentiment`,
+    MODEL `{PROJECT_ID}.{SERIES}.{EXPERIMENT.replace('-', '_')}`,
     (
         SELECT review as text
         FROM `bigquery-public-data.imdb.reviews`
@@ -275,7 +277,7 @@ Use the remote model to server a large batch of prediction.  Here 10k records ar
 query = f"""
 SELECT *
 FROM ML.PREDICT (
-    MODEL `{PROJECT_ID}.bqml_remote_model_tutorial.bert_sentiment`,
+    MODEL `{PROJECT_ID}.{SERIES}.{EXPERIMENT.replace('-', '_')}`,
     (
         SELECT review as text
         FROM `bigquery-public-data.imdb.reviews`
@@ -285,7 +287,7 @@ FROM ML.PREDICT (
 """
 job = bq.query(query = query)
 job.result()
-print(job.state, f'in {(job.ended-job.started).total_minutes()/60} minutes')
+print(job.state, f'in {(job.ended-job.started).seconds/60} minutes')
 ```
 
 ### Clean Up
@@ -300,11 +302,11 @@ endpoint.delete(force = True)
 model.delete()
 
 # remove model files in GCS
-#!gsutil rm -r gs://$PROJECT_ID/bqml/remote_model_tutorial
+#!gsutil rm -r gs://{PROJECT_ID}/{SERIES}/{EXPERIMENT}
 
 # remove BigQuery Dataset (holds model definition)
-# bq rm -r -f -d {PROJECT_ID}.bqml_remote_model_tutorial
+#!bq rm -r -f -d {PROJECT_ID}.{SERIES}
 
 # remove BigQuery Cloud Resource Connection
-#!bq rm --connection {PROJECT_ID}.{REGION[0:2]}.bqml_remote_model_tutorial
+!bq rm --connection {PROJECT_ID}.{REGION[0:2]}.{SERIES}_{EXPERIMENT}
 ```
