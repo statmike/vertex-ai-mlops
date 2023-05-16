@@ -42,7 +42,7 @@ This list is in the suggested order of review for anyone getting an overview and
 - Use Remote Models
     - [BQML Remote Model on Vertex AI Endpoint](BQML%20Remote%20Model%20on%20Vertex%20AI%20Endpoint.ipynb)
     - [BQML Remote Model Tutorial](BQML%20Remote%20Model%20Tutorial.md)
-        - [BQML Remote Model Tutorial - Notebook](BQML%20Remote%20Model%20Tutorial%20-%20Notebook.ipynb)
+        - [BQML Remote Model Tutorial - Notebook](BQML%20Remote%20Model%20Tutorial%20-%20Notebook.ipynb) (Run as a Colab - see header for instructions)
 - Other Topics
     - [03Tools - Predictions](03Tools%20-%20Predictions.ipynb)
     - [03Tools - Pipelines Example 1](03Tools%20-%20Pipelines%20Example%201.ipynb)
