@@ -81,7 +81,8 @@ These notebook include direct installs of several supporting packages.
 - Saves the document parsing and embeddings to GCS and/or BigQuery for retrieval on future runs - saves repeat cost and time
     
 Ask complex scenario based questions and get text generated answers with references to relative sections of the documents.
-- [Vertex AI GenAI For Document Q&A - MLB Rules](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20MLB%20Rules.ipynb)
+- [Vertex AI GenAI For Document Q&A - MLB Rules For Baseball](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20MLB%20Rules%20For%20Baseball.ipynb)
+- [Vertex AI GenAI For Document Q&A - USGA Rule For Golf](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20USGA%20Rules%20For%20Golf.ipynb)
 - [Vertex AI GenAI For Document Q&A - FAA Regulations](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20FAA%20Regulations.ipynb)
 
 Use Vertex AI Matching Engine to host low-latency vector search:
@@ -89,7 +90,7 @@ Use Vertex AI Matching Engine to host low-latency vector search:
     - Use [Vertex AI Matching Engine](https://cloud.google.com/vertex-ai/docs/matching-engine/overview) for stateful, low latency, vector searches
         - Create and Deploy an index
         - Perform online queries with hosted index
-        - Recreate the document bot from [Vertex AI GenAI For Document Q&A - MLB Rules](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20MLB%20Rules.ipynb) using online queries
+        - Recreate the document bot using online queries
         - Rerunning for multiple `EXPERIMENT` values will deploy multiple indexes to the same index endpoint
 
 <p><center>
