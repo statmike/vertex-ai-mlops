@@ -71,17 +71,20 @@ textgen_model.predict('What are the rules of baseball?')
 
 **Prerequisites**
 
-These notebook include direct installs of several supporting packages.  
+These notebooks include direct installs of several supporting packages.  
 
-**Document Q&A Examples**:
+### Document Q&A - Version 1
+
+Ask complex scenario based questions and get text generated answers with references to relative sections of the documents.
 - These parse a PDF document from GCS or URL into the documents elements: tables, paragraphs
 - gets embeddings for the elements
 - creates a local vector search function with ScaNN
 - creates a function to generate Generative AI prompts with document contexts retrieved by vector search of the question (embedding) and the documents elements
 - Saves the document parsing and embeddings to GCS and/or BigQuery for retrieval on future runs - saves repeat cost and time
-    
-Ask complex scenario based questions and get text generated answers with references to relative sections of the documents.
 
+<p><center><img alt="Overview Chart" src="../architectures/notebooks/applied/genai/doc_qa.png" width="45%"></center><p>
+
+    
 **Sports Rules:**
 - [Vertex AI GenAI For Document Q&A - MLB Rules For Baseball](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20MLB%20Rules%20For%20Baseball.ipynb)
 - [Vertex AI GenAI For Document Q&A - USGA Rule For Golf](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20USGA%20Rules%20For%20Golf.ipynb)
@@ -95,7 +98,7 @@ Ask complex scenario based questions and get text generated answers with referen
 - [Vertex AI GenAI For Document Q&A - FAA Regulations](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20FAA%20Regulations.ipynb)
 - [Vertex AI GenAI For Document Q&A - Municipal Securities](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20Municipal%20Securities.ipynb)
 - [Vertex AI GenAI For Document Q&A - Annual Report](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20Annual%20Report.ipynb)
-- [Vertex AI GenAI For Document Q&A - Local Government Trends](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20Local%20Government%20Trends.ipynb)
+
 
 Use Vertex AI Matching Engine to host low-latency vector search:
 - [Vertex AI Matching Engine For Document Q&A](./Vertex%20AI%20Matching%20Engine%20For%20Document%20Q&A.ipynb)
@@ -105,9 +108,20 @@ Use Vertex AI Matching Engine to host low-latency vector search:
         - Recreate the document bot using online queries
         - Rerunning for multiple `EXPERIMENT` values will deploy multiple indexes to the same index endpoint
 
-<p><center>
-    <img alt="Overview Chart" src="../architectures/notebooks/applied/genai/doc_qa.png" width="45%">
-</center><p>
+### Document Q&A - Version 2
+    
+Enhacements compared to Version 1:
+- multiple documents
+- better context configuation with multi-level search
+- ouput include visual of all pages that include context to the question with bounding boxes
+- better data formatting for scaling in services outside the notebook environment: datastore, Vetex AI Matching Engine, BigQuery, ...
+- ability to overwrite previous runs saved data when needed
 
+**Business Documents:**   
+- [Vertex AI GenAI For Document Q&A - Local Government Trends](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20Local%20Government%20Trends.ipynb)    
+
+
+---
 ## More Resources
 - Examples for Prompt Design and Tuning of Foundational Models: [github.com/GoogleCloudPlatform/generative-ai](https://github.com/GoogleCloudPlatform/generative-ai)
+- Vertex AI GenApp Builder and Enterpise Search
