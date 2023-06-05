@@ -71,7 +71,8 @@ textgen_model.predict('What are the rules of baseball?')
 
 **Prerequisites**
 
-These notebooks include direct installs of several supporting packages.  
+These notebooks include direct installs of several supporting packages.  They use Vertex AI and Document AI services for processing data while also using Google Cloud Storage And Google BigQuery for data storage and retrieval.  If you are running these notebooks from Colab or another environment where your user id is authenticated then your account will need roles/permissions that allow working with these services.  If you are running these from a Vertex AI Workbench Notebook instance then it is running as a service account which will need the roles/permission that allow working with these services. 
+
 
 ### Document Q&A - Version 1
 
