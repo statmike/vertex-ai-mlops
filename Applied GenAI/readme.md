@@ -66,6 +66,31 @@ textgen_model.predict('What are the rules of baseball?')
 >
 >A run is scored when a player advances around all four bases in the correct order. The bases are located at first, second, third, and home plate. A player can advance to the next base by hitting the ball and running, or by being walked or hit by a pitch.
 
+```Python
+textgen_model.predict(question, max_output_tokens = 500)
+```
+
+>Baseball is a bat-and-ball game played between two teams of nine players on a field in the shape of a diamond. The game is played with a hard, round ball and a bat. The object of the game is for a team to score more runs than the opposing team.
+>
+>A run is scored when a player advances around all four bases in the correct order. The bases are located at first, second, third, and home plate. A player can advance to the next base by hitting the ball and running to the next base before the ball is thrown to the fielder covering that base.
+>
+>The game is played in innings. Each inning consists of two halves, with one team batting in each half. In the first half of the inning, the batting team tries to score runs by hitting the ball and running the bases. In the second half of the inning, the fielding team tries to prevent the batting team from scoring runs by throwing the ball to the bases before the runners can reach them.
+>
+>The game ends when one team has scored more runs than the other team. The team with the most runs at the end of the game wins.
+>
+>Here are some of the basic rules of baseball:
+>
+>* The game is played between two teams of nine players.
+>* The game is played on a field in the shape of a diamond.
+>* The object of the game is to score more runs than the opposing team.
+>* A run is scored when a player advances around all four bases in the correct order.
+>* The game is played in innings. Each inning consists of two halves, with one team batting in each half.
+>* In the first half of the inning, the batting team tries to score runs by hitting the ball and running the bases.
+>* In the second half of the inning, the fielding team tries to prevent the batting team from scoring runs by throwing the ball to the bases before the runners can reach them.
+>* The game ends when one team has scored more runs than the other team.
+>* The team with the most runs at the end of the game wins.
+
+
 ---
 ## Notebooks:
 
