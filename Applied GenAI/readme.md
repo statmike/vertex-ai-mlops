@@ -95,7 +95,7 @@ textgen_model.predict(question, max_output_tokens = 500)
 ---
 ## GenAI Use Cases
 
-While using an LLM basically comes down to text input and text output, it can be helpful to understand how to frame the text input to achieve a desired output.  This task is known as prompting.  How the input is framed can solve different types of tasks like summarization, classification and various extraction tasks (generate, rewrite, answer questions).  A high level overview of prompt design for these task is depicted below:
+While using an LLM basically comes down to text input and text output, it can be helpful to understand how to frame the text input to achieve a desired output.  This is known as prompting.  How the input is framed can solve different types of tasks like summarization, classification and various extraction tasks (generate text, rewrite text, answer questions).  A high level overview of prompt design for these tasks is depicted below:
 
 <p align="center" width="100%"><center>
     <img align="center" alt="Overview Chart" src="../architectures/notebooks/applied/genai/prompting.png" width="45%">
@@ -103,25 +103,25 @@ While using an LLM basically comes down to text input and text output, it can be
     
 An incredibly useful task for LLMs is answering questions - the far right extraction tasks depicted above.  There are several approaches to constructing prompts for this type of tasks.  The simplest is just asking the question - single shot.  This relies on the LLMs pre-trained data to construct an answer.  LLMs can have vast knowledge of many topics but probably are unaware of you private and newly created information.  
 
-When the answers need to be tailed for format, length or tone then it can be helpful to try multi-shot prompting.  This includes example of quesitons with example in the prompt followed by the new question as a way of coercing the type of answer.  Another way to acomplish this is to create a tuned adaptor for the model that formats a single shot prompt in a way that coerces the answer based on a set of tuning examples.
+When the answers need to be tailored for format, length or tone then it can be helpful to try multi-shot prompting.  This includes examples of questions with answers in the prompt followed by the new question as a way of coercing the type of answer.  Another way to acomplish this is to create a tuned adaptor for the model that formats a single shot prompt in a way that coerces the answer based on a set of tuning examples.
 
-When the LLM needs additional information related to the question in order to answer it, the information can also be supplied in the prompt as context.  This avoid the need to customize or retrain an LLM for specific new or private information.
+When the LLM needs additional information related to the question in order to answer it, the information can also be supplied in the prompt as context.  This avoids the need to customize or retrain an LLM for specific new or private information.
 
-The prompting approaches for question answering are shown in the digram below:
+These prompting approaches for question answering are shown in the diagram below:
     
 <p align="center" width="100%"><center>
     <img align="center" alt="Overview Chart" src="../architectures/notebooks/applied/genai/qa.png" width="45%">
 </center></p>
 
-Ultimately, the LLM needs contextual information about the question in order to answer it.  Rather than needing your custom or private information as part of the LLM you could supply relevant context from your library or warehouse of information along with a question so that the LLM is tasked with reading, and determining how to answer using the supplied context.  The core to this approach is retrieving the context.  The chart below shows many sources that can be used to retrive context for the question.
+Ultimately, the LLM needs contextual information about the question in order to answer it.  Rather than needing your custom or private information as part of the LLM you could supply relevant context from your library or warehouse of information along with a question so that the LLM is tasked with reading, and determining how to answer using the supplied context.  The core to this approach is retrieving the context.  The chart below shows many sources that can be used to retrieve context for the question.
 
 <p align="center" width="100%"><center>
     <img align="center" alt="Overview Chart" src="../architectures/notebooks/applied/genai/context.png" width="45%">
 </center></p>
 
-The key is retrieving context relevant to the specific question being asked.  Not too much context, not off topic context, but specific relevant context.  A great advantage of this approach is that the LLM does not necessary need specific training or parameters to understand your private or new text because the text is being supplied in the prompt - as context to the question. A type of LLM is an embedding LLM which return a vector of numbers to represent the input text.  These number relate to the words, their order, their meaning, and their cooperation - in other words semantic meaning of the input.  These embedding lead to an amazing general approach to identifying context for a question that can been automated without a lot of customization.
+The key is retrieving context relevant to the specific question being asked.  Not too much context, not off topic context, but specific relevant context.  A great advantage of this approach is that the LLM does not necessary need specific training or parameters to understand your private or new text because the text is being supplied in the prompt - as context to the question. A type of LLM is an embedding LLM which returns a vector of numbers to represent the input text.  These numbers relate to the words, their order, their meaning, and their cooperation - in other words semantic meaning of the input.  These embeddings lead to an amazing general approach to identifying context for a question that can been automated without a lot of customization.
 
-The following section links to many notebook based examples of the general approach to contextual quesiton answering.
+The following section links to many notebook based examples of this general approach to contextual question answering.
 
 ---
 ## Notebooks For Q&A Examples:
