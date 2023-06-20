@@ -4,6 +4,11 @@
 
 This series of notebooks highlights the use over Vertex AI Generative AI for workflows that include using Google's large generative AI models.  Read more about these exciting new features of Vertex AI [here](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/overview).
 
+**More Resources**
+
+- Examples for Prompt Design and Tuning of Foundational Models: [github.com/GoogleCloudPlatform/generative-ai](https://github.com/GoogleCloudPlatform/generative-ai)
+- Vertex AI GenApp Builder and Enterpise Search (coming soon!)
+
 ---
 ## Getting Started
 
@@ -187,4 +192,4 @@ Enhacements compared to Version 1:
 ---
 ## More Resources
 - Examples for Prompt Design and Tuning of Foundational Models: [github.com/GoogleCloudPlatform/generative-ai](https://github.com/GoogleCloudPlatform/generative-ai)
-- Vertex AI GenApp Builder and Enterpise Search
+- Vertex AI GenApp Builder and Enterpise Search (coming soon!)
