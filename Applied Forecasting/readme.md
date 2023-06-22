@@ -49,13 +49,14 @@ This list is in the suggested order of review for anyone getting an overview and
 - Vertex AI Other:
     - 8 - [Vertex AI Seq2Seq+ Forecasting - Python client](./Vertex%20AI%20Seq2Seq+%20Forecasting%20-%20Python%20client.ipynb)
     - 9 - [Vertex AI Temporal Fusion Transformer Forecasting - Python client](./Vertex%20AI%20Temporal%20Fusion%20Transformer%20Forecasting%20-%20Python%20client.ipynb)
+    - 10 - [Vertex AI Time series Dense Encoder - Python client](./Vertex%20AI%20Time%20series%20Dense%20Encoder%20-%20Python%20client.ipynb)
 - Vertex AI Custom Models:
-    - 10 - [Vertex AI Custom Model - Prophet - In Notebook](./Vertex%20AI%20Custom%20Model%20-%20Prophet%20-%20In%20Notebook.ipynb)
-    - 11 - [Vertex AI Custom Model - Prophet - Custom Job With Custom Container](./Vertex%20AI%20Custom%20Model%20-%20Prophet%20-%20Custom%20Job%20With%20Custom%20Container.ipynb)
+    - 11 - [Vertex AI Custom Model - Prophet - In Notebook](./Vertex%20AI%20Custom%20Model%20-%20Prophet%20-%20In%20Notebook.ipynb)
+    - 12 - [Vertex AI Custom Model - Prophet - Custom Job With Custom Container](./Vertex%20AI%20Custom%20Model%20-%20Prophet%20-%20Custom%20Job%20With%20Custom%20Container.ipynb)
 - Vertex AI Pipelines:
-    - 12 - [Vertex AI Pipelines - BQML ARIMA+](./Vertex%20AI%20Pipelines%20-%20BQML%20ARIMA+.ipynb)
-    - 13 - [Vertex AI Pipelines - Prophet](./Vertex%20AI%20Pipelines%20-%20Prophet.ipynb)
-    - 14 - [Vertex AI Pipelines - Forecasting Tournament with Kubeflow Pipelines (KFP)](./Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20with%20Kubeflow%20Pipelines%20(KFP).ipynb)
+    - 13 - [Vertex AI Pipelines - BQML ARIMA+](./Vertex%20AI%20Pipelines%20-%20BQML%20ARIMA+.ipynb)
+    - 14 - [Vertex AI Pipelines - Prophet](./Vertex%20AI%20Pipelines%20-%20Prophet.ipynb)
+    - 15 - [Vertex AI Pipelines - Forecasting Tournament with Kubeflow Pipelines (KFP)](./Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20with%20Kubeflow%20Pipelines%20(KFP).ipynb)
     - **Forecasting Pipelines** For more detailed starting points using Pipelines for forecasting I highly recommend [this repository](https://github.com/tottenjordan/vertex-forecas-repo) from coworker Jordan Totten!
 
 
