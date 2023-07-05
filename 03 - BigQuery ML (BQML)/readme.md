@@ -32,7 +32,9 @@ This list is in the suggested order of review for anyone getting an overview and
     - [03h - BQML k-means with Anomaly Detection](03h%20-%20BQML%20k-means%20with%20Anomaly%20Detection.ipynb)
     - [03i - BQML Autoencoder with Anomaly Detection](03i%20-%20BQML%20Autoencoder%20with%20Anomaly%20Detection.ipynb)
 - Feature Engineering
-    - [BQML Feature Engineering](BQML%20Feature%20Engineering.ipynb)
+    - Depricated (see following notebooks) [BQML Feature Engineering](BQML%20Feature%20Engineering.ipynb)
+    - [BQML Feature Engineering - Create Model With Transpose](./BQML%20Feature%20Engineering%20-%20Create%20Model%20With%20Transpose.ipynb)
+    - [BQML Feature Engineering - preprocessing functions](./BQML%20Feature%20Engineering%20-%20preprocessing%20functions.ipynb)
 - Enhanced Examples - more than one model
     - [BQML Cross-validation Example](BQML%20Cross-validation%20Example.ipynb)
     - [BQML Ensemble Example](BQML%20Ensemble%20Example.ipynb)
