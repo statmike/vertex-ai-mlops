@@ -118,7 +118,7 @@ When the answers need to be tailored for format, length or tone then it can be h
 
 >**Sidebar:**
 >
->Tuning a language model does note actually change the model, instead, it is enhanced for a specific task.  This helps the model learn to perform a task as desired from a set of examples - tuning examples.  This can be thought of as an adaptor model.  I like to think of this as a pair of glasses for a LLM.  These glasses focus the light (input text) onto the eye (the LLM input) in an alignment that focuses on doing the task well.
+>Tuning a language model does not actually change the model. Instead, it enhances the model for a specific task.  This helps the model learn to perform a task as desired from a set of examples - tuning examples.  This can be thought of as an adaptor model.  I like to think of this as a pair of glasses for an LLM.  These glasses focus the light (input text) onto the eye (the LLM input) in an alignment that optimizes on doing the task well.
 
 **Contextual Awareness**
 
@@ -126,11 +126,11 @@ When the LLM needs additional information related to the question in order to an
 
 >**Sidebar:**
 >
->When an LLM is used to generate an answer, it is drawing from the input prompt and it's learned information (parameters).  I like to think of an LLM like a professional researcher.  The researcher has read many articles, books, papers and more and is very knowledgeable.  The researcher is likely very good at reading new documents as well because it has a lot of transferable skills from already vast knowledge.  When you give context to the LLM it is like giving the researcher a new article.  They are likely very good at reading and understanding this new information as long as it is similar in style, topic, and format to what it has spent its career (training time) on.
+>When an LLM is used to generate an answer, it is drawing from the input prompt and the learned information (parameters).  I like to think of an LLM like a professional researcher.  The researcher has read many articles, books, papers and more and is very knowledgeable.  The researcher is likely very good at reading new documents as well because it has a lot of transferable skills from already vast knowledge.  When you give context to the LLM it is like giving the researcher a new article.  They are likely very good at reading and understanding this new information as long as it is similar in style, topic, and format to what it has spent its career doing (training).
 >
->Extending this analogy, if the new context is too brief or off topic then the researcher likely need to fill in the gaps and might misinterpret what you are asking.  Also, if you give too much context that veers off into other topics then the researcher may also go too far off topic when trying to answer.  This sometimes gets called hallucination but I like to think of it as the researcher getting off topic from not being well informed, guided, and focused on the topic at hand.
+>Extending this analogy, if the new context is too brief or off topic then the researcher likely needs to fill in the gaps and might misinterpret what you are asking.  Also, if you give too much context that veers off into other topics then the researcher may also go too far off topic when trying to answer.  This sometimes gets called hallucination but I like to think of it as the researcher getting off topic from not being well informed, guided, and focused on the topic at hand.
 
-These prompting approaches for question answering are shown in the diagram below:
+Prompting approaches for question answering are shown in the diagram below:
     
 <p align="center" width="100%"><center>
     <img align="center" alt="Overview Chart" src="../architectures/notebooks/applied/genai/qa.png" width="45%">
