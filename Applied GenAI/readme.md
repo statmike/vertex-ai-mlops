@@ -2,7 +2,7 @@
 
 # /Applied GenAI/readme.md
 
-This series of notebooks highlights the use over Vertex AI Generative AI for workflows that include using Google's large generative AI models.  Read more about these exciting new features of Vertex AI [here](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/overview).
+This series of notebooks highlights the use over Vertex AI Generative AI for workflows that include using Google's foundational large generative AI models.  These dont't need to be trained or hosted - just called with via API.  Read more about these exciting new features of Vertex AI [here](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/overview).
 
 **More Resources**
 
@@ -52,19 +52,17 @@ auth.authenticate_user()
 PROJECT_ID = 'your project here'
 REGION = 'us-central1'
 
-import vertexai.preview.language_models
+import vertexai.language_models
 
 vertexai.init(project = PROJECT_ID, location = REGION)
-
-
 ```
 
 **Use**
 
-Example for a text generation request with a specific model - [reference](https://cloud.google.com/python/docs/reference/aiplatform/latest/vertexai.preview.language_models.TextGenerationModel):
+Example for a text generation request with a specific model - [reference](https://cloud.google.com/python/docs/reference/aiplatform/latest/vertexai.language_models.TextGenerationModel):
 
 ```Python
-textgen_model = vertexai.preview.language_models.TextGenerationModel.from_pretrained('text-bison@001')
+textgen_model = vertexai.language_models.TextGenerationModel.from_pretrained('text-bison@001')
 
 textgen_model.predict('What are the rules of baseball?')
 ```
@@ -74,7 +72,7 @@ textgen_model.predict('What are the rules of baseball?')
 >A run is scored when a player advances around all four bases in the correct order. The bases are located at first, second, third, and home plate. A player can advance to the next base by hitting the ball and running, or by being walked or hit by a pitch.
 
 ```Python
-textgen_model.predict(question, max_output_tokens = 500)
+textgen_model.predict('What are the rules of baseball?', max_output_tokens = 500)
 ```
 
 >Baseball is a bat-and-ball game played between two teams of nine players on a field in the shape of a diamond. The game is played with a hard, round ball and a bat. The object of the game is for a team to score more runs than the opposing team.
@@ -100,17 +98,37 @@ textgen_model.predict(question, max_output_tokens = 500)
 ---
 ## GenAI Use Cases
 
-While using an LLM basically comes down to text input and text output, it can be helpful to understand how to frame the text input to achieve a desired output.  This is known as prompting.  How the input is framed can solve different types of tasks like summarization, classification and various extraction tasks (generate text, rewrite text, answer questions).  A high level overview of prompt design for these tasks is depicted below:
+**Designing Prompts**
+
+Reference - [Overview of text prompt design](https://cloud.google.com/vertex-ai/docs/generative-ai/text/text-overview)
+
+While using an LLM basically comes down to text input and text output, it can be helpful to understand how to frame the text input to achieve a desired output.  This is known as prompting.  Experimenting with prompting is called prompt tuning.  How the input prompt is framed can solve different types of tasks like summarization, classification and various extraction tasks (generate text, rewrite text, answer questions).  A high level overview of prompt design for these tasks is depicted below:
 
 <p align="center" width="100%"><center>
     <img align="center" alt="Overview Chart" src="../architectures/notebooks/applied/genai/prompting.png" width="45%">
 </center></p>
     
-An incredibly useful task for LLMs is answering questions - the far right extraction tasks depicted above.  There are several approaches to constructing prompts for this type of tasks.  The simplest is just asking the question - single shot.  This relies on the LLMs pre-trained data to construct an answer.  LLMs can have vast knowledge of many topics but probably are unaware of you private and newly created information.  
+An incredibly useful task for LLMs is answering questions - the far right extraction tasks depicted above.  There are several approaches to constructing prompts for this type of tasks.  The simplest is just asking the question - single shot.  This relies on the LLMs pre-trained data to construct an answer.  LLMs can have vast knowledge of many topics but are probably are unaware of you private and/or newly created information.  
+
+**Tuning Langugae Models**
+
+Reference - [Tune language models](https://cloud.google.com/vertex-ai/docs/generative-ai/models/tune-models)
 
 When the answers need to be tailored for format, length or tone then it can be helpful to try multi-shot prompting.  This includes examples of questions with answers in the prompt followed by the new question as a way of coercing the type of answer.  Another way to acomplish this is to create a tuned adaptor for the model that formats a single shot prompt in a way that coerces the answer based on a set of tuning examples.
 
+>**Sidebar:**
+>
+>Tuning a language model does note actually change the model, instead, it is enhanced for a specific task.  This helps the model learn to perform a task as desired from a set of examples - tuning examples.  This can be thought of as an adaptor model.  I like to think of this as a pair of glasses for a LLM.  These glasses focus the light (input text) onto the eye (the LLM input) in an alignment that focuses on doing the task well.
+
+**Contextual Awareness**
+
 When the LLM needs additional information related to the question in order to answer it, the information can also be supplied in the prompt as context.  This avoids the need to customize or retrain an LLM for specific new or private information.
+
+>**Sidebar:**
+>
+>When an LLM is used to generate an answer, it is drawing from the input prompt and it's learned information (parameters).  I like to think of an LLM like a professional researcher.  The researcher has read many articles, books, papers and more and is very knowledgeable.  The researcher is likely very good at reading new documents as well because it has a lot of transferable skills from already vast knowledge.  When you give context to the LLM it is like giving the researcher a new article.  They are likely very good at reading and understanding this new information as long as it is similar in style, topic, and format to what it has spent its career (training time) on.
+>
+>Extending this analogy, if the new context is too brief or off topic then the researcher likely need to fill in the gaps and might misinterpret what you are asking.  Also, if you give too much context that veers off into other topics then the researcher may also go too far off topic when trying to answer.  This sometimes gets called hallucination but I like to think of it as the researcher getting off topic from not being well informed, guided, and focused on the topic at hand.
 
 These prompting approaches for question answering are shown in the diagram below:
     
@@ -118,13 +136,17 @@ These prompting approaches for question answering are shown in the diagram below
     <img align="center" alt="Overview Chart" src="../architectures/notebooks/applied/genai/qa.png" width="45%">
 </center></p>
 
+**Retrieving Context**
+
 Ultimately, the LLM needs contextual information about the question in order to answer it.  Rather than needing your custom or private information as part of the LLM you could supply relevant context from your library or warehouse of information along with a question so that the LLM is tasked with reading, and determining how to answer using the supplied context.  The core to this approach is retrieving the context.  The chart below shows many sources that can be used to retrieve context for the question.
 
 <p align="center" width="100%"><center>
     <img align="center" alt="Overview Chart" src="../architectures/notebooks/applied/genai/context.png" width="45%">
 </center></p>
 
-The key is retrieving context relevant to the specific question being asked.  Not too much context, not off topic context, but specific relevant context.  A great advantage of this approach is that the LLM does not necessary need specific training or parameters to understand your private or new text because the text is being supplied in the prompt - as context to the question. A type of LLM is an embedding LLM which returns a vector of numbers to represent the input text.  These numbers relate to the words, their order, their meaning, and their cooperation - in other words semantic meaning of the input.  These embeddings lead to an amazing general approach to identifying context for a question that can been automated without a lot of customization.
+The key is retrieving context relevant to the specific question being asked.  Not too much context, not off topic context, but specific relevant context.  A great advantage of this approach is that the LLM does not necessary need specific training or parameters to understand your private or new text because the text is being supplied in the prompt - as context to the question.
+
+A type of LLM is an embedding LLM which returns a vector of numbers to represent the input text.  These numbers relate to the words, their order, their meaning, and their cooperation - in other words semantic meaning of the input.  These embeddings lead to an amazing general approach to identifying context for a question that can been automated without a lot of customization.
 
 The following section links to many notebook based examples of this general approach to contextual question answering.
 
