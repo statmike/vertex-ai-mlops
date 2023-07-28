@@ -146,12 +146,25 @@ Ultimately, the LLM needs contextual information about the question in order to 
 
 The key is retrieving context relevant to the specific question being asked.  Not too much context, not off topic context, but specific relevant context.  A great advantage of this approach is that the LLM does not necessary need specific training or parameters to understand your private or new text because the text is being supplied in the prompt - as context to the question.
 
+**Semantic Retrieval**
+
 A type of LLM is an embedding LLM which returns a vector of numbers to represent the input text.  These numbers relate to the words, their order, their meaning, and their cooperation - in other words semantic meaning of the input.  These embeddings lead to an amazing general approach to identifying context for a question that can been automated without a lot of customization.
+
+By computing the distance between embeddingins for questions and pieces of information, sometimes called chunks (think lines, paragraphs, ...), a filter list of most relevant content can be retrieve as context.
+
+**Examples**
 
 The following section links to many notebook based examples of this general approach to contextual question answering.
 
 ---
-## Notebooks For Q&A Examples:
+## Notebooks For BigQuery Q&A Examples:
+
+These notebooks use code generation LLMs to first query BigQuery to retrieve context for users questions.  Then the response is provided to text generation LLMs to answer the question.
+
+- [Vertex AI GenAI For BigQuery Q&A](./Vertex%20AI%20GenAI%20For%20BigQuery%20Q&A%20-%20Overview.ipynb)
+
+---
+## Notebooks For Document Q&A Examples:
 
 **Prerequisites**
 
