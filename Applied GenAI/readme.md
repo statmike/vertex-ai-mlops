@@ -161,7 +161,11 @@ The following section links to many notebook based examples of this general appr
 
 These notebooks use code generation LLMs to first query BigQuery to retrieve context for users questions.  Then the response is provided to text generation LLMs to answer the question.
 
-- [Vertex AI GenAI For BigQuery Q&A](./Vertex%20AI%20GenAI%20For%20BigQuery%20Q&A%20-%20Overview.ipynb)
+<p align="center" width="100%"><center>
+    <img align="center" alt="Overview Chart" src="../architectures/notebooks/applied/genai/bq_qa.png" width="45%">
+</center></p>
+
+- [Vertex AI GenAI For BigQuery Q&A - Overview](./Vertex%20AI%20GenAI%20For%20BigQuery%20Q&A%20-%20Overview.ipynb)
 
 ---
 ## Notebooks For Document Q&A Examples:
