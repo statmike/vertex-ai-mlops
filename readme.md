@@ -440,13 +440,4 @@ This is my personal repository of demonstrations I use for learning and sharing 
 - GitHub [GoogleCloudPlatform/mlops-with-vertex-ai](https://github.com/GoogleCloudPlatform/mlops-with-vertex-ai)
 - [Overview of Data Science on Google Cloud](https://cloud.google.com/data-science)
 
----
-## ToDo
 
-See individual todo list in the readme within each folder of the repository 
-- [ ] for each notebook add a list of api's, roles, perimission used
-- [ ] use virtualenv throughout
-- [ ] move all setup of apis into the 00 folder and reference them as prerequisites
-- [ ] add colab link in all notebooks (if possible)
-- [ ] remove numbering from frameworks
-- [ ] New folder MLOps that pull all dev tools and workflows together
