@@ -72,27 +72,5 @@ This list is in the suggested order of review for anyone getting an overview and
     - [Vertex AI Pipelines - BQML ARIMA+](./Vertex%20AI%20Pipelines%20-%20BQML%20ARIMA+.ipynb)
     - [8 - Vertex AI Pipelines - Forecasting Tournament - BQML + AutoML + Prophet](../Applied%20Forecasting/8%20-%20Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20-%20BQML%20+%20AutoML%20+%20Prophet.ipynb)
 
----
 
-ToDo:
-- [ ] Next Update Pass
-    - [ ] correct language for 'This Run' sections print statment: with > will
-    - [ ] add colab link and code - update bq client to set project for colab use
-    - [ ] add code to lookup existing model to each notebook so it can be run without retraining
-    - [ ] rename experiment in 03g, h, i to match notebook name
-    - [ ] 03h kmeans add silhouette plot
-    - [ ] add experiment tracking
-    - [ ] directly register BQML models in Vertex AI [link](https://cloud.google.com/bigquery-ml/docs/managing-models-vertex)
-    - [ ] create an example of ML.PREDICT for patial dependence plot
-- [ ] update pipeline examples
-    - [ ] pipelines 1 and 2 break if models form 03g, 03h, or 03i are deployed - unsupervised methods
-    - [ ] New version of pipeline 1 that uses experiment tracking - call it 1b
-    - [X] update pipeline 2 - same flow but updated to match the series
-    - [ ] create pipeline 3
-- [ ] Predictions
-    - [ ] Online Predictions notebooks like 05
-    - [ ] Batch Predictions In Vertex
-    - [ ] Cloud Run
-    - [ ] Local
-    - [ ] DataFlow
 
