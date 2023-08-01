@@ -26,33 +26,8 @@ This list is in the suggest order of review for anyone getting an overview and l
     - [Vertex AI AutoML Forecasting - Python client](../Applied%20Forecasting/Vertex%20AI%20AutoML%20Forecasting%20-%20Python%20client.ipynb)
     - [Vertex AI AutoML Forecasting - multiple simultaneously](../Applied%20Forecasting/Vertex%20AI%20AutoML%20Forecasting%20-%20multiple%20simultaneously.ipynb)  
 
-**Notes:**
 
 
 
 
----
-ToDo:
-- [X] add prereq to readme
-- [X] Update references to Service Account and check for permissions - reference the 00 notebooks new section for correct setup
-- [IP] Add TabNet example
-    - [IP] Include TabNet with Hyperparameter Tuning Example
-    - [IP] Online and Batch Predictions
-    - [IP] Explainability with feature masks
-- [IP] BQML AutoML
-    - [ ] Which container serves the exported model?
-        - https://cloud.google.com/vertex-ai/docs/export/export-model-tabular#export_process
-- [ ] Refinement+Update Pass
-    - General
-        - [ ] Update readme with hyperlinks
-        - [ ] Update notebook naming
-            - [ ] Update links in YouTube Video descriptions        
-    - [ ] 02a
-    - [ ] 02b
-    - [ ] 02c    
-- [ ] Add Multiple AutoML in parallel model example - see applied forecasting
-- [ ] Add AutoML Workflow examples
-- [ ] 02d - add fetching logs to see which models were tried to create the final model: all tries, pick 20, ensemble....
-    - export, load, and inspect layers to see final model - see activation functions?
-- [IP] show how to interpret log of AutoML jobs: https://cloud.google.com/vertex-ai/docs/tabular-data/classification-regression/logging
-    - [ ] Export Model and Show Model Graph?
+
