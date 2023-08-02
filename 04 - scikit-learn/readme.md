@@ -30,6 +30,4 @@ This series of notebooks highlights the use of Vertex AI for machine learning wo
     - [04h - Vertex AI Custom Model - scikit-learn - Hyperparameter Tuning Job With Python Source Distribution](04h%20-%20Vertex%20AI%20Custom%20Model%20-%20scikit-learn%20-%20Hyperparameter%20Tuning%20Job%20With%20Python%20Source%20Distribution.ipynb)
     - [04i - Vertex AI Custom Model - scikit-learn - Hyperparameter Tuning Job With Custom Container](./04i%20-%20Vertex%20AI%20Custom%20Model%20-%20scikit-learn%20-%20Hyperparameter%20Tuning%20Job%20With%20Custom%20Container.ipynb)
 
----
 
-ToDo:

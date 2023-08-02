@@ -35,26 +35,7 @@ To add R:
     
     
 ---
-ToDo
-- [IP] 08Tools predictions online
-    - waiting on bug fix - works for REST now (11/2/22), but not aiplatform (maybe update?)
-- [X] 08Tools predictions custom
-    - [X] serve with cloud run
-    - [X] serve locally with docker
-- [ ] finish writeups for round 1 of development
-    - [ ] 08 notebook
-    - [ ] 08b Script - notebook to script
-    - [ ] 08b Training Job - custom container training job
-    - [ ] 08b_gcs Script - notebook to script
-    - [ ] 08b_gcs Training Job - custom container training job
-    - [ ] 08Tools Prediction Custom
-    - [ ] 08Tools GCS FUSE
-- Planning
-    - [ ] 08Tools predictions local
-    - [ ] 08Tools predictions batch
-    - [ ] 08c Custom Container Workflow with a Custom Job
-    - [ ] 08i Custom Conatiner Workflow with Hyperparameter tuning job (l2, or elastic net)
-    - [ ] Link to Tips for BigQuery with R
+
 - links to incorporate
     - gcs fuse
         - https://cloud.google.com/blog/topics/developers-practitioners/cloud-storage-file-system-vertex-ai-workbench-notebooks

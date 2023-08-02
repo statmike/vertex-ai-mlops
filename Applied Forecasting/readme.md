@@ -63,39 +63,9 @@ This list is in the suggested order of review for anyone getting an overview and
 
 **Notes**
 
-
----
-ToDo:
-- [ ] full update for 10
-- [ ] full update for 11
-- [ ] 13 waiting on fix to complete update
-- [ ] full update for 14
-    - [ ] Turn into solution: register components to artifact registry and build pipelines dynamically
-    - [ ] add 3 ARIMA_PLUS_XREG - wait for GA and time_series_id parameter
-    - [ ] add 4
-    - [ ] add 8
-    - [ ] add 9
-- Additions to make
-    - 3 update after preview -> GA
-        - add comparison to 2: make it optional
-    - more methods in the custom models section?
-        - XGBoost like 4
-        - sktime
-        - StatsForecast with Fugue
-        - GluonTS
-        - Darts
-- Issues To Investigate:
-    - 11 complete when bug is fixed
-    - 12 and 13 - Clean up link to bucket, staging bucket for GCS. Understand what goes where.
-    - 1,2,3,4 Consider printing all BQ query's out so they can be copy/pasted to console. 
-    - 4 address horizon predictions and related challenges
-    - 5 through 9 - Batch predictions - carry down known covariates into horizon
-    - 5 through 9 - explanations?
-    - 5 through 9 - get evaluations from Model Registry
-    - 10 and 11 - add evaluations to model registry (see 05 series)
-- thoughts:
+- Resources:
     - Price optimization example like: https://cloud.google.com/blog/products/ai-machine-learning/price-optimization-using-vertex-ai-forecast
----
+
 
 
 

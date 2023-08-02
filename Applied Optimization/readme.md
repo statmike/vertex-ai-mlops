@@ -22,7 +22,3 @@ This series of notebooks will feature examples for optimization - primarily with
     - [../04 - scikit-learn/04i - Vertex AI Custom Model - scikit-learn - Hyperparameter Tuning Job With Custom Container](../04%20-%20scikit-learn/04i%20-%20Vertex%20AI%20Custom%20Model%20-%20scikit-learn%20-%20Hyperparameter%20Tuning%20Job%20With%20Custom%20Container.ipynb)
     
     
----
-ToDo:
-- [ ] Add functional example from Dev work that automates the iterations
-- [ ] Add OSS example - need Python 3.10

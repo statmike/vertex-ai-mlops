@@ -124,15 +124,3 @@ This series of notebooks will feature Google Cloud Pre-Trained APIs:
     </tr>
 </table>
 
----
-
-ToDo:
-- [ ] Rename the fun-demo
-    - [ ] add links for client in each section and at top
-    - [ ] overview of capabilities of each API in text
-    - [ ] expand image example
-    - [ ] refine client definitions to latest versions
-- [ ] split fun-demo into per API demos as hello-world examples
-- [ ] bring in speech-to-text POC gist
-    - [ ] incorporate Google GitHub package for accuracy measures
-- [ ] bring in document AI demo
