@@ -64,12 +64,23 @@ Example for a text generation request with a specific model - [reference](https:
 ```Python
 textgen_model = vertexai.language_models.TextGenerationModel.from_pretrained('text-bison@001')
 
-textgen_model.predict('What are the rules of baseball?')
+prediction = textgen_model.predict('What are the rules of baseball?')
+
+predition.text
 ```
 
 >Baseball is a bat-and-ball game played between two teams of nine players on a field in the shape of a diamond. The game is played with a hard, round ball and a bat. The object of the game is for a team to score more runs than the opposing team.
 >
 >A run is scored when a player advances around all four bases in the correct order. The bases are located at first, second, third, and home plate. A player can advance to the next base by hitting the ball and running, or by being walked or hit by a pitch.
+
+You can also look at the `safety_attibute` part of the [prediction response](https://cloud.google.com/python/docs/reference/aiplatform/latest/vertexai.language_models.TextGenerationResponse).  It is empty in this example indicating no strong association with any of the potentially sensitive topics.  [Description of attributes](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/responsible-ai#safety_attribute_descriptions)
+
+```Python
+prediction.safety_attribute
+```
+
+> {}
+
 
 ```Python
 textgen_model.predict('What are the rules of baseball?', max_output_tokens = 500)
