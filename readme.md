@@ -436,6 +436,7 @@ Resources on these items:
 
 This is my personal repository of demonstrations I use for learning and sharing Vertex AI.  There are many more resources available.  Within each notebook I have included a resources section and a related training section. 
 
+- GitHub [Many Examples For Real World Scenarios!](https://github.com/jchavezar/vertex-ai-samples) by [@jcavezar](https://github.com/jchavezar)
 - GitHub [GoogleCloudPlatform/vertex-ai-samples](https://github.com/GoogleCloudPlatform/vertex-ai-samples)
 - GitHub [GoogleCloudPlatform/mlops-with-vertex-ai](https://github.com/GoogleCloudPlatform/mlops-with-vertex-ai)
 - [Overview of Data Science on Google Cloud](https://cloud.google.com/data-science)
