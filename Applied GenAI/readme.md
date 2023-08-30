@@ -107,6 +107,25 @@ textgen_model.predict('What are the rules of baseball?', max_output_tokens = 500
 >* The team with the most runs at the end of the game wins.
 
 ---
+## LLMs
+
+Large Language Models (LLMs) are models that have been trained on enormous amounts of text samples and then fine tuned for tasks like summarization, extraction, and/or classification.  Today, these fine-tuned models have emerged as generative AI, also called GenAI.  
+
+I like to say GenAI stands for "General AI" as these models are now like opinionated bots that can do many tasks that previously required custom fit-for-purpose ML models.  Those fit-for-purpose models needed training data, labeling, and iterative training to get to the necesssary accuracy for a single task.  Now the processes has reversed a bit.  These general models can be asked, called prompting, to do the a new task and then the prompt can be iteratively adjusted to attempt achieving a desired accuracy.  This prompt iteration takes on stages:
+- Adjusting prompts iteratively = Single Shot Prompt Engineering
+- Informing prompts with examples = Multi-Shot Prompt Engineering
+- Adaptive tuning with limited input:output sample pairs = Tuning 
+
+>See more in [Introduction to prompt design](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/introduction-prompt-design).
+
+Before jumping into use cases it is a good idea to think about what LLMs are doing.  The prompt is followed with an output.  The LLM is generating an output based on setting that guide it through picking likely next word, then next word, then next word, then next word, ... until it has either created a response that fits or hit the limit of it's output size.
+
+A good way to "see" this is to pick a popular passage of public domain text. Like the opening paragraph/sentence of "A Tale of Two Cites" by Charles Dickens and Harvey Dunn.  "It was the best of times, it was the worst of times, ...".  How many input/prompt words before the LLM picks the correct next word?  How many before it can fill in the remainder of the passage?  What is the input/prompt starts mid-sentence?  
+
+Expore all of these questions interatively with the notebook:
+- [Understanding LLMs](./Understanding%20LLMs.ipynb)
+
+---
 ## GenAI Use Cases
 
 **Designing Prompts**
