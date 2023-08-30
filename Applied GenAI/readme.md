@@ -121,7 +121,7 @@ While using an LLM basically comes down to text input and text output, it can be
     
 An incredibly useful task for LLMs is answering questions - the far right extraction tasks depicted above.  There are several approaches to constructing prompts for this type of tasks.  The simplest is just asking the question - single shot.  This relies on the LLMs pre-trained data to construct an answer.  LLMs can have vast knowledge of many topics but are probably are unaware of you private and/or newly created information.  
 
-**Tuning Langugae Models**
+**Tuning Language Models**
 
 Reference - [Tune language models](https://cloud.google.com/vertex-ai/docs/generative-ai/models/tune-models)
 
@@ -137,7 +137,7 @@ When the LLM needs additional information related to the question in order to an
 
 >**Sidebar:**
 >
->When an LLM is used to generate an answer, it is drawing from the input prompt and the learned information (parameters).  I like to think of an LLM like a professional researcher.  The researcher has read many articles, books, papers and more and is very knowledgeable.  The researcher is likely very good at reading new documents as well because it has a lot of transferable skills from already vast knowledge.  When you give context to the LLM it is like giving the researcher a new article.  They are likely very good at reading and understanding this new information as long as it is similar in style, topic, and format to what it has spent its career doing (training).
+>When an LLM is used to generate an answer, it is drawing from the input prompt and the learned information (parameters).  I like to think of an LLM like a professional researcher.  The researcher has read many articles, books, papers and more and is very knowledgeable.  The researcher is likely very good at reading new documents as well because it has a lot of transferable skills from already vast knowledge.  When you give context to the LLM it is like giving the researcher a new article.  They are likely very good at reading and understanding this new information as long as it is similar in style, topic, and format to what they have spent its career doing (training).
 >
 >Extending this analogy, if the new context is too brief or off topic then the researcher likely needs to fill in the gaps and might misinterpret what you are asking.  Also, if you give too much context that veers off into other topics then the researcher may also go too far off topic when trying to answer.  This sometimes gets called hallucination but I like to think of it as the researcher getting off topic from not being well informed, guided, and focused on the topic at hand.
 
@@ -157,15 +157,50 @@ Ultimately, the LLM needs contextual information about the question in order to 
 
 The key is retrieving context relevant to the specific question being asked.  Not too much context, not off topic context, but specific relevant context.  A great advantage of this approach is that the LLM does not necessary need specific training or parameters to understand your private or new text because the text is being supplied in the prompt - as context to the question.
 
+**Input/Output Sizes: Tokens**
+
+Large language models have limit for the size of input then can receive and output they can return.  While we think of these as words, maybe even characters, the models are actually using a codified version of language where the coding process is called tokenization.  It is not as simple as a `unique_word = unique_token` because models use a data compression mechanism like [Byte-Pair Encoding (BPE)](https://en.wikipedia.org/wiki/Byte_pair_encoding).
+
+>**Sidebar:**
+>
+> Languages are enormous.  Many words and many versions and variations of words.  Words are made up of characters and it turns out there are actually fewer grouping of unique characters than there are unique words.  Byte-Pair Encoding groups common/frequent sets of characters into unique encodings.  This process is a big part of mapping languages to machine learning and is a core part of the research.  Modern LLMs dont just take a "bag" of unique words, or encoded character groupings.  They also consider all the combinations of these with lengths that can be very long.  The longer the considered length the more the more semantic meaning and nuance can be learned from passages of text.
+
+Without getting into to much detail about the mechanics of the LLMs we want to know why these token limits exists.  First, computational performance.  Handling more means needing more memory and more computational complexity.  There are models designed for larger input and/or output.  These models have architectures designed to handle longer text during their training phase.  Models are typically priced based on the input+output size so we should always try to focus the interaction with LLMs on the specific task with optimal information.  Semantic retrieval in the next section will help a lot with this!
+
+>**Sidebar:**
+>
+>Input and output limits for LLMs can be described in the analogy of interacting with a researcher as we have before in this document.  The LLM is the researcher.  We can bring new information to the researcher - context in the prompt.  The researcher may limit what they are willing to consider when we ask each question - input tokens.  The researcher may also limit the response they give - output tokens.
+
+**Token and Pricing - Control and Transparency**
+
+LLMs hosted as API's are typically priced by a combination of the input+output and the model itself.  Large general models might cost more while smaller topical models (think code completion) are cheaper.  Models with highly focused areas of knowledge might have very special pricing - think medical or legal with specific domains covered in the pre-training data.
+
+One mechanism to control cost is limiting the input and output size.  To control output sizes model have parameters like [`max_output_token`](https://cloud.google.com/python/docs/reference/aiplatform/latest/vertexai.language_models.TextGenerationModel#vertexai_language_models_TextGenerationModel_predict).  Input size can be controlled and to create smaller, more optimal chunks of input the technique of the next section will help - semantic retrieval.
+
+With Vertex AI, [pricing](https://cloud.google.com/vertex-ai/pricing#generative_ai_models) for LLMs is based on the model and the character count of the input + output. This makes pricing easy and transparent.  Since the models measure input and output in tokens it can be helpful to use the `countTokens` method provided for models ([details here](https://cloud.google.com/vertex-ai/docs/generative-ai/get-token-count)).
+
 **Semantic Retrieval**
 
-A type of LLM is an embedding LLM which returns a vector of numbers to represent the input text.  These numbers relate to the words, their order, their meaning, and their cooperation - in other words semantic meaning of the input.  These embeddings lead to an amazing general approach to identifying context for a question that can been automated without a lot of customization.
+A type of LLM is an embedding LLM which returns a vector of numbers to represent the input text, image, or combination (multimodal).  These numbers relate to the words, their order, their meaning, and their cooperation - in other words semantic meaning of the input.  These embeddings lead to an amazing general approach to identifying context for a question that can been automated without a lot of customization.
 
-By computing the distance between embeddingins for questions and pieces of information, sometimes called chunks (think lines, paragraphs, ...), a filter list of most relevant content can be retrieve as context.
+By computing the distance between embeddingins for questions and pieces of information, sometimes called chunks (think lines, paragraphs, ...), a filtered list of most relevant content can be retrieve as context.
 
 **Examples**
 
-The following section links to many notebook based examples of this general approach to contextual question answering.
+The following sections link to many notebook based examples of using LLMs as described here!
+
+---
+## Summarization
+
+Text can come in the form of audio.  This requires a conversion to text, transcription.  Google Cloud provides a Speech-To-Text API with multiple methods to handle this process depending on the needs, length of audio, and file/streaming application.  
+
+- [Summarize Conversations - Text and Audio](./Summarize%20Conversations%20-%20Text%20and%20Audio.ipynb)
+    - Start with history of a chat transcription in text
+    - Continue the chat using a Chat LLM as an agent
+    - Uses an LLM to Summarize the combined chat transcription with the added agent interaction
+    - Converts the transcript to an audio file with multiple voices using the Text-To-Speech API
+    - Converts the audio file to a conversation transcript will also recognizing the different speakers
+    - Summarizes the chat transcript overall and from the perspective of each speaker
 
 ---
 ## Notebooks For BigQuery Q&A Examples:
