@@ -219,7 +219,9 @@ Text can come in the form of audio.  This requires a conversion to text, transcr
     - Uses an LLM to Summarize the combined chat transcription with the added agent interaction
     - Converts the transcript to an audio file with multiple voices using the Text-To-Speech API
     - Converts the audio file to a conversation transcript will also recognizing the different speakers
+    - Use DLP to redact person information like Names, Account numbers, and URLs.
     - Summarizes the chat transcript overall and from the perspective of each speaker
+    - Use the LLM to label the speaker by their role as either "Agent" or "Customer"
 
 ---
 ## Notebooks For BigQuery Q&A Examples:
