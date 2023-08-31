@@ -245,6 +245,19 @@ By creating embeddings for column descriptions, the question can be embedded and
 A further enhancement is to use a text LLM along with a code LLM.  First ask the text LLM to list the steps needed to answer the question.  Then, the prompt for the code llm would include the steps retrieved from the text LLM along with the matching table and column schema retrieved.  
 
 ---
+## Working with Code as A Language
+
+Code is a language.  A common syntax is SQL.  BigQuery runs GoogleSQL and a common question is "Is my code efficient?".
+
+Using BigQuery and Vertex AI Codey APIs it is possible to build a BigQuery Advisory!
+
+[Vertex AI GenAI For Rewriting - BigQuery Advisor With Codey](./Vertex%20AI%20GenAI%20For%20Rewriting%20-%20BigQuery%20Advisor%20With%20Codey.ipynb)
+- Use the BigQuery Information Schema to find potentially inefficient queries.  In this case identify the queries with longest syntax as an example.
+- Use BigQuery ML to directly connect to Vertex AI Generative AI APIs and get descriptions of long SQL statements
+- Use Vertex AI Codey APIs to rewrite long code with a target of shorter syntax
+    - The example runs on an environment that has run all the code in this GitHub repository.  It find a query with more than 7k character and shrinks it by 54% and then submits it to check that it runs successfully!
+
+---
 ## Notebooks For Document Q&A Examples:
 
 **Prerequisites**
