@@ -28,7 +28,48 @@ This series will use Citibike rentals in New York city.  The bike stations near 
     </tr>
 </table>
 
+---
+## Forecasting Topics
+
+**Univariate Forecasting**
+
+At the core, forecasting is prediction where the target(s) is/are future time points.  For this, only two columns are needed: one to represent the time point of the observation, another that captures the measurement.  The two columns make up a time series.  Proceeding with just these two columns the choice of approach could be:
+- Regression based approach predicting next value in series
+- Multi-step regression models predicting each of the next values over a future horizon
+- Using a parametrics approach like ARIMA
+    - build a formula for the future as a function of the past with parameters for previous time points (`p`), differencing (`d`), and moving averages (`q`).
+- Using a Generalized Additive Model approach like [Prophet](https://github.com/facebook/prophet)
+    - this detects change points
+
+**Multi-variate Forecasting**
+
+All of these are local forecast, meaning each time series is fit independently.  Theese can be expanded to incorporate more information using covariates with multi-variate forecasting.  Additional information that is related to the measurement over time can be helpful to understand the changes that occur over time.  The covariates could be information that could be know ahead of time like discounts, holiday periods, promotions and advertising.  They could also be information not know until they acctually occur like weather, traffic, and interruptions to business.  
+
+**Global Forecasting**
+
+Beyond covariates (or even without covariates) there are also method that learn across multiple time series in attempts to have great generalizability.  These are called global forecasting techniques in that the time series are learned together at the same time.
+
+**More topics**
+
+Other topics that come up in forcasting project include:
+- hierachical forecasting.  These approaches allow the hierarchy of time and/or categorization to be preserverd so that aggregations of the forecasted values make sense.
+- cold start or warm start forecasting for new time series (think about issues with forecasting sales new products).
+- clustering time series into like behaving groups with techniques like Dynamic Time Warping
+- more!
+
+**Online Forecasting**
+
+The approaches above fall into the category of batch forecasting.  This is the most common approach to forecasting and works for more cases because it takes training data at a point in time and creates predictive models for future time points over a specified horizon.  The predictions can be generated in batch, saved and recalled as needed by business application like dashboards. 
+
+What is forecasting is needed on-demand?
+- Maybe the number of time series is far too large to continously train, making it easier to just create a forecast as needed
+- Maybe the velocity of the data requires in the moment training and serving to make faster decisions - like anomaly detecting
+
+Google Cloud [Time Series Insights API](https://cloud.google.com/timeseries-insights) is a solution to the scale and speed requirements of these scenarios.  It is also possible to build local forecasting approaches into Vertex AI Endpoints with Custom Prediction Routines (CPR).  An example of CPR based local forecasting is given below using Prophet. 
+
+---
 **Prerequisites**
+
 - Environment Setup with: [00 - Setup.ipynb](../00%20-%20Setup/00%20-%20Environment%20Setup.ipynb)
 
 ## Notebooks:
@@ -38,27 +79,28 @@ This list is in the suggested order of review for anyone getting an overview and
 
 - Data Source:
     - 1 - [BigQuery Time Series Forecasting Data Review and Preparation](./BigQuery%20Time%20Series%20Forecasting%20Data%20Review%20and%20Preparation.ipynb)
-- BigQuery ML:
+- BigQuery ML: Univariate and Multivariate Local Forecasting Approaches
     - 2 - [BQML Univariate Forecasting with ARIMA+](./BQML%20Univariate%20Forecasting%20with%20ARIMA+.ipynb)
     - 3 - [BQML Multivariate Forecasting with ARIMA+ XREG](./BQML%20Multivariate%20Forecasting%20with%20ARIMA+%20XREG.ipynb)
     - 4 - [BQML Regression Based Forecasting](./BQML%20Regression%20Based%20Forecasting.ipynb)
-- Vertex AI AutoML:
+- Vertex AI AutoML: Global Forecasting for univariate or multi-variate including hierarchical forecasting
     - 5 - [Vertex AI AutoML Forecasting - GCP Console (no code)](./Vertex%20AI%20AutoML%20Forecasting%20-%20GCP%20Console%20(no%20code).ipynb)
     - 6 - [Vertex AI AutoML Forecasting - Python client](./Vertex%20AI%20AutoML%20Forecasting%20-%20Python%20client.ipynb)
     - 7 - [Vertex AI AutoML Forecasting - multiple simultaneously](./Vertex%20AI%20AutoML%20Forecasting%20-%20multiple%20simultaneously.ipynb)
-- Vertex AI Other:
+- Vertex AI Other: Global Forecasting for univariate or multi-variate including hierarchical forecasting
     - 8 - [Vertex AI Seq2Seq+ Forecasting - Python client](./Vertex%20AI%20Seq2Seq+%20Forecasting%20-%20Python%20client.ipynb)
     - 9 - [Vertex AI Temporal Fusion Transformer Forecasting - Python client](./Vertex%20AI%20Temporal%20Fusion%20Transformer%20Forecasting%20-%20Python%20client.ipynb)
     - 10 - [Vertex AI Time series Dense Encoder - Python client](./Vertex%20AI%20Time%20series%20Dense%20Encoder%20-%20Python%20client.ipynb)
-- Vertex AI Custom Models:
+- Vertex AI Custom Models: Local forecasting with Prophet for univariate and multi-variate data
     - 11 - [Vertex AI Custom Model - Prophet - In Notebook](./Vertex%20AI%20Custom%20Model%20-%20Prophet%20-%20In%20Notebook.ipynb)
     - 12 - [Vertex AI Custom Model - Prophet - Custom Job With Custom Container](./Vertex%20AI%20Custom%20Model%20-%20Prophet%20-%20Custom%20Job%20With%20Custom%20Container.ipynb)
-- Vertex AI Pipelines:
+- Vertex AI Pipelines: Automation for full forecasting workflows
     - 13 - [Vertex AI Pipelines - BQML ARIMA+](./Vertex%20AI%20Pipelines%20-%20BQML%20ARIMA+.ipynb)
     - 14 - [Vertex AI Pipelines - Prophet](./Vertex%20AI%20Pipelines%20-%20Prophet.ipynb)
     - 15 - [Vertex AI Pipelines - Forecasting Tournament with Kubeflow Pipelines (KFP)](./Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20with%20Kubeflow%20Pipelines%20(KFP).ipynb)
     - **Forecasting Pipelines** For more detailed starting points using Pipelines for forecasting I highly recommend [this repository](https://github.com/tottenjordan/vertex-forecas-repo) from coworker Jordan Totten!
-
+- Advanced Workflows:
+    - [Vertex AI Prediction Endpoints for Online Forecasting With Prophet](./Vertex%20AI%20Prediction%20Endpoints%20for%20Online%20Forecasting%20With%20Prophet.ipynb)
 
 
 **Notes**
