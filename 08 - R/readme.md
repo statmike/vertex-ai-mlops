@@ -5,15 +5,17 @@
 This series of notebooks highlights the use of Vertex AI for machine learning workflows with [R](https://www.r-project.org/).
 
 ## Environment Setup
-If the directions in the main [readme.md](../readme.md) were followed then this enviornment is Python based with TensorFlow installed.  Some of the notebooks here will also be using R which requies either:
-- an additional install to remain in this enviornment
-- or, choose a notebook install with R already installed (recommended)
-
-To add R:
-- Open a Terminal: File > New > Terminal
-- use [conda] to add both [R](https://anaconda.org/conda-forge/r) and the [R kernel](https://anaconda.org/conda-forge/r-irkernel) for Jupyter
-    - `conda install -c r r-irkernel`
-    - install packages with: `R -e 'install.packages(c("<package name>"), repos = "https://cran.us.r-project.org/")'`
+If the directions in the main [readme.md](../readme.md) were followed then this enviornment is Python based with TensorFlow installed.  Some of the notebooks here will also be using R which requies adding R.  For this it is recommend to use [Vertex AI Workbench Instances](https://cloud.google.com/vertex-ai/docs/workbench/instances/introduction).  Here is how:
+- Console > Vertex AI > Workbench Instance - [direct link](https://console.cloud.google.com/vertex-ai/workbench/instances)
+- Create a new instance - [instructions](https://cloud.google.com/vertex-ai/docs/workbench/instances/create)
+- Once it is started, click the `Open JupyterLab` link.
+- Add R:
+    - Open A terminal window within JupyterLab
+    - run: `conda create -n r-env r-essentials r-base`
+    - run: `conda activate r-env`
+    - (optional) run: `conda info --envs`
+    - install additional packages like:
+        - `conda install -c conda-forge r-bigrquery`
 
 ## Notebooks:
 - [08 - Vertex AI Custom Model - R - in Notebook](./08%20-%20Vertex%20AI%20Custom%20Model%20-%20R%20-%20in%20Notebook.ipynb)
