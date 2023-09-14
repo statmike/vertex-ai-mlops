@@ -6,7 +6,7 @@ This series of notebooks highlights the use of Vertex AI for machine learning wo
 
 ## Environment Setup
 If the directions in the main [readme.md](../readme.md) were followed then this enviornment is Python based with TensorFlow installed.  Some of the notebooks here will also be using R which requies adding R.  For this it is recommend to use [Vertex AI Workbench Instances](https://cloud.google.com/vertex-ai/docs/workbench/instances/introduction).  Here is how:
-- Console > Vertex AI > Workbench Instance - [direct link](https://console.cloud.google.com/vertex-ai/workbench/instances)
+- Console > Vertex AI > Workbench > Instances - [direct link](https://console.cloud.google.com/vertex-ai/workbench/instances)
 - Create a new instance - [instructions](https://cloud.google.com/vertex-ai/docs/workbench/instances/create)
 - Once it is started, click the `Open JupyterLab` link.
 - Add R:

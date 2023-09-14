@@ -355,7 +355,7 @@ For the full details on the APIs versions and layers and how/when to use each, [
 pip install google-cloud-aiplatform
 ```
 
-**Example Usage: Listing all Model in Vertex AI Model Registry**
+**Example Usage: Listing all Models in Vertex AI Model Registry**
 ```python
 PROJECT = 'statmike-mlops-349915'
 REGION = 'us-central1'
@@ -371,16 +371,23 @@ model_list = aiplatform.Model.list()
 <a id = 'setup'></a>
 ## Setup
 
-The demonstrations are presented in a series of JupyterLab notebooks. These can be reviewed directly in [this repository on GitHub](https://github.com/statmike/vertex-ai-mlops) or cloned to your Jupyter instance on [Vertex AI Workbench](https://cloud.google.com/vertex-ai/docs/workbench/notebook-solution).
+The demonstrations are presented in a series of notebooks that are best run in JupyterLab. These can be reviewed directly in [this repository on GitHub](https://github.com/statmike/vertex-ai-mlops) or cloned to your Jupyter instance on [Vertex AI Workbench Instances](https://cloud.google.com/vertex-ai/docs/workbench/instances/introduction).
 
-### Option 1: Review files directly
+### Option 1: Review And Use Individual Files
 
-Select the files and review them directly in the browser or IDE of your choice.  This can be helpful for general understanding and selecting sections to copy/paste to your project.
+Select the files and review them directly in the browser or IDE of your choice.  This can be helpful for general understanding and selecting sections to copy/paste to your project.  Some options to get a local copy of this repositories content:
+- use git: `git clone https://github.com/statmike/vertex-ai-mlops`
+- use `wget` to copy individual files directly from GitHub:
+    - Go to the notebook on GitHub.com and right-click the download link. Then select copy link address.
+    - Alternatively, click the Raw button on GitHub and then copy the URL that loads.
+    - Run the following from a notebook cell or directly from a terminal (without the !). Note the slightly different address that points directly to raw content on GitHub.
+        - `!wget "https://raw.githubusercontent.com/statmike/vertex-ai-mlops/main/<path and filename>.ipynb"`
+- Use [Colab](https://colab.research.google.com/) (and soon [Vetex AI Enterprise Colab](https://cloud.google.com/vertex-ai/docs/colab/create-console-quickstart)) to open the notebooks. Many of the notebooks have section at the top with buttons for opening directly in Colab.  Some notebooks don't yet have this feature and some use local Docker which is not available on Colab.  
 
 ### Option 2: Run These Notebooks in a Vertex AI Workbench based Notebook 
 
 TL;DR
-> In Google Cloud Console, Select/Create a Project then go to Vertex AI > Workbench > User-Managed Notebooks
+> In Google Cloud Console, Select/Create a Project then go to Vertex AI > Workbench > Instances
 > - Create a new notebook and Open JupyterLab
 > - Clone this repository using Git Menu, Open and run `00 - Environment Setup.ipynb`
 
@@ -394,21 +401,16 @@ TL;DR
       1. Alternatively, go to: 
          1. Console > Vertex AI, then enable API
          1. Then Console > Vertex AI > Workbench, then enable API
-1. Create A Notebook
-   1. [Link](https://console.cloud.google.com/vertex-ai/workbench), Alternatively, go to: Console > Vertex AI > Workbench
-   1. Click User-Managed Notebooks
-   1. Click "+ Create Notebook" or "+ New Notebook"
-   1. Selections:
-      1. Tensorflow Enterprise > Tensorflow Enterprise 2.3 > Without GPUs
-      1. Provide: name, region = us-central1, machine type = n1-standard-4
-      1. some options may be under "Advanced Options"
-   1. Click "Create"
-1. Open JupyterLab Notebook Instance
-   1. Once the Notebook Instance is started click the "Open JupyterLab" link
-   1. Clone This Repository to the Notebook Instance
-      1. Use the Git Menu at the top or on the left navigation bar to select "Clone a Repository"
-      1. Provide the Clone URI of this repository: [https://github.com/statmike/vertex-ai-mlops.git](https://github.com/statmike/vertex-ai-mlops.git)
-      1. In the File Browser you will now have the folder "vertex-ai-mlops" that contains the files from this repository
+1. Create A Notebook with [Vertex AI Workbench Instances](https://cloud.google.com/vertex-ai/docs/workbench/instances/introduction):
+    1. Go to: Console > Vertex AI > Workbench > Instances - [direct link](https://console.cloud.google.com/vertex-ai/workbench/instances)
+    1. Create a new instance - [instructions](https://cloud.google.com/vertex-ai/docs/workbench/instances/create)    
+    1. Once it is started, click the `Open JupyterLab` link.
+    1. Clone this repository to the JupyterLab instance:
+        1. Either:
+            1. Go to the `Fit` menu and choose `Clone a Repository`
+            1. Choose the Git icon on the left toolbar and click `Clone a Repository`
+        1. Provide the Clone URI of this repository: [https://github.com/statmike/vertex-ai-mlops.git](https://github.com/statmike/vertex-ai-mlops.git)
+        1. In the File Browser you will now have the folder "vertex-ai-mlops" that contains the files from this repository
 1. Setup the Notebook Environment for these workflows
    1. Open the notebook vertex-ai-mlops/00 - Environment Setup
    1. Follow the instructions and run the cells
@@ -416,9 +418,8 @@ TL;DR
 Resources on these items:
 - [Google Cloud Projects](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
 - [Vertex AI environment](https://cloud.google.com/vertex-ai/docs/start/cloud-environment)
-- [Introduction to Notebooks](https://cloud.google.com/notebooks/docs/introduction)
-- [Create a Notebooks Instance](https://cloud.google.com/notebooks/docs/create-new)
-- [Open Notebooks](https://cloud.google.com/notebooks/docs/create-new#open_the_notebook_2)
+- [Introduction to Vertex AI Workbench](https://cloud.google.com/vertex-ai/docs/workbench/introduction)
+- [Create a Vetex AI Workbench Instance](https://cloud.google.com/vertex-ai/docs/workbench/instances/create-console-quickstart)
 
 ---
 <a id = 'helpful'></a>
