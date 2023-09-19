@@ -15,6 +15,8 @@ Vertex AI AutoML accelerate the workflow of creating an ML model by preprocessin
 
 [AutoML](https://cloud.google.com/vertex-ai/docs/beginner/beginners-guide) is a service on Vertex AI that creates custom models from users data.  The data source for AutoML jobs is a [Vertex AI managed dataset](https://cloud.google.com/vertex-ai/docs/datasets/overview).  These managed datasets are links to actual data locations in GCS or BigQuery. The data is not imported so each training job that uses them will always grab a current version of the data source. When creating a dataset, the location selected needs to match the location of the linked data (like `us-central1` for example).  AutoML training jobs use these datasets as inputs.  The AutoML service availability by region should be reviewed to make sure it is available in the data location - [feature availability](https://cloud.google.com/vertex-ai/docs/general/locations#vertex-ai-regions).
 
+When using [AutoML from BigQuery ML](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-create-automl) a Vertex AI managed dataset is not required.  Instead, the BigQuery locations should be checked for AutoML availability via [this table](https://cloud.google.com/bigquery/docs/locations#bqml-loc) of BigQuery ML resource locations.
+
 ---
 ## Notebooks: 
 This list is in the suggest order of review for anyone getting an overview and learning about Vertex AI AutoML.  It is also ok to pick a particular notebook of interest and if there are dependencies on prior notebooks they will be listed in the **prerequisites** section at the top of the notebook.
