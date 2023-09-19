@@ -3,6 +3,8 @@
 ## Interacting with Vertex AI
 Many Vertex AI resources can be viewed and monitored directly in the [GCP Console](https://console.cloud.google.com/vertex-ai).  Vertex AI resources are primarily created, and modified with the [Vertex AI API](https://cloud.google.com/vertex-ai/docs/reference).  
 
+Also see [Introduction to the Vertex AI SDK for Python](https://cloud.google.com/vertex-ai/docs/python-sdk/use-vertex-ai-python-sdk).
+
 The API is accessible from:
 - the command line with [`gcloud ai`](https://cloud.google.com/sdk/gcloud/reference/ai), 
 - [REST](https://cloud.google.com/vertex-ai/docs/reference/rest),
@@ -13,9 +15,9 @@ The API is accessible from:
     - [Node.js](https://cloud.google.com/nodejs/docs/reference/aiplatform/latest).  
 
 There are [levels](https://cloud.google.com/vertex-ai/docs/start/client-libraries#client_libraries):
-- high-level `aiplatform`
+- high-level `aiplatform` - referred to as Vertex AI SDK
     - The Vertex AI SDK, publically available features. Easiest to use, concise, and designed to simplify common tasks in workflows.
-- low-level `aiplatform.gapic`
+- low-level `aiplatform.gapic` - referred to as Vertex AI client library
     - auto-generated from Google's sevice proto files.  GAPIC stands for Google API CodeGen.
 
 There are [versions](https://cloud.google.com/vertex-ai/docs/reference#versions) for `aiplatform.gapic`: 
@@ -30,7 +32,6 @@ The [Google Cloud Python Client](https://github.com/googleapis/google-cloud-pyth
 - All [Python Cloud Client Libraries](https://cloud.google.com/python/docs/reference)
     - Vertex AI: [google-cloud-aiplatform](https://cloud.google.com/python/docs/reference/aiplatform/latest)
         - Package: [`aiplatform` package](https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform)
-- Another helpful version of the Vertex AI SDK for Python documentation can be [found here](https://googleapis.dev/python/aiplatform/latest/index.html#)
 - Also helpful: [Getting started with Python](https://cloud.google.com/python/docs/getting-started) in Google Cloud
 
 
