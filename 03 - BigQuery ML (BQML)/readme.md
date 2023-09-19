@@ -20,39 +20,186 @@ A new way to interact with BigQuery and BigQuery ML is [BigQuery DataFrames](htt
 ## Notebooks:
 This list is in the suggested order of review for anyone getting an overview and learning about BigQuery ML.  It is also ok to pick a particular notebook of interest and if there are dependencies on prior notebooks they will be listed in the **prerequisites** section at the top of the notebook.  
 
->The notebooks are designed to be editable for trying with other data sources.  The same parameter names are used across the notebooks to also help when trying multiple methods on a custom data source.
+>These notebooks are designed to be editable for trying with other data sources.  The same parameter names are used across the notebooks to also help when trying multiple methods on a custom data source.
 
-- 1 - [Introduction to BigQuery ML (BQML)](Introduction%20to%20BigQuery%20ML%20(BQML).ipynb)
-- Supervised Learning: Classification Methods
-    - [03a - BQML Logistic Regression](03a%20-%20BQML%20Logistic%20Regression.ipynb)
-    - [03b - BQML Boosted Trees](03b%20-%20BQML%20Boosted%20Trees.ipynb)
-    - [03c - BQML Random Forest](03c%20-%20BQML%20Random%20Forest.ipynb)
-    - [03d - BQML Deep Neural Network (DNN)](03d%20-%20BQML%20Deep%20Neural%20Network%20(DNN).ipynb)
-    - [03e - BQML Wide-And-Deep Networks](03e%20-%20BQML%20Wide-And-Deep%20Networks.ipynb)
-    - [03f - BQML Logistic Regression With Hyperparameter Tuning](03f%20-%20BQML%20Logistic%20Regression%20With%20Hyperparameter%20Tuning.ipynb)
-- Unsupervised Learning
-    - [03g - BQML - PCA with Anomaly Detection](03g%20-%20BQML%20-%20PCA%20with%20Anomaly%20Detection.ipynb)
-    - [03h - BQML k-means with Anomaly Detection](03h%20-%20BQML%20k-means%20with%20Anomaly%20Detection.ipynb)
-    - [03i - BQML Autoencoder with Anomaly Detection](03i%20-%20BQML%20Autoencoder%20with%20Anomaly%20Detection.ipynb)
-- Feature Engineering
-    - Depricated (see following notebooks) [BQML Feature Engineering](BQML%20Feature%20Engineering.ipynb)
-    - [BQML Feature Engineering - Create Model With Transpose](./BQML%20Feature%20Engineering%20-%20Create%20Model%20With%20Transpose.ipynb)
-    - [BQML Feature Engineering - preprocessing functions](./BQML%20Feature%20Engineering%20-%20preprocessing%20functions.ipynb)
-- Enhanced Examples - more than one model
-    - [BQML Cross-validation Example](BQML%20Cross-validation%20Example.ipynb)
-    - [BQML Ensemble Example](BQML%20Ensemble%20Example.ipynb)
-- Import Models
-    - [BQML Import Model - scikit-learn](BQML%20Import%20Model%20-%20scikit-learn.ipynb)
-    - [BQML Import Model - TensorFlow](BQML%20Import%20Model%20-%20TensorFlow.ipynb)
-- Use Remote Models
-    - [BQML Remote Model on Vertex AI Endpoint](BQML%20Remote%20Model%20on%20Vertex%20AI%20Endpoint.ipynb)
-    - [BQML Remote Model Tutorial](BQML%20Remote%20Model%20Tutorial.md)
-        - [BQML Remote Model Tutorial - Notebook](BQML%20Remote%20Model%20Tutorial%20-%20Notebook.ipynb) (Run as a Colab - see header for instructions)
-- Other Topics
-    - [03Tools - Predictions](03Tools%20-%20Predictions.ipynb)
-    - [03Tools - Pipelines Example 1](03Tools%20-%20Pipelines%20Example%201.ipynb)
-    - [03Tools - Pipelines Example 2](03Tools%20-%20Pipelines%20Example%202.ipynb)
-    - [03Tools - Pipelines Example 3](03Tools%20-%20Pipelines%20Example%203.ipynb)
+<table style='text-align:left;vertical-align:middle;border:1px solid black' width="80%" cellpadding="1" cellspacing="0">
+<!--...........................................................................................................................................................................-->
+    <tr style='text-align:center;vertical-align:middle'>
+        <th>SQL With <a href = "https://cloud.google.com/python/docs/reference/bigquery/latest" target="_blank">BigQuery API</a></th>
+        <th>DataFrame With <a href = "https://cloud.google.com/python/docs/reference/bigframes/latest" target="_blank">BigFrames API</a></th>
+    </tr>
+<!--...........................................................................................................................................................................-->
+    <tr style='text-align:center;vertical-align:middle'>
+        <th colspan='2'>Setup And Introduction</th>
+    </tr>
+    <tr>
+        <td><a href = "./Introduction%20to%20BigQuery%20ML%20%28BQML%29.ipynb" target="_blank">Introduction to BigQuery ML (BQML)</a></td>
+        <td></td>
+    </tr>
+<!--...........................................................................................................................................................................-->
+    <tr style='text-align:center;vertical-align:middle'>
+        <th colspan='2'>Supervised Learning: Classification Methods</th>
+    </tr>
+    <tr>
+        <td><a href = "./03a%20-%20BQML%20Logistic%20Regression.ipynb" target="_blank">03a - BQML Logistic Regression</a></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a href = "./03b%20-%20BQML%20Boosted%20Trees.ipynb" target="_blank">03b - BQML Boosted Trees</a></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a href = "./03c%20-%20BQML%20Random%20Forest.ipynb" target="_blank">03c - BQML Random Forest</a></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a href = "./03d%20-%20BQML%20Deep%20Neural%20Network%20(DNN).ipynb" target="_blank">03d - BQML Deep Neural Network (DNN)</a></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a href = "./03e%20-%20BQML%20Wide-And-Deep%20Networks.ipynb" target="_blank">03e - BQML Wide-And-Deep Networks</a></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a href = "./03f%20-%20BQML%20Logistic%20Regression%20With%20Hyperparameter%20Tuning.ipynb" target="_blank">03f - BQML Logistic Regression With Hyperparameter Tuning</a></td>
+        <td></td>
+    </tr>
+<!--...........................................................................................................................................................................-->
+    <tr style='text-align:center;vertical-align:middle'>
+        <th colspan='2'>Unsupervised Learning</th>
+    </tr>
+    <tr>
+        <td><a href = "./03g%20-%20BQML%20-%20PCA%20with%20Anomaly%20Detection.ipynb" target="_blank">03g - BQML - PCA with Anomaly Detection</a></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a href = "./03h%20-%20BQML%20k-means%20with%20Anomaly%20Detection.ipynb" target="_blank">03h - BQML k-means with Anomaly Detection</a></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a href = "./03i%20-%20BQML%20Autoencoder%20with%20Anomaly%20Detection.ipynb" target="_blank">03i - BQML Autoencoder with Anomaly Detection</a></td>
+        <td></td>
+    </tr>
+<!--...........................................................................................................................................................................-->
+    <tr style='text-align:center;vertical-align:middle'>
+        <th colspan='2'>Feature Engineering</th>
+    </tr>
+    <tr>
+        <td>Depricated (see following notebooks) <a href = "./BQML%20Feature%20Engineering.ipynb" target="_blank">BQML Feature Engineering</a></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a href = "./BQML%20Feature%20Engineering%20-%20Create%20Model%20With%20Transpose.ipynb" target="_blank">BQML Feature Engineering - Create Model With Transpose</a></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a href = "./BQML%20Feature%20Engineering%20-%20preprocessing%20functions.ipynb" target="_blank">BQML Feature Engineering - preprocessing functions</a></td>
+        <td></td>
+    </tr>
+<!--...........................................................................................................................................................................-->
+    <tr style='text-align:center;vertical-align:middle'>
+        <th colspan='2'>Enhanced Examples - more than one model</th>
+    </tr>
+    <tr>
+        <td><a href = "./BQML%20Cross-validation%20Example.ipynb" target="_blank">BQML Cross-validation Example</a></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a href = "./BQML%20Ensemble%20Example.ipynb" target="_blank">BQML Ensemble Example</a></td>
+        <td></td>
+    </tr>
+<!--...........................................................................................................................................................................-->
+    <tr style='text-align:center;vertical-align:middle'>
+        <th colspan='2'>Import Models</th>
+    </tr>
+    <tr>
+        <td><a href = "./BQML%20Import%20Model%20-%20scikit-learn.ipynb" target="_blank">BQML Import Model - scikit-learn</a></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a href = "./BQML%20Import%20Model%20-%20TensorFlow.ipynb" target="_blank">BQML Import Model - TensorFlow</a></td>
+        <td></td>
+    </tr>
+<!--...........................................................................................................................................................................-->
+    <tr style='text-align:center;vertical-align:middle'>
+        <th colspan='2'>Use Remote Models</th>
+    </tr>
+    <tr>
+        <td><a href = "./BQML%20Remote%20Model%20on%20Vertex%20AI%20Endpoint.ipynb" target="_blank">BQML Remote Model on Vertex AI Endpoint</a></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a href = "./BQML%20Remote%20Model%20Tutorial.md" target="_blank">BQML Remote Model Tutorial</a>
+            <ul>
+                    <li><a href = "./BQML%20Remote%20Model%20Tutorial%20-%20Notebook.ipynb" target="_blank">BQML Remote Model Tutorial - Notebook</a> (Run as a Colab - see header for instructions)</li>
+            </ul>
+        </td>
+        <td></td>
+    </tr>
+<!--...........................................................................................................................................................................-->
+    <tr style='text-align:center;vertical-align:middle'>
+        <th colspan='2'>Other Topics</th>
+    </tr>
+    <tr>
+        <td><a href = "./03Tools%20-%20Predictions.ipynb" target="_blank">03Tools - Predictions</a></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a href = "./03Tools%20-%20Pipelines%20Example%201.ipynb" target="_blank">03Tools - Pipelines Example 1</a></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a href = "./03Tools%20-%20Pipelines%20Example%202.ipynb" target="_blank">03Tools - Pipelines Example 2</a></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a href = "./03Tools%20-%20Pipelines%20Example%203.ipynb" target="_blank">03Tools - Pipelines Example 3</a></td>
+        <td></td>
+    </tr>
+<!--...........................................................................................................................................................................-->
+    <tr style='text-align:center;vertical-align:middle'>
+        <th colspan='2'>Additional BQML techniques are explored throughout this repository</th>
+    </tr>
+    <tr>
+        <td><a href = "../02%20-%20Vertex%20AI%20AutoML/readme.md" target="_blank">AutoML</a>
+            <ul>
+                <li><a href = "../02%20-%20Vertex%20AI%20AutoML/BQML%20AutoML.ipynb" target="_blank">BQML AutoML</a></li>
+            </ul>
+        </td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a href = "../Applied%20Forecasting/readme.md" target="_blank">Applied Forecasting</a>
+            <ul>
+                <li><a href = "../Applied%20Forecasting/BigQuery%20Time%20Series%20Forecasting%20Data%20Review%20and%20Preparation.ipynb" target="_blank">BigQuery Time Series Forecasting Data Review and Preparation</a></li>
+                <li><a href = "../Applied%20Forecasting/BQML%20Univariate%20Forecasting%20with%20ARIMA+.ipynb" target="_blank">BQML Univariate Forecasting with ARIMA+</a></li>
+                <li><a href = "../Applied%20Forecasting/BQML%20Multivariate%20Forecasting%20with%20ARIMA+%20XREG.ipynb" target="_blank">BQML Multivariate Forecasting with ARIMA+ XREG</a></li>
+                <li><a href = "../Applied%20Forecasting/BQML%20Regression%20Based%20Forecasting.ipynb" target="_blank">BQML Regression Based Forecasting</a></li>
+                <li><a href = "../Applied%20Forecasting/Vertex%20AI%20Pipelines%20-%20BQML%20ARIMA+.ipynb" target="_blank">Vertex AI Pipelines - BQML ARIMA+</a></li>
+                <li><a href = "../Applied%20Forecasting/Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20with%20Kubeflow%20Pipelines%20(KFP).ipynb" target="_blank">Vertex AI Pipelines - Forecasting Tournament with Kubeflow Pipelines (KFP)</a></li>
+            </ul>
+        </td>
+        <td><a href = "../Applied%20Forecasting/readme.md" target="_blank">Applied Forecasting</a>
+            <ul>
+                <li><a href = "../Applied%20Forecasting/Vertex%20AI%20Prediction%20Endpoints%20for%20Online%20Forecasting%20With%20Prophet.ipynb" target="_blank">Vertex AI Prediction Endpoints for Online Forecasting With Prophet</a></li>
+            </ul>
+        </td>
+    </tr>
+    <tr>
+        <td><a href = "../Applied%20GenAI/readme.md" target="_blank">Applied GenAI</a>
+            <ul>
+                <li><a href = "../Applied%20GenAI/Vertex%20AI%20GenAI%20For%20Rewriting%20-%20BigQuery%20Advisor%20With%20Codey.ipynb" target = "_blank">Vertex AI GenAI For Rewriting - BigQuery Advisor With Codey</a></li>
+                <li><a href = "../Applied%20GenAI/Vertex%20AI%20GenAI%20For%20BigQuery%20Q&A%20-%20Overview.ipynb" target = "_blank">Vertex AI GenAI For BigQuery Q&A - Overview</a></li>
+            </ul>
+        </td>
+        <td><a href = "../Applied%20GenAI/readme.md" target="_blank">Applied GenAI</a>
+            <ul>
+                <li><a href = "../Applied%20GenAI/Vertex%20AI%20GenAI%20Embeddings%20-%20As%20Features%20For%20Hierarchical%20Classification.ipynb" target = "_blank">Vertex AI GenAI Embeddings - As Features For Hierarchical Classification</a></li>
+            </ul>
+        </td>
+    </tr>
+<!--...........................................................................................................................................................................-->    
+</table>
 
 
 **Notes:**
@@ -63,17 +210,3 @@ This list is in the suggested order of review for anyone getting an overview and
     - `Example 1`: Deploy The Best Model To An Endpoint
     - `Example 2`: Conditionally Update Endpoint
     - `Example 3`: Retraining Tournament
-
-## Additional BQML techniques are explored throughout this repository:
-- [AutoML](../02%20-%20Vertex%20AI%20AutoML)/
-    - [BQML AutoML](../02%20-%20Vertex%20AI%20AutoML/BQML%20AutoML.ipynb)
-- [Applied Forecasting](../Applied%20Forecasting/readme.md)/
-    - [BigQuery Time Series Forecasting Data Review and Preparation](../Applied%20Forecasting/BigQuery%20Time%20Series%20Forecasting%20Data%20Review%20and%20Preparation.ipynb)
-    - [BQML Univariate Forecasting with ARIMA+](../Applied%20Forecasting/BQML%20Univariate%20Forecasting%20with%20ARIMA+.ipynb)
-    - [BQML Multivariate Forecasting with ARIMA+ XREG](../Applied%20Forecasting/BQML%20Multivariate%20Forecasting%20with%20ARIMA+%20XREG.ipynb)
-    - [BQML Regression Based Forecasting](../Applied%20Forecasting/BQML%20Regression%20Based%20Forecasting.ipynb)
-    - [Vertex AI Pipelines - BQML ARIMA+](./Vertex%20AI%20Pipelines%20-%20BQML%20ARIMA+.ipynb)
-    - [8 - Vertex AI Pipelines - Forecasting Tournament - BQML + AutoML + Prophet](../Applied%20Forecasting/8%20-%20Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20-%20BQML%20+%20AutoML%20+%20Prophet.ipynb)
-
-
-
