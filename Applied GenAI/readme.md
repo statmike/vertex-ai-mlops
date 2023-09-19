@@ -317,6 +317,21 @@ Enhacements compared to Version 1:
 **Business Documents:**   
 - [Vertex AI GenAI For Document Q&A - Local Government Trends](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20Local%20Government%20Trends.ipynb)    
 
+---
+## Embeddings
+
+A number of the techniques covered here use embeddings. Embeddings are vector representations of text or images or both.  These are vectors of floating point numbers that come from a model that has been trained to embed content in a way that efficiently represents the content. See how to get embeddings from text, images and both with the notebook:
+- [Vertex AI GenAI Embeddings](./Vertex%20AI%20GenAI%20Embeddings.ipynb)
+
+Embeddings can be used:
+- To find similar content with vector similarity searches - as show in Q&A examples above
+- Clutering content in groups with similiar attributes
+- Detect anomaly or outlier observations
+- Classification models - use embeddings as features to predict classes
+
+Embeddings as features is a lot like a compact, lower dimension representation of content.  One idea for using embeddings as features is to categorize content.  Stores have catalogs.  Products in the catelog have descriptions (text) and maybe even images.  Using embeddings of the product information make it possible to train a classifier for complex product catalogs - even with hierarchys.  Check out this notebook to see an example of this:
+- [Vertex AI GenAI Embeddings - As Features For Hierarchical Classification](./Vertex%20AI%20GenAI%20Embeddings%20-%20As%20Features%20For%20Hierarchical%20Classification.ipynb)
+
 
 ---
 ## More Resources
