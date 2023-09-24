@@ -234,6 +234,8 @@ These notebooks use code generation LLMs to first query BigQuery to retrieve con
 
 - [Vertex AI GenAI For BigQuery Q&A - Overview](./Vertex%20AI%20GenAI%20For%20BigQuery%20Q&A%20-%20Overview.ipynb)
 
+**Coming Soon! [Vertex AI Extensions](https://cloud.google.com/vertex-ai/docs/generative-ai/extensions/overview)** Simplify the process of connecting to and retrieving relevant data from sources like BigQuery!
+
 **Extended concepts:**
 
 Similar to the Document Q&A examples below, embedding based content retrieval can also benefit BigQuery Q&A.  
@@ -243,6 +245,16 @@ By creating embeddings for table descriptions, the question can be embedded and 
 By creating embeddings for column descriptions, the question can be embedded and used to find the best matching columns to include in the schema supplied as context.  This allows narrowing the context down to a subset of columns rather than full tables.  The list of columns should always be checked for the inclusing of any key columns for the table and those added if not directly identified in the embedding search.  
 
 A further enhancement is to use a text LLM along with a code LLM.  First ask the text LLM to list the steps needed to answer the question.  Then, the prompt for the code llm would include the steps retrieved from the text LLM along with the matching table and column schema retrieved.  
+
+### Automate BigQuery Metadata With LLMs
+
+Using LLMs to query data in BigQuery highlight the need for descriptive metadata like:
+- better column names
+- deteails table and column descriptions
+
+This example workflow shows how to use an LLM to generate better naming and descriptions through interpretation of the content of tables. 
+
+- [Vertex AI GenAI For BigQuery Metadata - Make Better Tables](./Vertex%20AI%20GenAI%20For%20BigQuery%20Metadata%20-%20Make%20Better%20Tables.ipynb)
 
 ---
 ## Working with Code as A Language
