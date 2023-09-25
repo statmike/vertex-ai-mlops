@@ -250,7 +250,7 @@ A further enhancement is to use a text LLM along with a code LLM.  First ask the
 
 Using LLMs to query data in BigQuery highlight the need for descriptive metadata like:
 - better column names
-- deteails table and column descriptions
+- better table and column descriptions
 
 This example workflow shows how to use an LLM to generate better naming and descriptions through interpretation of the content of tables. 
 
