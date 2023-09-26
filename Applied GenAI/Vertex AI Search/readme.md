@@ -1,3 +1,5 @@
+![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2FApplied+GenAI%2FVertex+AI+Search&dt=readme.md)
+
 # /Applied GenAI/Vertex AI Search/readme.md
 
 This series of notebooks highlights the use over Vertex AI Search for workflows that includes using Google's foundational large generative AI models. These don't need to be trained or hosted - just called with via API. Read more about these exciting new features of Vertex AI Search (FKA) Generative AI App Builder Enterprise Search [here](https://cloud.google.com/enterprise-search)
