@@ -21,7 +21,7 @@ This is where it all begins.  Hands find keyboard and start writing instructions
 - repeat
 - a MILLION other things!
 
-This starts with a user in a tool of choice.  An IDE for developing this code.  Sometimes its a controlled experience in a tool that authors code for the user (high level).  If you are reading this then is likely an IDE where you are the author of the code like VSCode, JupyterLab, Colab, PyCharm amongst many others.
+This starts with a user in a tool of choice.  An IDE for developing this code.  Sometimes its a controlled experience in a tool that authors code for the user (high level).  If you are reading this then it is likely an IDE where you are the author of the code like OSS-Code (VSCode), JupyterLab, Colab, PyCharm amongst many others.
 
 ---
 ## in progress - stay tuned
@@ -34,7 +34,7 @@ This starts with a user in a tool of choice.  An IDE for developing this code.  
 
 
 Want more now?
-- The best overview every written: https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines
+- The best overview ever written: https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines
     - Even if you don't use TFX, this captures the whole goal!
 - MLOps Overview: https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning
 - MLOps on Vertex AI: https://cloud.google.com/vertex-ai/docs/start/introduction-mlops
