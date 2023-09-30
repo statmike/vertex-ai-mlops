@@ -4,7 +4,7 @@
 
 This series of notebooks highlights the use of Vertex AI for machine learning workflows with [TensorFlow](https://www.tensorflow.org/).  The same simple model specification is used for all examples with the focus put on workflows for different ML workflows and operational tasks.  The goal is to provide a starting point that can be used with the model architecture you already have.
 
->**NOTE:** The notebooks in the `05 - TensorFlow` series demonstrate training, serving and operations for TensorFlow models and take advantage of [Vertex AI TensorBoard](https://cloud.google.com/vertex-ai/docs/experiments/tensorboard-overview) to track training across experiments.  Running these notebooks will create a Vertex AI TensorBoard instance which has a user-based montly pricing that is different than other services that charge by usage.  This cost is $300 per user - [Vertex AI Pricing](https://cloud.google.com/vertex-ai/pricing#tensorboard).
+>**NOTE (UPDATE FOR AUGUST 2023):** The notebooks in the `05 - TensorFlow` series demonstrate training, serving and operations for TensorFlow models and take advantage of [Vertex AI TensorBoard](https://cloud.google.com/vertex-ai/docs/experiments/tensorboard-overview) to track training across experiments.  Running these notebooks will create a Vertex AI TensorBoard instance which previously (before August 2023) had a subscription cost but is now priced based on storage of which this notebook will create minimal size (<2MB). - [Vertex AI Pricing](https://cloud.google.com/vertex-ai/pricing#tensorboard).
 
 <p align="center" width="100%">
     <img src="../architectures/overview/training.png" width="45%">
@@ -37,7 +37,6 @@ This series of notebooks highlights the use of Vertex AI for machine learning wo
 - [05Tools - Interpretability with WIT.ipynb](./05Tools%20-%20Interpretability%20with%20WIT.ipynb)
 - [05Tools - ML Metadata.ipynb](./05Tools%20-%20ML%20Metadata.ipynb)
 - [05Tools - Monitoring.ipynb](./05Tools%20-%20Monitoring.ipynb)
-- [05Tools - Pipelines.ipynb](./05Tools%20-%20Pipelines.ipynb)
 - [05Tools - Prediction - Online.ipynb](./05Tools%20-%20Prediction%20-%20Online.ipynb)
 - [05Tools - Prediction - Batch.ipynb](./05Tools%20-%20Prediction%20-%20Batch.ipynb)
 - [05Tools - Prediction - Local.ipynb](./05Tools%20-%20Prediction%20-%20Local.ipynb)
