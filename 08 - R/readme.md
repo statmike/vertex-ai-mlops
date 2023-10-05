@@ -9,7 +9,7 @@ If the directions in the main [readme.md](../readme.md) were followed then this 
 - Console > Vertex AI > Workbench > Instances - [direct link](https://console.cloud.google.com/vertex-ai/workbench/instances)
 - Create a new instance - [instructions](https://cloud.google.com/vertex-ai/docs/workbench/instances/create)
 - Once it is started, click the `Open JupyterLab` link.
-- Add R:
+- Add R: [Add A conda Environment](https://cloud.google.com/vertex-ai/docs/workbench/instances/add-environment)
     - Open A terminal window within JupyterLab
     - run: `conda create -n r-env r-essentials r-base`
     - run: `conda activate r-env`
