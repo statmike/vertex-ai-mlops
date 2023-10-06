@@ -17,31 +17,41 @@ This series of notebooks highlights the use of Vertex AI for machine learning wo
 - [01 - BigQuery - Table Data Source.ipynb](../01%20-%20Data%20Sources/01%20-%20BigQuery%20-%20Table%20Data%20Source.ipynb)
 
 ## Notebooks:
-- [05 - Vertex AI Custom Model - TensorFlow - in Notebook.ipynb](./05%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20in%20Notebook.ipynb)
-- [05 - Vertex AI Custom Model - TensorFlow - Notebook to Script.ipynb](./05%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Notebook%20to%20Script.ipynb)
-    - [05a - Vertex AI Custom Model - TensorFlow - Custom Job With Python File.ipynb](./05a%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Custom%20Job%20With%20Python%20File.ipynb)
-    - [05b - Vertex AI Custom Model - TensorFlow - Custom Job With Python Source Distribution.ipynb](./05b%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Custom%20Job%20With%20Python%20Source%20Distribution.ipynb)
-    - [05c - Vertex AI Custom Model - TensorFlow - Custom Job With Custom Container.ipynb](./05c%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Custom%20Job%20With%20Custom%20Container.ipynb)
-    - [05d - Vertex AI Custom Model - TensorFlow - Training Pipeline With Python file.ipynb](./05d%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Training%20Pipeline%20With%20Python%20file.ipynb)
-    - [05e - Vertex AI Custom Model - TensorFlow - Training Pipeline With Python Source Distribution.ipynb](./05e%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Training%20Pipeline%20With%20Python%20Source%20Distribution.ipynb)
-    - [05f - Vertex AI Custom Model - TensorFlow - Training Pipeline With Custom Container.ipynb](./05f%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Training%20Pipeline%20With%20Custom%20Container.ipynb)
-- [05 - Vertex AI Custom Model - TensorFlow - Notebook to Hyperparameter Tuning Script.ipynb](./05%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Notebook%20to%20Hyperparameter%20Tuning%20Script.ipynb)
-    - [05g - Vertex AI Custom Model - TensorFlow - Hyperparameter Tuning Job With Python file.ipynb](./05g%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Hyperparameter%20Tuning%20Job%20With%20Python%20file.ipynb)
-    - [05h - Vertex AI Custom Model - TensorFlow - Hyperparameter Tuning Job With Python Source Distribution.ipynb](./05h%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Hyperparameter%20Tuning%20Job%20With%20Python%20Source%20Distribution.ipynb)
-    - [05i - Vertex AI Custom Model - TensorFlow - Hyperparameter Tuning Job With Custom Container.ipynb](./05i%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Hyperparameter%20Tuning%20Job%20With%20Custom%20Container.ipynb)
-- [05Tools - Distributed Training.ipynb](./05Tools%20-%20Distributed%20Training.ipynb)
-- [05Tools - Experiments.ipynb](./05Tools%20-%20Experiments.ipynb)
-- [05Tools - Explainability - Example-Based.ipynb](./05Tools%20-%20Explainability%20-%20Example-Based.ipynb)
-- [05Tools - Explainability - Feature-Based.ipynb](./05Tools%20-%20Explainability%20-%20Feature-Based.ipynb)
-- [05Tools - Interpretability with LIT.ipynb](./05Tools%20-%20Interpretability%20with%20LIT.ipynb)
-- [05Tools - Interpretability with WIT.ipynb](./05Tools%20-%20Interpretability%20with%20WIT.ipynb)
-- [05Tools - ML Metadata.ipynb](./05Tools%20-%20ML%20Metadata.ipynb)
-- [05Tools - Monitoring.ipynb](./05Tools%20-%20Monitoring.ipynb)
-- [05Tools - Prediction - Online.ipynb](./05Tools%20-%20Prediction%20-%20Online.ipynb)
-- [05Tools - Prediction - Batch.ipynb](./05Tools%20-%20Prediction%20-%20Batch.ipynb)
-- [05Tools - Prediction - Local.ipynb](./05Tools%20-%20Prediction%20-%20Local.ipynb)
-- [05Tools - Prediction - Custom.ipynb](./05Tools%20-%20Prediction%20-%20Custom.ipynb)
-- [05 Tools - Automation](./05Tools%20-%20Automation.ipynb)
+- Train A Model In A Notebook - with local resources:
+    - [05 - Vertex AI Custom Model - TensorFlow - in Notebook.ipynb](./05%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20in%20Notebook.ipynb)
+- Convert Notebook based Code Into Python Scripts:
+    - [05 - Vertex AI Custom Model - TensorFlow - Notebook to Script.ipynb](./05%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Notebook%20to%20Script.ipynb)
+    - Run the script as a [Vertex AI Custom Job](https://cloud.google.com/vertex-ai/docs/training/create-custom-job):
+        - Script as Source: [05a - Vertex AI Custom Model - TensorFlow - Custom Job With Python File.ipynb](./05a%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Custom%20Job%20With%20Python%20File.ipynb)
+        - Python Source Distribution as Source: [05b - Vertex AI Custom Model - TensorFlow - Custom Job With Python Source Distribution.ipynb](./05b%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Custom%20Job%20With%20Python%20Source%20Distribution.ipynb)
+        - Custom Container as Source: [05c - Vertex AI Custom Model - TensorFlow - Custom Job With Custom Container.ipynb](./05c%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Custom%20Job%20With%20Custom%20Container.ipynb)
+    - Run the script as a [Vertex AI Training Pipeline](https://cloud.google.com/vertex-ai/docs/training/create-training-pipeline), a Custom Job that also creates a Vertex AI Model Registry resource:
+        - Script as Source: [05d - Vertex AI Custom Model - TensorFlow - Training Pipeline With Python file.ipynb](./05d%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Training%20Pipeline%20With%20Python%20file.ipynb)
+        - Python Source Distribution as Source: [05e - Vertex AI Custom Model - TensorFlow - Training Pipeline With Python Source Distribution.ipynb](./05e%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Training%20Pipeline%20With%20Python%20Source%20Distribution.ipynb)
+        - Custom Container as Source: [05f - Vertex AI Custom Model - TensorFlow - Training Pipeline With Custom Container.ipynb](./05f%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Training%20Pipeline%20With%20Custom%20Container.ipynb)
+- Convert Notebook based Code Into Python Scripts For Hyperparameter Tuning:
+    - [05 - Vertex AI Custom Model - TensorFlow - Notebook to Hyperparameter Tuning Script.ipynb](./05%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Notebook%20to%20Hyperparameter%20Tuning%20Script.ipynb)
+    - Run the script as a [Vertex AI Hyperparameter Tuning Job](https://cloud.google.com/vertex-ai/docs/training/using-hyperparameter-tuning)
+        - Script as Source: [05g - Vertex AI Custom Model - TensorFlow - Hyperparameter Tuning Job With Python file.ipynb](./05g%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Hyperparameter%20Tuning%20Job%20With%20Python%20file.ipynb)
+        - Python Source Distribution as Source: [05h - Vertex AI Custom Model - TensorFlow - Hyperparameter Tuning Job With Python Source Distribution.ipynb](./05h%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Hyperparameter%20Tuning%20Job%20With%20Python%20Source%20Distribution.ipynb)
+        - Custom Container as Source: [05i - Vertex AI Custom Model - TensorFlow - Hyperparameter Tuning Job With Custom Container.ipynb](./05i%20-%20Vertex%20AI%20Custom%20Model%20-%20TensorFlow%20-%20Hyperparameter%20Tuning%20Job%20With%20Custom%20Container.ipynb)
+- Predictions From Models:
+    - [05Tools - Prediction - Online](./05Tools%20-%20Prediction%20-%20Online.ipynb)
+    - [05Tools - Prediction - NVIDIA Triton](./05Tools%20-%20Prediction%20-%20NVIDIA%20Triton.ipynb)
+    - [05Tools - Prediction - Batch](./05Tools%20-%20Prediction%20-%20Batch.ipynb)
+    - [05Tools - Prediction - Local](./05Tools%20-%20Prediction%20-%20Local.ipynb)
+    - [05Tools - Prediction - Custom](./05Tools%20-%20Prediction%20-%20Custom.ipynb)
+- Understanding and Explaining Models:
+    - [05Tools - Explainability - Example-Based](./05Tools%20-%20Explainability%20-%20Example-Based.ipynb)
+    - [05Tools - Explainability - Feature-Based](./05Tools%20-%20Explainability%20-%20Feature-Based.ipynb)
+    - [05Tools - Interpretability with LIT](./05Tools%20-%20Interpretability%20with%20LIT.ipynb)
+    - [05Tools - Interpretability with WIT](./05Tools%20-%20Interpretability%20with%20WIT.ipynb)
+- Scaling and Tracking:
+    - [05Tools - Distributed Training](./05Tools%20-%20Distributed%20Training.ipynb)
+    - [05Tools - Experiments](./05Tools%20-%20Experiments.ipynb)
+    - [05Tools - ML Metadata](./05Tools%20-%20ML%20Metadata.ipynb)
+    - [05Tools - Monitoring](./05Tools%20-%20Monitoring.ipynb)
+    - [05 Tools - Automation](./05Tools%20-%20Automation.ipynb)
 
 
 **Notes:**
