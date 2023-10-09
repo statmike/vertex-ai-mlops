@@ -11,6 +11,12 @@ A collection of tips for scaling jobs, generalizing jobs for flexibility, and de
 ## IDEs
 For more details around setting up working environment in a variety of IDE's beyond just JupyterLap please checkout the [IDE folder](../IDE/readme.md).
 
+- Hosted JupyterLab On Vertex AI with [Vertex AI Workbench](https://cloud.google.com/vertex-ai/docs/workbench/introduction)
+    - [Cloud Storage As A File System - For Workbench](./Cloud%20Storage%20As%20A%20File%20System%20-%20For%20Workbench.ipynb)
+- Colab in the Console with [Enterprise Colab (On Vertex AI)](https://cloud.google.com/vertex-ai/docs/workbench/notebook-solution#colab-enterprise)
+- Hosted IDE's with [Cloud Workstations](https://cloud.google.com/workstations/docs/overview)
+- Free Notebook IDE as a Service with [Colab](https://colab.research.google.com/)
+
 ## Tools
 - Secret Manager: [Secret Manager](./Secret%20Manager.ipynb)
 
