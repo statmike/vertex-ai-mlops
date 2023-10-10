@@ -55,6 +55,7 @@ This series of notebooks highlights the use of Vertex AI for machine learning wo
 
 
 **Notes:**
+
 - Vertex AI Training > Custom Jobs run ML training code in a serverless environment:
     - This is featured in notebooks `05a`, `05b` and `05c`
 - Vertex AI Training > Training Jobs run ML training code and register the resulting model in Vertex AI Model Registry:
@@ -65,7 +66,7 @@ This series of notebooks highlights the use of Vertex AI for machine learning wo
     - a single Python script: featured in notebooks `05a`, `05d`, and `05g`
     - a Python source distribution: featured in notebooks `05b`, `05e`, and `05h`
     - a custom container: featured in notebooks `05c`, `05f`, and `05i`
-- [`./codetrain.py`](./code/train.py) is the script used for all:
+- [`./code/train.py`](./code/train.py) is the script used for all:
     - Vertex AI Training > Custom Jobs: `05a`, `05b` and `05c` 
     - Vertex AI Training > Training Jobs: `05d`, `05e` and `05f`
 - [`./code/hp_train.py`](./code/hp_train.py) is the script used for all:
