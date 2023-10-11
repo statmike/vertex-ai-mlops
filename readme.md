@@ -27,6 +27,54 @@ To better understand which content is most helpful to users, this repository use
 A script is provided to remove this tracking from your local copy of this repository in the file `ga4_remove.py` in the folder [ga4](./architectures/tracking/setup/ga4/readme.md).
 
 ---
+## Approach Use In This Repository
+
+This repository is presented as workflows using, primarily, interactive python notebooks `.ipynb`.  Why?  These are easy to review, share, and move.  They contain elements for both code and narrative. The narrative can be written with plain text, Markdown and/or HTML which makes providing visual explanations easy.  This reinforces the goal of this repository: information that is easily accessible, portable, and great for starting points in your own work.
+
+In notebooks, execution is driven from the locally attached compute.  In this repository that means the Python code is currently running in the notebooks compute.  The code in this repository heavily leans on orchestrating services in GCP rather than doing data compute in the local environment to the notebook.  That means these notebooks are designed to run on minimal machine sizes, like `n1-standard2` even.  The heavy work of training and serving is done on Vertex AI, BigQuery, and other Google Cloud services.  You will even find notebooks that author code, and then deploy the code in services like Vertex AI Custon Training and Vertex AI Pipelines.  
+
+There are sections that use other languages, like R, as well as creating files that are external to the notebooks: `dockerfile`, `.py` scripts and modules, etc.
+
+The code in this repository is opinionated.  It is not completely production ready as well as not simply ad-hoc exploration.  It aims to the right of the continum of exploration to deployment: 'hello-world' to CI/CD/CT.  In our data science daily work we might think of the process as:
+
+<p align="center" width="100%"><center>
+    <img src="./architectures/architectures/images/readme/code_progression.png">
+</center></p>
+
+In **explore**, everything is code as you go.  At some point in this exploration ideas find value and need to be developed.
+
+In **develop**, the approach is usually something like:
+- make it work
+    - get a working end to end flow
+- clean it up
+    - revisit the code and remove parts that are no longer needed and reorder based on what is learned
+- generalize it
+    - parameterize
+    - use functions
+    - control flow: start using logic to check for out of bound conditions
+- optimize it
+    - better use of data structures to handle data usage during execution
+    - consider execution timing and optimize for the simoultaneous goal of readability (= maintainability) and compute time
+
+In many cases, getting from development to **deployment** is simple:
+- schedule a notebook - a lot like skipping the **develop** stage
+- deploy a pipeline
+- create a cloud function
+
+But, inevitably, as a workflow proves value it requires more effort before you **deploy**:
+- error handling
+- unit testing
+- move from specialized code to generalized code: 
+    - use classes
+    - control environment handling
+
+So where does the code in the repository fall? In the late **develop** phase with strong readability and adaptibility.
+
+<p align="center" width="100%"><center>
+    <img src="./architectures/architectures/images/readme/code_progression_star.png">
+</center></p>
+
+---
 ## Table of Contents
 - [Considerations](#considerations)
 - [Overview](#overview)
