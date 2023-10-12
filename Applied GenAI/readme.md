@@ -12,6 +12,11 @@ This series of notebooks highlights the use over Vertex AI Generative AI for wor
 ---
 ## Getting Started
 
+This section cover the basics for getting started with the Python Client. 
+
+>For a complete getting started overview of all the foundation models in use along with tips for managing asynchronous and streaming request as well as handling all requests within quota please check out this notebook:
+>- [Getting Started - Vertex AI GenAI Python Client](Getting%20Started%20-%20Vertex%20AI%20GenAI%20Python%20Client.ipynb)
+
 **Install**
 
 The Vertex AI [Python Client](https://cloud.google.com/python/docs/reference/aiplatform/latest) will need to be updated to at least the 1.25.0 release.
