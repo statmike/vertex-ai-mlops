@@ -1,9 +1,9 @@
 digraph {
-	a1 [label=Explore color="#669DF6" fillcolor="#669DF6" penwidth=3 shape=rectangle style="filled,rounded"]
-	a2 [label=Develop color="#669DF6" fillcolor="#FCC934" penwidth=3 shape=rectangle style="filled,rounded"]
-	m [label="" color="#EE675C" fillcolor="#EE675C" fixedsize=True height=.5 penwidth=0 shape=star style="filled,rounded" width=.5]
-	a3 [label=Deploy color="#FCC934" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
-	a1 -> a2 [color="#669DF6" penwidth=3]
-	a2 -> m [arrowhead=none color="#FCC934" penwidth=3]
-	m -> a3 [color="#FCC934" penwidth=3]
+	1
+	3
+	2
+	5
+	1 -> 2
+	1 -> 3
+	3 -> 5
 }
