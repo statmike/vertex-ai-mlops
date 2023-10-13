@@ -1,0 +1,28 @@
+digraph {
+	fontsize=20 label="Starting Points For AI With ML" labelloc=top rankdir=LR
+	d0 [label="Task Type:" color="#5BB974" fillcolor="#669DF6" fixedsize=True height=1.5 penwidth=3 shape=diamond style="filled,rounded" width=1.5]
+	g [label="Generative AI
+Foundation Models On Vertex AI" color="#FCC934" fillcolor="#FCC934" penwidth=3 shape=rectangle style="filled,rounded"]
+	d1 [label="Do You
+Have Training
+Data?" color="#5BB974" fillcolor="#669DF6" fixedsize=True height=1.5 penwidth=3 shape=diamond style="filled,rounded" width=1.5]
+	r1 [label="Pre-trained APIs" color="#5BB974" fillcolor="#5BB974" penwidth=3 shape=rectangle style="filled,rounded"]
+	d2 [label="Are You
+Writing
+Training
+Code?" color="#5BB974" fillcolor="#669DF6" fixedsize=True height=1.5 penwidth=3 shape=diamond style="filled,rounded" width=1.5]
+	r2 [label="Vertex AI AutoML" color="#5BB974" fillcolor="#5BB974" penwidth=3 shape=rectangle style="filled,rounded"]
+	d3 [label="Framework
+Choice:" color="#5BB974" fillcolor="#669DF6" fixedsize=True height=1.5 penwidth=3 shape=diamond style="filled,rounded" width=1.5]
+	r3 [label="BigQuery ML" color="#5BB974" fillcolor="#5BB974" penwidth=3 shape=rectangle style="filled,rounded"]
+	r4 [label="Vertex AI" color="#5BB974" fillcolor="#5BB974" penwidth=3 shape=rectangle style="filled,rounded"]
+	d0 -> d1 [label=Prediction color="#5BB974" penwidth=3]
+	d0 -> g [label=Generative color="#FCC934" penwidth=3]
+	d1 -> r1 [label=No color="#5BB974" penwidth=3]
+	d1 -> d2 [label=Yes color="#5BB974" penwidth=3]
+	d2 -> r2 [label=No color="#5BB974" penwidth=3]
+	d2 -> d3 [label=Yes color="#5BB974" penwidth=3]
+	d3 -> r3 [label=SQL color="#5BB974" penwidth=3]
+	d3 -> r4 [label="Your Choice!" color="#5BB974" penwidth=3]
+	r1 -> g [label=Including color="#FCC934" penwidth=3]
+}

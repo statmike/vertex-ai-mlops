@@ -124,7 +124,7 @@ To understand the contents of this repository, the following charts uncover the 
 
 | Direction |
 :-------------------------:
-![](./architectures/overview/decision.png)
+![](./architectures/architectures/images/readme/decision_training.png)
 
 ### Pre-Trained APIs
 <table style='text-align:center;vertical-align:middle' width="100%" cellpadding="1" cellspacing="0">
