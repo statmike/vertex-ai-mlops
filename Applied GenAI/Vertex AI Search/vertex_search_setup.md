@@ -8,7 +8,7 @@ To start with, download the MLB rule books from the URLs listed below and upload
 - [MLB 2023 Rule Book](https://img.mlbstatic.com/mlb-images/image/upload/mlb/wqn5ah4c3qtivwx3jatm.pdf)
 
 <p align="center" width="100%"><center>
-    <img align="center" alt="Upload the files to Google Cloud Storage Bucket" src="../architectures/notebooks/applied/genai/vertex_search_step_0.png" width="45%">
+    <img align="center" alt="Upload the files to Google Cloud Storage Bucket" src="../../architectures/notebooks/applied/genai/vertex_search_step_0.png" width="45%">
 </center></p>
 
 Once the files the uploaded to Cloud Storage Bucket, search for `Vertex AI Search and Conversation` in the search bar on the top of the console and switch to the page. You will be seeing the landing page as shown below in the screenshot.
@@ -20,47 +20,47 @@ Once the files the uploaded to Cloud Storage Bucket, search for `Vertex AI Searc
 Click on `New App` and select `Search` as App Type.
 
 <p align="center" width="100%"><center>
-    <img align="center" alt="Select Search" src="../architectures/notebooks/applied/genai/vertex_search_step_2.png" width="45%">
+    <img align="center" alt="Select Search" src="../../architectures/notebooks/applied/genai/vertex_search_step_2.png" width="45%">
 </center></p>
 
 Under Configuration, make sure to turn on `Enterprise Edition Features` and `Advanced LLM Features`. Also, Enter the `App Name` and select the region as `global`.
 
 <p align="center" width="100%"><center>
-    <img align="center" alt="Enter the App Name and Click Continue" src="../architectures/notebooks/applied/genai/vertex_search_step_3.png" width="45%">
+    <img align="center" alt="Enter the App Name and Click Continue" src="../../architectures/notebooks/applied/genai/vertex_search_step_3.png" width="45%">
 </center></p>
 
 Next Step is to create a `Data Store`. Click on `Create New Data Store` and Select `Cloud Storage` as Data Source. 
 
 <p align="center" width="100%"><center>
-    <img align="center" alt="Select Cloud Storage" src="../architectures/notebooks/applied/genai/vertex_search_step_4.png" width="45%">
+    <img align="center" alt="Select Cloud Storage" src="../../architectures/notebooks/applied/genai/vertex_search_step_4.png" width="45%">
 </center></p>
 
 Browse the Cloud Storage and select the files you have uploaded. 
 
 <p align="center" width="100%"><center>
-    <img align="center" alt="Browse to the location in Cloud Storage and select the files" src="../architectures/notebooks/applied/genai/vertex_search_step_5.png" width="45%">
+    <img align="center" alt="Browse to the location in Cloud Storage and select the files" src="../../architectures/notebooks/applied/genai/vertex_search_step_5.png" width="45%">
 </center></p>
 
 After choosing the files, enter the `Data Store` name and click on `Create`.
 
 <p align="center" width="100%"><center>
-    <img align="center" alt="Enter the Data Store Name" src="../architectures/notebooks/applied/genai/vertex_search_step_6.png" width="45%">
+    <img align="center" alt="Enter the Data Store Name" src="../../architectures/notebooks/applied/genai/vertex_search_step_6.png" width="45%">
 </center></p>
 
 Select the `Data Store` and click on `Create`.
 
 <p align="center" width="100%"><center>
-    <img align="center" alt="Click on Create to create the Data Store" src="../architectures/notebooks/applied/genai/vertex_search_step_7.png" width="45%">
+    <img align="center" alt="Click on Create to create the Data Store" src="../../architectures/notebooks/applied/genai/vertex_search_step_7.png" width="45%">
 </center></p>
 
 You will be able to watch the progress in `Data Store` creation as shown below.
 
 <p align="center" width="100%"><center>
-    <img align="center" alt="Data Store Creation in Progress" src="../architectures/notebooks/applied/genai/vertex_search_step_8.png" width="45%">
+    <img align="center" alt="Data Store Creation in Progress" src="../../architectures/notebooks/applied/genai/vertex_search_step_8.png" width="45%">
 </center></p>
 
 After the successful completion of Data Store creation, You will be able to test the search app using the `preview feature` on the left pane.
 
 <p align="center" width="100%"><center>
-    <img align="center" alt="Testing in Console using the preview" src="../architectures/notebooks/applied/genai/vertex_search_step_9.png" width="45%">
+    <img align="center" alt="Testing in Console using the preview" src="../../architectures/notebooks/applied/genai/vertex_search_step_9.png" width="45%">
 </center></p>
