@@ -39,5 +39,6 @@ This [Notebook](Applied GenAI/Vertex AI Search/Vertex AI Search Document Q&A Usi
 
  Ask any questions related to the MLB Baseball rules and get text generated answers using the combination of both Vertex AI Search and Vertex GenAI LLMs.
 
- 
+ ## Vertex AI Search Setup:
 
+Vertex AI Search Setup can be found [here](https://github.com/karticn-google/vertex-ai-mlops/blob/8ddde58c64944a390e9717308965ddf186c2016c/Applied%20GenAI/Vertex%20AI%20Search/vertex_search_setup.md)

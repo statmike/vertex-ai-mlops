@@ -2,7 +2,7 @@
 
 Following are the steps to create a Vertex AI Search App using Google Cloud Console.
 
-To start with, download the MLB rule books from the URLs listed below and upload them to Google Cloud Storage.
+To start with, download the MLB rule books from the URLs listed below and upload them to Google Cloud Storage. Steps to create a bucket in google cloud storage can be found [here](https://cloud.google.com/storage/docs/creating-buckets) and upload files to Google Cloud Storage can be found [here](https://cloud.google.com/storage/docs/uploading-objects)
 
 - [MLB 2022 Rule Book](https://img.mlbstatic.com/mlb-images/image/upload/mlb/hhvryxqioipb87os1puw.pdf)
 - [MLB 2023 Rule Book](https://img.mlbstatic.com/mlb-images/image/upload/mlb/wqn5ah4c3qtivwx3jatm.pdf)
