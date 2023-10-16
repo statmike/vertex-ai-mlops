@@ -14,7 +14,7 @@ To start with, download the MLB rule books from the URLs listed below and upload
 Once the files the uploaded to Cloud Storage Bucket, search for `Vertex AI Search and Conversation` in the search bar on the top of the console and switch to the page. You will be seeing the landing page as shown below in the screenshot.
 
 <p align="center" width="100%"><center>
-    <img align="center" alt="Click on New App Button" src="../architectures/notebooks/applied/genai/vertex_search_step_1.png" width="45%">
+    <img align="center" alt="Click on New App Button" src="../../architectures/notebooks/applied/genai/vertex_search_step_1.png" width="45%">
 </center></p>
 
 Click on `New App` and select `Search` as App Type.
