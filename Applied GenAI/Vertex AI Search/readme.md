@@ -41,4 +41,4 @@ This [Notebook](Applied GenAI/Vertex AI Search/Vertex AI Search Document Q&A Usi
 
  ## Vertex AI Search Setup:
 
-Vertex AI Search Setup can be found [here](https://github.com/karticn-google/vertex-ai-mlops/blob/8ddde58c64944a390e9717308965ddf186c2016c/Applied%20GenAI/Vertex%20AI%20Search/vertex_search_setup.md)
+Vertex AI Search Setup can be found [here](./vertex_search_setup.md)
