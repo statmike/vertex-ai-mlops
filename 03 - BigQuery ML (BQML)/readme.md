@@ -11,6 +11,7 @@ This series of notebooks will introduce [BigQuery ML (BQML)](https://cloud.googl
 A great starting point for seeing the scope of available methods is the [user journey for models](https://cloud.google.com/bigquery/docs/e2e-journey).  This repository also has a series of notebook based workflows for many BigQuery ML methods that can be reviewed here: [../03 - BigQuery ML (BQML)](../03%20-%20BigQuery%20ML%20(BQML)/readme.md).
 
 **BigFrames**
+
 A new way to interact with BigQuery and BigQuery ML is [BigQuery DataFrames](https://cloud.google.com/python/docs/reference/bigframes/latest).  A new Pythonic DataFrame with modules for BigQuery (`bigframes.pandas`) that is pandas-compatible and BigQuery ML (`bigframes.ml`) that is scikit-learn like.  This series of notebooks will be expanded to offer workflow examples in the choice of SQL or BigFrames!
 
 **Prerequisites**
@@ -136,6 +137,27 @@ This list is in the suggested order of review for anyone getting an overview and
         </td>
         <td></td>
     </tr>
+<!--...........................................................................................................................................................................--> 
+    <tr style='text-align:center;vertical-align:middle'>
+        <th colspan='2'>Generative AI</th>
+    </tr>
+    <tr>
+        <td><a href = "./BQML%20For%20Generative%20AI%20With%20SQL.ipynb" target="_blank">BQML For Generative AI With SQL</a></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td><a href = "../Applied%20GenAI/readme.md" target="_blank">Applied GenAI</a>
+            <ul>
+                <li><a href = "../Applied%20GenAI/Vertex%20AI%20GenAI%20For%20Rewriting%20-%20BigQuery%20Advisor%20With%20Codey.ipynb" target = "_blank">Vertex AI GenAI For Rewriting - BigQuery Advisor With Codey</a></li>
+                <li><a href = "../Applied%20GenAI/Vertex%20AI%20GenAI%20For%20BigQuery%20Q&A%20-%20Overview.ipynb" target = "_blank">Vertex AI GenAI For BigQuery Q&A - Overview</a></li>
+            </ul>
+        </td>
+        <td><a href = "../Applied%20GenAI/readme.md" target="_blank">Applied GenAI</a>
+            <ul>
+                <li><a href = "../Applied%20GenAI/Vertex%20AI%20GenAI%20Embeddings%20-%20As%20Features%20For%20Hierarchical%20Classification.ipynb" target = "_blank">Vertex AI GenAI Embeddings - As Features For Hierarchical Classification</a></li>
+            </ul>
+        </td>
+    </tr>
 <!--...........................................................................................................................................................................-->
     <tr style='text-align:center;vertical-align:middle'>
         <th colspan='2'>Other Topics</th>
@@ -182,19 +204,6 @@ This list is in the suggested order of review for anyone getting an overview and
         <td><a href = "../Applied%20Forecasting/readme.md" target="_blank">Applied Forecasting</a>
             <ul>
                 <li><a href = "../Applied%20Forecasting/Vertex%20AI%20Prediction%20Endpoints%20for%20Online%20Forecasting%20With%20Prophet.ipynb" target="_blank">Vertex AI Prediction Endpoints for Online Forecasting With Prophet</a></li>
-            </ul>
-        </td>
-    </tr>
-    <tr>
-        <td><a href = "../Applied%20GenAI/readme.md" target="_blank">Applied GenAI</a>
-            <ul>
-                <li><a href = "../Applied%20GenAI/Vertex%20AI%20GenAI%20For%20Rewriting%20-%20BigQuery%20Advisor%20With%20Codey.ipynb" target = "_blank">Vertex AI GenAI For Rewriting - BigQuery Advisor With Codey</a></li>
-                <li><a href = "../Applied%20GenAI/Vertex%20AI%20GenAI%20For%20BigQuery%20Q&A%20-%20Overview.ipynb" target = "_blank">Vertex AI GenAI For BigQuery Q&A - Overview</a></li>
-            </ul>
-        </td>
-        <td><a href = "../Applied%20GenAI/readme.md" target="_blank">Applied GenAI</a>
-            <ul>
-                <li><a href = "../Applied%20GenAI/Vertex%20AI%20GenAI%20Embeddings%20-%20As%20Features%20For%20Hierarchical%20Classification.ipynb" target = "_blank">Vertex AI GenAI Embeddings - As Features For Hierarchical Classification</a></li>
             </ul>
         </td>
     </tr>
