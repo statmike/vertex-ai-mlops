@@ -1,3 +1,5 @@
+![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2FApplied+GenAI%2FVertex+AI+Search&dt=vertex_search_setup.md)
+
 # /Applied GenAI/Vertex AI Search/vertex_search_setup.md
 
 Following are the steps to create a Vertex AI Search App using Google Cloud Console.
