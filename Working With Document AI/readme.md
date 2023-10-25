@@ -11,7 +11,7 @@ Document AI is an API where you interact with processors to extract information 
 You enable the API, create an instance of a processor in your project, send in document(s), receive back JSON with the extracted information:
 
 <p align="center" width="100%"><center>
-    <img src="../architectures/architectures/images/working%20with/documentai/readme/high_level.png">
+    <img src="../architectures/architectures/images/working with/documentai/readme/high_level.png">
 </center></p>
 
 **Documents**
