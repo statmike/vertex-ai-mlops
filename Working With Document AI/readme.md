@@ -14,15 +14,17 @@ You enable the API, create an instance of a processor in your project, send in d
     <img src="../architectures/architectures/images/working with/documentai/readme/high_level.png">
 </center></p>
 
+## Details
+
 **Documents**
 - [Document Types](https://cloud.google.com/document-ai/docs/file-types) like pdf, gif, tiff, jpeg, pn, gmp, webp
 
 **Clients**
 - Clients For Processing: [list of clients](https://cloud.google.com/document-ai/docs/libraries), [REST](https://cloud.google.com/document-ai/docs/reference/rest), [RPC](https://cloud.google.com/document-ai/docs/reference/rpc)
     - [Online](https://cloud.google.com/document-ai/docs/send-request#online-process)
-        - Sync and Async Client available
+        - Sync and Async Clients available
     - [Batch](https://cloud.google.com/document-ai/docs/send-request#batch-process)
-        - Sync and Async Client available
+        - Sync and Async Clients available
 
 **Processors**
 - General Processors
@@ -73,6 +75,16 @@ You enable the API, create an instance of a processor in your project, send in d
         - Summarize
         - [Documentation Tutorial](https://cloud.google.com/document-ai/docs/workbench/build-summarizer-processor)
 
+
+---
+## Understanding Responses
+
+The response is a JSON structure that explains all the extracted information.  
+
+- Handling responses: [Reference](https://cloud.google.com/document-ai/docs/handle-response)
+- Example output: [Reference](https://cloud.google.com/document-ai/docs/output)
+
+The structure of my guide with notes (in progress):
 ```
 document
     - uri: string
@@ -165,6 +177,18 @@ document
                         - type: string
                     - detectedLanguages: list
                         - languageCode: string
+            - symbols: list
+                - layout:
+                    - textAnchor:
+                        - textSegments: list
+                            - startIndex: string
+                            - endIndex: string
+                    - confidence: float
+                    - boundingPoly:
+                        - normalizedVertices: list
+                            - x: float
+                            - y: float
+                    - orientation: string
 ###### FORM & SPECIALTY PARSERS INCLUDE #########################################################
             - tables: list
                 - layout:
@@ -237,28 +261,48 @@ document
                     - orientation: string
 ###### SPECIALTY & CUSTOM PARSER INCLUDE #########################################################
             - entities: list
-                - fieldName:
+                - textAnchor:
+                    - textSegments: list
+                        - startIndex: string
+                        - endIndex: string
+                    - content: string # may be missing - see properties
+                - type: string
+                - mentionText: string
+                - confidence: float
+                - pageAnchor:
+                    - pageRefs: list
+                        - boundingPoly:
+                            - normalizedVertices: list
+                                - x: float
+                                - y: float
+                - id: string
+                - normalizedValue: # if textAnchor:content is not missing
+                    - text: string
+                    - dateValue:
+                        - year: int
+                        - month: int
+                        - day: int
+                - properties: list # if textAnchor:content is missing
                     - textAnchor:
                         - textSegments: list
                             - startIndex: string
                             - endIndex: string
+                        - content: string
+                    - type: string
+                    - mentionText: string
                     - confidence: float
-                    - boundingPoly:
-                        - normalizedVertices: list
-                            - x: float
-                            - y: float
-                    - orientation: string
-                - fieldValue:
-                    - textAnchor:
-                        - textSegments: list
-                            - startIndex: string
-                            - endIndex: string
-                    - confidence: float
-                    - boundingPoly:
-                        - normalizedVertices: list
-                            - x: float
-                            - y: float
-                    - orientation: string
+                    - pageAnchor:
+                        - pageRefs: list
+                            - boundingPoly:
+                                - normalizedVertices: list
+                                    - x: float
+                                    - y: float
+                    - id: string
+                    - normalizedValue:
+                        - text: string
+                        - moneyValue:
+                            - currencyCode: string
+                            - units: string
 ###### ALL PARSER INCLUDE #########################################################
             - image: 
                 - content: base64 string
