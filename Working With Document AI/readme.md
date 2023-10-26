@@ -18,6 +18,7 @@ You enable the API, create an instance of a processor in your project, send in d
 
 **Documents**
 - [Document Types](https://cloud.google.com/document-ai/docs/file-types) like pdf, gif, tiff, jpeg, pn, gmp, webp
+    - [More detail on supported document types](https://cloud.google.com/document-ai/docs/enterprise-document-ocr#supported_file_formats).
 
 **Clients**
 - Clients For Processing: [list of clients](https://cloud.google.com/document-ai/docs/libraries), [REST](https://cloud.google.com/document-ai/docs/reference/rest), [RPC](https://cloud.google.com/document-ai/docs/reference/rpc)
@@ -69,8 +70,13 @@ You enable the API, create an instance of a processor in your project, send in d
             <td>Yes</td>
             <td>No</td>
             <td>No</td>
-            <td>Quality Scores</td>
-            <td></td>
+            <td><a href = "https://cloud.google.com/document-ai/docs/process-documents-ocr#image-quality_analysis" target="_blank">Quality Scores</a></td>
+            <td>
+                <ul>
+                <li><a href = "https://cloud.google.com/document-ai/docs/process-documents-ocr#enable-configurations" target="_blank">Configurations</a></li>
+                <li><a href = "https://cloud.google.com/document-ai/docs/process-documents-ocr#ocr_add_ons" target="_blank">Add Ons</a></li>
+                </ul>
+            </td>
         </tr>
         <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
             <td><a href = "https://cloud.google.com/document-ai/docs/form-parser" target="_blank">Form</a></td>
@@ -82,33 +88,33 @@ You enable the API, create an instance of a processor in your project, send in d
             <td>No</td>
             <td>Yes</td>
             <td>No</td>
-            <td>Generic Entities</td>
+            <td><a href = "https://cloud.google.com/document-ai/docs/form-parser#data-extraction_features" target = "_blank">Generic Entities</a></td>
             <td></td>
         </tr>
         <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
             <td><a href = "https://cloud.google.com/document-ai/docs/processors-list#processor_doc-quality-processor" target="_blank">Document Quality</a></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td>Assess Document Quality</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Quality Scores</td>
             <td></td>
         </tr>
         <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
             <td><a href = "https://cloud.google.com/document-ai/docs/processors-list#processor_doc-splitter" target="_blank">Document Splitter</a></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td>Detect document splits</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Document Splits</td>
             <td></td>
         </tr>
 <!--.....................................................................................................................................................................-->
@@ -123,17 +129,18 @@ You enable the API, create an instance of a processor in your project, send in d
             <td>No</td>
             <td>No</td>
             <td>No</td>
-            <td>Invoice</td>
+            <td>Pre-trained<BR>Uptrained</td>
             <td></td>
         </tr>
         <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
             <td><a href = "https://cloud.google.com/document-ai/docs/processors-list#specialized_processors" target="_blank">Many More</a></td>
-            <td rowspan="1" colspan="10">
+            <td rowspan="1" colspan="8" style='text-align:left;vertical-align:middle'>
                 <b>Identity Parsers:</b> US Passport, US Driver License, France Passport, France Driver License, ...
                 <br><b>Lending Parsers:</b> Mortgage, Lending, Pay Slip, 1003, 1040, 1099-DIV, 1099-INT, Bank Statement, ...
                 <br><b>Procurement Parsers:</b> Invoice, Expense, Ultility, ...
                 <br><b>Contract Parser</b>
             </td>
+            <td>Pre-trained<BR>Uptrained</td>
         </tr>
 <!--.....................................................................................................................................................................-->
         <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
@@ -148,7 +155,7 @@ You enable the API, create an instance of a processor in your project, send in d
             <td>No</td>
             <td>No</td>
             <td>Custom</td>
-            <td></td>
+            <td><a href="https://cloud.google.com/document-ai/docs/workbench/build-custom-processor" target="_blank">Documentation Tutorial</a></td>
         </tr>
         <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
             <td><a href = "https://cloud.google.com/document-ai/docs/processors-list#processor_CUSTOM_CLASSIFICATION_PROCESSOR" target="_blank">Document Classifier</a></td>
@@ -161,7 +168,7 @@ You enable the API, create an instance of a processor in your project, send in d
             <td>No</td>
             <td>No</td>
             <td>Custom</td>
-            <td></td>
+            <td><a href="https://cloud.google.com/document-ai/docs/workbench/build-custom-classification-processor" target="_blank">Documentation Tutorial</a></td>
         </tr>
         <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
             <td><a href = "https://cloud.google.com/document-ai/docs/processors-list#processor_CUSTOM_SPLITTING_PROCESSOR" target="_blank">Document Splitter</a></td>
@@ -174,7 +181,7 @@ You enable the API, create an instance of a processor in your project, send in d
             <td>No</td>
             <td>No</td>
             <td>Custom</td>
-            <td></td>
+            <td><a href="https://cloud.google.com/document-ai/docs/workbench/build-custom-splitter-processor" target="_blank">Documentation Tutorial</a></td>
         </tr>
         <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
             <td><a href = "https://cloud.google.com/document-ai/docs/processors-list#processor_SUMMARIZER" target="_blank">Summarizer</a></td>
@@ -187,59 +194,11 @@ You enable the API, create an instance of a processor in your project, send in d
             <td>No</td>
             <td>No</td>
             <td>Summary</td>
-            <td></td>
+            <td><a href="https://cloud.google.com/document-ai/docs/workbench/build-summarizer-processor" target="_blank">Documentation Tutorial</a></td>
         </tr>
 <!--.....................................................................................................................................................................-->
     </tbody>
 </table>
-
-- General Processors
-    - [OCR Parser](https://cloud.google.com/document-ai/docs/enterprise-document-ocr)
-        - print and handwriting with language detection (including hints)
-        - detection regions: page, block, paragraph, line, word, symbol
-        - also, math OCR to latex, checkbox with status, font style detection
-    - [Form Parser](https://cloud.google.com/document-ai/docs/form-parser)
-        - OCR
-        - key-value pairs including custom logic
-        - generic entities: email, phone, url, date_time, address, person, organization, quantity, price, id, page_number
-        - tables
-        - checkboxes
-    - [Document Quality](https://cloud.google.com/document-ai/docs/processors-list#processor_doc-quality-processor)
-        - OCR
-        - Quality score between [0, 1] including quality reason if the score is < 0.5 (blurry, dark, faint, noisy, text too small
-    - [Document Splitter](https://cloud.google.com/document-ai/docs/processors-list#processor_doc-splitter)
-        - OCR
-        - splitting, suggest page location for indicating new files
-- [Specialized Processors](https://cloud.google.com/document-ai/docs/processors-list#specialized_processors)
-    - Example: [Invoice Parser](https://cloud.google.com/document-ai/docs/processors-list#processor_invoice-processor)
-        - OCR
-        - [Fields](https://cloud.google.com/document-ai/docs/fields#processor_invoice-processor)
-        - [Enriched Entity](https://cloud.google.com/document-ai/docs/ekg-enrichment#processor_invoice-processor)
-        - [Uptrain Parser](https://cloud.google.com/document-ai/docs/workbench/uptrain-processor) With Your Documents
-            - Better Accuracy
-            - Custom Fields
-    - So, Many, More!
-        - Contract Parser
-        - Identity Parsers: US Passport, US Driver License, France Passport, France Driver License, ...
-        - Lending Parsers: Mortgage, Lending, Pay Slip, 1003, 1040, 1099-DIV, 1099-INT, Bank Statement, ...
-        - Procurement Parsers: Invoice, Expense, Ultility, ...
-- [Custom Processors](https://cloud.google.com/document-ai/docs/processors-list#custom_processors)
-    - [Custom Document Extractor](https://cloud.google.com/document-ai/docs/processors-list#processor_cde)
-        - OCR
-        - Entity Extraction, Including Generative AI for extraction
-        - [Documentation Tutorial](https://cloud.google.com/document-ai/docs/workbench/build-custom-processor)
-    - [Custom Document Classifier](https://cloud.google.com/document-ai/docs/processors-list#processor_CUSTOM_CLASSIFICATION_PROCESSOR)
-        - OCR
-        - Classsification
-        - [Documentation Tutorial](https://cloud.google.com/document-ai/docs/workbench/build-custom-classification-processor)
-    - [Customer Document Splitter](https://cloud.google.com/document-ai/docs/processors-list#processor_CUSTOM_SPLITTING_PROCESSOR)
-        - OCR
-        - Classsification
-        - Splitting
-        - [Documentation Tutorial](https://cloud.google.com/document-ai/docs/workbench/build-custom-splitter-processor)
-    - [Summarizer](https://cloud.google.com/document-ai/docs/processors-list#processor_SUMMARIZER)
-        - Summarize
-        - [Documentation Tutorial](https://cloud.google.com/document-ai/docs/workbench/build-summarizer-processor)
 
 ---
 ## Notebook Workflows
@@ -308,13 +267,15 @@ The response is a JSON structure that contains all the extracted information.
         - tables: list
         - formFields: list
         - image: list
+        - imageQualityScores:
+        - visualElements: list
     - entities: list</b>
                 </pre>
             </td>
         </tr>
 <!--.....................................................................................................................................................................-->
         <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
-            <td>Document:pages:layout:blocks</td>
+            <td>Document:pages:blocks</td>
             <td>
                 <pre>
 <b>- blocks: list</b>
@@ -337,7 +298,7 @@ The response is a JSON structure that contains all the extracted information.
         </tr>
 <!--.....................................................................................................................................................................-->
         <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
-            <td>Document:pages:layout:paragraphs</td>
+            <td>Document:pages:paragraphs</td>
             <td>
                 <pre>
 <b>- paragraphs: list</b>
@@ -360,7 +321,7 @@ The response is a JSON structure that contains all the extracted information.
         </tr>
 <!--.....................................................................................................................................................................-->
         <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
-            <td>Document:pages:layout:lines</td>
+            <td>Document:pages:lines</td>
             <td>
                 <pre>
 <b>- lines: list</b>
@@ -385,7 +346,7 @@ The response is a JSON structure that contains all the extracted information.
         </tr>
 <!--.....................................................................................................................................................................-->
         <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
-            <td>Document:pages:layout:tokens</td>
+            <td>Document:pages:tokens</td>
             <td>
                 <pre>
 <b>- tokens: list</b>
@@ -406,16 +367,47 @@ The response is a JSON structure that contains all the extracted information.
         - detectedBreak: 
             - type: string
         - detectedLanguages: list
-            - languageCode: string     
+            - languageCode: string   
                 </pre>
             </td>
         </tr>
 <!--.....................................................................................................................................................................-->
         <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
-            <td>Document:pages:layout:symbols</td>
+            <td>Document:pages:tokens
+                <ul>
+                    <li>Add On: Font Style detection for OCR Parser</li>
+                </ul>
+            </td>
             <td>
                 <pre>
-<b># OCR Parser has Symbols (characters):</b>
+<b>- tokens: list</b>
+    - layout:   
+        - styleInfo:
+            - fontSize: int
+            - pixelFontSize: int
+            - fontType: string
+            - bold: bool
+            - fontWeight: int
+            - textColor:
+                - red: float
+                - green: float
+                - blue: float
+            - backgroundColor:
+                -red: float
+                - green: float
+                - blue: float
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>Document:pages:symbols
+                <ul>
+                    <li>OCR Parser Includes Symbols (characters, spaces)</li>
+                </ul>
+            </td>
+            <td>
+                <pre>
 <b>- symbols: list</b>
     - layout:
         - textAnchor:
@@ -433,7 +425,11 @@ The response is a JSON structure that contains all the extracted information.
         </tr>
 <!--.....................................................................................................................................................................-->
         <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
-            <td>Document:pages:layout:tables</td>
+            <td>Document:pages:tables
+                <ul>
+                    <li>Form Parser Includes Table Parsing</li>
+                </ul>
+            </td>
             <td>
                 <pre>
 <b>- tables: list</b>
@@ -486,10 +482,13 @@ The response is a JSON structure that contains all the extracted information.
         </tr>
 <!--.....................................................................................................................................................................-->
         <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
-            <td>Document:pages:layout:formFields</td>
+            <td>Document:pages:formFields
+                <ul>
+                    <li>Form Parser Includes Form Field Detection</li>
+                </ul>
+            </td>
             <td>
                 <pre>
-<b>- formFields: list</b>
     - fieldName:
         - textAnchor:
             - textSegments: list
@@ -519,10 +518,75 @@ The response is a JSON structure that contains all the extracted information.
         </tr>
 <!--.....................................................................................................................................................................-->
         <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
-            <td>Document:entities</td>
+            <td>
+                Document:pages:visualElements
+                <ul>
+                    <li>Add On: Checkbox Extraction With OCR Parser</li>
+                    <li>Add On: Math Text With OCR Parser</li>
+                </ul>
+            </td>
             <td>
                 <pre>
-<b># OCR Parser Has Quality Scores: </b>
+- visualElements: list 
+    - layout:
+        - confidence: float
+        - boundingPoly:
+            - vertices:
+                - x: int
+                - y: int
+            - normalizedVertices:
+                - x: float
+                - y: float
+        - type: string like ["unfilled_checkbox", "filled_checkbox", "math_formula"]
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>
+                Document:pages:image
+                <ul>
+                    <li>All Parsers Includes Base64 encoding of page images: image</li>
+                </ul>
+            </td>
+            <td>
+                <pre>
+- image: 
+    - content: base64 string
+    - mimeType: string
+    - width: int
+    - height: int
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>
+                Document:pages:imageQualityScores
+                <ul>
+                    <li>OCR Parser Includes Quality score: imageQualityScores</li>
+                </ul>
+            </td>
+            <td>
+                <pre>
+- imageQualityScores:
+    - qualityScore: float
+    - detectedDefects: list
+        - type: string
+        - confidence: float
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>Document:entities
+                <ul>
+                    <li>OCR Parser Includes type: quality_score</li>
+                    <li>Intelligent Document Quality Parser Includes tyes: quality_score</li>
+                </ul>
+            </td>
+            <td>
+                <pre>
 - entities: list
     <b>- type: "quality_score"</b>
     - confidence: float
@@ -532,7 +596,18 @@ The response is a JSON structure that contains all the extracted information.
     - properties: list
         - type: string = "quality/defect_[document_cutoff, glare, text_cutoff]"
         - confidence: float
-<BR><b># Form Parser Has Generic Entities:</b>
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>Document:entities
+                <ul>
+                    <li>Form Parser Has Generic Entity Detection</li>
+                </ul>
+            </td>
+            <td>
+                <pre>
 - entities: list
     <b>- type: "generic_entities"</b>
         - pageAnchor:
@@ -553,13 +628,36 @@ The response is a JSON structure that contains all the extracted information.
                             - x: float
                             - y: float
             - id: string
-<BR><b># Summarizer (Custom):</b>
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>Document:entities
+                <ul>
+                    <li>Summarizer Parser</li>
+                </ul>
+            </td>
+            <td>
+                <pre>
 - entities: list
     <b>- type: "summary"</b>
     - mentionText: string
     - normalizedValue:
         - text: string
-<BR><b># Custom Document Splitter:</b>
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>Document:entities
+                <ul>
+                    <li>Custom Document Splitter</li>
+                    <li>Document Splitter</li>
+                </ul>
+            </td>
+            <td>
+                <pre>
 - entities: list
     - textAnchor:
         - textSegments: list
@@ -571,12 +669,34 @@ The response is a JSON structure that contains all the extracted information.
         - pageRefs: list
             - page: string
             - confidence: float
-<BR><b># Custom Document Classifier:</b>
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>Document:entities
+                <ul>
+                    <li>Custom Document Classifier</li>
+                </ul>
+            </td>
+            <td>
+                <pre>
 - entities: list
     - type: string
     - confidence: float
     - id: string
-<BR><b># Custom Document Extractor:</b>
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>Document:entities
+                <ul>
+                    <li>Custom Document Extractor</li>
+                </ul>
+            </td>
+            <td>
+                <pre>
 - entities: list
     - textAnchor:
         - textSegments: list
@@ -593,7 +713,18 @@ The response is a JSON structure that contains all the extracted information.
                         - x: float
                         - y: float
         - id: string
-<BR><b># Specialized Parsers: specific entities, including nesting:</b>
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>Document:entities
+                <ul>
+                    <li>Specialized Parsers Include Entities</li>
+                </ul>
+            </td>
+            <td>
+                <pre>
 - entities: list
     - textAnchor:
         - textSegments: list
@@ -636,26 +767,7 @@ The response is a JSON structure that contains all the extracted information.
             - text: string
             - moneyValue:
                 - currencyCode: string
-                - units: string    
-                </pre>
-            </td>
-        </tr>
-<!--.....................................................................................................................................................................-->
-        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
-            <td>Document:pages:layout:image</td>
-            <td>
-                <pre>
-- image: 
-    - content: base64 string
-    - mimeType: string
-    - width: int
-    - height: int
-<BR><b># Included With OCR:</b>
-- imageQualityScores:
-    - qualityScore: float
-    - detectedDefects: list
-        - type: string
-        - confidence: float
+                - units: string 
                 </pre>
             </td>
         </tr>
@@ -663,20 +775,3 @@ The response is a JSON structure that contains all the extracted information.
     </tbody>
 </table>
 
-
-
-
-
-
-
-
-Automation
-- triggering document parsing on document creation
-
-BigQuery For working with parsing results
-- Extract parts of documents
-- Create chunks of content for use in application
-- Add Embedding using Vertex AI Generative AI
-
-Projects
-- Creating a table of contents using font sizes!
