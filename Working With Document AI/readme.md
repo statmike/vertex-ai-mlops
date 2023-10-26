@@ -1,6 +1,6 @@
 ![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2FWorking+With+Document+AI&dt=readme.md)
 
-# /Working With Document AI/readme.md
+# vertex-ai-mlops/Working With Document AI/readme.md
 
 Working With [DocumentAI](https://cloud.google.com/document-ai/docs/overview) to extract information from documents as part of ML focused workflows.
 
@@ -27,6 +27,172 @@ You enable the API, create an instance of a processor in your project, send in d
         - Sync and Async Clients available
 
 **Processors**
+
+<table style='text-align:left;vertical-align:middle;border:1px solid black' width="90%" cellpadding="1" cellspacing="0">
+    <caption>Processors</caption>
+<!--.....................................................................................................................................................................-->
+    <col>
+    <col>
+    <col>
+    <colgroup span="8"></colgroup>
+    <col>
+<!--.....................................................................................................................................................................-->
+    <thead>
+        <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
+            <th rowspan="2" scope="col">Processor</th>
+            <th rowspan="2" scope="col">Parser</th>
+            <th rowspan="2" scope="col">Description</th>
+            <th colspan="8" scope="colgroup">Extractions</th>
+            <th rowspan="2" scope="col">Notes</th>
+        </tr>
+        <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
+            <th scope="col">Block</th>
+            <th scope="col">Paragraph</th>
+            <th scope="col">Line</th>
+            <th scope="col">Token</th>
+            <th scope="col">Symbol</th>
+            <th scope="col">Tables</th>
+            <th scope="col">Form Fields</th>
+            <th scope="col">Entities</th>
+        </tr>
+    </thead>
+    <tbody>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
+            <td rowspan="4" scope="rowgroup"><a href = "https://cloud.google.com/document-ai/docs/processors-list#general_processors" target="_blank">General</a></td>
+            <td><a href = "https://cloud.google.com/document-ai/docs/enterprise-document-ocr" target="_blank">OCR</a></td>
+            <td>Print and handwriting with language detection</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Quality Scores</td>
+            <td></td>
+        </tr>
+        <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
+            <td><a href = "https://cloud.google.com/document-ai/docs/form-parser" target="_blank">Form</a></td>
+            <td>OCR +</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>Generic Entities</td>
+            <td></td>
+        </tr>
+        <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
+            <td><a href = "https://cloud.google.com/document-ai/docs/processors-list#processor_doc-quality-processor" target="_blank">Document Quality</a></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
+            <td><a href = "https://cloud.google.com/document-ai/docs/processors-list#processor_doc-splitter" target="_blank">Document Splitter</a></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
+            <td rowspan="2" scope="rowgroup"><a href = "https://cloud.google.com/document-ai/docs/processors-list#specialized_processors" target="_blank">Specialized</a></td>
+            <td><a href = "https://cloud.google.com/document-ai/docs/processors-list#processor_invoice-processor" target="_blank">Invoice</a></td>
+            <td></td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Invoice</td>
+            <td></td>
+        </tr>
+        <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
+            <td><a href = "https://cloud.google.com/document-ai/docs/processors-list#specialized_processors" target="_blank">Many More</a></td>
+            <td rowspan="1" colspan="10">
+                <b>Identity Parsers:</b> US Passport, US Driver License, France Passport, France Driver License, ...
+                <br><b>Lending Parsers:</b> Mortgage, Lending, Pay Slip, 1003, 1040, 1099-DIV, 1099-INT, Bank Statement, ...
+                <br><b>Procurement Parsers:</b> Invoice, Expense, Ultility, ...
+                <br><b>Contract Parser</b>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
+            <td rowspan="4" scope="rowgroup"><a href = "https://cloud.google.com/document-ai/docs/processors-list#custom_processors" target="_blank">Custom</a></td>
+            <td><a href = "https://cloud.google.com/document-ai/docs/processors-list#processor_cde" target="_blank">Document Extractor</a></td>
+            <td></td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Custom</td>
+            <td></td>
+        </tr>
+        <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
+            <td><a href = "https://cloud.google.com/document-ai/docs/processors-list#processor_CUSTOM_CLASSIFICATION_PROCESSOR" target="_blank">Document Classifier</a></td>
+            <td></td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Custom</td>
+            <td></td>
+        </tr>
+        <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
+            <td><a href = "https://cloud.google.com/document-ai/docs/processors-list#processor_CUSTOM_SPLITTING_PROCESSOR" target="_blank">Document Splitter</a></td>
+            <td></td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Custom</td>
+            <td></td>
+        </tr>
+        <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
+            <td><a href = "https://cloud.google.com/document-ai/docs/processors-list#processor_SUMMARIZER" target="_blank">Summarizer</a></td>
+            <td></td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>No</td>
+            <td>No</td>
+            <td>No</td>
+            <td>Summary</td>
+            <td></td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+    </tbody>
+</table>
+
 - General Processors
     - [OCR Parser](https://cloud.google.com/document-ai/docs/enterprise-document-ocr)
         - print and handwriting with language detection (including hints)
@@ -75,18 +241,41 @@ You enable the API, create an instance of a processor in your project, send in d
         - Summarize
         - [Documentation Tutorial](https://cloud.google.com/document-ai/docs/workbench/build-summarizer-processor)
 
+---
+## Notebook Workflows
+
+- Document AI - Process Documents
+- Document AI - Process Responses
+- Document AI - Automation
 
 ---
 ## Understanding Responses
 
-The response is a JSON structure that explains all the extracted information.  
+The response is a JSON structure that contains all the extracted information.  
 
 - Handling responses: [Reference](https://cloud.google.com/document-ai/docs/handle-response)
 - Example output: [Reference](https://cloud.google.com/document-ai/docs/output)
 
-The structure of my guide with notes (in progress):
-```
-document
+
+<table style='text-align:left;vertical-align:middle;border:1px solid black' width="90%" cellpadding="1" cellspacing="0">
+    <caption>Responses</caption>
+<!--.....................................................................................................................................................................-->
+    <col>
+    <col>
+<!--.....................................................................................................................................................................-->
+    <thead>
+        <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
+            <th scope="col">Element</th>
+            <th scope="col">Structure</th>
+        </tr>
+    </thead>
+    <tbody>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>Document</td>
+            <td>
+                <pre>
+<b>document</b>
     - uri: string
     - mimeType: string
     - text: string
@@ -109,9 +298,161 @@ document
                     - x: float
                     - y: float
             - orientation: string
-            - detectedLanguages: list
-                - languageCode: string
-            - blocks: list
+        - detectedLanguages: list
+            - languageCode: string
+        <b>- blocks: list
+        - paragraphs: list
+        - lines: list
+        - tokens: list
+        - symbols: list
+        - tables: list
+        - formFields: list
+        - image: list
+    - entities: list</b>
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>Document:pages:layout:blocks</td>
+            <td>
+                <pre>
+<b>- blocks: list</b>
+    - layout:
+        - textAnchor:
+            - textSegments: list
+                - startIndex: string
+                - endIndex: string
+        - confidence: float
+        - boundingPoly:
+            - vertices: list
+                - x: int
+                - y: int
+            - normalizedVertices: list
+                - x: float
+                - y: float
+        - orientation: string    
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>Document:pages:layout:paragraphs</td>
+            <td>
+                <pre>
+<b>- paragraphs: list</b>
+    - layout:
+        - textAnchor:
+            - textSegments: list
+                - startIndex: string
+                - endIndex: string
+        - confidence: float
+        - boundingPoly:
+            - vertices: list
+                - x: int
+                - y: int
+            - normalizedVertices: list
+                - x: float
+                - y: float
+        - orientation: string    
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>Document:pages:layout:lines</td>
+            <td>
+                <pre>
+<b>- lines: list</b>
+    - layout:
+        - textAnchor:
+            - textSegments: list
+                - startIndex: string
+                - endIndex: string
+        - confidence: float
+        - boundingPoly:
+            - vertices: list
+                - x: int
+                - y: int
+            - normalizedVertices: list
+                - x: float
+                - y: float
+        - orientation: string
+        - detectedLanguages: list
+            - languageCode: string  
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>Document:pages:layout:tokens</td>
+            <td>
+                <pre>
+<b>- tokens: list</b>
+    - layout:
+        - textAnchor:
+            - textSegments: list
+                - startIndex: string
+                - endIndex: string
+        - confidence: float
+        - boundingPoly:
+            - vertices: list
+                - x: int
+                - y: int
+            - normalizedVertices: list
+                - x: float
+                - y: float
+        - orientation: string
+        - detectedBreak: 
+            - type: string
+        - detectedLanguages: list
+            - languageCode: string     
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>Document:pages:layout:symbols</td>
+            <td>
+                <pre>
+<b># OCR Parser has Symbols (characters):</b>
+<b>- symbols: list</b>
+    - layout:
+        - textAnchor:
+            - textSegments: list
+                - startIndex: string
+                - endIndex: string
+        - confidence: float
+        - boundingPoly:
+            - normalizedVertices: list
+                - x: float
+                - y: float
+        - orientation: string     
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>Document:pages:layout:tables</td>
+            <td>
+                <pre>
+<b>- tables: list</b>
+    - layout:
+        - textAnchor:
+            - textSegments: list
+                - startIndex: string
+                - endIndex: string
+        - confidence: float
+        - boundingPoly:
+            - vertices: list
+                - x: int
+                - y: int
+            - normalizedVertices: list
+                - x: float
+                - y: float
+        - orientation: string
+        - headerRows: list
+            - cells: list
                 - layout:
                     - textAnchor:
                         - textSegments: list
@@ -119,65 +460,14 @@ document
                             - endIndex: string
                     - confidence: float
                     - boundingPoly:
-                        - vertices: list
-                            - x: int
-                            - y: int
                         - normalizedVertices: list
                             - x: float
                             - y: float
                     - orientation: string
-            - paragraphs: list
-                - layout:
-                    - textAnchor:
-                        - textSegments: list
-                            - startIndex: string
-                            - endIndex: string
-                    - confidence: float
-                    - boundingPoly:
-                        - vertices: list
-                            - x: int
-                            - y: int
-                        - normalizedVertices: list
-                            - x: float
-                            - y: float
-                    - orientation: string
-            - lines: list
-                - layout:
-                    - textAnchor:
-                        - textSegments: list
-                            - startIndex: string
-                            - endIndex: string
-                    - confidence: float
-                    - boundingPoly:
-                        - vertices: list
-                            - x: int
-                            - y: int
-                        - normalizedVertices: list
-                            - x: float
-                            - y: float
-                    - orientation: string
-                    - detectedLanguages: list
-                        - languageCode: string
-            - tokens: list
-                - layout:
-                    - textAnchor:
-                        - textSegments: list
-                            - startIndex: string
-                            - endIndex: string
-                    - confidence: float
-                    - boundingPoly:
-                        - vertices: list
-                            - x: int
-                            - y: int
-                        - normalizedVertices: list
-                            - x: float
-                            - y: float
-                    - orientation: string
-                    - detectedBreak: 
-                        - type: string
-                    - detectedLanguages: list
-                        - languageCode: string
-            - symbols: list
+                - rowSpan: int
+                - colSpan: int
+        - bodyRows: list
+            - cells: list
                 - layout:
                     - textAnchor:
                         - textSegments: list
@@ -189,128 +479,192 @@ document
                             - x: float
                             - y: float
                     - orientation: string
-###### FORM & SPECIALTY PARSERS INCLUDE #########################################################
-            - tables: list
-                - layout:
-                    - textAnchor:
-                        - textSegments: list
-                            - startIndex: string
-                            - endIndex: string
-                    - confidence: float
-                    - boundingPoly:
-                        - vertices: list
-                            - x: int
-                            - y: int
+                - rowSpan: int
+                - colSpan: int    
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>Document:pages:layout:formFields</td>
+            <td>
+                <pre>
+<b>- formFields: list</b>
+    - fieldName:
+        - textAnchor:
+            - textSegments: list
+                - startIndex: string
+                - endIndex: string
+            - content
+        - confidence: float
+        - boundingPoly:
+            - normalizedVertices: list
+                - x: float
+                - y: float
+        - orientation: string
+    - fieldValue:
+        - textAnchor:
+            - textSegments: list
+                - startIndex: string
+                - endIndex: string
+            - content: string
+        - confidence: float
+        - boundingPoly:
+            - normalizedVertices: list
+                - x: float
+                - y: float
+        - orientation: string     
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>Document:entities</td>
+            <td>
+                <pre>
+<b># OCR Parser Has Quality Scores: </b>
+- entities: list
+    <b>- type: "quality_score"</b>
+    - confidence: float
+    - pageAnchor:
+        - pageRefs: list
+            - page: string
+    - properties: list
+        - type: string = "quality/defect_[document_cutoff, glare, text_cutoff]"
+        - confidence: float
+<BR><b># Form Parser Has Generic Entities:</b>
+- entities: list
+    <b>- type: "generic_entities"</b>
+        - pageAnchor:
+            -pageRefs: list
+                - 
+        - properties: list
+            - textAnchor:
+                - textSegments: list
+                    - startIndex: string
+                    - endIndex: string
+            - type: string
+            - mentionText: string
+            - confidence: string
+            - pageAnchor:
+                - pageRefs: list
+                    - boundingPoly: 
                         - normalizedVertices: list
                             - x: float
                             - y: float
-                    - orientation: string
-                    - headerRows: list
-                        - cells: list
-                            - layout:
-                                - textAnchor:
-                                    - textSegments: list
-                                        - startIndex: string
-                                        - endIndex: string
-                                - confidence: float
-                                - boundingPoly:
-                                    - normalizedVertices: list
-                                        - x: float
-                                        - y: float
-                                - orientation: string
-                            - rowSpan: int
-                            - colSpan: int
-                    - bodyRows: list
-                        - cells: list
-                            - layout:
-                                - textAnchor:
-                                    - textSegments: list
-                                        - startIndex: string
-                                        - endIndex: string
-                                - confidence: float
-                                - boundingPoly:
-                                    - normalizedVertices: list
-                                        - x: float
-                                        - y: float
-                                - orientation: string
-                            - rowSpan: int
-                            - colSpan: int
-###### FORM & SPECIALTY PARSER INCLUDE #########################################################
-            - formFields: list
-                - fieldName:
-                    - textAnchor:
-                        - textSegments: list
-                            - startIndex: string
-                            - endIndex: string
-                    - confidence: float
-                    - boundingPoly:
-                        - normalizedVertices: list
-                            - x: float
-                            - y: float
-                    - orientation: string
-                - fieldValue:
-                    - textAnchor:
-                        - textSegments: list
-                            - startIndex: string
-                            - endIndex: string
-                    - confidence: float
-                    - boundingPoly:
-                        - normalizedVertices: list
-                            - x: float
-                            - y: float
-                    - orientation: string
-###### SPECIALTY & CUSTOM PARSER INCLUDE #########################################################
-            - entities: list
-                - textAnchor:
-                    - textSegments: list
-                        - startIndex: string
-                        - endIndex: string
-                    - content: string # may be missing - see properties
-                - type: string
-                - mentionText: string
-                - confidence: float
-                - pageAnchor:
-                    - pageRefs: list
-                        - boundingPoly:
-                            - normalizedVertices: list
-                                - x: float
-                                - y: float
-                - id: string
-                - normalizedValue: # if textAnchor:content is not missing
-                    - text: string
-                    - dateValue:
-                        - year: int
-                        - month: int
-                        - day: int
-                - properties: list # if textAnchor:content is missing
-                    - textAnchor:
-                        - textSegments: list
-                            - startIndex: string
-                            - endIndex: string
-                        - content: string
-                    - type: string
-                    - mentionText: string
-                    - confidence: float
-                    - pageAnchor:
-                        - pageRefs: list
-                            - boundingPoly:
-                                - normalizedVertices: list
-                                    - x: float
-                                    - y: float
-                    - id: string
-                    - normalizedValue:
-                        - text: string
-                        - moneyValue:
-                            - currencyCode: string
-                            - units: string
-###### ALL PARSER INCLUDE #########################################################
-            - image: 
-                - content: base64 string
-                - mimeType: string
-                - width: int
-                - height: int
-                
-```
+            - id: string
+<BR><b># Summarizer (Custom):</b>
+- entities: list
+    <b>- type: "summary"</b>
+    - mentionText: string
+    - normalizedValue:
+        - text: string
+<BR><b># Custom Document Splitter:</b>
+- entities: list
+    - textAnchor:
+        - textSegments: list
+            - startIndex: string
+            - endIndex: string
+    - type: string
+    - confidence: float
+    - pageAnchor:
+        - pageRefs: list
+            - page: string
+            - confidence: float
+<BR><b># Custom Document Classifier:</b>
+- entities: list
+    - type: string
+    - confidence: float
+    - id: string
+<BR><b># Custom Document Extractor:</b>
+- entities: list
+    - textAnchor:
+        - textSegments: list
+            - startIndex: string
+            - endIndex: string
+        - content: string
+        - type: string
+        - mentionText: string
+        - confidence: float
+        - pageAnchor:
+            - pageRefs: list
+                - boundingPoly:
+                    - normalizedVertices: list
+                        - x: float
+                        - y: float
+        - id: string
+<BR><b># Specialized Parsers: specific entities, including nesting:</b>
+- entities: list
+    - textAnchor:
+        - textSegments: list
+            - startIndex: string
+            - endIndex: string
+        - content: string # may be missing - see properties
+    - type: string
+    - mentionText: string
+    - confidence: float
+    - pageAnchor:
+        - pageRefs: list
+            - boundingPoly:
+                - normalizedVertices: list
+                    - x: float
+                    - y: float
+    - id: string
+    - normalizedValue: # if textAnchor:content is not missing
+        - text: string
+        - dateValue:
+            - year: int
+            - month: int
+            - day: int
+    - properties: list # if textAnchor:content is missing
+        - textAnchor:
+            - textSegments: list
+                - startIndex: string
+                - endIndex: string
+            - content: string
+        - type: string
+        - mentionText: string
+        - confidence: float
+        - pageAnchor:
+            - pageRefs: list
+                - boundingPoly:
+                    - normalizedVertices: list
+                        - x: float
+                        - y: float
+        - id: string
+        - normalizedValue:
+            - text: string
+            - moneyValue:
+                - currencyCode: string
+                - units: string    
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+        <tr style='text-align:left;vertical-align:middle;border:1px solid black'>
+            <td>Document:pages:layout:image</td>
+            <td>
+                <pre>
+- image: 
+    - content: base64 string
+    - mimeType: string
+    - width: int
+    - height: int
+<BR><b># Included With OCR:</b>
+- imageQualityScores:
+    - qualityScore: float
+    - detectedDefects: list
+        - type: string
+        - confidence: float
+                </pre>
+            </td>
+        </tr>
+<!--.....................................................................................................................................................................-->
+    </tbody>
+</table>
+
+
+
 
 
 
