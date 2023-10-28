@@ -129,7 +129,10 @@ You enable the API, create an instance of a processor in your project, send in d
             <td>No</td>
             <td>No</td>
             <td>No</td>
-            <td>Pre-trained<BR>Uptrained</td>
+            <td>
+                Pre-trained
+                <BR><a href="https://cloud.google.com/document-ai/docs/workbench/uptrain-processor" target="_blank">Uptrained</a>
+            </td>
             <td></td>
         </tr>
         <tr style='text-align:center;vertical-align:middle;border:1px solid black'>
@@ -203,9 +206,19 @@ You enable the API, create an instance of a processor in your project, send in d
 ---
 ## Notebook Workflows
 
-- Document AI - Process Documents
-- Document AI - Process Responses
+- [Document AI - Process Documents](./Document%20AI%20-%20Process%20Documents.ipynb)
+    - How to process 1 or many documents
+    - Examples of Batch and Online Processing
+- [Document AI - Process Responses](./Document%20AI%20-%20Process%20Responses.ipynb)
+    - Extracting elements from the JSON in Python or in BigQuery
+    - Treating elements like geographies for advanced extraction techniques
 - Document AI - Automation
+- Parser Examples:
+    - OCR Parser With Add-ons
+    - General Form Parser
+    - Summarizer
+    - Specialized Processors:
+        - Invoice Parser
 
 ---
 ## Understanding Responses
