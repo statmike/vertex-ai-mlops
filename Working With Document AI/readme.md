@@ -221,6 +221,182 @@ You enable the API, create an instance of a processor in your project, send in d
         - Invoice Parser
 
 ---
+## Inputs & Outputs
+
+The following table breaks down th einput and output locations by the type of processing.  This uses the [Python Client for Document AI](https://cloud.google.com/python/docs/reference/documentai/latest) for examples:
+
+<table style='text-align:center;vertical-align:middle;border:1px solid black' width="90%" cellpadding="1" cellspacing="0">
+    <caption>Inputs & Outputs</caption>
+    <col>
+    <col>
+    <col>
+<!--..........................................................................................-->
+    <thead>
+        <tr>
+            <th scope="col" style="width:20%">
+                Processing Mode
+            </th>
+            <th scope="col" style="width:40%">
+                Inputs
+            </th>
+            <th scope="col" style="width:40%">
+                Outputs
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+<!--..........................................................................................-->
+        <tr>
+            <td>
+                Online<br>(Single Document Per Request)
+            </td>
+            <td>
+                <table>
+                    <tr style='text-align:center'>
+                        <td>One of:</td>
+                    </tr>
+                    <tr style='text-align:left'>
+                        <td>Document in GCS:</td>
+                    </tr>
+                    <tr style='text-align:left'>
+                        <td>
+                        <pre>
+response = doc_ai.process_document(
+    request = documentai.types.ProcessRequest(
+        <b>inline_document</b> = documentai.types.Document(
+            uri = 'gs://bucket/path/to/object.ext'
+        )
+    )
+)
+                        </pre>
+                        </td>
+                    </tr>
+                    <tr style='text-align:left'>
+                        <td>Document as bytes</td>
+                    </tr>
+                    <tr style='text-align:left'>
+                        <td>
+                        <pre>
+response = doc_ai.process_document(
+    request = documentai.types.ProcessRequest(
+        # provide a bytes object
+        <b>raw_document</b> = documentai.types.RawDocument(
+            content = 
+        )
+    )
+)
+                        </pre>
+                        </td>
+                    </tr>
+                    <tr style='text-align:left'>
+                        <td>Document in GCS</td>
+                    </tr>
+                    <tr style='text-align:left'>
+                        <td>
+                        <pre>
+response = doc_ai.process_document(
+    request = documentai.types.ProcessRequest(
+        # provide GCS URI as string
+        <b>gcs_document</b> = documentai.types.GcsDocument(
+            gcs_uri = 'gs://bucket/path/to/object'
+        )
+    )
+)
+                        </pre>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+            <td  style='text-align:left'>
+                The response is an object containing the document response.
+                <br><pre>type(response) is documentai.types.ProcessResponse()</pre>
+                <br><br>This has a parameter with the document:
+                <br><pre>type(response.document) is documentai.types.Document()</pre>
+                <br><br>The document object contains parameters with document components, like:
+                <ul>
+                    <li>response.document.text is a string with full text of the document</li>
+                    <li>response.document.pages is a list of documentai.types.Document.Pagee objects</li>
+                    <li>response.document.entities is a list of documentai.types.Document.Entity objects</li>
+                </ul>
+                <br>The document object contains method for converting to Python objects:
+                <ul>
+                    <li>response.document.to_dict() for dictionary</li>
+                    <li>response.document.to_json() for JSON</li>
+                </ul>
+            </td>
+        </tr>
+<!--..........................................................................................-->
+        <tr>
+            <td>
+                Batch<br>(Multiple Documents Per Request)
+            </td>
+            <td>
+                <table>
+                    <tr style='text-align:center'>
+                        <td>One of:</td>
+                    </tr>
+                    <tr style='text-align:left'>
+                        <td>List of documents in GCS:</td>
+                    </tr>
+                    <tr style='text-align:left'>
+                        <td>
+                <pre>
+doc_ai.batch_process_documents(
+    request = documentai.types.BatchProcessRequest(
+        <b>input_documents</b> = documentai.types.BatchDOcumentsInputConfig(
+            # provide a list of document objects that each have parameter gcs_uri = GCS URI as string
+            <b>gcs_documents</b> = documentai.types.GcsDocuments(
+                gcs_uri = [documentai.types.GcsDocument(gcs_uri = ), ...]
+            )
+        )
+    )
+)
+                </pre>
+                        </td>
+                    </tr>
+                    <tr style='text-align:left'>
+                        <td>All documents with GCS prefix:</td>
+                    </tr>
+                    <tr style='text-align:left'>
+                        <td>
+                            <pre>
+doc_ai.batch_process_documents(
+    request = documentai.types.BatchProcessRequest(
+        <b>input_documents</b> = documentai.types.BatchDocumentsInputConfig(
+            # provide a GCS URI (prefix) as string
+            <b>gcs_prefix</b> = documentai.types.GcsPrefix(
+                gcs_uri_prefix = 
+            )
+        )
+    )
+)
+                            </pre>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+            <td style='text-align:left'>
+                The batch processing job includes a parameter for configuring the output location of JSON files in GCS.<br><br>
+                <pre>
+doc_ai.batch_process_documents(
+    request = documentai.BatchProcessRequest(
+       <b>document_output_config</b> = documentai.types.DocumentOutputConfig(
+            <b>gcs_output_config</b> = documentai.types.GcsOutputConfig(
+                gcs_uri = 'gs://bucket/path/to/output', # the output JSON will writen to this directory
+                field_mask = , # optional: fields to include in output
+                sharding_config = # optional: sharding config for output
+            )
+        )
+    )
+)
+                </pre>
+            </td>
+        </tr>     
+<!--..........................................................................................-->
+    </tbody>
+</table>
+
+---
 ## Understanding Responses
 
 The response is a JSON structure that contains all the extracted information.  
