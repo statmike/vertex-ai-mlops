@@ -87,7 +87,7 @@ You enable the API, create an instance of a processor in your project, send in d
             <td>Yes</td>
             <td>No</td>
             <td>Yes</td>
-            <td>No</td>
+            <td>Yes</td>
             <td><a href = "https://cloud.google.com/document-ai/docs/form-parser#data-extraction_features" target = "_blank">Generic Entities</a></td>
             <td></td>
         </tr>
@@ -209,16 +209,22 @@ You enable the API, create an instance of a processor in your project, send in d
 - [Document AI - Process Documents](./Document%20AI%20-%20Process%20Documents.ipynb)
     - How to process 1 or many documents
     - Examples of Batch and Online Processing
+    - Async Processing
+    - Storing results in GCS and/or BigQuery
+    - Recalling results from GCS and/or BigQuery
 - [Document AI - Process Responses](./Document%20AI%20-%20Process%20Responses.ipynb)
-    - Extracting elements from the JSON in Python or in BigQuery
+    - Extracting elements from the JSON in Python or in BigQuery with SQL
     - Treating elements like geographies for advanced extraction techniques
 - Document AI - Automation
-- Parser Examples:
-    - OCR Parser With Add-ons
-    - General Form Parser
-    - Summarizer
+- Document AI Processors:
+    - OCR Parser With Add-ons - used in [Document AI - Process Responses](./Document%20AI%20-%20Process%20Responses.ipynb)
+    - General Form Parser - [Document AI Processors - Form Parser](./Document%20AI%20Processors%20-%20Form%20Parser.ipynb)
+        - OCR without Add-Ons and Symbol configuration
+        - Form Fields
+        - Tables
+    - Document Summarizer - [Document AI Processors - Document Summarizer](./Document%20AI%20Processors%20-%20Document%20Summarizer.ipynb)
     - Specialized Processors:
-        - Invoice Parser
+        - Invoice Parser - [Document AI Processors - Invoice Parser](./Document%20AI%20Processors%20-%20Invoice%20Parser.ipynb)
 
 ---
 ## Inputs & Outputs
