@@ -217,14 +217,16 @@ You enable the API, create an instance of a processor in your project, send in d
     - Treating elements like geographies for advanced extraction techniques
 - Document AI - Automation
 - Document AI Processors:
-    - OCR Parser With Add-ons - used in [Document AI - Process Responses](./Document%20AI%20-%20Process%20Responses.ipynb)
-    - General Form Parser - [Document AI Processors - Form Parser](./Document%20AI%20Processors%20-%20Form%20Parser.ipynb)
+    - OCR Parser With Add-ons
+        - used in [Document AI - Process Responses](./Document%20AI%20-%20Process%20Responses.ipynb)
+        - Example with Math Type: coming soon
+    - [Document AI Processors - Form Parser](./Document%20AI%20Processors%20-%20Form%20Parser.ipynb)
         - OCR without Add-Ons and Symbol configuration
         - Form Fields
         - Tables
-    - Document Summarizer - [Document AI Processors - Document Summarizer](./Document%20AI%20Processors%20-%20Document%20Summarizer.ipynb)
+    - [Document AI Processors - Document Summarizer](./Document%20AI%20Processors%20-%20Document%20Summarizer.ipynb)
     - Specialized Processors:
-        - Invoice Parser - [Document AI Processors - Invoice Parser](./Document%20AI%20Processors%20-%20Invoice%20Parser.ipynb)
+        - [Document AI Processors - Invoice Parser](./Document%20AI%20Processors%20-%20Invoice%20Parser.ipynb)
 
 ---
 ## Inputs & Outputs
