@@ -7,7 +7,8 @@ This series of notebooks highlights the use over Vertex AI Generative AI for wor
 **More Resources**
 
 - Examples for Prompt Design and Tuning of Foundational Models: [github.com/GoogleCloudPlatform/generative-ai](https://github.com/GoogleCloudPlatform/generative-ai)
-- [Enterprise Search](https://cloud.google.com/enterprise-search) on Generative AI App Builder
+- For a solution based approach to generative AI search and conversation application check out [Vertex AI Search and Conversation](https://cloud.google.com/generative-ai-app-builder?hl=en)
+    - For an overview of using in application workflow check out the subfolder in this repository [Vertex AI Search](./Vertex%20AI%20Search/readme.md)
 
 ---
 ## Getting Started
@@ -352,5 +353,7 @@ Embeddings as features is a lot like a compact, lower dimension representation o
 
 ---
 ## More Resources
+
 - Examples for Prompt Design and Tuning of Foundational Models: [github.com/GoogleCloudPlatform/generative-ai](https://github.com/GoogleCloudPlatform/generative-ai)
-- [Enterprise Search](https://cloud.google.com/enterprise-search) on Generative AI App Builder
+- For a solution based approach to generative AI search and conversation application check out [Vertex AI Search and Conversation](https://cloud.google.com/generative-ai-app-builder?hl=en)
+    - For an overview of using in application workflow check out the subfolder in this repository [Vertex AI Search](./Vertex%20AI%20Search/readme.md)
