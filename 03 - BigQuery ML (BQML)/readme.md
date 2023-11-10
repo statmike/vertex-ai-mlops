@@ -97,6 +97,10 @@ This list is in the suggested order of review for anyone getting an overview and
         <td><a href = "./BQML%20Feature%20Engineering%20-%20preprocessing%20functions.ipynb" target="_blank">BQML Feature Engineering - preprocessing functions</a></td>
         <td></td>
     </tr>
+    <tr>
+        <td><a href = "./BQML%20Feature%20Engineering%20-%20reusable%20and%20modular.ipynb" target="_blank">BQML Feature Engineering - reusable and modular</a></td>
+        <td></td>
+    </tr>
 <!--...........................................................................................................................................................................-->
     <tr style='text-align:center;vertical-align:middle'>
         <th colspan='2'>Enhanced Examples - more than one model</th>
