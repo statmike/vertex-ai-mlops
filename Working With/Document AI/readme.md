@@ -215,11 +215,11 @@ You enable the API, create an instance of a processor in your project, send in d
 - [Document AI - Process Responses](./Document%20AI%20-%20Process%20Responses.ipynb)
     - Extracting elements from the JSON in Python or in BigQuery with SQL
     - Treating elements like geographies for advanced extraction techniques
-- Document AI - Automation
 - Document AI Processors:
     - OCR Parser With Add-ons
         - used in [Document AI - Process Responses](./Document%20AI%20-%20Process%20Responses.ipynb)
-        - Example with Math Type: coming soon
+        - [Document AI Processors - OCR Parser With Math Type](./Document%20AI%20Processors%20-%20OCR%2-Parser%20With%20Math%20Type.ipynb)
+            - Detect Math Type and extract to LaTeX
     - [Document AI Processors - Form Parser](./Document%20AI%20Processors%20-%20Form%20Parser.ipynb)
         - OCR without Add-Ons and Symbol configuration
         - Form Fields
