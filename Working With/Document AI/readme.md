@@ -206,6 +206,7 @@ You enable the API, create an instance of a processor in your project, send in d
 ---
 ## Notebook Workflows
 
+**Processing Details**
 - [Document AI - Process Documents](./Document%20AI%20-%20Process%20Documents.ipynb)
     - How to process 1 or many documents
     - Examples of Batch and Online Processing
@@ -215,18 +216,27 @@ You enable the API, create an instance of a processor in your project, send in d
 - [Document AI - Process Responses](./Document%20AI%20-%20Process%20Responses.ipynb)
     - Extracting elements from the JSON in Python or in BigQuery with SQL
     - Treating elements like geographies for advanced extraction techniques
-- Document AI Processors:
-    - OCR Parser With Add-ons
-        - used in [Document AI - Process Responses](./Document%20AI%20-%20Process%20Responses.ipynb)
-        - [Document AI Processors - OCR Parser With Math Type](./Document%20AI%20Processors%20-%20OCR%20Parser%20With%20Math%20Type.ipynb)
-            - Detect Math Type and extract to LaTeX
-    - [Document AI Processors - Form Parser](./Document%20AI%20Processors%20-%20Form%20Parser.ipynb)
-        - OCR without Add-Ons and Symbol configuration
-        - Form Fields
-        - Tables
-    - [Document AI Processors - Document Summarizer](./Document%20AI%20Processors%20-%20Document%20Summarizer.ipynb)
-    - Specialized Processors:
-        - [Document AI Processors - Invoice Parser](./Document%20AI%20Processors%20-%20Invoice%20Parser.ipynb)
+
+**Parser/Processor Examples**
+- [Document AI - Process Responses](./Document%20AI%20-%20Process%20Responses.ipynb)
+    - OCR parser with:
+        - Symbol configuration
+        - Image Quality scores
+        - Style info (font types, sizes, and more) Add On
+- [Document AI Processors - OCR Parser With Math Type](./Document%20AI%20Processors%20-%20OCR%20Parser%20With%20Math%20Type.ipynb)
+    - OCR parser with Symbol Configuration and Math OCR Add On
+    - Detect Math Type and extract to LaTeX
+- [Document AI Processors - Form Parser](./Document%20AI%20Processors%20-%20Form%20Parser.ipynb)
+    - OCR (without Add Ons and Symbol configuration)
+    - Form Fields
+    - Tables
+    - General Entities
+- [Document AI Processors - Document Summarizer](./Document%20AI%20Processors%20-%20Document%20Summarizer.ipynb)
+    - Get a full document summary produced by generative AI
+- Specialized Processors:
+    - [Document AI Processors - Invoice Parser](./Document%20AI%20Processors%20-%20Invoice%20Parser.ipynb)
+        - OCR (without Add ons and Symbol configuration)
+        - Invoice specific entities detected
 
 ---
 ## Inputs & Outputs
