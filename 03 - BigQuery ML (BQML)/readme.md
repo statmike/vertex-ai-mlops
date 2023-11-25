@@ -195,6 +195,14 @@ This list is in the suggested order of review for anyone getting an overview and
         <td></td>
     </tr>
     <tr>
+        <td><a href = "../Working%20With/Document%20AI/readme.md" target="_blank">Document AI</a>
+            <ul>
+                <li><a href = "../Working%20With/Document%20AI/Document%20AI%20-%20From%20BigQuery.ipynb" target="_blank">Document AI - From BigQuery</a></li>
+            </ul>
+        </td>
+        <td></td>
+    </tr>
+    <tr>
         <td><a href = "../Applied%20Forecasting/readme.md" target="_blank">Applied Forecasting</a>
             <ul>
                 <li><a href = "../Applied%20Forecasting/BigQuery%20Time%20Series%20Forecasting%20Data%20Review%20and%20Preparation.ipynb" target="_blank">BigQuery Time Series Forecasting Data Review and Preparation</a></li>

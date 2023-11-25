@@ -1,0 +1,19 @@
+digraph {
+	rankdir=LR
+	subgraph cluster_bq {
+		color="#E8F0FE" label=BigQuery style="filled,rounded"
+		subgraph cluster_bq_ot {
+			color="#DADCE0" label="Object Table" style="filled,rounded"
+			a1 [label=Document color="#669DF6" fillcolor="#669DF6" penwidth=3 shape=rectangle style="filled,rounded"]
+		}
+		subgraph cluster_bq_ml {
+			color="#DADCE0" label="ML.PROCESS_DOCUMENT" style="filled,rounded"
+			a2 [label=API color="#FCC934" fillcolor="#FCC934" penwidth=3 shape=rectangle style="filled,rounded"]
+			a3 [label=Processor color="#5BB974" fillcolor="#5BB974" penwidth=3 shape=rectangle style="filled,rounded"]
+			a4 [label=Response color="#EE675C" fillcolor="#EE675C" penwidth=3 shape=rectangle style="filled,rounded"]
+		}
+	}
+	a1 -> a2 [color="#669DF6" penwidth=3]
+	a2 -> a3 [color="#FCC934" penwidth=3]
+	a3 -> a4 [color="#5BB974" penwidth=3]
+}

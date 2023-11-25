@@ -216,6 +216,11 @@ You enable the API, create an instance of a processor in your project, send in d
 - [Document AI - Process Responses](./Document%20AI%20-%20Process%20Responses.ipynb)
     - Extracting elements from the JSON in Python or in BigQuery with SQL
     - Treating elements like geographies for advanced extraction techniques
+- [Document AI - From BigQuery](./Document%20AI%20-%20From%20BigQuery.ipynb)
+    - Process using BigQuery ML With ML.PROCESS_DOCUMENT function
+    - Given a table of GCS URI's for document this function processes and returns responses from Document AI
+    - Uses Online Processing and has the same limits for page size
+    - This workflow covers processing document and responses - all from BigQuery
 
 **Parser/Processor Examples**
 - [Document AI - Process Responses](./Document%20AI%20-%20Process%20Responses.ipynb)
