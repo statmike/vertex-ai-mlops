@@ -216,6 +216,9 @@ You enable the API, create an instance of a processor in your project, send in d
 - [Document AI - Process Responses](./Document%20AI%20-%20Process%20Responses.ipynb)
     - Extracting elements from the JSON in Python or in BigQuery with SQL
     - Treating elements like geographies for advanced extraction techniques
+- [Document AI - BigQuery Response Processing](./Document%20AI%20-%20BigQuery%20Response%20Processing.ipynb)
+    - A deeper workflow for storing response in BigQuery and using SQL to extract parts of the response
+    - Advanced techniques like using geospatial functions for clustering tokens to create custom groupings on pages
 - [Document AI - From BigQuery](./Document%20AI%20-%20From%20BigQuery.ipynb)
     - Process using BigQuery ML With ML.PROCESS_DOCUMENT function
     - Given a table of GCS URI's for documents this function processes and returns responses from Document AI
@@ -247,7 +250,7 @@ You enable the API, create an instance of a processor in your project, send in d
 ---
 ## Inputs & Outputs
 
-The following table breaks down th einput and output locations by the type of processing.  This uses the [Python Client for Document AI](https://cloud.google.com/python/docs/reference/documentai/latest) for examples:
+The following table breaks down the input and output locations by the type of processing.  This uses the [Python Client for Document AI](https://cloud.google.com/python/docs/reference/documentai/latest) for examples:
 
 <table style='text-align:center;vertical-align:middle;border:1px solid black' width="90%" cellpadding="1" cellspacing="0">
     <caption>Inputs & Outputs</caption>
