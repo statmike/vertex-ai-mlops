@@ -1,0 +1,20 @@
+In Vertex AI Workbench Instances I somes times find an issue with the Git plugin.
+
+Issue:
+When I try to stage a commit it will not add to the staged queue. I tried:
+- hovering on the file in the changed queue and click the '+'. 
+- right clickin gthe file in the changed queue and click '+ Stage'
+- using a terminal to stage with 'git add filename'
+
+This issue is exposed with the terminal method:
+- fatal: Unable to create '/home/jupyter/vertex-ai-mlops/.git/index.lock': File exists.
+
+To Troublshoot I did these:
+- cd to the main folder of the git repository
+- run: ls -a
+- notice that index.lock does exists
+- run: cat index.lock
+- notice that the filke is empty
+- run: rm index.lock
+- try to stage the file again, succesful
+
