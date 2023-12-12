@@ -4,6 +4,13 @@
 
 This series of notebooks highlights the use of Vertex AI for machine learning workflows with [R](https://www.r-project.org/).
 
+---
+**IDE - Alternative**
+
+This repository currently uses JupyterHub hosted as a Vertex AI Workbench Instance.  An alternative R native IDE is avialable through [Cloud Workstations](https://cloud.google.com/workstations/docs/overview) with a [Posit Workbench](https://cloud.google.com/workstations/docs/develop-code-using-posit-workbench-rstudio) (requires a Posit Workbench license key).
+
+---
+
 ## Environment Setup
 If the directions in the main [readme.md](../readme.md) were followed then this enviornment is Python based with TensorFlow installed.  Some of the notebooks here will also be using R which requies adding R.  For this it is recommend to use [Vertex AI Workbench Instances](https://cloud.google.com/vertex-ai/docs/workbench/instances/introduction).  Here is how:
 - Console > Vertex AI > Workbench > Instances - [direct link](https://console.cloud.google.com/vertex-ai/workbench/instances)
