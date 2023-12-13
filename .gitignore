@@ -1,6 +1,7 @@
 *-checkpoint.*
 .gitignore-checkpoint
 temp
+iframe_figures
 .DS_Store
 terraform.tfstate
 .terraform/
