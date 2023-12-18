@@ -1,18 +1,18 @@
 digraph {
 	rankdir=LR
 	subgraph cluster_0 {
-		color="#669DF6" label=BigQuery style=filled
+		color="#669DF6" label=BigQuery style="filled,rounded"
 		bq1 [label="Table/View" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
 	}
 	subgraph cluster_1 {
-		color="#5BB974" label="Vertex AI Feature Store" style=filled
+		color="#5BB974" label="Vertex AI Feature Store" style="filled,rounded"
 		subgraph cluster_2 {
-			color="#FCC934" label="Feature Registry" style=filled
+			color="#FCC934" label="Feature Registry" style="filled,rounded"
 			fr1 [label="Feature Groups" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
 			fr2 [label=Feature color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
 		}
 		subgraph cluster_3 {
-			color="#EE675C" label="Online Store" style=filled
+			color="#EE675C" label="Online Store" style="filled,rounded"
 			os1 [label="Feature View" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
 		}
 	}

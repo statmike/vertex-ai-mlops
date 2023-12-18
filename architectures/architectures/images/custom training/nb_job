@@ -2,12 +2,12 @@ digraph {
 	rankdir=LR
 	subgraph cluster_vertex {
 		color="#1E8E3E" label="Vertex AI" style="filled,rounded"
-		subgraph cluster_vertex {
-			color="#5BB974" label="Vertex AI Training" style="filled,rounded"
-			subgraph cluster_train {
-				color="#A8DAB5" label="Custom Job" style="filled,rounded"
-				cj3 [label=Compute color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
-				cj2 [label=Container color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
+		subgraph cluster_nb {
+			color="#5BB974" label="Vertex AI Workbench Instance" style="filled,rounded"
+			cj3 [label=Compute color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
+			cj2 [label=Container color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
+			subgraph cluster_ide {
+				color="#A8DAB5" label="IDE / JupyterLab" style="filled,rounded"
 				cj1 [label=Code color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
 			}
 		}
@@ -20,10 +20,6 @@ Specific Container" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectang
 			}
 		}
 	}
-	subgraph cluster_gcs {
-		color="#FCC934" label="Local (or GCS with FUSE)" style="filled,rounded"
-		gcs [label=Script color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
-	}
 	subgraph cluster_bq {
 		color="#669DF6" label=BigQuery style="filled,rounded"
 		bq [label=Table color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
@@ -33,7 +29,6 @@ Specific Container" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectang
 		gcs2 [label="Model Save Files" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
 	}
 	art -> cj2 [label=URI color="#5F6368" penwidth=3]
-	gcs -> cj1 [color="#5F6368" penwidth=3]
-	cj1 -> gcs2 [color="#5F6368" penwidth=3]
+	cj1 -> gcs2 [label=Copy color="#5F6368" penwidth=3]
 	bq -> cj1 [label=URI color="#5F6368" penwidth=3]
 }

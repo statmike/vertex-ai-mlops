@@ -1,0 +1,66 @@
+digraph {
+	subgraph cluster_vertex {
+		color="#1E8E3E" label="Vertex AI" style="filled,rounded"
+		subgraph cluster_vertex_training {
+			color="#5BB974" label="Vertex AI Training" style="filled,rounded"
+			subgraph cluster_train {
+				color="#A8DAB5" label="Custom Job" style="filled,rounded"
+				subgraph cluster_wps {
+					color="#E6F4EA" label="Worker Pool Spec" style="filled,rounded"
+					subgraph cluster_mspec {
+						color="#BDC1C6" label="Machine Spec" style="filled,rounded"
+						cj3 [label=Compute color="#BDC1C6" fillcolor="#E8EAED" penwidth=3 shape=rectangle style="filled,rounded"]
+					}
+					subgraph cluster_cspec {
+						color="#BDC1C6" label="Container Spec" style="filled,rounded"
+						cs [label=Container color="#BDC1C6" fillcolor="#E8EAED" penwidth=3 shape=rectangle style="filled,rounded"]
+					}
+				}
+			}
+		}
+		subgraph cluster_ar {
+			color="#5BB974" label="Vertex AI Pre-Built Containers" style="filled,rounded"
+			subgraph cluster_art {
+				color="#A8DAB5" label="For Training" style="filled,rounded"
+				art [label="Framework/Version
+Specific Container" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
+			}
+		}
+	}
+	subgraph cluster_dev {
+		color="#EE675C" label="Development Environment" style="filled,rounded"
+		dev1 [label=Create color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
+	}
+	subgraph cluster_gcs {
+		color="#FCC934" label=GCS style="filled,rounded"
+		gcs1 [label=Code color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
+		gcs1b [label=Dockerfile color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
+	}
+	subgraph cluster_gcs2 {
+		color="#FCC934" label=GCS style="filled,rounded"
+		gcs2 [label="Model Save Files" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
+	}
+	subgraph cluster_bq {
+		color="#669DF6" label=BigQuery style="filled,rounded"
+		bq [label=Table color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
+	}
+	subgraph cluster_build {
+		color="#FCC934" label="Cloud Build
+(Or Other Build Environment)" style="filled,rounded"
+		build [label="Build Job" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
+	}
+	subgraph cluster_artifact {
+		color="#FCC934" label="Artifact Registry" style="filled,rounded"
+		container [label="Custom Container" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
+	}
+	dev1 -> gcs1 [color="#5F6368" penwidth=3]
+	dev1 -> gcs1b [color="#5F6368" penwidth=3]
+	dev1 -> build [color="#5F6368" penwidth=3]
+	art -> build [color="#5F6368" penwidth=3]
+	gcs1 -> build [color="#5F6368" penwidth=3]
+	gcs1b -> build [color="#5F6368" penwidth=3]
+	build -> container [label=URI color="#5F6368" penwidth=3]
+	container -> cs [color="#5F6368" penwidth=3]
+	cs -> gcs2 [color="#5F6368" penwidth=3]
+	bq -> cs [label=URI color="#5F6368" penwidth=3]
+}
