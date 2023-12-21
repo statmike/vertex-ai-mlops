@@ -7,7 +7,6 @@ from google.cloud import bigquery
 from google.cloud import aiplatform
 import argparse
 import os
-import sys
 
 # import argument to local variables
 parser = argparse.ArgumentParser()
@@ -15,7 +14,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', dest = 'epochs', default = 10, type = int, help = 'Number of Epochs')
 parser.add_argument('--batch_size', dest = 'batch_size', default = 32, type = int, help = 'Batch Size')
 parser.add_argument('--var_target', dest = 'var_target', type=str)
-parser.add_argument('--var_omit', dest = 'var_omit', type=str, nargs='*')
+parser.add_argument('--var_omit', dest = 'var_omit', type=str)#, nargs='*')
 parser.add_argument('--project_id', dest = 'project_id', type=str)
 parser.add_argument('--bq_project', dest = 'bq_project', type=str)
 parser.add_argument('--bq_dataset', dest = 'bq_dataset', type=str)
@@ -28,24 +27,27 @@ parser.add_argument('--run_name', dest = 'run_name', type=str)
 args = parser.parse_args()
 
 # clients
-bigquery = bigquery.Client(project = args.project_id)
+bq = bigquery.Client(project = args.project_id)
 aiplatform.init(project = args.project_id, location = args.region)
 
 # Vertex AI Experiment
-expRun = aiplatform.ExperimentRun.create(run_name = args.run_name, experiment = args.experiment_name)
+if args.run_name in [run.name for run in aiplatform.ExperimentRun.list(experiment = args.experiment_name)]:
+    expRun = aiplatform.ExperimentRun(run_name = args.run_name, experiment = args.experiment_name)
+else:
+    expRun = aiplatform.ExperimentRun.create(run_name = args.run_name, experiment = args.experiment_name)
 expRun.log_params({'experiment': args.experiment, 'series': args.series, 'project_id': args.project_id})
 
 # get schema from bigquery source
 query = f"SELECT * FROM {args.bq_project}.{args.bq_dataset}.INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{args.bq_table}'"
-schema = bigquery.query(query).to_dataframe()
+schema = bq.query(query).to_dataframe()
 
 # get number of classes from bigquery source
-nclasses = bigquery.query(query = f'SELECT DISTINCT {args.var_target} FROM {args.bq_project}.{args.bq_dataset}.{args.bq_table} WHERE {args.var_target} is not null').to_dataframe()
+nclasses = bq.query(query = f'SELECT DISTINCT {args.var_target} FROM {args.bq_project}.{args.bq_dataset}.{args.bq_table} WHERE {args.var_target} is not null').to_dataframe()
 nclasses = nclasses.shape[0]
 expRun.log_params({'data_source': f'bq://{args.bq_project}.{args.bq_dataset}.{args.bq_table}', 'nclasses': nclasses, 'var_split': 'splits', 'var_target': args.var_target})
 
 # Make a list of columns to omit
-OMIT = args.var_omit + ['splits']
+OMIT = [x for x in args.var_omit.split(',') if x != '']
 
 # use schema to prepare a list of columns to read from BigQuery
 selected_fields = schema[~schema.column_name.isin(OMIT)].column_name.tolist()
@@ -82,34 +84,44 @@ train = bq_reader('TRAIN').parallel_read_rows().prefetch(1).map(transTable).shuf
 validate = bq_reader('VALIDATE').parallel_read_rows().prefetch(1).map(transTable).batch(args.batch_size)
 test = bq_reader('TEST').parallel_read_rows().prefetch(1).map(transTable).batch(args.batch_size)
 expRun.log_params({'training.batch_size': args.batch_size, 'training.shuffle': 10*args.batch_size, 'training.prefetch': 1})
-                   
 # Logistic Regression
 
-# model input definitions
-feature_columns = {header: tf.feature_column.numeric_column(header) for header in selected_fields if header != args.var_target}
-feature_layer_inputs = {header: tf.keras.layers.Input(shape = (1,), name = header) for header in selected_fields if header != args.var_target}
+# feature list
+numeric_features = [feature for feature in schema[~schema.column_name.isin(OMIT + [args.var_target])]['column_name'].to_list()]
 
-# feature columns to a Dense Feature Layer
-feature_layer_outputs = tf.keras.layers.DenseFeatures(feature_columns.values(), name = 'feature_layer')(feature_layer_inputs)
+# feature inputs
+features = [tf.keras.Input(shape = (1,), dtype = dtypes.float64, name = feature) for feature in numeric_features]
 
-# batch normalization then Dense with softmax activation to nclasses
-layers = tf.keras.layers.BatchNormalization(name = 'batch_normalization_layer')(feature_layer_outputs)
-layers = tf.keras.layers.Dense(64, activation = 'relu', name = 'hidden_layer')(layers)
-layers = tf.keras.layers.Dense(32, activation = 'relu', name = 'embedding_layer')(layers)
-layers = tf.keras.layers.Dense(nclasses, activation = tf.nn.softmax, name = 'prediction_layer')(layers)
+# normalize features - before training
+#normalized_features = []
+#for feature in features:
+#    normalizer = tf.keras.layers.Normalization(axis = None, name = feature.name + '_normalized')
+#    feature_data = train.map(lambda x, y: x[feature.name])
+#    normalizer.adapt(feature_data)
+#    normalized_features.append(normalizer(feature))
+
+# concatenate features
+all_features = tf.keras.layers.Concatenate(name = 'feature_layer')(features)
+#all_features = tf.keras.layers.Concatenate(name = 'feature_layer')(normalized_features) # (features)
+
+# batch normalization of inputs - during training
+all_features = tf.keras.layers.BatchNormalization(name = 'batch_normalization_layer')(all_features)
+
+# logistic - using softmax activation to nclasses
+logistic = tf.keras.layers.Dense(nclasses, activation = tf.nn.softmax, name = 'logistic')(all_features)
 
 # the model
 model = tf.keras.Model(
-    inputs = feature_layer_inputs,
-    outputs = layers,
+    inputs = features,
+    outputs = logistic,
     name = args.experiment
 )
-opt = tf.keras.optimizers.SGD() #SGD or Adam
-loss = tf.keras.losses.CategoricalCrossentropy()
+
+# compile the model
 model.compile(
-    optimizer = opt,
-    loss = loss,
-    metrics = ['accuracy', tf.keras.metrics.AUC(curve='PR', name = 'auprc')]
+    optimizer = tf.keras.optimizers.SGD(), #SGD or Adam
+    loss = tf.keras.losses.CategoricalCrossentropy(),
+    metrics = ['accuracy', tf.keras.metrics.AUC(curve = 'PR', name = 'auprc')]
 )
 
 # setup tensorboard logs and train
@@ -128,11 +140,15 @@ for e in range(0, history.params['epochs']):
         }
     )
 
-# evaluations:
+# test evaluations:
 loss, accuracy, auprc = model.evaluate(test)
 expRun.log_metrics({'test_loss': loss, 'test_accuracy': accuracy, 'test_auprc': auprc})
+
+# val evaluations:
 loss, accuracy, auprc = model.evaluate(validate)
 expRun.log_metrics({'val_loss': loss, 'val_accuracy': accuracy, 'val_auprc': auprc})
+
+# training evaluations:
 loss, accuracy, auprc = model.evaluate(train)
 expRun.log_metrics({'train_loss': loss, 'train_accuracy': accuracy, 'train_auprc': auprc})
 
