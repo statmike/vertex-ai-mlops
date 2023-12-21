@@ -7,7 +7,6 @@ from google.cloud import bigquery
 from google.cloud import aiplatform
 import argparse
 import os
-import sys
 
 # import argument to local variables
 parser = argparse.ArgumentParser()
@@ -15,7 +14,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', dest = 'epochs', default = 10, type = int, help = 'Number of Epochs')
 parser.add_argument('--batch_size', dest = 'batch_size', default = 32, type = int, help = 'Batch Size')
 parser.add_argument('--var_target', dest = 'var_target', type=str)
-parser.add_argument('--var_omit', dest = 'var_omit', type=str, nargs='*')
+parser.add_argument('--var_omit', dest = 'var_omit', type=str)#, nargs='*')
 parser.add_argument('--project_id', dest = 'project_id', type=str)
 parser.add_argument('--bq_project', dest = 'bq_project', type=str)
 parser.add_argument('--bq_dataset', dest = 'bq_dataset', type=str)
@@ -48,7 +47,7 @@ nclasses = nclasses.shape[0]
 expRun.log_params({'data_source': f'bq://{args.bq_project}.{args.bq_dataset}.{args.bq_table}', 'nclasses': nclasses, 'var_split': 'splits', 'var_target': args.var_target})
 
 # Make a list of columns to omit
-OMIT = args.var_omit + ['splits']
+OMIT = [x for x in args.var_omit.split(',') if x != '']
 
 # use schema to prepare a list of columns to read from BigQuery
 selected_fields = schema[~schema.column_name.isin(OMIT)].column_name.tolist()
@@ -85,30 +84,40 @@ train = bq_reader('TRAIN').parallel_read_rows().prefetch(1).map(transTable).shuf
 validate = bq_reader('VALIDATE').parallel_read_rows().prefetch(1).map(transTable).batch(args.batch_size)
 test = bq_reader('TEST').parallel_read_rows().prefetch(1).map(transTable).batch(args.batch_size)
 expRun.log_params({'training.batch_size': args.batch_size, 'training.shuffle': 10*args.batch_size, 'training.prefetch': 1})
-
 # Logistic Regression
 
-# model input definitions
-feature_columns = {header: tf.feature_column.numeric_column(header) for header in selected_fields if header != args.var_target}
-feature_layer_inputs = {header: tf.keras.layers.Input(shape = (1,), name = header) for header in selected_fields if header != args.var_target}
+# feature list
+numeric_features = [feature for feature in schema[~schema.column_name.isin(OMIT + [args.var_target])]['column_name'].to_list()]
 
-# feature columns to a Dense Feature Layer
-feature_layer_outputs = tf.keras.layers.DenseFeatures(feature_columns.values(), name = 'feature_layer')(feature_layer_inputs)
+# feature inputs
+features = [tf.keras.Input(shape = (1,), dtype = dtypes.float64, name = feature) for feature in numeric_features]
 
-# batch normalization of inputs
-normalized = tf.keras.layers.BatchNormalization(name = 'batch_normalization_layer')(feature_layer_outputs)
+# normalize features - before training
+#normalized_features = []
+#for feature in features:
+#    normalizer = tf.keras.layers.Normalization(axis = None, name = feature.name + '_normalized')
+#    feature_data = train.map(lambda x, y: x[feature.name])
+#    normalizer.adapt(feature_data)
+#    normalized_features.append(normalizer(feature))
+
+# concatenate features
+all_features = tf.keras.layers.Concatenate(name = 'feature_layer')(features)
+#all_features = tf.keras.layers.Concatenate(name = 'feature_layer')(normalized_features) # (features)
+
+# batch normalization of inputs - during training
+all_features = tf.keras.layers.BatchNormalization(name = 'batch_normalization_layer')(all_features)
 
 # logistic - using softmax activation to nclasses
-logistic = tf.keras.layers.Dense(nclasses, activation = tf.nn.softmax, name = 'logistic')(normalized)
+logistic = tf.keras.layers.Dense(nclasses, activation = tf.nn.softmax, name = 'logistic')(all_features)
 
 # the model
 model = tf.keras.Model(
-    inputs = feature_layer_inputs,
+    inputs = features,
     outputs = logistic,
     name = args.experiment
 )
 
-# compile
+# compile the model
 model.compile(
     optimizer = tf.keras.optimizers.SGD(), #SGD or Adam
     loss = tf.keras.losses.CategoricalCrossentropy(),
