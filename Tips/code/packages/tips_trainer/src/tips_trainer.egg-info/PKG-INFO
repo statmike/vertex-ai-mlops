@@ -1,0 +1,9 @@
+Metadata-Version: 2.1
+Name: tips-trainer
+Version: 0.1
+Summary: Training Package
+Author: statmike
+Requires-Dist: tensorflow_io
+Requires-Dist: google-cloud-aiplatform
+Requires-Dist: db-dtypes
+Requires-Dist: protobuf>=4.25.1

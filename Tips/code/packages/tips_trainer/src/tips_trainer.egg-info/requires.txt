@@ -1,0 +1,4 @@
+tensorflow_io
+google-cloud-aiplatform
+db-dtypes
+protobuf>=4.25.1
