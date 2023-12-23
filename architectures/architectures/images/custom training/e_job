@@ -6,8 +6,9 @@ digraph {
 		subgraph cluster_vertex_train {
 			color="#5BB974" label="Vertex AI Training" style="filled,rounded"
 			subgraph cluster_train {
-				color="#A8DAB5" label="Custom Job
-SDK: aiplatform.CustomJob.from_local_script()" style="filled,rounded"
+				color="#A8DAB5" label="Custom Training Job
+(Training Pipeline)
+SDK: aiplatform.CustomPythonPackageTrainingJob()" style="filled,rounded"
 				cj3 [label=Compute color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
 				cj2 [label=Container color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
 				cj1 [label=Code color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
@@ -15,16 +16,30 @@ SDK: aiplatform.CustomJob.from_local_script()" style="filled,rounded"
 		}
 		subgraph cluster_ar {
 			color="#5BB974" label="Vertex AI Pre-Built Containers" style="filled,rounded"
+			subgraph cluster_arp {
+				color="#A8DAB5" label="For Serving" style="filled,rounded"
+				arp [label="Framework/Version
+Specific Container" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
+			}
 			subgraph cluster_art {
 				color="#A8DAB5" label="For Training" style="filled,rounded"
 				art [label="Framework/Version
 Specific Container" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
 			}
 		}
+		subgraph cluster_mr {
+			color="#5BB974" label="Model Registry" style="filled,rounded"
+			model [label=Model color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
+		}
+	}
+	subgraph cluster_dev {
+		color="#EE675C" label="Development Environment" style="filled,rounded"
+		dev1 [label=Code color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
+		dev2 [label="Python Package" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
 	}
 	subgraph cluster_gcs {
-		color="#FCC934" label="Local (or GCS with FUSE)" style="filled,rounded"
-		gcs [label=Script color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
+		color="#FCC934" label=GCS style="filled,rounded"
+		gcs1 [label="Python Package" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
 	}
 	subgraph cluster_bq {
 		color="#669DF6" label=BigQuery style="filled,rounded"
@@ -34,8 +49,13 @@ Specific Container" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectang
 		color="#FCC934" label=GCS style="filled,rounded"
 		gcs2 [label="Model Save Files" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
 	}
+	dev1 -> dev2 [label=Build color="#5F6368" penwidth=3]
+	dev2 -> gcs1 [label=Copy color="#5F6368" penwidth=3]
 	art -> cj2 [label=URI color="#5F6368" penwidth=3]
-	gcs -> cj1 [color="#5F6368" penwidth=3]
+	gcs1 -> cj1 [color="#5F6368" penwidth=3]
 	cj1 -> gcs2 [color="#5F6368" penwidth=3]
 	bq -> cj1 [label=URI color="#5F6368" lhead=cluster_train penwidth=3]
+	cj1 -> model [label=Automatic color="#5F6368" ltail=cluster_train penwidth=3]
+	gcs2 -> model [color="#5F6368" penwidth=3]
+	arp -> cj1 [label=URI color="#5F6368" lhead=cluster_train penwidth=3]
 }

@@ -6,8 +6,9 @@ digraph {
 		subgraph cluster_vertex_train {
 			color="#5BB974" label="Vertex AI Training" style="filled,rounded"
 			subgraph cluster_train {
-				color="#A8DAB5" label="Custom Job
-SDK: aiplatform.CustomJob.from_local_script()" style="filled,rounded"
+				color="#A8DAB5" label="Custom Training Job
+(Training Pipeline)
+SDK: aiplatform.CustomTrainingJob()" style="filled,rounded"
 				cj3 [label=Compute color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
 				cj2 [label=Container color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
 				cj1 [label=Code color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
@@ -15,10 +16,26 @@ SDK: aiplatform.CustomJob.from_local_script()" style="filled,rounded"
 		}
 		subgraph cluster_ar {
 			color="#5BB974" label="Vertex AI Pre-Built Containers" style="filled,rounded"
+			subgraph cluster_arp {
+				color="#A8DAB5" label="For Serving" style="filled,rounded"
+				arp [label="Framework/Version
+Specific Container" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
+			}
 			subgraph cluster_art {
 				color="#A8DAB5" label="For Training" style="filled,rounded"
 				art [label="Framework/Version
 Specific Container" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
+			}
+		}
+		subgraph cluster_mr {
+			color="#5BB974" label="Model Registry" style="filled,rounded"
+			model [label=Model color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
+		}
+		subgraph cluster_online {
+			color="#5BB974" label="Online Prediction" style="filled,rounded"
+			subgraph cluster_endpoint {
+				color="#A8DAB5" label=Endpoint style="filled,rounded"
+				dmodel [label="Deployed Model" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectangle style="filled,rounded"]
 			}
 		}
 	}
@@ -38,4 +55,8 @@ Specific Container" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectang
 	gcs -> cj1 [color="#5F6368" penwidth=3]
 	cj1 -> gcs2 [color="#5F6368" penwidth=3]
 	bq -> cj1 [label=URI color="#5F6368" lhead=cluster_train penwidth=3]
+	model -> dmodel [color="#5F6368" penwidth=3]
+	cj1 -> model [label=Automatic color="#5F6368" ltail=cluster_train penwidth=3]
+	gcs2 -> model [color="#5F6368" penwidth=3]
+	arp -> cj1 [label=URI color="#5F6368" lhead=cluster_train penwidth=3]
 }

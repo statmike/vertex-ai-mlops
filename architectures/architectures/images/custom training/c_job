@@ -1,10 +1,13 @@
 digraph {
+	rankdir=LR
+	compound=True
 	subgraph cluster_vertex {
 		color="#1E8E3E" label="Vertex AI" style="filled,rounded"
-		subgraph cluster_vertex_training {
+		subgraph cluster_vertex_train {
 			color="#5BB974" label="Vertex AI Training" style="filled,rounded"
 			subgraph cluster_train {
-				color="#A8DAB5" label="Custom Job" style="filled,rounded"
+				color="#A8DAB5" label="Custom Job
+SDK: aiplatform.CustomJob()" style="filled,rounded"
 				subgraph cluster_wps {
 					color="#E6F4EA" label="Worker Pool Spec" style="filled,rounded"
 					subgraph cluster_mspec {
@@ -56,11 +59,11 @@ Specific Container" color="#BDC1C6" fillcolor="#BDC1C6" penwidth=3 shape=rectang
 	dev1 -> gcs1 [color="#5F6368" penwidth=3]
 	dev1 -> gcs1b [color="#5F6368" penwidth=3]
 	dev1 -> build [color="#5F6368" penwidth=3]
-	art -> build [color="#5F6368" penwidth=3]
+	art -> gcs1b [color="#5F6368" penwidth=3]
 	gcs1 -> build [color="#5F6368" penwidth=3]
 	gcs1b -> build [color="#5F6368" penwidth=3]
 	build -> container [label=URI color="#5F6368" penwidth=3]
 	container -> cs [color="#5F6368" penwidth=3]
 	cs -> gcs2 [color="#5F6368" penwidth=3]
-	bq -> cs [label=URI color="#5F6368" penwidth=3]
+	bq -> cs [label=URI color="#5F6368" lhead=cluster_train penwidth=3]
 }
