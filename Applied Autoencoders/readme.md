@@ -2,9 +2,20 @@
 
 # /Applied AutoEncoders/readme.md
 
-This series of notebooks will feature examples of workflows with and techniques for autoencoders.
+This series of workflows featuring techniques for autoencoders.
 
-## This series is in development
+Start with an overview of methods for reading tabular data into TensorFlow training:
+- [Autoencoders - Data To Training](./Autoencoders%20-%20Data%20To%20Training.ipynb)
+
+
+---
+
+This series is in development. The parts below are forthcoming and not yest released
+
+---
+
+
+
 
 ---
 
