@@ -24,6 +24,8 @@ Extensions to the basic training presented above:
     - [TensorFlow Basics - Feature Preprocessing]()
 - Prediction and Postprocessing
     - [TensorFlow Basics - Postprocessing]()
+- Tensorboard
+    - [TensorFlow Basics - Tensorboard]()
 - Saving and Reusing Models
     - [TensorFlow Basics - Saving and Resusing Models]()
     
