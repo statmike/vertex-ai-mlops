@@ -12,7 +12,7 @@ For a similar set of progressive workflow focused on autoencoders see the series
 
 ---
 
-This series is in development. The parts below are forthcoming and not yest released
+This series is in development. The parts below are forthcoming and not yet released
 
 ---
 
