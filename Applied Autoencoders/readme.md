@@ -10,20 +10,44 @@ Start with an overview of methods for reading tabular data into TensorFlow train
 
 ---
 
-This series is in development. The parts below are forthcoming and not yest released
+This series is in development. The parts below are forthcoming and not yet released
 
 ---
 
+Extensions to the basic training presented above:
+- Data Input - shaping and preparing data for inference:
+    - [Autoencoders - Data Inputs]()
+- Feature Preprocessing
+    - [Autoencoders - Feature Preprocessing]()
+- Prediction and Postprocessing
+    - [Autoencoders - Postprocessing]()
+- Tensorboard
+    - [Autoencoders - Tensorboard]()
+- Saving and Reusing Models
+    - [Autoencoders - Saving and Resusing Models]()
+    
+Workflow progressions:
+- Training In Vertext AI Custom Training Jobs
+    - [Autoencoders - Vertex AI Custom Training Jobs]()
+- Experiment Tracking with Vertex AI Experiments
+    - [Autoencoders - Vertex AI Experiment Tracking]()
+- Manage Models with Vertex AI Model Registry
+    - [Autoencoders - Vertex AI Model Registry]()
+    - [Autoencoders - Add Evaluations To Vertex AI Model Registry]()
+- Model Monitoring With Vertex AI Model Monitoring
+    - [Autoencoders - Vertex AI Model Monitoring]()
+
+Autoencoder Development:
+- Autoencoders - Bring All the ideas together
+- Optimal Architecture with Neural Architecture Search (NAS)
+- Anomaly Detection
+- Contrastive Learning For Enhanced Anomaly Detection:
+- Variational Autoencoders
 
 
 
----
+
 
 - Resources
     - https://blog.keras.io/building-autoencoders-in-keras.html
     
-    
-- TODO
-    - add notebooks
-    - add overview in readme
-    - include autoeconder overview in readme with graphics of architectures
