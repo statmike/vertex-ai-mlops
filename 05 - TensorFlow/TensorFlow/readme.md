@@ -19,7 +19,7 @@ This series is in development. The parts below are forthcoming and not yet relea
 
 Extensions to the basic training presented above:
 - Data Input - shaping and preparing data for inference:
-    - [TensorFlow Basics - Data Inputs](./TensorFlow%20Basics%20-%20Data%20To%20Training.ipynb)
+    - [TensorFlow Basics - Data Inputs](./TensorFlow%20Basics%20-%20Data%20Inputs.ipynb)
 - Feature Preprocessing
     - [TensorFlow Basics - Feature Preprocessing]()
 - Prediction and Postprocessing
