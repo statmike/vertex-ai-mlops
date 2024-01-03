@@ -16,11 +16,11 @@ This series is in development. The parts below are forthcoming and not yet relea
 
 Extensions to the basic training presented above:
 - Data Input - shaping and preparing data for inference:
-    - [Autoencoders - Data Inputs]()
+    - [Autoencoders - Data Inputs](./Autoencoders%20-%20Data%20Inputs.ipynb)
 - Feature Preprocessing
-    - [Autoencoders - Feature Preprocessing]()
+    - [Autoencoders - Feature Preprocessing](./Autoencoders%20-%20Feature%20Preprocessing.ipynb)
 - Prediction and Postprocessing
-    - [Autoencoders - Postprocessing]()
+    - [Autoencoders - Postprocessing](./Autoencoders%20-%20Postprocessing.ipynb)
 - Tensorboard
     - [Autoencoders - Tensorboard]()
 - Saving and Reusing Models
