@@ -13,10 +13,13 @@ This series of notebooks highlights the use over Vertex AI Generative AI for wor
 ---
 ## Getting Started
 
-This section cover the basics for getting started with the Python Client. 
+This section covers the basics for getting started with the Python Client. 
 
->For a complete getting started overview of all the foundation models in use along with tips for managing asynchronous and streaming request as well as handling all requests within quota please check out this notebook:
+>For a complete getting started overview of all the foundation models in use along with tips for managing asynchronous and streaming request as well as handling all requests within quota please check out this workflow:
 >- [Getting Started - Vertex AI GenAI Python Client](Getting%20Started%20-%20Vertex%20AI%20GenAI%20Python%20Client.ipynb)
+
+>For an overview of handling asynchronous request when working with generative AI APIs check out the workflow:
+>- [Python Asynchronous API Calls](./Python%20Asynchronous%20API%20Calls.ipynb)
 
 **Install**
 
