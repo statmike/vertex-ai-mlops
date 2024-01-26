@@ -2,7 +2,91 @@
 
 # /08 - R/readme.md
 
-This series of notebooks highlights the use of Vertex AI for machine learning workflows with [R](https://www.r-project.org/).
+This series of notebooks highlights the use of Vertex AI for machine learning workflows that use [R](https://www.r-project.org/).
+
+---
+## R Development Environments
+
+- R With Vertex AI Workbench Instances (used in this repository)
+    - Within Vertex AI there are Jupyter notebook-based development environments called [Vertex AI Workbench Instances](https://cloud.google.com/vertex-ai/docs/workbench/instances/introduction)
+    - It is very easy to add **R** to these environments by [adding a conda environment](https://cloud.google.com/vertex-ai/docs/workbench/instances/add-environment)
+
+- R With Cloud Workstations
+    - [Cloud Workstations](https://cloud.google.com/workstations/docs/overview) are managed development environments on Google Cloud
+        - The concept of workstations has three layers:
+            - A cluster: a group of workstations in a particular region and VPC network
+            - Configurations: templates for each type of workstation that might be needed, each with specification for the virtual machine, storage, container, IDE or Editor.  Access can be limited with IAM controls as well.
+            - Workstations: A deployment of a configuration
+        - When setting up workstation configuration there are a number or [preconfigured IDEs](https://cloud.google.com/workstations/docs/preconfigured-ides) that can be selected.  
+            - The [base editor](https://cloud.google.com/workstations/docs/base-editor-overview) is based on [Code-OSS](https://github.com/microsoft/vscode), the open source project behind VSCode.
+            - During workstation configuration the IDEs container can be switched to other available [preconfigured IDEs](https://cloud.google.com/workstations/docs/preconfigured-ides)
+            - **R** - During configuration, one of the IDEs that can be picked is [Posit Workbench](https://cloud.google.com/workstations/docs/develop-code-using-posit-workbench-rstudio) which includes **RStudio Pro**. 
+                - The configuration will require a license key from Posit
+            - Customized environments are also possible with [custom containers](https://cloud.google.com/workstations/docs/customize-container-images), including using [preconfigurated base images](https://cloud.google.com/workstations/docs/preconfigured-base-images)
+            - You can also use [local VS Code](https://cloud.google.com/workstations/docs/develop-code-using-local-vscode-editor) or local [JetBrains IDEs](https://cloud.google.com/workstations/docs/develop-code-using-local-jetbrains-ides) to connect to a Cloud Workstation for remote development.
+
+---
+
+## R Workflows
+
+
+### Setup Vertex AI Workbench Instance For **R**
+
+If the directions in the main [readme.md](../readme.md) were followed then this enviornment is Python based with Vertex AI Workbench Instances.  Some of the notebooks here will also be using R which requires adding R (very easy!).  If you are starting here then it is recommend to use [Vertex AI Workbench Instances](https://cloud.google.com/vertex-ai/docs/workbench/instances/introduction).  Here is how:
+- Console > Vertex AI > Workbench > Instances - [direct link](https://console.cloud.google.com/vertex-ai/workbench/instances)
+- Create a new instance - [instructions](https://cloud.google.com/vertex-ai/docs/workbench/instances/create)
+- Once it is started, click the `Open JupyterLab` link.
+- Add R: [Add A conda Environment](https://cloud.google.com/vertex-ai/docs/workbench/instances/add-environment)
+    - Open A terminal window within JupyterLab: File > New > Terminal
+    - Create environment: `conda create -n r`
+    - Activate environment: `conda activate r`
+    - Install R (with many common libraries): `conda install -c r r-essentials`
+    - Install additional packages, like [bigrquery](https://bigrquery.r-dbi.org/)
+        - run: `conda install -c conda-forge r-bigrquery`
+        - Notice the prefix on the library name, `r-` that is added.  Read more about [R language packages for Anaconda](https://docs.anaconda.com/free/anaconda/reference/packages/r-language-pkg-docs/).
+    - Deactivate environment: `conda deactivate`
+
+To work with the workflows below, clone the repository to the enviornment:
+- Clone this repository to the JupyterLab instance:
+    - Either:
+        - Go to the `Git` menu and choose `Clone a Repository`
+        - Choose the Git icon on the left toolbar and click `Clone a Repository`
+    - Provide the Clone URI of this repository: [https://github.com/statmike/vertex-ai-mlops.git](https://github.com/statmike/vertex-ai-mlops.git)
+    - In the File Browser you will now have the folder "vertex-ai-mlops" that contains the files from this repository. Open the folder '08 - R'.
+
+
+To start a new **R** notebook, do one of the following:
+- File > New > Notebook
+    - In the 'Select Kernel' popup select 'R (Local)' and click 'Select'
+- File > New Launcher
+    - Under 'Notebook' select 'R (Local)'
+  
+To start a new **R** command line session, do one of the following:
+- File > New > Console
+    - In the 'Select Kernel' popup select 'R (Local)' and click 'Select'
+- File > New Launcher
+    - Under 'Console' select 'R (Local)'
+
+### R With BigQuery
+
+- R - Working With BigQuery
+
+### R Scripts As Jobs
+
+- R - Vertex AI Custom Training Jobs
+- R - Dataproc Serverless Spark-R Jobs
+- R - Dataproc Spark-R Jobs
+
+### R Serving With Vertex AI Prediction Endpoints
+
+- R - Serving With Vertex AI Prediction Endpoints
+- R - Serving With Cloud Run
+
+
+
+
+
+
 
 ---
 **IDE - Alternative**
