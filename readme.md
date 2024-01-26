@@ -455,7 +455,7 @@ TL;DR
     1. Once it is started, click the `Open JupyterLab` link.
     1. Clone this repository to the JupyterLab instance:
         1. Either:
-            1. Go to the `Fit` menu and choose `Clone a Repository`
+            1. Go to the `Git` menu and choose `Clone a Repository`
             1. Choose the Git icon on the left toolbar and click `Clone a Repository`
         1. Provide the Clone URI of this repository: [https://github.com/statmike/vertex-ai-mlops.git](https://github.com/statmike/vertex-ai-mlops.git)
         1. In the File Browser you will now have the folder "vertex-ai-mlops" that contains the files from this repository
