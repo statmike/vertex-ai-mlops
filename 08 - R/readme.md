@@ -96,6 +96,7 @@ These workflows are driven from notebooks with Python kernels that launch remote
 > To have a complete **R** based workflow, the code in these workflows could be adapted to run in **R** with the [reticulate](https://cran.r-project.org/web/packages/reticulate/vignettes/calling_python.html) package.  This package provides an **R** interface to Python.
 
 - [R - Vertex AI Custom Training Jobs](./R%20-%20Vertex%20AI%20Custom%20Training%20Jobs.ipynb)
+- [
 - [R - Dataproc Serverless Spark-R Jobs](./R%20-%20Dataproc%20Serverless%20Spark-R%20Jobs.ipynb)
 - [R - Dataproc Cluster Spark-R Jobs](./R%20-%20Dataproc%20Cluster%20Spark-R%20Jobs.ipynb)
 
