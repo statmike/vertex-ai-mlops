@@ -96,7 +96,7 @@ These workflows are driven from notebooks with Python kernels that launch remote
 > To have a complete **R** based workflow, the code in these workflows could be adapted to run in **R** with the [reticulate](https://cran.r-project.org/web/packages/reticulate/vignettes/calling_python.html) package.  This package provides an **R** interface to Python.
 
 - [R - Vertex AI Custom Training Jobs](./R%20-%20Vertex%20AI%20Custom%20Training%20Jobs.ipynb)
-- [
+- R - Vertex AI Custom Training Jobs On Persistant Resource
 - [R - Dataproc Serverless Spark-R Jobs](./R%20-%20Dataproc%20Serverless%20Spark-R%20Jobs.ipynb)
 - [R - Dataproc Cluster Spark-R Jobs](./R%20-%20Dataproc%20Cluster%20Spark-R%20Jobs.ipynb)
 
@@ -106,7 +106,6 @@ These workflows are driven from notebooks with Python kernels that launch remote
 
 Make an R model available to serve preditions when and where they are needed.  These workflows show how to make an R model serve predictions.  This is the core buidling block to turning an R model into an applications feature!
 
-- R - Converting Models
 - R - Serving With Vertex AI Prediction Endpoints
 - R - Serving With BigQuery ML (BQML)
 - R - Serving With Cloud Run
