@@ -1,33 +1,40 @@
-
 # library import
 library(bigrquery)
 library(dplyr)
 
 # inputs
 args <- commandArgs(trailingOnly = TRUE)
-project_id <- args[1]
-region <- args[2]
-experiment <- args[3]
-series <- args[4]
-bq_project <- args[5]
-bq_dataset <- args[6]
-bq_table <- args[7]
-var_target <- args[8]
-var_omit <- args[9]
+bq_project <- args[1]
+bq_dataset <- args[2]
+bq_table <- args[3]
+var_target <- args[4]
+var_omit <- args[5]
 
 # data source
 get_data <- function(s){
-    query = sprintf('SELECT * EXCEPT(%s, splits) FROM `%s.%s.%s` WHERE splits = "%s"', var_omit, bq_project, bq_dataset, bq_table, s)
+    
+    # query for table
+    query <- sprintf('
+        SELECT * EXCEPT(%s)
+        FROM `%s.%s.%s`
+        WHERE splits = "%s"
+    ', var_omit, bq_project, bq_dataset, bq_table, s)
+    
+    # connect to table
     table <- bq_project_query(bq_project, query)
-    ds <- bq_table_download(table)
-    return(ds)
+    
+    # load table to dataframe
+    return(bq_table_download(table, n_max = Inf))
+
 }
 train <- get_data("TRAIN")
 test <- get_data("TEST")
 
 # logistic regression model
+model_exp = paste0(var_target, "~ .")
+
 model <- glm(
-    Class ~ .,
+    as.formula(model_exp),
     data = train,
     family = binomial)
 
@@ -45,12 +52,9 @@ cm <- table(results)
 # save model to file
 saveRDS(model, "model.rds")
 
+# get GCS fusemount location to save file to:
 path <- sub('gs://', '/gcs/', Sys.getenv('AIP_MODEL_DIR'))
-#saveRDS(
-#    model,
-#    sprintf('%smodel.rds', path)
-#)
+#system2('cp', c('model.rds', path))
 
-# use Vertex AI Training Pre-Defined Environment Variables to Write to GCS
-#system2('gsutil', c('cp', 'model.rds', Sys.getenv('AIP_MODEL_DIR')))
-system2('cp', c('model.rds', path))
+# copy model file to GCS
+system2('gsutil', c('cp', 'model.rds', Sys.getenv('AIP_MODEL_DIR')))
