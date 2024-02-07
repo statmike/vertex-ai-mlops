@@ -370,7 +370,7 @@ This work focuses on cases where you have training data:
 
 ---
 <a id = 'vertex'></a>
-## Vetex AI
+## Vertex AI
 
 Vetex AI is a platform for end-to-end model development.  It consist of core components that make the processes of MLOps possible for design patterns of all types.
 
