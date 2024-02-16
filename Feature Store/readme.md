@@ -2,16 +2,18 @@
 
 # vertex-ai-mlops/Feature Store/readme.md
 
-A core part of MLOps for going from model to MODELS is feature management.  [Vertex AI Feature Store](https://cloud.google.com/vertex-ai/docs/featurestore/latest/overview) is an excellent way manage features and short-cut the process of deploying models into production systems.
+A core part of MLOps, for going from model to MODELS, is feature management.  [Vertex AI Feature Store](https://cloud.google.com/vertex-ai/docs/featurestore/latest/overview) is an excellent way manage features and short-cut the process of deploying models into production systems.
 
 **Versions**
 
 Vertex AI Feature Store (pre-2023) is now named [Vertex Ai Feature Store (Legacy)](https://cloud.google.com/vertex-ai/docs/featurestore#vaifs_legacy).  The new feature store is [Vertex AI Feature Store](https://cloud.google.com/vertex-ai/docs/featurestore).  This readme will now focus on the latest feature store but for information regarding the legacy feature store see:
 - Notebook based workflow: [Feature Store (Legacy)](./Feature%20Store%20(Legacy).ipynb)
-- [Documentation](https://cloud.google.com/vertex-ai/docs/featurestore/overview)
+- [Documentation](https://cloud.google.com/vertex-ai/docs/featurestore#vaifs_legacy)
 - [Comparison to Vertex AI Feature Store](https://cloud.google.com/vertex-ai/docs/featurestore#comparison_between_and)
 
 ## Vertex AI Feature Store
+
+Workflow notebook: [Feature Store](./Feature%20Store.ipynb)
 
 [Documentation](https://cloud.google.com/vertex-ai/docs/featurestore/latest/overview)
 
@@ -42,7 +44,7 @@ The **online store** is has two types to choose from:
 - One or more **feature groups**
 - a table/view of type (1)
  
-BigQuery as a **data soruce**:
+BigQuery as a **data source**:
 - This means that managing time bound **features** is done in BigQuery but before the **feature store**.  You can create multiple rows per **entity** in tables and use the entity_id and feature_timestamp columns to indicate the time based values. To make this shape of source data useful for training data batches there are two new functions in BigQuery to help extract point-in-time value for **entity/feature** data:
     - [ML.FEATURES_AT_TIME](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-feature-time) - will take a table and timestamp as input and return the value for each feature on each entity as of the timestamp.  There are additional optional configurations also.  
     - [ML.ENTITY_FEATURES_AT_TIME](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-entity-feature-time) - will take a table and an additional table of entity+timestamp pairs and return the feature values for each entity+timestamp pair.  This allows both multiple points in time for single entities as well as different times for different entities.
