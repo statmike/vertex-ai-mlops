@@ -123,7 +123,11 @@ print(prediction.text)
 
 Large Language Models (LLMs) are models that have been trained on enormous amounts of text samples and then fine tuned for tasks like summarization, extraction, and/or classification.  Today, these fine-tuned models have emerged as generative AI, also called GenAI.  
 
-I like to say GenAI stands for "General AI" as these models are now like opinionated bots that can do many tasks that previously required custom fit-for-purpose ML models.  Those fit-for-purpose models needed training data, labeling, and iterative training to get to the necesssary accuracy for a single task.  Now the processes has reversed a bit.  These general models can be asked, called prompting, to do the a new task and then the prompt can be iteratively adjusted to attempt achieving a desired accuracy.  This prompt iteration takes on stages:
+### Customize
+
+I like to say GenAI stands for "General AI" as these models are now like opinionated bots that can do many tasks that previously required custom fit-for-purpose ML models.  Those fit-for-purpose models needed training data, labeling, and iterative training to get to the necesssary accuracy for a single task.  Now the processes has reversed a bit.  These general models can be asked, called prompting, to do the a new task and then the prompt can be iteratively adjusted to attempt achieving a desired accuracy.  This prompt iteration takes on stages.
+
+**Prompting**
 
 - [Prompt Design](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/introduction-prompt-design):
     - Adjusting prompts iteratively = Single Shot Prompt Engineering
@@ -132,7 +136,9 @@ I like to say GenAI stands for "General AI" as these models are now like opinion
     - More strategies:
         - [General Strategies](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/prompt-design-strategies#chain-prompts)
         - [Advanced Strategies](https://github.com/GoogleCloudPlatform/applied-ai-engineering-samples/tree/main/genai-on-vertex-ai/advanced_prompting_training) like Chain of Thought, and  ReAct (Reasoning + Acting)
-        
+
+**Tuning**
+
 The knowledge gained from prompt design leads the need to tune models for tasks:
 
 - [Tuning](https://cloud.google.com/vertex-ai/docs/generative-ai/models/tune-models) Models For specific tasks 
@@ -140,12 +146,44 @@ The knowledge gained from prompt design leads the need to tune models for tasks:
     - [Reinforcement learining from human feedback (RLHF)](https://cloud.google.com/vertex-ai/docs/generative-ai/models/tune-text-models-rlhf) to learn how create complex outputs based on providing human choices between multiple outputs
     - [Distillation](https://cloud.google.com/vertex-ai/docs/generative-ai/models/distill-text-models) to teach a smaller model how to do a task using a larger model as the teacher.  (lower cost, lower latency)
 
-As tuned version of models are built for tasks it is important to characterize the performance using evaluation:
+**Evaluation**
+
+As tuned versions of models are built for tasks it is important to characterize the performance using evaluation:
 
 - [Metrics-based evaluation](https://cloud.google.com/vertex-ai/docs/generative-ai/models/evaluate-models)
     - Provide a collection of prompt with answers and get metrics for the model performance at recreating the answers. Metrics are specifict to the type of task: classification, summarization, question answering, text generation
 - [Side-by-side evaluation](https://cloud.google.com/vertex-ai/docs/generative-ai/models/side-by-side-eval)
     - Compare models ability to summarize or answer questions with an autorater that is using evaluation critera to judge each model on specific prompts and aggregate metrics.
+
+### Use
+
+For any LLM stage mentioned above there are additional consideration when using beyond the prompt.  
+
+**Retrieve Context - Grounding**
+
+To have an LLM response informed on specific information, even information it has never seen, means providing the information as context directly in the prompt.  Later, below in GenAI use cases, this is covered more thoroughly.  There are multiple ways within VertexAI to achieve this on your custom information.
+
+A service within Vertex AI, [Vertex AI Search & Conversation](https://cloud.google.com/vertex-ai-search-and-conversation?hl=en), make it easy to manage custom content for search and retrieval.  One of these retrieval patterns is for grounding prompts to LLMs.  The PaLM and Gemini API can directly ground calls with the data stores of Vertex AI Search & Conversation: [Grounding](https://cloud.google.com/vertex-ai/docs/generative-ai/grounding/overview).
+
+The retrieval operation can also be custom built by:
+- parsing information, documents, websites, ...
+- splitting content into meaningful chunks: lines, paragraphs, tables, images, ...
+- generating embeddings for the chunks using embedding LLMs like those in Vertex AI, custom embedders, or OSS embedding models
+- storing the embedddings for retrieval in a Vector DB like:
+    - [BigQuery Vector Indexes](https://cloud.google.com/bigquery/docs/vector-search-intro)
+    - [Vertex AI Feature Store](https://cloud.google.com/vertex-ai/docs/featurestore/latest/overview) with built-in [Search using embeddings](https://cloud.google.com/vertex-ai/docs/featurestore/latest/embeddings-search) 
+    - [Vertex AI Vector Search](https://cloud.google.com/vertex-ai/docs/vector-search/overview)
+    - [Cloud SQL For PostgreSQL and AlloyDB for PostgreSQL with pgvector](https://cloud.google.com/blog/products/databases/using-pgvector-llms-and-langchain-with-google-cloud-databases)
+    - Locally hosted index using packages like [ScAAN](https://github.com/google-research/google-research/tree/master/scann) and [Faiss](https://github.com/facebookresearch/faiss)
+
+
+**Conforming Response Shape**
+
+A common need for responses is to be the inputs to a later activity like calling a function or an API.  This means conforming the response to a specific schema with certain keys and data type for values.  With Vertex AI Gemini Models you can use [Function Calling](https://cloud.google.com/vertex-ai/docs/generative-ai/multimodal/function-calling) to specify the output shapes and get responses that conform directly to the schema.  
+
+**Extending Response to Applications**
+
+After conforming the responses to a shape (schema) it is likely that the response could directly be sent to a function or api. Think of this as extending the response.  The responses from the extention are likely inputs to another prompt to an LLM to further synthesis and refine the overall response.  This orchestration is the goal of [Vertex Ai Extensions](https://cloud.google.com/vertex-ai/docs/generative-ai/extensions/overview).
 
 ---
 ### What is an LLM actually doing?
@@ -208,6 +246,14 @@ Ultimately, the LLM needs contextual information about the question in order to 
 
 The key is retrieving context relevant to the specific question being asked.  Not too much context, not off topic context, but specific relevant context.  A great advantage of this approach is that the LLM does not necessary need specific training or parameters to understand your private or new text because the text is being supplied in the prompt - as context to the question.
 
+**Semantic Retrieval - Retrieval Augmented Generation (RAG)**
+
+A type of LLM is an embedding LLM which returns a vector of numbers to represent the input text, image, or combination (multimodal).  These numbers relate to the words, their order, their meaning, and their cooperation - in other words semantic meaning of the input.  These embeddings lead to an amazing general approach to identifying context for a question that can been automated without a lot of customization.
+
+By computing the distance between embeddingins for questions and pieces of information, sometimes called chunks (think lines, paragraphs, ...), a filtered list of most relevant content can be retrieved as context.  
+
+At first pass this seems simple: match question to chunks, use chunks as context. However, the topic of retrieval can get deep, complex and very use-case specific.
+
 **Input/Output Sizes: Tokens**
 
 Large language models have limit for the size of input then can receive and output they can return.  While we think of these as words, maybe even characters, the models are actually using a codified version of language where the coding process is called tokenization.  It is not as simple as a `unique_word = unique_token` because models use a data compression mechanism like [Byte-Pair Encoding (BPE)](https://en.wikipedia.org/wiki/Byte_pair_encoding).
@@ -230,19 +276,11 @@ One mechanism to control cost is limiting the input and output size.  To control
 
 With Vertex AI, [pricing](https://cloud.google.com/vertex-ai/pricing#generative_ai_models) for LLMs is based on the model and the character count of the input + output. This makes pricing easy and transparent.  Since the models measure input and output in tokens it can be helpful to use the `countTokens` method provided for models ([details here](https://cloud.google.com/vertex-ai/docs/generative-ai/get-token-count)).
 
-**Semantic Retrieval - Retrieval Augmented Generation (RAG)**
-
-A type of LLM is an embedding LLM which returns a vector of numbers to represent the input text, image, or combination (multimodal).  These numbers relate to the words, their order, their meaning, and their cooperation - in other words semantic meaning of the input.  These embeddings lead to an amazing general approach to identifying context for a question that can been automated without a lot of customization.
-
-By computing the distance between embeddingins for questions and pieces of information, sometimes called chunks (think lines, paragraphs, ...), a filtered list of most relevant content can be retrieved as context.  
-
-At first pass this seems simple: match question to chunks, use chunks as context. However, the topic of retrieval can get deep, complex and very use-case specific.
-
 ---
 
 ## Example Workflows
 
-The following sections link to many notebook based examples of using LLMs as described above!
+The following sections links to many notebook based examples of using LLMs as described above!
 
 ---
 ### Summarization
@@ -260,7 +298,7 @@ Text can come in the form of audio.  This requires a conversion to text, transcr
     - Use the LLM to label the speaker by their role as either "Agent" or "Customer"
 
 ---
-## BigQuery Q&A Examples:
+### BigQuery Q&A Examples:
 
 These notebooks use code generation LLMs to first query BigQuery to retrieve context for users questions.  Then the response is provided to text generation LLMs to answer the question.
 
@@ -280,6 +318,7 @@ By creating embeddings for column descriptions, the question can be embedded and
 
 A further enhancement is to use a text LLM along with a code LLM.  First ask the text LLM to list the steps needed to answer the question.  Then, the prompt for the code llm would include the steps retrieved from the text LLM along with the matching table and column schema retrieved.  
 
+---
 ### Automate BigQuery Metadata With LLMs
 
 Using LLMs to query data in BigQuery highlights the need for descriptive metadata like:
@@ -290,6 +329,7 @@ This example workflow shows how to use an LLM to generate better naming and desc
 
 - [Vertex AI GenAI For BigQuery Metadata - Make Better Tables](./Vertex%20AI%20GenAI%20For%20BigQuery%20Metadata%20-%20Make%20Better%20Tables.ipynb)
 
+---
 ### BigQuery Advisor For More Efficient Code
 
 Code is a language.  A common syntax is SQL.  BigQuery runs GoogleSQL and a common question is "Is my code efficient?".
