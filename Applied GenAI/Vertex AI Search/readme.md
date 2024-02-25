@@ -25,18 +25,23 @@ Most approaches to retrieval typically require subsetting documents and other in
 
 ## Getting Started
 
+### Vertex AI Search Setup:
+
+The notebooks here use a Vertex Search environment setup with the simple steps covered in this [file](./vertex_search_setup.md)
+
+### Use API To Access Search Results
+
 **Install**
 
 The Vertex AI [Python Client](https://cloud.google.com/python/docs/reference/aiplatform/latest) will need to be updated to at least the 1.25.0 release.
 
 Th Vertex AI Search [Python Client](https://cloud.google.com/generative-ai-app-builder/docs/libraries#client-libraries-install-python) will need to be installed.
 
-## Notebooks For Document Q&A Examples:
+Demonstrate the different types of search results the Python Client: 
+
+### Notebooks For Document Q&A Examples Using Vertex AI Search For Grounding
 
 Demonstrate the use of **Vertex AI Search with Extractive Segments**:
 - [Vertex AI Search Document Q&A Using Extractive Segments - MLB Rules For Baseball.ipynb](./Vertex%20AI%20Search%20Document%20Q&A%20Using%20Extractive%20Segments%20-%20MLB%20Rules%20For%20Baseball.ipynb)
     - Ask questions related to the MLB Baseball rules and get text generated answers using the combination of both Vertex AI Search and Vertex GenAI LLMs.
 
-## Vertex AI Search Setup:
-
-The notebooks here use a Vertex Search environment setup with the simple steps covered in this [file](./vertex_search_setup.md)
