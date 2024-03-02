@@ -1,5 +1,3 @@
-![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2FApplied+GenAI&dt=readme.md)
-
 # /Applied GenAI/readme.md
 
 This series of notebooks highlights the use of [Vertex AI Generative AI](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/overview) for workflows that include using Google's foundational large generative AI models.  [These models](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/models) are hosted by Google and used by API:

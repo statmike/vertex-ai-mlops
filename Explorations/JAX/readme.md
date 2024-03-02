@@ -1,5 +1,3 @@
-![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2FExplorations%2FJAX&dt=readme.md)
-
 # /Explorations/JAX/readme.md
 
 A quickly developing framework for transforming numerical functions. Wait? What?

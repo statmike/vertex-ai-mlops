@@ -1,5 +1,3 @@
-![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2FApplied+Optimization&dt=readme.md)
-
 # /Applied Optimization/readme.md
 
 This series of notebooks will feature examples for optimization - primarily with Vertex AI Vizier and Open Source Vizier.
