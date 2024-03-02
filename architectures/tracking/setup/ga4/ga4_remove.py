@@ -22,6 +22,11 @@ for root, dirs, files in os.walk('../../../../.'):
                 if content[0].startswith('![ga4](https://www.google-analytics.com'):
                     content = content[1:]
                     update = True
+                    while True:
+                        if content[0] == '\n':
+                            content = content[1:]
+                        else:
+                            break
                     
                 # update file if ga4 present
                 if update:
@@ -42,6 +47,11 @@ for root, dirs, files in os.walk('../../../../.'):
                         if cell['source'][0].startswith('![ga4](https://www.google-analytics.com'):
                             cell['source'] = cell['source'][1:]
                             update = True
+                            while True:
+                                if cell['source'][0] == '\n':
+                                    cell['source'] = cell['source'][1:]
+                                else:
+                                    break
                         # only review the first markdown cell the break for loop
                         break
                 
