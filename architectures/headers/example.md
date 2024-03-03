@@ -7,8 +7,9 @@
       <br>View on<br>GitHub
     </a>
   </td>
-</table><br/><br/><br/>
+</table><br/><br/><br/><br/>
 
+---
 # vertex-ai-mlops/03 - BigQuery ML (BQML)/readme.md
 
 This series of notebooks will introduce [BigQuery ML (BQML)](https://cloud.google.com/bigquery/docs/bqml-introduction) with a focus on classification methods.
