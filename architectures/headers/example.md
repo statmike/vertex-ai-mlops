@@ -7,13 +7,6 @@
       <br>View on<br>GitHub
     </a>
   </td>
-  <td style="text-align: center">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,0,0" />
-    <a href="https://raw.githubusercontent.com/statmike/vertex-ai-mlops/main/architectures%2Fheaders%2Fexample.md" download="example.md">
-      <span class="material-symbols-outlined">download</span>
-      <br>Download<br>This File
-    </a>
-  </td> 
 </table><br/><br/><br/>
 
 # vertex-ai-mlops/03 - BigQuery ML (BQML)/readme.md
