@@ -1,15 +1,3 @@
-![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2FApplied+GenAI%2FVertex+AI+Search&dt=readme.md)
-<!--- header table --->
-<table align="left">     
-  <td style="text-align: center">
-    <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/Applied+GenAI%2FVertex+AI+Search%2Freadme.md">
-      <img src="https://cloud.google.com/ml-engine/images/github-logo-32px.png" alt="GitHub logo">
-      <br>View on<br>GitHub
-    </a>
-  </td>
-</table><br/><br/><br/><br/>
-
----
 # /Applied GenAI/Vertex AI Search/readme.md
 
 This series of notebooks highlights the use over [Vertex AI Search](https://cloud.google.com/generative-ai-app-builder/docs/try-enterprise-search) for workflows that includes using Google's [foundational large generative AI models](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/models). These don't need to be trained or hosted - just called with via API. Read more about these exciting new features of Vertex AI Search (formerly named Generative AI App Builder Enterprise Search) [here](https://cloud.google.com/generative-ai-app-builder/docs/try-enterprise-search)

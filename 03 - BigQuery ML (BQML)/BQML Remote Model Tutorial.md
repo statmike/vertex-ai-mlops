@@ -1,15 +1,3 @@
-![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2F03+-+BigQuery+ML+%28BQML%29&dt=BQML+Remote+Model+Tutorial.md)
-<!--- header table --->
-<table align="left">     
-  <td style="text-align: center">
-    <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/03+-+BigQuery+ML+%28BQML%29%2FBQML+Remote+Model+Tutorial.md">
-      <img src="https://cloud.google.com/ml-engine/images/github-logo-32px.png" alt="GitHub logo">
-      <br>View on<br>GitHub
-    </a>
-  </td>
-</table><br/><br/><br/><br/>
-
----
 # BQML Remote Model Tutorial
 
 This tutorial is also part of the BigQuery Documentations Tutorials section - [view here](https://cloud.google.com/bigquery/docs/bigquery-ml-remote-model-tutorial).  In this repository there is also a pre-completed version of the notebook modifications described below.
