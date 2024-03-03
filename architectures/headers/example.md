@@ -2,7 +2,7 @@
 <!--- header table --->
 <table align="left">     
   <td style="text-align: center">
-    <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/architectures%2Fheaders%2Fexample.md">
+    <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/architectures/headers/example.md">
       <img src="https://cloud.google.com/ml-engine/images/github-logo-32px.png" alt="GitHub logo">
       <br>View on<br>GitHub
     </a>
