@@ -1,3 +1,15 @@
+![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2F02+-+Vertex+AI+AutoML&dt=readme.md)
+<!--- header table --->
+<table align="left">     
+  <td style="text-align: center">
+    <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/02%20-%20Vertex%20AI%20AutoML/readme.md">
+      <img src="https://cloud.google.com/ml-engine/images/github-logo-32px.png" alt="GitHub logo">
+      <br>View on<br>GitHub
+    </a>
+  </td>
+</table><br/><br/><br/><br/>
+
+---
 # /02 - Vertex AI AutoML/readme.md
 
 This series of notebooks will introduce [Vertex AI AutoML](https://cloud.google.com/vertex-ai/docs/start/automl-model-types) with a focus on Tabular data Classification Methods.
