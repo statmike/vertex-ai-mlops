@@ -179,13 +179,34 @@ The retrieval operation can also be custom built by:
 - parsing information, documents, websites, ...
 - splitting content into meaningful chunks: lines, paragraphs, tables, images, ...
 - generating embeddings for the chunks using embedding LLMs like those in Vertex AI, custom embedders, or OSS embedding models
-- storing the embedddings for retrieval in a Vector DB like:
+- storing the embedddings for retrieval in a Vector DB
+
+There are many ways to do vector search. In production there are considerations, including:
+- How many indexes?
+- What is the size of indexes?
+- What is the lifespan and frequency of indexes?
+- How frequently will indexes get updates (append, update, delete)?
+- How quickly do updates need to surface in searches?
+- What is the next step after a search?  Does the coorespondinng text need to be retrieved separately?
+
+Google Cloud offers solutions for any workflow!
+- Local to the application:
+    - [ScAAN](https://github.com/google-research/google-research/tree/master/scann)
+    - [Faiss](https://github.com/facebookresearch/faiss)
+- With transactional data:
+    - using [pgvector](https://github.com/pgvector/pgvector) with:
+        - [Cloud SQL for PostgreSQL](https://cloud.google.com/sql/docs/postgres)
+        - [AlloyDB for PostgreSQL](https://cloud.google.com/alloydb/docs)
+        - blogs:
+            - [Building AI-powered apps on Google Cloud databases using pgvector, LLMs and LangChain](https://cloud.google.com/blog/products/databases/using-pgvector-llms-and-langchain-with-google-cloud-databases)
+    - [Spanner](https://cloud.google.com/spanner/docs)
+        - [Vector Search in Spanner](https://cloud.google.com/spanner/docs/find-k-nearest-neighbors)
+        - [langchain with Spanner](https://github.com/googleapis/langchain-google-spanner-python)
+- In the data warehouse:
     - [BigQuery Vector Indexes](https://cloud.google.com/bigquery/docs/vector-search-intro)
+- Fit-for-purpose: Fast, Scalable, and Flexible:
     - [Vertex AI Feature Store](https://cloud.google.com/vertex-ai/docs/featurestore/latest/overview) with built-in [Search using embeddings](https://cloud.google.com/vertex-ai/docs/featurestore/latest/embeddings-search) 
     - [Vertex AI Vector Search](https://cloud.google.com/vertex-ai/docs/vector-search/overview)
-    - [Cloud SQL For PostgreSQL and AlloyDB for PostgreSQL with pgvector](https://cloud.google.com/blog/products/databases/using-pgvector-llms-and-langchain-with-google-cloud-databases)
-    - Locally hosted index using packages like [ScAAN](https://github.com/google-research/google-research/tree/master/scann) and [Faiss](https://github.com/facebookresearch/faiss)
-
 
 **Conforming Response Shape**
 
