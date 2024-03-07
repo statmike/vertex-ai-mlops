@@ -10,12 +10,6 @@
 </table><br/><br/><br/><br/>
 
 ---
-<p align="center" width="100%">
-    <center>
-    <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/Google_Colaboratory_SVG_Logo.svg" width = '20%'>
-    </center>
-</p>
-
 # Google Colaboratory: Colab
 Notebooks, Jupyter notebooks, iPython notebooks .... COLAB
 

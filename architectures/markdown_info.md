@@ -10,8 +10,6 @@
 </table><br/><br/><br/><br/>
 
 ---
----
-
 ## Display Tips
 
 Just Icon/Image:
