@@ -58,7 +58,7 @@ This starts with a user in a tool of choice.  An IDE for developing this code.  
 
 The workflow of ML code does many steps in sequence.  Some of the steps involve conditional logic like deploying the new model only when it is more accurate than the currently deployed model.  This is a pipeline.  Pipelines are essential for turning ML processes into MLOps.  MLOps goes the next mile with automation, monitoring, and governing the workflow.
 
-There are frameworks for specifying these steps like [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/v1/introduction/) and [TensorFlow Extended (TFX)](https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines).  [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction) is a orchestrator for both of these.
+There are frameworks for specifying these steps like [Kubeflow Pipelines (KFP)](https://www.kubeflow.org/docs/components/pipelines/v2/introduction/) and [TensorFlow Extended (TFX)](https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines).  [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction) is a orchestrator for both of these.
 - The [history of Kubeflow](https://www.kubeflow.org/docs/started/introduction/#history) is creating a simplified way to running TensorFlow Extended jobs on Kubernetes.
 
 ### Components
@@ -80,7 +80,10 @@ The steps of the workflow, an ML task, are called components. Getting logic and 
         - [Python function-based components](https://www.tensorflow.org/tfx/guide/custom_function_component) - create a component from a Python function
         - [Container-based components](https://www.tensorflow.org/tfx/guide/container_component) - a component from a contaienr
         - [Fully custom components](https://www.tensorflow.org/tfx/guide/custom_component) - reuse and extend standard components.
-        
+
+For an overview of components from custom to pre-built, check out this notebook:
+- [Vertex AI Pipelines - Components](./Vertex%20AI%20Pipelines%20-%20Components.ipynb)
+
 ### Component IO
 
 Component inputs and outputs can take two forms: parameters and artifacts.  
