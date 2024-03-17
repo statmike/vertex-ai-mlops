@@ -17,7 +17,7 @@ A core part of MLOps, for going from model to MODELS, is feature management.  [V
 >**Versions**
 >
 >Vertex AI Feature Store (pre-2023) is now named [Vertex Ai Feature Store (Legacy)](https://cloud.google.com/vertex-ai/docs/featurestore#vaifs_legacy).  The new feature store is [Vertex AI Feature Store](https://cloud.google.com/vertex-ai/docs/featurestore).  This readme will now focus on the latest feature store but for information regarding the legacy feature store see:
->- Notebook based workflow: [Feature Store (Legacy)](./Feature%20Store%20(Legacy).ipynb)
+>- Notebook based workflow (in this repository): [Feature Store (Legacy)](./Feature%20Store%20(Legacy).ipynb)
 >- [Documentation](https://cloud.google.com/vertex-ai/docs/featurestore#vaifs_legacy)
 >- [Comparison to Vertex AI Feature Store](https://cloud.google.com/vertex-ai/docs/featurestore#comparison_between_and)
 
@@ -60,4 +60,50 @@ BigQuery as a **data source**:
     - [ML.ENTITY_FEATURES_AT_TIME](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-entity-feature-time) - will take a input table and an additional table of entity+timestamp pairs and return the feature values for each entity+timestamp pair.  This allows both multiple points in time for single entities as well as different times for different entities.
 - Time bound data, or column values that change for a row/entity, might not be the native way data scientist are used to working with data.  There are great features in BigQuery to help with handling data that changes with time.
     - Creating these tables/views with timestamp entity records may be benefited by [time-travel](https://cloud.google.com/bigquery/docs/time-travel#time_travel) (up to 7 days - configurable) and [snapshots](https://cloud.google.com/bigquery/docs/table-snapshots-intro) (user controlled points in time). You can also [query time-travel](https://cloud.google.com/bigquery/docs/access-historical-data) as well as [create snapshots from time-travel](https://cloud.google.com/bigquery/docs/table-snapshots-create#create_a_table_snapshot_using_time_travel).
+
 ---
+
+## Feature Focused Data Architecture
+
+With the offline store being able to be in BigQuery and be a history table with time bound **features** it opens up many possibilities for efficient data architectures for feature management to enable ease of use across the the spectrum of MLOps - DataOps as part of MLOps:
+
+<p><center>
+    <img alt="Overview Chart" src="../architectures/notebooks/mlops/ml_dataops.png" width="85%">
+</center><p>
+    
+1. Find data sources
+    - discovery
+    - understandinng
+    - formats
+    - frequency
+    - preparation, ETL
+2. Combine data sources
+    - formats
+    - frequency
+    - preparation, ETL
+3. Feature Enginneering
+    - Converting raw data columns into useful signal for ML methods
+4. Training ML Models
+    - Splits for train/validate/test
+    - Iterate Features and Feature Engineering
+5. Evaluate Models
+    - Continously
+6. Serve Models
+    - Format features for predition
+    - Serve features for prediction
+7. Monitor Models
+    - Skew: Change from training
+    - Drift: Change over time
+    - Continously
+    - Monitor Features for change
+
+When the goal is training a model (4), it might seem easy to ad-hoc work through 1-3. _Let's be honest - it's what we do most of the time._ But then, when a model version proves useful, many compromises are needed to get 5-7 to ~~work~~ - it rarely works correctly.
+
+**What if**
+- you could make careful decision during 1-3 that could essentially automate 5-7 seemlessly?
+- it was not hard or time consuming?
+- it makes it easier to train and iterate?
+- it made everything easier?
+    
+For a demonstration of a potential architecture that makes all this possible check out this notebook based workflow:
+- [Feature Focused Data Architecture](./Feature%20Focused%20Data%20Architecture.ipynb)
