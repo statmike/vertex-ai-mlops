@@ -1,4 +1,4 @@
-![ga4](https://www.google-analytics.com/collect?v=2&tid=G-6VDTYWLKX6&cid=1&en=page_view&sid=1&dl=statmike%2Fvertex-ai-mlops%2FTransfer+Learning&dt=readme.md)
+![tracker](https://us-central1-statmike-mlops-349915.cloudfunctions.net/tracking-pixel?path=statmike%2Fvertex-ai-mlops%2FTransfer+Learning&file=readme.md)
 <!--- header table --->
 <table align="left">     
   <td style="text-align: center">
