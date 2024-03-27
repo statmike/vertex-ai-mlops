@@ -14,17 +14,7 @@
 
 Let's talk about MLOps!
 
----
-## in progress - stay tuned
-
-- more than ML
-- authoring, testing, scaling
-- controling - CI and CD - Hey this is just DevOps!
-- Automation & Workflows
-- Putting it all together with CT
-
-
-Want more now?
+Before we get started, check these resources out:
 - The best overview ever written: https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines
     - Even if you don't use TFX, this captures the whole goal!
 - MLOps Overview: https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning
@@ -58,9 +48,10 @@ This starts with a user in a tool of choice.  An IDE for developing this code.  
 
 The workflow of ML code does many steps in sequence.  Some of the steps involve conditional logic like deploying the new model only when it is more accurate than the currently deployed model.  This is a pipeline.  Pipelines are essential for turning ML processes into MLOps.  MLOps goes the next mile with automation, monitoring, and governing the workflow.
 
-There are frameworks for specifying these steps like [Kubeflow Pipelines (KFP)](https://www.kubeflow.org/docs/components/pipelines/v2/introduction/) and [TensorFlow Extended (TFX)](https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines).  [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction) is a orchestrator for both of these.
+There are frameworks for specifying these steps like [Kubeflow Pipelines (KFP)](https://www.kubeflow.org/docs/components/pipelines/v2/introduction/) and [TensorFlow Extended (TFX)](https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines).  [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction) is a managed service that can execute both of these.
 - The [history of Kubeflow](https://www.kubeflow.org/docs/started/introduction/#history) is creating a simplified way to running TensorFlow Extended jobs on Kubernetes.
 
+---
 ### Components
 
 The steps of the workflow, an ML task, are called components. Getting logic and code into components can consists of using prebuilt components or constructing custom components:
@@ -84,6 +75,7 @@ The steps of the workflow, an ML task, are called components. Getting logic and 
 For an overview of components from custom to pre-built, check out this notebook:
 - [Vertex AI Pipelines - Components](./Vertex%20AI%20Pipelines%20-%20Components.ipynb)
 
+---
 ### Component IO
 
 Component inputs and outputs can take two forms: parameters and artifacts.  
@@ -98,9 +90,22 @@ Component inputs and outputs can take two forms: parameters and artifacts.
     - [Google Cloud Artifact Types](https://google-cloud-pipeline-components.readthedocs.io/en/google-cloud-pipeline-components-2.0.0/api/artifact_types.html)
 - [TFX Artifacts](https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines#artifact)
 
+---
+### Control Flow For Pipelines
 
+As the task of an ML pipeline run they form a graph.  The outputs of upstream components become the inputs of downstram components.  Both TFX and KFP automatically use these connection to create a DAG of execution.  When logic needs to be specified in the pipeline flow of execution the use of control structures is necessary.  
 
+The following notebook shows many examples of implement controls in KFP while running on Vertex AI Pipelines:
+- [Vertex AI Pipelines - Control](./Vertex%20AI%20Pipelines%20-%20Control.ipynb)
+    - **Ordering**: DAG and Explicit ordering
+    - **Conditional Execution**: if, elif (else if), and else
+        - **Collecting**: Conditional results
+    - **Looping**: And Parallelism
+        - **Collecting**: Looped Results
+    - **Exit Handling:** with and without task failures
+    - **Error Handling** continue execution even after task failures
 
+---
 ### Scheduling Pipelines
 
 Pipelines can be run on a schedule directly in Vertex AI without the need to setup a scheduler and trigger (like PubSub).  Here is an example of a pipeline run followed by a schedule that repeats the pipeline at a specified interval the number of iterations set as the maximum on the schedule:
@@ -112,6 +117,7 @@ This can have many helpful applications, including:
 - Retraining a model, do evaluations, and comparing the new model to the currently deployed model then conditionally updating the deployed model
 - Check for new training records and commence with retraining if conditions are met - like records that increase a class by 10%, atleast 1000 new records, ....
 
+---
 ### Triggering Pipelines
 
 
