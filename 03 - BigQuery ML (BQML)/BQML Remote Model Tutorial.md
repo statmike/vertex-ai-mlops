@@ -1,4 +1,4 @@
-![tracker](https://us-central1-statmike-mlops-349915.cloudfunctions.net/tracking-pixel?path=statmike%2Fvertex-ai-mlops%2F03+-+BigQuery+ML+%28BQML%29&file=BQML+Remote+Model+Tutorial.md)
+![tracker](https://us-central1-vertex-ai-mlops-369716.cloudfunctions.net/pixel-tracking?path=statmike%2Fvertex-ai-mlops%2F03+-+BigQuery+ML+%28BQML%29&file=BQML+Remote+Model+Tutorial.md)
 <!--- header table --->
 <table align="left">     
   <td style="text-align: center">

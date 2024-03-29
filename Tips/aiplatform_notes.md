@@ -1,4 +1,4 @@
-![tracker](https://us-central1-statmike-mlops-349915.cloudfunctions.net/tracking-pixel?path=statmike%2Fvertex-ai-mlops%2FTips&file=aiplatform_notes.md)
+![tracker](https://us-central1-vertex-ai-mlops-369716.cloudfunctions.net/pixel-tracking?path=statmike%2Fvertex-ai-mlops%2FTips&file=aiplatform_notes.md)
 <!--- header table --->
 <table align="left">     
   <td style="text-align: center">
