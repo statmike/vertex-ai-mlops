@@ -1,8 +1,8 @@
-![tracker](https://us-central1-statmike-mlops-349915.cloudfunctions.net/tracking-pixel?path=statmike%2Fvertex-ai-mlops%2Farchitectures%2Ftracking%2Fsetup%2Fga4&file=readme.md)
+![tracker](https://us-central1-statmike-mlops-349915.cloudfunctions.net/tracking-pixel?path=statmike%2Fvertex-ai-mlops%2Farchitectures%2Ftracking%2Fsetup%2Fpixel&file=readme.md)
 <!--- header table --->
 <table align="left">     
   <td style="text-align: center">
-    <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/architectures/tracking/setup/ga4/readme.md">
+    <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/architectures/tracking/setup/pixel/readme.md">
       <img src="https://cloud.google.com/ml-engine/images/github-logo-32px.png" alt="GitHub logo">
       <br>View on<br>GitHub
     </a>
