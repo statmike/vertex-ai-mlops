@@ -31,8 +31,8 @@ It contains the notebooks used to setup the environment, read data from APIs on 
     - Explore ways of tracking document usage in the repository without collecting user information
 - [tracking_youtube.ipynb](./tracking_youtube.ipynb)
     - Explore ways of tracking document usage in the repository without collecting user information
-    
-    
+- custom pixel tracking with [/pixel/developing-tracking-pixel.ipynb](./pixel/developing-tracking-pixel.ipynb)    
+
     
 ---
 ## TODO

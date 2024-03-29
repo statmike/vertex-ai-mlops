@@ -29,6 +29,11 @@ Each data source has a subfolder of notebooks specific to their setup:
     - includes notebooks that:
         - walkthrough setting up Google Analytics Exports to BigQuery
         - walkthrough ETL process to prepare this data for reporting
+    - decomissioning this for custom tracking - see pixel below:
+- [/pixel](./pixel/readme.md)
+    - create cloud function for custom pixel tracking with data privacy
+    - migrate GA4 trackinng data to the custom tracker
+    - update reporting to utilize the custom pixel tracking
 - [/github](./github/readme.md)
     - includes notebooks that:
         - show examples of reading from API and preparing the data for storage in BigQuery
