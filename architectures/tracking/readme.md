@@ -12,7 +12,7 @@
 ---
 # /architectures/tracking/readme.md
 
-This folder contains workbooks that setup tracking of the repositories files.  Great care is taken to not use user identifying information.  The goal is understanding document popularity relative the the total contents of the repository and overall.  Google Analytics Measurement Protocol is used to log `page_view` events without user identification or client identification - just a count of views.  GitHub traffic and metrics are used to understand the repositories usage at GitHub.com.  This measures post-conversion (already discovered at GitHub.com) and usage frequency.  Some notebooks also have YouTube videos for walkthroughs and the YouTube measurement API is used to understand popularity and engagement of this content.
+This folder contains workbooks that setup tracking of the repositories files.  Great care is taken to not use user identifying information.  The goal is understanding document popularity relative the the total contents of the repository and overall.  ~~Google Analytics Measurement Protocol~~ Custom tracking is used to log page view events without user or location identification - just a count of views.  GitHub traffic and metrics are used to understand the repositories usage at GitHub.com.  This measures post-conversion (already discovered at GitHub.com) and usage frequency.  Some notebooks also have YouTube videos for walkthroughs and the YouTube measurement API is used to understand popularity and engagement of this content.
 
 
 ## Environment Setup
@@ -31,8 +31,8 @@ It contains the notebooks used to setup the environment, read data from APIs on 
     - Explore ways of tracking document usage in the repository without collecting user information
 - [tracking_youtube.ipynb](./tracking_youtube.ipynb)
     - Explore ways of tracking document usage in the repository without collecting user information
-- custom pixel tracking with [/pixel/developing-tracking-pixel.ipynb](./pixel/developing-tracking-pixel.ipynb)    
-
+- custom pixel tracking with [/pixel/developing-tracking-pixel.ipynb](./pixel/developing-tracking-pixel.ipynb)
+    - Explore implementing a completely custom pixel tracking application with Cloud Functions, Cloud Run, PubSub, and BigQuery
     
 ---
 ## TODO
