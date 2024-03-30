@@ -1,11 +1,11 @@
-# this file, pixel_list.py, will list all the files in the repository with ga4 tracking
-# vertex-ai-mlops/architectures/tracking/setup/pixel/pixel_remove.py
+# vertex-ai-mlops/architectures/tracking/setup/pixel/pixel_list.py
+# this file, pixel_list.py, will list all the files in the repository
+# to remove the tracking from this files, run pixel_remove.py
 
 import os
 import json
-import urllib.parse
 
-# this file is in: /vertex-ai-mlops/architectures/tracking/setup/ga4/ga4_list.py
+# this file is in: /vertex-ai-mlops/architectures/tracking/setup/pixel/pixel_list.py
 for root, dirs, files in os.walk('../../../../.'):
     for file in files:
         if file.endswith(('.md', '.ipynb')) and not root.endswith('.ipynb_checkpoints'):
@@ -16,7 +16,7 @@ for root, dirs, files in os.walk('../../../../.'):
                 with open(os.path.join(root, file), 'r') as reader:
                     content = reader.readlines()
                 
-                # check for ga4
+                # check for pixel track
                 if content[0].startswith('![tracker](https://'):
                     print('File: ', os.path.join(root, file))
 
@@ -26,7 +26,7 @@ for root, dirs, files in os.walk('../../../../.'):
                 with open(os.path.join(root, file), 'r') as reader:
                     content = json.loads(reader.read())
                     
-                # check for ga4
+                # check for pixel track
                 for cell in content['cells']:
                     if cell['cell_type'] == 'markdown':
                         if cell['source'][0].startswith('![tracker](https://'):
