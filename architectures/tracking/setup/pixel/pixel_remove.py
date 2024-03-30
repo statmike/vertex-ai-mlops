@@ -19,7 +19,7 @@ for root, dirs, files in os.walk('../../../../.'):
                     content = reader.readlines()
                 
                 # check for pixel track
-                if content[0].startswith('![tracking](https://'):
+                if content[0].startswith('![tracker](https://'):
                     content = content[1:]
                     update = True
                     # remove any blank lines at the start of the file (these were empty spaces/lines after the tracker)
