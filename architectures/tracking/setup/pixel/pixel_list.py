@@ -1,4 +1,5 @@
-# this file, ga4_list.py, will list all the files in the repository with ga4 tracking
+# this file, pixel_list.py, will list all the files in the repository with ga4 tracking
+# vertex-ai-mlops/architectures/tracking/setup/pixel/pixel_remove.py
 
 import os
 import json
@@ -16,19 +17,19 @@ for root, dirs, files in os.walk('../../../../.'):
                     content = reader.readlines()
                 
                 # check for ga4
-                if content[0].startswith('![ga4](https://www.google-analytics.com'):
+                if content[0].startswith('![tracker](https://'):
                     print('File: ', os.path.join(root, file))
 
             elif file.endswith('.ipynb'):
                 
-                # read file contents
+                # read file contents (as JSON rather than nbformat)
                 with open(os.path.join(root, file), 'r') as reader:
                     content = json.loads(reader.read())
                     
                 # check for ga4
                 for cell in content['cells']:
                     if cell['cell_type'] == 'markdown':
-                        if cell['source'][0].startswith('![ga4](https://www.google-analytics.com'):
+                        if cell['source'][0].startswith('![tracker](https://'):
                             print('File: ', os.path.join(root, file))
                         # only review the first markdown cell the break for loop
                         break
