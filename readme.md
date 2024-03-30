@@ -14,7 +14,7 @@
 
 ## 👋 I'm Mike
 
-I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/start/introduction-unified-platform) from [Google Cloud](https://cloud.google.com/vertex-ai) with you.  The goal here is to share a comprehensive set of end-to-end workflows for machine learning that each cover the range of data to model to serving and managing - even automating the flow.  Regardless of your data type, skill level or framework preferences you will find something helpful here. 
+I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/start/introduction-unified-platform) from [Google Cloud](https://cloud.google.com/vertex-ai) with you.  The goal here is to share a comprehensive set of end-to-end workflows for machine learning that each cover the range of data to model to serving and managing - even automating the flow.  Regardless of your data type, skill level or framework preferences you will find something helpful here.  You can even ask for what you need and I might be able to work it into updates! 
 
 <p align="center" width="100%"><center>
     <a href="https://youtu.be/snUEwsft1wY" target="_blank" rel="noopener noreferrer">
@@ -24,16 +24,15 @@ I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/s
 <p align="center">Click to watch on YouTube</p>
 <p align="center">Click <a href="https://youtube.com/playlist?list=PLgxF613RsGoUuEjJJxJW2JYyZ8g1qOUou" target="_blank" rel="noopener noreferrer">here</a> to see current playlist for this repository</p>
 
-
 ---
 ## Tracking
 
-To better understand which content is most helpful to users, this repository uses tracking pixels in each markdown (`.md`) and notebook (`.ipynb`) file.  No user or location information gets captured as this is set to use a dummy client and session to protect privacy.  The only information captured is that the content was rendered/viewed which gives us a daily count of usage.  Please share any concerns you have with this in [repositories discussion board](https://github.com/statmike/vertex-ai-mlops/discussions) and I am happy to also provide a branch without the tracking.  
+To better understand which content is most helpful to users, this repository uses tracking pixels in each markdown (`.md`) and notebook (`.ipynb`) file.  **No user or location data is collected.**  The only information captured is that the content was rendered/viewed which gives us a daily count of usage.  Please share any concerns you have with this in [repositories discussion board](https://github.com/statmike/vertex-ai-mlops/discussions) and I am happy to also provide a branch without the tracking.  
 
-A script is provided to remove this tracking from your local copy of this repository in the file `ga4_remove.py` in the folder [ga4](./architectures/tracking/setup/ga4/readme.md).
+A script is provided to remove this tracking from your local copy of this repository in the file `pixel_remove.py` in the folder [pixel](./architectures/tracking/setup/pixel/readme.md).  This readme also has the complete code for creating the tracking in case you want to use replicate it or just understand it in greater detail.
 
 ---
-## Approach Use In This Repository
+## Approach Used In This Repository
 
 This repository is presented as workflows using, primarily, interactive python notebooks `.ipynb`.  Why?  These are easy to review, share, and move.  They contain elements for both code and narrative. The narrative can be written with plain text, Markdown and/or HTML which makes providing visual explanations easy.  This reinforces the goal of this repository: information that is easily accessible, portable, and great for starting points in your own work.
 

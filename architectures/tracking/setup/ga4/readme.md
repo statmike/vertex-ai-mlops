@@ -12,6 +12,8 @@
 ---
 # /architectures/tracking/setup/ga4/readme.md
 
+> **NOTE:** This approach is being removed (March 2024).  The replacement is a custom pixel tracker whose development is completely open and covered in this repository.  Check out [../pixel/readme.md](../pixel/readme.md).
+
 Setup Google Analytics for tracking document touches in this repository.
 
 >Great care is taken to not use user identifying information.  The goal is understanding document popularity relative the the total contents of the repository and overall.  Google Analytics Measurement Protocol is used to log `page_view` events without user identification or client identification - just a count of views.

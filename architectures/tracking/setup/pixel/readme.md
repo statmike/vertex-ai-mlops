@@ -21,10 +21,12 @@ Setup a custom pixel tracker for the repository with data privacy for users.  On
 ### Creation And Setup
 
 - [prod-tracking-pixel.ipynb](./prod-tracking-pixel.ipynb)
-    - Creates Cloud funtion to send tracking pixel
-        - Validates that it is from a document in this repository
-        - send the document info and timestamp to another cloud function ->
+    - Creates Cloud funtion to respond with tracking pixel
+        - Validates that request is from a document in this repository
+        - send the document info and timestamp to a pubsub topic
     - Creates Cloud function that writes event to BigQuery table
+        - triggered by pubsub topic
+        - write received data to a BigQuery table that collect page view events
 - upcoming: migrate-ga4-data-to-pixel-data.ipynb
 - upcoming: pixel-reporting.ipynb
 - upcoming: pixel-forecasting.ipynb
@@ -38,8 +40,8 @@ The `https` links for pixel retrieval are added to documents with the header cre
 List/Remove Pixel Tracking In Files (`.md` and `.ipynb`):
 - [pixel_list.py](./pixel_list.py)
     - Use this script to list all the files with tracking in this repository
-    - These are the files that will be updated by the `ga4_remove.py` script
+    - These are the files that will be updated by the `pixel_remove.py` script
     - Run this script first as a test (recommended)
 - [pixel_remove.py](./pixel_remove.py)
     - Use this script to remove all the tracking in this repository for a local clone
-    - run the script with `python ga4_remove.py` in this folder location
+    - run the script with `python pixel_remove.py` at this folder location within the repository
