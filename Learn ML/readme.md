@@ -19,6 +19,7 @@ I often get asked "How do I learn about ML?".  There are lots of good answers.  
 2. Strong Introduction to Fundamentals with Andrew Ng offered by Stanford on Coursera.  [Machine Learning](https://www.coursera.org/learn/machine-learning)
 3. Pull it all together with excellent walk-throughs of the core concepts from the [Youtube channel 3Blue1Brown](https://www.youtube.com/c/3blue1brown)
    1. [Neural Networks](https://www.youtube.com/playlist?list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi) playlist
+       - Contains the BRILLIANT [Visualizing Attention](https://youtu.be/eMlx5fFNoYc?si=-T6OnhBA_IeF7vaw) video
    2. [Essence of linear algebra](https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab) playlist
    3. [Essence of calculus](https://www.youtube.com/playlist?list=PLZHQObOWTQDMsr9K-rj53DwVRMYO3t5Yr) playlist
 
@@ -26,12 +27,10 @@ This is a good review order: 1, 3.1, 3.2, 3.3, 2, 3.1 (again!).  When done with 
 
 A good next step is to use the [curriculums curated by the Tensorflow community](https://www.tensorflow.org/resources/learn-ml).  These are great at balancing coding, math & stats, theory, and project based learning.
 
-## My Attempt!
-I like to teach ML with a bit of statistics.  Here I will uncover the journey through statistics and into machine learning using an essential technique: regression.
-
-Plan: migrate and expand content at [this repository](https://github.com/statmike/Logistic-Regression).
+Other Great Content:
+- TensorFlow Core [Tutorials](https://www.tensorflow.org/tutorials)
 
 ## Certification
 
 The official Google Cloud [Professional Machine Learning Engineer](https://cloud.google.com/certification/machine-learning-engineer) certification:
-- The [Learning Path](https://cloud.google.com/training/machinelearning-ai#data-scientist-learning-path) contains a series of courses and labs that are excellent
+- The [Machine Learning Engineer Learning Path](https://www.cloudskillsboost.google/paths/17) contains a series of courses and labs that are excellent
