@@ -25,7 +25,11 @@ link to blog(s)
 - [BQML Model Monitoring Tutorial](./bqml-model-monitoring-tutorial.ipynb)
 
 ## Automation
-
+- BigQuery Scheduled Queries - in tutorial
+- Dataform
+- Workflows
+- Cloud Composer
+- Vertex AI Pipelines (KFP)
 
 ## Monitor Predictions with Vertex AI Prediction Online Endpoints
 
