@@ -34,3 +34,21 @@ link to blog
 ## Monitor Predictions with Vertex AI Prediction Online Endpoints
 - included in tutorial
 
+
+
+---
+TODO for Tutorial:
+- [ ] Write Overview for this notebook that matches the blog post
+- [ ] link to blog post
+    
+Questions/Choices:
+- this has moved from tutorial to full workshop - ok? or think about splitting up into segments?
+- removed transform only model - i did add a section showing how to monitor transformed features with ML.TRANSFORM
+- removed history table for feature management - another notebook based workflow could focus on this data architecture with a focus in ongoing serving
+---
+
+---
+TODO for Introduction:
+- [ ] Write Overview for this notebook that matches the blog post
+- [ ] link to blog post
+---
