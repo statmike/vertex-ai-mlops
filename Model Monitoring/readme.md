@@ -14,7 +14,7 @@
 
 Overview here
 
-link to blog(s)
+link to blog
 
 ## Introduction
 
@@ -32,4 +32,5 @@ link to blog(s)
 - Vertex AI Pipelines (KFP)
 
 ## Monitor Predictions with Vertex AI Prediction Online Endpoints
+- included in tutorial
 
