@@ -23,7 +23,11 @@ A core part of MLOps, for going from model to MODELS, is feature management.  [V
 
 ## Vertex AI Feature Store
 
-Workflow notebook: [Feature Store](./Feature%20Store.ipynb)
+Get to know feature store with this workflow notebook:
+- [Feature Store](./Feature%20Store.ipynb) workflow
+
+Embeddings are condensed representation of data, usually in the form of an array (vector) of floats.  These are **features** and can be used directly in feature store. They can be retrieved as features for an entity like any other feature.  They can also be directly used in the online store for finding vector matches.  Search by entity and find neighbor entities or search by query embedding to find matching entities.  The indexing can be setup to be aNN or brute force and filter columns as well crowding can be configured.  Learn more and use this hand-on with:
+- [Feature Store - Embeddings](./Feature%20Store%20-%20Embeddings.ipynb) workflow
 
 [Documentation](https://cloud.google.com/vertex-ai/docs/featurestore/latest/overview)
 
