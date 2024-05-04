@@ -15,7 +15,7 @@
 Let's talk about MLOps!
 
 Before we get started, check these resources out:
-- The best overview ever written: https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines
+- The best overview ever written (#opinion): https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines
     - Even if you don't use TFX, this captures the whole goal!
 - MLOps Overview: https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning
 - MLOps on Vertex AI: https://cloud.google.com/vertex-ai/docs/start/introduction-mlops
@@ -54,7 +54,7 @@ There are frameworks for specifying these steps like [Kubeflow Pipelines (KFP)](
 ---
 ### Components
 
-The steps of the workflow, an ML task, are called components. Getting logic and code into components can consists of using prebuilt components or constructing custom components:
+The steps of the workflow, an ML task, are run with components. Getting logic and code into components can consists of using prebuilt components or constructing custom components:
 - KFP
     - Pre-Built:
         - [Google Cloud Pipeline Components](https://cloud.google.com/vertex-ai/docs/pipelines/gcpc-list)
@@ -90,6 +90,11 @@ Component inputs and outputs can take two forms: parameters and artifacts.
     - [Google Cloud Artifact Types](https://google-cloud-pipeline-components.readthedocs.io/en/google-cloud-pipeline-components-2.0.0/api/artifact_types.html)
 - [TFX Artifacts](https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines#artifact)
 
+**Secure Parameters:** Passing credentials for an API or service can expose them.  If these credentials are hardcoded then they can be discovered from the source code and are harder to update.  A great solution is using [Secret Manager](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#secretmanager-quickstart-console) to host credentials and then pass the name of the credential as a parameter.  The only modification needed to a component is to use a Python client to retrieve the credentials at run time.  Check out how easy this is to implement with the following notebook based example workflow:
+- [Vertex AI Pipelines - Secret Manager](./Vertex%20AI%20Pipelines%20-%20Secret%20Manager.ipynb)
+    - Setup Secret Manager and use the console and Python Client to store secrets
+    - Retrieve secrets using the Python Client
+    - An example pipeline that retrieves credentails from Secret Manager
 ---
 ### Control Flow For Pipelines
 
@@ -118,9 +123,12 @@ This can have many helpful applications, including:
 - Check for new training records and commence with retraining if conditions are met - like records that increase a class by 10%, atleast 1000 new records, ....
 
 ---
-### Triggering Pipelines
-
+### Storing And Reusing Pipelines
 
 
 ---
+### Triggering Pipelines
 
+
+---
+## Experiments
