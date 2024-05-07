@@ -20,6 +20,24 @@ Before we get started, check these resources out:
 - MLOps Overview: https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning
 - MLOps on Vertex AI: https://cloud.google.com/vertex-ai/docs/start/introduction-mlops
 
+**TL;DR**
+
+This is a series of notebook based workflows that teach all the ways to use pipelinnes and experiment withing Vertex AI. The suggested order and description/reason is:
+
+|Notebook Workflow|Description|
+|---|---|
+|[Vertex AI Pipelines - Components](./Vertex%20AI%20Pipelines%20-%20Components.ipynb)|An introduction to all the ways to create pipeline components|
+|[Vertex AI Pipelines - IO](./Vertex%20AI%20Pipelines%20-%20IO.ipynb)|An overview of all the type of inputs and outputs for pipeline components|
+|[Vertex AI Pipelines - Control](./Vertex%20AI%20Pipelines%20-%20Control.ipynb)|An overview of controlling the flow of exectution for pipelines|
+|[Vertex AI Pipelines - Secret Manager](./Vertex%20AI%20Pipelines%20-%20Secret%20Manager.ipynb)|How to pass sensitive information to pipelines and components|
+|[Vertex AI Pipelines - Scheduling](./Vertex%20AI%20Pipelines%20-%20Scheduling.ipynb)|How to schedule pipeline execution|
+||How to manage pipelines and components|
+||Resusing pipelines and components across teams|
+||Use a pipeline from the Vertex AI Console without code|
+||Understanding and using Vertex AI Experiments|
+
+To discover these notebooks as part of an introduction to MLOps read on below!
+
 ---
 
 ## ML Code
@@ -89,6 +107,9 @@ Component inputs and outputs can take two forms: parameters and artifacts.
     - provided [artifact types](https://www.kubeflow.org/docs/components/pipelines/v2/data-types/artifacts/#artifact-types)
     - [Google Cloud Artifact Types](https://google-cloud-pipeline-components.readthedocs.io/en/google-cloud-pipeline-components-2.0.0/api/artifact_types.html)
 - [TFX Artifacts](https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines#artifact)
+
+See all the types of parameters and artifacts in action with the following notebook based workflow:
+- [Vertex AI Pipelines - IO](./Vertex%20AI%20Pipelines%20-%20IO.ipynb)
 
 **Secure Parameters:** Passing credentials for an API or service can expose them.  If these credentials are hardcoded then they can be discovered from the source code and are harder to update.  A great solution is using [Secret Manager](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#secretmanager-quickstart-console) to host credentials and then pass the name of the credential as a parameter.  The only modification needed to a component is to use a Python client to retrieve the credentials at run time.  Check out how easy this is to implement with the following notebook based example workflow:
 - [Vertex AI Pipelines - Secret Manager](./Vertex%20AI%20Pipelines%20-%20Secret%20Manager.ipynb)
