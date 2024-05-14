@@ -70,6 +70,12 @@ The workflow of ML code does many steps in sequence.  Some of the steps involve 
 There are frameworks for specifying these steps like [Kubeflow Pipelines (KFP)](https://www.kubeflow.org/docs/components/pipelines/v2/introduction/) and [TensorFlow Extended (TFX)](https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines).  [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction) is a managed service that can execute both of these.
 - The [history of Kubeflow](https://www.kubeflow.org/docs/started/introduction/#history) is creating a simplified way to running TensorFlow Extended jobs on Kubernetes.
 
+Get a quick start with pipelines by reviewing this workflow for an example using both the Vertex AI Console and SDK.
+- [Vertex AI Pipelines - Introduction](./Vertex%20AI%20Pipelines%20-%20Introduction.ipynb)
+    - **Build** a simple pipeline with IO parameters and artifacts as well as conditional execution
+    - **Review** all parts (runs, tasks, parameters, artifacts, metadata) with the Vertex AI Console
+    - **Retrieve** all parts (runs, tasks, parameters, artifacts, metadata) with the Vertex AI SDK
+
 ---
 ### Components
 
@@ -93,6 +99,11 @@ The steps of the workflow, an ML task, are run with components. Getting logic an
 
 For an overview of components from custom to pre-built, check out this notebook:
 - [Vertex AI Pipelines - Components](./Vertex%20AI%20Pipelines%20-%20Components.ipynb)
+    - **Pre-Built Components:** Easy access to many GCP services
+    - **Lightweight Python Components:** Build a component from a Python function
+    - **Containerized Python Components:** Build an entire Python enviornment as a component
+    - **Container Components:** Any container as a component
+    - **Importer Components:** Quickly import artifacts
 
 ---
 ### Component IO
@@ -111,12 +122,14 @@ Component inputs and outputs can take two forms: parameters and artifacts.
 
 See all the types of parameters and artifacts in action with the following notebook based workflow:
 - [Vertex AI Pipelines - IO](./Vertex%20AI%20Pipelines%20-%20IO.ipynb)
+    - **parameters:** input, multi-input, output, multi-output
+    - **artifacts:** input, output, Vertex AI ML Metadata Lineage
 
 **Secure Parameters:** Passing credentials for an API or service can expose them.  If these credentials are hardcoded then they can be discovered from the source code and are harder to update.  A great solution is using [Secret Manager](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#secretmanager-quickstart-console) to host credentials and then pass the name of the credential as a parameter.  The only modification needed to a component is to use a Python client to retrieve the credentials at run time.  Check out how easy this is to implement with the following notebook based example workflow:
 - [Vertex AI Pipelines - Secret Manager](./Vertex%20AI%20Pipelines%20-%20Secret%20Manager.ipynb)
-    - Setup Secret Manager and use the console and Python Client to store secrets
-    - Retrieve secrets using the Python Client
-    - An example pipeline that retrieves credentails from Secret Manager
+    - **Setup** Secret Manager and use the console and Python Client to store secrets
+    - **Retrieve** secrets using the Python Client
+    - An **example** pipeline that retrieves credentails from Secret Manager
 ---
 ### Control Flow For Pipelines
 
@@ -138,6 +151,9 @@ The following notebook shows many examples of implement controls in KFP while ru
 Pipelines can be run on a schedule directly in Vertex AI without the need to setup a scheduler and trigger (like PubSub).  Here is an example of a pipeline run followed by a schedule that repeats the pipeline at a specified interval the number of iterations set as the maximum on the schedule:
 
 - [Vertex AI Pipelines - Scheduling](./Vertex%20AI%20Pipelines%20-%20Scheduling.ipynb)
+    - **Create**
+    - **Retrieve**
+    - **Manage**
 
 This can have many helpful applications, including:
 - Running Batch predictions, evaluations, monitoring each day or week
