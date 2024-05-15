@@ -105,6 +105,22 @@ For an overview of components from custom to pre-built, check out this notebook:
     - **Container Components:** Any container as a component
     - **Importer Components:** Quickly import artifacts
 
+**Compute Resources** For Components:
+
+Running pipleines on Vertex AI Pipelines runs each component as a Vertex AI Training `CustomJob`.  This defaults to a vm based on `e2-standard-4` (4 core CPU, 16GB memory).  This can be modified at the task level of pipelines to choose different computing resources, including GPUs.  For example:
+
+```Python
+@kfp.dsl.pipeline()
+def pipeline():
+    task = component().set_cpu_limit(C).set_memory_limit(M).add_node_selector_constraint(A).set_accelerator_limit(G).
+```
+Where the inputs are defining [machine configuration for the step](https://cloud.google.com/vertex-ai/docs/pipelines/machine-types):
+- C = a string representing the number of CPUs (up to 96).
+- M = a string represent the memory limit.  An integer follwed by K, M, or G (up to 624GB).
+- A = a string representing the desired GPU  or TPU type
+- G = an integer representing the multiple of A desired.
+
+
 ---
 ### Component IO
 
