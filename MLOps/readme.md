@@ -22,7 +22,7 @@ Before we get started, check these resources out:
 
 **TL;DR**
 
-This is a series of notebook based workflows that teach all the ways to use pipelinnes and experiment withing Vertex AI. The suggested order and description/reason is:
+This is a series of notebook based workflows that teach all the ways to use pipelines and experiments within Vertex AI. The suggested order and description/reason is:
 
 |Notebook Workflow|Description|
 |---|---|
