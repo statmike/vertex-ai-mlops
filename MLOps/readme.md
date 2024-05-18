@@ -203,6 +203,7 @@ Workflow:
 ---
 ### Topics In Progress
 
+- [ ] Importer component with Metadata lookup example
 - [ ] Triggering Pipelines
 - [ ] Graphic for code > container > component > pipeline with entrypoints
 - [ ] docstring for components and pipelines
