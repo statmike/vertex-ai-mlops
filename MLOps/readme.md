@@ -32,9 +32,7 @@ This is a series of notebook based workflows that teach all the ways to use pipe
 |[Vertex AI Pipelines - Control](./Vertex%20AI%20Pipelines%20-%20Control.ipynb)|An overview of controlling the flow of exectution for pipelines|
 |[Vertex AI Pipelines - Secret Manager](./Vertex%20AI%20Pipelines%20-%20Secret%20Manager.ipynb)|How to pass sensitive information to pipelines and components|
 |[Vertex AI Pipelines - Scheduling](./Vertex%20AI%20Pipelines%20-%20Scheduling.ipynb)|How to schedule pipeline execution|
-||Managing pipelines and components|
-||Resusing pipelines and components across teams|
-||Use a pipeline from the Vertex AI Console without code|
+||Managing, Reusing, and Sharing pipelines and components|
 ||Understanding and using Vertex AI Experiments|
 
 To discover these notebooks as part of an introduction to MLOps read on below!
