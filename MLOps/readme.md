@@ -32,8 +32,8 @@ This is a series of notebook based workflows that teach all the ways to use pipe
 |[Vertex AI Pipelines - Control](./Vertex%20AI%20Pipelines%20-%20Control.ipynb)|An overview of controlling the flow of exectution for pipelines|
 |[Vertex AI Pipelines - Secret Manager](./Vertex%20AI%20Pipelines%20-%20Secret%20Manager.ipynb)|How to pass sensitive information to pipelines and components|
 |[Vertex AI Pipelines - Scheduling](./Vertex%20AI%20Pipelines%20-%20Scheduling.ipynb)|How to schedule pipeline execution|
-||Managing, Reusing, and Sharing pipelines and components|
-||Understanding and using Vertex AI Experiments|
+|[Vertex AI Pipelines - Management](./Vertex%20AI%20Pipelines%20-%20Management.ipynb)|Managing, Reusing, and Storing pipelines and components|
+|[Vertex AI Experiments](./Vertex%20AI%20Experiments.ipynb)|Understanding and using Vertex AI Experiments|
 
 To discover these notebooks as part of an introduction to MLOps read on below!
 
@@ -58,7 +58,7 @@ This is where it all begins.  Hands find keyboard and start writing instructions
 - repeat
 - a MILLION other things!
 
-This starts with a user in a tool of choice.  An IDE for developing this code.  Sometimes its a controlled experience in a tool that authors code for the user (high level).  If you are reading this then it is likely an IDE where you are the author of the code like OSS-Code (VSCode), JupyterLab, Colab, PyCharm amongst the many choices.
+This starts with a user in a tool of choice.  An IDE for developing this code.  Sometimes it's a controlled experience in a tool that authors code for the user (high level).  If you are reading this then it is likely an IDE where you are the author of the code like OSS-Code (VSCode), JupyterLab, Colab, PyCharm amongst the many choices.
 
 ---
 ## Pipelines
@@ -175,12 +175,40 @@ This can have many helpful applications, including:
 - Check for new training records and commence with retraining if conditions are met - like records that increase a class by 10%, atleast 1000 new records, ....
 
 ---
-### Storing And Reusing Pipelines
+### Managing Pipelines: Storing And Reusing Pipelines & Components
 
+As seen above, pipelines are made up of steps which are executions of components.  These components are made up of code, container, and instructions (inputs and outputs).  
 
----
-### Triggering Pipelines
+**Components:**
 
+For each type of component, `kfp` compiles the component into YAML as part of the pipeline.  You can also directly compile individual components.  This makes the YAML for a component a source that can be managed.  And using this in additional pipelines is made possible with `kfp.components.load_component_from_*()` which has version for files, urls, text (strings).
+
+**Pipelines:**
+
+Pipelines are compiled into YAML files that include component specifications.  Managine these pipelines files as artifacts is made easy with the combination of:
+- Kubeflow Pipelines SDK and the included [`kfp.registry.RegistryClient`](https://kubeflow-pipelines.readthedocs.io/en/latest/source/registry.html)
+- Google Cloud [Artifact Registry](https://cloud.google.com/artifact-registry/docs/overview) with native format for [Kubeflow pipeline templates](https://cloud.google.com/artifact-registry/docs/kfp)
+- [Integration with Vertex AI](https://cloud.google.com/vertex-ai/docs/pipelines/create-pipeline-template#kubeflow-pipelines-sdk-client) for creating, uploading and using pipeline templates
+
+Work directly with these concepts in the following notebook based workflow:
+- [Vertex AI Pipelines - Management](./Vertex%20AI%20Pipelines%20-%20Management.ipynb)
 
 ---
 ## Experiments
+Describe.
+
+Workflow:
+- [Vertex AI Experiments](./Vertex%20AI%20Experiments.ipynb)
+
+---
+### Topics In Progress
+
+- [ ] Triggering Pipelines
+- [ ] Graphic for code > container > component > pipeline with entrypoints
+- [ ] docstring for components and pipelines
+- [ ] caching with Vertex AI Pipelines
+- [ ] local execution for testing
+- [ ] Link to surrounding topics
+    - [feature architectures](../Feature%20Store/Feature%20Focused%20Data%20Architecture.ipynb)
+    - [feature store](../Feature%20Store/readme.md)
+    - [model monitoring](../Model%20Monitoring/readme.md)
