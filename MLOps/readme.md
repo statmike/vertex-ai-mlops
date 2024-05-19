@@ -118,7 +118,6 @@ Where the inputs are defining [machine configuration for the step](https://cloud
 - A = a string representing the desired GPU  or TPU type
 - G = an integer representing the multiple of A desired.
 
-
 ---
 ### Component IO
 
@@ -209,6 +208,7 @@ Workflow:
 - [ ] docstring for components and pipelines
 - [ ] caching with Vertex AI Pipelines
 - [ ] local execution for testing
+- [ ] deeper metadata overview
 - [ ] Link to surrounding topics
     - [feature architectures](../Feature%20Store/Feature%20Focused%20Data%20Architecture.ipynb)
     - [feature store](../Feature%20Store/readme.md)
