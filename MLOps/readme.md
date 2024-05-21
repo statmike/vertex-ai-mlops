@@ -142,7 +142,8 @@ See all the types of parameters and artifacts in action with the following noteb
 - [Vertex AI Pipelines - Secret Manager](./Vertex%20AI%20Pipelines%20-%20Secret%20Manager.ipynb)
     - **Setup** Secret Manager and use the console and Python Client to store secrets
     - **Retrieve** secrets using the Python Client
-    - An **example** pipeline that retrieves credentails from Secret Manager
+    - **example** pipeline that retrieves credentials from Secret Manager
+
 ---
 ### Control Flow For Pipelines
 
@@ -194,13 +195,34 @@ Work directly with these concepts in the following notebook based workflow:
 
 ---
 ## Experiments
-Describe.
+The work of ML is inherantly iterative and experimental, involving trying different approaches and comparing results to make decisions towards future iteration.  A key part of moving from ad-hoc coding to fully operationalize ML training is tracking inputs, outputs, and other parameters.  Keeping track of information within experiments is the goal of [Vertex AI Experiments](https://cloud.google.com/vertex-ai/docs/experiments/intro-vertex-ai-experiments#experiments-experiment-runs). This hosted service lets you [log information](https://cloud.google.com/vertex-ai/docs/experiments/log-data) from each run, and even has [autologging](https://cloud.google.com/vertex-ai/docs/experiments/autolog-data) for common ML Frameworks.
 
-Workflow:
+The architecture of experiments is:
+- The Vertex AI Experiments **Service** (setup by default)
+    - An **Experiment**: Create, Delete
+        - **Runs** of the Experiment: Start, End, Resume, Delete, Manage
+            - Use Autologging for common frameworks (Keras, LightGBM, Pytorch Lightning, Scikit-learn, XGBoost, and more)
+            - Directed logging for:
+                - parameters (learning rate, epochs, ...)
+                - metrics (accuracy, precision, ...)
+                - classification metrics (confusion matrix, ROC curve data, ...)
+                - time series metrics (metrics for each step(epoch) of training)
+
+The logging is further enhanced with connectivity to other Vertex AI services:
+- Integrated with Vertex AI TensorBoard instance for backing time series metrics
+- Model Logging
+    - Save, Track, Load Models
+    - Select models to register to Vertex AI Model Registry
+- Use Executions and Artifacts to assign stages to your workflow with input and output Artifacts
+- Include Pipeline runs in experiments or experiment and have all pipeline parameters and Artifacts directly inferred
+- Logging within Training Jobs
+- Retrieve data for a run and compare data across runs using the Vertex AI SDK or the Vertex AI Console
+
+Work with experiments and explore all of these features in the following notebook based workflow:
 - [Vertex AI Experiments](./Vertex%20AI%20Experiments.ipynb)
 
 ---
-### Topics In Progress
+## Topics In Progress
 
 - [ ] Importer component with Metadata lookup example
 - [ ] Triggering Pipelines
