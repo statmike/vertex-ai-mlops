@@ -51,6 +51,10 @@ At the core, forecasting is prediction where the target(s) is/are future time po
 - Using a Generalized Additive Model approach like [Prophet](https://github.com/facebook/prophet)
     - this detects change points
 
+**Pre-Trained Time Series Foundation Models**
+
+A new class of forecasting models that are pretrained and used for forecasting as inference (similar in concept to LLMs for text).  The models are already trained and take time series as inputs and generate forecast horizons.  
+
 **Multi-variate Forecasting**
 
 All of these are local forecast, meaning each time series is fit independently.  Theese can be expanded to incorporate more information using covariates with multi-variate forecasting.  Additional information that is related to the measurement over time can be helpful to understand the changes that occur over time.  The covariates could be information that could be know ahead of time like discounts, holiday periods, promotions and advertising.  They could also be information not know until they acctually occur like weather, traffic, and interruptions to business.  
@@ -94,6 +98,8 @@ This list is in the suggested order of review for anyone getting an overview and
     - 3 - [BQML Multivariate Forecasting with ARIMA+ XREG](./BQML%20Multivariate%20Forecasting%20with%20ARIMA+%20XREG.ipynb)
     - 4 - [BQML Regression Based Forecasting](./BQML%20Regression%20Based%20Forecasting.ipynb)
     - [Notes - BQML ARIMA+ Handling of Granularity and Missing Data](./Notes%20-%20BQML%20ARIMA%2B%20Handling%20of%20Granularity%20and%20Missing%20Data.ipynb)
+- Pre-trained Forecasting Models: Google Research Time Series Foundation Model (TimesFM)
+    - [TimesFM - Time Series Foundation Model](./TimesFM%20-%20Time%20Series%20Foundation%20Model.ipynb)
 - Vertex AI AutoML: Global Forecasting for univariate or multi-variate including hierarchical forecasting
     - 5 - [Vertex AI AutoML Forecasting - GCP Console (no code)](./Vertex%20AI%20AutoML%20Forecasting%20-%20GCP%20Console%20(no%20code).ipynb)
     - 6 - [Vertex AI AutoML Forecasting - Python client](./Vertex%20AI%20AutoML%20Forecasting%20-%20Python%20client.ipynb)
