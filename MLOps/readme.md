@@ -58,7 +58,34 @@ This is where it all begins.  Hands find keyboard and start writing instructions
 - repeat
 - a MILLION other things!
 
-This starts with a user in a tool of choice.  An IDE for developing this code.  Sometimes it's a controlled experience in a tool that authors code for the user (high level).  If you are reading this then it is likely an IDE where you are the author of the code like OSS-Code (VSCode), JupyterLab, Colab, PyCharm amongst the many choices.
+This starts with a user in a tool of choice.  An IDE for developing this code.  Sometimes it's a controlled experience in a tool that authors code for the user (high level).  If you are reading this then it is likely an IDE where you are the author of the code like OSS-Code, VSCode, JupyterLab, Colab, PyCharm amongst the many choices.
+
+### More Than A Model
+
+The first takeaway is that this is more than just a model.  At the core, a model is the product of data, an architecture, and hyperparameters.  The system around this makes up the complete training pipeline. But Why invest in the extra steps of pipelines?  Even for a single model the benefits of automation, monitoring, and governing the workflow are great.  But ML maturity leads to more models, more version, and more everything!
+
+### From Model To Models
+
+As the workflow goes from one model to many models the practice of MLOps prevents also needing to scale the effort to support an maintain an ML environment.  Some common example of this scaling along with the benefits of MLOps are:
+
+|Example|Description|MLOps Implication|
+|---|---|---|
+|Retraining|The periodic retraining of a model with new or expanded data to maintain performance.|Needs pipelines for automation, versioning, monitoring, and governening.|
+|Multiple Datasets|Training the same architecture and hyperparameters on different datasets (regions, customer segments, etc.) as specialized models.|Need efficient data management, model deployment, and monitoring across environments.|
+|Hyperparameter Tuning|Experimenting with hyperparameter configurations to optimize model performance (e.g., grid search, random search, Bayesian optimization).|Need to track experiment parameters, automation, scaling of training compute, compare model versions.|
+|Multiple Architectures|Training a variety of model architectures (e.g., decision treees, neural networks, regression) on the same data and event combining predictions into stacked or ensemble models.|Needs efficient training, seleection, and deployment strategies to leverage the different architectures and model types.|
+|Feature Engineering|Transforming and creating new features from raw data to improve model performance.|Needs for feature store to centrally manage data, track transformations, and ensure consistency across models and between traininng and serving.|
+|Transfer Learning|Leveraging a trained model to accelerate training and improve performance on a new task.|Managing models and adapting to new taskswith seemless integration in to workflows.|
+|Serving Strategies|Deploying models to serve preditions in different ways: batch, online, hybrid.|Requires a flexible infrastructure, model versioning, monitoring and seamless scaling, reliability, and responsiveness.|
+|Model Optimization|Reducing model size and computational complexity through quantization, pruning, and distillation.|Involves evaluatinng trade-iffs between model performance and resource constraints, automation, and evaluation.|
+|Model Proliferation|The growth of new models for new and various tasks, driven by business needs, technology advancements, and data availability.|Increases demand for scalable infrastructure, efficient model management, and robust governance to handle growing complexity of deployment and maintenance.|
+|Continous Monitoring|Understanding each features distribution over time to get an early signal of change from the training data and/or over time as a precursor to model performance drops.|Need for robust automation for detection and notifications and ultimately automated retraining and subsequent deployment so that models adapt to real-world changes.|
+|Explainability|The ability to interpret why a model makes specific predictions.|Incorporation of explainability techniques into model development and deployment broadly to identify and mitigate bias and error.|
+|Addressing Bias|Identify and address biases in traininng data and training algorithms that lead to unfair predictions.|The need for automating auditing of training data for biases, implementing fairness metrics during evaluation, and implementing mitigation techniques (reweighing, adversarial debiasing, etc.) during training and deployment.|
+|Security|Protect models and data from unauthorized access, and malicious attacks.|The need for a controled operating environment with encryption, access control, access logging, vulnerability scanning, anomaly detection, and code scanningn and upgrading to address security vulnerabilities.|
+|Cost Optimization|Managed the computation, thus financial resources required to train, deploy, and maintain ML models.|Monitor resource utlization for over-provisioned compute and bottlenecks.  Optimize serving architectues for speed with cohosting and auto-scalinng techniques.|
+
+Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to this a bringing the entire workflow together into **pipelines**.  
 
 ---
 ## Pipelines
@@ -121,7 +148,7 @@ Where the inputs are defining [machine configuration for the step](https://cloud
 ---
 ### Component IO
 
-Component inputs and outputs can take two forms: parameters and artifacts.  
+Getting information into code and results out is the IO part of components.  These inputs and outputs are particularly important in MLOps as they are the artifacts that define an ML system: datasets, models, metrics, and more.  Pipelines tools like TFX and KFP go a step further and automatically track the inputs and outpus and even provide lineage information for them.  Component inputs and outputs can take two forms: parameters and artifacts.  
 
 **Parameters** are Python objects like `str`, `int`, `float`, `bool`, `list`, `dict` objects that are defined as inputs to pipelines and components. Components can also return parameters for input into subsequent components. Paramters are excellent for changing the behavior of a pipeline/component through inputs rather than rewriting code.
 - [KFP Parameters](https://www.kubeflow.org/docs/components/pipelines/v2/data-types/parameters/)
