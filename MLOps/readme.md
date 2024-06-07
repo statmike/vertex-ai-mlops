@@ -258,14 +258,31 @@ Work with experiments and explore all of these features in the following noteboo
 
 ---
 ## Topics In Progress
+This readme is desigend to become the outline for a workshop on MLOps. It will also connect to surrounding content on feature stores, model monitoring, and developement tools for ML.
 
+The following is an active todo list for content:
+- [ ] Fix HTML and MD artifacts to display in console
+- [ ] Create Graphics for readme
+- [ ] Screenshots embedded in notebooks only displaying in IDEs, not GitHub or Colab
+- [ ] Notifications: Vertex provided components, and custom (conditional notifications)
+- [ ] Consolidate task configurations: see pipeline basis language in kfp docs
+- [ ] Finish Experiment workflow, include training jobs
+- [ ] Training Job brought into this content - 6 methods, stand-alone, and from pipelines
+- [ ] cache tasks, local testing, Vertex specific
+- [ ] Test kfp artifacts with >2 tags
+- [ ] kfp artifacts update to pythonic approach throughout
+- [ ] Vertex ML Metadata overview
+- [ ] Governance overview (pull from all workflows in complete story)
+- [ ] Create a series of "Patterns"
+    - [ ] Straight Line: data > train > model > deploy > test
+    - [ ] many data > many train > many model > cohost deploy > test
+    - [ ] custom batch: in component, with endpoint, with triton
+    - [ ] CT example
+    - [ ] MM example
 - [ ] Importer component with Metadata lookup example
-- [ ] Triggering Pipelines
+- [ ] Triggering Pipelines - beyond scheduling
 - [X] Graphic for code > container > component > pipeline with entrypoints
 - [ ] docstring for components and pipelines
-- [ ] caching with Vertex AI Pipelines
-- [ ] local execution for testing
-- [ ] deeper metadata overview
 - [ ] Link to surrounding topics
     - [feature architectures](../Feature%20Store/Feature%20Focused%20Data%20Architecture.ipynb)
     - [feature store](../Feature%20Store/readme.md)
