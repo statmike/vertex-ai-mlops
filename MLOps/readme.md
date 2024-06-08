@@ -120,7 +120,7 @@ An overview:
     <img src="../architectures/notebooks/mlops/readme/pipelines-overview-5-pipeline_task_job.png" width="75%">
 </center><p>
 
-<div id='workflow-1'><table style='text-align:left;vertical-align:middle' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block" bgcolor="#4285F4">
+<div id='workflow-1'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
 
 **Notebook Workflow:**
 
@@ -131,12 +131,6 @@ Get a quick start with pipelines by reviewing this workflow for an example using
     - **Retrieve** all parts (runs, tasks, parameters, artifacts, metadata) with the Vertex AI SDK
 
 </td></tr></table></div>
-
-Get a quick start with pipelines by reviewing this workflow for an example using both the Vertex AI Console and SDK.
-- [Vertex AI Pipelines - Introduction](./Vertex%20AI%20Pipelines%20-%20Introduction.ipynb)
-    - **Build** a simple pipeline with IO parameters and artifacts as well as conditional execution
-    - **Review** all parts (runs, tasks, parameters, artifacts, metadata) with the Vertex AI Console
-    - **Retrieve** all parts (runs, tasks, parameters, artifacts, metadata) with the Vertex AI SDK
 
 ---
 ### Components
@@ -159,6 +153,10 @@ The steps of the workflow, an ML task, are run with components. Getting logic an
         - [Container-based components](https://www.tensorflow.org/tfx/guide/container_component) - a component from a contaienr
         - [Fully custom components](https://www.tensorflow.org/tfx/guide/custom_component) - reuse and extend standard components.
 
+<div id='workflow-2'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+
+**Notebook Workflow:**
+
 For an overview of components from custom to pre-built, check out this notebook:
 - [Vertex AI Pipelines - Components](./Vertex%20AI%20Pipelines%20-%20Components.ipynb)
     - **Pre-Built Components:** Easy access to many GCP services
@@ -166,6 +164,8 @@ For an overview of components from custom to pre-built, check out this notebook:
     - **Containerized Python Components:** Build an entire Python enviornment as a component
     - **Container Components:** Any container as a component
     - **Importer Components:** Quickly import artifacts
+
+</td></tr></table></div>
 
 **Compute Resources** For Components:
 
@@ -197,21 +197,39 @@ Getting information into code and results out is the IO part of components.  The
     - [Google Cloud Artifact Types](https://google-cloud-pipeline-components.readthedocs.io/en/google-cloud-pipeline-components-2.0.0/api/artifact_types.html)
 - [TFX Artifacts](https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines#artifact)
 
+<div id='workflow-3'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+
+**Notebook Workflow:**
+
 See all the types of parameters and artifacts in action with the following notebook based workflow:
 - [Vertex AI Pipelines - IO](./Vertex%20AI%20Pipelines%20-%20IO.ipynb)
     - **parameters:** input, multi-input, output, multi-output
     - **artifacts:** input, output, Vertex AI ML Metadata Lineage
 
-**Secure Parameters:** Passing credentials for an API or service can expose them.  If these credentials are hardcoded then they can be discovered from the source code and are harder to update.  A great solution is using [Secret Manager](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#secretmanager-quickstart-console) to host credentials and then pass the name of the credential as a parameter.  The only modification needed to a component is to use a Python client to retrieve the credentials at run time.  Check out how easy this is to implement with the following notebook based example workflow:
+</td></tr></table></div>
+
+**Secure Parameters:** Passing credentials for an API or service can expose them.  If these credentials are hardcoded then they can be discovered from the source code and are harder to update.  A great solution is using [Secret Manager](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#secretmanager-quickstart-console) to host credentials and then pass the name of the credential as a parameter.  The only modification needed to a component is to use a Python client to retrieve the credentials at run time.  
+
+<div id='workflow-5'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+
+**Notebook Workflow:**
+
+Check out how easy secret manager isis to implement with the following notebook based example workflow:
 - [Vertex AI Pipelines - Secret Manager](./Vertex%20AI%20Pipelines%20-%20Secret%20Manager.ipynb)
     - **Setup** Secret Manager and use the console and Python Client to store secrets
     - **Retrieve** secrets using the Python Client
     - **example** pipeline that retrieves credentials from Secret Manager
 
+</td></tr></table></div>
+
 ---
 ### Control Flow For Pipelines
 
 As the task of an ML pipeline run they form a graph.  The outputs of upstream components become the inputs of downstram components.  Both TFX and KFP automatically use these connection to create a DAG of execution.  When logic needs to be specified in the pipeline flow of execution the use of control structures is necessary.  
+
+<div id='workflow-4'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+
+**Notebook Workflow:**
 
 The following notebook shows many examples of implement controls in KFP while running on Vertex AI Pipelines:
 - [Vertex AI Pipelines - Control](./Vertex%20AI%20Pipelines%20-%20Control.ipynb)
@@ -223,15 +241,25 @@ The following notebook shows many examples of implement controls in KFP while ru
     - **Exit Handling:** with and without task failures
     - **Error Handling** continue execution even after task failures
 
+</td></tr></table></div>
+
 ---
 ### Scheduling Pipelines
 
-Pipelines can be run on a schedule directly in Vertex AI without the need to setup a scheduler and trigger (like PubSub).  Here is an example of a pipeline run followed by a schedule that repeats the pipeline at a specified interval the number of iterations set as the maximum on the schedule:
+Pipelines can be run on a schedule directly in Vertex AI without the need to setup a scheduler and trigger (like PubSub).  
+
+<div id='workflow-6'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+
+**Notebook Workflow:**
+
+Here is an example of a pipeline run followed by a schedule that repeats the pipeline at a specified interval the number of iterations set as the maximum on the schedule:
 
 - [Vertex AI Pipelines - Scheduling](./Vertex%20AI%20Pipelines%20-%20Scheduling.ipynb)
     - **Create**
     - **Retrieve**
     - **Manage**
+
+</td></tr></table></div>
 
 This can have many helpful applications, including:
 - Running Batch predictions, evaluations, monitoring each day or week
@@ -254,8 +282,14 @@ Pipelines are compiled into YAML files that include component specifications.  M
 - Google Cloud [Artifact Registry](https://cloud.google.com/artifact-registry/docs/overview) with native format for [Kubeflow pipeline templates](https://cloud.google.com/artifact-registry/docs/kfp)
 - [Integration with Vertex AI](https://cloud.google.com/vertex-ai/docs/pipelines/create-pipeline-template#kubeflow-pipelines-sdk-client) for creating, uploading and using pipeline templates
 
+<div id='workflow-7'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+
+**Notebook Workflow:**
+
 Work directly with these concepts in the following notebook based workflow:
 - [Vertex AI Pipelines - Management](./Vertex%20AI%20Pipelines%20-%20Management.ipynb)
+
+</td></tr></table></div>
 
 ---
 ## Experiments
@@ -282,8 +316,14 @@ The logging is further enhanced with connectivity to other Vertex AI services:
 - Logging within Training Jobs
 - Retrieve data for a run and compare data across runs using the Vertex AI SDK or the Vertex AI Console
 
+<div id='workflow-7'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+
+**Notebook Workflow:**
+
 Work with experiments and explore all of these features in the following notebook based workflow:
 - [Vertex AI Experiments](./Vertex%20AI%20Experiments.ipynb)
+
+</td></tr></table></div>
 
 ---
 ## Putting It All Together
