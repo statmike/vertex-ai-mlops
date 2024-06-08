@@ -120,7 +120,7 @@ An overview:
     <img src="../architectures/notebooks/mlops/readme/pipelines-overview-5-pipeline_task_job.png" width="75%">
 </center><p>
 
-<div id='workflow-1'><table style='text-align:left;vertical-align:middle;background-color:#4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+<div id='workflow-1'><table style='text-align:left;vertical-align:middle' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block" bgcolor="#4285F4">
 
 **Notebook Workflow:**
 
