@@ -24,16 +24,16 @@ Before we get started, check these resources out:
 
 This is a series of notebook based workflows that teach all the ways to use pipelines and experiments within Vertex AI. The suggested order and description/reason is:
 
-|Notebook Workflow|Description|
-|---|---|
-|[Vertex AI Pipelines - Introduction](./Vertex%20AI%20Pipelines%20-%20Introduction.ipynb)|Introduction to pipelines with the console and Vertex AI SDK|
-|[Vertex AI Pipelines - Components](./Vertex%20AI%20Pipelines%20-%20Components.ipynb)|An introduction to all the ways to create pipeline components from your code|
-|[Vertex AI Pipelines - IO](./Vertex%20AI%20Pipelines%20-%20IO.ipynb)|An overview of all the type of inputs and outputs for pipeline components|
-|[Vertex AI Pipelines - Control](./Vertex%20AI%20Pipelines%20-%20Control.ipynb)|An overview of controlling the flow of exectution for pipelines|
-|[Vertex AI Pipelines - Secret Manager](./Vertex%20AI%20Pipelines%20-%20Secret%20Manager.ipynb)|How to pass sensitive information to pipelines and components|
-|[Vertex AI Pipelines - Scheduling](./Vertex%20AI%20Pipelines%20-%20Scheduling.ipynb)|How to schedule pipeline execution|
-|[Vertex AI Pipelines - Management](./Vertex%20AI%20Pipelines%20-%20Management.ipynb)|Managing, Reusing, and Storing pipelines and components|
-|[Vertex AI Experiments](./Vertex%20AI%20Experiments.ipynb)|Understanding and using Vertex AI Experiments|
+|Link To Section|Notebook Workflow|Description|
+|---|---|---|
+|[Link To Section](#workflow-1)|[Vertex AI Pipelines - Introduction](./Vertex%20AI%20Pipelines%20-%20Introduction.ipynb)|Introduction to pipelines with the console and Vertex AI SDK|
+|[Link To Section](#workflow-2)|[Vertex AI Pipelines - Components](./Vertex%20AI%20Pipelines%20-%20Components.ipynb)|An introduction to all the ways to create pipeline components from your code|
+|[Link To Section](#workflow-3)|[Vertex AI Pipelines - IO](./Vertex%20AI%20Pipelines%20-%20IO.ipynb)|An overview of all the type of inputs and outputs for pipeline components|
+|[Link To Section](#workflow-4)|[Vertex AI Pipelines - Control](./Vertex%20AI%20Pipelines%20-%20Control.ipynb)|An overview of controlling the flow of exectution for pipelines|
+|[Link To Section](#workflow-5)|[Vertex AI Pipelines - Secret Manager](./Vertex%20AI%20Pipelines%20-%20Secret%20Manager.ipynb)|How to pass sensitive information to pipelines and components|
+|[Link To Section](#workflow-6)|[Vertex AI Pipelines - Scheduling](./Vertex%20AI%20Pipelines%20-%20Scheduling.ipynb)|How to schedule pipeline execution|
+|[Link To Section](#workflow-7)|[Vertex AI Pipelines - Management](./Vertex%20AI%20Pipelines%20-%20Management.ipynb)|Managing, Reusing, and Storing pipelines and components|
+|[Link To Section](#workflow-8)|[Vertex AI Experiments](./Vertex%20AI%20Experiments.ipynb)|Understanding and using Vertex AI Experiments|
 
 To discover these notebooks as part of an introduction to MLOps read on below!
 
@@ -119,6 +119,18 @@ An overview:
 <p><center>
     <img src="../architectures/notebooks/mlops/readme/pipelines-overview-5-pipeline_task_job.png" width="75%">
 </center><p>
+
+<div id='workflow-1'><table style='text-align:left;vertical-align:middle;background-color:#4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+
+**Notebook Workflow:**
+
+Get a quick start with pipelines by reviewing this workflow for an example using both the Vertex AI Console and SDK.
+- [Vertex AI Pipelines - Introduction](./Vertex%20AI%20Pipelines%20-%20Introduction.ipynb)
+    - **Build** a simple pipeline with IO parameters and artifacts as well as conditional execution
+    - **Review** all parts (runs, tasks, parameters, artifacts, metadata) with the Vertex AI Console
+    - **Retrieve** all parts (runs, tasks, parameters, artifacts, metadata) with the Vertex AI SDK
+
+</td></tr></table></div>
 
 Get a quick start with pipelines by reviewing this workflow for an example using both the Vertex AI Console and SDK.
 - [Vertex AI Pipelines - Introduction](./Vertex%20AI%20Pipelines%20-%20Introduction.ipynb)
