@@ -39,7 +39,7 @@ To discover these notebooks as part of an introduction to MLOps read on below!
 
 ---
 
-## ML Code
+## ML Code: More Than A Model
 
 This is where it all begins.  Hands find keyboard and start writing instructions to:
 - find data source
@@ -60,11 +60,9 @@ This is where it all begins.  Hands find keyboard and start writing instructions
 
 This starts with a user in a tool of choice.  An IDE for developing this code.  Sometimes it's a controlled experience in a tool that authors code for the user (high level).  If you are reading this then it is likely an IDE where you are the author of the code like OSS-Code, VSCode, JupyterLab, Colab, PyCharm amongst the many choices.
 
-### More Than A Model
+The first takeaway is that this is more than just a model.  At the core, a model is the product of data, an architecture, and hyperparameters.  The system around this makes up the complete training pipeline. Putting the model into use expands the pipeline to deployment and monitoring. But Why invest in the extra steps of pipelines?  Even for a single model the benefits of automation, monitoring, and governing the workflow are great.  But ML maturity leads to more models, more version, and more everything!
 
-The first takeaway is that this is more than just a model.  At the core, a model is the product of data, an architecture, and hyperparameters.  The system around this makes up the complete training pipeline. But Why invest in the extra steps of pipelines?  Even for a single model the benefits of automation, monitoring, and governing the workflow are great.  But ML maturity leads to more models, more version, and more everything!
-
-### From Model To Models
+## Model Fleets: MLOps for Scale
 
 As the workflow goes from one model to many models the practice of MLOps prevents also needing to scale the effort to support an maintain an ML environment.  Some common example of this scaling along with the benefits of MLOps are:
 
@@ -85,7 +83,7 @@ As the workflow goes from one model to many models the practice of MLOps prevent
 |Security|Protect models and data from unauthorized access, and malicious attacks.|The need for a controled operating environment with encryption, access control, access logging, vulnerability scanning, anomaly detection, and code scanningn and upgrading to address security vulnerabilities.|
 |Cost Optimization|Managed the computation, thus financial resources required to train, deploy, and maintain ML models.|Monitor resource utlization for over-provisioned compute and bottlenecks.  Optimize serving architectues for speed with cohosting and auto-scalinng techniques.|
 
-Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to this a bringing the entire workflow together into **pipelines**.  
+Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to this a bringing the entire workflow together into **pipelines** - the _'ops'_ in **MLOps**.  
 
 ---
 ## Pipelines
@@ -94,6 +92,33 @@ The workflow of ML code does many steps in sequence.  Some of the steps involve 
 
 There are frameworks for specifying these steps like [Kubeflow Pipelines (KFP)](https://www.kubeflow.org/docs/components/pipelines/v2/introduction/) and [TensorFlow Extended (TFX)](https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines).  [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction) is a managed service that can execute both of these.
 - The [history of Kubeflow](https://www.kubeflow.org/docs/started/introduction/#history) is creating a simplified way to running TensorFlow Extended jobs on Kubernetes.
+
+### Introduction
+
+Pipelines are constructed of:
+1. Create **Components** From Code
+2. Construct **Pipelines** Where steps, or **Tasks**, are made from components
+3. **Run** Pipelines on Vertex AI Pipelines
+4. Review pipelines runs and **tasks results**
+5. Review task **Execution**: Each task runs as a Vertex AI Training Custom Job
+
+An overview:
+
+<p><center>
+    <img src="../architectures/notebooks/mlops/readme/pipelines-overview-1-code_components.png" width="75%">
+</center><p>
+<p><center>
+    <img src="../architectures/notebooks/mlops/readme/pipelines-overview-2-components_pipeline.png" width="75%">
+</center><p>
+<p><center>
+    <img src="../architectures/notebooks/mlops/readme/pipelines-overview-3-pipeline_run.png" width="75%">
+</center><p>
+<p><center>
+    <img src="../architectures/notebooks/mlops/readme/pipelines-overview-4-pipeline_task_review.png" width="75%">
+</center><p>
+<p><center>
+    <img src="../architectures/notebooks/mlops/readme/pipelines-overview-5-pipeline_task_job.png" width="75%">
+</center><p>
 
 Get a quick start with pipelines by reviewing this workflow for an example using both the Vertex AI Console and SDK.
 - [Vertex AI Pipelines - Introduction](./Vertex%20AI%20Pipelines%20-%20Introduction.ipynb)
@@ -252,7 +277,7 @@ Work with experiments and explore all of these features in the following noteboo
 ## Putting It All Together
 
 <p><center>
-    <img src="../architectures/notebooks/mlops/kfp.png" width="75%">
+    <img src="../architectures/notebooks/mlops/readme/kfp.png" width="75%">
 </center><p>
 
 
