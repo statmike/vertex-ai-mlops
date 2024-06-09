@@ -12,13 +12,15 @@
 ---
 # MLOps
 
+How are you going to manage data, features, training, models, deployment, monitoring, and all the connectivity between these?  How will your approach be impacted if the number of models increases 10x, 100x, or more?
+
 Let's talk about MLOps!
 
-Before we get started, check these resources out:
-- The best overview ever written (#opinion): https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines
-    - Even if you don't use TFX, this captures the whole goal!
-- MLOps Overview: https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning
-- MLOps on Vertex AI: https://cloud.google.com/vertex-ai/docs/start/introduction-mlops
+>Before we get started, check these resources out:
+>- The best overview ever written (#opinion): https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines
+>    - Even if you don't use TFX, this captures the whole goal!
+>- MLOps Overview: https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning
+>- MLOps on Vertex AI: https://cloud.google.com/vertex-ai/docs/start/introduction-mlops
 
 **TL;DR**
 
@@ -36,6 +38,25 @@ This is a series of notebook based workflows that teach all the ways to use pipe
 |[Link To Section](#workflow-8)|[Vertex AI Experiments](./Vertex%20AI%20Experiments.ipynb)|Understanding and using Vertex AI Experiments|
 
 To discover these notebooks as part of an introduction to MLOps read on below!
+
+---
+
+## Table of Contents
+
+- [ML Code: More Than A Model](#ml-code-more-than-a-model)
+- [Model Fleets: MLOps for Scale](#model-fleets-mlops-for-scale)
+- [Pipelines](#pipelines)
+    - [Introduction](#introduction)
+    - [Components](#components)
+        - [Compute Resources](#compute-resources-for-components)
+    - [Component IO](#component-io)
+        - [Secure Parameters](#secure-parameters)
+    - [Control Flow For Pipelines](#control-flow-for-pipelines)
+    - [Scheduling Pipelines](#scheduling-pipelines)
+    - [Managing Pipelines: Storing And Reusing Pipelines & Components](#managing-pipelines-storing-and-reusing-pipelines-components)
+- [Experiments](#experiments)
+- [Putting It All Together](#putting-it-all-together)
+- [Topics In Progress](#topics-in-progress)
 
 ---
 
@@ -338,12 +359,18 @@ Work with experiments and explore all of these features in the following noteboo
 This readme is desigend to become the outline for a workshop on MLOps. It will also connect to surrounding content on feature stores, model monitoring, and developement tools for ML.
 
 The following is an active todo list for content:
+
+In Progress:
 - [ ] Fix HTML and MD artifacts to display in console
-- [ ] Create Graphics for readme
+- [ ] Create Graphics for readme: ML process
 - [ ] Screenshots embedded in notebooks only displaying in IDEs, not GitHub or Colab
-- [ ] Notifications: Vertex provided components, and custom (conditional notifications)
 - [ ] Consolidate task configurations: see pipeline basis language in kfp docs
 - [ ] Finish Experiment workflow, include training jobs
+- [X] Create Graphics for readme: pipelines overview
+- [ ] Create Graphics for readme: Training Jobs
+
+Upcoming:
+- [ ] Notifications: Vertex provided components, and custom (conditional notifications)
 - [ ] Training Job brought into this content - 6 methods, stand-alone, and from pipelines
 - [ ] cache tasks, local testing, Vertex specific
 - [ ] Test kfp artifacts with >2 tags
@@ -361,6 +388,7 @@ The following is an active todo list for content:
 - [X] Graphic for code > container > component > pipeline with entrypoints
 - [ ] docstring for components and pipelines
 - [ ] Link to surrounding topics
+    - IDEs: Colab, Colab Enterprise, Vertex AI Workbench, Google Cloud Workstations, VSCode, VSCode+Workstations
     - [feature architectures](../Feature%20Store/Feature%20Focused%20Data%20Architecture.ipynb)
     - [feature store](../Feature%20Store/readme.md)
     - [model monitoring](../Model%20Monitoring/readme.md)
