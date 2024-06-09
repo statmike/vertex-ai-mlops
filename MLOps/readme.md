@@ -361,10 +361,13 @@ This readme is desigend to become the outline for a workshop on MLOps. It will a
 The following is an active todo list for content:
 
 In Progress:
-- [ ] Fix HTML and MD artifacts to display in console
+- [X] Fix HTML and MD artifacts to display in console
+- [ ] Test kfp artifacts with >2 tags
 - [ ] Create Graphics for readme: ML process
-- [ ] Screenshots embedded in notebooks only displaying in IDEs, not GitHub or Colab
 - [ ] Consolidate task configurations: see pipeline basis language in kfp docs
+- [ ] Rerun all
+    - [ ] Screenshots embedded in notebooks only displaying in IDEs, not GitHub or Colab
+    - [ ] kfp artifacts update to pythonic approach throughout
 - [ ] Finish Experiment workflow, include training jobs
 - [X] Create Graphics for readme: pipelines overview
 - [ ] Create Graphics for readme: Training Jobs
@@ -373,8 +376,6 @@ Upcoming:
 - [ ] Notifications: Vertex provided components, and custom (conditional notifications)
 - [ ] Training Job brought into this content - 6 methods, stand-alone, and from pipelines
 - [ ] cache tasks, local testing, Vertex specific
-- [ ] Test kfp artifacts with >2 tags
-- [ ] kfp artifacts update to pythonic approach throughout
 - [ ] Vertex ML Metadata overview
 - [ ] Governance overview (pull from all workflows in complete story)
 - [ ] Create a series of "Patterns"
