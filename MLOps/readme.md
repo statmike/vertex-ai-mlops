@@ -86,14 +86,15 @@ This is where it all begins.  Hands find keyboard and start writing instructions
 In other words, "ML Code" is much more than just ML code.  As depicted by the blocks in this diagram which are also sized to emphasize the effort of different parts of the full ML ecosystem:
 
 
-<figure style="display: block; margin-left: auto; margin-right: auto;">
+<p align="center">
   <img src="../architectures/notebooks/mlops/readme/hidden-technical-debt-in-machine-learning-platforms.png" alt="Hidden Technical Debt In Machine Learning Platforms" width="80%">
-  <figcaption style="text-align: center;">
-    <a href="https://proceedings.neurips.cc/paper_files/paper/2015/file/86df7dcfd896fcaf2674f757a2463eba-Paper.pdf">
-      Sculley, D., Holt, G., Golovin, D., Davydov, E., Phillips, T., Ebner, D., Chaudhary, V., Young, M., Crespo, J., & Dennison, D. (2015). Hidden Technical Debt in Machine Learning Systems.
-    </a>
-  </figcaption>
-</figure>
+</p>
+
+<p align="center">
+  <a href="https://proceedings.neurips.cc/paper_files/paper/2015/file/86df7dcfd896fcaf2674f757a2463eba-Paper.pdf">
+    Sculley, D., Holt, G., Golovin, D., Davydov, E., Phillips, T., Ebner, D., Chaudhary, V., Young, M., Crespo, J., & Dennison, D. (2015). Hidden Technical Debt in Machine Learning Systems.expand_more
+  </a>
+</p>
 
 
 This starts with a user in a tool of choice.  An IDE for developing this code.  Sometimes it's a controlled experience in a tool that authors code for the user (high level).  If you are reading this then it is likely an IDE where you are the author of the code like OSS-Code, VSCode, JupyterLab, Colab, PyCharm amongst the many choices.
@@ -366,7 +367,7 @@ Work with experiments and explore all of these features in the following noteboo
 ---
 ## Putting It All Together
 
-<p><center>
+<p align="center"><center>
     <img src="../architectures/notebooks/mlops/readme/kfp.png" width="75%">
 </center><p>
 
