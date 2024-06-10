@@ -366,9 +366,9 @@ Work with experiments and explore all of these features in the following noteboo
 ---
 ## Putting It All Together
 
-<p align="center"><center>
+<p align="center">
     <img src="../architectures/notebooks/mlops/readme/kfp.png" width="75%">
-</center><p>
+<p>
 
 
 ---
