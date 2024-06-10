@@ -89,7 +89,6 @@ In other words, "ML Code" is much more than just ML code.  As depicted by the bl
 <p align="center">
   <img src="../architectures/notebooks/mlops/readme/hidden-technical-debt-in-machine-learning-platforms.png" alt="Hidden Technical Debt In Machine Learning Platforms" width="80%">
 </p>
-
 <p align="center">
   <a href="https://proceedings.neurips.cc/paper_files/paper/2015/file/86df7dcfd896fcaf2674f757a2463eba-Paper.pdf">
     Sculley, D., Holt, G., Golovin, D., Davydov, E., Phillips, T., Ebner, D., Chaudhary, V., Young, M., Crespo, J., & Dennison, D. (2015). Hidden Technical Debt in Machine Learning Systems.expand_more
@@ -143,19 +142,19 @@ Pipelines are constructed of:
 
 An overview:
 
-<p><center>
+<p align="center"><center>
     <img src="../architectures/notebooks/mlops/readme/pipelines-overview-1-code_components.png" width="75%">
 </center><p>
-<p><center>
+<p align="center"><center>
     <img src="../architectures/notebooks/mlops/readme/pipelines-overview-2-components_pipeline.png" width="75%">
 </center><p>
-<p><center>
+<p align="center"><center>
     <img src="../architectures/notebooks/mlops/readme/pipelines-overview-3-pipeline_run.png" width="75%">
 </center><p>
-<p><center>
+<p align="center"><center>
     <img src="../architectures/notebooks/mlops/readme/pipelines-overview-4-pipeline_task_review.png" width="75%">
 </center><p>
-<p><center>
+<p align="center"><center>
     <img src="../architectures/notebooks/mlops/readme/pipelines-overview-5-pipeline_task_job.png" width="75%">
 </center><p>
 
