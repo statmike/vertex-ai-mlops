@@ -142,21 +142,21 @@ Pipelines are constructed of:
 
 An overview:
 
-<p align="center"><center>
+<p align="center">
     <img src="../architectures/notebooks/mlops/readme/pipelines-overview-1-code_components.png" width="75%">
-</center><p>
-<p align="center"><center>
+<p>
+<p align="center">
     <img src="../architectures/notebooks/mlops/readme/pipelines-overview-2-components_pipeline.png" width="75%">
-</center><p>
-<p align="center"><center>
+<p>
+<p align="center">
     <img src="../architectures/notebooks/mlops/readme/pipelines-overview-3-pipeline_run.png" width="75%">
-</center><p>
-<p align="center"><center>
+<p>
+<p align="center">
     <img src="../architectures/notebooks/mlops/readme/pipelines-overview-4-pipeline_task_review.png" width="75%">
-</center><p>
-<p align="center"><center>
+<p>
+<p align="center">
     <img src="../architectures/notebooks/mlops/readme/pipelines-overview-5-pipeline_task_job.png" width="75%">
-</center><p>
+<p>
 
 <div id='workflow-1'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
 
