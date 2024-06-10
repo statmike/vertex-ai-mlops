@@ -18,9 +18,13 @@ Let's talk about MLOps!
 
 >Before we get started, check these resources out:
 >- The best overview ever written (#opinion): https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines
->    - Even if you don't use TFX, this captures the whole goal!
->- MLOps Overview: https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning
->- MLOps on Vertex AI: https://cloud.google.com/vertex-ai/docs/start/introduction-mlops
+>   - Even if you don't use TFX, this captures the whole goal!
+>- Google Cloud + Vertex AI Content:
+>   - MLOps Overview: https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning
+>   - MLOps on Vertex AI: https://cloud.google.com/vertex-ai/docs/start/introduction-mlops
+>- Foundational Papers In This Area:
+>   - 2014: [Machine Learning: The High Interest Credit Card of Technical Debt](https://research.google/pubs/machine-learning-the-high-interest-credit-card-of-technical-debt/)
+>   - 2015: [Hidden Technical Debt in Machine Learning Systems](https://proceedings.neurips.cc/paper_files/paper/2015/file/86df7dcfd896fcaf2674f757a2463eba-Paper.pdf)
 
 **TL;DR**
 
@@ -78,6 +82,16 @@ This is where it all begins.  Hands find keyboard and start writing instructions
 - automate
 - repeat
 - a MILLION other things!
+
+In other words, "ML Code" is much more than just ML code.  As depicted by the blocks in this diagram which are also sized to emphasize the effort of different parts of the full ML ecosystem:
+
+<figure><center>
+  <img src="../architectures/notebooks/mlops/readme/hidden-technical-debt-in-machine-learning-platforms.png" alt="Hiddent Technical Debt In Machine Learning Platforms" width='80%'>
+  <figcaption>
+  <a href="https://proceedings.neurips.cc/paper_files/paper/2015/file/86df7dcfd896fcaf2674f757a2463eba-Paper.pdf">
+  Sculley, D., Holt, G., Golovin, D., Davydov, E., Phillips, T., Ebner, D., Chaudhary, V., Young, M., Crespo, J., & Dennison, D. (2015). Hidden Technical Debt in Machine Learning Systems.
+  </a></figcaption>
+</center></figure>
 
 This starts with a user in a tool of choice.  An IDE for developing this code.  Sometimes it's a controlled experience in a tool that authors code for the user (high level).  If you are reading this then it is likely an IDE where you are the author of the code like OSS-Code, VSCode, JupyterLab, Colab, PyCharm amongst the many choices.
 
@@ -362,8 +376,8 @@ The following is an active todo list for content:
 
 In Progress:
 - [X] Fix HTML and MD artifacts to display in console
-- [ ] Test kfp artifacts with >2 tags
-- [ ] Create Graphics for readme: ML process
+- [X] Test kfp artifacts with > 2 tags
+- [X] Create Graphics for readme: ML process
 - [ ] Consolidate task configurations: see pipeline basis language in kfp docs
 - [ ] Rerun all
     - [ ] Screenshots embedded in notebooks only displaying in IDEs, not GitHub or Colab
