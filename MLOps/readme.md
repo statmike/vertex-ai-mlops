@@ -97,16 +97,16 @@ Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to thi
 ---
 ## Content Overview
 
-<table style='text-align:center;vertical-align:middle;width:100%;table-layout:fixed;' width="100%" cellpadding="1" cellspacing="0">
+<table style='text-align:center;vertical-align:middle;' width="100%" cellpadding="1" cellspacing="0">
     <tr>
         <th colspan="12">Development</th>
     </tr>
     <tr>
         <th colspan="2">Vertex AI<br>SDK</th>
         <th colspan="2">Google<br>Colab</th>
-        <th colspan="2">Vertex AI<br>Enterprise Colab</th>
+        <th colspan="2">Vertex AI<br>Enterprise<br>Colab</th>
         <th colspan="2">Vertex AI<br>Workbench<br>Instances</th>
-        <th colspan="2">Google Cloud<br>Workstations</th>
+        <th colspan="2">Google<br>Cloud<br>Workstations</th>
         <th colspan="2">VSCode</th>
     </tr>
     <tr>
