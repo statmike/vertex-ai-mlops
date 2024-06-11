@@ -122,15 +122,15 @@ Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to thi
         <th colspan="12" style="font-size:24px;">Manage</th>
     </tr>
     <tr>
-        <td colspan="4">Model Registry</td>
-        <td colspan="4">Experiments</td>
-        <td colspan="4">ML Metadata</td>
+        <th colspan="4">Model Registry</th>
+        <th colspan="4">Experiments</th>
+        <th colspan="4">ML Metadata</th>
     </tr>
     <tr>
-        <th colspan="12" style="font-size:24px;text-align:center;">Orchestrate</th>
+        <th colspan="12">Orchestrate</th>
     </tr>
     <tr>
-        <th colspan="12" style="font-size:12px;text-align:center;">Pipelines</th>
+        <th colspan="12">Pipelines</th>
     </tr>
 </table>
 
