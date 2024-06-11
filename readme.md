@@ -11,7 +11,7 @@
 
 ---
 
->**2024 UPDATE:**  This repository is evolving form end-to-end workflows for various frameworks to an MLOps focused approach to development.  The new approach is being developed in the [MLOps](./MLOps/readme.md) folder.  Once it nears completion, the content in this repository will be rearranged into:
+>**2024 UPDATE:**  This repository is evolving from end-to-end workflows for various frameworks to an MLOps focused approach to development.  The new approach is being developed in the [MLOps](./MLOps/readme.md) folder.  Once it nears completion, the content in this repository will be rearranged into the following structure:
 >- MLOps
 >- Applied Examples
 >    - Forecasting
