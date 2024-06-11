@@ -127,10 +127,10 @@ Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to thi
         <td colspan="4">ML Metadata</td>
     </tr>
     <tr>
-        <th colspan="12" style="font-size:24px;">Orchestrate</th>
+        <th colspan="12" style="font-size:24px;"><p style="text-align: center;">Orchestrate<p></th>
     </tr>
     <tr>
-        <td colspan="12" style="text-align:center;" halign="center">Pipelines</td>
+        <td colspan="12"><p style="text-align: center;">Pipelines<p></td>
     </tr>
 </table>
 
