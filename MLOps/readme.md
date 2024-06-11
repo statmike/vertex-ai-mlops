@@ -135,6 +135,7 @@ Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to thi
     </tr>
 </table>
 </div>
+
 ---
 ## MLOps Resources & References
 
