@@ -130,7 +130,7 @@ Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to thi
         <th colspan="12">Orchestrate</th>
     </tr>
     <tr>
-        <th colspan="12">Pipelines</th>
+        <th colspan="12"><a href="#pipelines">Pipelines</a></th>
     </tr>
 </table>
 
