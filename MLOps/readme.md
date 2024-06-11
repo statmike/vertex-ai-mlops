@@ -99,7 +99,7 @@ Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to thi
 
 <table style='text-align:center;vertical-align:middle' width="100%" cellpadding="1" cellspacing="0">
     <tr>
-        <td colspan="12" style="text-align:center;font-size:24px;">Development</td>
+        <th colspan="12" style="font-size:24px;">Development</th>
     </tr>
     <tr>
         <td colspan="2">Vertex AI SDK</td>
@@ -110,7 +110,7 @@ Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to thi
         <td colspan="2">VSCode</td>
     </tr>
     <tr>
-        <td colspan="12" style="text-align:center;font-size:24px;">Lifecycle</td>
+        <th colspan="12" style="font-size:24px;">Lifecycle</th>
     </tr>
     <tr>
           <td colspan="3">Features</td>
@@ -119,7 +119,7 @@ Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to thi
           <td colspan="3">Monitoring</td>
     </tr>
     <tr>
-        <td colspan="12" style="text-align:center;font-size:24px;">Manage</td>
+        <th colspan="12" style="font-size:24px;">Manage</th>
     </tr>
     <tr>
         <td colspan="4">Model Registry</td>
@@ -127,7 +127,7 @@ Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to thi
         <td colspan="4">ML Metadata</td>
     </tr>
     <tr>
-        <td colspan="12" style="text-align:center;font-size:24px;">Orchestrate</td>
+        <th colspan="12" style="font-size:24px;">Orchestrate</th>
     </tr>
     <tr>
         <td colspan="12">Pipelines</td>
