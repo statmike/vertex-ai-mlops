@@ -16,51 +16,25 @@ How are you going to manage data, features, training, models, deployment, monito
 
 Let's talk about MLOps!
 
->Before we get started, check these resources out:
->- The best overview ever written (#opinion): https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines
->   - Even if you don't use TFX, this captures the whole goal!
->- Google Cloud + Vertex AI Content:
->   - MLOps Overview: https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning
->   - MLOps on Vertex AI: https://cloud.google.com/vertex-ai/docs/start/introduction-mlops
->- Foundational Papers In This Area:
->   - 2014: [Machine Learning: The High Interest Credit Card of Technical Debt](https://research.google/pubs/machine-learning-the-high-interest-credit-card-of-technical-debt/)
->   - 2015: [Hidden Technical Debt in Machine Learning Systems](https://proceedings.neurips.cc/paper_files/paper/2015/file/86df7dcfd896fcaf2674f757a2463eba-Paper.pdf)
-
-**TL;DR**
-
-This is a series of notebook based workflows that teach all the ways to use pipelines and experiments within Vertex AI. The suggested order and description/reason is:
-
-|Link To Section|Notebook Workflow|Description|
-|---|---|---|
-|[Link To Section](#workflow-1)|[Vertex AI Pipelines - Introduction](./Vertex%20AI%20Pipelines%20-%20Introduction.ipynb)|Introduction to pipelines with the console and Vertex AI SDK|
-|[Link To Section](#workflow-2)|[Vertex AI Pipelines - Components](./Vertex%20AI%20Pipelines%20-%20Components.ipynb)|An introduction to all the ways to create pipeline components from your code|
-|[Link To Section](#workflow-3)|[Vertex AI Pipelines - IO](./Vertex%20AI%20Pipelines%20-%20IO.ipynb)|An overview of all the type of inputs and outputs for pipeline components|
-|[Link To Section](#workflow-4)|[Vertex AI Pipelines - Control](./Vertex%20AI%20Pipelines%20-%20Control.ipynb)|An overview of controlling the flow of exectution for pipelines|
-|[Link To Section](#workflow-5)|[Vertex AI Pipelines - Secret Manager](./Vertex%20AI%20Pipelines%20-%20Secret%20Manager.ipynb)|How to pass sensitive information to pipelines and components|
-|[Link To Section](#workflow-6)|[Vertex AI Pipelines - Scheduling](./Vertex%20AI%20Pipelines%20-%20Scheduling.ipynb)|How to schedule pipeline execution|
-|[Link To Section](#workflow-7)|[Vertex AI Pipelines - Management](./Vertex%20AI%20Pipelines%20-%20Management.ipynb)|Managing, Reusing, and Storing pipelines and components|
-|[Link To Section](#workflow-8)|[Vertex AI Experiments](./Vertex%20AI%20Experiments.ipynb)|Understanding and using Vertex AI Experiments|
-
-To discover these notebooks as part of an introduction to MLOps read on below!
-
 ---
 
 ## Table of Contents
 
-- [ML Code: More Than A Model](#ml-code-more-than-a-model)
-- [Model Fleets: MLOps for Scale](#model-fleets-mlops-for-scale)
+- [MLOps](#mlops)
+    - [ML Code: More Than A Model](#ml-code-more-than-a-model)
+    - [Model Fleets: MLOps for Scale](#model-fleets-mlops-for-scale)
+    - [Content Overview](#content-overview)
+    - [MLOps Resources & References](#mlops-resources--references)
 - [Pipelines](#pipelines)
     - [Introduction](#introduction)
     - [Components](#components)
-        - [Compute Resources](#compute-resources-for-components)
     - [Component IO](#component-io)
-        - [Secure Parameters](#secure-parameters)
     - [Control Flow For Pipelines](#control-flow-for-pipelines)
     - [Scheduling Pipelines](#scheduling-pipelines)
-    - [Managing Pipelines: Storing And Reusing Pipelines & Components](#managing-pipelines-storing-and-reusing-pipelines-components)
+    - [Managing Pipelines: Storing And Reusing Pipelines & Components](#managing-pipelines-storing-and-reusing-pipelines--components)
 - [Experiments](#experiments)
 - [Putting It All Together](#putting-it-all-together)
-- [Topics In Progress](#topics-in-progress)
+- [Content Development Progress](#content-development-progress)
 
 ---
 
@@ -95,9 +69,6 @@ In other words, "ML Code" is much more than just ML code.  As depicted by the bl
   </a>
 </p>
 
-
-This starts with a user in a tool of choice.  An IDE for developing this code.  Sometimes it's a controlled experience in a tool that authors code for the user (high level).  If you are reading this then it is likely an IDE where you are the author of the code like OSS-Code, VSCode, JupyterLab, Colab, PyCharm amongst the many choices.
-
 The first takeaway is that this is more than just a model.  At the core, a model is the product of data, an architecture, and hyperparameters.  The system around this makes up the complete training pipeline. Putting the model into use expands the pipeline to deployment and monitoring. But Why invest in the extra steps of pipelines?  Even for a single model the benefits of automation, monitoring, and governing the workflow are great.  But ML maturity leads to more models, more version, and more everything!
 
 ## Model Fleets: MLOps for Scale
@@ -124,14 +95,84 @@ As the workflow goes from one model to many models the practice of MLOps prevent
 Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to this a bringing the entire workflow together into **pipelines** - the _'ops'_ in **MLOps**.  
 
 ---
-## Pipelines
+## Content Overview
+
+<table style='text-align:center;vertical-align:middle' width="100%" cellpadding="1" cellspacing="0">
+    <tr>
+        <td colspan="12" style="font-size: 24px;">Development</td>
+    </tr>
+    <tr>
+        <td colspan="2">Vertex AI SDK</td>
+        <td colspan="2">Google Colab</td>
+        <td colspan="2">Vertex AI Enterprise Colab</td>
+        <td colspan="2">Vertex AI Workbench Instances</td>
+        <td colspan="2">Google Cloud Workstations</td>
+        <td colspan="2">VSCode</td>
+    </tr>
+    <tr>
+        <td colspan="12" style="font-size: 24px;">Lifecycle</td>
+    </tr>
+    <tr>
+          <td colspan="3">Features</td>
+          <td colspan="3">Training</td>
+          <td colspan="3">Serving</td>
+          <td colspan="3">Monitoring</td>
+    </tr>
+    <tr>
+        <td colspan="12" style="font-size: 24px;">Manage</td>
+    </tr>
+    <tr>
+        <td colspan="4">Model Registry</td>
+        <td colspan="4">Experiments</td>
+        <td colspan="4">ML Metadata</td>
+    </tr>
+    <tr>
+        <td colspan="12" style="font-size: 24px;">Orchestrate</td>
+    </tr>
+    <tr>
+        <td colspan="12">Pipelines</td>
+    </tr>
+</table>
+
+---
+## MLOps Resources & References
+
+Resources on MLOps:
+- The best overview ever written (#opinion): https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines
+   - Even if you don't use TFX, this captures the whole goal!
+- Google Cloud + Vertex AI Content:
+   - MLOps Overview: https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning
+   - MLOps on Vertex AI: https://cloud.google.com/vertex-ai/docs/start/introduction-mlops
+- Foundational Papers In This Area:
+   - 2014: [Machine Learning: The High Interest Credit Card of Technical Debt](https://research.google/pubs/machine-learning-the-high-interest-credit-card-of-technical-debt/)
+   - 2015: [Hidden Technical Debt in Machine Learning Systems](https://proceedings.neurips.cc/paper_files/paper/2015/file/86df7dcfd896fcaf2674f757a2463eba-Paper.pdf)
+
+---
+# Pipelines
 
 The workflow of ML code does many steps in sequence.  Some of the steps involve conditional logic like deploying the new model only when it is more accurate than the currently deployed model.  This is a pipeline.  Pipelines are essential for turning ML processes into MLOps.  MLOps goes the next mile with automation, monitoring, and governing the workflow.
 
 There are frameworks for specifying these steps like [Kubeflow Pipelines (KFP)](https://www.kubeflow.org/docs/components/pipelines/v2/introduction/) and [TensorFlow Extended (TFX)](https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines).  [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction) is a managed service that can execute both of these.
 - The [history of Kubeflow](https://www.kubeflow.org/docs/started/introduction/#history) is creating a simplified way to running TensorFlow Extended jobs on Kubernetes.
 
-### Introduction
+**TL;DR**
+
+This is a series of notebook based workflows that teach all the ways to use pipelines and experiments within Vertex AI. The suggested order and description/reason is:
+
+|Link To Section|Notebook Workflow|Description|
+|---|---|---|
+|[Link To Section](#workflow-1)|[Vertex AI Pipelines - Introduction](./Vertex%20AI%20Pipelines%20-%20Introduction.ipynb)|Introduction to pipelines with the console and Vertex AI SDK|
+|[Link To Section](#workflow-2)|[Vertex AI Pipelines - Components](./Vertex%20AI%20Pipelines%20-%20Components.ipynb)|An introduction to all the ways to create pipeline components from your code|
+|[Link To Section](#workflow-3)|[Vertex AI Pipelines - IO](./Vertex%20AI%20Pipelines%20-%20IO.ipynb)|An overview of all the type of inputs and outputs for pipeline components|
+|[Link To Section](#workflow-4)|[Vertex AI Pipelines - Control](./Vertex%20AI%20Pipelines%20-%20Control.ipynb)|An overview of controlling the flow of exectution for pipelines|
+|[Link To Section](#workflow-5)|[Vertex AI Pipelines - Secret Manager](./Vertex%20AI%20Pipelines%20-%20Secret%20Manager.ipynb)|How to pass sensitive information to pipelines and components|
+|[Link To Section](#workflow-6)|[Vertex AI Pipelines - Scheduling](./Vertex%20AI%20Pipelines%20-%20Scheduling.ipynb)|How to schedule pipeline execution|
+|[Link To Section](#workflow-7)|[Vertex AI Pipelines - Management](./Vertex%20AI%20Pipelines%20-%20Management.ipynb)|Managing, Reusing, and Storing pipelines and components|
+|[Link To Section](#workflow-8)|[Vertex AI Experiments](./Vertex%20AI%20Experiments.ipynb)|Understanding and using Vertex AI Experiments|
+
+To discover these notebooks as part of an introduction to MLOps read on below!
+
+## Introduction
 
 Pipelines are constructed of:
 1. Create **Components** From Code
@@ -171,7 +212,7 @@ Get a quick start with pipelines by reviewing this workflow for an example using
 </td></tr></table></div>
 
 ---
-### Components
+## Components
 
 The steps of the workflow, an ML task, are run with components. Getting logic and code into components can consists of using prebuilt components or constructing custom components:
 - KFP
@@ -221,7 +262,7 @@ Where the inputs are defining [machine configuration for the step](https://cloud
 - G = an integer representing the multiple of A desired.
 
 ---
-### Component IO
+## Component IO
 
 Getting information into code and results out is the IO part of components.  These inputs and outputs are particularly important in MLOps as they are the artifacts that define an ML system: datasets, models, metrics, and more.  Pipelines tools like TFX and KFP go a step further and automatically track the inputs and outpus and even provide lineage information for them.  Component inputs and outputs can take two forms: parameters and artifacts.  
 
@@ -261,7 +302,7 @@ Check out how easy secret manager isis to implement with the following notebook 
 </td></tr></table></div>
 
 ---
-### Control Flow For Pipelines
+## Control Flow For Pipelines
 
 As the task of an ML pipeline run they form a graph.  The outputs of upstream components become the inputs of downstram components.  Both TFX and KFP automatically use these connection to create a DAG of execution.  When logic needs to be specified in the pipeline flow of execution the use of control structures is necessary.  
 
@@ -282,7 +323,7 @@ The following notebook shows many examples of implement controls in KFP while ru
 </td></tr></table></div>
 
 ---
-### Scheduling Pipelines
+## Scheduling Pipelines
 
 Pipelines can be run on a schedule directly in Vertex AI without the need to setup a scheduler and trigger (like PubSub).  
 
@@ -305,7 +346,7 @@ This can have many helpful applications, including:
 - Check for new training records and commence with retraining if conditions are met - like records that increase a class by 10%, atleast 1000 new records, ....
 
 ---
-### Managing Pipelines: Storing And Reusing Pipelines & Components
+## Managing Pipelines: Storing And Reusing Pipelines & Components
 
 As seen above, pipelines are made up of steps which are executions of components.  These components are made up of code, container, and instructions (inputs and outputs).  
 
@@ -330,7 +371,7 @@ Work directly with these concepts in the following notebook based workflow:
 </td></tr></table></div>
 
 ---
-## Experiments
+# Experiments
 The work of ML is inherantly iterative and experimental, involving trying different approaches and comparing results to make decisions towards future iteration.  A key part of moving from ad-hoc coding to fully operationalize ML training is tracking inputs, outputs, and other parameters.  Keeping track of information within experiments is the goal of [Vertex AI Experiments](https://cloud.google.com/vertex-ai/docs/experiments/intro-vertex-ai-experiments#experiments-experiment-runs). This hosted service lets you [log information](https://cloud.google.com/vertex-ai/docs/experiments/log-data) from each run, and even has [autologging](https://cloud.google.com/vertex-ai/docs/experiments/autolog-data) for common ML Frameworks.
 
 The architecture of experiments is:
@@ -364,7 +405,7 @@ Work with experiments and explore all of these features in the following noteboo
 </td></tr></table></div>
 
 ---
-## Putting It All Together
+# Putting It All Together
 
 <p align="center">
     <img src="../architectures/notebooks/mlops/readme/kfp.png" width="75%">
@@ -372,7 +413,7 @@ Work with experiments and explore all of these features in the following noteboo
 
 
 ---
-## Topics In Progress
+# Content Development Progress
 This readme is desigend to become the outline for a workshop on MLOps. It will also connect to surrounding content on feature stores, model monitoring, and developement tools for ML.
 
 The following is an active todo list for content:
@@ -381,6 +422,7 @@ In Progress:
 - [X] Fix HTML and MD artifacts to display in console
 - [X] Test kfp artifacts with > 2 tags
 - [X] Create Graphics for readme: ML process
+- [ ] Create Graphic for experiments
 - [ ] Consolidate task configurations: see pipeline basis language in kfp docs
 - [ ] Rerun all
     - [ ] Screenshots embedded in notebooks only displaying in IDEs, not GitHub or Colab
@@ -388,6 +430,15 @@ In Progress:
 - [ ] Finish Experiment workflow, include training jobs
 - [X] Create Graphics for readme: pipelines overview
 - [ ] Create Graphics for readme: Training Jobs
+
+Reorganize this page:
+- [ ] Make pipelines a linked topic in a subfolder
+- [ ] move feature store into a subfolder
+- [ ] move model monitoring into a subfolder
+- [ ] create a training subfolder
+- [ ] create a deployment subfolder
+- [ ] create a subfolder for development tools
+- [ ] reconfigure this page to be overall MLOps and link to the subfolders by topic
 
 Upcoming:
 - [ ] Notifications: Vertex provided components, and custom (conditional notifications)
