@@ -97,29 +97,29 @@ Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to thi
 ---
 ## Content Overview
 
-<table style='text-align:center;vertical-align:middle' width="100%" cellpadding="1" cellspacing="0">
+<table style='text-align:center;vertical-align:middle;width:100%;table-layout:fixed;' width="100%" cellpadding="1" cellspacing="0">
     <tr>
-        <th colspan="12" style="font-size:24px;">Development</th>
+        <th colspan="12">Development</th>
     </tr>
     <tr>
-        <td colspan="2">Vertex AI SDK</td>
-        <td colspan="2">Google Colab</td>
-        <td colspan="2">Vertex AI Enterprise Colab</td>
-        <td colspan="2">Vertex AI Workbench Instances</td>
-        <td colspan="2">Google Cloud Workstations</td>
-        <td colspan="2">VSCode</td>
+        <th colspan="2">Vertex AI SDK</th>
+        <th colspan="2">Google Colab</th>
+        <th colspan="2">Vertex AI Enterprise Colab</th>
+        <th colspan="2">Vertex AI Workbench Instances</th>
+        <th colspan="2">Google Cloud Workstations</th>
+        <th colspan="2">VSCode</th>
     </tr>
     <tr>
-        <th colspan="12" style="font-size:24px;">Lifecycle</th>
+        <th colspan="12">Lifecycle</th>
     </tr>
     <tr>
-          <td colspan="3">Features</td>
-          <td colspan="3">Training</td>
-          <td colspan="3">Serving</td>
-          <td colspan="3">Monitoring</td>
+          <th colspan="3">Features</th>
+          <th colspan="3">Training</th>
+          <th colspan="3">Serving</th>
+          <th colspan="3">Monitoring</th>
     </tr>
     <tr>
-        <th colspan="12" style="font-size:24px;">Manage</th>
+        <th colspan="12">Manage</th>
     </tr>
     <tr>
         <th colspan="4">Model Registry</th>
