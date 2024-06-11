@@ -10,6 +10,19 @@
 </table><br/><br/><br/><br/>
 
 ---
+
+>**2024 UPDATE:**  This repository is evolving form end-to-end workflows for various frameworks to an MLOps focused approach to development.  The new approach is being developed in the [MLOps](./MLOps/readme.md) folder.  Once it nears completion, the content in this repository will be rearranged into:
+>- MLOps
+>- Applied Examples
+>    - Forecasting
+>    - GenAI
+>    - ...
+>- Framework Workflows
+>    - BigQuery ML
+>    - TensorFlow
+>    - scikit-learn
+>    - ...
+
 # Vertex AI for Machine Learning Operations
 
 ## 👋 I'm Mike
