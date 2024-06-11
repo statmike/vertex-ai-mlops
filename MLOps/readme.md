@@ -97,11 +97,12 @@ Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to thi
 ---
 ## Content Overview
 
-<table style='text-align:center;vertical-align:middle;' width="100%" cellpadding="1" cellspacing="0">
-    <tr width="100%">
+<div align="center">
+<table style='text-align:center;vertical-align:middle;' cellpadding="1" cellspacing="0">
+    <tr>
         <th colspan="12">Development</th>
     </tr>
-    <tr width="100%">
+    <tr>
         <th colspan="2">Vertex AI<br>SDK</th>
         <th colspan="2">Google<br>Colab</th>
         <th colspan="2">Vertex AI<br>Enterprise<br>Colab</th>
@@ -109,31 +110,31 @@ Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to thi
         <th colspan="2">Google<br>Cloud<br>Workstations</th>
         <th colspan="2">VSCode</th>
     </tr>
-    <tr width="100%">
+    <tr>
         <th colspan="12">Lifecycle</th>
     </tr>
-    <tr width="100%">
+    <tr>
           <th colspan="3">Features</th>
           <th colspan="3">Training</th>
           <th colspan="3">Serving</th>
           <th colspan="3">Monitoring</th>
     </tr>
-    <tr width="100%">
+    <tr>
         <th colspan="12">Manage</th>
     </tr>
-    <tr width="100%">
+    <tr>
         <th colspan="4">Model Registry</th>
         <th colspan="4">Experiments</th>
         <th colspan="4">ML Metadata</th>
     </tr>
-    <tr width="100%">
+    <tr>
         <th colspan="12">Orchestrate</th>
     </tr>
-    <tr width="100%">
+    <tr>
         <th colspan="12"><a href="#pipelines">Pipelines</a></th>
     </tr>
 </table>
-
+</div>
 ---
 ## MLOps Resources & References
 
