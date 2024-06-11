@@ -50,11 +50,13 @@ This is where it all begins.  Hands find keyboard and start writing instructions
 - iterate, iterate, iterate, ...
 - evaluate the model
 - iterate, iterate, iterare, ...
-- prepare model for deployment - batch, online, cloud, onprem, mobile, ....
+- prepare model for deployment - batch, online, cloud, onprem, mobile, ...
+- deploy, test, rolloout
 - monitor shift and drift
 - troubleshoot everything that goes wrong or does not make sense
 - automate
 - repeat
+- scale
 - a MILLION other things!
 
 In other words, "ML Code" is much more than just ML code.  As depicted by the blocks in this diagram which are also sized to emphasize the effort of different parts of the full ML ecosystem:
@@ -69,7 +71,7 @@ In other words, "ML Code" is much more than just ML code.  As depicted by the bl
   </a>
 </p>
 
-The first takeaway is that this is more than just a model.  At the core, a model is the product of data, an architecture, and hyperparameters.  The system around this makes up the complete training pipeline. Putting the model into use expands the pipeline to deployment and monitoring. But Why invest in the extra steps of pipelines?  Even for a single model the benefits of automation, monitoring, and governing the workflow are great.  But ML maturity leads to more models, more version, and more everything!
+The first takeaway is that this is more than just a model.  At the core, a model is the product of data, an architecture, and hyperparameters.  The system around this makes up the complete training pipeline. Putting the model into use expands the pipeline to deployment and monitoring. But Why invest in the extra steps of pipelines?  Even for a single model the benefits of automation, monitoring, and governing the workflow are great.  The speed of deployment and opportunity for continous training are also great. But ML maturity leads to more models, more versions, and more everything!
 
 ## Model Fleets: MLOps for Scale
 
@@ -425,6 +427,7 @@ In Progress:
 - [X] Test kfp artifacts with > 2 tags
 - [X] Create Graphics for readme: ML process
 - [ ] Create Graphic for experiments
+- [ ] Notifications workflow: Vertex provided components, and custom (conditional notifications)
 - [ ] Consolidate task configurations: see pipeline basis language in kfp docs
 - [ ] Rerun all
     - [ ] Screenshots embedded in notebooks only displaying in IDEs, not GitHub or Colab
@@ -443,7 +446,6 @@ Reorganize this page:
 - [ ] reconfigure this page to be overall MLOps and link to the subfolders by topic
 
 Upcoming:
-- [ ] Notifications: Vertex provided components, and custom (conditional notifications)
 - [ ] Training Job brought into this content - 6 methods, stand-alone, and from pipelines
 - [ ] cache tasks, local testing, Vertex specific
 - [ ] Vertex ML Metadata overview
