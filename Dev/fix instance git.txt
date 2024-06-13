@@ -15,6 +15,6 @@ To Troublshoot I did these:
 - notice that index.lock does exists
 - run: cat .git/index.lock
 - notice that the file is empty
-- run: rm index.lock
+- run: rm .git/index.lock
 - try to stage the file again, succesful
 
