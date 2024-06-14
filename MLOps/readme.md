@@ -172,7 +172,7 @@ This is a series of notebook based workflows that teach all the ways to use pipe
 |[Link To Section](#workflow-4)|[Vertex AI Pipelines - Control](./Vertex%20AI%20Pipelines%20-%20Control.ipynb)|An overview of controlling the flow of exectution for pipelines|
 |[Link To Section](#workflow-5)|[Vertex AI Pipelines - Secret Manager](./Vertex%20AI%20Pipelines%20-%20Secret%20Manager.ipynb)|How to pass sensitive information to pipelines and components|
 |[Link To Section](#workflow-6)|[Vertex AI Pipelines - Scheduling](./Vertex%20AI%20Pipelines%20-%20Scheduling.ipynb)|How to schedule pipeline execution|
-|[Link To Section](#workflow-9)|[Vertex Ai Pipelines - Notifications](./Vertex%20AI%20Pipelines%20-%20Notifications.ipynb)|How to send email notification of pipeline status.|
+|[Link To Section](#workflow-9)|[Vertex AI Pipelines - Notifications](./Vertex%20AI%20Pipelines%20-%20Notifications.ipynb)|How to send email notification of pipeline status.|
 |[Link To Section](#workflow-7)|[Vertex AI Pipelines - Management](./Vertex%20AI%20Pipelines%20-%20Management.ipynb)|Managing, Reusing, and Storing pipelines and components|
 |[Link To Section](#workflow-8)|[Vertex AI Experiments](./Vertex%20AI%20Experiments.ipynb)|Understanding and using Vertex AI Experiments|
 
