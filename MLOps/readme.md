@@ -31,6 +31,7 @@ Let's talk about MLOps!
     - [Component IO](#component-io)
     - [Control Flow For Pipelines](#control-flow-for-pipelines)
     - [Scheduling Pipelines](#scheduling-pipelines)
+    - [Notifications From Pipelines](#notifications-from-pipelines)
     - [Managing Pipelines: Storing And Reusing Pipelines & Components](#managing-pipelines-storing-and-reusing-pipelines--components)
 - [Experiments](#experiments)
 - [Putting It All Together](#putting-it-all-together)
@@ -171,6 +172,7 @@ This is a series of notebook based workflows that teach all the ways to use pipe
 |[Link To Section](#workflow-4)|[Vertex AI Pipelines - Control](./Vertex%20AI%20Pipelines%20-%20Control.ipynb)|An overview of controlling the flow of exectution for pipelines|
 |[Link To Section](#workflow-5)|[Vertex AI Pipelines - Secret Manager](./Vertex%20AI%20Pipelines%20-%20Secret%20Manager.ipynb)|How to pass sensitive information to pipelines and components|
 |[Link To Section](#workflow-6)|[Vertex AI Pipelines - Scheduling](./Vertex%20AI%20Pipelines%20-%20Scheduling.ipynb)|How to schedule pipeline execution|
+|[Link To Section](#workflow-9)|[Vertex Ai Pipelines - Notifications](./Vertex%20AI%20Pipelines%20-%20Notifications.ipynb)|How to send email notification of pipeline status.|
 |[Link To Section](#workflow-7)|[Vertex AI Pipelines - Management](./Vertex%20AI%20Pipelines%20-%20Management.ipynb)|Managing, Reusing, and Storing pipelines and components|
 |[Link To Section](#workflow-8)|[Vertex AI Experiments](./Vertex%20AI%20Experiments.ipynb)|Understanding and using Vertex AI Experiments|
 
@@ -348,6 +350,24 @@ This can have many helpful applications, including:
 - Running Batch predictions, evaluations, monitoring each day or week
 - Retraining a model, do evaluations, and comparing the new model to the currently deployed model then conditionally updating the deployed model
 - Check for new training records and commence with retraining if conditions are met - like records that increase a class by 10%, atleast 1000 new records, ....
+
+---
+## Notifications From Pipelines
+
+As the number of pipelines grow and the use of schedulinng and triggering is implemented it becomes necessary to know which pipelines need to be reviewed.  Getting notificaitons about the completion of pipeliens is a good first step.  Then, being able to control notificaitons to only be sent on failure or particular failures becomes important.
+
+<div id='workflow-9'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+
+**Notebook Workflow:**
+
+This notebook workflow covers pre-built components for email notification and building a custom notification system for send emails (or tasks) conditional on the pipelines status.
+
+- [Vertex AI Pipelines - Notifications](./Vertex@20AI%20Pipelines%20-%20Notifications.ipynb)
+    - Pre-Built Component to send emails on pipelines completion
+    - Overview of retrieving pipeline runs final status information
+    - Building a custom component to send emails conditional on the pipelines final status.
+
+</td></tr></table></div>
 
 ---
 ## Managing Pipelines: Storing And Reusing Pipelines & Components
