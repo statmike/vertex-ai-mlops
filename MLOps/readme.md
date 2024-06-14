@@ -362,7 +362,7 @@ As the number of pipelines grow and the use of schedulinng and triggering is imp
 
 This notebook workflow covers pre-built components for email notification and building a custom notification system for send emails (or tasks) conditional on the pipelines status.
 
-- [Vertex AI Pipelines - Notifications](./Vertex@20AI%20Pipelines%20-%20Notifications.ipynb)
+- [Vertex AI Pipelines - Notifications](./Vertex%20AI%20Pipelines%20-%20Notifications.ipynb)
     - Pre-Built Component to send emails on pipelines completion
     - Overview of retrieving pipeline runs final status information
     - Building a custom component to send emails conditional on the pipelines final status.
