@@ -72,7 +72,7 @@ In other words, "ML Code" is much more than just ML code.  As depicted by the bl
   </a>
 </p>
 
-The first takeaway is that this is more than just a model.  At the core, a model is the product of data, an architecture, and hyperparameters.  The system around this makes up the complete training pipeline. Putting the model into use expands the pipeline to deployment and monitoring. But Why invest in the extra steps of pipelines?  Even for a single model the benefits of automation, monitoring, and governing the workflow are great.  The speed of deployment and opportunity for continous training are also great. But ML maturity leads to more models, more versions, and more everything!
+The first takeaway is that this is more than just a model.  At the core, a model is the product of data, an architecture, it's loss function, and hyperparameters.  The system around this makes up the complete training pipeline. Putting the model into use expands the pipeline to deployment and monitoring. But Why invest in the extra steps of pipelines?  Even for a single model the benefits of automation, monitoring, and governing the workflow are great.  The speed of deployment and opportunity for continous training are also great. But ML maturity leads to more models, more versions, and more everything!
 
 ## Model Fleets: MLOps for Scale
 
@@ -87,12 +87,12 @@ As the workflow goes from one model to many models the practice of MLOps prevent
 |Feature Engineering|Transforming and creating new features from raw data to improve model performance.|Needs for feature store to centrally manage data, track transformations, and ensure consistency across models and between traininng and serving.|
 |Transfer Learning|Leveraging a trained model to accelerate training and improve performance on a new task.|Managing models and adapting to new taskswith seemless integration in to workflows.|
 |Serving Strategies|Deploying models to serve preditions in different ways: batch, online, hybrid.|Requires a flexible infrastructure, model versioning, monitoring and seamless scaling, reliability, and responsiveness.|
-|Model Optimization|Reducing model size and computational complexity through quantization, pruning, and distillation.|Involves evaluatinng trade-iffs between model performance and resource constraints, automation, and evaluation.|
+|Model Optimization|Reducing model size and computational complexity through quantization, pruning, and distillation.|Involves evaluatinng trade-offs between model performance and resource constraints, automation, and evaluation.|
 |Model Proliferation|The growth of new models for new and various tasks, driven by business needs, technology advancements, and data availability.|Increases demand for scalable infrastructure, efficient model management, and robust governance to handle growing complexity of deployment and maintenance.|
 |Continous Monitoring|Understanding each features distribution over time to get an early signal of change from the training data and/or over time as a precursor to model performance drops.|Need for robust automation for detection and notifications and ultimately automated retraining and subsequent deployment so that models adapt to real-world changes.|
 |Explainability|The ability to interpret why a model makes specific predictions.|Incorporation of explainability techniques into model development and deployment broadly to identify and mitigate bias and error.|
 |Addressing Bias|Identify and address biases in traininng data and training algorithms that lead to unfair predictions.|The need for automating auditing of training data for biases, implementing fairness metrics during evaluation, and implementing mitigation techniques (reweighing, adversarial debiasing, etc.) during training and deployment.|
-|Security|Protect models and data from unauthorized access, and malicious attacks.|The need for a controled operating environment with encryption, access control, access logging, vulnerability scanning, anomaly detection, and code scanningn and upgrading to address security vulnerabilities.|
+|Security|Protect models and data from unauthorized access, and malicious attacks.|The need for a controled operating environment with encryption, access control, access logging, vulnerability scanning, anomaly detection, and code scanning, and upgrading to address security vulnerabilities.|
 |Cost Optimization|Managed the computation, thus financial resources required to train, deploy, and maintain ML models.|Monitor resource utlization for over-provisioned compute and bottlenecks.  Optimize serving architectues for speed with cohosting and auto-scalinng techniques.|
 
 Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to this a bringing the entire workflow together into **pipelines** - the _'ops'_ in **MLOps**.  
@@ -155,10 +155,10 @@ Resources on MLOps:
 ---
 # Pipelines
 
-The workflow of ML code does many steps in sequence.  Some of the steps involve conditional logic like deploying the new model only when it is more accurate than the currently deployed model.  This is a pipeline.  Pipelines are essential for turning ML processes into MLOps.  MLOps goes the next mile with automation, monitoring, and governing the workflow.
+The workflow of ML code does many steps in sequence.  Some of the steps involve conditional logic like deploying the new model only when it is more accurate than the currently deployed model.  This is a pipeline.  Pipelines are essential for turning ML processes into MLOps. MLOps goes the next mile with automation, monitoring, and governing the workflow.
 
 There are frameworks for specifying these steps like [Kubeflow Pipelines (KFP)](https://www.kubeflow.org/docs/components/pipelines/v2/introduction/) and [TensorFlow Extended (TFX)](https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines).  [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction) is a managed service that can execute both of these.
-- The [history of Kubeflow](https://www.kubeflow.org/docs/started/introduction/#history) is creating a simplified way to running TensorFlow Extended jobs on Kubernetes.
+- The [history of Kubeflow](https://www.kubeflow.org/docs/started/introduction/#history) is creating a simplified way to run TensorFlow Extended jobs on Kubernetes.
 
 **TL;DR**
 
