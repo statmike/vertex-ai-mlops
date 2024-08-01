@@ -395,6 +395,16 @@ Work directly with these concepts in the following notebook based workflow:
 </td></tr></table></div>
 
 ---
+## Pipeline Patterns - Puttinng Concepts Together Into Common Workflows
+
+A series of notebook based workflows that show how to put all the concepts from the material above into common workflows:
+
+- [Vertex AI Pipelines - Pattern - Modular and Reusable](./Vertex%20AI%20Pipelines%20-%20Pattern%20-%20Modular%20and%20Reusable.ipynb)
+    - Example 1: Store a pipeline in artifact registry and directly run it on Vertex AI Pipelines without a local download.
+    - Example 2: Store and retrieve components for reusability: as files (at url, file directory, or text string) and as artifact in artifact registry
+    - Example 3: Store pipelines in artifact registry and retrieve (download, and import) to use as components in new pipelines
+
+---
 # Experiments
 The work of ML is inherantly iterative and experimental, involving trying different approaches and comparing results to make decisions towards future iteration.  A key part of moving from ad-hoc coding to fully operationalize ML training is tracking inputs, outputs, and other parameters.  Keeping track of information within experiments is the goal of [Vertex AI Experiments](https://cloud.google.com/vertex-ai/docs/experiments/intro-vertex-ai-experiments#experiments-experiment-runs). This hosted service lets you [log information](https://cloud.google.com/vertex-ai/docs/experiments/log-data) from each run, and even has [autologging](https://cloud.google.com/vertex-ai/docs/experiments/autolog-data) for common ML Frameworks.
 
@@ -447,7 +457,7 @@ In Progress:
 - [X] Test kfp artifacts with > 2 tags
 - [X] Create Graphics for readme: ML process
 - [ ] Create Graphic for experiments
-- [ ] Notifications workflow: Vertex provided components, and custom (conditional notifications)
+- [Finish writeup] Notifications workflow: Vertex provided components, and custom (conditional notifications)
 - [ ] Consolidate task configurations: see pipeline basis language in kfp docs
 - [ ] Rerun all
     - [ ] Screenshots embedded in notebooks only displaying in IDEs, not GitHub or Colab
@@ -455,7 +465,9 @@ In Progress:
 - [ ] Finish Experiment workflow, include training jobs
 - [X] Create Graphics for readme: pipelines overview
 - [ ] Create Graphics for readme: Training Jobs
-
+- [X] add readme section for patterns
+- [X] pattern: reusable and modular
+    
 Reorganize this page:
 - [ ] Make pipelines a linked topic in a subfolder
 - [ ] move feature store into a subfolder
