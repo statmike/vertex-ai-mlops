@@ -467,6 +467,10 @@ In Progress:
 - [ ] Create Graphics for readme: Training Jobs
 - [X] add readme section for patterns
 - [X] pattern: reusable and modular
+- [ ] pattern: add run of single component
+- [ ] management: add AR storage of sinngle component, recall, and direct run
+- [ ] management: add python library for sharing components and pipelines
+
     
 Reorganize this page:
 - [ ] Make pipelines a linked topic in a subfolder
