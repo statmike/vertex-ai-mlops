@@ -395,7 +395,7 @@ Work directly with these concepts in the following notebook based workflow:
 </td></tr></table></div>
 
 ---
-## Pipeline Patterns - Puttinng Concepts Together Into Common Workflows
+## Pipeline Patterns - Putting Concepts Together Into Common Workflows
 
 A series of notebook based workflows that show how to put all the concepts from the material above into common workflows:
 
@@ -470,6 +470,7 @@ In Progress:
 - [ ] pattern: add run of single component
 - [ ] management: add AR storage of sinngle component, recall, and direct run
 - [ ] management: add python library for sharing components and pipelines
+    - https://github.com/kubeflow/pipelines/blob/master/components/google-cloud/README.md
 
     
 Reorganize this page:
