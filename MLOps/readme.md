@@ -16,7 +16,7 @@ How are you going to manage data, features, training, models, deployment, monito
 
 Let's talk about MLOps!
 
-> Note: This folder is in active development and is the primary focus of this repository for 2024.  Check back often and provide feedback as it will help buide the build out.
+> Note: This folder is in active development and is the primary focus of this repository for 2024.  Check back often and provide feedback as it will help guide the build-out.
 
 ---
 
