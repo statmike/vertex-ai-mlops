@@ -12,6 +12,10 @@
 ---
 # /Applied GenAI/readme.md
 
+> **NOTE** - content in this folder is changing and this readme needs to be updated to reflect:
+>- files moving the the `/legacy` subfolder
+>- new files entering for a new series on grounding
+
 This series of notebooks highlights the use of [Vertex AI Generative AI](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/overview) for workflows that include using Google's foundational large generative AI models.  [These models](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/models) are hosted by Google and used by API:
 - Gemini API (Multimodal data, text, code, chat)
 - PaLM API (Text, chat, embeddings)
