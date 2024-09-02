@@ -1,8 +1,8 @@
-![tracker](https://us-central1-vertex-ai-mlops-369716.cloudfunctions.net/pixel-tracking?path=statmike%2Fvertex-ai-mlops%2FApplied+GenAI%2FVertex+AI+Search&file=vertex_search_setup.md)
+![tracker](https://us-central1-vertex-ai-mlops-369716.cloudfunctions.net/pixel-tracking?path=statmike%2Fvertex-ai-mlops%2FApplied+GenAI%2Flegacy%2FVertex+AI+Search&file=vertex_search_setup.md)
 <!--- header table --->
 <table align="left">     
   <td style="text-align: center">
-    <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20GenAI/Vertex%20AI%20Search/vertex_search_setup.md">
+    <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20GenAI/legacy/Vertex%20AI%20Search/vertex_search_setup.md">
       <img src="https://cloud.google.com/ml-engine/images/github-logo-32px.png" alt="GitHub logo">
       <br>View on<br>GitHub
     </a>
