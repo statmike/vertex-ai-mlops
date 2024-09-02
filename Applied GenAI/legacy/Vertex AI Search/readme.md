@@ -49,9 +49,5 @@ Th Vertex AI Search [Python Client](https://cloud.google.com/generative-ai-app-b
 
 Demonstrate the different types of search results the Python Client: 
 
-### Notebooks For Document Q&A Examples Using Vertex AI Search For Grounding
-
-Demonstrate the use of **Vertex AI Search with Extractive Segments**:
-- [Vertex AI Search Document Q&A Using Extractive Segments - MLB Rules For Baseball.ipynb](./Vertex%20AI%20Search%20Document%20Q&A%20Using%20Extractive%20Segments%20-%20MLB%20Rules%20For%20Baseball.ipynb)
-    - Ask questions related to the MLB Baseball rules and get text generated answers using the combination of both Vertex AI Search and Vertex GenAI LLMs.
+- [Vertex AI Search Python Client Overview](./Vertex%20AI%20Search%20Python%20Client%20Overview.ipynb)
 
