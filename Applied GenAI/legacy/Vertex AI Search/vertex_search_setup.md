@@ -10,6 +10,16 @@
 </table><br/><br/><br/><br/>
 
 ---
+
+**File Move Notices**
+
+This file moved locations:
+- On 09/03/2024 (mm/dd/yyyy)
+	- From: `Applied GenAI/Vertex AI Search/vertex_search_setup.md`
+	- To: `Applied GenAI/legacy/Vertex AI Search/vertex_search_setup.md`
+---
+<!---end of move notices--->
+
 # /Applied GenAI/Vertex AI Search/vertex_search_setup.md
 
 Following are the steps to create a Vertex AI Search App using Google Cloud Console.
