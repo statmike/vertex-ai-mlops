@@ -28,7 +28,7 @@ This series of notebooks highlights the use of [Vertex AI Generative AI](https:/
 - A great repository with notebooks, code samples , sample applications, and more: [GitHub/GoogleCloudPlatform/generative-ai](https://github.com/GoogleCloudPlatform/generative-ai)
 - Advanced Prompt Engineering at [GitHub/GoogleCloudPlatform/applied-ai-engineering-samples](https://github.com/GoogleCloudPlatform/applied-ai-engineering-samples/tree/main/genai-on-vertex-ai/advanced_prompting_training)
 - For a solution based approach to generative AI search and conversation applications check out [Vertex AI Search and Conversation](https://cloud.google.com/generative-ai-app-builder?hl=en)
-    - For an overview of using in application workflow check out the subfolder in this repository [Vertex AI Search](../../legacy/Vertex%20AI%20Search/readme.md)
+    - For an overview of using in application workflow check out the subfolder in this repository [Vertex AI Search](./Vertex%20AI%20Search/readme.md)
 
 ---
 ## Getting Started
