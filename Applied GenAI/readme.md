@@ -322,7 +322,7 @@ The following sections links to many notebook based examples of using LLMs as de
 
 Text can come in the form of audio.  This requires a conversion to text, transcription.  Google Cloud provides a Speech-To-Text API with multiple methods to handle this process depending on the needs, length of audio, and file/streaming application.  
 
-- [Summarize Conversations - Text and Audio](./Summarize%20Conversations%20-%20Text%20and%20Audio.ipynb)
+- [Summarize Conversations - Text and Audio](./legacy/Summarize%20Conversations%20-%20Text%20and%20Audio.ipynb)
     - Start with history of a chat transcription in text
     - Continue the chat using a Chat LLM as an agent
     - Uses an LLM to Summarize the combined chat transcription with the added agent interaction
