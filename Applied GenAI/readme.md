@@ -409,7 +409,7 @@ Ask complex scenario based questions and get text generated answers with referen
 - [Vertex AI GenAI For Document Q&A - NHL Rules For Hockey](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20NHL%20Rules%20For%20Hockey.ipynb)
 
 **Business Documents:**
-- [Vertex AI GenAI For Document Q&A - FAA Regulations](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20FAA%20Regulations.ipynb)
+- [Vertex AI GenAI For Document Q&A - FAA Regulations](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20FAA%20Regulations.ipynb)
 - [Vertex AI GenAI For Document Q&A - Municipal Securities](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20Municipal%20Securities.ipynb)
 - [Vertex AI GenAI For Document Q&A - Annual Report](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20Annual%20Report.ipynb)
 
