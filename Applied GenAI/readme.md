@@ -404,7 +404,7 @@ Ask complex scenario based questions and get text generated answers with referen
 - [Vertex AI GenAI For Document Q&A - USGA Rule For Golf](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20USGA%20Rules%20For%20Golf.ipynb)
 - [Vertex AI GenAI For Document Q&A - IFAB Laws For Football](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20IFAB%20Laws%20For%20Football.ipynb)
 - [Vertex AI GenAI For Document Q&A - MCC Laws For Cricket](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20MCC%20Laws%20For%20Cricket.ipynb)
-- [Vertex AI GenAI For Document Q&A - NBA Rules For Basketball](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20NBA%20Rules%20For%20Basketball.ipynb)
+- [Vertex AI GenAI For Document Q&A - NBA Rules For Basketball](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20NBA%20Rules%20For%20Basketball.ipynb)
 - [Vertex AI GenAI For Document Q&A - NFL Rules For Football](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20NFL%20Rules%20For%20Football.ipynb)
 - [Vertex AI GenAI For Document Q&A - NHL Rules For Hockey](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20NHL%20Rules%20For%20Hockey.ipynb)
 
