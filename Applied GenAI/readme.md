@@ -341,7 +341,7 @@ These notebooks use code generation LLMs to first query BigQuery to retrieve con
     <img align="center" alt="Overview Chart" src="../architectures/notebooks/applied/genai/bq_qa.png" width="45%">
 </center></p>
 
-- [Vertex AI GenAI For BigQuery Q&A - Overview](./Vertex%20AI%20GenAI%20For%20BigQuery%20Q&A%20-%20Overview.ipynb)
+- [Vertex AI GenAI For BigQuery Q&A - Overview](./legacy/Vertex%20AI%20GenAI%20For%20BigQuery%20Q%26A%20-%20Overview.ipynb)
 
 **Extended concepts:**
 
