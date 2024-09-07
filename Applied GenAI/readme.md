@@ -432,7 +432,7 @@ Enhacements compared to Version 1:
 - ability to overwrite previous runs saved data when needed
 
 **Sports Rules:**
-- [Vertex AI GenAI For Document Q&A v2 - MLB Rules For Baseball](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20v2%20-%20MLB%20Rules%20For%20Baseball.ipynb)
+- [Vertex AI GenAI For Document Q&A v2 - MLB Rules For Baseball](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20v2%20-%20MLB%20Rules%20For%20Baseball.ipynb)
     
 **Business Documents:**   
 - [Vertex AI GenAI For Document Q&A - Local Government Trends](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20Local%20Government%20Trends.ipynb)    
