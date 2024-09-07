@@ -371,7 +371,7 @@ Code is a language.  A common syntax is SQL.  BigQuery runs GoogleSQL and a comm
 
 Using BigQuery and Vertex AI Codey APIs it is possible to build a BigQuery Advisory!
 
-[Vertex AI GenAI For Rewriting - BigQuery Advisor With Codey](./Vertex%20AI%20GenAI%20For%20Rewriting%20-%20BigQuery%20Advisor%20With%20Codey.ipynb)
+[Vertex AI GenAI For Rewriting - BigQuery Advisor With Codey](./legacy/Vertex%20AI%20GenAI%20For%20Rewriting%20-%20BigQuery%20Advisor%20With%20Codey.ipynb)
 - Use the BigQuery Information Schema to find potentially inefficient queries.  In this case identify the queries with longest syntax as an example.
 - Use BigQuery ML to directly connect to Vertex AI Generative AI APIs and get descriptions of long SQL statements
 - Use Vertex AI Codey APIs to rewrite long code with a target of shorter syntax
