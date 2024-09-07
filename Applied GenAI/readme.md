@@ -415,7 +415,7 @@ Ask complex scenario based questions and get text generated answers with referen
 
 
 Use Vertex AI Matching Engine to host low-latency vector search:
-- [Vertex AI Matching Engine For Document Q&A](./Vertex%20AI%20Matching%20Engine%20For%20Document%20Q&A.ipynb)
+- [Vertex AI Matching Engine For Document Q&A](./legacy/Vertex%20AI%20Matching%20Engine%20For%20Document%20Q%26A.ipynb)
     - Use [Vertex AI Matching Engine](https://cloud.google.com/vertex-ai/docs/matching-engine/overview) for stateful, low latency, vector searches
         - Create and Deploy an index
         - Perform online queries with hosted index
