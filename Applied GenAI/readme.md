@@ -362,7 +362,7 @@ Using LLMs to query data in BigQuery highlights the need for descriptive metadat
 
 This example workflow shows how to use an LLM to generate better naming and descriptions through interpretation of the content of tables. 
 
-- [Vertex AI GenAI For BigQuery Metadata - Make Better Tables](./Vertex%20AI%20GenAI%20For%20BigQuery%20Metadata%20-%20Make%20Better%20Tables.ipynb)
+- [Vertex AI GenAI For BigQuery Metadata - Make Better Tables](./legacy/Vertex%20AI%20GenAI%20For%20BigQuery%20Metadata%20-%20Make%20Better%20Tables.ipynb)
 
 ---
 ### BigQuery Advisor For More Efficient Code
