@@ -10,6 +10,16 @@
 </table><br/><br/><br/><br/>
 
 ---
+
+**File Move Notices**
+
+This file moved locations:
+- On 09/08/2024 (mm/dd/yyyy)
+	- From: `Feature Store/readme.md`
+	- To: `MLOps/Feature Store/readme.md`
+---
+<!---end of move notices--->
+
 # vertex-ai-mlops/Feature Store/readme.md
 
 A core part of MLOps, for going from model to MODELS, is feature management.  [Vertex AI Feature Store](https://cloud.google.com/vertex-ai/docs/featurestore/latest/overview) is an excellent way manage features and short-cut the process of deploying models into production systems.
