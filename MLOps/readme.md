@@ -503,4 +503,4 @@ Upcoming:
     - IDEs: Colab, Colab Enterprise, Vertex AI Workbench, Google Cloud Workstations, VSCode, VSCode+Workstations
     - [feature architectures](../Feature%20Store/Feature%20Focused%20Data%20Architecture.ipynb)
     - [feature store](../Feature%20Store/readme.md)
-    - [model monitoring](../Model%20Monitoring/readme.md)
+    - [model monitoring](./Model%20Monitoring/readme.md)
