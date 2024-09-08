@@ -17,7 +17,7 @@ A core part of MLOps, for going from model to MODELS, is feature management.  [V
 >**Versions**
 >
 >Vertex AI Feature Store (pre-2023) is now named [Vertex Ai Feature Store (Legacy)](https://cloud.google.com/vertex-ai/docs/featurestore#vaifs_legacy).  The new feature store is [Vertex AI Feature Store](https://cloud.google.com/vertex-ai/docs/featurestore).  This readme will now focus on the latest feature store but for information regarding the legacy feature store see:
->- Notebook based workflow (in this repository): [Feature Store (Legacy)](./Feature%20Store%20(Legacy).ipynb)
+>- Notebook based workflow (in this repository): [Feature Store (Legacy)](./Feature%20Store%20%28Legacy%29.ipynb)
 >- [Documentation](https://cloud.google.com/vertex-ai/docs/featurestore#vaifs_legacy)
 >- [Comparison to Vertex AI Feature Store](https://cloud.google.com/vertex-ai/docs/featurestore#comparison_between_and)
 
