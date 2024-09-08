@@ -35,7 +35,7 @@ Embeddings are condensed representation of data, usually in the form of an array
 **tl;dr**
 
 <p align="center" width="100%"><center>
-    <img src="../architectures/architectures/images/feature store/readme/overview.png">
+    <img src="../../architectures/architectures/images/feature%20store/readme/overview.png">
 </center></p>
 
 The main layout for Feature Store is serving environment for **features** observed on **entities**:
@@ -72,7 +72,7 @@ BigQuery as a **data source**:
 With the offline store being able to be in BigQuery and be a history table with time bound **features** it opens up many possibilities for efficient data architectures for feature management to enable ease of use across the the spectrum of MLOps - DataOps as part of MLOps:
 
 <p><center>
-    <img alt="Overview Chart" src="../architectures/notebooks/mlops/ml_dataops.png" width="85%">
+    <img alt="Overview Chart" src="../../architectures/notebooks/mlops/ml_dataops.png" width="85%">
 </center><p>
     
 1. Find data sources
