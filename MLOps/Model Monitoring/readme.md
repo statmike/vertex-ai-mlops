@@ -10,6 +10,16 @@
 </table><br/><br/><br/><br/>
 
 ---
+
+**File Move Notices**
+
+This file moved locations:
+- On 09/08/2024 (mm/dd/yyyy)
+	- From: `Model Monitoring/readme.md`
+	- To: `MLOps/Model Monitoring/readme.md`
+---
+<!---end of move notices--->
+
 # BigQuery ML - Model Monitoring
 
 Overview here
