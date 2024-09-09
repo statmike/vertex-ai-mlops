@@ -11,6 +11,7 @@
 
 ---
 # Orchestration With Pipelines
+> You are here: `vertex-ai-mlops/MLOps/Pipelines/readme.md`
 
 The workflow of ML code does many steps in sequence.  Some of the steps involve conditional logic like deploying the new model only when it is more accurate than the currently deployed model.  This is a pipeline.  Pipelines are essential for turning ML processes into MLOps.  MLOps goes the next mile with automation, monitoring, and governing the workflow.
 

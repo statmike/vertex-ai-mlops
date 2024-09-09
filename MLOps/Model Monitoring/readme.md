@@ -11,6 +11,7 @@
 
 ---
 # Model Monitoring
+> You are here: `vertex-ai-mlops/MLOps/Model Monitoring/readme.md`
 
 Understanding the ongoing performance of a model in production is important to maintain accuracy.  While evaluations can be run on new data, they rely on also knowing the ground truth of the new records which is often delayed.  To monitor models for potential impacts to peformance is better done by monitoring what the model learned from - features.  The distribution of feature can be compared between training and current for **skew** and between rolling time points for **drift**.  
 

@@ -11,6 +11,7 @@
 
 ---
 # MLOps
+> You are here: `vertex-ai-mlops/MLOps/readme.md`
 
 How are you going to manage data, features, training, models, deployment, monitoring, and all the connectivity between these?  How will your approach be impacted if the number of models increases 10x, 100x, or more?
 
