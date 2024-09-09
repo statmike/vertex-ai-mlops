@@ -10,16 +10,6 @@
 </table><br/><br/><br/><br/>
 
 ---
-
-**File Move Notices**
-
-This file moved locations:
-- On 09/03/2024 (mm/dd/yyyy)
-	- From: `Applied GenAI/Vertex AI Search/readme.md`
-	- To: `Applied GenAI/legacy/Vertex AI Search/readme.md`
----
-<!---end of move notices--->
-
 # /Applied GenAI/Vertex AI Search/readme.md
 
 This series of notebooks highlights the use over [Vertex AI Search](https://cloud.google.com/generative-ai-app-builder/docs/try-enterprise-search) for workflows that includes using Google's [foundational large generative AI models](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/models). These don't need to be trained or hosted - just called with via API. Read more about these exciting new features of Vertex AI Search (formerly named Generative AI App Builder Enterprise Search) [here](https://cloud.google.com/generative-ai-app-builder/docs/try-enterprise-search)

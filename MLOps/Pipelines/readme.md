@@ -1,3 +1,15 @@
+![tracker](https://us-central1-vertex-ai-mlops-369716.cloudfunctions.net/pixel-tracking?path=statmike%2Fvertex-ai-mlops%2FMLOps%2FPipelines&file=readme.md)
+<!--- header table --->
+<table align="left">     
+  <td style="text-align: center">
+    <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Pipelines/readme.md">
+      <img src="https://cloud.google.com/ml-engine/images/github-logo-32px.png" alt="GitHub logo">
+      <br>View on<br>GitHub
+    </a>
+  </td>
+</table><br/><br/><br/><br/>
+
+---
 # Orchestration With Pipelines
 
 The workflow of ML code does many steps in sequence.  Some of the steps involve conditional logic like deploying the new model only when it is more accurate than the currently deployed model.  This is a pipeline.  Pipelines are essential for turning ML processes into MLOps.  MLOps goes the next mile with automation, monitoring, and governing the workflow.

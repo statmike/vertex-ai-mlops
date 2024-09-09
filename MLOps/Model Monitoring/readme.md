@@ -1,8 +1,8 @@
-![tracker](https://us-central1-vertex-ai-mlops-369716.cloudfunctions.net/pixel-tracking?path=statmike%2Fvertex-ai-mlops%2FModel+Monitoring&file=readme.md)
+![tracker](https://us-central1-vertex-ai-mlops-369716.cloudfunctions.net/pixel-tracking?path=statmike%2Fvertex-ai-mlops%2FMLOps%2FModel+Monitoring&file=readme.md)
 <!--- header table --->
 <table align="left">     
   <td style="text-align: center">
-    <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/Model%20Monitoring/readme.md">
+    <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Model%20Monitoring/readme.md">
       <img src="https://cloud.google.com/ml-engine/images/github-logo-32px.png" alt="GitHub logo">
       <br>View on<br>GitHub
     </a>
@@ -10,16 +10,6 @@
 </table><br/><br/><br/><br/>
 
 ---
-
-**File Move Notices**
-
-This file moved locations:
-- On 09/08/2024 (mm/dd/yyyy)
-	- From: `Model Monitoring/readme.md`
-	- To: `MLOps/Model Monitoring/readme.md`
----
-<!---end of move notices--->
-
 # Model Monitoring
 
 Understanding the ongoing performance of a model in production is important to maintain accuracy.  While evaluations can be run on new data, they rely on also knowing the ground truth of the new records which is often delayed.  To monitor models for potential impacts to peformance is better done by monitoring what the model learned from - features.  The distribution of feature can be compared between training and current for **skew** and between rolling time points for **drift**.  
