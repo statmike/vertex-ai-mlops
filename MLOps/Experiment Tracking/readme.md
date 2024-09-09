@@ -41,6 +41,6 @@ The logging is further enhanced with connectivity to other Vertex AI services:
 **Notebook Workflow:**
 
 Work with experiments and explore all of these features in the following notebook based workflow:
-- [Vertex AI Experiments](../Vertex%20AI%20Experiments.ipynb)
+- [Vertex AI Experiments](./Vertex%20AI%20Experiments.ipynb)
 
 </td></tr></table></div>
