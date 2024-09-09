@@ -257,7 +257,7 @@ Work directly with these concepts in the following notebook based workflow:
 
 A series of notebook based workflows that show how to put all the concepts from the material above into common workflows:
 
-- [Vertex AI Pipelines - Pattern - Modular and Reusable](../Vertex%20AI%20Pipelines%20-%20Pattern%20-%20Modular%20and%20Reusable.ipynb)
+- [Vertex AI Pipelines - Pattern - Modular and Reusable](./Vertex%20AI%20Pipelines%20-%20Pattern%20-%20Modular%20and%20Reusable.ipynb)
     - Example 1: Store a pipeline in artifact registry and directly run it on Vertex AI Pipelines without a local download.
     - Example 2: Store and retrieve components for reusability: as files (at url, file directory, or text string) and as artifact in artifact registry
     - Example 3: Store pipelines in artifact registry and retrieve (download, and import) to use as components in new pipelines
