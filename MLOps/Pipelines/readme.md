@@ -7,7 +7,7 @@ There are frameworks for specifying these steps like [Kubeflow Pipelines (KFP)](
 
 **TL;DR**
 
-This is a series of notebook based workflows that teach all the ways to use pipelines and experiments within Vertex AI. The suggested order and description/reason is:
+This is a series of notebook based workflows that teach all the ways to use pipelines within Vertex AI. The suggested order and description/reason is:
 
 |Link To Section|Notebook Workflow|Description|
 |---|---|---|
@@ -19,7 +19,7 @@ This is a series of notebook based workflows that teach all the ways to use pipe
 |[Link To Section](#workflow-6)|[Vertex AI Pipelines - Scheduling](./Vertex%20AI%20Pipelines%20-%20Scheduling.ipynb)|How to schedule pipeline execution|
 |[Link To Section](#workflow-9)|[Vertex AI Pipelines - Notifications](./Vertex%20AI%20Pipelines%20-%20Notifications.ipynb)|How to send email notification of pipeline status.|
 |[Link To Section](#workflow-7)|[Vertex AI Pipelines - Management](./Vertex%20AI%20Pipelines%20-%20Management.ipynb)|Managing, Reusing, and Storing pipelines and components|
-|[Link To Section](../readme.md#workflow-8)|[Vertex AI Experiments](../Vertex%20AI%20Experiments.ipynb)|Understanding and using Vertex AI Experiments|
+
 
 To discover these notebooks as part of an introduction to MLOps read on below!
 
@@ -265,8 +265,8 @@ A series of notebook based workflows that show how to put all the concepts from 
 ---
 # Putting It All Together
 
-<p align="center">
+<p align="center"><center>
     <img src="../../architectures/notebooks/mlops/readme/kfp.png" width="75%">
-<p>
+</center></p>
 
 
