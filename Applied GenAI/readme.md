@@ -10,7 +10,8 @@
 </table><br/><br/><br/><br/>
 
 ---
-# /Applied GenAI/readme.md
+# Applied Generative AI
+> You are here: `vertex-ai-mlops/Applied GenAI/readme.md`
 
 > **NOTE** - content in this folder is changing and this readme needs to be updated to reflect:
 >- files moving the the `/legacy` subfolder
