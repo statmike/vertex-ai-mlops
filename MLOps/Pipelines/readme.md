@@ -14,7 +14,7 @@ This is a series of notebook based workflows that teach all the ways to use pipe
 |[Link To Section](#workflow-1)|[Vertex AI Pipelines - Introduction](../Vertex%20AI%20Pipelines%20-%20Introduction.ipynb)|Introduction to pipelines with the console and Vertex AI SDK|
 |[Link To Section](#workflow-2)|[Vertex AI Pipelines - Components](./Vertex%20AI%20Pipelines%20-%20Components.ipynb)|An introduction to all the ways to create pipeline components from your code|
 |[Link To Section](#workflow-3)|[Vertex AI Pipelines - IO](../Vertex%20AI%20Pipelines%20-%20IO.ipynb)|An overview of all the type of inputs and outputs for pipeline components|
-|[Link To Section](#workflow-4)|[Vertex AI Pipelines - Control](../Vertex%20AI%20Pipelines%20-%20Control.ipynb)|An overview of controlling the flow of exectution for pipelines|
+|[Link To Section](#workflow-4)|[Vertex AI Pipelines - Control](./Vertex%20AI%20Pipelines%20-%20Control.ipynb)|An overview of controlling the flow of exectution for pipelines|
 |[Link To Section](#workflow-5)|[Vertex AI Pipelines - Secret Manager](../Vertex%20AI%20Pipelines%20-%20Secret%20Manager.ipynb)|How to pass sensitive information to pipelines and components|
 |[Link To Section](#workflow-6)|[Vertex AI Pipelines - Scheduling](../Vertex%20AI%20Pipelines%20-%20Scheduling.ipynb)|How to schedule pipeline execution|
 |[Link To Section](#workflow-9)|[Vertex AI Pipelines - Notifications](../Vertex%20AI%20Pipelines%20-%20Notifications.ipynb)|How to send email notification of pipeline status.|
@@ -175,7 +175,7 @@ As the task of an ML pipeline run they form a graph.  The outputs of upstream co
 **Notebook Workflow:**
 
 The following notebook shows many examples of implement controls in KFP while running on Vertex AI Pipelines:
-- [Vertex AI Pipelines - Control](../Vertex%20AI%20Pipelines%20-%20Control.ipynb)
+- [Vertex AI Pipelines - Control](./Vertex%20AI%20Pipelines%20-%20Control.ipynb)
     - **Ordering**: DAG and Explicit ordering
     - **Conditional Execution**: if, elif (else if), and else
         - **Collecting**: Conditional results
