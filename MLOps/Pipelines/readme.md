@@ -32,6 +32,7 @@ This is a series of notebook based workflows that teach all the ways to use pipe
 |[Link To Section](#workflow-6)|[Vertex AI Pipelines - Scheduling](./Vertex%20AI%20Pipelines%20-%20Scheduling.ipynb)|How to schedule pipeline execution|
 |[Link To Section](#workflow-9)|[Vertex AI Pipelines - Notifications](./Vertex%20AI%20Pipelines%20-%20Notifications.ipynb)|How to send email notification of pipeline status.|
 |[Link To Section](#workflow-7)|[Vertex AI Pipelines - Management](./Vertex%20AI%20Pipelines%20-%20Management.ipynb)|Managing, Reusing, and Storing pipelines and components|
+|[Link To Section](#workflow-8)|[Vertex AI Pipelines - Testing](./Vertex%20AI%20Pipelines%20-%20Testing.ipynb)|Strategies for testing components and pipeliens locally and remotely to aide development.|
 
 
 To discover these notebooks as part of an introduction to MLOps read on below!
@@ -47,7 +48,9 @@ To discover these notebooks as part of an introduction to MLOps read on below!
     - [Scheduling Pipelines](#scheduling-pipelines)
     - [Notifications From Pipelines](#notifications-from-pipelines)
     - [Managing Pipelines: Storing And Reusing Pipelines & Components](#managing-pipelines-storing-and-reusing-pipelines--components)
+    - [Testing Components And Pipelines: Strategies for Local and Remote Development](#testing-components-and-pipelines-strategies-for-local-and-remote-development)
 - [Putting It All Together](#putting-it-all-together)
+
 ---
 ## Introduction
 
@@ -262,6 +265,20 @@ Pipelines are compiled into YAML files that include component specifications.  M
 
 Work directly with these concepts in the following notebook based workflow:
 - [Vertex AI Pipelines - Management](./Vertex%20AI%20Pipelines%20-%20Management.ipynb)
+
+</td></tr></table></div>
+
+---
+## Testing Components And Pipelines: Strategies for Local and Remote Development
+
+When creating pipeline components and pipelines the process of testing can be aided by local testing and several strategies for remote (On Vertex AI Pipelines) testing.  This section covers local and remote stratedgies to aide development processes.
+
+<div id='workflow-8'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+
+**Notebook Workflow:**
+
+Work directly with these concepts in the following notebook based workflow:
+- [Vertex AI Pipelines - Testing](./Vertex%20AI%20Pipelines%20-%20Testing.ipynb)
 
 </td></tr></table></div>
 
