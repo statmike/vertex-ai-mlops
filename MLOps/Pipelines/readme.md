@@ -16,7 +16,7 @@
 The workflow of ML code does many steps in sequence.  Some of the steps involve conditional logic like deploying the new model only when it is more accurate than the currently deployed model.  This is a pipeline.  Pipelines are essential for turning ML processes into MLOps.  MLOps goes the next mile with automation, monitoring, and governing the workflow.
 
 There are frameworks for specifying these steps like [Kubeflow Pipelines (KFP)](https://www.kubeflow.org/docs/components/pipelines/v2/introduction/) and [TensorFlow Extended (TFX)](https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines).  [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction) is a managed service that can execute both of these.
-- The [history of Kubeflow](https://www.kubeflow.org/docs/started/introduction/#history) is creating a simplified way to running TensorFlow Extended jobs on Kubernetes.
+- The [history of Kubeflow](https://www.kubeflow.org/docs/started/introduction/#history) is creating a simplified way for running TensorFlow Extended jobs on Kubernetes.
 
 **TL;DR**
 
@@ -24,6 +24,7 @@ This is a series of notebook based workflows that teach all the ways to use pipe
 
 |Link To Section|Notebook Workflow|Description|
 |---|---|---|
+|[Link To Section](#workflow-0)|[Vertex AI Pipelines - Start Here](./Vertex%20AI%20Pipelines%20-%20Start%20Here.ipynb)|What are pipelines? Start here to go from code to pipeline and see it in action.|
 |[Link To Section](#workflow-1)|[Vertex AI Pipelines - Introduction](./Vertex%20AI%20Pipelines%20-%20Introduction.ipynb)|Introduction to pipelines with the console and Vertex AI SDK|
 |[Link To Section](#workflow-2)|[Vertex AI Pipelines - Components](./Vertex%20AI%20Pipelines%20-%20Components.ipynb)|An introduction to all the ways to create pipeline components from your code|
 |[Link To Section](#workflow-3)|[Vertex AI Pipelines - IO](./Vertex%20AI%20Pipelines%20-%20IO.ipynb)|An overview of all the type of inputs and outputs for pipeline components|
@@ -40,7 +41,8 @@ To discover these notebooks as part of an introduction to MLOps read on below!
 ---
 ## Table of Contents
 
-- [Pipelines](#pipelines)
+- [Pipelines](#orchestration-with-pipelines)
+    - [Start Here](#start-here)
     - [Introduction](#introduction)
     - [Components](#components)
     - [Component IO](#component-io)
@@ -50,6 +52,28 @@ To discover these notebooks as part of an introduction to MLOps read on below!
     - [Managing Pipelines: Storing And Reusing Pipelines & Components](#managing-pipelines-storing-and-reusing-pipelines--components)
     - [Testing Components And Pipelines: Strategies for Local and Remote Development](#testing-components-and-pipelines-strategies-for-local-and-remote-development)
 - [Putting It All Together](#putting-it-all-together)
+
+---
+## Start Here
+
+What are pipelines?
+- They help you automate, manage, and scale your ML workflows
+- They offer reproducibility, collaboration, and efficiency
+
+Before getting into the details let's go from code to pipeline and see this in action!
+
+<div id='workflow-0'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+
+**Notebook Workflow:**
+
+In this quick start, we'll take a simple code example and run it both in a notebook and as a pipeline on Vertex AI Pipelines. This will likely spark many questions, and that's great! The rest of this series will dive deeper into each aspect of pipelines, providing comprehensive answers by example. 
+- [Vertex AI Pipelines - Start Here](./Vertex%20AI%20Pipelines%20-%20Start%20Here.ipynb)
+    - Code, Python, pulling data and training a model
+    - Same code running in a pipeline on Vertex AI Pipelines
+    - Same code modified to be for MLOps on Vertex AI Pipelines
+
+</td></tr></table></div>
+
 
 ---
 ## Introduction
