@@ -10,6 +10,16 @@
 </table><br/><br/><br/><br/>
 
 ---
+
+**File Move Notices**
+
+This file moved locations:
+- On 09/13/2024 (mm/dd/yyyy)
+	- From: `Working With/Embeddings/readme.md`
+	- To: `Applied GenAI/Embeddings/readme.md`
+---
+<!---end of move notices--->
+
 # vertex-ai-mlops/Working With/Embeddings/readme.md
 
 Embeddings are condensed representations of data that retain the information from the data.  They are represented by a vector of numbers, usually floats, like `[0, 1, 0, 1]` or `[0.63475, 0.234, ..., 0.2646]`.  The are trained/learned representations for data like text, images, and tables. Based on the type of model that is used in training they can be very good at retraining latent information like semantic meaning in text, objects in images, and correlation in tables.  This series shows ways of creating embeddings through OSS models, API's and custom models.  
