@@ -20,7 +20,8 @@ This file moved locations:
 ---
 <!---end of move notices--->
 
-# vertex-ai-mlops/Working With/Embeddings/readme.md
+# Embeddings
+> You are here: `vertex-ai-mlops/Applied GenAI/Embeddings/readme.md`
 
 Embeddings are condensed representations of data that retain the information from the data.  They are represented by a vector of numbers, usually floats, like `[0, 1, 0, 1]` or `[0.63475, 0.234, ..., 0.2646]`.  The are trained/learned representations for data like text, images, and tables. Based on the type of model that is used in training they can be very good at retraining latent information like semantic meaning in text, objects in images, and correlation in tables.  This series shows ways of creating embeddings through OSS models, API's and custom models.  
 
@@ -33,6 +34,33 @@ The notebook workflow in ["BQML Autoencoder As Table Embedding"](./BQML%20Autoen
 
 ---
 TODO:
+- what are embeddings overview with numpy
+- embeddings API deep dive
+- tools:
+    - vertex vector search
+    - bigquery ml
+    - alloy db
+    - scaan
+    - llamaindex
+    - others?
+- projector 
+- build your own with BQML autoencoder
+- working with embeddings
+
+
+
 A review of embedding in Vertex AI:
 - Foundation models for text, and multi modal (text, image, text and image)
 - OSS pre-trained: local, BQML, and Vertex AI Endpoints
+
+
+A review of tools for Vector Matching:
+- ScANN
+- BigQuery with ML.DISTANCE
+- CloudSQL and pgvector
+- Vertex AI Vector Search (fomerly Matching Engine)
+
+Topics:
+- Brute force and approximate matching
+- Indexes that update with insert/delete/updates
+- Filtered searches
