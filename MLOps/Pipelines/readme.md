@@ -54,6 +54,7 @@ To discover these notebooks as part of an introduction to MLOps read on below!
 - [Putting It All Together](#putting-it-all-together)
 
 ---
+<a id='workflow-0'></a>
 ## Start Here
 
 What are pipelines?
@@ -62,7 +63,7 @@ What are pipelines?
 
 Before getting into the details let's go from code to pipeline and see this in action!
 
-<div id='workflow-0'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+<div><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
 
 **Notebook Workflow:**
 
@@ -76,6 +77,7 @@ In this quick start, we'll take a simple code example and run it both in a noteb
 
 
 ---
+<a id='workflow-1'></a>
 ## Introduction
 
 Pipelines are constructed of:
@@ -103,7 +105,7 @@ An overview:
     <img src="../../architectures/notebooks/mlops/readme/pipelines-overview-5-pipeline_task_job.png" width="75%">
 </center></p>
 
-<div id='workflow-1'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+<div><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
 
 **Notebook Workflow:**
 
@@ -116,6 +118,7 @@ Get a quick start with pipelines by reviewing this workflow for an example using
 </td></tr></table></div>
 
 ---
+<a id='workflow-2'></a>
 ## Components
 
 The steps of the workflow, an ML task, are run with components. Getting logic and code into components can consists of using prebuilt components or constructing custom components:
@@ -136,7 +139,7 @@ The steps of the workflow, an ML task, are run with components. Getting logic an
         - [Container-based components](https://www.tensorflow.org/tfx/guide/container_component) - a component from a contaienr
         - [Fully custom components](https://www.tensorflow.org/tfx/guide/custom_component) - reuse and extend standard components.
 
-<div id='workflow-2'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+<div><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
 
 **Notebook Workflow:**
 
@@ -166,6 +169,7 @@ Where the inputs are defining [machine configuration for the step](https://cloud
 - G = an integer representing the multiple of A desired.
 
 ---
+<a id='workflow-3'></a>
 ## Component IO
 
 Getting information into code and results out is the IO part of components.  These inputs and outputs are particularly important in MLOps as they are the artifacts that define an ML system: datasets, models, metrics, and more.  Pipelines tools like TFX and KFP go a step further and automatically track the inputs and outpus and even provide lineage information for them.  Component inputs and outputs can take two forms: parameters and artifacts.  
@@ -180,7 +184,7 @@ Getting information into code and results out is the IO part of components.  The
     - [Google Cloud Artifact Types](https://google-cloud-pipeline-components.readthedocs.io/en/google-cloud-pipeline-components-2.0.0/api/artifact_types.html)
 - [TFX Artifacts](https://www.tensorflow.org/tfx/guide/understanding_tfx_pipelines#artifact)
 
-<div id='workflow-3'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+<div><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
 
 **Notebook Workflow:**
 
@@ -191,9 +195,11 @@ See all the types of parameters and artifacts in action with the following noteb
 
 </td></tr></table></div>
 
+
+<a id='workflow-5'></a>
 **Secure Parameters:** Passing credentials for an API or service can expose them.  If these credentials are hardcoded then they can be discovered from the source code and are harder to update.  A great solution is using [Secret Manager](https://cloud.google.com/secret-manager/docs/create-secret-quickstart#secretmanager-quickstart-console) to host credentials and then pass the name of the credential as a parameter.  The only modification needed to a component is to use a Python client to retrieve the credentials at run time.  
 
-<div id='workflow-5'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+<div><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
 
 **Notebook Workflow:**
 
@@ -206,11 +212,12 @@ Check out how easy secret manager isis to implement with the following notebook 
 </td></tr></table></div>
 
 ---
+<a id='workflow-4'></a>
 ## Control Flow For Pipelines
 
 As the task of an ML pipeline run they form a graph.  The outputs of upstream components become the inputs of downstram components.  Both TFX and KFP automatically use these connection to create a DAG of execution.  When logic needs to be specified in the pipeline flow of execution the use of control structures is necessary.  
 
-<div id='workflow-4'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+<div><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
 
 **Notebook Workflow:**
 
@@ -227,11 +234,12 @@ The following notebook shows many examples of implement controls in KFP while ru
 </td></tr></table></div>
 
 ---
+<a id='workflow-6'></a>
 ## Scheduling Pipelines
 
 Pipelines can be run on a schedule directly in Vertex AI without the need to setup a scheduler and trigger (like PubSub).  
 
-<div id='workflow-6'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+<div><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
 
 **Notebook Workflow:**
 
@@ -250,11 +258,12 @@ This can have many helpful applications, including:
 - Check for new training records and commence with retraining if conditions are met - like records that increase a class by 10%, atleast 1000 new records, ....
 
 ---
+<a id='workflow-9'></a>
 ## Notifications From Pipelines
 
 As the number of pipelines grow and the use of schedulinng and triggering is implemented it becomes necessary to know which pipelines need to be reviewed.  Getting notificaitons about the completion of pipeliens is a good first step.  Then, being able to control notificaitons to only be sent on failure or particular failures becomes important.
 
-<div id='workflow-9'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+<div><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
 
 **Notebook Workflow:**
 
@@ -268,6 +277,7 @@ This notebook workflow covers pre-built components for email notification and bu
 </td></tr></table></div>
 
 ---
+<a id='workflow-7'></a>
 ## Managing Pipelines: Storing And Reusing Pipelines & Components
 
 As seen above, pipelines are made up of steps which are executions of components.  These components are made up of code, container, and instructions (inputs and outputs).  
@@ -283,7 +293,7 @@ Pipelines are compiled into YAML files that include component specifications.  M
 - Google Cloud [Artifact Registry](https://cloud.google.com/artifact-registry/docs/overview) with native format for [Kubeflow pipeline templates](https://cloud.google.com/artifact-registry/docs/kfp)
 - [Integration with Vertex AI](https://cloud.google.com/vertex-ai/docs/pipelines/create-pipeline-template#kubeflow-pipelines-sdk-client) for creating, uploading and using pipeline templates
 
-<div id='workflow-7'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+<div><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
 
 **Notebook Workflow:**
 
@@ -293,11 +303,12 @@ Work directly with these concepts in the following notebook based workflow:
 </td></tr></table></div>
 
 ---
+<a id='workflow-8'></a>
 ## Testing Components And Pipelines: Strategies for Local and Remote Development
 
 When creating pipeline components and pipelines the process of testing can be aided by local testing and several strategies for remote (On Vertex AI Pipelines) testing.  This section covers local and remote stratedgies to aide development processes.
 
-<div id='workflow-8'><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+<div><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
 
 **Notebook Workflow:**
 
@@ -307,7 +318,7 @@ Work directly with these concepts in the following notebook based workflow:
 </td></tr></table></div>
 
 ---
-## Pipeline Patterns - Putting Concepts Together Into Common Workflows
+# Pipeline Patterns - Putting Concepts Together Into Common Workflows
 
 A series of notebook based workflows that show how to put all the concepts from the material above into common workflows:
 
