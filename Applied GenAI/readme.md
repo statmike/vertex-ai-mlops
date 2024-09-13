@@ -442,7 +442,7 @@ Enhacements compared to Version 1:
 ## Embeddings
 
 A number of the techniques covered here use embeddings. Embeddings are vector representations of text or images or both.  These are vectors of floating point numbers that come from a model that has been trained to embed content in a way that efficiently represents the content. See how to get embeddings from text, images and both with the notebook:
-- [Vertex AI GenAI Embeddings](./Vertex%20AI%20GenAI%20Embeddings.ipynb)
+- [Vertex AI GenAI Embeddings](./Embeddings/Vertex%20AI%20GenAI%20Embeddings.ipynb)
 
 Embeddings can be used:
 - To find similar content with vector similarity searches - as shown in Q&A examples above
