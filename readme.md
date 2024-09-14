@@ -12,8 +12,13 @@
 ---
 # Vertex AI for Machine Learning Operations
 
->**2024 UPDATE:**  This repository is evolving from end-to-end workflows for various frameworks into an MLOps focused approach to development.  The new approach is being developed in the [MLOps](./MLOps/readme.md) folder.  Once it nears completion, the content in this repository will be rearranged into the following structure:
+>**2024 UPDATE:**  This repository is evolving from end-to-end workflows for various frameworks into an MLOps focused approach for development of predictive and generative AI operations.  The new approach is being developed in the [MLOps](./MLOps/readme.md) folder.  Once it nears completion, the content in this repository will be rearranged into the following structure:
 >- MLOps
+>    - Pipelines
+>    - Experiments
+>    - Feature Store
+>    - Model Monitoring
+>    - ...
 >- Applied Examples
 >    - Forecasting
 >    - GenAI
@@ -23,6 +28,15 @@
 >    - TensorFlow
 >    - scikit-learn
 >    - ...
+
+
+
+
+
+
+
+---
+> This is the original readme from prior to the shift in this repository.  After the content rearrangement is complete and this information is incorporate above it will be removed.  
 
 ## 👋 I'm Mike
 
