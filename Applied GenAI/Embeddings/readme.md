@@ -17,7 +17,7 @@ Embeddings are condensed representations of data that retain the information fro
 
 ## Vertex AI Text Embeddings API
 
-Get to know the [Vertex AI Text Embeddings API](https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings) through example including how to scale request and make batch request for many embeddings predictions.  
+Get to know the [Vertex AI Text Embeddings API](https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings) through examples including how to scale requests and make batch requests for many embeddings predictions.  
 - [Vertex AI Text Embeddings API](./Vertex%20AI%20Text%20Embeddings%20API.ipynb)
 
 ## Multimodal Embeddings of Text, Images, Video, and Combinations
