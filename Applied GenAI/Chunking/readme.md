@@ -12,3 +12,5 @@
 ---
 # Content Processing and Annotation - Chunking
 > You are here: `vertex-ai-mlops/Applied GenAI/Chunking/readme.md`
+
+[Process Documents - Document AI Layout Parser](./Process%20Documents%20-%20Document%20AI%20Layout%20Parser.ipynb)
