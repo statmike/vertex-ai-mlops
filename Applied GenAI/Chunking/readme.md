@@ -13,4 +13,8 @@
 # Content Processing and Annotation - Chunking
 > You are here: `vertex-ai-mlops/Applied GenAI/Chunking/readme.md`
 
-[Process Documents - Document AI Layout Parser](./Process%20Documents%20-%20Document%20AI%20Layout%20Parser.ipynb)
+In retrieval augement generation (RAG) workflows the goal is to retrieve context chunks related to a query.  While whole documents are possible with long-context LLMs like Gemini it is efficient to retrieve the most related context via a retrieval system.  These systems can be simple or complex but at the core is the choice of methods for breaking down content into logical parts - chunks.  This series of workflows examines methods to help with automating the creation of chunks from documents.
+
+## Document AI Layout Parser
+Document AI on Google Cloud offers parsers that process input documents into output JSON with extracted information.  The [Layout Parser](https://cloud.google.com/document-ai/docs/layout-parse-chunk) is specifically designed for creating chunks of desired sizes while also maintaing location information from a documents hierarchy: title > chaper > section.... headings.  The following workflow shows multiple ways to process documents of different lengths and types and how to process the responses into information ready for creating embeddings.  This workflow creates the information (chunks) used by the embeddings workflows and RAG workflows within this series:
+- [Process Documents - Document AI Layout Parser](./Process%20Documents%20-%20Document%20AI%20Layout%20Parser.ipynb)
