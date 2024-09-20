@@ -30,6 +30,11 @@ Expand from predicted embedding of text (above) to images and video as well as t
 A key use case for embeddings it representing semantic meaning of content, like chunks of text from a document.  Retrieving context for a prompt to an LLM can include using the predicted embedding of the prompt to find matching chunks of text using distance measures like dot product, Euclidean distance, and cosine similarity.  In the following notebook work the math of these methods is explored and visualized to provide intuition for which distance measure should be used for retrieval:
 - [The Math of Similarity](./The%20Math%20of%20Similarity.ipynb)
 
+## Visualizing Embeddings And Embeddings Spaces
+
+While embeddings are high dimensional arrays that represent the latent space of much larger information spaces they are too complex to directly visualize.  The following workflow show introduces tools for visualizinng single embeddings as well as groups of embeddings in a common space.  This includes plotting directly, dimension reduction, and the Tensorflow Embedding projector tool.
+- [Bring Embeddings to Life With Visualization Techniques](./Bring%20Embeddings%20to%20Life%20With%20Visualization%20Techniques.ipynb)
+
 ## Embedding Tablular Data - Autoencoders
 
 There are applications where being able to condense a table can be helpful.  Like fewer features for model training.  One method of learning a condensed representation of a table is an autoencoder, which uses successive hidden layers of a neural network that first condenses (encodes) and then expands (decodes) while comparing the input to the output to create a loss function with a goal of recreating the input from the encoded representation.  The predicted encoding for a row can be used to create an embedding for rows. This embedding can then be used for clustering, row matching (think master data management), and more.
