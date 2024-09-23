@@ -12,3 +12,5 @@
 ---
 # Ranking and Re-Ranking
 > You are here: `vertex-ai-mlops/Applied GenAI/Ranking/readme.md`
+
+- [Vertex AI Agent Builder Ranking API](./Vertex%20AI%20Agent%20Builder%20Ranking%20API.ipynb)
