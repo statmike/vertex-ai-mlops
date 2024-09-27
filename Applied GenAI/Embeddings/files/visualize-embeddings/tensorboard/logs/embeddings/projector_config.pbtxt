@@ -1,0 +1,8 @@
+embeddings {
+  tensor_name: "text/.ATTRIBUTES/VARIABLE_VALUE"
+  metadata_path: "text_metadata.tsv"
+}
+embeddings {
+  tensor_name: "image/.ATTRIBUTES/VARIABLE_VALUE"
+  metadata_path: "image_metadata.tsv"
+}

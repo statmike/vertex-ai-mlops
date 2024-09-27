@@ -1,0 +1,2 @@
+model_checkpoint_path: "embeddings.ckpt-1"
+all_model_checkpoint_paths: "embeddings.ckpt-1"
