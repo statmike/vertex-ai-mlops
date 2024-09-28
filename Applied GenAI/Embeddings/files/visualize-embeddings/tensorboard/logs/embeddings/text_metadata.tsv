@@ -1,118 +1,119 @@
-Sporting - Afghan Hound
-Sporting - American Foxhound
-Sporting - Basset Hound
-Sporting - Beagle
-Sporting - Bloodhound
-Sporting - Brittany
-Sporting - Cocker Spaniel
-Sporting - English Cocker Spaniel
-Sporting - English Springer Spaniel
-Sporting - Field Spaniel
-Sporting - German Shorthaired Pointer
-Sporting - German Wirehaired Pointer
-Sporting - Irish Red Setter
-Sporting - Irish Water Spaniel
-Sporting - Labrador Retriever
-Sporting - Pointer
-Sporting - Rhodesian Ridgeback
-Sporting - Weimaraner
-Sporting - Wirehaired Pointing Griffon
-Hound - Afghan Hound
-Hound - Basset Hound
-Hound - Beagle
-Hound - Bloodhound
-Hound - Borzoi
-Hound - Coonhound
-Hound - English Foxhound
-Hound - Foxhound (American)
-Hound - Harrier
-Hound - Irish Wolfhound
-Hound - Otterhound
-Hound - Rhodesian Ridgeback
-Hound - Saluki
-Hound - Scottish Deerhound
-Hound - Whippet
-Working - Alaskan Malamute
-Working - Australian Shepherd
-Working - Belgian Malinois
-Working - Bernese Mountain Dog
-Working - Boxer
-Working - Doberman Pinscher
-Working - English Springer Spaniel
-Working - German Shepherd
-Working - Golden Retriever
-Working - Great Dane
-Working - Great Pyrenees
-Working - Husky
-Working - Labrador Retriever
-Working - Newfoundland
-Working - Rottweiler
-Working - Siberian Husky
-Working - Standard Schnauzer
-Working - Weimaraner
-Working - Yorkshire Terrier
-Terrier - Airedale Terrier
-Terrier - Bedlington Terrier
-Terrier - Border Terrier
-Terrier - Cairn Terrier
-Terrier - Dandie Dinmont Terrier
-Terrier - Fox Terrier (Smooth and Wire)
-Terrier - Irish Terrier
-Terrier - Jack Russell Terrier
-Terrier - Kerry Blue Terrier
-Terrier - Lakeland Terrier
-Terrier - Manchester Terrier (Standard and Toy)
-Terrier - Miniature Schnauzer
-Terrier - Norfolk Terrier
-Terrier - Norwich Terrier
-Terrier - Scottish Terrier
-Terrier - Sealyham Terrier
-Terrier - Skye Terrier
-Terrier - Soft Coated Wheaten Terrier
-Terrier - Staffordshire Bull Terrier
-Terrier - Tibetan Terrier
-Terrier - Welsh Terrier
-Terrier - Wirehaired Fox Terrier
-Terrier - Yorkshire Terrier
-Toy Dog Breeds - Chihuahua
-Toy Dog Breeds - Yorkshire Terrier
-Toy Dog Breeds - Pomeranian
-Toy Dog Breeds - Maltese
-Toy Dog Breeds - Cavalier King Charles Spaniel
-Toy Dog Breeds - Pug
-Toy Dog Breeds - French Bulldog
-Toy Dog Breeds - Shih Tzu
-Toy Dog Breeds - Bichon Frise
-Toy Dog Breeds - Miniature Pinscher
-Non-Sporting - Bichon Frise
-Non-Sporting - Boston Terrier
-Non-Sporting - Bulldog
-Non-Sporting - Cavalier King Charles Spaniel
-Non-Sporting - Chinese Crested
-Non-Sporting - Chow Chow
-Non-Sporting - French Bulldog
-Non-Sporting - Havanese
-Non-Sporting - Keeshond
-Non-Sporting - Lhasa Apso
-Non-Sporting - Maltese
-Non-Sporting - Pekingese
-Non-Sporting - Pomeranian
-Non-Sporting - Shih Tzu
-Non-Sporting - Tibetan Spaniel
-Non-Sporting - Brussels Griffon
-Non-Sporting - Pug
-Non-Sporting - Shih Tzu
-Herding - Australian Shepherd
-Herding - Border Collie
-Herding - Belgian Malinois
-Herding - Bearded Collie
-Herding - Bouvier des Flandres
-Herding - Briard
-Herding - Cattledog (Australian Cattle Dog)
-Herding - Collie (Rough Collie)
-Herding - German Shepherd Dog
-Herding - Old English Sheepdog
-Herding - Puli
-Herding - Shetland Sheepdog (Sheltie)
-Herding - Welsh Corgi (Pembroke)
-Herding - Welsh Corgi (Cardigan)
+Group	Breed
+Sporting	Afghan Hound
+Sporting	American Foxhound
+Sporting	Basset Hound
+Sporting	Beagle
+Sporting	Bloodhound
+Sporting	Brittany
+Sporting	Cocker Spaniel
+Sporting	English Cocker Spaniel
+Sporting	English Springer Spaniel
+Sporting	Field Spaniel
+Sporting	German Shorthaired Pointer
+Sporting	German Wirehaired Pointer
+Sporting	Irish Red Setter
+Sporting	Irish Water Spaniel
+Sporting	Labrador Retriever
+Sporting	Pointer
+Sporting	Rhodesian Ridgeback
+Sporting	Weimaraner
+Sporting	Wirehaired Pointing Griffon
+Hound	Afghan Hound
+Hound	Basset Hound
+Hound	Beagle
+Hound	Bloodhound
+Hound	Borzoi
+Hound	Coonhound
+Hound	English Foxhound
+Hound	Foxhound (American)
+Hound	Harrier
+Hound	Irish Wolfhound
+Hound	Otterhound
+Hound	Rhodesian Ridgeback
+Hound	Saluki
+Hound	Scottish Deerhound
+Hound	Whippet
+Working	Alaskan Malamute
+Working	Australian Shepherd
+Working	Belgian Malinois
+Working	Bernese Mountain Dog
+Working	Boxer
+Working	Doberman Pinscher
+Working	English Springer Spaniel
+Working	German Shepherd
+Working	Golden Retriever
+Working	Great Dane
+Working	Great Pyrenees
+Working	Husky
+Working	Labrador Retriever
+Working	Newfoundland
+Working	Rottweiler
+Working	Siberian Husky
+Working	Standard Schnauzer
+Working	Weimaraner
+Working	Yorkshire Terrier
+Terrier	Airedale Terrier
+Terrier	Bedlington Terrier
+Terrier	Border Terrier
+Terrier	Cairn Terrier
+Terrier	Dandie Dinmont Terrier
+Terrier	Fox Terrier (Smooth and Wire)
+Terrier	Irish Terrier
+Terrier	Jack Russell Terrier
+Terrier	Kerry Blue Terrier
+Terrier	Lakeland Terrier
+Terrier	Manchester Terrier (Standard and Toy)
+Terrier	Miniature Schnauzer
+Terrier	Norfolk Terrier
+Terrier	Norwich Terrier
+Terrier	Scottish Terrier
+Terrier	Sealyham Terrier
+Terrier	Skye Terrier
+Terrier	Soft Coated Wheaten Terrier
+Terrier	Staffordshire Bull Terrier
+Terrier	Tibetan Terrier
+Terrier	Welsh Terrier
+Terrier	Wirehaired Fox Terrier
+Terrier	Yorkshire Terrier
+Toy Dog Breeds	Chihuahua
+Toy Dog Breeds	Yorkshire Terrier
+Toy Dog Breeds	Pomeranian
+Toy Dog Breeds	Maltese
+Toy Dog Breeds	Cavalier King Charles Spaniel
+Toy Dog Breeds	Pug
+Toy Dog Breeds	French Bulldog
+Toy Dog Breeds	Shih Tzu
+Toy Dog Breeds	Bichon Frise
+Toy Dog Breeds	Miniature Pinscher
+Non-Sporting	Bichon Frise
+Non-Sporting	Boston Terrier
+Non-Sporting	Bulldog
+Non-Sporting	Cavalier King Charles Spaniel
+Non-Sporting	Chinese Crested
+Non-Sporting	Chow Chow
+Non-Sporting	French Bulldog
+Non-Sporting	Havanese
+Non-Sporting	Keeshond
+Non-Sporting	Lhasa Apso
+Non-Sporting	Maltese
+Non-Sporting	Pekingese
+Non-Sporting	Pomeranian
+Non-Sporting	Shih Tzu
+Non-Sporting	Tibetan Spaniel
+Non-Sporting	Brussels Griffon
+Non-Sporting	Pug
+Non-Sporting	Shih Tzu
+Herding	Australian Shepherd
+Herding	Border Collie
+Herding	Belgian Malinois
+Herding	Bearded Collie
+Herding	Bouvier des Flandres
+Herding	Briard
+Herding	Cattledog (Australian Cattle Dog)
+Herding	Collie (Rough Collie)
+Herding	German Shepherd Dog
+Herding	Old English Sheepdog
+Herding	Puli
+Herding	Shetland Sheepdog (Sheltie)
+Herding	Welsh Corgi (Pembroke)
+Herding	Welsh Corgi (Cardigan)

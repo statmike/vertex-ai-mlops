@@ -5,4 +5,9 @@ embeddings {
 embeddings {
   tensor_name: "image/.ATTRIBUTES/VARIABLE_VALUE"
   metadata_path: "image_metadata.tsv"
+  sprite {
+    image_path: "sprite.jpg"
+    single_image_dim: 150
+    single_image_dim: 150
+  }
 }
