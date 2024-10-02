@@ -17,12 +17,11 @@
 - [CatBoost In Notebook](./CatBoost%20In%20Notebook.ipynb)
 - [CatBoost Custom Prediction With FastAPI](./CatBoost%20Custom%20Prediction%20With%20FastAPI.ipynb)
     - Build A custom container with Cloud Build and store it in Artifact Registry
-    - Multiple version of formatting the output for prediction on the same container
-    - Use the same containner to serve predictions three ways:
+    - Multiple versions of formatting the output for prediction on the same container
+    - Use the same container to serve predictions three ways:
         - Test the container locally with Docker
         - Register the model (with container) in Vertex Model Registry and deploy To a Vertex AI Prediction Endpoint
         - Deploy the container and serve predictions with Cloud Run
-
----
-todo:
-- Pipeline For model train + deploy + test
+- CatBoost Training Pipeline
+    - Train + Eval + Registry + Deploy + Test
+    - **In Development**
