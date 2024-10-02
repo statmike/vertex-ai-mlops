@@ -15,3 +15,10 @@
 [CatBoost](https://catboost.ai/) is an OSS library for gradient boosted decision trees.
 
 - [CatBoost In Notebook](./CatBoost%20In%20Notebook.ipynb)
+- [CatBoost Custom Prediction With FastAPI](./CatBoost%20Custom%20Prediction%20With%20FastAPI.ipynb)
+
+---
+todo:
+- Model on Vertex: Model Registry, Vertex Endpoints
+- Model on Cloud Run
+- Pipeline For model train + deploy + test
