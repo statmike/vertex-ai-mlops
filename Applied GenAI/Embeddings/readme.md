@@ -13,7 +13,7 @@
 # Embeddings
 > You are here: `vertex-ai-mlops/Applied GenAI/Embeddings/readme.md`
 
-Embeddings are condensed representations of data that retain the information from the data.  They are represented by a vector of numbers, usually floats, like `[0, 1, 0, 1]` or `[0.63475, 0.234, ..., 0.2646]`.  They are a trained/learned representation for data like text, images, and tables and served as preditions form these models. Based on the type of model that is used in training they can be very good at retaining latent information like semantic meaning in text, objects in images, and correlation in tables.  This series shows ways of getting predicted embeddings and example uses of embeddings.  
+Embeddings are condensed representations of data that retain the information from the data.  They are represented by a vector of numbers, usually floats, like `[0, 1, 0, 1]` or `[0.63475, 0.234, ..., 0.2646]`.  They are a trained/learned representation for data like text, images, and tables and served as preditions from these models. Based on the type of model that is used in training they can be very good at retaining latent information like semantic meaning in text, objects in images, and correlation in tables.  This series shows ways of getting predicted embeddings and example uses of embeddings.  
 
 ## Vertex AI Text Embeddings API
 
@@ -32,7 +32,7 @@ A key use case for embeddings it representing semantic meaning of content, like 
 
 ## Visualizing Embeddings And Embeddings Spaces
 
-While embeddings are high dimensional arrays that represent the latent space of much larger information spaces they are too complex to directly visualize.  The following workflow show introduces tools for visualizinng single embeddings as well as groups of embeddings in a common space.  This includes plotting directly, dimension reduction, and the Tensorflow Embedding projector tool.
+While embeddings are high dimensional arrays that represent the latent space of much larger information spaces they are too complex to directly visualize.  The following workflow show introduces tools for visualizinng single embeddings as well as groups of embeddings in a common space.  This includes plotting directly, dimension reduction, and the Tensorboard Embedding projector tool.
 - [Bring Embeddings to Life With Visualization Techniques](./Bring%20Embeddings%20to%20Life%20With%20Visualization%20Techniques.ipynb)
 
 ## Embedding Tablular Data - Autoencoders
