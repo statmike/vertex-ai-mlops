@@ -12,13 +12,12 @@
 ---
 # /Applied Optimization/readme.md
 
-This series of notebooks will feature examples for optimization - primarily with Vertex AI Vizier and Open Source Vizier.
+This series of notebook based workflows will feature examples for optimization - primarily with Vertex AI Vizier and Open Source Vizier.
 
-**Prerequisites**
-- [00 - Setup.ipynb](../00%20-%20Setup/00%20-%20Environment%20Setup.ipynb)
-
-## Notebooks:
+Workflows:
 - [Vertex AI Vizier Optimization Service](./Vertex%20AI%20Vizier%20Optimization%20Service.ipynb)
+- [Vertex AI Vizier - Getting Started](./Vertex%20AI%20Vizier%20-%20Getting Started)
+
 
 ## Additional Notebooks Using Vizier throughout this repository:
 - [../Applied Forecasting/Vertex AI Pipelines - Forecasting Tournament with Kubeflow Pipelines (KFP)](../Applied%20Forecasting/Vertex%20AI%20Pipelines%20-%20Forecasting%20Tournament%20with%20Kubeflow%20Pipelines%20(KFP).ipynb)
