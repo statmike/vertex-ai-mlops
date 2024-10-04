@@ -16,7 +16,7 @@ This series of notebook based workflows will feature examples for optimization -
 
 Workflows:
 - [Vertex AI Vizier Optimization Service](./Vertex%20AI%20Vizier%20Optimization%20Service.ipynb)
-- [Vertex AI Vizier - Getting Started](./Vertex%20AI%20Vizier%20-%20Getting Started)
+- [Vertex AI Vizier - Getting Started](./Vertex%20AI%20Vizier%20-%20Getting%20Started.ipynb)
 
 
 ## Additional Notebooks Using Vizier throughout this repository:
