@@ -11,6 +11,7 @@
 
 ---
 # /Applied Optimization/readme.md
+> You are here: `vertex-ai-mlops/Applied Optimization/readme.md`
 
 This series of notebook based workflows will feature examples for optimization - primarily with Vertex AI Vizier and Open Source Vizier.
 
