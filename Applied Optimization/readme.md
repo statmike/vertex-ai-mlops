@@ -15,9 +15,13 @@
 
 This series of notebook based workflows will feature examples for optimization - primarily with Vertex AI Vizier and Open Source Vizier.
 
-Workflows:
-- [Vertex AI Vizier Optimization Service](./Vertex%20AI%20Vizier%20Optimization%20Service.ipynb)
+## Workflows:
 - [Vertex AI Vizier - Getting Started](./Vertex%20AI%20Vizier%20-%20Getting%20Started.ipynb)
+    - includes multiple parameters and multiple objectives (metrics)
+    - includes safety threshold for a metric
+    - includes examples of loading past trials as a starting point
+- [Vertex AI Vizier Optimization Service](./Vertex%20AI%20Vizier%20Optimization%20Service.ipynb)
+    - Older introduction without all the features demonstrated
 
 
 ## Additional Notebooks Using Vizier throughout this repository:
