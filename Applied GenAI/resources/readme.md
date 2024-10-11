@@ -26,5 +26,5 @@ Screenshots are also stored in the `./images` folder which is organized by noteb
 ```
 <p align="center"><center>
     <img src="./resources/images/grounding/vs_app_preview.png" width="75%">
-</center><p>
+</center></p>
 ```
