@@ -17,6 +17,8 @@ Workflows:
 - [Vertex AI Gemini API](./Vertex%20AI%20Gemini%20API.ipynb)
 - [Vertex AI Imagen For Image Generation](./Vertex%20AI%20Imagen%20For%20Image%20Generation.ipynb)
 - [Tokens - Counting And Listing](./Tokens%20-%20Counting%20And%20Listing.ipynb)
+- [Long Context Retrieval With The Vertex AI Gemini API](./Long%20Context%20Retrieval%20With%20The%20Vertex%20AI%20Gemini%20API.ipynb)
+
 
 Helper Workflows:
 - [Create Files For Multimodal Prompt Examples](./Create%20Files%20For%20Multimodal%20Prompt%20Examples.ipynb)
