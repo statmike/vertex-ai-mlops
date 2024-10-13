@@ -13,6 +13,10 @@
 # Generate
 > You are here: `vertex-ai-mlops/Applied GenAI/Generate/readme.md`
 
+<p align="center"><center>
+    <img src="./resources/images/created/applied-genai/overview-build-generate.png" width="75%">
+</center></p>
+
 Workflows:
 - [Vertex AI Gemini API](./Vertex%20AI%20Gemini%20API.ipynb)
 - [Vertex AI Imagen For Image Generation](./Vertex%20AI%20Imagen%20For%20Image%20Generation.ipynb)
