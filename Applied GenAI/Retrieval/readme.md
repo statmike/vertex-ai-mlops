@@ -14,5 +14,5 @@
 > You are here: `vertex-ai-mlops/Applied GenAI/Retrieval/readme.md`
 
 <p align="center"><center>
-    <img src="./resources/images/created/applied-genai/overview-build-.png" width="75%">
+    <img src="../resources/images/created/applied-genai/overview-build-index.png" width="75%">
 </center></p>

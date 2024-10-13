@@ -14,7 +14,7 @@
 > You are here: `vertex-ai-mlops/Applied GenAI/Chunking/readme.md`
 
 <p align="center"><center>
-    <img src="./resources/images/created/applied-genai/overview-build-chunk.png" width="75%">
+    <img src="../resources/images/created/applied-genai/overview-build-chunk.png" width="75%">
 </center></p>
 
 In retrieval augement generation (RAG) workflows the goal is to retrieve context chunks related to a query.  While whole documents are possible with long-context LLMs like Gemini it is efficient to retrieve the most related context via a retrieval system.  These systems can be simple or complex but at the core is the choice of methods for breaking down content into logical parts - chunks.  This series of workflows examines methods to help with automating the creation of chunks from documents.

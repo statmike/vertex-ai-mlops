@@ -14,7 +14,7 @@
 > You are here: `vertex-ai-mlops/Applied GenAI/Embeddings/readme.md`
 
 <p align="center"><center>
-    <img src="./resources/images/created/applied-genai/overview-build-embed.png" width="75%">
+    <img src="../resources/images/created/applied-genai/overview-build-embed.png" width="75%">
 </center></p>
 
 Embeddings are condensed representations of data that retain the information from the data.  They are represented by a vector of numbers, usually floats, like `[0, 1, 0, 1]` or `[0.63475, 0.234, ..., 0.2646]`.  They are a trained/learned representation for data like text, images, and tables and served as preditions from these models. Based on the type of model that is used in training they can be very good at retaining latent information like semantic meaning in text, objects in images, and correlation in tables.  This series shows ways of getting predicted embeddings and example uses of embeddings.  

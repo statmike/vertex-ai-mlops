@@ -14,7 +14,7 @@
 > You are here: `vertex-ai-mlops/Applied GenAI/Validate/readme.md`
 
 <p align="center"><center>
-    <img src="./resources/images/created/applied-genai/overview-build-validate.png" width="75%">
+    <img src="../resources/images/created/applied-genai/overview-build-validate.png" width="75%">
 </center></p>
 
 - [Vertex AI Agent Builder Check Grounding API](../Validate/Vertex%20AI%20Agent%20Builder%20Check%20Grounding%20API.ipynb)

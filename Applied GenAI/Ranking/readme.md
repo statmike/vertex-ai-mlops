@@ -14,7 +14,7 @@
 > You are here: `vertex-ai-mlops/Applied GenAI/Ranking/readme.md`
 
 <p align="center"><center>
-    <img src="./resources/images/created/applied-genai/overview-build-rank.png" width="75%">
+    <img src="../resources/images/created/applied-genai/overview-build-rank.png" width="75%">
 </center></p>
 
 - [Vertex AI Agent Builder Ranking API](./Vertex%20AI%20Agent%20Builder%20Ranking%20API.ipynb)
