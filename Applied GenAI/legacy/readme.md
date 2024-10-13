@@ -50,7 +50,7 @@ This section covers the basics for getting started with the Python Client.
 >- [Getting Started - Vertex AI GenAI Python Client](./Getting%20Started%20-%20Vertex%20AI%20GenAI%20Python%20Client.ipynb)
 
 >For an overview of handling asynchronous requests when working with generative AI APIs check out the workflow:
->- [Python Asynchronous API Calls](../Python%20Asynchronous%20API%20Calls.ipynb)
+>- [Python Asynchronous API Calls](./Python%20Asynchronous%20API%20Calls.ipynb)
 
 **Install**
 
