@@ -1,8 +1,8 @@
-![tracker](https://us-central1-vertex-ai-mlops-369716.cloudfunctions.net/pixel-tracking?path=statmike%2Fvertex-ai-mlops%2FApplied+GenAI&file=readme.md)
+![tracker](https://us-central1-vertex-ai-mlops-369716.cloudfunctions.net/pixel-tracking?path=statmike%2Fvertex-ai-mlops%2FApplied+GenAI%2Flegacy&file=readme.md)
 <!--- header table --->
 <table align="left">     
   <td style="text-align: center">
-    <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20GenAI/readme.md">
+    <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20GenAI/legacy/readme.md">
       <img src="https://cloud.google.com/ml-engine/images/github-logo-32px.png" alt="GitHub logo">
       <br>View on<br>GitHub
     </a>
@@ -10,16 +10,6 @@
 </table><br/><br/><br/><br/>
 
 ---
-
-**File Move Notices**
-
-This file moved locations:
-- On 10/13/2024 (mm/dd/yyyy)
-	- From: `Applied GenAI/readme.md`
-	- To: `Applied GenAI/legacy/readme.md`
----
-<!---end of move notices--->
-
 # Applied Generative AI
 > You are here: `vertex-ai-mlops/Applied GenAI/readme.md`
     
