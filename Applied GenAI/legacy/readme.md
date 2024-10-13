@@ -10,6 +10,16 @@
 </table><br/><br/><br/><br/>
 
 ---
+
+**File Move Notices**
+
+This file moved locations:
+- On 10/13/2024 (mm/dd/yyyy)
+	- From: `Applied GenAI/readme.md`
+	- To: `Applied GenAI/legacy/readme.md`
+---
+<!---end of move notices--->
+
 # Applied Generative AI
 > You are here: `vertex-ai-mlops/Applied GenAI/readme.md`
     
@@ -403,7 +413,7 @@ Ask complex scenario based questions and get text generated answers with referen
 **Sports Rules:**
 - [Vertex AI GenAI For Document Q&A - MLB Rules For Baseball](./Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20MLB%20Rules%20For%20Baseball.ipynb)
 - [Vertex AI GenAI For Document Q&A - USGA Rule For Golf](./Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20USGA%20Rules%20For%20Golf.ipynb)
-- [Vertex AI GenAI For Document Q&A - IFAB Laws For Football](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20IFAB%20Laws%20For%20Football.ipynb)
+- [Vertex AI GenAI For Document Q&A - IFAB Laws For Soccer](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20IFAB%20Laws%20For%20Soccer.ipynb)
 - [Vertex AI GenAI For Document Q&A - MCC Laws For Cricket](./Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20MCC%20Laws%20For%20Cricket.ipynb)
 - [Vertex AI GenAI For Document Q&A - NBA Rules For Basketball](./Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20NBA%20Rules%20For%20Basketball.ipynb)
 - [Vertex AI GenAI For Document Q&A - NFL Rules For Football](./Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20NFL%20Rules%20For%20Football.ipynb)
