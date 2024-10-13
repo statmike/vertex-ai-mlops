@@ -54,3 +54,11 @@ This section covers workflows for working with [Generative AI on Vertex AI](http
       </tr>
     </tbody>
   </table>
+  
+  ---
+  ## Older Content Moved
+  
+  If you visited this page in the past and are back to find a file that you remembered but it is not here:
+  - Files moved to the [/legacy](./legacy/readme.md) folder
+  
+  ---
