@@ -10,12 +10,10 @@
 </table><br/><br/><br/><br/>
 
 ---
-# Applied Generative AI
-> You are here: `vertex-ai-mlops/Applied GenAI/readme.md`
+# Applied Generative AI (Legacy)
+> You are here: `vertex-ai-mlops/Applied GenAI/legacy/readme.md`
     
-> **NOTE** - content in this folder is changing and this readme needs to be updated to reflect:
->- files moving the the `/legacy` subfolder
->- new files entering for a new series on grounding
+> **NOTE** - content in this folder was previously in the parent folder structure and has been moved here to preserve it while new content has been introduced with better techniques and newer features.  This content might still be helpful.  Make sure to check out the latest content in the [main folder](../readme.md).
 
 This series of notebooks highlights the use of [Vertex AI Generative AI](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/overview) for workflows that include using Google's foundational large generative AI models.  [These models](https://cloud.google.com/vertex-ai/docs/generative-ai/learn/models) are hosted by Google and used by API:
 - Gemini API (Multimodal data, text, code, chat)

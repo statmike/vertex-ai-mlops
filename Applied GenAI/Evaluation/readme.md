@@ -12,5 +12,3 @@
 ---
 # Evaluation
 > You are here: `vertex-ai-mlops/Applied GenAI/Evaluation/readme.md`
-
-- [Vertex AI Agent Builder Check Grounding API](../Validate/Vertex%20AI%20Agent%20Builder%20Check%20Grounding%20API.ipynb)

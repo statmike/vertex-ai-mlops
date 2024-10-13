@@ -10,7 +10,6 @@
 </table><br/><br/><br/><br/>
 
 ---
----
 # Applied Generative AI
 > You are here: `vertex-ai-mlops/Applied GenAI/readme.md`
 
@@ -60,17 +59,23 @@ This section covers workflows for working with [Generative AI on Vertex AI](http
         <td style="border-bottom: none;"></td>
       </tr>
       <tr>
-        <td style="text-align: center;"><a href="./Evaluation/readme.md">Validate</a></td>
+        <td style="text-align: center;"><a href="./Validate/readme.md">Validate</a></td>
         <td style="border-bottom: none;"></td>
         <td style="border-bottom: none;"></td>
       </tr>
     </tbody>
   </table>
   
-  ---
-  ## Older Content Moved
   
-  If you visited this page in the past and are back to find a file that you remembered but it is not here:
-  - Files moved to the [/legacy](./legacy/readme.md) folder
+## So How Do LLMs Work?
   
-  ---
+The following workflow uses an LLM to show how LLMs operate.  It makes a fun exercise out of word guessing when the next word in a pattern is from a famous passage of literature. Check it out for a brief overview to help with intuition when working with LLMs:
+- [Understanding LLMs](./Understanding%20LLMs.ipynb) 
+ 
+---
+## Older Content Moved
+
+If you visited this page in the past and are back to find a file that you remembered but it is not here:
+- Files moved to the [/legacy](./legacy/readme.md) folder
+
+---
