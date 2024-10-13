@@ -12,44 +12,6 @@
 ---
 # Applied Generative AI
 > You are here: `vertex-ai-mlops/Applied GenAI/readme.md`
-
-This section covers workflows for working with [Generative AI on Vertex AI](https://cloud.google.com/vertex-ai/generative-ai/docs/learn/overview), which are large models trained to continue inputs with likely outputs. While simply prompting an LLM to get helpful responses is a great starting point, the tools around these models unlock even more use cases and scalability. This enables you to quickly trial, iterate, and develop ideas into solutions. To jump right into generation, head over to the [Generate](./Generate/readme.md) section and learn all about Gemini models and Imagen.  You can also use the following table to jump to a section of interest, or keep reading here to discover this content as part of a narrative overview on applying generative AI.
-
-<p align="center"><center>
-    <img src="./resources/images/created/applied-genai/overview.png" width="75%">
-</center><p>
-
-  <table>
-    <thead>
-      <tr>
-        <th colspan="6" style="text-align: center;">Links To Content Sections</th> 
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td style="text-align: center;">Building with Generative AI</td>
-        <td style="text-align: center;"><a href="./Chunking/readme.md">Process</a></td>
-        <td style="text-align: center;"><a href="./Embeddings/readme.md">Embeddings</a></td>
-        <td style="text-align: center;"><a href="./Retrieval/readme.md">Index & Retrieve</a></td>
-        <td style="text-align: center;"><a href="./Ranking/readme.md">Rank</a></td>
-        <td style="text-align: center;"><a href="./Generate/readme.md">Generate</a></td>
-      </tr>
-      <tr>
-        <td style="text-align: center;">Customize</td>
-        <td style="text-align: center;" colspan="3">Tuning</td>
-        <td style="text-align: center;" colspan="2">Evaluation</td>
-      </tr>
-      <tr>
-        <td style="text-align: center;">Augment</td>
-        <td style="text-align: center;" colspan="3">Function Calling</td>
-        <td style="text-align: center;" colspan="2">Extensions</td>
-      </tr>
-    </tbody>
-  </table>
-
-
----
-## Previous Content
     
 > **NOTE** - content in this folder is changing and this readme needs to be updated to reflect:
 >- files moving the the `/legacy` subfolder
