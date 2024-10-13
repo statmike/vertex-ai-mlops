@@ -29,7 +29,7 @@ This series of notebooks highlights the use of [Vertex AI Generative AI](https:/
 - A great repository with notebooks, code samples , sample applications, and more: [GitHub/GoogleCloudPlatform/generative-ai](https://github.com/GoogleCloudPlatform/generative-ai)
 - Advanced Prompt Engineering at [GitHub/GoogleCloudPlatform/applied-ai-engineering-samples](https://github.com/GoogleCloudPlatform/applied-ai-engineering-samples/tree/main/genai-on-vertex-ai/advanced_prompting_training)
 - For a solution based approach to generative AI search and conversation applications check out [Vertex AI Search and Conversation](https://cloud.google.com/generative-ai-app-builder?hl=en)
-    - For an overview of using in application workflow check out the subfolder in this repository [Vertex AI Search](./legacy/Vertex%20AI%20Search/readme.md)
+    - For an overview of using in application workflow check out the subfolder in this repository [Vertex AI Search](./Vertex%20AI%20Search/readme.md)
 
 ---
 ## Getting Started
@@ -37,10 +37,10 @@ This series of notebooks highlights the use of [Vertex AI Generative AI](https:/
 This section covers the basics for getting started with the Python Client. 
 
 >For a complete getting started overview of all the foundation models in use along with tips for managing asynchronous and streaming request as well as handling all requests within quota please check out this workflow:
->- [Getting Started - Vertex AI GenAI Python Client](Getting%20Started%20-%20Vertex%20AI%20GenAI%20Python%20Client.ipynb)
+>- [Getting Started - Vertex AI GenAI Python Client](../Getting%20Started%20-%20Vertex%20AI%20GenAI%20Python%20Client.ipynb)
 
 >For an overview of handling asynchronous requests when working with generative AI APIs check out the workflow:
->- [Python Asynchronous API Calls](./Python%20Asynchronous%20API%20Calls.ipynb)
+>- [Python Asynchronous API Calls](../Python%20Asynchronous%20API%20Calls.ipynb)
 
 **Install**
 
@@ -229,7 +229,7 @@ Before jumping into use cases it is a good idea to think about what LLMs are doi
 A good way to "see" this is to pick a popular passage of public domain text. Like the opening paragraph/sentence of "A Tale of Two Cites" by Charles Dickens and Harvey Dunn.  "It was the best of times, it was the worst of times, ...".  How many input/prompt words before the LLM picks the correct next word?  How many before it can fill in the remainder of the passage?  What is the input/prompt starts mid-sentence?  
 
 Expore all of these questions interatively with the notebook:
-- [Understanding LLMs](./Understanding%20LLMs.ipynb)
+- [Understanding LLMs](../Understanding%20LLMs.ipynb)
 
 ---
 ## GenAI Use Cases
@@ -241,7 +241,7 @@ Reference - [Overview of text prompt design](https://cloud.google.com/vertex-ai/
 While using an LLM basically comes down to text input and text output, it can be helpful to understand how to frame the text input to achieve a desired output.  This is known as prompting.  Experimenting with prompting is called prompt tuning.  How the input prompt is framed can solve different types of tasks like summarization, classification and various extraction tasks (generate text, rewrite text, answer questions).  A high level overview of prompt design for these tasks is depicted below:
 
 <p align="center" width="100%"><center>
-    <img align="center" alt="Overview Chart" src="../architectures/notebooks/applied/genai/prompting.png" width="45%">
+    <img align="center" alt="Overview Chart" src="../../architectures/notebooks/applied/genai/prompting.png" width="45%">
 </center></p>
     
 An incredibly useful task for LLMs is answering questions - the far right extraction tasks depicted above.  There are several approaches to constructing prompts for this type of tasks.  The simplest is just asking the question - single shot.  This relies on the LLMs pre-trained data to construct an answer.  LLMs can have vast knowledge of many topics but are unaware of your private and/or newly created information.  
@@ -269,7 +269,7 @@ When the LLM needs additional information related to the question in order to an
 Prompting approaches for question answering are shown in the diagram below:
     
 <p align="center" width="100%"><center>
-    <img align="center" alt="Overview Chart" src="../architectures/notebooks/applied/genai/qa.png" width="45%">
+    <img align="center" alt="Overview Chart" src="../../architectures/notebooks/applied/genai/qa.png" width="45%">
 </center></p>
 
 **Retrieving Context**
@@ -277,7 +277,7 @@ Prompting approaches for question answering are shown in the diagram below:
 Ultimately, the LLM needs contextual information about the question in order to answer it.  Rather than needing your custom or private information as part of the LLM you could supply relevant context from your library or warehouse of information along with a question so that the LLM is tasked with reading, and determining how to answer using the supplied context.  The core to this approach is retrieving the context.  The chart below shows many sources that can be used to retrieve context for the question.
 
 <p align="center" width="100%"><center>
-    <img align="center" alt="Overview Chart" src="../architectures/notebooks/applied/genai/context.png" width="45%">
+    <img align="center" alt="Overview Chart" src="../../architectures/notebooks/applied/genai/context.png" width="45%">
 </center></p>
 
 The key is retrieving context relevant to the specific question being asked.  Not too much context, not off topic context, but specific relevant context.  A great advantage of this approach is that the LLM does not necessary need specific training or parameters to understand your private or new text because the text is being supplied in the prompt - as context to the question.
@@ -323,7 +323,7 @@ The following sections links to many notebook based examples of using LLMs as de
 
 Text can come in the form of audio.  This requires a conversion to text, transcription.  Google Cloud provides a Speech-To-Text API with multiple methods to handle this process depending on the needs, length of audio, and file/streaming application.  
 
-- [Summarize Conversations - Text and Audio](./legacy/Summarize%20Conversations%20-%20Text%20and%20Audio.ipynb)
+- [Summarize Conversations - Text and Audio](./Summarize%20Conversations%20-%20Text%20and%20Audio.ipynb)
     - Start with history of a chat transcription in text
     - Continue the chat using a Chat LLM as an agent
     - Uses an LLM to Summarize the combined chat transcription with the added agent interaction
@@ -339,10 +339,10 @@ Text can come in the form of audio.  This requires a conversion to text, transcr
 These notebooks use code generation LLMs to first query BigQuery to retrieve context for users questions.  Then the response is provided to text generation LLMs to answer the question.
 
 <p align="center" width="100%"><center>
-    <img align="center" alt="Overview Chart" src="../architectures/notebooks/applied/genai/bq_qa.png" width="45%">
+    <img align="center" alt="Overview Chart" src="../../architectures/notebooks/applied/genai/bq_qa.png" width="45%">
 </center></p>
 
-- [Vertex AI GenAI For BigQuery Q&A - Overview](./legacy/Vertex%20AI%20GenAI%20For%20BigQuery%20Q%26A%20-%20Overview.ipynb)
+- [Vertex AI GenAI For BigQuery Q&A - Overview](./Vertex%20AI%20GenAI%20For%20BigQuery%20Q%26A%20-%20Overview.ipynb)
 
 **Extended concepts:**
 
@@ -363,7 +363,7 @@ Using LLMs to query data in BigQuery highlights the need for descriptive metadat
 
 This example workflow shows how to use an LLM to generate better naming and descriptions through interpretation of the content of tables. 
 
-- [Vertex AI GenAI For BigQuery Metadata - Make Better Tables](./legacy/Vertex%20AI%20GenAI%20For%20BigQuery%20Metadata%20-%20Make%20Better%20Tables.ipynb)
+- [Vertex AI GenAI For BigQuery Metadata - Make Better Tables](./Vertex%20AI%20GenAI%20For%20BigQuery%20Metadata%20-%20Make%20Better%20Tables.ipynb)
 
 ---
 ### BigQuery Advisor For More Efficient Code
@@ -372,7 +372,7 @@ Code is a language.  A common syntax is SQL.  BigQuery runs GoogleSQL and a comm
 
 Using BigQuery and Vertex AI Codey APIs it is possible to build a BigQuery Advisory!
 
-[Vertex AI GenAI For Rewriting - BigQuery Advisor With Codey](./legacy/Vertex%20AI%20GenAI%20For%20Rewriting%20-%20BigQuery%20Advisor%20With%20Codey.ipynb)
+[Vertex AI GenAI For Rewriting - BigQuery Advisor With Codey](./Vertex%20AI%20GenAI%20For%20Rewriting%20-%20BigQuery%20Advisor%20With%20Codey.ipynb)
 - Use the BigQuery Information Schema to find potentially inefficient queries.  In this case identify the queries with longest syntax as an example.
 - Use BigQuery ML to directly connect to Vertex AI Generative AI APIs and get descriptions of long SQL statements
 - Use Vertex AI Codey APIs to rewrite long code with a target of shorter syntax
@@ -396,27 +396,27 @@ Ask complex scenario based questions and get text generated answers with referen
 - Saves the document parsing and embeddings to GCS and/or BigQuery for retrieval on future runs - saves repeat cost and time
 
 <p align="center" width="100%"><center>
-    <img align="center" alt="Overview Chart" src="../architectures/notebooks/applied/genai/doc_qa.png" width="45%">
+    <img align="center" alt="Overview Chart" src="../../architectures/notebooks/applied/genai/doc_qa.png" width="45%">
 </center></p>
 
     
 **Sports Rules:**
-- [Vertex AI GenAI For Document Q&A - MLB Rules For Baseball](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20MLB%20Rules%20For%20Baseball.ipynb)
-- [Vertex AI GenAI For Document Q&A - USGA Rule For Golf](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20USGA%20Rules%20For%20Golf.ipynb)
+- [Vertex AI GenAI For Document Q&A - MLB Rules For Baseball](./Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20MLB%20Rules%20For%20Baseball.ipynb)
+- [Vertex AI GenAI For Document Q&A - USGA Rule For Golf](./Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20USGA%20Rules%20For%20Golf.ipynb)
 - [Vertex AI GenAI For Document Q&A - IFAB Laws For Football](./Vertex%20AI%20GenAI%20For%20Document%20Q&A%20-%20IFAB%20Laws%20For%20Football.ipynb)
-- [Vertex AI GenAI For Document Q&A - MCC Laws For Cricket](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20MCC%20Laws%20For%20Cricket.ipynb)
-- [Vertex AI GenAI For Document Q&A - NBA Rules For Basketball](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20NBA%20Rules%20For%20Basketball.ipynb)
-- [Vertex AI GenAI For Document Q&A - NFL Rules For Football](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20NFL%20Rules%20For%20Football.ipynb)
-- [Vertex AI GenAI For Document Q&A - NHL Rules For Hockey](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20NHL%20Rules%20For%20Hockey.ipynb)
+- [Vertex AI GenAI For Document Q&A - MCC Laws For Cricket](./Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20MCC%20Laws%20For%20Cricket.ipynb)
+- [Vertex AI GenAI For Document Q&A - NBA Rules For Basketball](./Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20NBA%20Rules%20For%20Basketball.ipynb)
+- [Vertex AI GenAI For Document Q&A - NFL Rules For Football](./Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20NFL%20Rules%20For%20Football.ipynb)
+- [Vertex AI GenAI For Document Q&A - NHL Rules For Hockey](./Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20NHL%20Rules%20For%20Hockey.ipynb)
 
 **Business Documents:**
-- [Vertex AI GenAI For Document Q&A - FAA Regulations](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20FAA%20Regulations.ipynb)
-- [Vertex AI GenAI For Document Q&A - Municipal Securities](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20Municipal%20Securities.ipynb)
-- [Vertex AI GenAI For Document Q&A - Annual Report](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20Annual%20Report.ipynb)
+- [Vertex AI GenAI For Document Q&A - FAA Regulations](./Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20FAA%20Regulations.ipynb)
+- [Vertex AI GenAI For Document Q&A - Municipal Securities](./Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20Municipal%20Securities.ipynb)
+- [Vertex AI GenAI For Document Q&A - Annual Report](./Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20Annual%20Report.ipynb)
 
 
 Use Vertex AI Matching Engine to host low-latency vector search:
-- [Vertex AI Matching Engine For Document Q&A](./legacy/Vertex%20AI%20Matching%20Engine%20For%20Document%20Q%26A.ipynb)
+- [Vertex AI Matching Engine For Document Q&A](./Vertex%20AI%20Matching%20Engine%20For%20Document%20Q%26A.ipynb)
     - Use [Vertex AI Matching Engine](https://cloud.google.com/vertex-ai/docs/matching-engine/overview) for stateful, low latency, vector searches
         - Create and Deploy an index
         - Perform online queries with hosted index
@@ -433,16 +433,16 @@ Enhacements compared to Version 1:
 - ability to overwrite previous runs saved data when needed
 
 **Sports Rules:**
-- [Vertex AI GenAI For Document Q&A v2 - MLB Rules For Baseball](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20v2%20-%20MLB%20Rules%20For%20Baseball.ipynb)
+- [Vertex AI GenAI For Document Q&A v2 - MLB Rules For Baseball](./Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20v2%20-%20MLB%20Rules%20For%20Baseball.ipynb)
     
 **Business Documents:**   
-- [Vertex AI GenAI For Document Q&A - Local Government Trends](./legacy/Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20Local%20Government%20Trends.ipynb)    
+- [Vertex AI GenAI For Document Q&A - Local Government Trends](./Vertex%20AI%20GenAI%20For%20Document%20Q%26A%20-%20Local%20Government%20Trends.ipynb)    
 
 ---
 ## Embeddings
 
 A number of the techniques covered here use embeddings. Embeddings are vector representations of text or images or both.  These are vectors of floating point numbers that come from a model that has been trained to embed content in a way that efficiently represents the content. See how to get embeddings from text, images and both with the notebook:
-- [Vertex AI GenAI Embeddings](./Embeddings/Vertex%20AI%20GenAI%20Embeddings.ipynb)
+- [Vertex AI GenAI Embeddings](../Embeddings/Vertex%20AI%20GenAI%20Embeddings.ipynb)
 
 Embeddings can be used:
 - To find similar content with vector similarity searches - as shown in Q&A examples above
@@ -451,6 +451,6 @@ Embeddings can be used:
 - Classification models - use embeddings as features to predict classes
 
 Embeddings as features is a lot like a compact, lower dimension representation of content.  One idea for using embeddings as features is to categorize content.  Stores have catalogs.  Products in the catelog have descriptions (text) and maybe even images.  Using embeddings of the product information make it possible to train a classifier for complex product catalogs - even with hierarchys.  Check out this notebook to see an example of this:
-- [Vertex AI GenAI Embeddings - As Features For Hierarchical Classification](./Embeddings/Vertex%20AI%20GenAI%20Embeddings%20-%20As%20Features%20For%20Hierarchical%20Classification.ipynb)
+- [Vertex AI GenAI Embeddings - As Features For Hierarchical Classification](../Embeddings/Vertex%20AI%20GenAI%20Embeddings%20-%20As%20Features%20For%20Hierarchical%20Classification.ipynb)
 
 ---
