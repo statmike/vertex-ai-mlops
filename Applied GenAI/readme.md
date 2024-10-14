@@ -65,7 +65,14 @@ This section covers workflows for working with [Generative AI on Vertex AI](http
       </tr>
     </tbody>
   </table>
-  
+
+## But What About Prompting?
+
+The core of generation is the prompt—that piece of information provided as input to an LLM. The concept of prompt engineering centers around how to craft this input. In this series, we think about this task from an ML side rather than treating an LLM like an oracle. 
+
+ML models generate predictions based on inputs. These predictions are the most likely outcomes to expect given the inputs. With LLMs, we have flexibility on the input side. It is important to think of this input as the information needed to lead to the correct response. 
+
+Guess what? There are probably more than one, even many ways to do this for a given prompt. This section is all about how to provide the best context to ground the request to the LLM in order to make the output the most likely correct response.
   
 ## So How Do LLMs Work?
   
