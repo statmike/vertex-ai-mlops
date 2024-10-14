@@ -73,6 +73,8 @@ The core of generation is the prompt—that piece of information provided as inp
 ML models generate predictions based on inputs. These predictions are the most likely outcomes to expect given the inputs. With LLMs, we have flexibility on the input side. It is important to think of this input as the information needed to lead to the correct response. 
 
 Guess what? There are probably more than one, even many ways to do this for a given prompt. This section is all about how to provide the best context to ground the request to the LLM in order to make the output the most likely correct response.
+
+Prompt structure is important and many valuable insights can be found in this documentation section: [Introduction To Prompt Design](https://cloud.google.com/vertex-ai/generative-ai/docs/learn/prompts/introduction-prompt-design).
   
 ## So How Do LLMs Work?
   
