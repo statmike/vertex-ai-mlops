@@ -22,11 +22,16 @@ Once [embeddings](../Embeddings/readme.md) are generated for the pieces of conte
 This retrieval process is what is usually referred to as retrieval augmented generation, or RAG, but is actually just the retrieval portion. Read more about the full process in the parent series of this content: [Applied GenAI](../readme.md), which includes a common next step of [ranking/re-ranking](../Ranking/readme.md) of the matched content.
 
 **Workflows:**
-- Local With Numpy
+
+- [Retrieval - Local With Numpy](Retrieval%20-%20Local%20With%20Numpy.ipynb)
+- [Retrieval - BigQuery Vector Indexing And Search](Retrieval%20-%20BigQuery%20Vector%20Indexing%20And%20Search.ipynb)
+- [Retrieval - Vertex AI Feature Store](Retrieval%20-%20Vertex%20AI%20Feature%20Store.ipynb)
+
+**More To Come**
+
 - Local With Scaan
-- BigQuery
-- Vertex AI Feature Store
 - Vertex AI Vector Search
 - Alloy DB
 - Spanner
 - LlamaIndex
+- Custom Endpoinnts on GCS and Vertex With Numpy
