@@ -35,3 +35,28 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 - Spanner
 - LlamaIndex
 - Custom Endpoinnts on GCS and Vertex With Numpy
+
+
+
+
+
+### Important Notes About Setting Up An Index
+
+Working with embeddings, a vectors of numbers, a list of floating points... the nature of vector database solutions.  These are considerations to be taken regardless of the solution being used.  Here Vertex AI Feature Store, which has many configurable options to aide in this.
+
+- **Storage**
+    - filter attributes: values that can be used to limit a search
+    - crowding attributes: limit the number of matches with these attributes
+    - additional columns inline, like the text chunk an embedding represents to prevent the additional step of retrieving data for matches
+- **Indexing**
+    - a brute force configuration to force search across all embeddings, good for benchmarkinng and ground truth retrieval
+    - a method of segmenting embeddings, primarily:
+        - inverted file index (IVF), or k-means clustering of embeddings
+        - TreeAH, or [ScaNN](https://research.google/blog/announcing-scann-efficient-vector-similarity-search/), for compressing embeddings
+    - setting to configure the size of a cluster (IVF) or leaf nodes (TreeAH)
+    - distance type to set how matches are computed: dot product, euclidean, manhatten, cosine
+- **Retrieval**
+    - a brute force override to retrieve ground truth across the full index
+    - ability to control the number of neighbors retrieved at query time
+    - option to set distance calcuation type at query time
+    - usage of filtering and crowding attributes to tailor neighbors list
