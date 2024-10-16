@@ -21,7 +21,7 @@ Once [embeddings](../Embeddings/readme.md) are generated for the pieces of conte
 
 This retrieval process is what is usually referred to as retrieval augmented generation, or RAG, but is actually just the retrieval portion. Read more about the full process in the parent series of this content: [Applied GenAI](../readme.md), which includes a common next step of [ranking/re-ranking](../Ranking/readme.md) of the matched content.
 
-**Workflows:**
+**Workflows:** Implement retrieval with different storage and indexing solutions:
 
 - [Retrieval - Local With Numpy](Retrieval%20-%20Local%20With%20Numpy.ipynb)
 - [Retrieval - BigQuery Vector Indexing And Search](Retrieval%20-%20BigQuery%20Vector%20Indexing%20And%20Search.ipynb)
