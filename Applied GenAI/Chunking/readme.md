@@ -24,4 +24,4 @@ Document AI on Google Cloud offers parsers that process input documents into out
 - [Process Documents - Document AI Layout Parser](./Process%20Documents%20-%20Document%20AI%20Layout%20Parser.ipynb)
 
 Building on the overview of the Document AI Layout Parser, the following workflow processes multiple large documents (over 1000 pages):
-- [Large Document Processing - Document AI Layout Parser](Large%20Document%20Processing%20-%20Document%20AI%20Layout%20Parser.ipynb)
+- [Large Document Processing - Document AI Layout Parser](./Large%20Document%20Processing%20-%20Document%20AI%20Layout%20Parser.ipynb)
