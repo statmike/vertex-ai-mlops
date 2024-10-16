@@ -34,13 +34,15 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 - Alloy DB
 - Spanner
 - LlamaIndex
-- Custom Endpoinnts on GCS and Vertex With Numpy
+- Custom Endpoints on GCS and Vertex With Numpy
 
 
+---
 
+**Notes To Incorporate On Future Revision**
 
-
-### Important Notes About Setting Up An Index
+---
+Important Notes About Setting Up An Index
 
 Working with embeddings, a vectors of numbers, a list of floating points... the nature of vector database solutions.  These are considerations to be taken regardless of the solution being used.  Here Vertex AI Feature Store, which has many configurable options to aide in this.
 
