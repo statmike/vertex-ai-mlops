@@ -26,11 +26,11 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 - [Retrieval - Local With Numpy](Retrieval%20-%20Local%20With%20Numpy.ipynb)
 - [Retrieval - BigQuery Vector Indexing And Search](Retrieval%20-%20BigQuery%20Vector%20Indexing%20And%20Search.ipynb)
 - [Retrieval - Vertex AI Feature Store](Retrieval%20-%20Vertex%20AI%20Feature%20Store.ipynb)
+- [Retrieval - Vertex AI Vector Search](Retrieval%20-%20Vertex%20AI%20Vector%20Search.ipynb)
 
 **More To Come**
 
 - Local With Scaan
-- Vertex AI Vector Search
 - Alloy DB
 - Spanner
 - LlamaIndex
