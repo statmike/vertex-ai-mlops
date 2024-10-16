@@ -36,29 +36,29 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 - LlamaIndex
 - Custom Endpoints on GCS and Vertex With Numpy
 
+## Important Notes About Setting Up An Index Solution
 
----
-
-**Notes To Incorporate On Future Revision**
-
----
-Important Notes About Setting Up An Index
-
-Working with embeddings, a vectors of numbers, a list of floating points... the nature of vector database solutions.  These are considerations to be taken regardless of the solution being used.  Here Vertex AI Feature Store, which has many configurable options to aide in this.
+When working with embeddings—vectors of numbers represented as lists of floating points—there are key considerations for choosing and configuring a vector database solution.  Here are some crucial aspects to keep in mind:
 
 - **Storage**
-    - filter attributes: values that can be used to limit a search
-    - crowding attributes: limit the number of matches with these attributes
-    - additional columns inline, like the text chunk an embedding represents to prevent the additional step of retrieving data for matches
+    - **Filterable attributes:**  Include values that can be used to filter search results (e.g., date, category, source).
+    - **Crowding attributes:**  Use these to limit the number of similar matches returned (e.g., author, publication).
+    - **Inline data:** Store the text chunk associated with each embedding directly to avoid an extra retrieval step.
+    - **Metadata:**  Include relevant metadata like file name, location in the file, page number, etc.
+    - **Normalization:** Consider automatic calculation and storage of normalized embeddings for efficient comparisons.
+
 - **Indexing**
-    - a brute force configuration to force search across all embeddings, good for benchmarkinng and ground truth retrieval
-    - a method of segmenting embeddings, primarily:
-        - inverted file index (IVF), or k-means clustering of embeddings
-        - TreeAH, or [ScaNN](https://research.google/blog/announcing-scann-efficient-vector-similarity-search/), for compressing embeddings
-    - setting to configure the size of a cluster (IVF) or leaf nodes (TreeAH)
-    - distance type to set how matches are computed: dot product, euclidean, manhatten, cosine
+    - **Brute-force search:**  Offer a configuration for exhaustive search across all embeddings, useful for benchmarking and establishing ground truth retrieval.
+    - **Approximate Nearest Neighbor (ANN) search:** Provide methods for efficient approximate search, such as:
+        - **Inverted File (IVF) index:**  Clustering embeddings using algorithms like k-means.
+        - **Tree-based methods:**  Hierarchical approaches like TreeAH.
+        - **Quantization techniques:**  Compressing embeddings using methods like ScaNN ([link to ScaNN research blog](https://research.google/blog/announcing-scann-efficient-vector-similarity-search/)).
+    - **Index parameters:** Allow configuration of cluster size (IVF) or leaf node size (TreeAH) to tune performance.
+    - **Distance metrics:**  Support various distance metrics for similarity calculations (e.g., dot product, Euclidean, Manhattan, cosine).
+
 - **Retrieval**
-    - a brute force override to retrieve ground truth across the full index
-    - ability to control the number of neighbors retrieved at query time
-    - option to set distance calcuation type at query time
-    - usage of filtering and crowding attributes to tailor neighbors list
+    - **Brute-force override:**  Enable an option to override ANN search and perform a brute-force search for ground truth retrieval.
+    - **Control over retrieved neighbors:** Allow users to specify the number of neighbors to retrieve.
+    - **Distance metric override:** Allow users to override the default distance metric at query time.
+    - **Filtering and crowding:**  Enable the use of filterable and crowding attributes to refine the list of retrieved neighbors.
+    - **Rich result sets:**  Return more than just match IDs; include the content, metadata, and similarity scores.
