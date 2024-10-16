@@ -22,3 +22,6 @@ In retrieval augement generation (RAG) workflows, the goal is to retrieve contex
 ## Document AI Layout Parser
 Document AI on Google Cloud offers parsers that process input documents into output JSON with extracted information.  The [Layout Parser](https://cloud.google.com/document-ai/docs/layout-parse-chunk) is specifically designed for creating chunks of desired sizes while also maintaining location information from a documents hierarchy: title > chapter > section > ... headings.  The following workflow shows multiple ways to process documents of different lengths and types and how to process the responses into information ready for creating embeddings.  This workflow creates the information (chunks) used by the [embeddings workflows](../Embeddings/readme.md) and [retrieval (RAG) workflows](../Retrieval/readme.md) within this [series](../readme.md):
 - [Process Documents - Document AI Layout Parser](./Process%20Documents%20-%20Document%20AI%20Layout%20Parser.ipynb)
+
+Building on the overview of the Document AI Layout Parser, the following workflow processes multiple large documents (over 1000 pages):
+- [Large Document Processing - Document AI Layout Parser](Large%20Document%20Processing%20-%20Document%20AI%20Layout%20Parser.ipynb)
