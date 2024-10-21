@@ -27,14 +27,17 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 - [Retrieval - BigQuery Vector Indexing And Search](Retrieval%20-%20BigQuery%20Vector%20Indexing%20And%20Search.ipynb)
 - [Retrieval - Vertex AI Feature Store](Retrieval%20-%20Vertex%20AI%20Feature%20Store.ipynb)
 - [Retrieval - Vertex AI Vector Search](Retrieval%20-%20Vertex%20AI%20Vector%20Search.ipynb)
+- In Progress: [Retrieval - Spanner](Retrieval%20-%20Spanner.ipynb)
+- In Progress: [Retrieval - Firestore](Retrieval%20-%20Firestore.ipynb)
+- In Progress: [Retrieval - AlloyDB For PostgreSQL](Retrieval%20-%20AlloyDB%20For%20PostgreSQL.ipynb)
 
 **More To Come**
 
 - Local With Scaan
-- Alloy DB
-- Spanner
-- LlamaIndex
-- Custom Endpoints on GCS and Vertex With Numpy
+- Vertex AI LlamaIndex
+- Custom Endpoints on Cloud Run and Vertex With Numpy
+- Integrations with Langchain For Vertex AI
+- Integrations with Langchain OSS
 
 ## Important Notes About Setting Up An Index Solution
 
