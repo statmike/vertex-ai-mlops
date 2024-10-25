@@ -30,6 +30,8 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 - In Progress: [Retrieval - Spanner](Retrieval%20-%20Spanner.ipynb)
 - In Progress: [Retrieval - Firestore](Retrieval%20-%20Firestore.ipynb)
 - In Progress: [Retrieval - AlloyDB For PostgreSQL](Retrieval%20-%20AlloyDB%20For%20PostgreSQL.ipynb)
+- In Progress: [Retrieval - Memorystore](Retrieval%20-%20Memorystore.ipynb)
+
 
 **More To Come**
 
