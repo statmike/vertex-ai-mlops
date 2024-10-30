@@ -31,7 +31,8 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 - In Progress - Working - Needs Writeup: [Retrieval - Firestore](Retrieval%20-%20Firestore.ipynb)
 - In Progress - Setup Only: [Retrieval - AlloyDB For PostgreSQL](Retrieval%20-%20AlloyDB%20For%20PostgreSQL.ipynb)
 - In Progress - Working - Needs Writeup: [Retrieval - Memorystore](Retrieval%20-%20Memorystore.ipynb)
-- In Progress - Setup Only: [Retrieval - Bigtable](Retrieval%20-%20Bigtable.ipynb)
+- In Progress - Working - Needs Writeup: [Retrieval - Bigtable](Retrieval%20-%20Bigtable.ipynb)
+- Upcoming: Retrieval - CloudSQL
 
 **More To Come**
 
