@@ -29,11 +29,11 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 - [Retrieval - Vertex AI Vector Search](Retrieval%20-%20Vertex%20AI%20Vector%20Search.ipynb)
 - In Progress - Working - Needs Writeup: [Retrieval - Spanner](Retrieval%20-%20Spanner.ipynb)
 - In Progress - Working - Needs Writeup: [Retrieval - Firestore](Retrieval%20-%20Firestore.ipynb)
-- In Progress - Working - NNeeds Writeup: [Retrieval - AlloyDB For PostgreSQL](Retrieval%20-%20AlloyDB%20For%20PostgreSQL.ipynb)
+- In Progress - Working - Needs Writeup: [Retrieval - AlloyDB For PostgreSQL](Retrieval%20-%20AlloyDB%20For%20PostgreSQL.ipynb)
 - In Progress - Working - Needs Writeup: [Retrieval - Memorystore](Retrieval%20-%20Memorystore.ipynb)
 - In Progress - Working - Needs Writeup: [Retrieval - Bigtable](Retrieval%20-%20Bigtable.ipynb)
-- Upcoming: Retrieval - CloudSQL For PostgreSQL
-- Upcoming: Retrieval - CloudSQL For MySQL
+- In Progrees - Setup Only: [Retrieval - Cloud SQL For PostgreSQL](Retrieval%20-%20Cloud%20SQL%20For%20PostgreSQL.ipynb)
+- In Progress - Setup Only: [Retrieval - Cloud SQL For MySQL](Retrieval%20-%20Cloud%20SQL%20For%20MySQL.ipynb)
 
 **More To Come**
 
