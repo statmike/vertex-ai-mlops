@@ -32,7 +32,7 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 - In Progress - Working - Needs Writeup: [Retrieval - AlloyDB For PostgreSQL](Retrieval%20-%20AlloyDB%20For%20PostgreSQL.ipynb)
 - In Progress - Working - Needs Writeup: [Retrieval - Memorystore](Retrieval%20-%20Memorystore.ipynb)
 - In Progress - Working - Needs Writeup: [Retrieval - Bigtable](Retrieval%20-%20Bigtable.ipynb)
-- In Progrees - Setup Only: [Retrieval - Cloud SQL For PostgreSQL](Retrieval%20-%20Cloud%20SQL%20For%20PostgreSQL.ipynb)
+- In Progrees - Working - Needs Writeup: [Retrieval - Cloud SQL For PostgreSQL](Retrieval%20-%20Cloud%20SQL%20For%20PostgreSQL.ipynb)
 - In Progress - Setup Only: [Retrieval - Cloud SQL For MySQL](Retrieval%20-%20Cloud%20SQL%20For%20MySQL.ipynb)
 
 **More To Come**
