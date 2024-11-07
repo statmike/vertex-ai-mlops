@@ -24,18 +24,42 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 **Workflows:** Implement retrieval with different storage and indexing solutions:
 
 - [Retrieval - Local With Numpy](Retrieval%20-%20Local%20With%20Numpy.ipynb)
+    - A simple fully local solution that also shows how vector similarity works, including indexing with an inverted file (IVF) approach using k-means clustering.
+    - **Ideal for:**  Experimentation, small-scale prototypes, and understanding the fundamentals of vector search.
 - [Retrieval - BigQuery Vector Indexing And Search](Retrieval%20-%20BigQuery%20Vector%20Indexing%20And%20Search.ipynb)
+    - A SQL-based data warehouse that has built-in vector search, including indexing methods for efficient approximate nearest neighbor search.
+    - **Ideal for:** Large-scale analytical workloads, combining vector search with structured data analysis.
 - [Retrieval - Vertex AI Feature Store](Retrieval%20-%20Vertex%20AI%20Feature%20Store.ipynb)
+    - A fast online sync of BigQuery tables that includes vector similarity and indexing for nearest neighbor search.
+    - **Ideal for:** Machine learning applications requiring low-latency retrieval of feature vectors.
 - [Retrieval - Vertex AI Vector Search](Retrieval%20-%20Vertex%20AI%20Vector%20Search.ipynb)
+    - A purpose-built solution for incredible scale vector similarity search with low latency and many features, including hybrid search with sparse vectors.
+    - **Ideal for:**  High-performance, large-scale production deployments with advanced search requirements.
 
 The following have working code and are in the process of being written up to describe each step:
+
 - [Retrieval - Spanner](Retrieval%20-%20Spanner.ipynb)
+    - The database that is super scale and globally distributed. Now with built-in vector similarity search.
+    - **Ideal for:** Applications requiring global scale, high availability, and strong consistency for vector data.
 - [Retrieval - Firestore](Retrieval%20-%20Firestore.ipynb)
+    - An object database with real-time sync and serverless scalability.
+    - **Ideal for:**  Real-time applications, mobile and web apps, where data synchronization and offline access are important.
 - [Retrieval - AlloyDB For PostgreSQL](Retrieval%20-%20AlloyDB%20For%20PostgreSQL.ipynb)
+    - Google Cloud's own PostgreSQL with enhanced performance and built-in vector search, including indexing methods that also cover the efficient ScaNN algorithm.
+    - **Ideal for:**  PostgreSQL-compatible workloads requiring high performance and advanced vector search capabilities.
 - [Retrieval - Memorystore](Retrieval%20-%20Memorystore.ipynb)
+    - In-memory data store with high-performance retrieval, including vector search.
+    - **Ideal for:** Caching frequently accessed vectors and applications needing extremely fast retrieval speeds.
 - [Retrieval - Bigtable](Retrieval%20-%20Bigtable.ipynb)
+    - The original NoSQL wide-column store with high throughput, low latency, and now, built-in vector similarity search.
+    - **Ideal for:**  Large-scale, low-latency applications with sparse data and high write throughput.
 - [Retrieval - Cloud SQL For PostgreSQL](Retrieval%20-%20Cloud%20SQL%20For%20PostgreSQL.ipynb)
+    - A fully managed PostgreSQL solution with an enhanced `pgvector` extension optimized for vector similarity search.
+    - **Ideal for:** General-purpose vector search applications with moderate scale and PostgreSQL compatibility.
 - [Retrieval - Cloud SQL For MySQL](Retrieval%20-%20Cloud%20SQL%20For%20MySQL.ipynb)
+    - A fully managed MySQL solution that includes extensions for storing, indexing, and similarity search with vectors.
+    - **Ideal for:**  MySQL-compatible applications with basic vector search needs.
+
 
 **More To Come**
 
