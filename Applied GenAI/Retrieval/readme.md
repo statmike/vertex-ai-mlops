@@ -26,6 +26,13 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 - [Retrieval - Local With Numpy](Retrieval%20-%20Local%20With%20Numpy.ipynb)
     - A simple fully local solution that also shows how vector similarity works, including indexing with an inverted file (IVF) approach using k-means clustering.
     - **Ideal for:**  Experimentation, small-scale prototypes, and understanding the fundamentals of vector search.
+- [Retrieval - Cloud SQL For MySQL](Retrieval%20-%20Cloud%20SQL%20For%20MySQL.ipynb)
+    - A fully managed MySQL solution that includes extensions for storing, indexing, and similarity search with vectors.
+    - **Ideal for:**  MySQL-compatible applications with basic vector search needs.
+    
+
+The following have working code and are in the process of being written up to describe each step:
+
 - [Retrieval - BigQuery Vector Indexing And Search](Retrieval%20-%20BigQuery%20Vector%20Indexing%20And%20Search.ipynb)
     - A SQL-based data warehouse that has built-in vector search, including indexing methods for efficient approximate nearest neighbor search.
     - **Ideal for:** Large-scale analytical workloads, combining vector search with structured data analysis.
@@ -35,9 +42,6 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 - [Retrieval - Vertex AI Vector Search](Retrieval%20-%20Vertex%20AI%20Vector%20Search.ipynb)
     - A purpose-built solution for incredible scale vector similarity search with low latency and many features, including hybrid search with sparse vectors.
     - **Ideal for:**  High-performance, large-scale production deployments with advanced search requirements.
-
-The following have working code and are in the process of being written up to describe each step:
-
 - [Retrieval - Spanner](Retrieval%20-%20Spanner.ipynb)
     - The database that is super scale and globally distributed. Now with built-in vector similarity search.
     - **Ideal for:** Applications requiring global scale, high availability, and strong consistency for vector data.
@@ -56,10 +60,6 @@ The following have working code and are in the process of being written up to de
 - [Retrieval - Cloud SQL For PostgreSQL](Retrieval%20-%20Cloud%20SQL%20For%20PostgreSQL.ipynb)
     - A fully managed PostgreSQL solution with an enhanced `pgvector` extension optimized for vector similarity search.
     - **Ideal for:** General-purpose vector search applications with moderate scale and PostgreSQL compatibility.
-- [Retrieval - Cloud SQL For MySQL](Retrieval%20-%20Cloud%20SQL%20For%20MySQL.ipynb)
-    - A fully managed MySQL solution that includes extensions for storing, indexing, and similarity search with vectors.
-    - **Ideal for:**  MySQL-compatible applications with basic vector search needs.
-
 
 **More To Come**
 
@@ -95,3 +95,20 @@ When working with embeddings—vectors of numbers represented as lists of floati
     - **Distance metric override:** Allow users to override the default distance metric at query time.
     - **Filtering and crowding:**  Enable the use of filterable and crowding attributes to refine the list of retrieved neighbors.
     - **Rich result sets:**  Return more than just match IDs; include the content, metadata, and similarity scores.
+
+
+---
+
+## Comparison - Work In Progress
+
+|Feature|Cloud SQL For MySQL|Numpy|
+|---|---|---|
+|Store Embeddings|Enable Vector Features, Use VARBINARY extension.|Stored as Numpy Array Object|
+|Brute Force Search Without Indexing|Yes|Yes|
+|Distance Metrics|Euclidean (L2 Squared), Cosine Similarity, Dot Product|Any with math functions|
+|Indexing|Brute Force (In Memory), Tree_SQ, Tree_AH|None, but can be built custom|
+|Tune Index|Choose Number of Partions||
+|Index Restrictions|One Per Table||
+|Index Config In Query|Overrides for number of neighbors and partitions scanned.||
+|Override Index|Yes, Use Distance Metric Functions||
+|Pre-filtering|Not with Index, yes with brute force using distance metric functions||
