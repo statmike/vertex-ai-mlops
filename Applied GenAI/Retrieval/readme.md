@@ -26,6 +26,9 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 - [Retrieval - Local With Numpy](Retrieval%20-%20Local%20With%20Numpy.ipynb)
     - A simple fully local solution that also shows how vector similarity works, including indexing with an inverted file (IVF) approach using k-means clustering.
     - **Ideal for:**  Experimentation, small-scale prototypes, and understanding the fundamentals of vector search.
+- [Retrieval - Cloud SQL For PostgreSQL](Retrieval%20-%20Cloud%20SQL%20For%20PostgreSQL.ipynb)
+    - A fully managed PostgreSQL solution with an enhanced `pgvector` extension optimized for vector similarity search.
+    - **Ideal for:** General-purpose vector search applications with moderate scale and PostgreSQL compatibility.
 - [Retrieval - Cloud SQL For MySQL](Retrieval%20-%20Cloud%20SQL%20For%20MySQL.ipynb)
     - A fully managed MySQL solution that includes extensions for storing, indexing, and similarity search with vectors.
     - **Ideal for:**  MySQL-compatible applications with basic vector search needs.
@@ -57,9 +60,7 @@ The following have working code and are in the process of being written up to de
 - [Retrieval - Bigtable](Retrieval%20-%20Bigtable.ipynb)
     - The original NoSQL wide-column store with high throughput, low latency, and now, built-in vector similarity search.
     - **Ideal for:**  Large-scale, low-latency applications with sparse data and high write throughput.
-- [Retrieval - Cloud SQL For PostgreSQL](Retrieval%20-%20Cloud%20SQL%20For%20PostgreSQL.ipynb)
-    - A fully managed PostgreSQL solution with an enhanced `pgvector` extension optimized for vector similarity search.
-    - **Ideal for:** General-purpose vector search applications with moderate scale and PostgreSQL compatibility.
+
 
 **More To Come**
 
