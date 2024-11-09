@@ -102,14 +102,15 @@ When working with embeddings—vectors of numbers represented as lists of floati
 
 ## Comparison - Work In Progress
 
-|Feature|Cloud SQL For MySQL|Numpy|
-|---|---|---|
-|Store Embeddings|Enable Vector Features, Use VARBINARY extension.|Stored as Numpy Array Object|
-|Brute Force Search Without Indexing|Yes|Yes|
-|Distance Metrics|Euclidean (L2 Squared), Cosine Similarity, Dot Product|Any with math functions|
-|Indexing|Brute Force (In Memory), Tree_SQ, Tree_AH|None, but can be built custom|
-|Tune Index|Choose Number of Partions||
-|Index Restrictions|One Per Table||
-|Index Config In Query|Overrides for number of neighbors and partitions scanned.||
-|Override Index|Yes, Use Distance Metric Functions||
-|Pre-filtering|Not with Index, yes with brute force using distance metric functions||
+|Feature|Cloud SQL For MySQL|Numpy|Cloud SQL For PostgreSQL|
+|---|---|---|---|
+|Store Embeddings|Enable Vector Features, Use VARBINARY extension.|Stored as Numpy Array Object|Enable Vector Features with vector extention|
+|Brute Force Search Without Indexing|Yes|Yes|Yes|
+|Distance Metrics|Euclidean (L2 Squared), Cosine Similarity, Dot Product|Any with math functions|Euclidean (L2), Cosine Similarity, Dot Product (inner product)|
+|Indexing|Brute Force (In Memory), Tree_SQ, Tree_AH|None, but can be built custom|IVFFlat and HNSW|
+|Distance Metric Tied To Index|Yes, no way to specify different metric in use||Yes, choosing a different distance metric in query will force query optimizer to use brute force|
+|Tune Index|Choose Number of Partions||Choose Number of Partitions|
+|Index Restrictions|One Per Table||No but query optimizer picks index|
+|Index Config In Query|Overrides for number of neighbors and partitions scanned.||Overrides for number of partitions scanned|
+|Override Index|Yes, Use Distance Metric Functions||Not directly, choosen by query optimizer|
+|Pre-filtering|Not with Index, yes with brute force using distance metric functions||Yes, indexes work with pre-filtering|
