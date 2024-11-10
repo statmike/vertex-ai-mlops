@@ -26,6 +26,9 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 - [Retrieval - Local With Numpy](Retrieval%20-%20Local%20With%20Numpy.ipynb)
     - A simple fully local solution that also shows how vector similarity works, including indexing with an inverted file (IVF) approach using k-means clustering.
     - **Ideal for:**  Experimentation, small-scale prototypes, and understanding the fundamentals of vector search.
+- [Retrieval - BigQuery Vector Indexing And Search](Retrieval%20-%20BigQuery%20Vector%20Indexing%20And%20Search.ipynb)
+    - A SQL-based data warehouse that has built-in vector search, including indexing methods for efficient approximate nearest neighbor search.
+    - **Ideal for:** Large-scale analytical workloads, combining vector search with structured data analysis.  Batch vector matching across many rows!
 - [Retrieval - AlloyDB For PostgreSQL](Retrieval%20-%20AlloyDB%20For%20PostgreSQL.ipynb)
     - Google Cloud's own PostgreSQL with enhanced performance and built-in vector search, including indexing methods that also cover the efficient ScaNN algorithm.
     - **Ideal for:**  PostgreSQL-compatible workloads requiring high performance and advanced vector search capabilities.
@@ -39,9 +42,6 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 
 The following have working code and are in the process of being written up to describe each step:
 
-- [Retrieval - BigQuery Vector Indexing And Search](Retrieval%20-%20BigQuery%20Vector%20Indexing%20And%20Search.ipynb)
-    - A SQL-based data warehouse that has built-in vector search, including indexing methods for efficient approximate nearest neighbor search.
-    - **Ideal for:** Large-scale analytical workloads, combining vector search with structured data analysis.
 - [Retrieval - Vertex AI Feature Store](Retrieval%20-%20Vertex%20AI%20Feature%20Store.ipynb)
     - A fast online sync of BigQuery tables that includes vector similarity and indexing for nearest neighbor search.
     - **Ideal for:** Machine learning applications requiring low-latency retrieval of feature vectors.
@@ -69,6 +69,8 @@ The following have working code and are in the process of being written up to de
 - Custom Endpoints on Cloud Run and Vertex With Numpy
 - Integrations with Langchain For Vertex AI
 - Integrations with Langchain OSS
+
+---
 
 ## Important Notes About Setting Up An Index Solution
 
@@ -102,15 +104,15 @@ When working with embeddings—vectors of numbers represented as lists of floati
 
 ## Comparison - Work In Progress
 
-|Functionality|Cloud SQL For MySQL|Numpy|Cloud SQL For PostgreSQL|AlloyDB|
-|---|---|---|---|---|
-|Store Embeddings|Enable Vector Features, Use VARBINARY extension.|Stored as Numpy Array Object|Enable Vector Features with vector extention|Enable Vector Feature with vector extension|
-|Brute Force Search Without Indexing|Yes|Yes|Yes|Yes|
-|Distance Metrics|Euclidean (L2 Squared), Cosine Similarity, Dot Product|Any with math functions|Euclidean (L2), Cosine Similarity, Dot Product (inner product)|Euclidean (L2), Cosine Similarity, Dot Product (inner product)|
-|Indexing|Brute Force (In Memory), Tree_SQ, Tree_AH|None, but can be built custom|IVFFlat and HNSW|IVFFlat and HNSW from the vector extention (pgvector).  IVR and ScaNN from the alloydb_scann extention.|
-|Distance Metric Tied To Index|Yes, no way to specify different metric in use||Yes, choosing a different distance metric in query will force query optimizer to use brute force|Yes, choosing a different distance metric in query will force query optimizer to use brute force|
-|Tune Index During Build|Choose Number of Partions||Choose Number of Partitions|Choose Number of Partitions|
-|Index Restrictions|One Per Table||No but query optimizer picks index|No but query optimizer picks index|
-|Index Config In Query|Overrides for number of neighbors and partitions scanned.||Overrides for number of partitions scanned|Overrides for number of partitions scanned|
-|Override Index|Yes, Use Distance Metric Functions||Not directly, choosen by query optimizer|Not directly, choosen by query optimizer|
-|Pre-filtering|Not with Index, yes with brute force using distance metric functions||Yes, indexes work with pre-filtering|Yes, indexes work with pre-filtering|
+|Functionality|Cloud SQL For MySQL|Numpy|Cloud SQL For PostgreSQL|AlloyDB|BigQuery|
+|---|---|---|---|---|---|
+|Store Embeddings|Enable Vector Features, Use VARBINARY extension.|Stored as Numpy Array Object|Enable Vector Features with vector extention|Enable Vector Feature with vector extension|As Array of Float|
+|Brute Force Search Without Indexing|Yes|Yes|Yes|Yes|Yes, with 'VECTOR_SEARCH' function.|
+|Distance Metrics|Euclidean (L2 Squared), Cosine Similarity, Dot Product|Any with math functions|Euclidean (L2), Cosine Similarity, Dot Product (inner product)|Euclidean (L2), Cosine Similarity, Dot Product (inner product)|Euclidean, Dot Product, and Cosine Similarity.|
+|Indexing|Brute Force (In Memory), Tree_SQ, Tree_AH|None, but can be built custom|IVFFlat and HNSW|IVFFlat and HNSW from the vector extention (pgvector).  IVR and ScaNN from the alloydb_scann extention.|IVF and TreeAH (ScaNN)|
+|Distance Metric Tied To Index|Yes, no way to specify different metric in use||Yes, choosing a different distance metric in query will force query optimizer to use brute force|Yes, choosing a different distance metric in query will force query optimizer to use brute force|Can be modified in query and index will still be used|
+|Tune Index During Build|Choose Number of Partions||Choose Number of Partitions|Choose Number of Partitions|Choose number of partitions|
+|Index Restrictions|One Per Table||No but query optimizer picks index|No but query optimizer picks index|Depend on index type and data storage type for pre-filtering.|
+|Index Config In Query|Overrides for number of neighbors and partitions scanned.||Overrides for number of partitions scanned|Overrides for number of partitions scanned|Overrides for number of partitions and distance measure, including forced brute force.|
+|Override Index|Yes, Use Distance Metric Functions||Not directly, choosen by query optimizer|Not directly, choosen by query optimizer|An option to force brute foce in query options.|
+|Pre-filtering|Not with Index, yes with brute force using distance metric functions||Yes, indexes work with pre-filtering|Yes, indexes work with pre-filtering|Yes with IVF, not with TreeAH (ScaNN)|
