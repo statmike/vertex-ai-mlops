@@ -26,6 +26,9 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 - [Retrieval - Local With Numpy](Retrieval%20-%20Local%20With%20Numpy.ipynb)
     - A simple fully local solution that also shows how vector similarity works, including indexing with an inverted file (IVF) approach using k-means clustering.
     - **Ideal for:**  Experimentation, small-scale prototypes, and understanding the fundamentals of vector search.
+- [Retrieval - AlloyDB For PostgreSQL](Retrieval%20-%20AlloyDB%20For%20PostgreSQL.ipynb)
+    - Google Cloud's own PostgreSQL with enhanced performance and built-in vector search, including indexing methods that also cover the efficient ScaNN algorithm.
+    - **Ideal for:**  PostgreSQL-compatible workloads requiring high performance and advanced vector search capabilities.
 - [Retrieval - Cloud SQL For PostgreSQL](Retrieval%20-%20Cloud%20SQL%20For%20PostgreSQL.ipynb)
     - A fully managed PostgreSQL solution with an enhanced `pgvector` extension optimized for vector similarity search.
     - **Ideal for:** General-purpose vector search applications with moderate scale and PostgreSQL compatibility.
@@ -51,9 +54,6 @@ The following have working code and are in the process of being written up to de
 - [Retrieval - Firestore](Retrieval%20-%20Firestore.ipynb)
     - An object database with real-time sync and serverless scalability.
     - **Ideal for:**  Real-time applications, mobile and web apps, where data synchronization and offline access are important.
-- [Retrieval - AlloyDB For PostgreSQL](Retrieval%20-%20AlloyDB%20For%20PostgreSQL.ipynb)
-    - Google Cloud's own PostgreSQL with enhanced performance and built-in vector search, including indexing methods that also cover the efficient ScaNN algorithm.
-    - **Ideal for:**  PostgreSQL-compatible workloads requiring high performance and advanced vector search capabilities.
 - [Retrieval - Memorystore](Retrieval%20-%20Memorystore.ipynb)
     - In-memory data store with high-performance retrieval, including vector search.
     - **Ideal for:** Caching frequently accessed vectors and applications needing extremely fast retrieval speeds.
@@ -102,15 +102,15 @@ When working with embeddings—vectors of numbers represented as lists of floati
 
 ## Comparison - Work In Progress
 
-|Feature|Cloud SQL For MySQL|Numpy|Cloud SQL For PostgreSQL|
-|---|---|---|---|
-|Store Embeddings|Enable Vector Features, Use VARBINARY extension.|Stored as Numpy Array Object|Enable Vector Features with vector extention|
-|Brute Force Search Without Indexing|Yes|Yes|Yes|
-|Distance Metrics|Euclidean (L2 Squared), Cosine Similarity, Dot Product|Any with math functions|Euclidean (L2), Cosine Similarity, Dot Product (inner product)|
-|Indexing|Brute Force (In Memory), Tree_SQ, Tree_AH|None, but can be built custom|IVFFlat and HNSW|
-|Distance Metric Tied To Index|Yes, no way to specify different metric in use||Yes, choosing a different distance metric in query will force query optimizer to use brute force|
-|Tune Index|Choose Number of Partions||Choose Number of Partitions|
-|Index Restrictions|One Per Table||No but query optimizer picks index|
-|Index Config In Query|Overrides for number of neighbors and partitions scanned.||Overrides for number of partitions scanned|
-|Override Index|Yes, Use Distance Metric Functions||Not directly, choosen by query optimizer|
-|Pre-filtering|Not with Index, yes with brute force using distance metric functions||Yes, indexes work with pre-filtering|
+|Functionality|Cloud SQL For MySQL|Numpy|Cloud SQL For PostgreSQL|AlloyDB|
+|---|---|---|---|---|
+|Store Embeddings|Enable Vector Features, Use VARBINARY extension.|Stored as Numpy Array Object|Enable Vector Features with vector extention|Enable Vector Feature with vector extension|
+|Brute Force Search Without Indexing|Yes|Yes|Yes|Yes|
+|Distance Metrics|Euclidean (L2 Squared), Cosine Similarity, Dot Product|Any with math functions|Euclidean (L2), Cosine Similarity, Dot Product (inner product)|Euclidean (L2), Cosine Similarity, Dot Product (inner product)|
+|Indexing|Brute Force (In Memory), Tree_SQ, Tree_AH|None, but can be built custom|IVFFlat and HNSW|IVFFlat and HNSW from the vector extention (pgvector).  IVR and ScaNN from the alloydb_scann extention.|
+|Distance Metric Tied To Index|Yes, no way to specify different metric in use||Yes, choosing a different distance metric in query will force query optimizer to use brute force|Yes, choosing a different distance metric in query will force query optimizer to use brute force|
+|Tune Index During Build|Choose Number of Partions||Choose Number of Partitions|Choose Number of Partitions|
+|Index Restrictions|One Per Table||No but query optimizer picks index|No but query optimizer picks index|
+|Index Config In Query|Overrides for number of neighbors and partitions scanned.||Overrides for number of partitions scanned|Overrides for number of partitions scanned|
+|Override Index|Yes, Use Distance Metric Functions||Not directly, choosen by query optimizer|Not directly, choosen by query optimizer|
+|Pre-filtering|Not with Index, yes with brute force using distance metric functions||Yes, indexes work with pre-filtering|Yes, indexes work with pre-filtering|
