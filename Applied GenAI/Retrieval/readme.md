@@ -32,6 +32,9 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 - [Retrieval - Vertex AI Feature Store](Retrieval%20-%20Vertex%20AI%20Feature%20Store.ipynb)
     - A fast online sync of BigQuery tables that includes vector similarity and indexing for nearest neighbor search.
     - **Ideal for:** Machine learning applications requiring low-latency retrieval of feature vectors.
+- [Retrieval - Vertex AI Vector Search](Retrieval%20-%20Vertex%20AI%20Vector%20Search.ipynb)
+    - A purpose-built solution for incredible scale vector similarity search with low latency and many features, including hybrid search with sparse vectors.
+    - **Ideal for:**  High-performance, large-scale production deployments with advanced search requirements.
 - [Retrieval - AlloyDB For PostgreSQL](Retrieval%20-%20AlloyDB%20For%20PostgreSQL.ipynb)
     - Google Cloud's own PostgreSQL with enhanced performance and built-in vector search, including indexing methods that also cover the efficient ScaNN algorithm.
     - **Ideal for:**  PostgreSQL-compatible workloads requiring high performance and advanced vector search capabilities.
@@ -45,9 +48,6 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 
 The following have working code and are in the process of being written up to describe each step:
 
-- [Retrieval - Vertex AI Vector Search](Retrieval%20-%20Vertex%20AI%20Vector%20Search.ipynb)
-    - A purpose-built solution for incredible scale vector similarity search with low latency and many features, including hybrid search with sparse vectors.
-    - **Ideal for:**  High-performance, large-scale production deployments with advanced search requirements.
 - [Retrieval - Spanner](Retrieval%20-%20Spanner.ipynb)
     - The database that is super scale and globally distributed. Now with built-in vector similarity search.
     - **Ideal for:** Applications requiring global scale, high availability, and strong consistency for vector data.
@@ -104,16 +104,17 @@ When working with embeddings—vectors of numbers represented as lists of floati
 
 ## Comparison - Work In Progress
 
-|Functionality|Cloud SQL For MySQL|Numpy|Cloud SQL For PostgreSQL|AlloyDB|BigQuery|Vertex AI Feature Store|
-|---|---|---|---|---|---|---|
-|Store Embeddings|Enable Vector Features, Use VARBINARY extension.|Stored as Numpy Array Object|Enable Vector Features with vector extention|Enable Vector Feature with vector extension|As Array of Floats|As Array of Floats|
-|Brute Force Search Without Indexing|Yes|Yes|Yes|Yes|Yes, with 'VECTOR_SEARCH' function.|No, Feature Views need to be setup with an `IndexConfig`.
-|Distance Metrics|Euclidean (L2 Squared), Cosine Similarity, Dot Product|Any with math functions|Euclidean (L2), Cosine Similarity, Dot Product (inner product)|Euclidean (L2), Cosine Similarity, Dot Product (inner product)|Euclidean, Dot Product, and Cosine Similarity.|Euclidean, Dot Product, and Cosine Similarity.|
-|Indexing|Brute Force (In Memory), Tree_SQ, Tree_AH|None, but can be built custom|IVFFlat and HNSW|IVFFlat and HNSW from the vector extention (pgvector).  IVR and ScaNN from the alloydb_scann extention.|IVF and TreeAH (ScaNN)|Brute Force or TreenAH (ScaNN)|
-|Distance Metric Tied To Index|Yes, no way to specify different metric in use||Yes, choosing a different distance metric in query will force query optimizer to use brute force|Yes, choosing a different distance metric in query will force query optimizer to use brute force|Can be modified in query and index will still be used|Yes, no override in query|
-|Tune Index During Build|Choose Number of Partions||Choose Number of Partitions|Choose Number of Partitions|Choose number of partitions|Choose size of partitions.|
-|Index Restrictions|One Per Table||No but query optimizer picks index|No but query optimizer picks index|Depend on index type and data storage type for pre-filtering.|One per feature view|
-|Index Config In Query|Overrides for number of neighbors and partitions scanned.||Overrides for number of partitions scanned|Overrides for number of partitions scanned|Overrides for number of partitions and distance measure, including forced brute force.|Overrides for number of partions.|
-|Override Index|Yes, Use Distance Metric Functions||Not directly, choosen by query optimizer|Not directly, choosen by query optimizer|An option to force brute foce in query options.|No (or specify large number of partitions to search).|
-|Pre-filtering|Not with Index, yes with brute force using distance metric functions||Yes, indexes work with pre-filtering|Yes, indexes work with pre-filtering|Yes with IVF, not with TreeAH (ScaNN)|Yes, on pre-specified filter column (in `IndexConfig`) with either allow or deny lists.|
-|Crowding Attribute|No||No|No|No|Yes, with pre-specified column in `IndexConfig`|
+|Functionality|Cloud SQL For MySQL|Numpy|Cloud SQL For PostgreSQL|AlloyDB|BigQuery|Vertex AI Feature Store|Vertex AI Vector Search|
+|---|---|---|---|---|---|---|---|
+|Store Embeddings|Enable Vector Features, Use VARBINARY extension.|Stored as Numpy Array Object|Enable Vector Features with vector extention|Enable Vector Feature with vector extension|As Array of Floats|As Array of Floats|As Array of Floats|
+|Brute Force Search Without Indexing|Yes|Yes|Yes|Yes|Yes, with 'VECTOR_SEARCH' function.|No, Feature Views need to be setup with an `IndexConfig`.|No, Indexes Need to be created, loaded, and deployed.|
+|Distance Metrics|Euclidean (L2 Squared), Cosine Similarity, Dot Product|Any with math functions|Euclidean (L2), Cosine Similarity, Dot Product (inner product)|Euclidean (L2), Cosine Similarity, Dot Product (inner product)|Euclidean, Dot Product, and Cosine Similarity.|Euclidean, Dot Product, and Cosine Similarity.|Euclidean, Dot Produt, and Cosine Similarity.|
+|Indexing|Brute Force (In Memory), Tree_SQ, Tree_AH|None, but can be built custom|IVFFlat and HNSW|IVFFlat and HNSW from the vector extention (pgvector).  IVR and ScaNN from the alloydb_scann extention.|IVF and TreeAH (ScaNN)|Brute Force or TreeAH (ScaNN)|Brute Force or TreeAH (ScaNN)|
+|Distance Metric Tied To Index|Yes, no way to specify different metric in use||Yes, choosing a different distance metric in query will force query optimizer to use brute force|Yes, choosing a different distance metric in query will force query optimizer to use brute force|Can be modified in query and index will still be used|Yes, no override in query|Yes, no override in query|
+|Tune Index During Build|Choose Number of Partions||Choose Number of Partitions|Choose Number of Partitions|Choose number of partitions|Choose size of partitions.|Choose size of partition and number to use in search|
+|Index Restrictions|One Per Table||No but query optimizer picks index|No but query optimizer picks index|Depend on index type and data storage type for pre-filtering.|One per feature view|Indexes are the source of search rather than underlying tables/files|
+|Index Config In Query|Overrides for number of neighbors and partitions scanned.||Overrides for number of partitions scanned|Overrides for number of partitions scanned|Overrides for number of partitions and distance measure, including forced brute force.|Overrides for number of partions.|Overrides for number of partitions.|
+|Override Index|Yes, Use Distance Metric Functions||Not directly, choosen by query optimizer|Not directly, choosen by query optimizer|An option to force brute foce in query options.|No (or specify large number of partitions to search).|No, an index is the source for search|
+|Pre-filtering|Not with Index, yes with brute force using distance metric functions||Yes, indexes work with pre-filtering|Yes, indexes work with pre-filtering|Yes with IVF, not with TreeAH (ScaNN)|Yes, on pre-specified filter column (in `IndexConfig`) with either allow or deny lists.|Yes, on pre-specified filter columns with either allow or deny lists of values.
+|Crowding Attribute|No||No|No|No|Yes, with pre-specified column in `IndexConfig`|Yes, with pre-specified attribute|
+|Response Includes Text From Match|As long as stored in the same table and included in SELECT statement|Needs a separate retrieval step|As long as stored in the same table and included in SELECT statement|As long as stored in the same table and included in SELECT statement|As long as stored in the same table and included in SELECT statement|As long as included in the same feature view and using the search option `return_full_entity = True`|Needs a spearate retrieve step after the matches are returned|
