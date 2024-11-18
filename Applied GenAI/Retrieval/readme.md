@@ -102,7 +102,7 @@ When working with embeddings—vectors of numbers represented as lists of floati
 
 | Functionality | Cloud SQL for MySQL | NumPy | Cloud SQL for PostgreSQL | AlloyDB | BigQuery | Vertex AI Feature Store | Vertex AI Vector Search | Spanner | Memorystore | Firestore | Bigtable |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| **Database Type** | OLTP |  `ndarray` (in-memory array) | OLTP | HTAP (OLTP + OLAP) | OLAP | AI/ML Feature Store | Vector Database | HTAP (OLTP + OLAP) | In-Memory Data Store | NoSQL (OLTP-focused) | NoSQL Wide-Column Store |
+| **Database Type** | OLTP |  `ndarray` (in-memory array) | OLTP | HTAP (OLTP + OLAP) | OLAP | AI/ML Feature Store | Vector Database | OLTP | In-Memory Data Store | NoSQL (OLTP-focused) | NoSQL Wide-Column Store |
 | **Data Model** | Relational | In-memory Arrays | Relational | Relational, Columnar | Columnar | Key-Value based | Vector-based | Relational, Key-Value  | Key-Value | Document | Sparse, Key-Value, Wide-Column |
 | **Store Embeddings** | Enable Vector Features, Use `VARBINARY` extension | Stored as NumPy Array Object | Enable Vector Features with `vector` extension | Enable Vector Features with `vector` extension | As `ARRAY<FLOAT64>` | As `ARRAY<FLOAT64>` | Native `Vector` type | As `ARRAY<FLOAT64>`, indexes require `(vector_length => INT)` parameter | Convert to bytes object | Native `Vector` type | Requires conversion to bytes |
 | **Brute Force Search (No Index)** | Yes | Yes | Yes | Yes | Yes, with `VECTOR_SEARCH` function | No, requires `IndexConfig` in Feature View | No, requires index creation and deployment | Yes, with distance functions | No, requires index | No, requires index | Yes, with GoogleSQL and distance functions |
