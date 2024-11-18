@@ -87,10 +87,22 @@ Key-Value Pairs:
 
 Each workflow sets up an environment,loads the data, and then demonstrates of all vector search capabilities.  For each solution the minimal environment is choosen for the testing/development stage and is suitable for test or POC.  Here is a summary of the workflows choices for environments creation along with an approximate daily running cost when idle.  Each workflow includes code at the bottom for stopping all services and removing on going costs.
 
-| Setting Choice | Numpy | BigQuery | Vertex AI Feature Store | Vertex AI Vector Search | Spanner | AlloyDB | Cloud SQL For PostgreSQL | Cloud SQL For MySQL | Memorystore (Redis) | Firestore | Bigtable |
+| Setting Choice For Test Environment (set as small as possible) | Numpy | BigQuery | Vertex AI Feature Store | Vertex AI Vector Search | Spanner | AlloyDB | Cloud SQL For PostgreSQL | Cloud SQL For MySQL | Memorystore (Redis) | Firestore | Bigtable |
 |---|---|---|---|---|---|---|---|---|---|---|---|
+|Tier||N/A|N/A|N/A|N/A|N/A|N/A|N/A|Basic|N/A|N/A|
+|Edition||On-Demand|N/A|N/A|Enterprise|N/A|Enterprise|Enterprise|N/A|N/A|N/A|
+|Region||`us` multi|`us-central1`|`us-central1`|`regional-us-central1`|`us-central1`|`us-central1`|`us-central1`|`us-central1`|`us-central1`|`us-central1`|
+|Zone||N/A|N/A|N/A|N/A|`a`|N/A|N/A|N/A|N/A|`a`|
+|Cluster||N/A|N/A|N/A|N/A|1|N/A|N/A|N/A|N/A|1|
+|Instance/Node/Database||N/A|N/A|2 (min/max replicas)|1|1|1|1|1|`(default)`|1|
+|Compute||On-Demand|N/A|`e2-standard-2`|Node|2 CPU, 16GB Memory|`db-g1-small`|`db-g1-small`|N/A|N/A|Node|
+|Storage||33MB|N/A|N/A|N/A|N/A|N/A|N/A|1GB (memory)|N/A|HDD|
+|Version Info||On-Demand|Optimized Online Serving|N/A|`GOOGLE_STANDARD_SQL`|N/A|`POSTGRES_15`|`MYSQL_8_0_36`|`REDIS_7_2`|N/A|N/A|
+|Appoximate **Idle** Cost / Day|-|-|\$14.37|\$9.00|\$29.52|\$7.50|\$0.85|\$0.85|\$1.18|Free Tier|\$15.57|
 
-**WORK IN PROGRESS**
+**Production environments will likely need larger scale, replicas, etc.  In the case of fully managed solutions like BigQuery, Vertex AI Feature Store, Vertex AI Vector Search, etc. these are small scale production values.**
+
+Remember to use the provided code at the end of each workflow to shut down environments in order to prevent ongoing costs.
 
 ---
 
