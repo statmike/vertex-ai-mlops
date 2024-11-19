@@ -24,6 +24,11 @@ Workflows:
         - Test the container locally with Docker
         - Register the model (with container) in Vertex Model Registry and deploy To a Vertex AI Prediction Endpoint
         - Deploy the container and serve predictions with Cloud Run
+- [CatBoost Prediction With Vertex AI Feature Store](./Catboost%20Prediction%20With%20Vertex%20AI%20Feature%20Store.ipynb)
+    - How to setup Vertex AI Feature Store For online serviing of features for a CatBoost Model
+    - Incorporate retrieving feature from Vertex AI Feature Store for inference
+    - Build a cusotmer container with Cloud Build and store it in Artifact Registry
+    - Use the container locally, on Vertex AI Endpoints, and on Cloud Run
 - CatBoost Training Pipeline
     - Train + Eval + Registry + Deploy + Test
     - **In Development**
