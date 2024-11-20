@@ -30,6 +30,10 @@ Get to know feature store with this workflow notebook:
 Embeddings are condensed representation of data, usually in the form of an array (vector) of floats.  These are **features** and can be used directly in feature store. They can be retrieved as features for an entity like any other feature.  They can also be directly used in the online store for finding vector matches.  Search by entity and find neighbor entities or search by query embedding to find matching entities.  The indexing can be setup to be aNN or brute force and filter columns as well crowding can be configured.  Learn more and use this hand-on with:
 - [Feature Store - Embeddings](./Feature%20Store%20-%20Embeddings.ipynb) workflow
 
+Incorporating feature store in model serving helps prevent **training-serving skew**.  Check out the following workflow for a detail guide to implementing feature store in model serving locally or with a custom container than can be used locally, on Cloud Run, or with Vertex AI Endpoints:
+- [CatBoost Prediction With Vertex AI Feature Store](../../Framework%20Workflows/CatBoost/CatBoost%20Prediction%20With%20Vertex%20AI%20Feature%20Store.ipynb)
+
+
 [Documentation](https://cloud.google.com/vertex-ai/docs/featurestore/latest/overview)
 
 ---
