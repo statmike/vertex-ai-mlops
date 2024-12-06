@@ -17,3 +17,4 @@ Using the tools from [MLOps](../MLOps/readme.md) in workflows for specific frame
 
 Frameworks:
 - [CatBoost](./CatBoost/readme.md)
+- [Keras](./Keras/readme.md)

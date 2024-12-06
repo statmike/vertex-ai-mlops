@@ -101,6 +101,7 @@ Links To Content:
 - Feature Management with [Vertex AI Feature Store](./Feature%20Store/readme.md)
 - [Model Monitoring](./Model%20Monitoring/readme.md)
 - [Experiment Tracking](./Experiment%20Tracking/readme.md)
+- [Model Serving](./Serving/readme.md)
 - More coming soon!
     
 ---
