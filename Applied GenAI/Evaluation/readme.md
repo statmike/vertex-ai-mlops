@@ -12,3 +12,9 @@
 ---
 # Evaluation
 > You are here: `vertex-ai-mlops/Applied GenAI/Evaluation/readme.md`
+
+
+**Workflows:**
+
+- **[Evaluation For GenAI](./Evaluation%20For%20GenAI.ipynb):** This notebook provides a comprehensive guide to using the Vertex AI SDK for evaluation generative AI responses using task specific metrics.
+- **[Optimize Prompts Using Evaluation Metrics](./Optimize%20Prompts%20Using%20Evaluation%20Metrics.ipynb):** Use evaluation metrics as the basis to automatically optimize prompt performance by rewriting system instructions.
