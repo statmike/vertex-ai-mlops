@@ -10,7 +10,6 @@
 </table><br/><br/><br/><br/>
 
 ---
----
 # Model Serving
 
 > You are here: `vertex-ai-mlops/MLOps/Serving/readme.md`
