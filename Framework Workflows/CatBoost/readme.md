@@ -29,6 +29,3 @@ Workflows:
     - Incorporate retrieving features from Vertex AI Feature Store for inference
     - Build a custome container with Cloud Build and store it in Artifact Registry
     - Use the container locally, on Vertex AI Endpoints, and on Cloud Run
-- CatBoost Training Pipeline
-    - Train + Eval + Registry + Deploy + Test
-    - **In Development**
