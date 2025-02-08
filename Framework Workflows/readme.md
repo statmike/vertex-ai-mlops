@@ -13,8 +13,14 @@
 # Framework Workflows
 > You are here: `vertex-ai-mlops/Framework Workflows/readme.md`
 
-Using the tools from [MLOps](../MLOps/readme.md) in workflows for specific frameworks.
+Using the tools from [MLOps](../MLOps/readme.md) in workflows for specific frameworks.  The start with notebook based workflows showcasing the features of the framework.
 
 Frameworks:
 - [CatBoost](./CatBoost/readme.md)
 - [Keras](./Keras/readme.md)
+- [Flax](./Flax/readme.md)
+- [Vertex AI AutoML](./Vertex%20AI%20AutoML/readme.md)
+- LightGBM
+- scikit-learn
+- XGBoost
+- R
