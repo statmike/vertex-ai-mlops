@@ -1,4 +1,0 @@
-google-cloud-storage
-google-cloud-aiplatform==1.71.0
-catboost
-numpy
