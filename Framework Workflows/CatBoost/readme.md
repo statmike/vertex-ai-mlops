@@ -16,7 +16,8 @@
 [CatBoost](https://catboost.ai/) is an OSS library for gradient boosted decision trees.
 
 Workflows:
-- [CatBoost In Notebook](./CatBoost%20In%20Notebook.ipynb)
+- [CatBoost Overview](./CatBoost%20Overview.ipynb)
+    - Explore building a CatBoost Classifier for a BigQuery Data Source
 - [CatBoost Custom Prediction With FastAPI](./CatBoost%20Custom%20Prediction%20With%20FastAPI.ipynb)
     - Build A custom container with Cloud Build and store it in Artifact Registry
     - Multiple versions of formatting the output for prediction on the same container
