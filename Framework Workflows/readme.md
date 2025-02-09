@@ -15,6 +15,11 @@
 
 Using the tools from [MLOps](../MLOps/readme.md) in workflows for specific frameworks.  The start with notebook based workflows showcasing the features of the framework.
 
+For each framework the workflows will focus on a common task:
+> Training a classification model on data that is stored in Google BigQuery
+
+There are no prerequisites for these code workflows. Also, there is no dependencies between the frameworks workflows and they all start by creating the same source tables in BigQuery - or they leverage the already created source if other frameworks have already be run.  
+
 Frameworks:
 - [CatBoost](./CatBoost/readme.md)
 - [Keras](./Keras/readme.md)
