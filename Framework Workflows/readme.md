@@ -13,14 +13,18 @@
 # Framework Workflows
 > You are here: `vertex-ai-mlops/Framework Workflows/readme.md`
 
-Using the tools from [MLOps](../MLOps/readme.md) in workflows for specific frameworks.  The start with notebook based workflows showcasing the features of the framework.
-
-For each framework the workflows will focus on a common task:
+Using the tools from [MLOps](../MLOps/readme.md) in workflows for specific frameworks.  These start with notebook based workflows showcasing the features of the framework.  For each framework the workflows will focus on a common task:
 > Training a classification model on data that is stored in Google BigQuery
 
-There are no prerequisites for these code workflows. Also, there is no dependencies between the frameworks workflows and they all start by creating the same source tables in BigQuery - or they leverage the already created source if other frameworks have already be run.  
+Information is shared between frameworks:
+- Each framework focuses on the same source data in BigQuery
+- The preparation and access to this data is the same across the frameworks - and shared in case you run examples from muliple frame works
+- Vertex AI resources are shared between example across frameworks
+    - Vertex AI Model Registry - models registered as different versions of the same model registry entry
+    - Vertex AI Feature Store - The online store is shared across frameworks
+    - Vertex AI One Prediction Endpoint - The endpoint used in example is the same, shared, and deleted at the end of examples
 
-Frameworks:
+**Frameworks:**
 - [CatBoost](./CatBoost/readme.md)
 - [Keras](./Keras/readme.md)
 - [Flax](./Flax/readme.md)
