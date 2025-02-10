@@ -10,7 +10,6 @@
 </table><br/><br/><br/><br/>
 
 ---
----
 # Flax
 > You are here: `vertex-ai-mlops/Framework Workflows/Flax/readme.md`
 

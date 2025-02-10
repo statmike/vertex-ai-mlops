@@ -10,7 +10,6 @@
 </table><br/><br/><br/><br/>
 
 ---
----
 # Vertex AI AutoML
 > You are here: `vertex-ai-mlops/Framework Workflows/Vertex AI AutoML/readme.md`
 
@@ -27,6 +26,13 @@ Vertex AI AutoML Services create high quality models from user data without writ
 
 **Workflows:**
 - Tabular AutoML
+    - [Vertex AI AutoML - Classification.ipynb](Vertex%20AI%20AutoML%20-%20Classification.ipynb)
+    - [Vertex AI AutoML - Review Model Architecture.ipynb](Vertex%20AI%20AutoML%20-%20Review%20Model%20Architecture.ipynb)
 - Tabular Workflows
+    - [Vertex AI Tabular Workflows - AutoML - Classification.ipynb](Vertex%20AI%20Tabular%20Workflows%20-%20AutoML%20-%20Classification.ipynb)
+    - [Vertex AI Tabular Workflows - Feature Engineering.ipynb](Vertex%20AI%20Tabular%20Workflows%20-%20Feature%20Engineering.ipynb)
+    - [Vertex AI Tabular Workflows - TabNet - Classification.ipynb](Vertex%20AI%20Tabular%20Workflows%20-%20TabNet%20-%20Classification.ipynb)
+    - [Vertex AI Tabular Workflows - Wide and Deep - Classification.ipynb](Vertex%20AI%20Tabular%20Workflows%20-%20Wide%20and%20Deep%20-%20Classification.ipynb) 
+    
 - Forcasting AutoML
     - Checkout the large collection of forecasting on GCP workflows [Applied Forecasting](../../Applied%20Forecasting/readme.md)

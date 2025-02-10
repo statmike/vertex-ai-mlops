@@ -29,3 +29,4 @@ Frameworks:
 - scikit-learn
 - XGBoost
 - R
+- PyTorch
