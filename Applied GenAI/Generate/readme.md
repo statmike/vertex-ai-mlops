@@ -36,6 +36,7 @@ It's time for the exciting part: generating text with large language models (LLM
     - Integrating Tools and Function Calling
     - Metadata labels for applications to trace costs
     - Much more!
+- **[Gemini For Vision - Classification and Detection](./Gemini%20For%20Vision%20-%20Classification%20and%20Detection.ipynb)** This workflow explores using Gemini (2.0) for vision task like classification and detection.
 - **[Vertex AI Imagen For Image Generation](./Vertex%20AI%20Imagen%20For%20Image%20Generation.ipynb):**  Expand your generative capabilities beyond text with Vertex AI Imagen. This notebook demonstrates how to:
     - Generate images from text prompts.
     - Control image attributes (style, composition, etc.).
