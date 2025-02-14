@@ -34,7 +34,7 @@ This is a series of notebook based workflows that teach all the ways to use pipe
 |[Link To Section](#workflow-9)|[Vertex AI Pipelines - Notifications](./Vertex%20AI%20Pipelines%20-%20Notifications.ipynb)|How to send email notification of pipeline status.|
 |[Link To Section](#workflow-7)|[Vertex AI Pipelines - Management](./Vertex%20AI%20Pipelines%20-%20Management.ipynb)|Managing, Reusing, and Storing pipelines and components|
 |[Link To Section](#workflow-8)|[Vertex AI Pipelines - Testing](./Vertex%20AI%20Pipelines%20-%20Testing.ipynb)|Strategies for testing components and pipeliens locally and remotely to aide development.|
-
+|[Link To Section](#workflow-10)|[Vertex AI Pipelines - Managing Pipeline Jobs](./Vertex%20AI%20Pipelines%20-%20Managing%20Pipeline%20Jobs.ipynb)|Manage runs of pipelines in an environment: list, check status, filtered list, cancel and delete jobs.|
 
 To discover these notebooks as part of an introduction to MLOps read on below!
 
@@ -51,6 +51,7 @@ To discover these notebooks as part of an introduction to MLOps read on below!
     - [Notifications From Pipelines](#notifications-from-pipelines)
     - [Managing Pipelines: Storing And Reusing Pipelines & Components](#managing-pipelines-storing-and-reusing-pipelines--components)
     - [Testing Components And Pipelines: Strategies for Local and Remote Development](#testing-components-and-pipelines-strategies-for-local-and-remote-development)
+    - [Managing Pipeline Jobs](#managing-pipeline-jobs)
 - [Putting It All Together](#putting-it-all-together)
 
 ---
@@ -314,6 +315,21 @@ When creating pipeline components and pipelines the process of testing can be ai
 
 Work directly with these concepts in the following notebook based workflow:
 - [Vertex AI Pipelines - Testing](./Vertex%20AI%20Pipelines%20-%20Testing.ipynb)
+
+</td></tr></table></div>
+
+---
+<a id='workflow-10'></a>
+## Managing Pipeline Jobs
+
+Vertex AI Pipeline Jobs are runs of a pipeline.  These can be directly run by a user, started by API, or scheduled.  Withing Vetex AI a project can have many jobs running at any time and a history of all past jobs.  This workflow shows how to review and manage the jobs in an enviornment using the Python SDK.  For custom metrics in Cloud Logging check out [this helpful page](https://cloud.google.com/vertex-ai/docs/pipelines/metrics).
+
+<div><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+
+**Notebook Workflow:**
+
+Work directly with these concepts in the following notebook based workflow:
+- [Vertex AI Pipelines - Managing Pipeline Jobs](./Vertex%20AI%20Pipelines%20-%20Managing%20Pipeline%20Jobs.ipynb)
 
 </td></tr></table></div>
 
