@@ -26,7 +26,7 @@ There are two primary approaches to model serving, each with its own set of cons
 ## Tutorials and Examples
 
 - **Workflows:**
-    - [Online Serving With NVIDIA Triton Server](./Online%20Serving%20With%20NVIDIA%20Triton%20Server.ipynb)
+    - [Understanding Prediction IO With FastAPI](./Understanding%20Prediction%20IO%20With%20FastAPI.ipynb)
 - **More examples in the repository:**
     -  Add links here - soon
 
