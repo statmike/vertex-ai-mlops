@@ -27,6 +27,14 @@ There are two primary approaches to model serving, each with its own set of cons
 
 - **Workflows:**
     - [Understanding Prediction IO With FastAPI](./Understanding%20Prediction%20IO%20With%20FastAPI.ipynb)
+        - Build A Custom Container with FastAPI that repeast the inputs as output predictions
+        - Serve online predictions with the container: locally, on Vertex AI Prediction Endpoints, on Cloud Run
+        - Server batch predictions with Vertex AI Batch Prediction and multiple input types:
+            - JSONL
+            - CSV
+            - BigQuery
+            - File List
+            - TFRecord Files
 - **More examples in the repository:**
     -  Add links here - soon
 
