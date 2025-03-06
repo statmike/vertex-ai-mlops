@@ -17,3 +17,19 @@
 
 Workflows:
 - [Keras With JAX Overview](./Keras%20With%20JAX%20Overview.ipynb)
+    - Setup Keras with a JAX backend
+    - Specify and Train an Autoencoder
+    - Set up a training data pipeline for Keras training
+        - transform instances in the pipelines
+    - Use Keras preprocessing layers
+        - Incorporate preprocessing into the model for serving
+    - Continue training models for fine-tuning
+    - Extract the encoder as a separate model
+    - Enhance the Autoencoder:
+        - Stack preprocessing, the model, and postprocessing into a new model object
+        - Add a named input layer
+        - Create detailed post-processing with metrics, each features reconstruction, the encoded values, and present both normalized and denormalized values
+    - Save models
+        - In Keras format
+        - In TensorFlow SavedModel Format
+        
