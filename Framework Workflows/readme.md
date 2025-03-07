@@ -31,6 +31,7 @@ Information is shared between frameworks:
 In-Progress
 - [Flax](./Flax/readme.md)
 - [Vertex AI AutoML](./Vertex%20AI%20AutoML/readme.md)
+- [BigQuery ML](./BQML/readme.md)
 
 Planning:
 - LightGBM
