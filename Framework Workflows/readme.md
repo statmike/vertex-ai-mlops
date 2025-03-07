@@ -27,10 +27,21 @@ Information is shared between frameworks:
 **Frameworks:**
 - [CatBoost](./CatBoost/readme.md)
 - [Keras](./Keras/readme.md)
+
+In-Progress
 - [Flax](./Flax/readme.md)
 - [Vertex AI AutoML](./Vertex%20AI%20AutoML/readme.md)
+
+Planning:
 - LightGBM
 - scikit-learn
 - XGBoost
 - R
 - PyTorch
+- Pycaret
+- statsmodels
+- scipy
+- stan
+- PyMC
+- JAX (direct)
+
