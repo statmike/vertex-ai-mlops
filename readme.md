@@ -12,6 +12,23 @@
 ---
 # Vertex AI for Machine Learning Operations
 
+>**2025 UPDATE:** The repository is progressing toward an MLOps focused approach for predictive and generative AI operations.
+>
+>The main focus of the repository is new content developed in:
+>- MLOps
+>- Frameworks
+>- Applied *
+>   - mostly Applied GenAI and Applied Forecasting
+>
+>What to expect in 2025:
+>- Much more MLOps content in the `/MLOps` folder
+>- A detailed review of GenAI tooling in the `Applied GenAI` folder
+>- Many framework specific workflows in the `Frameworks` folder
+>- Migration of all the numbered folders to these main folders
+>- Collapsing all the Applied * folders into a single 'Applied Workflows' folder with subfolders by topic: GenAI, Forecasting, ...
+>- A complete rewrite of this readme.md file
+>- Content that is deemed stale is moved into subfolders named `legacy` and links from/to are updated.
+
 >**2024 UPDATE:**  This repository is evolving from end-to-end workflows for various frameworks into an MLOps focused approach for development of predictive and generative AI operations.  The new approach is being developed in the [MLOps](./MLOps/readme.md) folder.  Once it nears completion, the content in this repository will be rearranged into the following structure:
 >- MLOps
 >    - Pipelines
