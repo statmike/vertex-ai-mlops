@@ -32,4 +32,5 @@ Workflows:
     - Save models
         - In Keras format
         - In TensorFlow SavedModel Format
-        
+    - NEXT:
+        - See these models imported for serving directly in BigQuery in this workflow: [../../MLOps/Serving/Serve TensorFlow SavedModel Format With BigQuery](../../MLOps/Serving/Serve%20TensorFlow%20SavedModel%20Format%20With%20BigQuery.ipynb)

@@ -131,10 +131,6 @@ This list is in the suggested order of review for anyone getting an overview and
         <td><a href = "./BQML%20Import%20Model%20-%20scikit-learn.ipynb" target="_blank">BQML Import Model - scikit-learn</a></td>
         <td></td>
     </tr>
-    <tr>
-        <td><a href = "./BQML%20Import%20Model%20-%20TensorFlow.ipynb" target="_blank">BQML Import Model - TensorFlow</a></td>
-        <td></td>
-    </tr>
 <!--...........................................................................................................................................................................-->
     <tr style='text-align:center;vertical-align:middle'>
         <th colspan='2'>Use Remote Models</th>
