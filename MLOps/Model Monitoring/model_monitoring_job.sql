@@ -109,7 +109,8 @@ IF(ARRAY_LENGTH(drift_anomalies) > 0 OR ARRAY_LENGTH(skew_anomalies) > 0) THEN
                 ENABLE_GLOBAL_EXPLAIN = TRUE,
 
                 # register model in Vertex AI For Online Serving
-                MODEL_REGISTRY = 'VERTEX_AI'
+                MODEL_REGISTRY = 'VERTEX_AI',
+                VERTEX_AI_MODEL_ID = 'classify_species_rf'
             )
         AS
             SELECT species, island, culmen_length_mm, culmen_depth_mm, sex, flipper_length_mm, body_mass_g

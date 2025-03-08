@@ -13,7 +13,7 @@
 # Model Monitoring
 > You are here: `vertex-ai-mlops/MLOps/Model Monitoring/readme.md`
 
-Understanding the ongoing performance of a model in production is important to maintain accuracy.  While evaluations can be run on new data, they rely on also knowing the ground truth of the new records which is often delayed.  To monitor models for potential impacts to peformance is better done by monitoring what the model learned from - features.  The distribution of feature can be compared between training and current for **skew** and between rolling time points for **drift**.  
+Understanding the ongoing performance of a model in production is important to maintain accuracy.  While evaluations can be run on new data, they rely on also knowing the ground truth of the new records which is often delayed.  To monitor models for potential impacts to peformance it is better to monitoring what the model learned from - features.  The distribution of feature can be compared between training and current for **skew** and between rolling time points for **drift**.  
 
 Model monitoring tasks can be easily accessed in both BigQuery ML and Vertex AI:
 - [BigQuery Model Monitoring](https://cloud.google.com/bigquery/docs/model-monitoring-overview)
@@ -35,10 +35,36 @@ These resources help get started with BQML based model monitoring:
             - Automation with scheduled BigQuery Jobs
             - Email notifications for alerts
 
+## BigQuery ML Model Monitoring - In Vertex AI
+
+BigQuery ML models that are created with BigQuery [can be registered to the Vertex AI Model Registry](https://cloud.google.com/bigquery/docs/managing-models-vertex) by adding parameters to the `CREATE MODEL` statement.  This is the basis for also beign able to visualize and collect results of `ML.VALIDATE_DATA_SKEW` and `ML.VALIDATE_DATA_DRIFT` directly in Vertex AI Model Monitoring! More on this coming soon!
+
 ## Vertex AI Model Monitoring
 
-In progress
+Vertex AI has a [model registry](https://cloud.google.com/vertex-ai/docs/model-registry/introduction) the organize models.  Each model has versions and each version holds the links to the model files, evaluation information, list of batch prediction jobs, and deployed instances on Vertex AI Endpoints.  
 
+Vertex AI Model Monitoring has two version currently.  [Version 1](https://cloud.google.com/vertex-ai/docs/model-monitoring/overview#v1) was/is specific to a deployed instance on Vertex AI Endpoints.  The newer [version 2](https://cloud.google.com/vertex-ai/docs/model-monitoring/overview#v2) is connected to a model version in the model registry - a prefered and more general approach to monitoring models.  Only version 2 is covered here and you can read more about both versions [in the documentation](https://cloud.google.com/vertex-ai/docs/model-monitoring/overview#versions).
+
+Monitoring means comparing distribution between training and serving.  This include both numerical (float, int) and categorical (bool, string, category) data that is a feature, and output (prediction), or feature attribution (SHAP value).  Comparison is done using metrics:
+- Categorical features and predictions:
+    - L-Infinity
+    - Jansen Shannon Divergence
+- Numerical features and predictions:
+    - Jensen Shannon Divergence
+- Feature attributions:
+    - SHAP Value
+
+With Vertex AI Model Monitoring V2 the monitoring can use data from:
+- BigQuery
+    - Including time windows for tables that have a timestamp column in the table
+- Cloud Storage for CSV and JSONL formats
+- Vertex AI Batch Predictions Jobs
+- Vertex AI Endpoint Logging
+- Vertex AI Managed Dataset such as the input for AutoML
+
+The Vertex AI Model Monitoring V2 is also continous in that jobs can be scheduled on a routine.
+
+## Understanding Monitoring Metrics
 
 
 
