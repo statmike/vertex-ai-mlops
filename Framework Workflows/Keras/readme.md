@@ -36,3 +36,6 @@
     - Parallel workflow to the JAX example above but with a TensorFlow backend
     - This will create models without XLA which can be used in BigQuery and other serving environments:
         - See these models imported for serving directly in BigQuery in this workflow: [../../MLOps/Serving/Serve TensorFlow SavedModel Format With BigQuery](../../MLOps/Serving/Serve%20TensorFlow%20SavedModel%20Format%20With%20BigQuery.ipynb)
+        
+**Planning:**
+- Keras With PyTorch Overview

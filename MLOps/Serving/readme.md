@@ -36,21 +36,21 @@ There are two primary approaches to model serving, each with its own set of cons
             - BigQuery
             - File List
             - TFRecord Files
-    - [Serve TensorFlow SavedModel Format With BigQuery](./Serve%20TensorFlow%20SavedModel%20Format%20With%20BigQuery.ipynb)
-        - import TensorFlow SavedModel format model directly into BigQuery and get serverless predictions with SQL 
+- Import TensorFlow SavedModel format model directly into BigQuery and get serverless predictions with SQL
+    - [Serve TensorFlow SavedModel Format With BigQuery](./Serve%20TensorFlow%20SavedModel%20Format%20With%20BigQuery.ipynb) 
 
-**More serving examples in the repository:**
--  Customize prediction responses
-    -  [CatBoost Custom Prediction With FastAPI](../../Framework%20Workflows/CatBoost/CatBoost%20Custom%20Prediction%20With%20FastAPI.ipynb)
-        - Create multiple FastAPI apps in the same container. One that serves simple responses, another that gives details responses
-        - Create a custom container and use it locally, on Vertex AI Endpoints, and Cloud Run to serve either response type
-- Simplify serving by integrating Vertex AI Feature Store API into your custom prediction - fetch features from Vertex AI Feature Store at serving time
-    - [CatBoost Prediction With Vertex AI Feature Store](../../Framework%20Workflows/CatBoost/CatBoost%20Prediction%20With%20Vertex%20AI%20Feature%20Store.ipynb)
-        - Custom serving container build with FastAPI
-        - Incorporate feature retrieval from Vertex AI Feature Store
+**Related Workflows:**
+- `vertex-ai-mlops/Framework Workflows/Catboost/`
+    -  Customize prediction responses
+        -  [CatBoost Custom Prediction With FastAPI](../../Framework%20Workflows/CatBoost/CatBoost%20Custom%20Prediction%20With%20FastAPI.ipynb)
+            - Create multiple FastAPI apps in the same container. One that serves simple responses, another that gives details responses
+            - Create a custom container and use it locally, on Vertex AI Endpoints, and Cloud Run to serve either response type
+    - Simplify serving by integrating Vertex AI Feature Store API into your custom prediction - fetch features from Vertex AI Feature Store at serving time
+        - [CatBoost Prediction With Vertex AI Feature Store](../../Framework%20Workflows/CatBoost/CatBoost%20Prediction%20With%20Vertex%20AI%20Feature%20Store.ipynb)
+            - Custom serving container build with FastAPI
+            - Incorporate feature retrieval from Vertex AI Feature Store
 
 **Planning**
-- BigQuery Import TensorFlow SavedModel
 - BigQuery Import ONNX model files
 - BigQuery Import XGBoost model files
 - BigQuery Remote Connection To Vertex AI Endpoints

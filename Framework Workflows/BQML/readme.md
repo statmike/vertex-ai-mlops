@@ -23,8 +23,14 @@ A great starting point for seeing the scope of available methods is the [user jo
 
 **BigFrames**
 
-A new way to interact with BigQuery and BigQuery ML is [BigQuery DataFrames](https://cloud.google.com/python/docs/reference/bigframes/latest).  A new Pythonic DataFrame with modules for BigQuery (`bigframes.pandas`) that is pandas-compatible and BigQuery ML (`bigframes.ml`) that is scikit-learn like.  This series of notebooks will be expanded to offer workflow examples in the choice of SQL or BigFrames!
+A new way to interact with BigQuery and BigQuery ML is [BigQuery DataFrames](https://cloud.google.com/python/docs/reference/bigframes/latest).  A new Pythonic DataFrame with modules for BigQuery (`bigframes.pandas`) that is pandas-compatible and BigQuery ML (`bigframes.ml`) that is scikit-learn like.
 
 **Workflows:**
 
 This repository also has a series of notebook based workflows for many BigQuery ML methods that can be reviewed here: [../../03 - BigQuery ML (BQML)](../../03%20-%20BigQuery%20ML%20(BQML)/readme.md).  These workflows will be reviewed, updated, and migrated to this folder.
+
+**Related Workflows:**
+- `vertex-ai-mlops/MLOps/Serving/`
+    - Import TensorFlow SavedModel format model directly into BigQuery and get serverless predictions with SQL
+        - [Serve TensorFlow SavedModel Format With BigQuery](../../MLOps/Serving/Serve%20TensorFlow%20SavedModel%20Format%20With%20BigQuery.ipynb) 
+   
