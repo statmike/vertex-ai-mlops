@@ -20,11 +20,13 @@ Model monitoring tasks can be easily accessed in both BigQuery ML and Vertex AI:
     - Easily conduct monitoring task on any model with logged predictions in BigQuery, including Vertex AI Endpoints or even offline models with logs saved to BigQuery.
 - [Introduction To Vertex AI Model Monitoring](https://cloud.google.com/vertex-ai/docs/model-monitoring/overview)
     - Monitoring for any Vertex AI model with visuals integrated directly in the console.
-    
+
+---
 ## BigQuery ML Model Monitoring
 
 BigQuery ML model monitoring provides a powerful and efficient way to ensure the ongoing performance and accuracy of your machine learning models. By leveraging the techniques and tools covered in this notebook, you can gain valuable insights into your data, detect potential issues early on, and take corrective actions to maintain the effectiveness of your models over time.
 
+**Workflows:**
 These resources help get started with BQML based model monitoring:
 - Blog Post: [Introducing new ML model monitoring capabilities in BigQuery](https://cloud.google.com/blog/products/data-analytics/monitor-ml-model-skew-and-drift-in-bigquery)
     - Introduction Notebook Workflow: [BQML Model Monitoring Introduction](./bqml-model-monitoring-introduction.ipynb)
@@ -35,10 +37,22 @@ These resources help get started with BQML based model monitoring:
             - Automation with scheduled BigQuery Jobs
             - Email notifications for alerts
 
+**Planning:**
+- Automate Monitoring With:
+    - Dataform
+    - Workflows
+    - Cloud Composer
+    - Vertex AI Pipelines with KFP
+
+---
 ## BigQuery ML Model Monitoring - In Vertex AI
 
 BigQuery ML models that are created with BigQuery [can be registered to the Vertex AI Model Registry](https://cloud.google.com/bigquery/docs/managing-models-vertex) by adding parameters to the `CREATE MODEL` statement.  This is the basis for also beign able to visualize and collect results of `ML.VALIDATE_DATA_SKEW` and `ML.VALIDATE_DATA_DRIFT` directly in Vertex AI Model Monitoring! More on this coming soon!
 
+**Planning:**
+- Show integration with Vertex AI via the Model Registry
+
+---
 ## Vertex AI Model Monitoring
 
 Vertex AI has a [model registry](https://cloud.google.com/vertex-ai/docs/model-registry/introduction) the organize models.  Each model has versions and each version holds the links to the model files, evaluation information, list of batch prediction jobs, and deployed instances on Vertex AI Endpoints.  
@@ -62,8 +76,13 @@ With Vertex AI Model Monitoring V2 the monitoring can use data from:
 - Vertex AI Endpoint Logging
 - Vertex AI Managed Dataset such as the input for AutoML
 
-The Vertex AI Model Monitoring V2 is also continous in that jobs can be scheduled on a routine.
+The Vertex AI Model Monitoring V2 is also continuous in that jobs can be scheduled on a routine.
 
+**Planning:**
+- Setup monitoring for model version, show monitoring across data sources
+- Pipeline triggered by monitoring alerts: retrain, compare, condintionally replace
+
+---
 ## Understanding Monitoring Metrics
 
 Let's understand the calculation of these two metrics:
@@ -90,7 +109,7 @@ Calculating the L-Infinity Distance starts with the absolute percentage differen
 The final value of the L-Infinity Distance is the maximum of these absolute percentage differences:
 
 <p align="center"><center>
-    <img src="../resources/images/created/monitoring/l-infinity.png" width="75%">
+    <img src="../resources/images/created/monitoring/l-infinity.png" width="60%">
 </center><p>
 
 The Jansen-Shannon Divergence (JSD) is bit more involved to calculate so let do it step-by-step. For each category we want to calculate the Jansen-Shannon Divergence and the final value will be the sum across categories.  
@@ -113,20 +132,7 @@ stats['serve_kl'] = stats['serve_pct'] * np.log2(stats['serve_pct'] / stats['mix
 Finally, sum the `JSD` values across all categories for the overall value of the Jansen-Shannon Divergence
 
 <p align="center"><center>
-    <img src="../resources/images/created/monitoring/jsd.png" width="75%">
+    <img src="../resources/images/created/monitoring/jsd.png" width="60%">
 </center><p>
 
-
----
-TODO for Tutorial:
-More automations:
-- [ ] Dataform
-- [ ] Workflows
-- [ ] Cloud Composer
-- [ ] Vertex AI Pipelines (KFP)
-    
-Questions/Choices:
-- this has moved from tutorial to full workshop - ok? or think about splitting up into segments?
-- removed transform only model - i did add a section showing how to monitor transformed features with ML.TRANSFORM
-- removed history table for feature management - another notebook based workflow could focus on this data architecture with a focus in ongoing serving
 ---
