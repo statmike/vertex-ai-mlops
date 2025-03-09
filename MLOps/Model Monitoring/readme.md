@@ -116,12 +116,23 @@ The Jansen-Shannon Divergence (JSD) is bit more involved to calculate so let do 
 
 For each category:
 - Step 1: Calculate the average percentage and call it `mix`
->```stats['mix'] = (stats['train_pct'] + stats['serve_pct']) / 2```
+
+```python
+stats['mix'] = (stats['train_pct'] + stats['serve_pct']) / 2
+```
+
 - Step 2: Calculate the Kullback-Leibler (KL) Divergence of the train and serve percentages from the `mix`
->```stats['train_kl'] = stats['train_pct'] * np.log2(stats['train_pct'] / stats['mix'])
-stats['serve_kl'] = stats['serve_pct'] * np.log2(stats['serve_pct'] / stats['mix'])```
+
+```python
+stats['train_kl'] = stats['train_pct'] * np.log2(stats['train_pct'] / stats['mix'])
+stats['serve_kl'] = stats['serve_pct'] * np.log2(stats['serve_pct'] / stats['mix'])
+```
+
 - Step 3: Calculate the `JSD` as the average of the `kl` values for train and serve
->```stats['JSD'] = (stats['train_kl'] + stats['serve_kl']) / 2```
+
+```python
+stats['JSD'] = (stats['train_kl'] + stats['serve_kl']) / 2
+```
 
 |    |   train_n |   serve_n |   train_pct |   serve_pct |   abs_change_pct |      mix |     train_kl |     serve_kl |         JSD |
 |:---|----------:|----------:|------------:|------------:|-----------------:|---------:|-------------:|-------------:|------------:|
