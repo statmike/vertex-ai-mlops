@@ -66,6 +66,55 @@ The Vertex AI Model Monitoring V2 is also continous in that jobs can be schedule
 
 ## Understanding Monitoring Metrics
 
+Let's understand the calculation of these two metrics:
+- [L-infinity distance](https://en.wikipedia.org/wiki/Chebyshev_distance) for categorical features
+- [Jensen-Shannon divergence](https://en.wikipedia.org/wiki/Jensen%E2%80%93Shannon_divergence) for numeric features.  Can also be use for categorical features.
+
+Start with a categorical feature with three levels: A, B, C.  This table show some statistics for the levels in the trianing data and some recent serving data:
+
+|    |   train_n |   serve_n |   train_pct |   serve_pct |
+|:---|----------:|----------:|------------:|------------:|
+| A  |       116 |       775 |    0.487395 |    0.419145 |
+| B  |        86 |       795 |    0.361345 |    0.429962 |
+| C  |        36 |       279 |    0.151261 |    0.150892 |
+
+
+Calculating the L-Infinity Distance starts with the absolute percentage difference in each category.  Add that to the table:
+
+|    |   train_n |   serve_n |   train_pct |   serve_pct |   abs_change_pct |
+|:---|----------:|----------:|------------:|------------:|-----------------:|
+| A  |       116 |       775 |    0.487395 |    0.419145 |       0.0682495  |
+| B  |        86 |       795 |    0.361345 |    0.429962 |       0.0686176  |
+| C  |        36 |       279 |    0.151261 |    0.150892 |       0.00036813 |
+
+The final value of the L-Infinity Distance is the maximum of these absolute percentage differences:
+
+<p align="center"><center>
+    <img src="../resources/images/created/monitoring/l-infinity.png" width="75%">
+</center><p>
+
+The Jansen-Shannon Divergence (JSD) is bit more involved to calculate so let do it step-by-step. For each category we want to calculate the Jansen-Shannon Divergence and the final value will be the sum across categories.  
+
+For each category:
+- Step 1: Calculate the average percentage and call it `mix`
+>```stats['mix'] = (stats['train_pct'] + stats['serve_pct']) / 2```
+- Step 2: Calculate the Kullback-Leibler (KL) Divergence of the train and serve percentages from the `mix`
+>```stats['train_kl'] = stats['train_pct'] * np.log2(stats['train_pct'] / stats['mix'])
+stats['serve_kl'] = stats['serve_pct'] * np.log2(stats['serve_pct'] / stats['mix'])```
+- Step 3: Calculate the `JSD` as the average of the `kl` values for train and serve
+>```stats['JSD'] = (stats['train_kl'] + stats['serve_kl']) / 2```
+
+|    |   train_n |   serve_n |   train_pct |   serve_pct |   abs_change_pct |      mix |     train_kl |     serve_kl |         JSD |
+|:---|----------:|----------:|------------:|------------:|-----------------:|---------:|-------------:|-------------:|------------:|
+| A  |       116 |       775 |    0.487395 |    0.419145 |       0.0682495  | 0.45327  |  0.05104     | -0.04733     | 0.00185497  |
+| B  |        86 |       795 |    0.361345 |    0.429962 |       0.0686176  | 0.395653 | -0.0472862   |  0.0515837   | 0.00214875  |
+| C  |        36 |       279 |    0.151261 |    0.150892 |       0.00036813 | 0.151076 |  0.000265711 | -0.000265388 | 1.61767e-07 |
+
+Finally, sum the `JSD` values across all categories for the overall value of the Jansen-Shannon Divergence
+
+<p align="center"><center>
+    <img src="../resources/images/created/monitoring/jsd.png" width="75%">
+</center><p>
 
 
 ---
