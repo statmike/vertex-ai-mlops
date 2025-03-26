@@ -58,3 +58,6 @@ path <- sub('gs://', '/gcs/', Sys.getenv('AIP_MODEL_DIR'))
 
 # copy model file to GCS
 system2('gsutil', c('cp', 'model.rds', Sys.getenv('AIP_MODEL_DIR')))
+
+# output
+writeLines(paste('project:', bq_project, 'dataset:', bq_dataset))
