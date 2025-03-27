@@ -10,7 +10,6 @@
 </table><br/><br/><br/><br/>
 
 ---
----
 # Applied Agents
 > You are here: `vertex-ai-mlops/Applied ML/Agents/readme.md`
 
