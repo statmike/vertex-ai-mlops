@@ -10,6 +10,14 @@
 </table><br/><br/><br/><br/>
 
 ---
----
 # Applied Forecasting
 > You are here: `vertex-ai-mlops/Applied ML/Forecasting/readme.md`
+
+This series explores forecasting with Vertex AI, BigQuery ML, and additional open source frameworks. Forecasting involves following a measurement over time and exploring trends, the impact of seasonality (years, months, days, etc.), holidays, and special events, with the goal of using these insights to forecast into the near future. Some methods also incorporate observable measurements that impact demand to understand the relationships and improve forecasting accuracy.
+
+**Workflows:**
+- This repository contains many applied forecasting examples that will be migrated here soon. Please visit [Applied Forecasting](../../Applied%20Forecasting/readme.md) to review these examples!
+- [BigQuery ML For Hierarchical Forecasting](./BigQuery%20ML%20For%20Hierarchical%20Forecasting.ipynb)
+    - Use BigQuery ML to create hierarchical forecasting models.
+    - Detailed review of the default bottom-up approach.
+    - Examples of creating a top-down forecast by disaggregating the top-level forecast down the hierarchy using forecast proportions.

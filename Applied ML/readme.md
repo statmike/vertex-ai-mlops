@@ -10,15 +10,14 @@
 </table><br/><br/><br/><br/>
 
 ---
----
 # Applied ML
 > You are here: `vertex-ai-mlops/Applied ML/readme.md`
 
-Putting models into use to enhance workflows = Applied ML.
+Applying models to enhance workflows is Applied ML – often referred to as AI.
 
 **Applied ML**
 
-In some cases a workflow needs model output which might seem like the serving topic covered in [MLOps/Serving](../MLOps/Serving/readme.md) but its actually the next step - what you do with the response.  For instance, in forecasting you might use the forecasted horizon to change how you interact with your customers or your supplychain.  A great example of applied ml is generative AI where a very general model serves many purposes and can be coerced into conducting actions - agents.  Another area of applied ml is combining or specifically applying techniques to achieve an objective.  This is the purpose of this area of the repository.  
+In some cases, a workflow requires model output, which might seem related to the serving topic covered in [MLOps/Serving](../MLOps/Serving/readme.md). However, it's actually the next step: what you do with the response. For instance, in forecasting, you might use the forecasted horizon to change how you interact with your customers or your supply chain. A great example of applied ML is generative AI, where a very general model serves many purposes and can be coerced into conducting actions, such as agents. Another area of applied ML involves combining or specifically applying techniques to achieve an objective. This is the purpose of this area of the repository.
 
 The work in this part of the repository will make use of:
 - Multiple Frameworks which are covered directly in [Framework Workflows](../Framework%20Workflows/readme.md)
@@ -29,5 +28,3 @@ The work in this part of the repository will make use of:
 - [Generative AI (GenAI)](./GenAI/readme.md)
 - [Agents](./Agents/readme.md)
 - [Anomaly Detection](./Anomaly%20Detection/readme.md)
-
-

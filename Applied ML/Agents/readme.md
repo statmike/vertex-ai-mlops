@@ -13,3 +13,5 @@
 ---
 # Applied Agents
 > You are here: `vertex-ai-mlops/Applied ML/Agents/readme.md`
+
+Putting ML and Generative AI into action - agents!  More coming here after [Google Cloud Next 2025](https://cloud.withgoogle.com/next/25).
