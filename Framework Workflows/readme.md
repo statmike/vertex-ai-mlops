@@ -32,12 +32,12 @@ In-Progress
 - [Flax](./Flax/readme.md)
 - [Vertex AI AutoML](./Vertex%20AI%20AutoML/readme.md)
 - [BigQuery ML](./BQML/readme.md)
+- [R](./R/readme.md)
 
 Planning:
 - LightGBM
 - scikit-learn
 - XGBoost
-- R
 - PyTorch
 - Pycaret
 - statsmodels
