@@ -1,13 +1,13 @@
-DECLARE drift_anomalies ARRAY<STRING>;
+DECLARE drift_anomalies ARRAY<STRUCT<input STRING, visualization_link STRING>>;
 DECLARE drift STRING;
-DECLARE skew_anomalies ARRAY<STRING>;
+DECLARE skew_anomalies ARRAY<STRUCT<input STRING, visualization_link STRING>>;
 DECLARE skew STRING;
 
-# Monitor Drift
+# Monitor Drift:
 SET drift_anomalies = (
-    SELECT ARRAY_AGG(input)
+    SELECT ARRAY_AGG(STRUCT(input, visualization_link))
     FROM ML.VALIDATE_DATA_DRIFT(
-        (
+        (# base
             SELECT * EXCEPT(instance_timestamp)
             FROM `statmike-mlops-349915.bqml_model_monitoring.serving_all`
             WHERE
@@ -15,7 +15,7 @@ SET drift_anomalies = (
                 AND
                 DATE(instance_timestamp) < DATE_SUB(@run_date, INTERVAL 1 WEEK)
         ),
-        (
+        (# compare
             SELECT * EXCEPT(instance_timestamp)
             FROM `statmike-mlops-349915.bqml_model_monitoring.serving_all`
             WHERE DATE(instance_timestamp) >= DATE_SUB(@run_date, INTERVAL 1 WEEK)
@@ -24,34 +24,59 @@ SET drift_anomalies = (
             0.4 AS categorical_default_threshold,
             0.4 AS numerical_default_threshold
         )
+        , MODEL `statmike-mlops-349915.bqml_model_monitoring.classify_species_logistic`
     )
     WHERE is_anomaly = True
 );
 IF(ARRAY_LENGTH(drift_anomalies) > 0) THEN
     SET drift = CONCAT(
-        "Found data drift (", ARRAY_TO_STRING(drift_anomalies, ", "), ")"
+        "\n\tDrift: detected in the following features",
+        (
+            SELECT STRING_AGG(
+                CONCAT(
+                    '\n\t\t',
+                    da.input,
+                    ': ',
+                    da.visualization_link
+                )
+            )
+            FROM UNNEST(drift_anomalies) as da
+        )
     );
-    ELSE SET drift = 'No drift detected.';
+    ELSE SET drift = '\n\tDrift: not detected.';
 END IF;
 
 # Monitor Skew
 SET skew_anomalies = (
-    SELECT ARRAY_AGG(input)
+    SELECT ARRAY_AGG(STRUCT(input, visualization_link))
     FROM ML.VALIDATE_DATA_SKEW(
+        # base
         MODEL `statmike-mlops-349915.bqml_model_monitoring.classify_species_rf`,
-        (
+        (# compare
             SELECT * EXCEPT(instance_timestamp)
             FROM `statmike-mlops-349915.bqml_model_monitoring.serving_all`
             WHERE DATE(instance_timestamp) >= DATE_SUB(@run_date, INTERVAL 1 WEEK)
         )
+        ,STRUCT(TRUE AS enable_visualization_link)
     )
     WHERE is_anomaly = True
 );
 IF(ARRAY_LENGTH(skew_anomalies) > 0) THEN
     SET skew = CONCAT(
-        "Found data skew (", ARRAY_TO_STRING(skew_anomalies, ", "), ")"
+        "\n\tSkew: detected in the following features",
+        (
+            SELECT STRING_AGG(
+                CONCAT(
+                    '\n\t\t',
+                    sa.input,
+                    ': ',
+                    sa.visualization_link
+                )
+            )
+            FROM UNNEST(skew_anomalies) as sa
+        )
     );
-    ELSE SET skew = 'No skew detected.';
+    ELSE SET skew = '\n\tSkew: not detected.';
 END IF;
 
 # Prepare Alert
@@ -109,7 +134,8 @@ IF(ARRAY_LENGTH(drift_anomalies) > 0 OR ARRAY_LENGTH(skew_anomalies) > 0) THEN
                 ENABLE_GLOBAL_EXPLAIN = TRUE,
 
                 # register model in Vertex AI For Online Serving
-                MODEL_REGISTRY = 'VERTEX_AI'
+                MODEL_REGISTRY = 'VERTEX_AI',
+                VERTEX_AI_MODEL_ID = 'classify_species_rf'
             )
         AS
             SELECT species, island, culmen_length_mm, culmen_depth_mm, sex, flipper_length_mm, body_mass_g
@@ -134,7 +160,7 @@ IF(ARRAY_LENGTH(drift_anomalies) > 0 OR ARRAY_LENGTH(skew_anomalies) > 0) THEN
                 "\n\nMonitoring Report for ", @run_date, ":",
                 "\n\t", drift,
                 "\n\t", skew,
-                "\nThe Model was retrained:",
+                "\n\nThe Model was retrained:",
                 "\n\taccuracy of prior model: ", train_accuracy,
                 "\n\trecent accuracy of prior model: ", recent_accuracy,
                 "\n\taccuracy after retraining: ", retrain_accuracy,

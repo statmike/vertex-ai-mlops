@@ -40,7 +40,7 @@ This section covers workflows for working with [Generative AI on Vertex AI](http
       </tr>
       <tr>
         <td style="text-align: center;"><a href="./Embeddings/readme.md">Embeddings</a></td>
-        <td style="text-align: center;">Evaluation</td>
+        <td style="text-align: center;"><a href="./Evaluation/readme.md">Evaluation</a></td>
         <td style="text-align: center;">Extensions</td>
       </tr> 
       <tr>

@@ -23,6 +23,10 @@ It's time for the exciting part: generating text with large language models (LLM
 
 **Workflows:**
 
+- **[Google Gen AI Python SDK](./Google%20Gen%20AI%20Python%20SDK.ipynb):** This notebook is and overview of the new Google Gen AI SDK (for Python) with comparisons to the Vertex AI Gemini API
+    - Send prompts and receiving generate text
+    - Multimodal prompts
+    - Trying multiple models
 - **[Vertex AI Gemini API](./Vertex%20AI%20Gemini%20API.ipynb):** This notebook provides a comprehensive guide to using the Vertex AI Gemini API for text generation. It covers essential aspects such as:
     - Sending prompts and receiving generated text.
     - Multimodal prompts with images, audio, video, and documents
@@ -32,6 +36,7 @@ It's time for the exciting part: generating text with large language models (LLM
     - Integrating Tools and Function Calling
     - Metadata labels for applications to trace costs
     - Much more!
+- **[Gemini For Vision - Classification and Detection](./Gemini%20For%20Vision%20-%20Classification%20and%20Detection.ipynb)** This workflow explores using Gemini (2.0) for vision task like classification and detection.
 - **[Vertex AI Imagen For Image Generation](./Vertex%20AI%20Imagen%20For%20Image%20Generation.ipynb):**  Expand your generative capabilities beyond text with Vertex AI Imagen. This notebook demonstrates how to:
     - Generate images from text prompts.
     - Control image attributes (style, composition, etc.).

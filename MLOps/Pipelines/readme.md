@@ -30,11 +30,12 @@ This is a series of notebook based workflows that teach all the ways to use pipe
 |[Link To Section](#workflow-3)|[Vertex AI Pipelines - IO](./Vertex%20AI%20Pipelines%20-%20IO.ipynb)|An overview of all the type of inputs and outputs for pipeline components|
 |[Link To Section](#workflow-4)|[Vertex AI Pipelines - Control](./Vertex%20AI%20Pipelines%20-%20Control.ipynb)|An overview of controlling the flow of exectution for pipelines|
 |[Link To Section](#workflow-5)|[Vertex AI Pipelines - Secret Manager](./Vertex%20AI%20Pipelines%20-%20Secret%20Manager.ipynb)|How to pass sensitive information to pipelines and components|
+|[Link To Section](#workflow-11)|[Vertex AI Pipelines - GCS Read and Write](./Vertex%20AI%20Pipelines%20-%20GCS%20Read%20and%20Write.ipynb)|How to read/write to GCS from components, including container components.|
 |[Link To Section](#workflow-6)|[Vertex AI Pipelines - Scheduling](./Vertex%20AI%20Pipelines%20-%20Scheduling.ipynb)|How to schedule pipeline execution|
 |[Link To Section](#workflow-9)|[Vertex AI Pipelines - Notifications](./Vertex%20AI%20Pipelines%20-%20Notifications.ipynb)|How to send email notification of pipeline status.|
 |[Link To Section](#workflow-7)|[Vertex AI Pipelines - Management](./Vertex%20AI%20Pipelines%20-%20Management.ipynb)|Managing, Reusing, and Storing pipelines and components|
 |[Link To Section](#workflow-8)|[Vertex AI Pipelines - Testing](./Vertex%20AI%20Pipelines%20-%20Testing.ipynb)|Strategies for testing components and pipeliens locally and remotely to aide development.|
-
+|[Link To Section](#workflow-10)|[Vertex AI Pipelines - Managing Pipeline Jobs](./Vertex%20AI%20Pipelines%20-%20Managing%20Pipeline%20Jobs.ipynb)|Manage runs of pipelines in an environment: list, check status, filtered list, cancel and delete jobs.|
 
 To discover these notebooks as part of an introduction to MLOps read on below!
 
@@ -51,6 +52,7 @@ To discover these notebooks as part of an introduction to MLOps read on below!
     - [Notifications From Pipelines](#notifications-from-pipelines)
     - [Managing Pipelines: Storing And Reusing Pipelines & Components](#managing-pipelines-storing-and-reusing-pipelines--components)
     - [Testing Components And Pipelines: Strategies for Local and Remote Development](#testing-components-and-pipelines-strategies-for-local-and-remote-development)
+    - [Managing Pipeline Jobs](#managing-pipeline-jobs)
 - [Putting It All Together](#putting-it-all-together)
 
 ---
@@ -211,6 +213,20 @@ Check out how easy secret manager isis to implement with the following notebook 
 
 </td></tr></table></div>
 
+
+<a id='workflow-11'></a>
+**GCS Read/Write:** Methods for reading and writing data in GCS within a component.  Components run as Vertex AI Training jobs which include GCS as a Fuse mount.  That means components can utlizes GCS at the `/gcs` mount during runs.  This include container components and the notebook workflow below even shows how to pass code directly to a container for execution.
+
+<div><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+
+**Notebook Workflow:**
+ 
+Use the `/gcs` mount point to easily read and write data to GCS without need any library imports or setup.  The pipeline runs as a service account on a network and any bucket that can be reached with this setup is automatically available.
+- [Vertex AI Pipelines - GCS Read and Write](./Vertex%20AI%20Pipelines%20-%20GCS%20Read%20and%20Write.ipynb) 
+
+</td></tr></table></div>
+
+
 ---
 <a id='workflow-4'></a>
 ## Control Flow For Pipelines
@@ -318,6 +334,21 @@ Work directly with these concepts in the following notebook based workflow:
 </td></tr></table></div>
 
 ---
+<a id='workflow-10'></a>
+## Managing Pipeline Jobs
+
+Vertex AI Pipeline Jobs are runs of a pipeline.  These can be directly run by a user, started by API, or scheduled.  Withing Vetex AI a project can have many jobs running at any time and a history of all past jobs.  This workflow shows how to review and manage the jobs in an enviornment using the Python SDK.  For custom metrics in Cloud Logging check out [this helpful page](https://cloud.google.com/vertex-ai/docs/pipelines/metrics).
+
+<div><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+
+**Notebook Workflow:**
+
+Work directly with these concepts in the following notebook based workflow:
+- [Vertex AI Pipelines - Managing Pipeline Jobs](./Vertex%20AI%20Pipelines%20-%20Managing%20Pipeline%20Jobs.ipynb)
+
+</td></tr></table></div>
+
+---
 # Pipeline Patterns - Putting Concepts Together Into Common Workflows
 
 A series of notebook based workflows that show how to put all the concepts from the material above into common workflows:
@@ -326,6 +357,8 @@ A series of notebook based workflows that show how to put all the concepts from 
     - Example 1: Store a pipeline in artifact registry and directly run it on Vertex AI Pipelines without a local download.
     - Example 2: Store and retrieve components for reusability: as files (at url, file directory, or text string) and as artifact in artifact registry
     - Example 3: Store pipelines in artifact registry and retrieve (download, and import) to use as components in new pipelines
+- Run [R on Vertex AI Pipelines](../../Framework%20Workflows/R/R%20on%20Vertex%20AI%20Pipelines.ipynb)
+    - Use a prebuilt container to easily run an R script with inputs for the required libraries and command line arguments
 
 ---
 # Putting It All Together

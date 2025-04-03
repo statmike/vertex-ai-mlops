@@ -16,7 +16,8 @@
 [CatBoost](https://catboost.ai/) is an OSS library for gradient boosted decision trees.
 
 Workflows:
-- [CatBoost In Notebook](./CatBoost%20In%20Notebook.ipynb)
+- [CatBoost Overview](./CatBoost%20Overview.ipynb)
+    - Explore building a CatBoost Classifier for a BigQuery Data Source
 - [CatBoost Custom Prediction With FastAPI](./CatBoost%20Custom%20Prediction%20With%20FastAPI.ipynb)
     - Build A custom container with Cloud Build and store it in Artifact Registry
     - Multiple versions of formatting the output for prediction on the same container
@@ -24,6 +25,8 @@ Workflows:
         - Test the container locally with Docker
         - Register the model (with container) in Vertex Model Registry and deploy To a Vertex AI Prediction Endpoint
         - Deploy the container and serve predictions with Cloud Run
-- CatBoost Training Pipeline
-    - Train + Eval + Registry + Deploy + Test
-    - **In Development**
+- [CatBoost Prediction With Vertex AI Feature Store](./CatBoost%20Prediction%20With%20Vertex%20AI%20Feature%20Store.ipynb)
+    - How to setup Vertex AI Feature Store For online serving of features and use it with a CatBoost Model
+    - Incorporate retrieving features from Vertex AI Feature Store for inference
+    - Build a custome container with Cloud Build and store it in Artifact Registry
+    - Use the container locally, on Vertex AI Endpoints, and on Cloud Run
