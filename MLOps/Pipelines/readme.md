@@ -30,6 +30,7 @@ This is a series of notebook based workflows that teach all the ways to use pipe
 |[Link To Section](#workflow-3)|[Vertex AI Pipelines - IO](./Vertex%20AI%20Pipelines%20-%20IO.ipynb)|An overview of all the type of inputs and outputs for pipeline components|
 |[Link To Section](#workflow-4)|[Vertex AI Pipelines - Control](./Vertex%20AI%20Pipelines%20-%20Control.ipynb)|An overview of controlling the flow of exectution for pipelines|
 |[Link To Section](#workflow-5)|[Vertex AI Pipelines - Secret Manager](./Vertex%20AI%20Pipelines%20-%20Secret%20Manager.ipynb)|How to pass sensitive information to pipelines and components|
+|[Link To Section](#workflow-11)|[Vertex AI Pipelines - GCS Read and Write](./Vertex%20AI%20Pipelines%20-%20GCS%20Read%20and%20Write.ipynb)|How to read/write to GCS from components, including container components.|
 |[Link To Section](#workflow-6)|[Vertex AI Pipelines - Scheduling](./Vertex%20AI%20Pipelines%20-%20Scheduling.ipynb)|How to schedule pipeline execution|
 |[Link To Section](#workflow-9)|[Vertex AI Pipelines - Notifications](./Vertex%20AI%20Pipelines%20-%20Notifications.ipynb)|How to send email notification of pipeline status.|
 |[Link To Section](#workflow-7)|[Vertex AI Pipelines - Management](./Vertex%20AI%20Pipelines%20-%20Management.ipynb)|Managing, Reusing, and Storing pipelines and components|
@@ -211,6 +212,20 @@ Check out how easy secret manager isis to implement with the following notebook 
     - **example** pipeline that retrieves credentials from Secret Manager
 
 </td></tr></table></div>
+
+
+<a id='workflow-11'></a>
+**GCS Read/Write:** Methods for reading and writing data in GCS within a component.  Components run as Vertex AI Training jobs which include GCS as a Fuse mount.  That means components can utlizes GCS at the `/gcs` mount during runs.  This include container components and the notebook workflow below even shows how to pass code directly to a container for execution.
+
+<div><table style='text-align:left;vertical-align:middle;background-color: #4285F4' width="100%" cellpadding="1" cellspacing="0"><tr><td markdown="block">
+
+**Notebook Workflow:**
+ 
+Use the `/gcs` mount point to easily read and write data to GCS without need any library imports or setup.  The pipeline runs as a service account on a network and any bucket that can be reached with this setup is automatically available.
+- [Vertex AI Pipelines - GCS Read and Write](./Vertex%20AI%20Pipelines%20-%20GCS%20Read%20and%20Write.ipynb) 
+
+</td></tr></table></div>
+
 
 ---
 <a id='workflow-4'></a>
