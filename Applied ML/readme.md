@@ -26,5 +26,5 @@ The work in this part of the repository will make use of:
 **Application Areas:**
 - [Forecasting](./Forecasting/readme.md)
 - [Generative AI (GenAI)](./GenAI/readme.md)
-- [Agents](./Agents/readme.md)
+- [AI Agents](./AI%20Agents/readme.md)
 - [Anomaly Detection](./Anomaly%20Detection/readme.md)
