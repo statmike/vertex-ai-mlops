@@ -13,4 +13,37 @@
 # Applied AI Agents
 > You are here: `vertex-ai-mlops/Applied ML/AI Agents/readme.md`
 
-Putting ML and Generative AI into action - agents!  More coming here after [Google Cloud Next 2025](https://cloud.withgoogle.com/next/25).
+Putting ML and Generative AI to work with Agents.
+
+**Agents**
+
+An **AI Agent** uses models (like LLMs) to understand goals, make decisions, and take actions to get things done.
+
+Agent purposes often fit into these categories:
+
+* **LLM-based Agents:** Interpret input to generate outputs that create action.
+* **Workflow Agents:** Control execution: sequential steps, parallel actions, or loops.
+* **Custom Agents:** Allow implementing custom code, even for non-LLM or model-based tasks.
+
+Agents need:
+
+* **Tools:** To interact with outside services, APIs, or execute code.
+* **Callbacks:** Hooks for checks, logging, and redirection during execution.
+* **Session Management:** For handling session history, state, and memory (including save/load of files).
+* **Planning:** Breaking down inputs into steps and planning the execution order.
+* **Model Access:** Connection to the underlying AI models.
+* **Runtime:** To manage agent execution and coordinate with services.
+* **Deployment:** An environment to run and scale agent invocations.
+* **Evaluation:** Logic to compare expected results to actual results for testing.
+
+This is made easier by the Google [Agent Development Kit (ADK)](https://google.github.io/adk-docs/). It enables flexible agent creation and addresses advanced needs like:
+* **[Deploying agents](https://google.github.io/adk-docs/deploy/)** to execution envioronments
+    * Directly to [Vertex AI Agent Engine](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/overview) for fully managed scaling. Vertex AI Agent Engine also supports deploying agents built with other frameworks (like LangChain, LangGraph, AutoGen (*verify AG2?*), and LlamaIndex).
+* **Connecting agents to services via Model Context Protocol (MCP)**
+    * Use existing MCP servers with ADK ([ADK as an MCP Client](https://google.github.io/adk-docs/tools/mcp-tools/#1-using-mcp-servers-with-adk-agents-adk-as-an-mcp-client)).
+    * Build an [MCP server exposing ADK Tools](https://google.github.io/adk-docs/tools/mcp-tools/).
+
+Sometimes agents need to interact across boundaries (departments, companies, networks). The need for a standard protocol for agent-to-agent communication is met by the [A2A protocol](https://google.github.io/A2A/#/?id=unlock-collaborative-agent-to-agent-scenarios-with-a-new-open-protocol).
+
+
+
