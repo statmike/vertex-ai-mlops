@@ -28,3 +28,4 @@ The work in this part of the repository will make use of:
 - [Generative AI (GenAI)](./GenAI/readme.md)
 - [AI Agents](./AI%20Agents/readme.md)
 - [Anomaly Detection](./Anomaly%20Detection/readme.md)
+- [Optimization](./Optimization/readme.md)
