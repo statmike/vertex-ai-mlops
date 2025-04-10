@@ -38,7 +38,7 @@ Agents need:
 
 This is made easier by the Google [Agent Development Kit (ADK)](https://google.github.io/adk-docs/). It enables flexible agent creation and addresses advanced needs like:
 * **[Deploying agents](https://google.github.io/adk-docs/deploy/)** to execution envioronments
-    * Directly to [Vertex AI Agent Engine](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/overview) for fully managed scaling. Vertex AI Agent Engine also supports deploying agents built with other frameworks (like LangChain, LangGraph, AutoGen (*verify AG2?*), and LlamaIndex).
+    * Directly to [Vertex AI Agent Engine](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/overview) for fully managed scaling. Vertex AI Agent Engine also supports deploying agents built with other frameworks (like LangChain, LangGraph, AG2 (AutoGen), and LlamaIndex).
 * **Connecting agents to services via Model Context Protocol (MCP)**
     * Use existing MCP servers with ADK ([ADK as an MCP Client](https://google.github.io/adk-docs/tools/mcp-tools/#1-using-mcp-servers-with-adk-agents-adk-as-an-mcp-client)).
     * Build an [MCP server exposing ADK Tools](https://google.github.io/adk-docs/tools/mcp-tools/).
