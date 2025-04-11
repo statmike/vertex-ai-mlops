@@ -42,14 +42,13 @@ The best tool for an optimization task depends heavily on the mathematical struc
 **In summary:** The nature of your objective function, variables, and constraints dictates the appropriate tool – use SciPy for continuous mathematical functions, OR-Tools for discrete/combinatorial/LP/MIP problems, and Vizier for optimizing expensive or unknown black-box functions, especially hyperparameters.
 
 ---
-
 ## Vertex AI Vizier
 
-As motivated above, Vertex AI Vizier is a black-box optimization service that finds optimal parameters setting to achieve goals on desired metrics.  It excels when you don't have an objective function to evaluate and the cost of a trial is costly in terms of time, cost, or complexity.  The service allows you to configure a study and retrieve suggested trials from it.  As you respond to trials with the outcome metrics it's successive suggestion learn from and optimize the setting it is suggesting.  You can even backfill past trials for it to use in optimization.
+As motivated above, Vertex AI Vizier is a black-box optimization service that helps find optimal parameter settings to achieve goals on desired metrics. It excels when you don't have a simple objective function to evaluate, or when the cost (in time, money, or complexity) of running a trial is high. The service allows you to configure an optimization "Study" and retrieve suggested parameter settings ("Trials") from it. As you report back the outcome metrics for completed trials, Vizier's successive suggestions learn from past results to optimize the settings it proposes. You can even backfill the study with data from past trials for Vizier to use as a starting point.
 
 **Vizier References**
-- [Vertex AI Vizier Documentation]()
-- [Vertex SDK Vizier Client For Python]()
+- [Vertex AI Vizier Documentation](https://cloud.google.com/vertex-ai/docs/vizier/overview)
+- [Vertex SDK Vizier Client For Python](https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform_v1.services.vizier_service)
 - Read about how Vertex AI Vizier tunes multi-objective functions: [Random Hypervolume Scalarizations for Provable Multi-Objective Black Box Optimization](https://arxiv.org/abs/2006.04655)
 - Vizier Research paper [Google Vizier: A Service for Black-Box Optimization](https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/46180.pdf)
 - [OSS Vizier](https://arxiv.org/abs/2207.13676) and its GitHub Repository: [Open Source Vizier: Reliable and Flexible Black-Box Optimization](https://github.com/google/vizier)
@@ -58,25 +57,25 @@ A great way to get started is to try an overview workflow like this:
 
 ### Workflows:
 - [Vertex AI Vizier - Getting Started](../../Applied%20Optimization/Vertex%20AI%20Vizier%20-%20Getting%20Started.ipynb)
-    - includes multiple parameters and multiple objectives (metrics)
-    - includes safety threshold for a metric
-    - includes examples of loading past trials as a starting point
-    - includes example of contextual bandits with some parameters fixed during trials
-    
+    - Includes multiple parameters and multiple objectives (metrics).
+    - Includes safety thresholds for metrics.
+    - Includes examples of loading past trials as a starting point.
+    - Includes an example of contextual bandits (some parameters fixed during trials).
+
 > This content currently resides in the [Applied Optimization](../../Applied%20Optimization/readme.md) folder and will migrate here.
-    
+
 ### Working With Vizier on Vertex AI
 
 #### **Vertex AI SDK**
 
-To interact with Vizier you use a [Vertex AI Client library](https://cloud.google.com/vertex-ai/generative-ai/docs/reference/libraries) of which the [Vertex AI SDK for Python](https://cloud.google.com/vertex-ai/docs/python-sdk/use-vertex-ai-python-sdk) is used here.
-- The full API Guide (for Python) is documented [here](https://cloud.google.com/python/docs/reference/aiplatform/latest) is used here.
+To interact with Vizier, you use a [Vertex AI Client library](https://cloud.google.com/vertex-ai/generative-ai/docs/reference/libraries); the [Vertex AI SDK for Python](https://cloud.google.com/vertex-ai/docs/python-sdk/use-vertex-ai-python-sdk) is used in these examples.
+- The full API Guide for the Python client library is documented [here](https://cloud.google.com/python/docs/reference/aiplatform/latest).
 
 ```python
 from google.cloud import aiplatform
 
 REGION = 'us-central1'
-PROJECT_ID = 'your-project-1234'
+PROJECT_ID = 'your-project-1234' # Replace with your Project ID
 ```
 
 #### **Vizier Client**
@@ -91,11 +90,11 @@ vizier = aiplatform.gapic.VizierServiceClient(
 
 #### **Vizier Study**
 
-A Vizier study is a series of trails of settings, represented by parameters, and the resulting metric(s) from the settings.  
+A Vizier study represents an optimization process, consisting of a series of trials. Each trial involves specific parameter settings and their resulting metric(s).
 
 **Retrieve Existing Study**
 
-If you already have a study you can retrieve it (connect to it) with either of these approaches:
+f you already have a study, you can retrieve it (connect to it) using either of these approaches:
 
 ```python
 # using the studies display name:
@@ -115,9 +114,9 @@ study = vizier.get_study(
 
 **Create A New Study**
 
-You need a study configuration to create a study and the next section will show how to make one.
+You need a study configuration (defined below) to create a new study.
 
-Create a new study by supplying a study configuration, `study_spesc` in the code here, as follows:
+Create a new study by providing a study configuration object (e.g., `study_specs` in the code here):
 
 ```python
 study = vizier.create_study(
@@ -128,11 +127,11 @@ study = vizier.create_study(
 
 #### **Study Configuration**
 
-The study configuration is where you specify the parameters (inputs), metrics (outputs), and settings for a study.  
+The study configuration defines the parameters (inputs), metrics (outputs), and optimization settings for a study. 
 
 **Parameters**
 
-These are the study settings that can either be supplied for a trial (contextual input) or will be suggested by the Vizier service at each trial as it seeks to find the optimal value of these base on the metrics that you return based on these settings.
+These define the search space. Parameters can represent tunable settings that Vizier will suggest values for, or they can represent contextual information provided for a trial. Vizier seeks the optimal values for tunable parameters based on the metrics reported.
 
 ```python
 parameter_specs = [
@@ -174,14 +173,14 @@ parameter_specs = [
 
 Some optional advanced settings for each parameter are:
 - `scale_type` - not applicable when parameter uses `categorical_value_spec`
-    - `scale_type = 'SCALE_TYPE_UNSPECIFIED'` is the default, no scaling
-    - `scale_type = 'UNIT_LINEAR_SCALE'` scales the space to (0, 1) linearly
-    - `scale_type = 'UNIT_LOG_SCALE'` scale the space logarithmically to (0, 1), the space must be positive
-    - `scale_type = 'UNIT_REVERSE_LOG_SCALE'` scale the space reverse logarithmically to (0, 1), the space must be positive
+    - `scale_type = 'SCALE_TYPE_UNSPECIFIED'`: default, no scaling.
+    - `scale_type = 'UNIT_LINEAR_SCALE'`: scales the feasible space linearly to (0, 1).
+    - `scale_type = 'UNIT_LOG_SCALE'`: Scales the feasible space logarithmically to (0, 1); requires parameter values > 0.
+    - `scale_type = 'UNIT_REVERSE_LOG_SCALE'`: Scales using a reverse logarithm to (0, 1); requires parameter values > 0.
 
-**Nested Child Parameters**
+**Conditional (Nested) Parameters**
 
-Parameter specification can also include nested relationships, like the examples here.  The specification of child parameters is like regular parameters but include the parent values they apply to, or are nested within.  The list of parent values can overlap or be shared between multiple child parameters which would make them shared for the parent value settings.  
+Parameter specifications can also include nested (conditional) relationships, as shown in the following examples. The specification for child parameters is similar to regular parameters but includes the parent parameter values they apply to. The list of parent values can overlap or be shared between multiple child parameters, activating them when those parent values occur.
 
 ```python
 parameter_specs = parameter_specs + [
@@ -254,7 +253,7 @@ parameter_specs = parameter_specs + [
 
 **Metric(s)**
 
-The outcome of a trial is a one or more metrics. These are the values that have a goal of being maximized or minimized by the optimal parameter settings. Metrics can also include safety threshold in cases where a level of outcome is undesired, not safe - like profits < 0 or shelf space < 0 for example.
+The outcome of a trial consists of one or more metrics. These are the values that Vizier aims to maximize or minimize by finding the optimal parameter settings. Metrics can also include safety thresholds for outcomes that are undesired or unsafe (e.g., profit < 0 or resource usage > limit).
 
 ```python
 metric_specs = [
@@ -278,9 +277,9 @@ metric_specs = [
 ]
 ```
 
-**Study Specs**
+**Study Specification Dictionary**
 
-The full study specs combine the `parameter_specs` and `metric_specs` with the overall study settings:
+The full study specification combines the `parameter_specs` and `metric_specs` with overall study settings into a dictionary suitable for the `create_study` call:
 
 ```python
 study_specs = dict(
@@ -315,11 +314,11 @@ The `study_spec` can contain additional optional settings:
 
 #### **Trials**
 
-Trials are a set of parameter settings for which the metrics will be measured.  Vizier provides these as suggestions and has the goal of providing optimal values to meet the metric(s) goals.  Vizier will learn over the course of trails and past settings with metrics can be provided with the `.create_trial()` method to be used as a starting points.
+A trial represents a specific set of parameter values evaluated against the defined metrics. Vizier suggests parameter values with the goal of finding settings that best meet the metric goals. Vizier learns over the course of trials, and past trials (with their parameters and metrics) can be provided using the `.create_trial()` method to serve as starting points or historical data.
 
 **Get Suggested Trial(s)**
 
-Request one or more trials with the clients `.suggest_trials()` method.  This will return the desired number of trials with parameter setting for all parameters since none are being provided as context - more on that next.  Notice that a client id can also be provided so that you can delineate which suggestion have been provided to which requester in case you have multiple systems making requests for suggestions.
+Request one or more trials using the client's `.suggest_trials()` method. This will return the desired number of trials, each containing suggested parameter settings (assuming no context is provided - see below). A `client_id` can be provided to distinguish requests if multiple systems are interacting with the same study.
 
 ```python
 suggestions = vizier.suggest_trials(
@@ -331,7 +330,7 @@ suggestions = vizier.suggest_trials(
 ).result()
 ```
 
-And reviewing the first trial suggestion in `suggestions.trials[0]` looks like:
+Reviewing the first suggested trial (`suggested_trials[0]`) might look like this (output formatted for readability):
 
 ```python
 name: "projects/1026793852137/locations/us-central1/studies/3247715830740/trials/1"
@@ -402,11 +401,15 @@ start_time {
 client_id: "client_1"
 ```
 
-**Return Metrics For Trials**
+**Report Metrics for Trials**
 
-Once you evaluate the suggested trials parameters you can reply with the resulting metrics using the `.add_trial_measurement()` method.  This can also be done incrementally when metrics might have values after steps - like accuracy or loss after each epoch of a neural network training tasks.  Once the final metrics have been added the trial can be marked complete with the `.complete_trial()` method.  If a trial does not have intermmediate results the metrics measurments can be sent directly with the `.complete_trial()` method as the final measurements. Each of the three combinations here are presented as methods:
+Once you evaluate the suggested trial's parameters, you report the resulting metrics back to Vizier. This can be done incrementally if metrics have intermediate values (e.g., accuracy after each training epoch).
 
-Method 1: Add results then complete the trial
+The `add_trial_measurement()` method reports intermediate or final results. The `complete_trial()` method marks the trial as finished (e.g., `SUCCEEDED`, `INFEASIBLE`).
+
+The following examples show different ways to report results:
+
+Method 1: Add Final Measurement, then Complete
 
 ```python
 add_result = vizier.add_trial_measurement(
@@ -442,7 +445,7 @@ complete.final_measurement
 # }
 ```
 
-Method 2: Add incremental results then complete the trial
+Method 2: Add Incremental Measurements, then Complete
 
 ```python
 add_result_1 = vizier.add_trial_measurement(
@@ -491,7 +494,7 @@ complete.final_measurement
 # }
 ```
 
-Method 3: Complete the trial with final results as a single step
+Method 3: Complete with Final Measurement in One Step
 
 ```python
 complete = vizier.complete_trial(
@@ -527,7 +530,7 @@ complete.final_measurement
 
 **Infeasible Trials**
 
-When the suggestion for a trial results in a failed run of the process or cannot even be started then it is infeasible.  This is still value information for the optimization process.  Finalizing a trail suggestions state as infeasbile can be done directly:
+If a suggested trial results in a failed run or cannot be started (e.g., due to resource constraints or invalid parameter combinations discovered during setup), it should be marked as `INFEASIBLE`. This is still valuable information for the optimization process.
 
 ```python
 infeasible = vizier.complete_trial(
@@ -545,9 +548,9 @@ infeasible.infeasible_reason
 # 'Settings result in process errors.'
 ```
 
-**Trials With Context**
+**Trials With Context (Contextual Bandits / Conditional Optimization)**
 
-Some parameters may not be setting but rather observations, like weather, current market cost, etc.  We may wish to optimize within the context of these observed parameters.  We can treat any of the parameters as contextual parameters by included the fixed setting value during the request for suggested trials.  Here we fix the value of the first three parameters as context during the request and notice that the suggestion has the same value as the context:
+Some parameters might represent observed context (e.g., weather, current market conditions, user segment) rather than tunable settings. You might want to optimize the tunable parameters within the context of these observations. You can achieve this by providing the fixed values for context parameters in the `.suggest_trials()` request. Vizier will then suggest values for the remaining tunable parameters based on that context.
 
 ```python
 suggestion_with_context = vizier.suggest_trials(
@@ -582,7 +585,7 @@ suggestion_with_context.trials[0].parameters
 
 **List Trials**
 
-At any time you can generate a list of all trials for a study:
+At any time, you can retrieve a list of all trials associated with a study:
 
 ```python
 trials = vizier.list_trials(dict(parent = study.name)).trials
@@ -596,7 +599,10 @@ len(trials)
 
 **Retrieve Optimal Trials**
 
-At any point you can request a subset of the trials that currently the most optimal with the `.list_optimal_trials()` method. For single objective trials (1 metric) this is the list of trials with best outcome.  For multi-objective trials this is the list of [pareto-optimal trials](https://en.wikipedia.org/wiki/Pareto_efficiency).
+You can request the subset of trials considered most optimal so far using the `.list_optimal_trials()` method.
+
+- For single-objective studies (1 metric), this returns the trial(s) with the best metric value according to the goal (MAXIMIZE/MINIMIZE).
+- For multi-objective studies, this returns a list of [pareto-optimal trials](https://en.wikipedia.org/wiki/Pareto_efficiency) (trials where no single metric can be improved without worsening another).
 
 ```python
 optimal_trials = vizier.list_optimal_trials(dict(parent = study.name)).optimal_trials
