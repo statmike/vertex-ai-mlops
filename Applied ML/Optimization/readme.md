@@ -618,37 +618,34 @@ len(optimal_trials)
 
 #### **Advanced Topics**
 
-**Parameters With Constraints**
+**Parameters With Constraints Between Them**
 
-There might be study configurations where you know that paramters constrain each other.  For example two paramter that constrain each other like:
+Sometimes, combinations of parameter values might be invalid or impossible. For example, you might require $p_1 \le p_2$. Vizier doesn't directly support arbitrary constraints between parameters in the study definition. Here are strategies to handle such cases:
 
-$$(a,b) \text{ such that } 0 \le a \le b \le 1$$
+- Strategy 1: Use Context / Conditional Parameters:
+If some constrained parameters are contextual (you provide their values), they naturally restrict the space for other parameters. You can also model some constraints using conditional parameters, activating certain parameter ranges only when parent parameters have specific values.
 
-Strategy 1:
+- Strategy 2: Use Trial Infeasibility:
+When Vizier suggests a trial, immediately check if the parameter combination violates your known constraints. If it does, mark the trial as `INFEASIBLE` using `.complete_trial()`. This tells Vizier not to explore that specific combination further. Combining this with safety thresholds on metrics can help guide the search away from invalid regions.
 
-If some of the parameters being constrained are contextural, meaning you input the values so they subset the search space of the other parameters which Vizier is making suggestions for then you can manage this directly based on the values you input as context.  You can also make child parameters for contextual parameters so that you are constraining suggestions to be in different contextual space.
+- Strategy 3: Reparameterization:
+Rewrite the constrained parameters using a set of unconstrained surrogate parameters. Define the Vizier study over these surrogate parameters, and then transform the suggested surrogate values back into the original constrained parameter space before running the trial.
 
-Strategy 2:
+An example of strategy 3:
 
-Use trial infeasibility to immediatly evaluate parameters and reject trials violating the constraints.  This along with setting up safety thresholds for metrics can limit the region of search.
+Example: Constraint on $(p_1, p_2)$ such that $0 \le p_1 \le p_2 \le 10$.
 
-Strategy 3:
-
-Reparameterize the constraint by rewriting the constraint in new parameters and search over the new parameters - like surrogate parameters in the constrained space.  There are multiple mathimatical methods for this and for a small number of parameters constraining each other the follwing approach can work well:
-
-$$(p_1,p_2) \text{ such that } 0 \le p_1 \le p_2 \le 10$$
-
-Generate new parameters $z_1$, and $z_2$ each in the range $[0,1]$. Now the new parameters $z_1$ and $z_2$ can be calulated from:
+Define new surrogate parameters $z_1, z_2$, each in the range $[0, 1]$. Calculate the original parameters using a transformation that enforces the constraint. One such transformation is:
 
 $$p_i = p_{i-1} + 10*z_i^3(1-\frac{p_{i-1}}{10})$$
 
-In this example:
+For this example:
 - $p_1 = 10 * z_1^3$
 - $p_2 = p_1 + 10*z_2^3(1-\frac{p_1}{10})$
 
 The idea is that the $z_i$ will be fractions of the remaining distance from $p_i$ to the upper limit, 10 in this case.
 
-Now the Vizer study spec would setup the new $z_i$ parameters in the $[0, 1]$ space like this:
+Now, set up the Vizier study specification with $z_1$ and $z_2$ as `DOUBLE` parameters in $[0, 1]$:
 
 ```python
 parameter_specs = [
@@ -669,7 +666,7 @@ parameter_specs = [
 ]
 ```
 
-When requesting suggestions from Vizier the suggested values for $z_i$ would need to be converted back to $p_i$ for use as setting in the trial.  This is a Python function for doing this:
+When receiving suggestions for $z_1, z_2$ from Vizier, you need to convert them back into $p_1, p_2$ values using a function before running the actual trial. Here is an example Python function for this conversion (assuming the upper limit is 10.0):
 
 ```python
 def converter(*z_values):
