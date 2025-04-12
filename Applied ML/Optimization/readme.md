@@ -701,3 +701,20 @@ for i in range(10):
 # Run number 8 had values p1: 0.04679 and p2: 0.5477. 0 <= p1 <= p2 <= 10 is True
 # Run number 9 had values p1: 6.603 and p2: 6.654. 0 <= p1 <= p2 <= 10 is True
 ```
+
+**Vizier in the Vertex AI Console**
+
+The Vertex AI section of the Google Cloud Console provides a visual interface for monitoring your Vizier studies. Actions performed via the SDK (like creating studies or reporting trials) are reflected here, allowing you to track trial states, view parameters and metrics, explore analysis graphs, and examine study configurations.
+
+<p>Viewing the list of Vizier studies:</p>
+<p style="text-align: center;"><img src="./resources/screenshots/console_vizier_studies.png" alt="Vertex AI Console showing a list of Vizier studies" style="border: 1px solid black; width: 75%;"></p>
+
+<p>The overview page for a specific study:</p>
+<p style="text-align: center;"><img src="./resources/screenshots/console_vizier_study_overview.png" alt="Vertex AI Console showing the overview page for a specific Vizier study" style="border: 1px solid black; width: 75%;"></p>
+
+<p>Analysis graphs (e.g., parallel coordinates, parameter importance):</p>
+<p style="text-align: center;"><img src="./resources/screenshots/console_vizier_study_analysis.png" alt="Vertex AI Console showing the analysis graphs for a Vizier study" style="border: 1px solid black; width: 75%;"></p>
+
+<p>Viewing the study configuration details (parameters, metrics):</p>
+<p style="text-align: center;"><img src="./resources/screenshots/console_vizier_study_config.png" alt="Vertex AI Console showing the configuration details for a Vizier study" style="border: 1px solid black; width: 75%;"></p>
+
