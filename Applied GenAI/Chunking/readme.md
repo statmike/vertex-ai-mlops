@@ -25,3 +25,20 @@ Document AI on Google Cloud offers parsers that process input documents into out
 
 Building on the overview of the Document AI Layout Parser, the following workflow processes multiple large documents (over 1000 pages):
 - [Large Document Processing - Document AI Layout Parser](./Large%20Document%20Processing%20-%20Document%20AI%20Layout%20Parser.ipynb)
+
+## Using PyMuPDF For Extraction
+
+[PyMuPDF](https://pymupdf.readthedocs.io/en/latest/) (based on the underlying MuPDF library) is a lightweight yet powerful Python library for accessing and manipulating various document formats, most notably PDF. It is known for its speed, efficiency, and comprehensive feature set, making it an excellent choice for extracting raw content from PDFs before chunking for RAG applications.
+
+**Key Capabilities Utilized:**
+
+* **Text Extraction:** Efficiently extracts plain text content page by page or from the entire document. It can also provide more detailed text information, including bounding boxes, which can be useful for layout-aware chunking strategies.
+* **Metadata Access:** Allows retrieval of standard PDF metadata (e.g., title, author, creation date) which can be valuable context to associate with chunks.
+* **Image Extraction:** Can identify and extract embedded images from PDFs, useful if your RAG pipeline needs to handle or reference visual content separately.
+* **Page Handling:** Provides easy access to individual pages, page counts, and basic manipulation capabilities.
+
+**Workflow Demonstration:**
+
+The following notebook demonstrates a typical workflow using PyMuPDF to open PDF documents, iterate through pages, and extract text content suitable for subsequent chunking operations:
+
+- [Process Documents - PyMuPDF](./Process%20Documents%20-%20PyMuPDF.ipynb)
