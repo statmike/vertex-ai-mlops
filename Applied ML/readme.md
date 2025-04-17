@@ -29,3 +29,9 @@ The work in this part of the repository will make use of:
 - [AI Agents](./AI%20Agents/readme.md)
 - [Anomaly Detection](./Anomaly%20Detection/readme.md)
 - [Optimization](./Optimization/readme.md)
+
+**Solution Prototypes**
+
+Some workflows require complex applications or the combination of multiple applications.  These **solutions** can solve complex business scenarios.
+
+- [Solution Prototypes](./Solution%20Prototypes/readme.md)
