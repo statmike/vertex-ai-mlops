@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - INV-2024-110</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .invoice-container {
+            width: 80%;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff; /* Example BlueTech color */
+        }
+
+        .invoice-info {
+            text-align: right;
+        }
+
+        .address {
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .total {
+            text-align: right;
+            font-weight: bold;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #777;
+            font-size: smaller;
+        }
+    </style>
+</head>
+<body>
+
+<div class="invoice-container">
+    <div class="header">
+        <div class="logo">
+            <span style="color:#007bff;">B</span>lue<span style="color:#007bff;">T</span>ech <span style="font-size:16px;">Innovations</span>
+        </div>
+        <div class="invoice-info">
+            <h2>Invoice</h2>
+            <p>Invoice Number: INV-2024-110</p>
+            <p>Date: 2024-03-10</p>
+            <p>Due Date: 2024-03-25</p>
+        </div>
+    </div>
+
+    <div class="address">
+        <strong>Billed To:</strong><br>
+        LearnVerse EdTech<br>
+        222 Maple Drive<br>
+        Boston, MA 02108
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Description</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>List Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>SWDEV-001</td>
+                <td>Custom Software Development</td>
+                <td>80</td>
+                <td>$150.00</td>
+                <td>$12,000.00</td>
+            </tr>
+            <tr>
+                <td>UIUX-002</td>
+                <td>UI/UX Design</td>
+                <td>40</td>
+                <td>$120.00</td>
+                <td>$4,800.00</td>
+            </tr>
+            <tr>
+                <td>QA-003</td>
+                <td>QA & Testing</td>
+                <td>40</td>
+                <td>$100.00</td>
+                <td>$4,000.00</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="total">
+        Subtotal: $20,800.00<br>
+        Tax: $200.00<br>
+        <strong>Total: $21,000.00</strong>
+    </div>
+
+    <div class="footer">
+        <p>&copy; 2024 BlueTech Innovations. All rights reserved.</p>
+        <p>456 Oak Avenue, Springfield, IL 62704 | contact@bluetechinnovations.com | 555-987-6543</p>
+    </div>
+</div>
+
+</body>
+</html>

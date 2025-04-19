@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - INV-2024-1022</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff; /* Horizon's color */
+        }
+        .company-info {
+            text-align: right;
+        }
+        .invoice-info {
+            margin-bottom: 20px;
+        }
+        .invoice-info table {
+            width: 100%;
+        }
+        .invoice-info th {
+            text-align: left;
+            padding: 8px;
+        }
+        .invoice-info td {
+            padding: 8px;
+        }
+        .billing-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .billing-info div {
+            width: 48%;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .totals {
+            text-align: right;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #888;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+            font-size: smaller;
+        }
+        .accent-color {
+          color: #007bff;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <div class="logo">
+            <span class="accent-color">H</span>orizon Software Inc.
+        </div>
+        <div class="company-info">
+            <p>555 Pine Avenue</p>
+            <p>Denver, CO 80202</p>
+            <p>555-111-5555</p>
+            <p><a href="mailto:sales@horizonsoftware.com">sales@horizonsoftware.com</a></p>
+        </div>
+    </div>
+
+    <div class="invoice-info">
+        <table>
+            <tr>
+                <th>Invoice Number:</th>
+                <td>INV-2024-1022</td>
+            </tr>
+            <tr>
+                <th>Invoice Date:</th>
+                <td>2024-03-15</td>
+            </tr>
+            <tr>
+                <th>Due Date:</th>
+                <td>2024-04-10</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="billing-info">
+        <div>
+            <strong>Bill to:</strong><br>
+            RetailNow Innovations<br>
+            700 Market St<br>
+            Philadelphia, PA 19103<br>
+            215-555-6767
+        </div>
+
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+            <tr>
+                <th>Item</th>
+                <th>Description</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>List Price</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>CSD-001</td>
+                <td>Custom Software Development</td>
+                <td>80</td>
+                <td>$150.00</td>
+                <td>$12,000.00</td>
+            </tr>
+            <tr>
+                <td>UIUX-002</td>
+                <td>UI/UX Design</td>
+                <td>40</td>
+                <td>$120.00</td>
+                <td>$4,800.00</td>
+            </tr>
+            <tr>
+                <td>QA-003</td>
+                <td>QA & Testing</td>
+                <td>40</td>
+                <td>$100.00</td>
+                <td>$4,000.00</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="totals">
+        <p>Subtotal: $20,800.00</p>
+        <p>Tax: $240.00</p>
+        <h3>Total: $21,040.00 USD</h3>
+    </div>
+
+    <div class="footer">
+        <p>Thank you for your business!</p>
+        <p>© 2024 Horizon Software Inc.</p>
+    </div>
+
+</div>
+
+</body>
+</html>

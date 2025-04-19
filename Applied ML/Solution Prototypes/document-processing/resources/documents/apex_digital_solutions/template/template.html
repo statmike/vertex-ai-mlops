@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - INV-2024-0322</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #ddd;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: left;
+            margin-bottom: 30px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+        }
+
+		.logo {
+			font-size: 2em;
+			font-weight: bold;
+			color: #007bff; /* A professional blue */
+			padding: 5px 10px;
+			border: 2px solid #007bff;
+			border-radius: 5px;
+		}
+
+
+        .invoice-info {
+            text-align: right;
+        }
+
+        .customer-info {
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .total {
+            text-align: right;
+            font-weight: bold;
+        }
+
+		.footer {
+			text-align: center;
+			margin-top: 30px;
+			padding-top: 20px;
+			border-top: 1px solid #ddd;
+			color: #777;
+			font-size: 0.8em;
+		}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+			<div class="logo">A<span style="color: #28a745;">DS</span></div>
+            <div class="invoice-info">
+                <h2>Invoice</h2>
+                <p>Invoice Number: INV-2024-0322</p>
+                <p>Date: 2024-03-15</p>
+                <p>Due Date: 2024-04-04</p>
+            </div>
+        </div>
+
+        <div class="customer-info">
+            <h3>Bill To:</h3>
+            <p><strong>SecureHealth Solutions</strong></p>
+            <p>666 Willow Way</p>
+            <p>Denver, CO 80202</p>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>SWDEV-001</td>
+                    <td>Custom Software Development: Tailored software solutions designed and built to meet specific business needs.</td>
+                    <td>80</td>
+                    <td>$150.00</td>
+                    <td>$12000.00</td>
+                </tr>
+                <tr>
+                    <td>UIUX-002</td>
+                    <td>UI/UX Design: User interface and user experience design services focused on usability and engagement.</td>
+                    <td>40</td>
+                    <td>$120.00</td>
+                    <td>$4800.00</td>
+                </tr>
+                <tr>
+                    <td>QA-003</td>
+                    <td>QA & Testing: Comprehensive quality assurance and testing services to ensure software reliability.</td>
+                    <td>40</td>
+                    <td>$100.00</td>
+                    <td>$4000.00</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="total">
+            <p>Subtotal: $20800.00</p>
+            <p>Tax: $0.00</p>
+            <p><strong>Total: $20800.00 USD</strong></p>
+        </div>
+
+		<div class="footer">
+			<p>Apex Digital Solutions | 123 Main Street, Anytown, CA 91234 | 555-123-4567 | info@apexdigitalsolutions.com</p>
+		</div>
+    </div>
+</body>
+</html>

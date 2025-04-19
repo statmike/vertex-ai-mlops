@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - INV-2024-1122</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+
+        .invoice-container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3498db; /* Vendor Specific Color */
+        }
+
+        .invoice-info {
+            text-align: right;
+        }
+
+        .address {
+            margin-bottom: 10px;
+        }
+
+        .customer-info {
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .total {
+            text-align: right;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #777;
+        }
+
+        .fut-for {
+          color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-container">
+        <div class="header">
+            <div class="logo">
+                Future <span class="fut-for">Forward</span> Technologies
+            </div>
+            <div class="invoice-info">
+                <h2>INVOICE</h2>
+                <p>Invoice Number: INV-2024-1122</p>
+                <p>Date: 2024-03-10</p>
+                <p>Due Date: 2024-03-25</p>
+            </div>
+        </div>
+
+        <div class="address">
+            <strong>Future Forward Technologies</strong><br>
+            333 Cherry Court<br>
+            Sunnyvale, CA 94087
+        </div>
+
+        <div class="customer-info">
+            <strong>Bill to:</strong><br>
+            RetailEdge Analytics<br>
+            701 Congress Ave<br>
+            Austin, TX 78701
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>SWDEV-001</td>
+                    <td>Custom Software Development</td>
+                    <td>80</td>
+                    <td>$150.00</td>
+                    <td>$12000.00</td>
+                </tr>
+                <tr>
+                    <td>UIUX-002</td>
+                    <td>UI/UX Design</td>
+                    <td>40</td>
+                    <td>$120.00</td>
+                    <td>$4800.00</td>
+                </tr>
+                <tr>
+                    <td>CLOUD-003</td>
+                    <td>Cloud Consulting</td>
+                    <td>20</td>
+                    <td>$200.00</td>
+                    <td>$4000.00</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="total">
+            Subtotal: $20800.00<br>
+            Tax: $384.00<br>
+            <strong>Total: $21184.00 USD</strong>
+        </div>
+
+        <div class="footer">
+            Thank you for your business!
+        </div>
+    </div>
+</body>
+</html>

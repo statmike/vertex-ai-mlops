@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - EEA-2024-110</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .invoice-container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff; /* Eagle Eye Blue */
+        }
+
+        .address {
+            text-align: right;
+        }
+
+        .invoice-details {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .invoice-table th, .invoice-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .invoice-table th {
+            background-color: #f2f2f2;
+        }
+
+        .total {
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+
+<div class="invoice-container">
+
+    <div class="header">
+        <div class="logo">
+            <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAEqADAAQAAAABAAAAEgAAAAAOUVdOAAAAwElEQVQ4T2P8//8/hQIEqZ9o4mQ/9/z6R0QfXN8U23E3N93z2mYkFhAQ8sP0f7f8/o/wR4uAQ+jKzs//f/w/fP9z4w8j1z+m/BniIUB8z0o4Qk8z9/x4j+E08h/0H9Y8/m1JzR//8fNnx/x6Mh4wEAAAO7xUfHn9l5AAAAAElFTkSuQmCC" alt="Eagle Eye Applications Logo" style="width:20px;height:20px; vertical-align:middle;"> Eagle Eye Applications
+        </div>
+        <div class="address">
+            222 Maple Drive<br>
+            Gotham City, NJ 07030<br>
+            555-444-9999<br>
+            info@eagleeyeapps.com
+        </div>
+    </div>
+
+    <div class="invoice-details">
+        <div>
+            <strong>Bill To:</strong><br>
+            GreenTech Energy Corp<br>
+            123 Powerline Road<br>
+            Phoenix, AZ 85004
+        </div>
+        <div>
+            <strong>Invoice Number:</strong> EEA-2024-110<br>
+            <strong>Invoice Date:</strong> 2024-03-10<br>
+            <strong>Due Date:</strong> 2024-03-25
+        </div>
+    </div>
+
+    <table class="invoice-table">
+        <thead>
+            <tr>
+                <th>Item #</th>
+                <th>Description</th>
+                <th>Unit Price</th>
+                <th>Quantity</th>
+                <th>List Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>CSD-001</td>
+                <td>Custom Software Development: Building tailored software solutions to meet unique business needs.</td>
+                <td>$150.00</td>
+                <td>80</td>
+                <td>$12,000.00</td>
+            </tr>
+            <tr>
+                <td>UIUX-002</td>
+                <td>UI/UX Design: Crafting intuitive and engaging user interfaces and user experiences.</td>
+                <td>$120.00</td>
+                <td>40</td>
+                <td>$4,800.00</td>
+            </tr>
+            <tr>
+                <td>QA-003</td>
+                <td>QA & Testing: Ensuring software quality through rigorous testing and quality assurance processes.</td>
+                <td>$100.00</td>
+                <td>40</td>
+                <td>$4,000.00</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="total">
+        <strong>Subtotal:</strong> $20,800.00<br>
+        <strong>Tax:</strong> $0.00<br>
+        <strong>Total:</strong> $20,800.00 USD
+    </div>
+
+    <div class="footer">
+        Thank you for your business!
+    </div>
+
+</div>
+
+</body>
+</html>

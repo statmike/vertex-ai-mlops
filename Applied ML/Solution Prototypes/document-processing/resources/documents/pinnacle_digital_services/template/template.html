@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - INV-2024-1122</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .invoice-container {
+            width: 800px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff; /* A professional blue */
+        }
+
+        .invoice-details {
+            text-align: right;
+        }
+
+        .address-block {
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .total-section {
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ccc;
+            color: #777;
+            font-size: small;
+        }
+    </style>
+</head>
+<body>
+
+<div class="invoice-container">
+
+    <div class="invoice-header">
+        <div class="logo">
+            <span style="color: #343a40;">Pinnacle</span> <span style="color: #007bff;">Digital</span>
+        </div>
+        <div class="invoice-details">
+            <h2>Invoice</h2>
+            <p>Invoice Number: INV-2024-1122</p>
+            <p>Date: 2024-03-10</p>
+            <p>Due Date: 2024-03-25</p>
+        </div>
+    </div>
+
+    <div class="address-block">
+        <strong>Billed To:</strong><br>
+        Quantum Education<br>
+        777 Pine St<br>
+        Los Angeles, CA 90001
+    </div>
+
+    <div class="address-block">
+        <strong>From:</strong><br>
+        Pinnacle Digital Services<br>
+        333 Maple Road<br>
+        San Francisco, CA 94105
+    </div>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Item</th>
+            <th>Description</th>
+            <th>Quantity</th>
+            <th>Unit Price</th>
+            <th>List Price</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>CSD-001</td>
+            <td>Custom Software Development</td>
+            <td>80</td>
+            <td>$150.00</td>
+            <td>$12,000.00</td>
+        </tr>
+        <tr>
+            <td>UIUX-002</td>
+            <td>UI/UX Design</td>
+            <td>40</td>
+            <td>$120.00</td>
+            <td>$4,800.00</td>
+        </tr>
+        <tr>
+            <td>QA-003</td>
+            <td>QA & Testing</td>
+            <td>40</td>
+            <td>$100.00</td>
+            <td>$4,000.00</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="total-section">
+        <p>Subtotal: $20,800.00</p>
+        <p>Tax: $0.00</p>
+        <h3>Total: $20,800.00</h3>
+    </div>
+
+    <div class="footer">
+        Pinnacle Digital Services | 333 Maple Road, San Francisco, CA 94105 | support@pinnacledigitalservices.com | 555-787-9090
+    </div>
+
+</div>
+
+</body>
+</html>

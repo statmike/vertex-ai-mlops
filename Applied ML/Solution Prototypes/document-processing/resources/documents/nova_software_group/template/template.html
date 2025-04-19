@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice - INV-2024-777</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      margin: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      border: 1px solid #ccc;
+      padding: 20px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+      color: #3498db; /* Nova Software Group Color */
+    }
+
+    .invoice-info {
+      text-align: right;
+    }
+
+    .invoice-info p {
+      margin: 5px 0;
+    }
+
+    .billing-info {
+      margin-bottom: 20px;
+    }
+
+    .billing-info h2 {
+      font-size: 1.2em;
+      margin-bottom: 5px;
+    }
+
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    .items-table th,
+    .items-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .items-table th {
+      background-color: #f2f2f2;
+    }
+
+    .totals {
+      text-align: right;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 10px;
+      border-top: 1px solid #ccc;
+      color: #777;
+      font-size: 0.8em;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <div class="header">
+      <div class="logo">
+        Nova Software Group <span style="font-size:0.6em; color:#888">(Where Innovation Meets Code)</span>
+      </div>
+      <div class="invoice-info">
+        <p>Invoice Number: INV-2024-777</p>
+        <p>Date: 2024-03-10</p>
+        <p>Due Date: 2024-03-25</p>
+      </div>
+    </div>
+
+    <div class="billing-info">
+      <h2>Bill To:</h2>
+      <p>ShopSmart Retail Tech</p>
+      <p>3 Retail Row</p>
+      <p>Chicago, IL 60606</p>
+    </div>
+
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th>Item #</th>
+          <th>Description</th>
+          <th>Quantity</th>
+          <th>Unit Price</th>
+          <th>List Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>SWDEV-001</td>
+          <td>Custom Software Development</td>
+          <td>80</td>
+          <td>$150.00</td>
+          <td>$12,000.00</td>
+        </tr>
+        <tr>
+          <td>UIUX-002</td>
+          <td>UI/UX Design</td>
+          <td>40</td>
+          <td>$120.00</td>
+          <td>$4,800.00</td>
+        </tr>
+        <tr>
+          <td>QA-003</td>
+          <td>QA & Testing</td>
+          <td>40</td>
+          <td>$100.00</td>
+          <td>$4,000.00</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="totals">
+      <p>Subtotal: $20,800.00</p>
+      <p>Tax: $600.00</p>
+      <p style="font-size: 1.2em; font-weight: bold;">Total: $21,400.00 USD</p>
+    </div>
+
+    <div class="footer">
+      <p>Nova Software Group - 111 Pine Drive, Boston, MA 02110</p>
+      <p>Contact: sales@novasoftwaregroup.com | 555-343-5656</p>
+    </div>
+
+  </div>
+
+</body>
+</html>
