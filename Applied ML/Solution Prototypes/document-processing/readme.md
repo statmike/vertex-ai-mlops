@@ -1,4 +1,4 @@
-# Document Processing
+# Document Processing With Generative AI: Parse, Extract, Validate Authenticity, and More
 > You are here `vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/readme.md`
 
 A common scenario for companies is receiving documents, like invoices, with variable formats and needing to extract information into a structured form. Compounding this is the need to verify document authenticity and detect fraud, creating a full-scale document processing challenge.
@@ -24,7 +24,7 @@ pip install -r requirements.txt
 
 ## Documents
 
-This project requires a set of documents with known values. In this scenario, vendors send invoices to customers for services rendered. The dataset also includes anomalous documents with varying degrees of format changes, which could potentially indicate fraud. These documents were generated using the Gemini family of generative AI models hosted on Vertex AI. To understand how these documents were created, refer to the process outlined in [0-documents.ipynb](./0-documents.ipynb). The resulting files are located in the [./resources/documents](./resources/documents) directory. Each vendor has a dedicated folder containing the following subfolders:
+This project requires a set of documents with known values. In this scenario, vendors send invoices to customers for services rendered. The dataset also includes anomalous documents with varying degrees of format changes, which could potentially indicate fraud. These documents were generated using the Gemini family of generative AI models hosted on Vertex AI. To understand how these documents were created, refer to the process outlined in [0-generate-documents.ipynb](./0-generate-documents.ipynb). The resulting files are located in the [./resources/documents](./resources/documents) directory. Each vendor has a dedicated folder containing the following subfolders:
 
 -   `data`: Contains `invoices.jsonl`, which holds the actual invoice data.
 -   `template`: Contains a template invoice for the vendor in `.png`, `.html`, and `.pdf` formats.
@@ -76,7 +76,12 @@ When a document, such as an invoice, arrives, it is often in the form of an imag
 
 > Document AI offers a range of parsers for various tasks, including [OCR](https://cloud.google.com/document-ai/docs/enterprise-document-ocr), general form extraction with the [Form Parser](https://cloud.google.com/document-ai/docs/form-parser), and document preparation for generative AI retrieval pipelines using the [Layout Parser](https://cloud.google.com/document-ai/docs/layout-parse-chunk).
 
-Setting up the `Custom extractor with generative AI` is an interactive process with many automated features available directly in the Google Cloud Console. The resulting parser can be accessed via REST, gRPC, and numerous client libraries - [reference](https://cloud.google.com/document-ai/docs/reference). The console-based workflow and client usage with Python are detailed step-by-step in the included workflow [1-extraction.ipynb](./1-extraction.ipynb).
+Setting up the `Custom extractor with generative AI` is an interactive process with many automated features available directly in the Google Cloud Console. The resulting parser can be accessed via REST, gRPC, and numerous client libraries - [reference](https://cloud.google.com/document-ai/docs/reference). The console-based workflow and client usage with Python are detailed step-by-step in the included workflow [1-custom-extractor.ipynb](./1-custom-extractor.ipynb). This workflow shows how to:
+- Create a zero-shot parseer with just a schema and a few test documents to evaluate
+- Create a multi-shot parser with a sample of training documents
+- Create a fine-tuned parser with a larger sample of training documents
+- Use each parser version to serve online extraction of documents
+
 
 
 
