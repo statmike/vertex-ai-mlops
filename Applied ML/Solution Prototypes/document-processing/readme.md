@@ -44,28 +44,58 @@ To get started, select one of the vendors and review the first five real and fak
     <tbody>
         <tr>
             <td>Invoice 0</td>
-            <td><img src="./resources/documents/future_forward_technologies/invoices/0.png" alt="Invoice 0 (Real)" style="border: 3px solid green;"></td>
-            <td><img src="./resources/documents/future_forward_technologies/fake_invoices/0.png" alt="Invoice 0 (Anomalous)" style="border: 3px solid red;"></td>
+            <td><img src="./resources/documents/vendor_0/invoices/vendor_0_invoice_0.png" alt="Invoice 0 (Real)" style="border: 3px solid green;"></td>
+            <td><img src="./resources/documents/vendor_0/fake_invoices/vendor_0_invoice_0.png" alt="Invoice 0 (Anomalous)" style="border: 3px solid red;"></td>
         </tr>
         <tr>
             <td>Invoice 1</td>
-            <td><img src="./resources/documents/future_forward_technologies/invoices/1.png" alt="Invoice 1 (Real)" style="border: 3px solid green;"></td>
-            <td><img src="./resources/documents/future_forward_technologies/fake_invoices/1.png" alt="Invoice 1 (Anomalous)" style="border: 3px solid red;"></td>
+            <td><img src="./resources/documents/vendor_0/invoices/vendor_0_invoice_1.png" alt="Invoice 1 (Real)" style="border: 3px solid green;"></td>
+            <td><img src="./resources/documents/vendor_0/fake_invoices/vendor_0_invoice_1.png" alt="Invoice 1 (Anomalous)" style="border: 3px solid red;"></td>
         </tr>
         <tr>
             <td>Invoice 2</td>
-            <td><img src="./resources/documents/future_forward_technologies/invoices/2.png" alt="Invoice 2 (Real)" style="border: 3px solid green;"></td>
-            <td><img src="./resources/documents/future_forward_technologies/fake_invoices/2.png" alt="Invoice 2 (Anomalous)" style="border: 3px solid red;"></td>
+            <td><img src="./resources/documents/vendor_0/invoices/vendor_0_invoice_2.png" alt="Invoice 2 (Real)" style="border: 3px solid green;"></td>
+            <td><img src="./resources/documents/vendor_0/fake_invoices/vendor_0_invoice_2.png" alt="Invoice 2 (Anomalous)" style="border: 3px solid red;"></td>
         </tr>
         <tr>
             <td>Invoice 3</td>
-            <td><img src="./resources/documents/future_forward_technologies/invoices/3.png" alt="Invoice 3 (Real)" style="border: 3px solid green;"></td>
-            <td><img src="./resources/documents/future_forward_technologies/fake_invoices/3.png" alt="Invoice 3 (Anomalous)" style="border: 3px solid red;"></td>
+            <td><img src="./resources/documents/vendor_0/invoices/vendor_0_invoice_3.png" alt="Invoice 3 (Real)" style="border: 3px solid green;"></td>
+            <td><img src="./resources/documents/vendor_0/fake_invoices/vendor_0_invoice_3.png" alt="Invoice 3 (Anomalous)" style="border: 3px solid red;"></td>
         </tr>
         <tr>
             <td>Invoice 4</td>
-            <td><img src="./resources/documents/future_forward_technologies/invoices/4.png" alt="Invoice 4 (Real)" style="border: 3px solid green;"></td>
-            <td><img src="./resources/documents/future_forward_technologies/fake_invoices/4.png" alt="Invoice 4 (Anomalous)" style="border: 3px solid red;"></td>
+            <td><img src="./resources/documents/vendor_0/invoices/vendor_0_invoice_4.png" alt="Invoice 4 (Real)" style="border: 3px solid green;"></td>
+            <td><img src="./resources/documents/vendor_0/fake_invoices/vendor_0_invoice_4.png" alt="Invoice 4 (Anomalous)" style="border: 3px solid red;"></td>
+        </tr>
+        <tr>
+            <td>Invoice 5</td>
+            <td><img src="./resources/documents/vendor_0/invoices/vendor_0_invoice_5.png" alt="Invoice 4 (Real)" style="border: 3px solid green;"></td>
+            <td><img src="./resources/documents/vendor_0/fake_invoices/vendor_0_invoice_5.png" alt="Invoice 4 (Anomalous)" style="border: 3px solid red;"></td>
+        </tr>
+        <tr>
+            <td>Invoice 6</td>
+            <td><img src="./resources/documents/vendor_0/invoices/vendor_0_invoice_6.png" alt="Invoice 4 (Real)" style="border: 3px solid green;"></td>
+            <td><img src="./resources/documents/vendor_0/fake_invoices/vendor_0_invoice_6.png" alt="Invoice 4 (Anomalous)" style="border: 3px solid red;"></td>
+        </tr>
+        <tr>
+            <td>Invoice 7</td>
+            <td><img src="./resources/documents/vendor_0/invoices/vendor_0_invoice_7.png" alt="Invoice 4 (Real)" style="border: 3px solid green;"></td>
+            <td><img src="./resources/documents/vendor_0/fake_invoices/vendor_0_invoice_7.png" alt="Invoice 4 (Anomalous)" style="border: 3px solid red;"></td>
+        </tr>
+        <tr>
+            <td>Invoice 8</td>
+            <td><img src="./resources/documents/vendor_0/invoices/vendor_0_invoice_8.png" alt="Invoice 4 (Real)" style="border: 3px solid green;"></td>
+            <td><img src="./resources/documents/vendor_0/fake_invoices/vendor_0_invoice_8.png" alt="Invoice 4 (Anomalous)" style="border: 3px solid red;"></td>
+        </tr>
+        <tr>
+            <td>Invoice 9</td>
+            <td><img src="./resources/documents/vendor_0/invoices/vendor_0_invoice_9.png" alt="Invoice 4 (Real)" style="border: 3px solid green;"></td>
+            <td><img src="./resources/documents/vendor_0/fake_invoices/vendor_0_invoice_9.png" alt="Invoice 4 (Anomalous)" style="border: 3px solid red;"></td>
+        </tr>
+        <tr>
+            <td>Invoice 10</td>
+            <td><img src="./resources/documents/vendor_0/invoices/vendor_0_invoice_10.png" alt="Invoice 4 (Real)" style="border: 3px solid green;"></td>
+            <td><img src="./resources/documents/vendor_0/fake_invoices/vendor_0_invoice_10.png" alt="Invoice 4 (Anomalous)" style="border: 3px solid red;"></td>
         </tr>
     </tbody>
 </table>
@@ -77,7 +107,7 @@ When a document, such as an invoice, arrives, it is often in the form of an imag
 > Document AI offers a range of parsers for various tasks, including [OCR](https://cloud.google.com/document-ai/docs/enterprise-document-ocr), general form extraction with the [Form Parser](https://cloud.google.com/document-ai/docs/form-parser), and document preparation for generative AI retrieval pipelines using the [Layout Parser](https://cloud.google.com/document-ai/docs/layout-parse-chunk).
 
 Setting up the `Custom extractor with generative AI` is an interactive process with many automated features available directly in the Google Cloud Console. The resulting parser can be accessed via REST, gRPC, and numerous client libraries - [reference](https://cloud.google.com/document-ai/docs/reference). The console-based workflow and client usage with Python are detailed step-by-step in the included workflow [1-custom-extractor.ipynb](./1-custom-extractor.ipynb). This workflow shows how to:
-- Create a zero-shot parseer with just a schema and a few test documents to evaluate
+- Create a zero-shot parser with just a schema and a few test documents to evaluate
 - Create a few-shot parser with a sample of training documents
 - Create a fine-tuned parser with a larger sample of training documents
 - Use each parser version to serve online extraction of documents
