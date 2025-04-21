@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - INV-2024-1122</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .invoice-container {
+            width: 800px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff; /* A professional blue color */
+        }
+        .address {
+            text-align: right;
+        }
+        .invoice-details {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .table-container {
+            width: 100%;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .footer {
+            text-align: right;
+            margin-top: 20px;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-container">
+        <div class="header">
+            <div class="logo">
+                <span style="color: #333;">D</span><span style="color: #007bff;">S</span> Analytics
+                <p style="font-size: smaller;">Data-Driven Insights</p>
+            </div>
+            <div class="address">
+                DataStream Analytics<br>
+                101 Elm Street<br>
+                Metropolis, NY 10001<br>
+                Phone: 555-321-7890<br>
+                support@datastreamanalytics.com
+            </div>
+        </div>
+
+        <div class="invoice-details">
+            <div>
+                <strong>Bill To:</strong><br>
+                FinanceForward Technologies<br>
+                789 Market Street<br>
+                New York, NY 10001
+            </div>
+            <div>
+                <strong>Invoice Number:</strong> INV-2024-1122<br>
+                <strong>Invoice Date:</strong> 2024-03-15<br>
+                <strong>Due Date:</strong> 2024-04-09
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item #</th>
+                        <th>Description</th>
+                        <th>Quantity</th>
+                        <th>Unit Price</th>
+                        <th>List Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>CSD-001</td>
+                        <td>Custom Software Development</td>
+                        <td>80</td>
+                        <td>$150.00</td>
+                        <td>$12000.00</td>
+                    </tr>
+                    <tr>
+                        <td>UIUX-002</td>
+                        <td>UI/UX Design</td>
+                        <td>40</td>
+                        <td>$120.00</td>
+                        <td>$4800.00</td>
+                    </tr>
+                    <tr>
+                        <td>DACS-003</td>
+                        <td>Data Analytics Consulting</td>
+                        <td>20</td>
+                        <td>$200.00</td>
+                        <td>$4000.00</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p>Subtotal: $20800.00</p>
+            <p>Tax (8%): $1664.00</p>
+            <p style="font-size: 18px; font-weight: bold;">Total: $22464.00</p>
+            <p>Thank you for your business!</p>
+        </div>
+    </div>
+</body>
+</html>

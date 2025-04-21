@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - INV-2024-0315</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff; /* A professional blue */
+        }
+        .invoice-info {
+            text-align: right;
+        }
+        .invoice-info p {
+            margin: 5px 0;
+        }
+        .billing-details {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .billing-details div {
+            width: 45%;
+        }
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f5f5f5;
+        }
+        .total {
+            text-align: right;
+            margin-top: 20px;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+            text-align: center;
+            color: #777;
+            font-size: 12px;
+        }
+
+        .footer p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAGKADAAQAAAABAAAAGAAAAAB1tX49AAAAmElEQVRIDWNgGAXUBZcDA4SCwUCMAyD5//8/IQcQAa5iLgOMLCAhJQAiOISkZMAABj8BfC5i9wEGR/w0jQ4jY/gwAAiHAAk9c8QwM+ZAAhQ00X1xI/jAEigH8kHwCxV9oBwJz+gAEiF7g/QO7yYl4MABmYAAWYA0c+QAiMNAAAAABJRU5ErkJggg==" alt="Horizon Software Logo" width="30" height="30">
+              Horizon Software Inc.
+            </div>
+            <div class="invoice-info">
+                <p><b>Invoice #:</b> INV-2024-0315</p>
+                <p><b>Date:</b> 2024-03-01</p>
+                <p><b>Due Date:</b> 2024-03-31</p>
+            </div>
+        </div>
+
+        <div class="billing-details">
+            <div>
+                <div class="section-title">Bill to:</div>
+                <p><b>ShopStream Commerce</b></p>
+                <p>123 Main Avenue</p>
+                <p>New York, NY 10001</p>
+            </div>
+            <div>
+                <div class="section-title">From:</div>
+                <p><b>Horizon Software Inc.</b></p>
+                <p>555 Pine Avenue</p>
+                <p>Denver, CO 80202</p>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>CSD-001</td>
+                    <td>Custom Software Development</td>
+                    <td>80</td>
+                    <td>$150.00</td>
+                    <td>$12,000.00</td>
+                </tr>
+                <tr>
+                    <td>UIUX-002</td>
+                    <td>UI/UX Design</td>
+                    <td>40</td>
+                    <td>$120.00</td>
+                    <td>$4,800.00</td>
+                </tr>
+                <tr>
+                    <td>QA-003</td>
+                    <td>QA & Testing</td>
+                    <td>40</td>
+                    <td>$100.00</td>
+                    <td>$4,000.00</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="total">
+            <p>Subtotal: $20,800.00</p>
+            <p>Tax (5%): $1,040.00</p>
+            <h3>Total: $21,840.00 USD</h3>
+        </div>
+
+        <div class="footer">
+            <p>Horizon Software Inc.</p>
+            <p>555 Pine Avenue, Denver, CO 80202</p>
+            <p>Phone: 555-111-5555 | Email: sales@horizonsoftware.com</p>
+            <p>Thank you for your business!</p>
+        </div>
+    </div>
+</body>
+</html>

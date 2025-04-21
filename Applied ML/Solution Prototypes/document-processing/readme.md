@@ -78,7 +78,7 @@ When a document, such as an invoice, arrives, it is often in the form of an imag
 
 Setting up the `Custom extractor with generative AI` is an interactive process with many automated features available directly in the Google Cloud Console. The resulting parser can be accessed via REST, gRPC, and numerous client libraries - [reference](https://cloud.google.com/document-ai/docs/reference). The console-based workflow and client usage with Python are detailed step-by-step in the included workflow [1-custom-extractor.ipynb](./1-custom-extractor.ipynb). This workflow shows how to:
 - Create a zero-shot parseer with just a schema and a few test documents to evaluate
-- Create a multi-shot parser with a sample of training documents
+- Create a few-shot parser with a sample of training documents
 - Create a fine-tuned parser with a larger sample of training documents
 - Use each parser version to serve online extraction of documents
 

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - INV-2024-110</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #ddd;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .invoice-info {
+            text-align: right;
+        }
+        .address {
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f5f5f5;
+        }
+        .total {
+            text-align: right;
+            font-weight: bold;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #777;
+        }
+        .footer a {
+            color: #777;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <div class="logo">PDS</div>  <!-- Pinnacle Digital Services Logo -->
+            <div class="invoice-info">
+                <h2>Invoice</h2>
+                <p>Invoice Number: INV-2024-110</p>
+                <p>Date: 2024-03-10</p>
+                <p>Due Date: 2024-03-25</p>
+            </div>
+        </div>
+
+        <div class="address">
+            <strong>Billed To:</strong><br>
+            CloudScale Software<br>
+            234 Tech Drive<br>
+            Seattle, WA 98101
+        </div>
+
+        <div class="address">
+            <strong>From:</strong><br>
+            Pinnacle Digital Services<br>
+            333 Maple Road<br>
+            San Francisco, CA 94105
+        </div>
+
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Item #</th>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>List Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>CSD-001</td>
+                    <td>Custom Software Development</td>
+                    <td>80</td>
+                    <td>$150.00</td>
+                    <td>$12000.00</td>
+                </tr>
+                <tr>
+                    <td>UIUX-002</td>
+                    <td>UI/UX Design</td>
+                    <td>40</td>
+                    <td>$120.00</td>
+                    <td>$4800.00</td>
+                </tr>
+                <tr>
+                    <td>QA-003</td>
+                    <td>QA & Testing</td>
+                    <td>60</td>
+                    <td>$100.00</td>
+                    <td>$6000.00</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="total">
+            Subtotal: $22800.00<br>
+            Total: $22800.00 USD
+        </div>
+
+        <div class="footer">
+            <p>Pinnacle Digital Services | <a href="mailto:support@pinnacledigitalservices.com">support@pinnacledigitalservices.com</a></p>
+        </div>
+    </div>
+
+</body>
+</html>

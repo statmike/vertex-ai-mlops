@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice KD-2024-1103</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      margin: 20px;
+    }
+
+    .invoice-container {
+      max-width: 800px;
+      margin: 0 auto;
+      border: 1px solid #ccc;
+      padding: 20px;
+    }
+
+    .invoice-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+        font-size: 2em;
+        font-weight: bold;
+        color: #3498db; /* A nice blue color */
+    }
+
+    .invoice-details {
+      text-align: right;
+    }
+
+    .address {
+      margin-bottom: 10px;
+    }
+
+    .invoice-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    .invoice-table th, .invoice-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .invoice-table th {
+      background-color: #f2f2f2;
+    }
+
+    .total {
+      text-align: right;
+      font-weight: bold;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      color: #777;
+    }
+    .header-line {
+            border-bottom: 2px solid #3498db;
+            margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="invoice-container">
+
+    <div class="invoice-header">
+        <div class="logo">
+            KD<span style="color: #2ecc71;">A</span>
+        </div>
+      <div class="invoice-details">
+        <h2>Invoice</h2>
+        <p>Invoice Number: KD-2024-1103</p>
+        <p>Date: 2024-03-10</p>
+        <p>Due Date: 2024-03-25</p>
+      </div>
+    </div>
+
+    <div class="header-line"></div>
+
+    <div class="address">
+      <strong>Billed To:</strong><br>
+      Learniverse Online<br>
+      222 University Place<br>
+      Boston, MA 02115
+    </div>
+
+    <div class="address">
+      <strong>From:</strong><br>
+      Keystone Digital Agency<br>
+      888 Cherry Street<br>
+      Chicago, IL 60601
+    </div>
+
+    <table class="invoice-table">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Description</th>
+          <th>Quantity</th>
+          <th>Unit Price</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>WEB-DEV-001</td>
+          <td>Web Development: Designing and developing responsive and scalable websites and web applications.</td>
+          <td>160</td>
+          <td>$120.00</td>
+          <td>$19200.00</td>
+        </tr>
+        <tr>
+          <td>UI-UX-002</td>
+          <td>UI/UX Design: Crafting intuitive and engaging user interfaces and user experiences.</td>
+          <td>80</td>
+          <td>$150.00</td>
+          <td>$12000.00</td>
+        </tr>
+        <tr>
+          <td>QA-TEST-003</td>
+          <td>QA & Testing: Ensuring software quality through rigorous testing and quality assurance processes.</td>
+          <td>200</td>
+          <td>$80.00</td>
+          <td>$16000.00</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="total">
+      <strong>Subtotal:</strong> $47200.00<br>
+      <strong>Tax:</strong> $0.00<br>
+      <strong>Total:</strong> $47200.00 USD
+    </div>
+
+    <div class="footer">
+      <p>Keystone Digital Agency - hello@keystonedigital.com - 555-999-1212</p>
+    </div>
+
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - EEA-2024-110</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .container {
+            width: 80%;
+            margin: auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #336699; /* A professional blue */
+        }
+
+        .invoice-details {
+            text-align: right;
+        }
+
+        .address {
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .total {
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #777;
+            font-size: small;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <span style="color: darkgreen;">E</span>agle <span style="color: darkgreen;">E</span>ye Applications
+            </div>
+            <div class="invoice-details">
+                <h2>Invoice</h2>
+                <p><strong>Invoice Number:</strong> EEA-2024-110</p>
+                <p><strong>Invoice Date:</strong> 2024-03-10</p>
+                <p><strong>Due Date:</strong> 2024-03-25</p>
+            </div>
+        </div>
+
+        <div class="address">
+            <h3>Bill To:</h3>
+            <strong>LearnVerse</strong><br>
+            333 Maple Drive<br>
+            Boston, MA 02115
+        </div>
+
+        <div class="address">
+            <h3>From:</h3>
+            <strong>Eagle Eye Applications</strong><br>
+            222 Maple Drive<br>
+            Gotham City, NJ 07030
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>List Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>CSD-001</td>
+                    <td>Custom Software Development: Building tailored software solutions to meet specific business needs and requirements.</td>
+                    <td>80</td>
+                    <td>$150.00</td>
+                    <td>$12000.00</td>
+                </tr>
+                <tr>
+                    <td>UIUX-002</td>
+                    <td>UI/UX Design: Crafting intuitive and engaging user interfaces and user experiences for software applications.</td>
+                    <td>40</td>
+                    <td>$120.00</td>
+                    <td>$4800.00</td>
+                </tr>
+                <tr>
+                    <td>QA-003</td>
+                    <td>QA & Testing: Ensuring software quality through comprehensive testing and quality assurance processes.</td>
+                    <td>60</td>
+                    <td>$100.00</td>
+                    <td>$6000.00</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="total">
+            <p>Subtotal: $22800.00</p>
+            <p>Tax (5%): $1140.00</p>
+            <h2>Total: $23940.00 USD</h2>
+        </div>
+
+        <div class="footer">
+            <p>Eagle Eye Applications | 222 Maple Drive, Gotham City, NJ 07030 | 555-444-9999 | info@eagleeyeapps.com</p>
+        </div>
+    </div>
+</body>
+</html>

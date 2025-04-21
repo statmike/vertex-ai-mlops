@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - INV-2024-9876</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .invoice-container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            font-size: 2em;
+            color: #007BFF;
+            font-weight: bold;
+            font-style: italic;
+        }
+
+        .invoice-details {
+            text-align: right;
+        }
+
+        .invoice-address {
+            margin-bottom: 20px;
+        }
+
+        .address-section {
+            display: inline-block;
+            width: 45%;
+            vertical-align: top;
+        }
+
+        .address-section h3 {
+            margin-bottom: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .total-section {
+            text-align: right;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #ccc;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="invoice-container">
+        <div class="invoice-header">
+            <div class="logo">BlueTech Innovations</div>
+            <div class="invoice-details">
+                <h2>Invoice</h2>
+                <p><strong>Invoice Number:</strong> INV-2024-9876</p>
+                <p><strong>Date:</strong> 2024-07-15</p>
+                <p><strong>Due Date:</strong> 2024-08-04</p>
+            </div>
+        </div>
+
+        <div class="invoice-address">
+            <div class="address-section">
+                <h3>Bill to:</h3>
+                <p><strong>CloudGenius SaaS</strong></p>
+                <p>444 Cloud Ct</p>
+                <p>Seattle, WA 98101</p>
+            </div>
+
+            <div class="address-section">
+                <h3>From:</h3>
+                <p><strong>BlueTech Innovations</strong></p>
+                <p>456 Oak Avenue</p>
+                <p>Springfield, IL 62704</p>
+            </div>
+        </div>
+
+
+        <table>
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Unit Price (USD)</th>
+                    <th>List Price (USD)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>CSD-001</td>
+                    <td>Custom Software Development</td>
+                    <td>80</td>
+                    <td>150.00</td>
+                    <td>12000.00</td>
+                </tr>
+                <tr>
+                    <td>MAD-002</td>
+                    <td>Mobile App Development</td>
+                    <td>40</td>
+                    <td>175.00</td>
+                    <td>7000.00</td>
+                </tr>
+                <tr>
+                    <td>QCD-003</td>
+                    <td>Cloud Consulting</td>
+                    <td>20</td>
+                    <td>200.00</td>
+                    <td>4000.00</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="total-section">
+            <p><strong>Subtotal:</strong> USD 23000.00</p>
+            <p><strong>Tax:</strong> USD 0.00</p>
+            <p><strong>Total:</strong> USD 23000.00</p>
+        </div>
+
+        <div class="footer">
+            <p>Thank you for your business!</p>
+            <p>BlueTech Innovations | contact@bluetechinnovations.com | 555-987-6543</p>
+        </div>
+    </div>
+
+</body>
+</html>
