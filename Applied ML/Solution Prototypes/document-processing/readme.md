@@ -1,3 +1,15 @@
+![tracker](https://us-central1-vertex-ai-mlops-369716.cloudfunctions.net/pixel-tracking?path=statmike%2Fvertex-ai-mlops%2FApplied+ML%2FSolution+Prototypes%2Fdocument-processing&file=readme.md)
+<!--- header table --->
+<table align="left">     
+  <td style="text-align: center">
+    <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20ML/Solution%20Prototypes/document-processing/readme.md">
+      <img src="https://cloud.google.com/ml-engine/images/github-logo-32px.png" alt="GitHub logo">
+      <br>View on<br>GitHub
+    </a>
+  </td>
+</table><br/><br/><br/><br/>
+
+---
 # Document Processing With Generative AI: Parse, Extract, Validate Authenticity, and More
 > You are here `vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/readme.md`
 
