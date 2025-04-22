@@ -22,7 +22,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Documents
+## Documents - Generate Sample Documents For This Project
 
 This project requires a set of documents with known values. In this scenario, vendors send invoices to customers for services rendered. The dataset also includes anomalous documents with varying degrees of format changes, which could potentially indicate fraud. These documents were generated using the Gemini family of generative AI models hosted on Vertex AI. To understand how these documents were created, refer to the process outlined in [0-generate-documents.ipynb](./0-generate-documents.ipynb). The resulting files are located in the [./resources/documents](./resources/documents) directory. Each vendor has a dedicated folder containing the following subfolders:
 
@@ -31,7 +31,9 @@ This project requires a set of documents with known values. In this scenario, ve
 -   `invoices`: Contains generated invoices that closely follow the vendor's template in `.png` and `.pdf` formats.
 -   `fake_invoices`: Contains generated invoices with slight to moderate changes from the vendor's template. These were created for the first five invoices found in the `invoices` folder.
 
-To get started, select one of the vendors and review the first five real and fake invoices.
+The table below show documents for one of the vendors.  
+- On the left side are real documents.  Notice the consistency in formatting as you scroll down.
+- On the right side are anomalous documents. Notice the changes in layout, fonts, sizes, and colors.
 
 <table>
     <thead>
@@ -100,7 +102,7 @@ To get started, select one of the vendors and review the first five real and fak
     </tbody>
 </table>
 
-## Extraction
+## Extractor - Create Custom Data Extractors With Document AI
 
 When a document, such as an invoice, arrives, it is often in the form of an image. To make this document useful for processing, essential information must be extracted. In some cases, this might be as simple as identifying the vendor's name to route the document to the appropriate review queue. In other cases, more detailed information is needed, including repeating data like invoice line items and their associated elements, such as SKU, description, price, and quantity. This is where the [Document AI Custom Extractor](https://cloud.google.com/document-ai/docs/custom-extractor-overview) is valuable. In this project, we will leverage the [Custom extractor with generative AI](https://cloud.google.com/document-ai/docs/ce-with-genai) version to ensure a simple and effective process across the variety of invoice formats, which can vary significantly from vendor to vendor.
 
@@ -110,9 +112,31 @@ Setting up the `Custom extractor with generative AI` is an interactive process w
 - Create a zero-shot parser with just a schema and a few test documents to evaluate
 - Create a few-shot parser with a sample of training documents
 - Create a fine-tuned parser with a larger sample of training documents
-- Use each parser version to serve online extraction of documents
+- Use each parser version to serve online extractions from documents
+- Show how to move a custom parser between projects
 
+---
 
+<div align="center">Point of Progress</div>
+
+---
+
+## Extraction - Prepare Document Extractions
+[2-document-extraction.ipynb](./2-document-extraction.ipynb)
+
+## Embedded Representation - Generate Embedding For Documents
+[3-document-embedding.ipynb](./3-document-embedding.ipynb)
+
+## Document Similarity With Embeddings
+[4-document-similarity.ipynb](./4-document-similarity.ipynb)
+
+## Anomaly Detection With Document Similarity
+[5-document-anomalies.ipynb](./5-document-anomalies.ipynb)
+
+## Document Comparison For Automated Descriptive Differences
+[6-document-comparison.ipynb](./6-document-comparison.ipynb)
+
+## Building An Agent For Fraud Analyst
 
 
 

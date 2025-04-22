@@ -256,7 +256,13 @@ You enable the API, create an instance of a processor in your project, send in d
     - [Document AI Processors - Invoice Parser](./Document%20AI%20Processors%20-%20Invoice%20Parser.ipynb)
         - OCR (without Add ons and Symbol configuration)
         - Invoice specific entities detected
-
+- Custom Data Extractor
+    - [Document AI Custom Extractor with Generative AI](../../Applied%20ML/Solution%20Prototypes/document-processing/1-custom-extractor.ipynb)
+        - Zero-shot extration with a document schema
+        - Few-shot extraction with a few auto-labeled documents
+        - Fine-tuned extractor with a set of auto-labled test documents
+        - Evaluation of custom extractors with test documents including auto-labeling
+        - Moving custom extractor between projects
 ---
 ## Inputs & Outputs
 
