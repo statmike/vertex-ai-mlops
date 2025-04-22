@@ -23,6 +23,8 @@ To start, we will establish a core workflow for ingesting documents into Google 
   <img src="./resources/images/document_processing.png" alt="Document Processing" width="80%"/>
 </div>
 
+---
+
 ## Environment Setup
 
 This project uses a Python environment.  You can replicate the exact environment with `pyenv` and the `venv` library (included in Python >= 3.3):
@@ -34,6 +36,8 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+---
+
 ## Documents - Generate Sample Documents For This Project
 
 This project requires a set of documents with known values. In this scenario, vendors send invoices to customers for services rendered. The dataset also includes anomalous documents with varying degrees of format changes, which could potentially indicate fraud. These documents were generated using the Gemini family of generative AI models hosted on Vertex AI. To understand how these documents were created, refer to the process outlined in [0-generate-documents.ipynb](./0-generate-documents.ipynb). The resulting files are located in the [./resources/documents](./resources/documents) directory. Each vendor has a dedicated folder containing the following subfolders:
@@ -42,6 +46,9 @@ This project requires a set of documents with known values. In this scenario, ve
 -   `template`: Contains a template invoice for the vendor in `.png`, `.html`, and `.pdf` formats.
 -   `invoices`: Contains generated invoices that closely follow the vendor's template in `.png` and `.pdf` formats.
 -   `fake_invoices`: Contains generated invoices with slight to moderate changes from the vendor's template. These were created for the first five invoices found in the `invoices` folder.
+
+**Workflow**
+- [0-generate-documents.ipynb](./0-generate-documents.ipynb)
 
 The table below show documents for one of the vendors.  
 - On the left side are real documents.  Notice the consistency in formatting as you scroll down.
@@ -114,6 +121,8 @@ The table below show documents for one of the vendors.
     </tbody>
 </table>
 
+---
+
 ## Extractor - Create Custom Data Extractors With Document AI
 
 When a document, such as an invoice, arrives, it is often in the form of an image. To make this document useful for processing, essential information must be extracted. In some cases, this might be as simple as identifying the vendor's name to route the document to the appropriate review queue. In other cases, more detailed information is needed, including repeating data like invoice line items and their associated elements, such as SKU, description, price, and quantity. This is where the [Document AI Custom Extractor](https://cloud.google.com/document-ai/docs/custom-extractor-overview) is valuable. In this project, we will leverage the [Custom extractor with generative AI](https://cloud.google.com/document-ai/docs/ce-with-genai) version to ensure a simple and effective process across the variety of invoice formats, which can vary significantly from vendor to vendor.
@@ -127,26 +136,61 @@ Setting up the `Custom extractor with generative AI` is an interactive process w
 - Use each parser version to serve online extractions from documents
 - Show how to move a custom parser between projects
 
+**Workflow**
+- [1-custom-extractor.ipynb](./1-custom-extractor.ipynb)
+
 ---
 
-<div align="center">Point of Progress</div>
+<div align="center">Point of Completed Progress</div>
+
+---
 
 ---
 
 ## Extraction - Prepare Document Extractions
-[2-document-extraction.ipynb](./2-document-extraction.ipynb)
+
+This section of the workflow applies the custom extractor to the documents. It begins by reviewing methods for processing documents with the Document AI client using the custom parser:
+
+-   **Online Processing of Individual Documents:**
+    -   This can be done as documents arrive in real-time, as byte objects, or after they are stored in Google Cloud Storage.
+-   **Batch Processing of Multiple Files:**
+    -   This is ideal for processing batches of many files already stored in Google Cloud Storage.
+
+Since this workflow requires the documents later for anomaly detection and comparison, the documents are first moved to Google Cloud Storage. As information is extracted from the documents, it needs to be stored. Google Cloud BigQuery manages both the documents and all the extracted information in this workflow. This is enabled by BigQuery's object tables feature, which provides read-only tables over unstructured data in Google Cloud Storage.
+
+This workflow establishes the complete BigQuery setup, including directly processing all documents from a single SQL query using the `ML.PROCESS_DOCUMENT` function. This function provides direct access to the custom extractor created with Document AI.
+
+**Workflow**
+- [2-document-extraction.ipynb](./2-document-extraction.ipynb)
+
+---
 
 ## Embedded Representation - Generate Embedding For Documents
-[3-document-embedding.ipynb](./3-document-embedding.ipynb)
+**Workflow**
+- [3-document-embedding.ipynb](./3-document-embedding.ipynb)
 
 ## Document Similarity With Embeddings
-[4-document-similarity.ipynb](./4-document-similarity.ipynb)
+
+---
+
+**Workflow**
+- [4-document-similarity.ipynb](./4-document-similarity.ipynb)
+
+---
 
 ## Anomaly Detection With Document Similarity
-[5-document-anomalies.ipynb](./5-document-anomalies.ipynb)
+
+**Workflow**
+- [5-document-anomalies.ipynb](./5-document-anomalies.ipynb)
+
+---
 
 ## Document Comparison For Automated Descriptive Differences
-[6-document-comparison.ipynb](./6-document-comparison.ipynb)
+
+**Workflow**
+- [6-document-comparison.ipynb](./6-document-comparison.ipynb)
+
+---
 
 ## Building An Agent For Fraud Analyst
 
