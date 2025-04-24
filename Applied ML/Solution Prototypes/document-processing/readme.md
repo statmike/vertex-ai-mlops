@@ -159,15 +159,33 @@ This workflow establishes the complete BigQuery setup, including directly proces
 
 ---
 
+## Embedded Representations: Generating Embeddings for Documents
+
+Now that we have BigQuery tables linking to the documents and their extracted information, we can enhance our understanding of these documents.
+
+One effective way to represent information is by using an **embedding model**. These models are trained to create dense vector representations, known as embeddings. An embedding is essentially a vector of floating-point numbers, such as `[-0.06302902102470398, 0.00928034819662571, 0.014716853387653828, -0.028747491538524628, ...]`. These embeddings are incredibly useful for various tasks, including:
+-   **Similarity Search:** Finding and ranking similar content.
+-   **Classification:** Categorizing content based on similarity.
+-   **Clustering:** Grouping objects with similar attributes.
+-   **Anomaly Detection:** Identifying outliers or mismatched objects.
+-   **Contextual Sorting:** Ordering content based on its context.
+-   **And More:** Embeddings have a wide range of applications.
+
+Google Cloud's Vertex AI platform offers several embedding models as a service, ideal for both text and multimodal data (images, video, audio, and text). Vertex AI simplifies the use of these models through APIs and various client libraries, including Python.
+-   [Vertex AI Embeddings APIs Overview](https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings)
+
+BigQuery also integrates these Vertex AI embedding models directly with the `ML.GENERATE_EMBEDDING` function. This allows us to enrich the data in BigQuery with embeddings of the source content stored in Google Cloud Storage, accessible through the object table we created.
+-   [BigQuery ML.GENERATE_EMBEDDING function](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-generate-embedding)
+
+
+**Workflow**
+- [3-document-embedding.ipynb](./3-document-embedding.ipynb)
+
+---
+
 <div align="center">Point of Completed Progress</div>
 
 ---
-
----
-
-## Embedded Representation - Generate Embedding For Documents
-**Workflow**
-- [3-document-embedding.ipynb](./3-document-embedding.ipynb)
 
 ## Document Similarity With Embeddings
 
