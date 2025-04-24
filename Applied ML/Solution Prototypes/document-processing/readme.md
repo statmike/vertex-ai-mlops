@@ -123,7 +123,7 @@ The table below show documents for one of the vendors.
 
 ---
 
-## Extractor - Create Custom Data Extractors With Document AI
+## Step 1: Extractor - Create Custom Data Extractors With Document AI
 
 When a document, such as an invoice, arrives, it is often in the form of an image. To make this document useful for processing, essential information must be extracted. In some cases, this might be as simple as identifying the vendor's name to route the document to the appropriate review queue. In other cases, more detailed information is needed, including repeating data like invoice line items and their associated elements, such as SKU, description, price, and quantity. This is where the [Document AI Custom Extractor](https://cloud.google.com/document-ai/docs/custom-extractor-overview) is valuable. In this project, we will leverage the [Custom extractor with generative AI](https://cloud.google.com/document-ai/docs/ce-with-genai) version to ensure a simple and effective process across the variety of invoice formats, which can vary significantly from vendor to vendor.
 
@@ -141,7 +141,7 @@ Setting up the `Custom extractor with generative AI` is an interactive process w
 
 ---
 
-## Extraction - Prepare Document Extractions
+## Step 2: Extraction - Prepare Document Extractions
 
 This section of the workflow applies the custom extractor to the documents. It begins by reviewing methods for processing documents with the Document AI client using the custom parser:
 
@@ -159,7 +159,7 @@ This workflow establishes the complete BigQuery setup, including directly proces
 
 ---
 
-## Embedded Representations: Generating Embeddings for Documents
+## Step 3: Embedded Representations: Generating Embeddings for Documents
 
 Now that we have BigQuery tables linking to the documents and their extracted information, we can enhance our understanding of these documents.
 
@@ -187,7 +187,7 @@ BigQuery also integrates these Vertex AI embedding models directly with the `ML.
 
 ---
 
-## Document Similarity With Embeddings
+## Step 4: Document Similarity With Embeddings
 
 ---
 
@@ -196,21 +196,21 @@ BigQuery also integrates these Vertex AI embedding models directly with the `ML.
 
 ---
 
-## Anomaly Detection With Document Similarity
+## Step 5: Anomaly Detection With Document Similarity
 
 **Workflow**
 - [5-document-anomalies.ipynb](./5-document-anomalies.ipynb)
 
 ---
 
-## Document Comparison For Automated Descriptive Differences
+## Step 6: Document Comparison For Automated Descriptive Differences
 
 **Workflow**
 - [6-document-comparison.ipynb](./6-document-comparison.ipynb)
 
 ---
 
-## Building An Agent For Fraud Analyst
+## Step 7: Building An Agent For Fraud Analyst
 
 
 --- 
