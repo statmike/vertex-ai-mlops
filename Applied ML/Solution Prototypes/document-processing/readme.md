@@ -141,12 +141,6 @@ Setting up the `Custom extractor with generative AI` is an interactive process w
 
 ---
 
-<div align="center">Point of Completed Progress</div>
-
----
-
----
-
 ## Extraction - Prepare Document Extractions
 
 This section of the workflow applies the custom extractor to the documents. It begins by reviewing methods for processing documents with the Document AI client using the custom parser:
@@ -162,6 +156,12 @@ This workflow establishes the complete BigQuery setup, including directly proces
 
 **Workflow**
 - [2-document-extraction.ipynb](./2-document-extraction.ipynb)
+
+---
+
+<div align="center">Point of Completed Progress</div>
+
+---
 
 ---
 
