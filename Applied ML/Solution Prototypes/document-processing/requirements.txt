@@ -115,6 +115,7 @@ requests-oauthlib==2.0.0
 rich==13.9.4
 rpds-py==0.24.0
 rsa==4.9.1
+seaborn==0.13.2
 setuptools==79.0.0
 shapely==2.1.0
 six==1.17.0
