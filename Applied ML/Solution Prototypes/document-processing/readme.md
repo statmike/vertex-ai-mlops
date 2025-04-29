@@ -218,4 +218,4 @@ The embedded representation of the documents created in the previous section can
 --- 
 
 ToDo list:
-- Create links to next section at the bottom of each section
+- Create links to next section at the bottom of each workflow
