@@ -183,16 +183,18 @@ BigQuery also integrates these Vertex AI embedding models directly with the `ML.
 
 ---
 
-<div align="center">Point of Completed Progress</div>
-
----
-
 ## Step 4: Document Similarity With Embeddings
 
----
+The embedded representation of the documents created in the previous section can be used to calculate a mathematical distance between documents which serves as a similarity measure.  The closer documents are the more similar they are.  This can be done directly within BigQuery with the `VECTOR_SEARCH` function.  This workflow also shows how to use a re-dimensionalization technique, PCA, to represent the embeddings in 2 dimensions for vizualizing the relationships between documents and vendors.
 
 **Workflow**
 - [4-document-similarity.ipynb](./4-document-similarity.ipynb)
+
+---
+
+<div align="center">Point of Completed Progress</div>
+
+---
 
 ---
 
