@@ -201,16 +201,18 @@ Building on the concept of document similarity derived from embeddings, this wor
 
 ---
 
----
-
-<div align="center">Point of Completed Progress</div>
-
----
-
 ## Step 6: Document Comparison For Automated Descriptive Differences
+
+Once documents are flagged as anomalous, the next step is to pinpoint the specific layout or formatting elements that suggest potential fraud. This workflow leverages a multimodal generative model, like Gemini on Vertex AI, to perform an initial evaluation and highlight potential indicators of fraud. The workflow also demonstrates how to integrate this document comparison directly into BigQuery, further enriching the data.
 
 **Workflow**
 - [6-document-comparison.ipynb](./6-document-comparison.ipynb)
+
+---
+
+---
+
+<div align="center">Point of Completed Progress</div>
 
 ---
 
