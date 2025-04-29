@@ -185,23 +185,25 @@ BigQuery also integrates these Vertex AI embedding models directly with the `ML.
 
 ## Step 4: Document Similarity With Embeddings
 
-The embedded representation of the documents created in the previous section can be used to calculate a mathematical distance between documents which serves as a similarity measure.  The closer documents are the more similar they are.  This can be done directly within BigQuery with the `VECTOR_SEARCH` function.  This workflow also shows how to use a re-dimensionalization technique, PCA, to represent the embeddings in 2 dimensions for vizualizing the relationships between documents and vendors.
+In the previous step, we generated document embeddings. These embeddings allow us to quantify document similarity by calculating the mathematical distance between them. Smaller distances correspond to higher similarity. BigQuery's `VECTOR_SEARCH` function provides a direct way to perform these calculations. Additionally, this workflow illustrates how to apply Principal Component Analysis (PCA) to project the embeddings into a two-dimensional space, enabling visualization of the relationships between documents and vendors.
 
 **Workflow**
 - [4-document-similarity.ipynb](./4-document-similarity.ipynb)
 
 ---
 
-<div align="center">Point of Completed Progress</div>
-
----
-
----
-
 ## Step 5: Anomaly Detection With Document Similarity
+
+Building on the concept of document similarity derived from embeddings, this workflow extends the analysis to detect potentially anomalous documents. These anomalies can signal various issues, such as mislabeled documents (incorrect vendor), changes in a vendor's document format, or potential fraudulent activity. By leveraging statistical information from known documents, this workflow identifies and flags these anomalies.
 
 **Workflow**
 - [5-document-anomalies.ipynb](./5-document-anomalies.ipynb)
+
+---
+
+---
+
+<div align="center">Point of Completed Progress</div>
 
 ---
 
