@@ -201,9 +201,12 @@ Building on the concept of document similarity derived from embeddings, this wor
 
 ---
 
-## Step 6: Document Comparison For Automated Descriptive Differences
+## Step 6: Document Comparison for Automated Descriptive Differences
 
-Once documents are flagged as anomalous, the next step is to pinpoint the specific layout or formatting elements that suggest potential fraud. This workflow leverages a multimodal generative model, like Gemini on Vertex AI, to perform an initial evaluation and highlight potential indicators of fraud. The workflow also demonstrates how to integrate this document comparison directly into BigQuery, further enriching the data.
+After documents are flagged as anomalous, the next step is to pinpoint the specific layout or formatting elements that suggest potential fraud. A multimodal generative model, such as Gemini on Vertex AI, is used to perform an initial evaluation and highlight potential indicators of fraud. <del>This process is then integrated directly into BigQuery, further enriching the data.</del>
+
+<del>This integration is enabled by using the Gemini API on Vertex AI to generate comparisons with [multimodal prompts](https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference#sample-requests-text-gen-multimodal-prompt) via the [Google Gen AI SDK](https://cloud.google.com/vertex-ai/generative-ai/docs/sdks/overview). The [generating](https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference) of comparisons is scaled by using the Gemini API within BigQuery with functions like [ML.GENERATE_TEXT](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-generate-text).</del>
+
 
 **Workflow**
 - [6-document-comparison.ipynb](./6-document-comparison.ipynb)
