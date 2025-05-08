@@ -222,6 +222,15 @@ After documents are flagged as anomalous, the next step is to pinpoint the speci
 
 ## Step 7: Building An Agent For Fraud Analyst
 
+Put all the steps above into a workflow using agents to orchestrate the process for a user - like a fraud analyst.  This step using the [Agent Development Kit (ADK)](https://google.github.io/adk-docs/) from Google.  This agent workflow will:
+- load document for evaluation as an artifact for agents to use
+- extract content from the document using the custom data extractor we created in [step 1](./1-custom-extractor.ipynb) and used in [step 2](./2-document-extraction.ipynb)
+- compare the document to each vendors document to show similarity and verify classification like we showed in [step 4](./4-document-similarity.ipynb)
+- assess the document for anomalies like we did in [step 5](./5-document-anomalies.ipynb)
+- compare the document to a known good doucment from the same vedor to highlight in key difference in formatting like we did in [step 6](./6-document-comparison.ipynb)
+
+**Workflow**
+- [7-agents](./7-agents/readme.md)
 
 --- 
 
