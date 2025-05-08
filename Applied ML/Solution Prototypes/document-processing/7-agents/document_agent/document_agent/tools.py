@@ -5,8 +5,7 @@ from google.adk import tools
 from google import genai
 from google.cloud import storage
 from google.cloud import documentai
-
-DOCUMENT_PARSER = 'projects/1026793852137/locations/us/processors/7f04f5f3e6092d6a/processorVersions/51cb697cf226b5fd'
+from . import config
 
 def _generate_artifact_key(gcs_bucket: str, gcs_file_path: str) -> str:
     """Generates a unique key for storing and retrieving the GCS file artifact."""
@@ -97,7 +96,7 @@ def get_document_extraction(artifact_key: str, tool_context: tools.ToolContext) 
         )
         response = docai_client.process_document(
             request = documentai.ProcessRequest(
-                name = DOCUMENT_PARSER,
+                name = config.DOCUMENT_PARSER,
                 inline_document = documentai.Document(content = file_bytes, mime_type = file_mime_type)
             )
         )
