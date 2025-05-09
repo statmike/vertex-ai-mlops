@@ -11,7 +11,7 @@ def _generate_artifact_key(gcs_bucket: str, gcs_file_path: str) -> str:
     """Generates a unique key for storing and retrieving the GCS file artifact."""
     return f"gcsfile_{gcs_bucket}_{gcs_file_path.replace('/', '_')}"
 
-def get_gcs_file(gcs_bucket: str, gcs_file_path: str, tool_context: tools.ToolContext) -> str:
+async def get_gcs_file(gcs_bucket: str, gcs_file_path: str, tool_context: tools.ToolContext) -> str:
     """
     Checks if a file from GCS is already loaded as an artifact. If so, returns its details.
     Otherwise, downloads the file, saves it as an artifact in the ADK session,
@@ -32,7 +32,7 @@ def get_gcs_file(gcs_bucket: str, gcs_file_path: str, tool_context: tools.ToolCo
 
     try:
         # does this file already exists as an artifact?
-        existing_artifact = tool_context.load_artifact(filename = artifact_key)
+        existing_artifact = await tool_context.load_artifact(filename = artifact_key)
 
         # it already exists:
         if existing_artifact and isinstance(existing_artifact, genai.types.Part):
@@ -56,7 +56,7 @@ def get_gcs_file(gcs_bucket: str, gcs_file_path: str, tool_context: tools.ToolCo
         file_part = genai.types.Part.from_bytes(data = file_bytes, mime_type = file_type)
         
         # add info to tool_context as artifact
-        version = tool_context.save_artifact(filename = artifact_key, artifact = file_part)
+        version = await tool_context.save_artifact(filename = artifact_key, artifact = file_part)
         
         return f"The file {file_name} of type {file_type} and size {len(file_bytes)} bytes was loaded as an artifact with artifact_key = {artifact_key} and version = {version}"
     
@@ -65,7 +65,7 @@ def get_gcs_file(gcs_bucket: str, gcs_file_path: str, tool_context: tools.ToolCo
         return f"Error downloading the file: {str(e)}"
 
 
-def get_document_extraction(artifact_key: str, tool_context: tools.ToolContext) -> str:
+async def get_document_extraction(artifact_key: str, tool_context: tools.ToolContext) -> str:
     """
     Processes a previously loaded document artifact using Google Document AI for text extraction,
     then summarizes the extracted text using an LLM.
@@ -80,7 +80,7 @@ def get_document_extraction(artifact_key: str, tool_context: tools.ToolContext) 
 
     try:
         # 1. Get the artifact
-        artifact = tool_context.load_artifact(filename = artifact_key)
+        artifact = await tool_context.load_artifact(filename = artifact_key)
 
         if not artifact:
             return f"Error: Artifact with key '{artifact_key}' not found. Please load the file first."

@@ -10,7 +10,7 @@ cryptography==44.0.2
 Deprecated==1.2.18
 docstring_parser==0.16
 fastapi==0.115.12
-google-adk==0.3.0
+google-adk==0.5.0
 google-api-core==2.24.2
 google-api-python-client==2.169.0
 google-auth==2.39.0
