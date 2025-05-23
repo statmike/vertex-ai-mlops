@@ -10,7 +10,7 @@ cryptography==44.0.2
 Deprecated==1.2.18
 docstring_parser==0.16
 fastapi==0.115.12
-google-adk==0.5.0
+google-adk==1.0.0
 google-api-core==2.24.2
 google-api-python-client==2.169.0
 google-auth==2.39.0
@@ -25,7 +25,7 @@ google-cloud-speech==2.32.0
 google-cloud-storage==2.19.0
 google-cloud-trace==1.16.1
 google-crc32c==1.7.1
-google-genai==1.12.1
+google-genai==1.16.1
 google-resumable-media==2.7.2
 googleapis-common-protos==1.70.0
 graphviz==0.20.3
@@ -56,6 +56,7 @@ pycparser==2.22
 pydantic==2.11.4
 pydantic-settings==2.9.1
 pydantic_core==2.33.2
+PyMuPDF==1.26.0
 pyparsing==3.2.3
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
