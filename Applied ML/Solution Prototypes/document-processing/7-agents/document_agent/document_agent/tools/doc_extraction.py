@@ -5,15 +5,14 @@ from ..config import DOCUMENT_PARSER
 
 async def document_extraction(artifact_key: str, tool_context: tools.ToolContext) -> str:
     """
-    Processes a previously loaded document artifact using Google Document AI for text extraction,
-    then summarizes the extracted text using an LLM.
+    Processes a previously loaded document artifact using Google Document AI for text extraction.
 
     Args:
         artifact_key: The key of the artifact previously loaded by get_gcs_file.
         tool_context: The execution context for the tool.
 
     Returns:
-        A string containing the summary of the document's extracted text, or an error message.
+        A string containing the documents extration results, or an error message.
     """
 
     try:
