@@ -2,8 +2,18 @@ from google.adk import agents
 from .tools import DOCUMENT_PROCESSING_TOOLS
 from . import prompts
 
+comparison_insights_agent = agents.Agent(
+    name = "comparison_insights_agent",
+    model = "gemini-2.0-flash",
+    description = "Compares formatting differences between an original document and a vendor template.",
+    global_instruction = prompts.global_instructions,
+    instruction = prompts.comparison_insights_agent_instructions,
+    #allow_transfer = False,
+    # tools = [] # This agent is primarily for LLM-based comparison
+)
+
 classification_insights_agent = agents.Agent(
-    name = "classification_reporter_agent",
+    name = "classification_insights_agent",
     model = "gemini-2.0-flash",
     description = "Interprets and reports document classification results from a Markdown table.",
     global_instruction = prompts.global_instructions,
@@ -30,7 +40,8 @@ root_agent = agents.Agent(
     instruction = prompts.root_agent_instructions,
     sub_agents = [
         extraction_insights_agent,
-        classification_insights_agent
+        classification_insights_agent,
+        comparison_insights_agent
     ],
     tools = DOCUMENT_PROCESSING_TOOLS
 )
