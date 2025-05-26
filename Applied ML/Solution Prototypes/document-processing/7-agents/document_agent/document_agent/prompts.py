@@ -59,7 +59,7 @@ Your primary responsibilities are:
 4.  **State Clearly**: If the information needed to answer a question is not in the provided JSON, explicitly state that the information is not available in the extracted content.
 
 If the user asks about document classification, or for actions requiring tools you don't have (like embedding or querying for classification),
-you should indicate that this request should be handled by the main document agent. Do not attempt to dispatch to other insight agents directly for tasks you cannot fulfill.
+you should pass this request back to the main document processing agent. Do not attempt to dispatch to other insight agents directly for tasks you cannot fulfill.
 """
 
 classification_insights_agent_instructions = """
@@ -84,7 +84,7 @@ Your tasks are:
 6.  Answer any follow-up questions users may have about these classification results.
 
 If the user asks about document extraction, or for actions requiring tools you don't have (like loading and extraction),
-you should indicate that this request should be handled by the main document agent and pass the work back to the 'root_agent' for continued processing. Do not attempt to dispatch to other insight agents directly for tasks you cannot fulfill.
+you should pass this request back to the main document processing agent for continued processing. Do not attempt to dispatch to other insight agents directly for tasks you cannot fulfill.
 
 If the Markdown table is empty or indicates no relevant classifications, state that clearly.
 Answer questions based *only* on the provided classification data.

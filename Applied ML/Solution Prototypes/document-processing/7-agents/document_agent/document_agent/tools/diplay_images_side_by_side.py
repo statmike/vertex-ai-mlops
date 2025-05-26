@@ -9,7 +9,8 @@ async def display_images_side_by_side(
     tool_context: tools.ToolContext
 ) -> str:
     """
-    Loads two image artifacts (expected to be PNGs) and returns a composite PNG of these side-by-side for comparison.
+    Loads two image artifacts (expected to be PNGs), resizes them to the height of the smaller image
+    while maintaining aspect ratio, and returns a composite PNG of these side-by-side for comparison.
 
     Args:
         original_document_artifact_key: The key of the original document image artifact.
@@ -41,17 +42,39 @@ async def display_images_side_by_side(
         img_orig = Image.open(io.BytesIO(original_img_bytes))
         img_template = Image.open(io.BytesIO(template_img_bytes))
 
-        # 3. Cacluate dimension for composite image:
+        # 3. Determine target height (height of the smaller image) and resize images
         img_orig_width, img_orig_height = img_orig.size
         img_template_width, img_template_height = img_template.size
 
+        target_height = min(img_orig_height, img_template_height)
+
+        try:
+            resampling_method = Image.Resampling.LANCZOS
+        except AttributeError:  # For older Pillow versions
+            resampling_method = Image.ANTIALIAS
+
+        # Resize original image
+        if img_orig_height != target_height:
+            ratio_orig = target_height / img_orig_height
+            new_orig_width = int(img_orig_width * ratio_orig)
+            img_orig = img_orig.resize((new_orig_width, target_height), resampling_method)
+            img_orig_width, img_orig_height = img_orig.size # Update dimensions
+
+        # Resize template image
+        if img_template_height != target_height:
+            ratio_template = target_height / img_template_height
+            new_template_width = int(img_template_width * ratio_template)
+            img_template = img_template.resize((new_template_width, target_height), resampling_method)
+            img_template_width, img_template_height = img_template.size # Update dimensions
+
+        # 4. Calculate dimension for composite image using new (potentially resized) dimensions:
         total_content_width = img_orig_width + img_template_width + PADDING_BETWEEN_IMAGES
         max_content_height = max(img_orig_height, img_template_height)
 
         canvas_width = total_content_width + 2 * OUTER_MARGIN + 2 * BORDER_THICKNESS # one border per image
         canvas_height = max_content_height + LABEL_AREA_HEIGHT + 2 * OUTER_MARGIN + BORDER_THICKNESS # one border for image area
 
-        # 4. Create the new image canvas
+        # 5. Create the new image canvas
         composite_image = Image.new('RGB', (canvas_width, canvas_height), BACKGROUND_COLOR)
         draw = ImageDraw.Draw(composite_image)
 
@@ -60,7 +83,7 @@ async def display_images_side_by_side(
         except IOError:
             font = ImageFont.load_default()
 
-        # 5. Draw labels
+        # 6. Draw labels
         label_orig_text = "Original Document"
         label_template_text = "Classified Vendor's Template"
 
@@ -81,7 +104,7 @@ async def display_images_side_by_side(
         draw.text((x_orig_label, y_label), label_orig_text, fill=TEXT_COLOR, font=font)
         draw.text((x_template_label, y_label), label_template_text, fill=TEXT_COLOR, font=font)
 
-        # 6. Define positions and draw borders and paste images
+        # 7. Define positions and draw borders and paste images
         y_images_top = OUTER_MARGIN + LABEL_AREA_HEIGHT
 
         # Original Image
@@ -100,12 +123,12 @@ async def display_images_side_by_side(
         )
         composite_image.paste(img_template, (x_template_start + BORDER_THICKNESS, y_images_top + BORDER_THICKNESS))
 
-        # 7. Save the composite image to bytes
+        # 8. Save the composite image to bytes
         img_byte_arr = io.BytesIO()
         composite_image.save(img_byte_arr, format='PNG')
         png_bytes = img_byte_arr.getvalue()
 
-        # 8. Store as a new artifact
+        # 9. Store as a new artifact
         comparison_part = genai.types.Part.from_bytes(data = png_bytes, mime_type="image/png")
         version = await tool_context.save_artifact(filename = "latest_comparison", artifact = comparison_part)
 
