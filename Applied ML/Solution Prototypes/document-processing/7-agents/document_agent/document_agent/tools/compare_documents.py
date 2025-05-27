@@ -111,7 +111,7 @@ async def compare_documents(
 
         # 2. requests
         response = client.models.generate_content(
-            model = 'gemini-2.0-pro',
+            model = 'gemini-2.0-flash',
             contents = [original_doc_artifact, template_doc_artifact, prompt],
             config = genai.types.GenerateContentConfig(
                 system_instruction = """You are specialized in comparing two documents, an 'original document' and a 'vendor template', for formatting differences."""
