@@ -1,5 +1,6 @@
 from google.adk import agents
-from .tools import DOCUMENT_PROCESSING_TOOLS
+from google.adk.tools import agent_tool
+from . import tools
 from . import prompts
 
 comparison_insights_agent = agents.Agent(
@@ -8,28 +9,22 @@ comparison_insights_agent = agents.Agent(
     description = "Compares formatting differences between an original document and a vendor template.",
     global_instruction = prompts.global_instructions,
     instruction = prompts.comparison_insights_agent_instructions,
-    #allow_transfer = False,
-    # tools = [] # This agent is primarily for LLM-based comparison
 )
 
 classification_insights_agent = agents.Agent(
     name = "classification_insights_agent",
     model = "gemini-2.0-flash",
-    description = "Interprets and reports document classification results from a Markdown table.",
+    description = "Generates a document comparison tables and summarizes it for the user and includes a final determination of classification.",
     global_instruction = prompts.global_instructions,
     instruction = prompts.classification_insights_agent_instructions,
-    #allow_transfer = False,
-    # tools=[] # This agent is primarily for LLM-based interpretation and formatting
 )
 
 extraction_insights_agent = agents.Agent(
     name = "extraction_insights_agent",
     model = "gemini-2.0-flash",
-    description = "Summarizes extracted document content and answers user questions about it.",
+    description = "Generates and summarizes extracted document content and answers user questions about it.",
     global_instruction = prompts.global_instructions,
     instruction = prompts.extraction_insights_agent_instructions,
-    #allow_transfer = False,
-    # tools = [] # This agent might not need specific ADK tools if it's purely LLM-based for this task
 )
 
 root_agent = agents.Agent(
@@ -39,10 +34,10 @@ root_agent = agents.Agent(
     global_instruction = prompts.global_instructions,
     instruction = prompts.root_agent_instructions,
     sub_agents = [
-        extraction_insights_agent,
+        comparison_insights_agent,
         classification_insights_agent,
-        comparison_insights_agent
+        extraction_insights_agent,
     ],
-    tools = DOCUMENT_PROCESSING_TOOLS
+    tools = tools.DOCUMENT_PROCESSING_TOOLS
 )
 
