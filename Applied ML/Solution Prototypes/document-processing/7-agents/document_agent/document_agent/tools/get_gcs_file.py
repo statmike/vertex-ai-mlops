@@ -1,8 +1,7 @@
 from google.adk import tools
-from google.cloud import storage
 from google import genai
-
-import fitz #pymupdf
+from google.cloud import storage
+from . import utils
 
 async def get_gcs_file(gcs_bucket: str, gcs_file_path: str, tool_context: tools.ToolContext) -> str:
     """
@@ -31,8 +30,7 @@ async def get_gcs_file(gcs_bucket: str, gcs_file_path: str, tool_context: tools.
         if existing_artifact and isinstance(existing_artifact, genai.types.Part):
             file_type = existing_artifact.inline_data.mime_type
             file_size = len(existing_artifact.inline_data.data)
-            message = f"The file {file_name} (from gs://{gcs_bucket}/{gcs_file_path}) is already loaded as an artifact. Type: {file_type}, Size: {file_size} bytes, artifact_key = {artifact_key}."
-            return message
+            return f"The file {file_name} (from gs://{gcs_bucket}/{gcs_file_path}) is already loaded as an artifact. Type: {file_type}, Size: {file_size} bytes, artifact_key = {artifact_key}."
 
         # retrieve file as bytes
         gcs = storage.Client()
@@ -58,16 +56,8 @@ async def get_gcs_file(gcs_bucket: str, gcs_file_path: str, tool_context: tools.
         
         # convert pdf to png
         if file_type == 'application/pdf':
-            #file_bytes = convert_to_png(file_bytes)
-            doc = fitz.open(filetype ="pdf", stream = file_bytes)
-            page = doc.load_page(0)
-            pix = page.get_pixmap(dpi=300)
-            file_bytes = pix.tobytes(output = 'png')                
-            file_type = 'image/png'
-            if file_name[-4:] == '.pdf':
-                file_name = file_name[:-4]
+            file_type, file_bytes = utils.pdf_to_png(file_type, file_bytes)
 
-        file_name = blob.name.split('/')[-1]
         file_part = genai.types.Part.from_bytes(data = file_bytes, mime_type = file_type)
         
         # add info to tool_context as artifact

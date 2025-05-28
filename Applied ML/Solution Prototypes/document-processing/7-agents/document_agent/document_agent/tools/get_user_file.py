@@ -1,7 +1,6 @@
 from google.adk import tools
 from google import genai
-
-import fitz #pymupdf
+from . import utils
 
 async def get_user_file(
     tool_context: tools.ToolContext
@@ -31,12 +30,7 @@ async def get_user_file(
             
             # convert pdf to png
             if file_type == 'application/pdf':
-                #file_bytes = convert_to_png(file_bytes)
-                doc = fitz.open(filetype ="pdf", stream = file_bytes)
-                page = doc.load_page(0)
-                pix = page.get_pixmap(dpi=300)
-                file_bytes = pix.tobytes(output = 'png')                
-                file_type = 'image/png'
+                file_type, file_bytes = utils.pdf_to_png(file_type, file_bytes)
 
             file_part = genai.types.Part.from_bytes(data = file_bytes, mime_type = file_type)
 

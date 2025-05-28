@@ -1,8 +1,7 @@
 from google.adk import tools
-from google.cloud import storage
 from google import genai
-
-import fitz #pymupdf
+from google.cloud import storage
+from . import utils
 
 async def load_vendor_template(most_likely_class: str, tool_context: tools.ToolContext) -> str:
     """
@@ -60,16 +59,8 @@ async def load_vendor_template(most_likely_class: str, tool_context: tools.ToolC
         
         # convert pdf to png
         if file_type == 'application/pdf':
-            #file_bytes = convert_to_png(file_bytes)
-            doc = fitz.open(filetype ="pdf", stream = file_bytes)
-            page = doc.load_page(0)
-            pix = page.get_pixmap(dpi=300)
-            file_bytes = pix.tobytes(output = 'png')                
-            file_type = 'image/png'
-            if file_name[-4:] == '.pdf':
-                file_name = file_name[:-4]
+            file_type, file_bytes = utils.pdf_to_png(file_type, file_bytes)
 
-        file_name = blob.name.split('/')[-1]
         file_part = genai.types.Part.from_bytes(data = file_bytes, mime_type = file_type)
         
         # add info to tool_context as artifact
