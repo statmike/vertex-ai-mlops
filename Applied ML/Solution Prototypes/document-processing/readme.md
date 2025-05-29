@@ -214,12 +214,6 @@ After documents are flagged as anomalous, the next step is to pinpoint the speci
 
 ---
 
----
-
-<div align="center">Point of Completed Progress</div>
-
----
-
 ## Step 7: Building An Agent For Fraud Analyst
 
 Put all the steps above into a workflow using agents to orchestrate the process for a user - like a fraud analyst.  This step using the [Agent Development Kit (ADK)](https://google.github.io/adk-docs/) from Google.  This agent workflow will:
@@ -231,6 +225,12 @@ Put all the steps above into a workflow using agents to orchestrate the process 
 
 **Workflow**
 - [7-agents](./7-agents/readme.md)
+
+This workflow will run a test UI that will open in a local browser:
+
+<div align="center">
+  <img src="./resources/images/adk/adk_web_ui.png" alt="Document Processing" width="80%"/>
+</div>
 
 --- 
 

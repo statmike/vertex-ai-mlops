@@ -11,12 +11,35 @@ Build an agent workflow using the [Agent Development Kit (ADK)](https://google.g
 
 This project uses a Python environment.  You can replicate the exact environment with `pyenv` and the `venv` library (included in Python >= 3.3):
 
+> **Note:** This code does assume you have [git](https://github.com/git-guides/install-git) installed and relies on having installed the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install) and [initialized](https://cloud.google.com/sdk/docs/initializing) it with `gcloud init`.
+
 ```
+# 1. Clone the repository
+git clone https://github.com/statmike/vertex-ai-mlops.git
+
+# 2. Change into the cloned repository directory
+cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
+
+# 3. Set up the Python environment using pyenv
+# (Install Python 3.13.3 if you don't have it)
 pyenv install 3.13.3
+# (Set Python 3.13.3 as the local version for this project)
 pyenv local 3.13.3
+
+# 4. Create a virtual environment
 python -m venv .venv
+
+# 5. Activate the virtual environment
 source .venv/bin/activate
+
+# 6. Install the required Python packages
 pip install -r requirements.txt
+
+# 7. Change to the specific agent subfolder
+cd document_agent
+
+# 8. Run the ADK web interface
+adk web
 ```
 
 ## Run The Agents Locally
@@ -32,4 +55,6 @@ The test UI will open in a local browser:
 <div align="center">
   <img src="../resources/images/adk/adk_web_ui.png" alt="Document Processing" width="80%"/>
 </div>
+
+Stop the service with `ctrl+c` in the terminal.
 
