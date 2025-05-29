@@ -58,7 +58,7 @@ The test UI will open in a local browser:
 
 Stop the service with `ctrl+c` in the terminal.
 
-## An Example User UI
+## An Example User UI: Gradio
 
 With `adk web` running in one terminal window open another terminal window.  
 
@@ -70,6 +70,19 @@ python gradio_app.py
 ```
 
 Open the Gradio app at the address reported in the terminal with a `ctrl+click`.
+
+## An Example User UI: Streamlit
+
+With `adk web` running in one terminal window open another terminal window.  
+
+```
+cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
+source .venv/bin/activate
+cd document_agent/streamlit_app
+streamlit run streamlit_app.py
+```
+
+Open the Streamlit app at the address reported in the terminal with a `ctrl+click` - it will most likely auto-open in the system browser.
 
 
 
