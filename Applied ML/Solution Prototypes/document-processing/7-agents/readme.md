@@ -60,7 +60,7 @@ Stop the service with `ctrl+c` in the terminal.
 
 ## An Example User UI: Gradio
 
-With `adk web` running in one terminal window open another terminal window.  
+With `adk web` running in one terminal window open another terminal window to execute:
 
 ```
 cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
@@ -73,7 +73,7 @@ Open the Gradio app at the address reported in the terminal with a `ctrl+click`.
 
 ## An Example User UI: Streamlit
 
-With `adk web` running in one terminal window open another terminal window.  
+With `adk web` running in one terminal window open another terminal window to execute:
 
 ```
 cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
@@ -84,5 +84,16 @@ streamlit run streamlit_app.py
 
 Open the Streamlit app at the address reported in the terminal with a `ctrl+click` - it will most likely auto-open in the system browser.
 
+## An Example User UI: Mesop
 
+With `adk web` running in one terminal window open another terminal window.  
+
+```
+cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
+source .venv/bin/activate
+cd document_agent/mesop_app
+mesop mesop_app.py
+```
+
+Open the Mesop app at the address reported in the terminal with a `ctrl+click`.
 
