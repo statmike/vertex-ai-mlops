@@ -42,7 +42,7 @@ cd document_agent
 adk web
 ```
 
-## Run The Agents Locally
+## Run The Agents Locally With A Test UI
 
 To test this agent you can use the `adk web` command from inside the `document_agent` folder.  This will start the test user interface and you can `ctrl+click` on the `http://localhost:8000` address:
 
@@ -57,4 +57,19 @@ The test UI will open in a local browser:
 </div>
 
 Stop the service with `ctrl+c` in the terminal.
+
+## An Example User UI
+
+With `adk web` running in one terminal window open another terminal window.  
+
+```
+cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
+source .venv/bin/activate
+cd document_agent/gradio_app
+python gradio_app.py
+```
+
+Open the Gradio app at the address reported in the terminal with a `ctrl+click`.
+
+
 

@@ -24,8 +24,8 @@ async def display_images_side_by_side(
     BORDER_THICKNESS = 5
     PADDING_BETWEEN_IMAGES = 30
     OUTER_MARGIN = 20
-    LABEL_AREA_HEIGHT = 60  # Height for the label text area above images
-    FONT_SIZE = 24
+    LABEL_AREA_HEIGHT = 100  # Height for the label text area above images
+    FONT_SIZE = 56
     BACKGROUND_COLOR = "white"
     BORDER_COLOR = "black"
     TEXT_COLOR = "black"
@@ -79,7 +79,7 @@ async def display_images_side_by_side(
         draw = ImageDraw.Draw(composite_image)
 
         try:
-            font = ImageFont.truetype("arial.ttf", FONT_SIZE)
+            font = ImageFont.truetype("DejaVuSans.ttf", FONT_SIZE)
         except IOError:
             font = ImageFont.load_default()
 
@@ -92,6 +92,7 @@ async def display_images_side_by_side(
             label_orig_bbox = draw.textbbox((0,0), label_orig_text, font=font)
             label_template_bbox = draw.textbbox((0,0), label_template_text, font=font)
             label_orig_width = label_orig_bbox[2] - label_orig_bbox[0]
+            label_orig_height = label_orig_bbox[3] - label_orig_bbox[1] # Get text height
             label_template_width = label_template_bbox[2] - label_template_bbox[0]
         else: # Fallback for older Pillow
             label_orig_width, _ = draw.textsize(label_orig_text, font=font)
@@ -100,6 +101,7 @@ async def display_images_side_by_side(
         x_orig_label = OUTER_MARGIN + BORDER_THICKNESS + (img_orig_width / 2) - (label_orig_width / 2)
         x_template_label = OUTER_MARGIN + BORDER_THICKNESS + img_orig_width + PADDING_BETWEEN_IMAGES + (img_template_width / 2) - (label_template_width / 2)
         y_label = OUTER_MARGIN + (LABEL_AREA_HEIGHT - FONT_SIZE) / 3 # Adjusted for better vertical centering
+        y_label = OUTER_MARGIN + (LABEL_AREA_HEIGHT - label_orig_height) / 2 # Center based on actual text height
 
         draw.text((x_orig_label, y_label), label_orig_text, fill=TEXT_COLOR, font=font)
         draw.text((x_template_label, y_label), label_template_text, fill=TEXT_COLOR, font=font)
