@@ -71,6 +71,10 @@ python gradio_app.py
 
 Open the Gradio app at the address reported in the terminal with a `ctrl+click`.
 
+<div align="center">
+  <img src="../resources/images/adk/gradio.png" alt="Document Processing App: Gradio" width="80%"/>
+</div>
+
 ## An Example User UI: Streamlit
 
 With `adk web` running in one terminal window open another terminal window to execute:
@@ -84,6 +88,10 @@ streamlit run streamlit_app.py
 
 Open the Streamlit app at the address reported in the terminal with a `ctrl+click` - it will most likely auto-open in the system browser.
 
+<div align="center">
+  <img src="../resources/images/adk/streamlit.png" alt="Document Processing App: Streamlit" width="80%"/>
+</div>
+
 ## An Example User UI: Mesop
 
 With `adk web` running in one terminal window open another terminal window.  
@@ -96,4 +104,8 @@ mesop mesop_app.py
 ```
 
 Open the Mesop app at the address reported in the terminal with a `ctrl+click`.
+
+<div align="center">
+  <img src="../resources/images/adk/mesop.png" alt="Document Processing App: Mesop" width="80%"/>
+</div>
 
