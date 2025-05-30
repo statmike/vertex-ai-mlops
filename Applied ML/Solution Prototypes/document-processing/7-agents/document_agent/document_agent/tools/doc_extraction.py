@@ -1,3 +1,5 @@
+import json
+
 from google.adk import tools
 from google import genai
 from google.cloud import documentai
@@ -38,7 +40,11 @@ async def document_extraction(artifact_key: str, tool_context: tools.ToolContext
             )
         )
 
-        # 3. Extract Details From Reponse
+        # 3a. testing entities to JSON and let LLM handle
+        dict_result = documentai.Document.to_dict(response.document, use_integers_for_enums = False)
+        json_result = json.dumps(dict_result['entities'])
+
+        # 3b. Extract Details From Reponse
         result = ""
         for e, entity in enumerate(response.document.entities):
             a = entity.type_
@@ -55,7 +61,9 @@ async def document_extraction(artifact_key: str, tool_context: tools.ToolContext
                     else:
                         c = prop.mention_text
                     result += f"{prop.type_} = {c}\n"
-        return result  
+
+        # 3. Return either the json extract of the entities or the prepared string of entity data:
+        return json_result  
       
     except Exception as e:
         return f"An error occurred during document extraction or summarization for '{artifact_key}': {str(e)}"
