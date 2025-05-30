@@ -65,7 +65,7 @@ With `adk web` running in one terminal window open another terminal window to ex
 ```
 cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
 source .venv/bin/activate
-cd document_agent/gradio_app
+cd document_agent/apps
 python gradio_app.py
 ```
 
@@ -82,7 +82,7 @@ With `adk web` running in one terminal window open another terminal window to ex
 ```
 cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
 source .venv/bin/activate
-cd document_agent/streamlit_app
+cd document_agent/apps
 streamlit run streamlit_app.py
 ```
 
@@ -99,7 +99,7 @@ With `adk web` running in one terminal window open another terminal window.
 ```
 cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
 source .venv/bin/activate
-cd document_agent/mesop_app
+cd document_agent/apps
 mesop mesop_app.py
 ```
 

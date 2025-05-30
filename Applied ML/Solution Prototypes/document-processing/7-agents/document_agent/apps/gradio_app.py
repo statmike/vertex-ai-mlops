@@ -6,9 +6,7 @@ import base64
 import mimetypes
 
 # --- Configuration for your ADK Web server ---
-# These URLs were discovered by inspecting the adk web UI's network traffic.
-ADK_SESSION_CREATE_URL = "http://localhost:8000/apps/document_agent/users/user/sessions"
-ADK_RUN_SSE_URL = "http://localhost:8000/run_sse"
+from config import ADK_SESSION_CREATE_URL, ADK_RUN_SSE_URL
 
 # Global variable to store the session ID obtained from the server.
 # In a production multi-user app, this would require more robust state management.

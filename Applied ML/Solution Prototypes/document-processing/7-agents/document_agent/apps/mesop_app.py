@@ -9,8 +9,7 @@ import mimetypes
 import time
 
 # --- Configuration for your ADK Web server ---
-ADK_SESSION_CREATE_URL = "http://localhost:8000/apps/document_agent/users/user/sessions"
-ADK_RUN_URL = "http://localhost:8000/run"
+from config import ADK_SESSION_CREATE_URL, ADK_RUN_URL
 
 
 @me.stateclass

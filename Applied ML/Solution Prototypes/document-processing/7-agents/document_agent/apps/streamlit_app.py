@@ -9,9 +9,7 @@ import io
 import os
 
 # --- Configuration for your ADK Web server ---
-ADK_SESSION_CREATE_URL = "http://localhost:8000/apps/document_agent/users/user/sessions"
-# CORRECTED: Point to the non-streaming /run endpoint
-ADK_RUN_URL = "http://localhost:8000/run"
+from config import ADK_SESSION_CREATE_URL, ADK_RUN_URL
 
 # --- ADK Communication Logic ---
 
