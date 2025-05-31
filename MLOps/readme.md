@@ -23,11 +23,12 @@ Let's talk about MLOps!
 ## Table of Contents
 
 - [MLOps](#mlops)
-    - [ML Code: More Than A Model](#ml-code-more-than-a-model)
-    - [Model Fleets: MLOps for Scale](#model-fleets-mlops-for-scale)
-    - [Content Overview](#content-overview)
-    - [MLOps Resources & References](#mlops-resources--references)
-- [Content Development Progress](#content-development-progress)
+  - [Table of Contents](#table-of-contents)
+  - [ML Code: More Than A Model](#ml-code-more-than-a-model)
+  - [Model Fleets: MLOps for Scale](#model-fleets-mlops-for-scale)
+  - [Content Overview](#content-overview)
+    - [Environment Setup Tips](#environment-setup-tips)
+  - [MLOps Resources \& References](#mlops-resources--references)
 
 ---
 
@@ -99,11 +100,24 @@ Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to thi
 Links To Content:
 - Orchestration with [Pipelines](./Pipelines/readme.md)
 - Feature Management with [Vertex AI Feature Store](./Feature%20Store/readme.md)
+- [Model Evaluation](./Model%20Evaluation/readme.md)
 - [Model Monitoring](./Model%20Monitoring/readme.md)
 - [Experiment Tracking](./Experiment%20Tracking/readme.md)
 - [Model Serving](./Serving/readme.md)
-- More coming soon!
-    
+- More planned!
+
+### Environment Setup Tips
+
+The notebooks in this project individually check for and install packages they require. To replicate the development environment with `pyenv` (Python version) and `venv` (for package versions) you can use this code:
+
+```
+pyenv install 3.13.3
+pyenv local 3.13.3
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
 ---
 ## MLOps Resources & References
 

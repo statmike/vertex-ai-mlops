@@ -1,5 +1,6 @@
 *-checkpoint.*
 .gitignore-checkpoint
+.venv/
 temp
 *.pyc
 iframe_figures
@@ -8,4 +9,3 @@ terraform.tfstate
 .terraform/
 terraform.tfstate.backup
 .terraform.lock.hcl
-Applied ML/AI Agents/.python-version
