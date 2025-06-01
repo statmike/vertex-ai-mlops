@@ -3,7 +3,7 @@
 <table align="left">     
   <td style="text-align: center">
     <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20GenAI/Evaluation/readme.md">
-      <img src="https://cloud.google.com/ml-engine/images/github-logo-32px.png" alt="GitHub logo">
+      <img width="32px" src="https://www.svgrepo.com/download/217753/github.svg" alt="GitHub logo">
       <br>View on<br>GitHub
     </a>
   </td>
