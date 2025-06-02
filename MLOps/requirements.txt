@@ -10,6 +10,7 @@ astunparse==1.6.3
 atpublic==5.1
 attrs==25.3.0
 bigframes==2.4.0
+bigquery-magics==0.10.0
 blinker==1.9.0
 cachetools==5.5.2
 certifi==2025.4.26
@@ -170,6 +171,7 @@ termcolor==3.1.0
 threadpoolctl==3.6.0
 toolz==1.0.0
 tornado==6.5.1
+tqdm==4.67.1
 traitlets==5.14.3
 typing-inspection==0.4.1
 typing_extensions==4.13.2
