@@ -51,12 +51,12 @@ This project provides practical examples and code snippets demonstrating how to 
 
 * ### Multi-Label Classification: When One Sample Has Many Answers
     Discover how to evaluate models that predict multiple independent labels for a single input. This notebook will guide you through relevant metrics like Hamming loss, Jaccard score, and per-label performance analysis, crucial for understanding models where an item can belong to several categories simultaneously.
-    * [Explore Multi-label Classification Evaluation](model-evaluation-classification-multi-label.ipynb)
+    * Explore Multi-label Classification Evaluation - future: model-evaluation-classification-multi-label.ipynb
 
 * ### Regression: Predicting Continuous Values
     Shift focus to models that predict continuous numerical outputs. This section details essential regression metrics such as Mean Squared Error (MSE), Root Mean Squared Error (RMSE), Mean Absolute Error (MAE), and R-squared ($R^2$), providing insights into prediction accuracy and error magnitude.
-    * [Explore Regression Evaluation](model-evaluation-regression.ipynb)
+    * Explore Regression Evaluation - future: model-evaluation-regression.ipynb
 
 * ### Forecasting: Predicting Future Trends Over Time
     Delve into the specialized world of time-series forecasting. Learn how to evaluate models that predict future values, often using metrics that account for temporal dependencies, such as Mean Absolute Percentage Error (MAPE), Symmetric Mean Absolute Percentage Error (sMAPE), and various error measures over time horizons.
-    * [Explore Forecasting Evaluation](model-evaluation-forecasting.ipynb)
+    * Explore Forecasting Evaluation - future: model-evaluation-forecasting.ipynb
