@@ -94,7 +94,7 @@ Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to thi
 ## Content Overview
 
 <p align="center"><center>
-    <img src="./resources/images/created/mlops/overview.png" width="90%">
+    <img src="./resources/images/external/mlops/overview.png" width="90%">
 </center><p>
 
 Links To Content:

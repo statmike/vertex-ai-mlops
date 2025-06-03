@@ -49,7 +49,9 @@
 
 
 
-
+<p align="center"><center>
+    <img src="./MLOps/resources/images/external/mlops/overview.png" width="90%">
+</center><p>
 
 
 
