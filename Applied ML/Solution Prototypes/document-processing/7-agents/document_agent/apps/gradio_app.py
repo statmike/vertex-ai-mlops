@@ -6,7 +6,7 @@ import base64
 import mimetypes
 
 # --- Configuration for your ADK Web server ---
-from config import ADK_SESSION_CREATE_URL, ADK_RUN_SSE_URL
+from config import ADK_SESSION_CREATE_URL, ADK_RUN_SSE_URL, ADK_RUN_URL
 
 # Global variable to store the session ID obtained from the server.
 # In a production multi-user app, this would require more robust state management.
@@ -128,6 +128,7 @@ def call_adk_agent(message: dict, history: list):
 
 
     try:
+        """
         # The rest of this function (requests call and response parsing) remains the same
         response = requests.post(ADK_RUN_SSE_URL, json=payload, timeout=180, stream=True)
         response.raise_for_status()
@@ -152,6 +153,29 @@ def call_adk_agent(message: dict, history: list):
         
         final_reply = "\n".join(filter(None, agent_reply_parts))
         return final_reply if final_reply else "Agent responded, but no displayable text was found."
+        """
+        response = requests.post(ADK_RUN_URL, json = payload, timeout = 180)
+        response.raise_for_status()
+        response_data = response.json()
+
+        final_text = "Error: No final response from assistant found."
+        if isinstance(response_data, list):
+            for message in reversed(response_data):
+                content = message.get("content", {})
+                if isinstance(content, dict) and content.get("role") == "model":
+                    parts = content.get("parts", [])
+                    if parts and isinstance(parts, list):
+                        first_part = parts[0]
+                        if isinstance(first_part, dict):
+                            text_part = first_part.get("text")
+                            if text_part:
+                                final_text = text_part
+                            else:
+                                final_text = f"Agent returned a structured response: `{json.dumps(first_part)}`"
+                        else:
+                            final_text = f"Agent returned an unknown part: `{str(first_part)}`"
+                        break
+        return final_text
 
     except Exception as e:
         return f"An unexpected error occurred: {str(e)}"
