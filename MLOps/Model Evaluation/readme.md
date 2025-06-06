@@ -36,6 +36,11 @@ For a deeper dive into proactive strategies, refer to the dedicated content on [
 2.  **Evaluating the Model:** Comprehensive evaluation will be performed using appropriate metrics for the given problem (e.g., binary classification, regression, etc.).
 3.  **Registering the Model in Vertex AI Model Registry:** The trained model will then be registered as a new version within the Vertex AI Model Registry.
 4.  **Custom Loading Evaluations to the Model in the Registry:** Finally, the collected evaluation metrics will be custom loaded and associated with the respective model version in the Vertex AI Model Registry, demonstrating how to centralize your model's performance data.
+  
+Additional concepts covered:
+- Including explainations (feature attributions) with evaluations is also possible.  This is demonstrated in the Binary Classification example.
+- Including metrics on data slices, like the individual class levels, is possible and included in the multi-class and multi-level classification examples.
+
 
 ---
 
@@ -44,10 +49,23 @@ This project provides practical examples and code snippets demonstrating how to 
 * ### Binary Classification: Is it A or Not-A?
     Dive into the fundamental world of binary classification. This notebook covers key metrics like accuracy, precision, recall, F1-score, and ROC AUC, showcasing how to interpret them when your model predicts one of two outcomes.
     * [Explore Binary Classification Evaluation](model-evaluation-classification-binary.ipynb)
+      * Prepare Data
+      * Train a model with preprocessing pipeline
+      * Save and upload the model to Vertex AI Model Registry
+      * Create and upload custom evaluations to the model in Vertex AI Model Registry
+        * Review and compare evaluations in the console and with the Vertex AI SDK
+      * Create and upload model explanations (feature attributions) to the evaluation in the Vertex AI Model Registry.
 
 * ### Multi-Class Classification: Distinguishing Between Many Categories
     Expand your understanding to scenarios where your model must categorize inputs into more than two distinct classes. Learn about metrics like macro/micro averages, weighted averages, and confusion matrices to gain a comprehensive view of performance across multiple categories.
     * [Explore Multi-Class Classification Evaluation](model-evaluation-classification-multi-class.ipynb)
+      * Prepare Data
+      * Train a model with preprocessing pipeline
+      * Save and upload the model to Vertex AI Model Registry
+      * Create and upload custom evaluations to the model in Vertex AI Model Registry
+        * Review and compare evaluations in the console and with the Vertex AI SDK
+      * Create and upload custom evaluations on model slices, each class level of the multi-class model, to the evaluations in Vertex AI Model Registry
+        * Review the slice evaluations in the console and with the Vertex AI SDK
 
 * ### Multi-Label Classification: When One Sample Has Many Answers
     Discover how to evaluate models that predict multiple independent labels for a single input. This notebook will guide you through relevant metrics like Hamming loss, Jaccard score, and per-label performance analysis, crucial for understanding models where an item can belong to several categories simultaneously.
@@ -60,3 +78,15 @@ This project provides practical examples and code snippets demonstrating how to 
 * ### Forecasting: Predicting Future Trends Over Time
     Delve into the specialized world of time-series forecasting. Learn how to evaluate models that predict future values, often using metrics that account for temporal dependencies, such as Mean Absolute Percentage Error (MAPE), Symmetric Mean Absolute Percentage Error (sMAPE), and various error measures over time horizons.
     * Explore Forecasting Evaluation - future: model-evaluation-forecasting.ipynb
+
+---
+## Considerations
+
+These example workflows above create metrics locally and use the Vertex AI SDK to manually load these to the model in Vertex AI Model Registry.  There are more automated ways to accomplish this:
+- Directly from the console with the Vertex AI Model Registry:
+  - Uses a batch prediction job
+  - [read more](https://cloud.google.com/vertex-ai/docs/evaluation/using-model-evaluation#create_an_evaluation)
+-  Using pre-built pipeline components to create and load evaluation metrics:
+   - Uses VertexAI Pipelines
+   - [read more](https://cloud.google.com/vertex-ai/docs/pipelines/gcpc-list#modeleval_components)
+- 
