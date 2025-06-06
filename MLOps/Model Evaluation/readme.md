@@ -12,7 +12,7 @@
 ---
 # Model Evaluation
 
-> You are here: `vertex-ai-mlops/MLOps/Model Evalaution/readme.md`
+> You are here: `vertex-ai-mlops/MLOps/Model Evaluation/readme.md`
 
 Model evaluation is the critical process of rigorously comparing a model's predictions against the actual, known truth. These comparisons are quantified by **evaluation metrics**, which succinctly describe the model's performance over a given sample of data instances. Evaluations are indispensable throughout a model's lifecycle: they are tremendously helpful during **training iterations** to understand not only how well a current model version performs on the training data, but more importantly, how effectively it **generalizes** when exposed to unseen validation and test data. Beyond development, evaluations remain crucial during the **operational life of a deployed model**. Here, new data samples with confirmed outcomes are continuously used to verify that the model retains the accuracy observed during initial training, detect performance degradation, and maintain trust. Furthermore, it can be particularly insightful to evaluate models on data instances from various time periods, including historical data, to assess how consistently the model behaves across different temporal segments compared to newer data.
 
