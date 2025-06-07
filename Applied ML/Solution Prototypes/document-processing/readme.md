@@ -232,6 +232,8 @@ This workflow will run a test UI that will open in a local browser:
   <img src="./resources/images/adk/adk_web_ui.png" alt="Document Processing" width="80%"/>
 </div>
 
+The workflow also include deployment to Vertex AI Agent Engine and examples of application integration.
+
 --- 
 
 ToDo list:

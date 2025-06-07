@@ -49,14 +49,18 @@ pip install -r requirements.txt
 
 # 7. Change to the specific agent subfolder
 cd document_agent
-
-# 8. Run the ADK web interface
-adk web
 ```
 
 ## Run The Agents Locally With A Test UI
 
-To test this agent you can use the `adk web` command from inside the `document_agent` folder.  This will start the test user interface and you can `ctrl+click` on the `http://localhost:8000` address:
+To test this agent you can use the `adk web` command from inside the `document_agent` folder.  
+
+```
+# 8. Run the ADK web interface
+adk web
+```
+
+This will start the test user interface and you can `ctrl+click` on the `http://localhost:8000` address:
 
 <div align="center">
   <img src="../resources/images/adk/adk_web.png" alt="Document Processing" width="80%"/>
@@ -70,7 +74,19 @@ The test UI will open in a local browser:
 
 Stop the service with `ctrl+c` in the terminal.
 
-## An Example User UI: Gradio
+## Deploy Agents: Locally for testing, Vertex AI Agent Engine for productions
+
+Deployment code is included in the included notebook workflow [deploy-vertex-ai-agent-engine](./document_agent/deploy-vertex-ai-agent-engine.ipynb).  This workflow shows how to use the Vertex AI SDK to deploy the agent as a local application for testing and then to Vertex AI Agent Engine for a scalable production hosting.
+
+The deployment created here is directly used in the following example UI Applications:
+
+---
+
+> The following UI Applicaiton need updating to point to hosted versions of the agent on Vetex AI Agent Engine. (optionally local)
+
+---
+
+### An Example User UI: Gradio
 
 With `adk web` running in one terminal window open another terminal window to execute:
 
@@ -87,7 +103,7 @@ Open the Gradio app at the address reported in the terminal with a `ctrl+click`.
   <img src="../resources/images/adk/gradio.png" alt="Document Processing App: Gradio" width="80%"/>
 </div>
 
-## An Example User UI: Streamlit
+### An Example User UI: Streamlit
 
 With `adk web` running in one terminal window open another terminal window to execute:
 
@@ -104,7 +120,7 @@ Open the Streamlit app at the address reported in the terminal with a `ctrl+clic
   <img src="../resources/images/adk/streamlit.png" alt="Document Processing App: Streamlit" width="80%"/>
 </div>
 
-## An Example User UI: Mesop
+### An Example User UI: Mesop
 
 With `adk web` running in one terminal window open another terminal window.  
 
