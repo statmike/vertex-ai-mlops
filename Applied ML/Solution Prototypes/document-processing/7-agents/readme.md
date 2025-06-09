@@ -80,24 +80,18 @@ Deployment code is included in the included notebook workflow [deploy-vertex-ai-
 
 The deployment created here is directly used in the following example UI Applications:
 
----
-
-> The following UI Applicaiton need updating to point to hosted versions of the agent on Vetex AI Agent Engine. (optionally local)
-
----
-
 ### An Example User UI: Gradio
 
-With `adk web` running in one terminal window open another terminal window to execute:
+To start the [Gradio](https://www.gradio.app/) app execute:
 
-```
-cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
-source .venv/bin/activate
-cd document_agent/apps
+```bash
+#cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
+#source .venv/bin/activate
+#cd document_agent/apps
 python gradio_app.py
 ```
 
-Open the Gradio app at the address reported in the terminal with a `ctrl+click`.
+Open the Gradio app at the address reported in the terminal with a `ctrl+click`. To stop the app use `ctrl+c` in the terminal.
 
 <div align="center">
   <img src="../resources/images/adk/gradio.png" alt="Document Processing App: Gradio" width="80%"/>
@@ -105,16 +99,16 @@ Open the Gradio app at the address reported in the terminal with a `ctrl+click`.
 
 ### An Example User UI: Streamlit
 
-With `adk web` running in one terminal window open another terminal window to execute:
+To start the [Streamlit](https://streamlit.io/) app execute:
 
-```
-cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
-source .venv/bin/activate
-cd document_agent/apps
+```bash
+#cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
+#source .venv/bin/activate
+#cd document_agent/apps
 streamlit run streamlit_app.py
 ```
 
-Open the Streamlit app at the address reported in the terminal with a `ctrl+click` - it will most likely auto-open in the system browser.
+Open the Streamlit app at the address reported in the terminal with a `ctrl+click` - it will most likely auto-open in the system browser. To stop the app use `ctrl+c` in the terminal.
 
 <div align="center">
   <img src="../resources/images/adk/streamlit.png" alt="Document Processing App: Streamlit" width="80%"/>
@@ -122,16 +116,16 @@ Open the Streamlit app at the address reported in the terminal with a `ctrl+clic
 
 ### An Example User UI: Mesop
 
-With `adk web` running in one terminal window open another terminal window.  
+To start the [Mesop](https://mesop-dev.github.io/mesop/) app execute:
 
-```
-cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
-source .venv/bin/activate
-cd document_agent/apps
+```bash
+#cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
+#source .venv/bin/activate
+#cd document_agent/apps
 mesop mesop_app.py
 ```
 
-Open the Mesop app at the address reported in the terminal with a `ctrl+click`.
+Open the Mesop app at the address reported in the terminal with a `ctrl+click`. To stop the app use `ctrl+c` in the terminal.
 
 <div align="center">
   <img src="../resources/images/adk/mesop.png" alt="Document Processing App: Mesop" width="80%"/>
