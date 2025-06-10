@@ -70,7 +70,13 @@ This project provides practical examples and code snippets demonstrating how to 
 * ### Multi-Label Classification: When One Sample Has Many Answers
     Discover how to evaluate models that predict multiple independent labels for a single input. This notebook will guide you through relevant metrics like Hamming loss, Jaccard score, and per-label performance analysis, crucial for understanding models where an item can belong to several categories simultaneously.
     * [Explore Multi-label Classification Evaluation](model-evaluation-classification-multi-label.ipynb)
-      * In Progress
+      * Prepare Data
+      * Train a model with preprocessing pipeline that include multi-label target preparation
+      * Save and upload the model to the Vertex AI Model Registry
+      * Create and upload custom evaluations to the model in Vertex AI Model Registry
+        * Review and compare evaluations in the console and with the Vertex AI SDK
+      * Create and upload custom evaluations on model slices, each of the possible labels of the multi-label model, to the evaluations in Vertex AI Model Registry
+        * Review the slice evaluations in the console and with the Vertex AI SDK
 
 * ### Regression: Predicting Continuous Values
     Shift focus to models that predict continuous numerical outputs. This section details essential regression metrics such as Mean Squared Error (MSE), Root Mean Squared Error (RMSE), Mean Absolute Error (MAE), and R-squared ($R^2$), providing insights into prediction accuracy and error magnitude.
