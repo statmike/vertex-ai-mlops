@@ -47,5 +47,12 @@ This is made easier by the Google [Agent Development Kit (ADK)](https://google.g
 
 Sometimes agents need to interact across boundaries (departments, companies, networks). The need for a standard protocol for agent-to-agent communication is met by the [A2A protocol](https://google.github.io/A2A/#/?id=unlock-collaborative-agent-to-agent-scenarios-with-a-new-open-protocol).
 
+## Examples In This Repository
 
+[Document Processing Agent](../Solution%20Prototypes/document-processing/7-agents/readme.md)
+- Provide upload files or GCS URI to load documents (PNG or PDF)
+- Agent can:
+  - Extract Content
+  - Classify the document based on warehouse of known vendors
+  - Compare a document to the classified or any other vendors template
 
