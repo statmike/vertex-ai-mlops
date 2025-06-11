@@ -74,11 +74,15 @@ The test UI will open in a local browser:
 
 Stop the service with `ctrl+c` in the terminal.
 
+**Note:** For examples of custom  UI Applications running locally and interacting with the local ADK test environment see the UI examples below and start them in their default mode: `mode = local`.
+
 ## Deploy Agents: Locally for testing, Vertex AI Agent Engine for productions
 
-Deployment code is included in the included notebook workflow [deploy-vertex-ai-agent-engine](./document_agent/deploy-vertex-ai-agent-engine.ipynb).  This workflow shows how to use the Vertex AI SDK to deploy the agent as a local application for testing and then to Vertex AI Agent Engine for a scalable production hosting.
+Deployment code is included in the included notebook workflow [deploy-vertex-ai-agent-engine](./document_agent/deploy-vertex-ai-agent-engine.ipynb).  This workflow shows how to use the Vertex AI SDK to deploy the agent as a local application for testing and then to [Vertex AI Agent Engine](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/overview) for easy and scalable production hosting.
 
-The deployment created here is directly used in the following example UI Applications. To use these UI examples locally make sure you are in the correct folder with the virutal environment activated:
+For examples of directly interacting with the deployed agent using both the SDK and REST check out this workflow: [use-vertex-ai-agent-engine](./document_agent/use-vertex-ai-agent-engine.ipynb).
+
+The deployment created here is directly used in the following example UI Applications when the mode is set to `remote`. To use these UI examples locally make sure you are in the correct folder with the virtual environment activated:
 
 ```bash
 cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
