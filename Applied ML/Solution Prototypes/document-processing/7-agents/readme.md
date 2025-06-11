@@ -78,17 +78,29 @@ Stop the service with `ctrl+c` in the terminal.
 
 Deployment code is included in the included notebook workflow [deploy-vertex-ai-agent-engine](./document_agent/deploy-vertex-ai-agent-engine.ipynb).  This workflow shows how to use the Vertex AI SDK to deploy the agent as a local application for testing and then to Vertex AI Agent Engine for a scalable production hosting.
 
-The deployment created here is directly used in the following example UI Applications:
+The deployment created here is directly used in the following example UI Applications. To use these UI examples locally make sure you are in the correct folder with the virutal environment activated:
 
+```bash
+cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
+source .venv/bin/activate
+cd document_agent/apps
+```
+
+---
 ### An Example User UI: Gradio
 
 To start the [Gradio](https://www.gradio.app/) app execute:
 
+For **local** ADK running with `adk web` or `adk api_server`:
 ```bash
-#cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
-#source .venv/bin/activate
-#cd document_agent/apps
-python gradio_app.py
+#python gradio_app.py --mode local
+# the default mode is local so the following works as well
+python gradio_app.py 
+```
+
+For **remote** ADK deployed to Vertex AI Agent Engine:
+```bash
+python gradio_app.py --mode remote
 ```
 
 Open the Gradio app at the address reported in the terminal with a `ctrl+click`. To stop the app use `ctrl+c` in the terminal.
@@ -97,15 +109,21 @@ Open the Gradio app at the address reported in the terminal with a `ctrl+click`.
   <img src="../resources/images/adk/gradio.png" alt="Document Processing App: Gradio" width="80%"/>
 </div>
 
+---
 ### An Example User UI: Streamlit
 
 To start the [Streamlit](https://streamlit.io/) app execute:
 
+For **local** ADK running with `adk web` or `adk api_server`:
 ```bash
-#cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
-#source .venv/bin/activate
-#cd document_agent/apps
+#streamlit run streamlit_app.py -- --mode local
+# the default mode is local so the following works as well
 streamlit run streamlit_app.py
+```
+
+For **remote** ADK deployed to Vertex AI Agent Engine:
+```bash
+streamlit run streamlit_app.py -- --mode remote
 ```
 
 Open the Streamlit app at the address reported in the terminal with a `ctrl+click` - it will most likely auto-open in the system browser. To stop the app use `ctrl+c` in the terminal.
@@ -114,15 +132,21 @@ Open the Streamlit app at the address reported in the terminal with a `ctrl+clic
   <img src="../resources/images/adk/streamlit.png" alt="Document Processing App: Streamlit" width="80%"/>
 </div>
 
+---
 ### An Example User UI: Mesop
 
 To start the [Mesop](https://mesop-dev.github.io/mesop/) app execute:
 
+For **local** ADK running with `adk web` or `adk api_server`:
 ```bash
-#cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/document-processing/7-agents'
-#source .venv/bin/activate
-#cd document_agent/apps
-mesop mesop_app.py
+#APP_MODE=local mesop mesop_app.py
+# the default mode is local so the following works as well
+mesop mesop_app.py 
+```
+
+For **remote** ADK deployed to Vertex AI Agent Engine:
+```bash
+APP_MODE=remote mesop mesop_app.py
 ```
 
 Open the Mesop app at the address reported in the terminal with a `ctrl+click`. To stop the app use `ctrl+c` in the terminal.

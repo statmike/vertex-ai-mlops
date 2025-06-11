@@ -1,8 +1,5 @@
+import json, argparse, base64, mimetypes
 import streamlit as st
-import base64
-import mimetypes
-import json
-from PIL import Image
 import dotenv
 import utils
 
@@ -12,10 +9,20 @@ dotenv.load_dotenv(dotenv_path = '.env')
 # Set variables
 USER_ID = 'streamlit_user_123'
 
+# Determine run mode
+parser = argparse.ArgumentParser(description="Run the Streamlit app with a specific configuration.")
+parser.add_argument(
+    "--mode",
+    type=str,
+    default="local",
+    help="Specify the run mode: 'local' (adk web) or 'remote' (Vertex AI Agent Engine)."
+)
+args = parser.parse_args()
+
 # Streamlit App UI
 st.set_page_config(layout="wide", page_title="Document Processing Agent")
 st.title("📄 Document Processing Agent")
-st.markdown("Interact with your ADK agent. Upload a PDF/PNG via the sidebar, type a message, and click Send.")
+st.markdown(f"Interact with your ADK agent (Mode: `{args.mode}`)). Upload a PDF/PNG via the sidebar, type a message, and click Send.")
 
 # setup parameters in the session state
 if "user_id" not in st.session_state:
@@ -29,11 +36,13 @@ if "error" not in st.session_state:
 
 # create an active session
 if not st.session_state.session_id:
-    st.session_state.session_id = utils.initialize_adk_session(user_id = st.session_state.user_id)
-if not st.session_state.session_id:
-    st.session_state.error = f"Failed to initialize ADK session."
-    st.error(st.session_state.error)
-    st.stop()
+    st.session_state.session_id = utils.initialize_adk_session(user_id = st.session_state.user_id, mode = args.mode)
+    if st.session_state.session_id:
+        st.success(f"New session created: {st.session_state.session_id}.")
+        st.rerun() # Rerun to clear the success message and have a clean slate
+    else:
+        st.error("Fatal Error: Failed to initialize ADK session. Please check the terminal for logs.")
+        st.stop()
 
 # setup sidebar for doucment loading
 with st.sidebar:
@@ -54,61 +63,60 @@ for message in st.session_state.messages:
         if "image_content" in message:
             st.image(message["image_content"], caption="Agent Image Response")
 
-# handle user input: text and possible file
+# interaction logic
 if prompt := st.chat_input("What would you like to do?"):
-    file_bytes_data = None
-    mime_type_data = None
-    user_message_text = prompt
-    if uploaded_file is not None:
-        file_bytes_data = uploaded_file.getvalue()
-        mime_type_data = uploaded_file.type
-        user_message_text += f"\n\n*(File attached: `{uploaded_file.name}`)*"
-
-    st.session_state.messages.append({"role": "user", "text_content": user_message_text})
+    # Add user message to UI
+    st.session_state.messages.append({"role": "user", "text_content": prompt})
     with st.chat_message("user"):
-        st.markdown(user_message_text)
+        st.markdown(prompt)
     
-    # Interact with agent 
+    # Process inputs for the payload
+    message_parts = []
+    if prompt:
+        message_parts.append({"text": prompt})
+    if uploaded_file:
+        file_bytes = uploaded_file.getvalue()
+        base64_encoded_data = base64.b64encode(file_bytes).decode('utf-8')
+        mime_type = uploaded_file.type or "application/octet-stream"
+        file_part = {"inline_data": {"mime_type": mime_type, "data": base64_encoded_data}}
+        message_parts.append(file_part)
+
+    # Show a thinking spinner while waiting for the response
     with st.spinner("Agent is thinking..."):
-        payload = dict(
-            class_method = 'stream_query',
-            input = dict(
-                user_id = st.session_state.user_id,
-                session_id = st.session_state.session_id,
-                message = prompt
+        if args.mode == 'local':
+            payload = dict(
+                appName='document_agent',
+                userId=st.session_state.user_id,
+                sessionId=st.session_state.session_id,
+                newMessage=dict(role="user", parts=message_parts),
+                streaming=True
             )
-        )
-        response = utils.make_request(suffix = 'streamQuery?alt=sse', payload = payload, stream = True)
-        # parse response
-        #response_dict = call_adk_agent(prompt, file_bytes_data, mime_type_data)
+            response = utils.make_request(payload = payload, mode = args.mode, suffix = 'run_sse')
+        elif args.mode == 'remote':
+            payload = dict(
+                class_method='stream_query',
+                input=dict(
+                    user_id=st.session_state.user_id,
+                    session_id=st.session_state.session_id,
+                    message=prompt  # Remote endpoint takes the text prompt
+                )
+            )
+            response = utils.make_request(payload = payload, mode = args.mode, suffix = 'streamQuery?alt=sse')
+
         try:
-            final_text = 'ERROR: No final response from agent found.'
-            for line in response.iter_lines(decode_unicode = True):
-                event = json.loads(line)
-                final_text = event.get('content').get('parts')[0].get('text')
-            #return final_text
+            final_text = utils.response_parse(response, mode = args.mode)
+            if not final_text:
+                final_text = "Agent responded, but no text was found."
+
         except Exception as e:
-            final_text = f"An unexpected error occurred: {str(e)}"
-        # for use by the app
-        response_dict = {"text": final_text, "image": None}
+            st.error(f"An error occurred while parsing the response: {e}")
+            final_text = None
 
-    # return to user
-    with st.chat_message("assistant"):
-        final_text = response_dict.get("text")
-        final_image = response_dict.get("image")
-        
-        if final_text:
-            st.markdown(final_text)
-        if final_image:
-            st.image(final_image, caption="Agent Image Response")
-
-    assistant_message = {"role": "assistant"}
+    # Display agent response and update history
     if final_text:
-        assistant_message["text_content"] = final_text
-    if final_image:
-        assistant_message["image_content"] = final_image
-    
-    if final_text or final_image:
-        st.session_state.messages.append(assistant_message)
-    
+        st.session_state.messages.append({"role": "assistant", "text_content": final_text})
+        with st.chat_message("assistant"):
+            st.markdown(final_text)
+
+    # Rerun to clear the input box implicitly
     st.rerun()

@@ -1,9 +1,8 @@
-import os, json, time, base64
+import os, json, time, base64, mimetypes
 import mesop as me
 import mesop.labs as mel
 from dataclasses import field
 import dotenv
-import mimetypes
 import utils
 
 # Load environment variables set with agent (.env)
@@ -16,6 +15,7 @@ USER_ID = 'mesop_user_123'
 class State:
     user_id: str | None = None
     session_id: str | None = None
+    mode: str = ""
     chat_history: list[mel.ChatMessage] = field(default_factory=list)
     staged_file: me.UploadedFile | None = None
     is_processing: bool = False
@@ -33,8 +33,10 @@ def set_notification(message: str):
 
 def on_load(e: me.LoadEvent):
     state = me.state(State)
+    state.mode = os.getenv("APP_MODE", "local") # defaults to local if not set
+    print(f"✅ Mesop App starting in '{state.mode}' mode.")
     state.user_id = USER_ID
-    state.session_id = utils.initialize_adk_session(user_id = state.user_id)  
+    state.session_id = utils.initialize_adk_session(user_id = state.user_id, mode = state.mode)  
     if not state.chat_history:
         state.chat_history.append(
             mel.ChatMessage(role = "assistant", content = "Welcome! Ask a question or upload a document.")
@@ -68,7 +70,10 @@ def on_chat_submit(event: me.InputEvent):
     yield
 
     if not state.session_id:
-        state.chat_history[-1].content = state.error_message; state.is_processing = False; yield; return
+        state.chat_history[-1].content = "Error: Session not initialized."
+        state.is_processing = False
+        yield
+        return
 
     message_parts = []
     if user_input:
@@ -87,24 +92,44 @@ def on_chat_submit(event: me.InputEvent):
             yield
             return
 
+    # Interact With Agent
     try:
-        payload = dict(
-            class_method = 'stream_query',
-            input = dict(
-                user_id = state.user_id,
-                session_id = state.session_id,
-                message = user_input # only text for now, need SDK to accept inlien objects
-            ) 
-        )
-        response = utils.make_request(suffix = 'streamQuery?alt=sse', payload = payload, stream = True)
+        if state.mode == 'local':
+            payload = dict(
+                appName = 'document_agent',
+                userId = state.user_id,
+                sessionId = state.session_id,
+                newMessage = dict(
+                    role = "user",
+                    parts = message_parts
+                ),
+                streaming = False # token level streaming
+            )
+            response = utils.make_request(payload = payload, mode = state.mode, suffix = 'run_sse')
 
-        # Parse Response and Send Back
-        final_text = 'ERROR: No final response from agent found.'
-        for line in response.iter_lines(decode_unicode = True):
-            event = json.loads(line)
-            final_text = event.get('content').get('parts')[0].get('text')
-        state.chat_history[-1].content = final_text
+        elif state.mode == 'remote':
+            payload = dict(
+                class_method = 'stream_query',
+                input = dict(
+                    user_id = state.user_id,
+                    session_id = state.session_id,
+                    message = user_input
+                )
+            )
+            response = utils.make_request(payload = payload, mode = state.mode, suffix = 'streamQuery?alt=sse')
+
+        else:
+            state.chat_history[-1].content = f"An unknown exectuion mode was requested: mode = '{mode}'"
+            state.is_processing = False
+            yield
+            return
+    
+        final_text = utils.response_parse(response, mode = state.mode)
+        state.chat_history[-1].content = final_text if final_text else "Agent responded, but no text was found."
+
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         state.chat_history[-1].content = f"An unexpected error occurred: {str(e)}"       
     finally:
         state.is_processing = False
@@ -129,7 +154,7 @@ def app():
 
     with me.box(style=me.Style(display="flex", flex_direction="column", height="95vh", padding=me.Padding.all(16))):
         me.text("Document Processing Agent", type="headline-4")
-        me.text("Interact with your ADK agent. Type a message and/or upload a document.", style=me.Style(margin=me.Margin(bottom=16)))
+        me.text(f"Interact with your ADK agent (Mode: {state.mode}). Type a message and/or upload a document.", style=me.Style(margin=me.Margin(bottom=16)))
         if state.error_message:
             me.text(state.error_message, style=me.Style(color="red", font_weight="bold"))
 
