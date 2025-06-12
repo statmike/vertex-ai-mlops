@@ -193,6 +193,15 @@ In the previous step, we generated document embeddings. These embeddings allow u
 
 ---
 
+## Step 4a: Document Classification With ML
+
+Adding on to step 4, this workflow trains an ML model directly in BigQuery that learns to classify a documents vendor from the embedding values.  The model is trained on the known good documents and applied to the additional documents for demonstration.
+
+**Workflow**
+- [4a-document-classification.ipynb](./4a-document-classification.ipynb)
+
+---
+
 ## Step 5: Anomaly Detection With Document Similarity
 
 Building on the concept of document similarity derived from embeddings, this workflow extends the analysis to detect potentially anomalous documents. These anomalies can signal various issues, such as mislabeled documents (incorrect vendor), changes in a vendor's document format, or potential fraudulent activity. By leveraging statistical information from known documents, this workflow identifies and flags these anomalies.
