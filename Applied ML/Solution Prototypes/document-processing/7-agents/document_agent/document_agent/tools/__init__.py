@@ -7,10 +7,12 @@ from .bq_query_to_predict_classification import bq_query_to_predict_classificati
 from .load_vendor_template import load_vendor_template
 from .diplay_images_side_by_side import display_images_side_by_side
 from .compare_documents import compare_documents
+from .dlp_image_redact import dlp_image_redact
 
 DOCUMENT_PROCESSING_TOOLS = [
     get_gcs_file,
     get_user_file,
+    dlp_image_redact,
     document_extraction,
     get_doc_embedding,
     bq_query_to_classify,

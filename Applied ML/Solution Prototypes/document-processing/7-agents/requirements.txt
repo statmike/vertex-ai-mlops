@@ -40,6 +40,7 @@ google-cloud-appengine-logging==1.6.1
 google-cloud-audit-log==0.3.2
 google-cloud-bigquery==3.31.0
 google-cloud-core==2.4.3
+google-cloud-dlp==3.30.0
 google-cloud-documentai==3.5.0
 google-cloud-logging==3.12.1
 google-cloud-resource-manager==1.14.2
