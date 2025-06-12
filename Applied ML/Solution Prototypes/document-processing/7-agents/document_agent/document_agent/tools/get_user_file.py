@@ -6,13 +6,20 @@ async def get_user_file(
     tool_context: tools.ToolContext
 ) -> str:
     """
-    Find a user uploaded file in the context and saves it as an artifact and returns the artifact key as part of the response.
-    If the detected file is a PDF then it converts the first page to a PNG to use as the artifact.
+    Processes a newly uploaded user file, making it available for other tools.
+
+    This tool MUST be called as the first step immediately after a user uploads a file.
+    It accesses the file data from the user's message, converts it to a standard
+    PNG format (if it's a PDF), and saves it as a session artifact with the key
+    'user_uploaded_file'. All other document processing tools depend on this
+    artifact being created first.
 
     Args:
-        tool_context: The execution context for the tool
+        tool_context: The execution context for the tool, which contains the user's
+                      uploaded file content.
     Returns:
-        A string confirming the file status and its details, or an error message.
+        A string confirming the successful creation of the file artifact and its
+        details, or a clear error message if the file cannot be processed.
     """
 
     try:

@@ -10,7 +10,25 @@ async def compare_documents(
     tool_context: tools.ToolContext
 ) -> str:
     """
-    
+    Performs a detailed visual and structural comparison between two document images.
+
+    This function loads an 'original document' and a 'vendor template' from the ADK
+    artifacts. It then uses a multimodal AI model to analyze and report all visual,
+    formatting, and structural discrepancies between them. The comparison focuses on
+    layout, branding elements, text formatting, table structures, and more, rather
+    than the semantic content of the text.
+
+    Args:
+        original_document_artifact_key: The artifact key for the user's document image
+                                          that needs to be checked.
+        template_document_artifact_key: The artifact key for the "gold standard" vendor
+                                          template image to compare against.
+        tool_context: The execution context for the tool, used to load the artifacts.
+
+    Returns:
+        A string containing a detailed report of all visual and structural
+        discrepancies found between the two documents, or an error message if the
+        comparison fails.
     """
 
     prompt = """

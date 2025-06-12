@@ -6,7 +6,20 @@ bq = bigquery.Client(project = GCP_PROJECT)
 
 async def bq_query_to_classify(tool_context: tools.ToolContext) -> str:
     """
-    
+    Classifies a document by querying a BigQuery table with a document embedding.
+
+    This function retrieves a pre-computed document embedding from the ADK's tool
+    context state. It then uses this embedding to perform a vector search (similarity
+    search) against a BigQuery table containing known vendor embeddings. The function
+    returns a list of vendors and their similarity scores, ordered by relevance.
+
+    Args:
+        tool_context: The execution context for the tool, which must contain the
+                      'document_embedding' in its state.
+
+    Returns:
+        A markdown-formatted string listing the vendors and their corresponding
+        similarity distances, or an error message if the query fails.
     """
 
     try:

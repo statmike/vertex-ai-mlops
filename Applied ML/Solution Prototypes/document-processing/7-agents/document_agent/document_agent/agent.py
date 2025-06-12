@@ -17,6 +17,7 @@ classification_insights_agent = agents.Agent(
     description = "Generates a document comparison tables and summarizes it for the user and includes a final determination of classification.",
     global_instruction = prompts.global_instructions,
     instruction = prompts.classification_insights_agent_instructions,
+    tools = tools.DOCUMENT_CLASSIFICATION_TOOLS
 )
 
 extraction_insights_agent = agents.Agent(

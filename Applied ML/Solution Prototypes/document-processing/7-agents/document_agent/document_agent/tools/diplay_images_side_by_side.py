@@ -84,7 +84,7 @@ async def display_images_side_by_side(
             font = ImageFont.load_default()
 
         # 6. Draw labels
-        label_orig_text = "Original Document"
+        label_orig_text = "Uploaded Document"
         label_template_text = "Classified Vendor's Template"
 
         # Calculate text size for centering (Pillow 9.2.0+ has getbbox, older has textsize)
