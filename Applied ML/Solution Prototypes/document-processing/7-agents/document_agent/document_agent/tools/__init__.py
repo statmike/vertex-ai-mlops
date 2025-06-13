@@ -11,14 +11,14 @@ from .dlp_image_redact import dlp_image_redact
 
 DOCUMENT_PROCESSING_TOOLS = [
     get_gcs_file,
-    get_user_file,
+    #get_user_file,
     dlp_image_redact,
     document_extraction,
     get_doc_embedding,
     bq_query_to_classify,
     load_vendor_template,
     display_images_side_by_side,
-    compare_documents
+    compare_documents,
 ]
 
 DOCUMENT_CLASSIFICATION_TOOLS = [

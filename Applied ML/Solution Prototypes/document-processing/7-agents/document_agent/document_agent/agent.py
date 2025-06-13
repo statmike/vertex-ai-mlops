@@ -2,6 +2,7 @@ from google.adk import agents
 from google.adk.tools import agent_tool
 from . import tools
 from . import prompts
+from . import callbacks
 
 comparison_insights_agent = agents.Agent(
     name = "comparison_insights_agent",
@@ -39,6 +40,7 @@ root_agent = agents.Agent(
         classification_insights_agent,
         extraction_insights_agent,
     ],
-    tools = tools.DOCUMENT_PROCESSING_TOOLS
+    tools = tools.DOCUMENT_PROCESSING_TOOLS,
+    before_agent_callback = callbacks.before_agent_get_user_file
 )
 
