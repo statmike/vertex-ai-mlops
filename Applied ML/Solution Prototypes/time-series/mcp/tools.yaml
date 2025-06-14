@@ -1,0 +1,25 @@
+toolsets:
+  ts-toolset:
+    - sum-by-day
+sources:
+  bq-query-project:
+    kind: bigquery
+    project: statmike-mlops-349915
+    location: us
+tools:
+  sum-by-day:
+    kind: bigquery-sql
+    source: bq-query-project
+    description: Use this tool to get daily totals for bike stations
+    statement: |
+        SELECT
+           start_station_name,
+           EXTRACT(DATE FROM starttime) AS starttime,
+           COUNT(*) AS num_trips,
+           AVG(tripduration) as avg_tripduration,
+           COUNTIF(usertype='Subscriber')/COUNT(*) as pct_subscriber,
+           SAFE_DIVIDE(COUNTIF(gender='male'), COUNTIF(gender!='male')) as ratio_gender
+        FROM `bigquery-public-data.new_york.citibike_trips`
+        WHERE start_station_name LIKE '%Central Park%'
+        GROUP BY start_station_name, starttime
+        LIMIT 10
