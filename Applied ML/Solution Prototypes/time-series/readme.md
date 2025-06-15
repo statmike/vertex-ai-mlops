@@ -40,4 +40,10 @@ see:
 }
 ```
 
+stop it with `ctrl+c`
 
+other uses: 
+- MCP Inspector: https://googleapis.github.io/genai-toolbox/how-to/connect_via_mcp/#using-the-mcp-inspector-with-toolbox
+- With IDE Chat: https://cloud.google.com/blog/products/ai-machine-learning/new-mcp-integrations-to-google-cloud-databases?e=48754805
+  - Like BQ: https://cloud.google.com/bigquery/docs/pre-built-tools-with-mcp-toolbox#configure-your-mcp-client
+  - Full List: https://googleapis.github.io/genai-toolbox/how-to/connect-ide/
