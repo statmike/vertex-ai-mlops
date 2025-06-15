@@ -43,7 +43,7 @@ A futher check is reviewing the hosted toolsets on the server that were loaded f
 }
 ```
 
-Stop the lcoal server with `ctrl+c`.
+Stop the local server with `ctrl+c`.
 
 other uses: 
 - MCP Inspector: https://googleapis.github.io/genai-toolbox/how-to/connect_via_mcp/#using-the-mcp-inspector-with-toolbox
@@ -51,8 +51,8 @@ other uses:
   - Like BQ: https://cloud.google.com/bigquery/docs/pre-built-tools-with-mcp-toolbox#configure-your-mcp-client
   - Full List: https://googleapis.github.io/genai-toolbox/how-to/connect-ide/
 
-
-## Environent Setup
+---
+## Local Environment Setup
 
 Start my initializing the Python environment for the ADK agents to utilize locally.
 
@@ -63,7 +63,9 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+Start local testing with `adk web` and open the test UI in a browser at `http://localhost:8000`.
 
+Stop the service with `ctrl+c`.
 
 
 
