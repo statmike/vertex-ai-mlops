@@ -60,49 +60,51 @@ async def process_ts_data(
 
         # Store traces for visibility toggling
         all_traces = []
-
         for s_name in series_list:
             series_df = df[df['start_station_name'] == s_name].copy()
             traces_for_series = []
 
-            # --- Plotting Logic ---
+            # --- Refined Plotting Logic ---
             if is_forecast:
                 hist_df = series_df[series_df['type'] == 'history']
                 fcst_df = series_df[series_df['type'] == 'forecast']
-
-                # 1. Lower confidence bound (invisible, for filling)
+                
+                # Confidence Bounds (with names for hover)
                 fig.add_trace(go.Scatter(
-                    x=fcst_df['starttime'], y=fcst_df['pred_low'],
-                    mode='lines', line_color='rgba(0,0,0,0)', showlegend=False
-                ))
-                traces_for_series.append(len(fig.data) - 1)
-
-                # 2. Upper confidence bound (fills to lower bound)
-                fig.add_trace(go.Scatter(
-                    x=fcst_df['starttime'], y=fcst_df['pred_high'],
+                    x=fcst_df['starttime'], y=fcst_df['pred_low'], name='Lower',
                     mode='lines', line_color='rgba(0,0,0,0)', showlegend=False,
-                    fill='tonexty', fillcolor='rgba(0,100,80,0.2)'
+                    hovertemplate='Lower Bound: %{y}<extra></extra>'
                 ))
                 traces_for_series.append(len(fig.data) - 1)
 
-                # 3. Forecast line
+                fig.add_trace(go.Scatter(
+                    x=fcst_df['starttime'], y=fcst_df['pred_high'], name='Upper',
+                    mode='lines', line_color='rgba(0,0,0,0)', showlegend=False,
+                    fill='tonexty', fillcolor='rgba(0,100,80,0.2)',
+                    hovertemplate='Upper Bound: %{y}<extra></extra>'
+                ))
+                traces_for_series.append(len(fig.data) - 1)
+
+                # Forecast and History lines (with station names in legend/hover)
                 fig.add_trace(go.Scatter(
                     x=fcst_df['starttime'], y=fcst_df['num_trips'],
-                    name='Forecast', mode='lines', line=dict(color='green', dash='dot')
+                    name=f'Forecast: {s_name}', mode='lines', line=dict(color='green', dash='dot'),
+                    hovertemplate='Forecast: %{y}<extra></extra>'
                 ))
                 traces_for_series.append(len(fig.data) - 1)
                 
-                # 4. Historical line
                 fig.add_trace(go.Scatter(
                     x=hist_df['starttime'], y=hist_df['num_trips'],
-                    name='History', mode='lines+markers', line=dict(color='blue'), marker={'size': 4}
+                    name=f'History: {s_name}', mode='lines+markers', line=dict(color='blue'), marker={'size': 4},
+                    hovertemplate='Trips: %{y}<extra></extra>'
                 ))
                 traces_for_series.append(len(fig.data) - 1)
 
-            else: # Not a forecast, plot as before
+            else: # Not a forecast, plot with refined hover text
                 fig.add_trace(go.Scatter(
-                    x=series_df['starttime'], y=series_df['num_trips'], name='num_trips',
-                    mode='lines+markers', line={'width': 2}, marker={'size': 5}
+                    x=series_df['starttime'], y=series_df['num_trips'], name=s_name,
+                    mode='lines+markers', line={'width': 2}, marker={'size': 5},
+                    hovertemplate=f"<b>{s_name}</b><br>Trips: %{{y}}<extra></extra>"
                 ))
                 traces_for_series.append(len(fig.data) - 1)
             
@@ -116,13 +118,13 @@ async def process_ts_data(
                 visibility[trace_index] = True
             buttons.append(dict(label=s_name, method='update', args=[{'visible': visibility}]))
 
-        # Set first series to be visible by default
-        for trace_index in all_traces[0]:
-            fig.data[trace_index].visible = True
-
+        if fig.data:
+            # Set first series to be visible by default
+            for trace_index in all_traces[0]:
+                fig.data[trace_index].visible = True
+        
         # --- Layout Updates ---
         max_date = df['starttime'].max()
-        # Extend visible range to 180 days for forecasts
         min_date_range = max_date - timedelta(days=180 if is_forecast else 90)
         fig.update_layout(
             title_text='Daily Bike Trips' + (' with Forecast' if is_forecast else ''),
@@ -135,62 +137,8 @@ async def process_ts_data(
                 active=0, buttons=buttons, direction="down",
                 x=1.0, y=1.1, xanchor="right", yanchor="top"
             )],
-            showlegend=is_forecast # Only show legend if there's a forecast
+            legend_title_text='Series'
         )
-
-        # buttons = []
-        # # Add a trace for each series
-        # for i, s_name in enumerate(series_list):
-        #     series_df = df[df['start_station_name'] == s_name]
-        #     fig.add_trace(
-        #         go.Scatter(
-        #             x=series_df['starttime'],
-        #             y=series_df['num_trips'],
-        #             name='num_trips',
-        #             text=series_df['num_trips'],
-        #             hoverinfo='name+x+text',
-        #             mode='lines+markers',
-        #             line={'width': 2},
-        #             marker={'size': 5},
-        #             visible=(i == 0) # Make first series visible by default
-        #         )
-        #     )
-
-        # # Create a dropdown button for each series
-        # for i, s_name in enumerate(series_list):
-        #     visibility = [False] * len(series_list)
-        #     visibility[i] = True
-        #     button = dict(
-        #         label=s_name,
-        #         method='update',
-        #         args=[{'visible': visibility}]
-        #     )
-        #     buttons.append(button)
-
-        # # Update layout with dropdown, rangeslider, and styling
-        # max_date = df['starttime'].max()
-        # min_date_range = max_date - timedelta(days=90)
-        # fig.update_layout(
-        #     title_text='Daily Bike Trips',
-        #     template='plotly_white',
-        #     height=600,
-        #     hovermode="x unified",
-        #     xaxis=dict(
-        #         rangeslider=dict(visible=True),
-        #         type='date',
-        #         range = [min_date_range, max_date]
-        #     ),
-        #     yaxis=dict(title='Number of Trips'),
-        #     updatemenus=[dict(
-        #         active=0,
-        #         buttons=buttons,
-        #         direction="down",
-        #         x=1.0,
-        #         y=1.1,
-        #         xanchor="right",
-        #         yanchor="top"
-        #     )]
-        # )
 
         # --- Save figure as an HTML artifact ---
         html_plot = fig.to_html(full_html = True)
