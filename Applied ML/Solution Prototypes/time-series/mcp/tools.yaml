@@ -1,25 +1,118 @@
 toolsets:
   ts-toolset:
-    - sum-by-day
+    - sum-by-day-overall
+    - sum-by-day-stations
+    - forecast-sum-by-day-overall
+    - forecast-sum-by-day-stations
 sources:
   bq-query-project:
     kind: bigquery
     project: statmike-mlops-349915
     location: us
 tools:
-  sum-by-day:
+  sum-by-day-overall:
+    kind: bigquery-sql
+    source: bq-query-project
+    description: Use this tool to get overall daily totals
+    statement: |
+        SELECT
+           EXTRACT(DATE FROM starttime) AS starttime,
+           COUNT(*) AS num_trips
+        FROM `bigquery-public-data.new_york.citibike_trips`
+        GROUP BY starttime
+        ORDER BY starttime
+  sum-by-day-stations:
     kind: bigquery-sql
     source: bq-query-project
     description: Use this tool to get daily totals for bike stations
+    parameters:
+      - name: locator
+        type: string
+        description: Part of a start_station_name value, a wildcard
     statement: |
         SELECT
            start_station_name,
            EXTRACT(DATE FROM starttime) AS starttime,
-           COUNT(*) AS num_trips,
-           AVG(tripduration) as avg_tripduration,
-           COUNTIF(usertype='Subscriber')/COUNT(*) as pct_subscriber,
-           SAFE_DIVIDE(COUNTIF(gender='male'), COUNTIF(gender!='male')) as ratio_gender
+           COUNT(*) AS num_trips
         FROM `bigquery-public-data.new_york.citibike_trips`
-        WHERE start_station_name LIKE '%Central Park%'
+        WHERE LOWER(start_station_name) LIKE LOWER(CONCAT('%',@locator,'%'))
         GROUP BY start_station_name, starttime
-        LIMIT 10
+        ORDER BY start_station_name, starttime
+  forecast-sum-by-day-overall:
+    kind: bigquery-sql
+    source: bq-query-project
+    description: Use this tool to get overall daily totals with forecasts
+    statement: |
+        WITH history AS (
+          SELECT
+            EXTRACT(DATE FROM starttime) AS starttime,
+            COUNT(*) AS num_trips
+          FROM `bigquery-public-data.new_york.citibike_trips`
+          GROUP BY starttime
+          ORDER BY starttime
+        )
+        SELECT *
+        FROM (
+          (SELECT *, 'history' as type, Null as pred_low, Null as pred_high FROM history)
+          UNION ALL
+          (
+            SELECT
+              EXTRACT(DATE FROM forecast_timestamp) as starttime,
+              forecast_value as num_trips,
+              'forecast' as type,
+              prediction_interval_lower_bound as pred_low,
+              prediction_interval_upper_bound as pred_high
+            FROM AI.FORECAST(
+              (SELECT * FROM history),
+              data_col=> 'num_trips',
+              timestamp_col => 'starttime',
+              model => 'TimesFM 2.0',
+              horizon => 90,
+              confidence_level => .95
+            )
+          )
+        )
+        ORDER BY starttime
+  forecast-sum-by-day-stations:
+    kind: bigquery-sql
+    source: bq-query-project
+    description: Use this tool to get daily totals for bike stations with forecasts
+    parameters:
+      - name: locator
+        type: string
+        description: Part of a start_station_name value, a wildcard
+    statement: |
+        WITH history AS (
+          SELECT
+            start_station_name,
+            EXTRACT(DATE FROM starttime) AS starttime,
+            COUNT(*) AS num_trips
+          FROM `bigquery-public-data.new_york.citibike_trips`
+          WHERE LOWER(start_station_name) LIKE LOWER(CONCAT('%',@locator,'%'))
+          GROUP BY start_station_name, starttime
+          ORDER BY start_station_name, starttime
+        )
+        SELECT *
+        FROM (
+          (SELECT *, 'history' as type, Null as pred_low, Null as pred_high FROM history)
+          UNION ALL
+          (
+            SELECT
+              start_station_name,
+              EXTRACT(DATE FROM forecast_timestamp) as starttime,
+              forecast_value as num_trips,
+              'forecast' as type,
+              prediction_interval_lower_bound as pred_low,
+              prediction_interval_upper_bound as pred_high
+            FROM AI.FORECAST(
+              (SELECT * FROM history),
+              data_col=> 'num_trips',
+              timestamp_col => 'starttime',
+              model => 'TimesFM 2.0',
+              id_cols => ['start_station_name'],
+              horizon => 90,
+              confidence_level => .95
+            )
+          )
+        )
+        ORDER BY start_station_name, starttime
