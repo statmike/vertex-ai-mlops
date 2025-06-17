@@ -37,4 +37,6 @@ This folder contains solution prototypes that integrate multiple aspects of Appl
       - Automate document processing using BigQuery Object Tables.
     - **Agentic Workflow:**
       - Create an agentic workflow using the Google ADK including deployment to Vertex AI Agent Engine and example of application integration.
+- [Time Series](./time-series/readme.md)
+  - Users interact with agents built with ADK the select MCP tools and retrieve results from BigQuery and present interactive charts
 

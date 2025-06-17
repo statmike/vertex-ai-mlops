@@ -18,7 +18,7 @@ async def process_toolbox_output(
     agent_name = tool_context.agent_name
     response = tool_response #.get("result", "")
 
-    if tool.name in ['sum-by-day-overall', 'sum-by-day-stations', 'forcast-sum-by-day-overall', 'forecast-sum-by-day-stations']:
+    if tool.name in ['sum-by-day-overall', 'sum-by-day-stations', 'forecast-sum-by-day-overall', 'forecast-sum-by-day-stations']:
 
         # save the tool response as an artifact specific to the tool
         artifact_key = f'response-from-{tool.name}'

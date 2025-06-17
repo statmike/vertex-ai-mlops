@@ -23,6 +23,7 @@ chmod +x toolbox
 Start the MCP server locally on port 7000:
 
 ```bash
+cd 'Applied ML/Solution Prototypes/time-series'
 ~/toolbox --tools-file="./mcp/tools.yaml" --port 7000
 ```
 
