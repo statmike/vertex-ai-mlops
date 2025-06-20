@@ -15,6 +15,15 @@
 a helpful codelab: https://codelabs.developers.google.com/travel-agent-mcp-toolbox-adk#0
 
 
+Todo:
+- add environment setup
+- mcp setup
+- adk setup
+- mcp tools
+- adk agents
+- plot relationships
+- how to run
+
 ## MCP Toolbox for Databases
 
 A solution that makes connecting to, authorizing to, and querying data simple!
