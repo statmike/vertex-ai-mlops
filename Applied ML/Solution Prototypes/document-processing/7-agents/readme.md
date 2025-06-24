@@ -46,7 +46,10 @@ This project uses a Python environment.  You can replicate the exact environment
 
 > **Note:** This code does assume you have [git](https://github.com/git-guides/install-git) installed and relies on having installed the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install) and [initialized](https://cloud.google.com/sdk/docs/initializing) it with `gcloud init`.
 
-```
+```bash
+# 0. change to the directory where you want to store the git repository:
+cd ~/repos # change to your preference
+
 # 1. Clone the repository
 git clone https://github.com/statmike/vertex-ai-mlops.git
 
@@ -76,7 +79,7 @@ cd document_agent
 
 To test this agent you can use the `adk web` command from inside the `document_agent` folder.  
 
-```
+```bash
 # 8. Run the ADK web interface
 adk web
 ```
