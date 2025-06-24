@@ -33,7 +33,7 @@
 ---
 # Time Series Chat
 
-a helpful codelab: https://codelabs.developers.google.com/travel-agent-mcp-toolbox-adk#0
+
 
 
 
@@ -177,6 +177,13 @@ Some example questions:
 Example results:
 
 Question 1 will trigger the tool for visualizing the overall daily totals from the past:
+<div style="text-align: center;">
+  <img src="./resources/overall.gif" style="border: 2px solid black; width: auto; height: 600px;">
+  <a href="./resources/plot-from-response-from-sum-by-day-overall.html" target="_blank" rel="noopener noreferrer">
+    <p style="margin-top: 12px; font-size: 0.9em; font-style: italic;">Right-Click and open in new tab for interactive view</p>
+  </a>
+</div>
+
 
 
 
@@ -230,3 +237,4 @@ Todo:
 - how to run
 
 
+a helpful codelab: https://codelabs.developers.google.com/travel-agent-mcp-toolbox-adk#0
