@@ -193,7 +193,7 @@ Question 2 will trigger the tool for visualizing the station level daily totals 
 Question 3 will trigger the tool for visualizing the station level daily totals with forecast for the stations where the name includes 'Central Park':
 <div style="text-align: center;">
   <img src="./resources/stations_forecast.gif" style="border: 2px solid black; width: auto; height: 600px;">
-  <a href="./resources/plot-from-response-from-forecast-sum-by-day-stations.html" target="_blank" rel="noopener noreferrer">
+  <a href="https://htmlpreview.github.io/?https://github.com/statmike/vertex-ai-mlops/Applied%20ML/Solution%20Prototypes/time-series/resources/plot-from-response-from-forecast-sum-by-day-stations.html" target="_blank" rel="noopener noreferrer">
     <p style="margin-top: 12px; font-size: 0.9em; font-style: italic; text-aign: center;">Right-Click and open in new tab for interactive view</p>
   </a>
 </div><br><br>
