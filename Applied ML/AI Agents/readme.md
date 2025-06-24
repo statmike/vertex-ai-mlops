@@ -77,3 +77,9 @@ Sometimes agents need to interact across boundaries (departments, companies, net
   - Classify the document based on warehouse of known vendors
   - Compare a document to the classified or any other vendors template
 
+[Time Series Forecasting Agent](../Solution%20Prototypes/time-series/readme.md)
+- An agent that use MCP Toolbox for database to retrieve data, context, from BigQuery
+- Multiple tools that retrieve history of daily demand and can also use `AI.FORECAST` to create on-demand forecast for daily demand going forward
+- The agent also has tools the prepare the data in interactive visuals
+
+
