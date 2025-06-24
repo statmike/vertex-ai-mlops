@@ -179,21 +179,21 @@ Example results:
 Question 1 will trigger the tool for visualizing the overall daily totals from the past:
 <div style="text-align: center;">
   <img src="./resources/overall.gif" style="border: 2px solid black; width: auto; height: 600px;">
-  <a href="./resources/plot-from-response-from-sum-by-day-overall.html" target="_blank" rel="noopener noreferrer">
+  <a href="https://htmlpreview.github.io/?https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20ML/Solution%20Prototypes/time-series/resources/plot-from-response-from-sum-by-day-overall.html" target="_blank" rel="noopener noreferrer">
     <p style="margin-top: 12px; font-size: 0.9em; font-style: italic; text-aign: center;">Right-Click and open in new tab for interactive view</p>
   </a>
 </div><br><br>
 Question 2 will trigger the tool for visualizing the station level daily totals from the past for the subset of stations where the name includes '72 St':
 <div style="text-align: center;">
   <img src="./resources/stations.gif" style="border: 2px solid black; width: auto; height: 600px;">
-  <a href="./resources/plot-from-response-from-sum-by-day-stations.html" target="_blank" rel="noopener noreferrer">
+  <a href="https://htmlpreview.github.io/?https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20ML/Solution%20Prototypes/time-series/resources/plot-from-response-from-sum-by-day-stations.html" target="_blank" rel="noopener noreferrer">
     <p style="margin-top: 12px; font-size: 0.9em; font-style: italic; text-aign: center;">Right-Click and open in new tab for interactive view</p>
   </a>
 </div><br><br>
 Question 3 will trigger the tool for visualizing the station level daily totals with forecast for the stations where the name includes 'Central Park':
 <div style="text-align: center;">
   <img src="./resources/stations_forecast.gif" style="border: 2px solid black; width: auto; height: 600px;">
-  <a href="https://htmlpreview.github.io/?https://github.com/statmike/vertex-ai-mlops/Applied%20ML/Solution%20Prototypes/time-series/resources/plot-from-response-from-forecast-sum-by-day-stations.html" target="_blank" rel="noopener noreferrer">
+  <a href="https://htmlpreview.github.io/?https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20ML/Solution%20Prototypes/time-series/resources/plot-from-response-from-forecast-sum-by-day-stations.html" target="_blank" rel="noopener noreferrer">
     <p style="margin-top: 12px; font-size: 0.9em; font-style: italic; text-aign: center;">Right-Click and open in new tab for interactive view</p>
   </a>
 </div><br><br>
