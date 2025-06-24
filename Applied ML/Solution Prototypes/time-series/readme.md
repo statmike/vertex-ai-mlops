@@ -36,18 +36,16 @@
 a helpful codelab: https://codelabs.developers.google.com/travel-agent-mcp-toolbox-adk#0
 
 
-Todo:
-- add environment setup
-- mcp setup
-- adk setup
-- mcp tools
-- adk agents
-- plot relationships
-- how to run
 
-## MCP Toolbox for Databases
 
-A solution that makes connecting to, authorizing to, and querying data simple!
+---
+## Environment Setup
+
+Install the prerequisite tools and setup the Python environment.
+
+### MCP Toolbox For Databases
+
+This is a solution that makes connecting to, authorizing to, and querying data simple!
 
 Install [MCP Toolbox for Databases](https://googleapis.github.io/genai-toolbox/getting-started/introduction/).  I prefer to do this once in the home folder and reuse the toolbox for all projects during development.
 
@@ -60,9 +58,48 @@ chmod +x toolbox
 ./toolbox --version
 ```
 
-### Test The MCP Toolbox Server
+### Python Enviornment
 
-Start the MCP server locally on port 7000:
+This project uses a Python environment.  You can replicate the exact environment with `pyenv` and the `venv` library (included in Python >= 3.3):
+
+> **Note:** This code does assume you have [git](https://github.com/git-guides/install-git) installed and relies on having installed the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install) and [initialized](https://cloud.google.com/sdk/docs/initializing) it with `gcloud init`.
+
+```bash
+# 0. change to the directory where you want to store the git repository:
+cd ~/repos # change to your preference
+
+# 1. Clone the repository
+git clone https://github.com/statmike/vertex-ai-mlops.git
+
+# 2. Change into the cloned repository directory
+cd 'vertex-ai-mlops/Applied ML/Solution Prototypes/time-series'
+
+# 3. Set up the Python environment using pyenv
+# (Install Python 3.13.3 if you don't have it)
+pyenv install 3.13.3
+# (Set Python 3.13.3 as the local version for this project)
+pyenv local 3.13.3
+
+# 4. Create a virtual environment
+python -m venv .venv
+
+# 5. Activate the virtual environment
+source .venv/bin/activate
+
+# 6. Install the required Python packages
+pip install -r requirements.txt
+```
+
+---
+## Running The Agent
+
+Running the agent requires first running the MCP Toolbox Server, locally in this case, and then starting the ADK test UI, also locally.
+
+### Start The MCP Toolbox Server
+
+Use a new terminal window to start the MCP server locally on port 7000.  
+
+> **Note:** The Python `venv` is not needed for toolbox to run.
 
 ```bash
 cd 'Applied ML/Solution Prototypes/time-series'
@@ -75,18 +112,106 @@ A futher check is reviewing the hosted toolsets on the server that were loaded f
 
 ```json
 {
-    "serverVersion": "0.7.0+binary.linux.amd64.714d990c34ee990e268fac1aa6b89c4883ae5023",
-    "tools": {
-        "sum-by-day": {
-            "description": "Use this tool to get daily totals for bike stations",
-            "parameters": [],
-            "authRequired": []
+  "serverVersion": "0.7.0+binary.linux.amd64.714d990c34ee990e268fac1aa6b89c4883ae5023",
+  "tools": {
+    "forecast-sum-by-day-overall": {
+      "description": "Use this tool to get overall daily totals with forecasts",
+      "parameters": [],
+      "authRequired": []
+    },
+    "forecast-sum-by-day-stations": {
+      "description": "Use this tool to get daily totals for bike stations with forecasts",
+      "parameters": [
+        {
+          "name": "locator",
+          "type": "string",
+          "description": "Part of a start_station_name value, a wildcard",
+          "authSources": []
         }
+      ],
+      "authRequired": []
+    },
+    "sum-by-day-overall": {
+      "description": "Use this tool to get overall daily totals",
+      "parameters": [],
+      "authRequired": []
+    },
+    "sum-by-day-stations": {
+      "description": "Use this tool to get daily totals for bike stations",
+      "parameters": [
+        {
+          "name": "locator",
+          "type": "string",
+          "description": "Part of a start_station_name value, a wildcard",
+          "authSources": []
+        }
+      ],
+      "authRequired": []
     }
+  }
 }
 ```
 
-Stop the local server with `ctrl+c`.
+When done, **but not yet**, you can stop the local server with `ctrl+c`.
+
+### Run The Agents Locally With A Test UI
+
+To test this agent you can use the `adk web` command from inside the `time-series` folder. 
+
+```bash
+# 7. Run the ADK web interface
+adk web
+```
+
+This will start the test user interface and you can `ctrl+click` on the `http://localhost:8000` address.
+
+Stop the service with `ctrl+c` in the terminal.
+
+### Example Questions
+
+Some example questions:
+1.  What are the recent daily totals?
+2.  What are the numer like for stations along 72 st?
+3.  What are the expected values for stations near central park?
+
+Example results:
+
+Question 1 will trigger the tool for visualizing the overall daily totals from the past:
+
+
+
+<div align="center">
+  <p>Question 1 will trigger the tool for visualizing the overall daily totals from the past:</p>
+  <a href="./resources/plot-from-response-from-sum-by-day-overall.html" target="_blank" rel="noopener noreferrer">
+  <p style="margin-top: 12px; font-size: 0.9em; font-style: italic;">Right-Click and open in new tab for interactive view</p>
+  <img src="./resources/overall.gif" alt="Interactive View" width="80%">  
+  </a>
+</div>
+<br><br>
+<div align="center">
+  <p>Question 2 will trigger the tool for visualizing the station level daily totals from the past for the subset of stations where the name includes '72 St':</p>
+  <a href="./resources/plot-from-response-from-sum-by-day-stations.html" target="_blank" rel="noopener noreferrer">
+  <p style="margin-top: 12px; font-size: 0.9em; font-style: italic;">Right-Click and open in new tab for interactive view</p>
+  <img src="./resources/stations.gif" alt="Interactive View" width="80%">  
+  </a>
+</div>
+<br><br>
+<div align="center">
+  <p>Question 3 will trigger the tool for visualizing the station level daily totals with forecast for the stations where the name includes 'Central Park':</p>
+  <a href="./resources/plot-from-response-from-forecast-sum-by-day-stations.html" target="_blank" rel="noopener noreferrer">
+  <p style="margin-top: 12px; font-size: 0.9em; font-style: italic;">Right-Click and open in new tab for interactive view</p>
+  <img src="./resources/stations_forecast.gif" alt="Interactive View" width="80%">  
+  </a>
+</div>
+
+
+
+
+
+
+
+---
+Thoughts to include later:
 
 other uses: 
 - MCP Inspector: https://googleapis.github.io/genai-toolbox/how-to/connect_via_mcp/#using-the-mcp-inspector-with-toolbox
@@ -94,21 +219,14 @@ other uses:
   - Like BQ: https://cloud.google.com/bigquery/docs/pre-built-tools-with-mcp-toolbox#configure-your-mcp-client
   - Full List: https://googleapis.github.io/genai-toolbox/how-to/connect-ide/
 
----
-## Local Environment Setup
 
-Start my initializing the Python environment for the ADK agents to utilize locally.
-
-```bash
-cd 'Applied ML/Solution Prototypes/time-series'
-pyenv local 3.13.3
-python -m venv .venv
-pip install -r requirements.txt
-```
-
-Start local testing with `adk web` and open the test UI in a browser at `http://localhost:8000`.
-
-Stop the service with `ctrl+c`.
-
+Todo:
+- add environment setup
+- mcp setup
+- adk setup
+- mcp tools
+- adk agents
+- plot relationships
+- how to run
 
 
