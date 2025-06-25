@@ -68,18 +68,28 @@ This is made easier by the Google [Agent Development Kit (ADK)](https://google.g
 
 Sometimes agents need to interact across boundaries (departments, companies, networks). The need for a standard protocol for agent-to-agent communication is met by the [A2A protocol](https://google.github.io/A2A/#/?id=unlock-collaborative-agent-to-agent-scenarios-with-a-new-open-protocol).
 
-## Examples In This Repository
+## Solution Based Workflows In This Repository
+
+The [Solution Prototypes](../Solution%20Prototypes/readme.md) folder has examples that cover full user workflows that incorporate multiple GCP services. Here are some example that can be found over there: 
 
 [Document Processing Agent](../Solution%20Prototypes/document-processing/7-agents/readme.md)
-- Provide upload files or GCS URI to load documents (PNG or PDF)
+- Upload files or provide GCS URI to load documents (PNG or PDF)
 - Agent can:
+  - Redact Content
   - Extract Content
   - Classify the document based on warehouse of known vendors
-  - Compare a document to the classified or any other vendors template
+    - First based on document similarity to known vendors document
+    - Then, if needed, with a predictive classification model training on known good documents
+  - Compare a document to the classified vendor or any other vendors template
+    - Get a side-by-side view along with list of different detected by a model
 
 [Time Series Forecasting Agent](../Solution%20Prototypes/time-series/readme.md)
-- An agent that use MCP Toolbox for database to retrieve data, context, from BigQuery
-- Multiple tools that retrieve history of daily demand and can also use `AI.FORECAST` to create on-demand forecast for daily demand going forward
-- The agent also has tools the prepare the data in interactive visuals
+- An agent that uses MCP Toolbox for databases to retrieve data, context, from BigQuery
+  - Multiple tools that retrieve history of daily demand and can also use `AI.FORECAST` to create on-demand forecast for daily demand going forward
+  - The agent also has tools the prepare the data in interactive visuals
+
+## Example Concepts In This Folder
+
+This folder has examples based on core functionality of agents interacting with GCP services.  These are meant to help learn and explore core concepts.
 
 
