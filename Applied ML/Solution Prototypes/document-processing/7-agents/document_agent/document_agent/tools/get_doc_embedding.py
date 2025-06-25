@@ -10,7 +10,7 @@ async def get_doc_embedding(artifact_key: str, tool_context: tools.ToolContext) 
     Stores the embedding vector in the context with key 'document_embedding'.
 
     Args:
-        artifact_key: The key of the artifact previously loaded by get_gcs_file.
+        artifact_key: The key of the artifact previously loaded by the user as document upload or a gcs path.
         tool_context: The execution context for the tool.
 
     Returns:
