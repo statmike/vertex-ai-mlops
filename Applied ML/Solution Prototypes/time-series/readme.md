@@ -33,6 +33,8 @@
 ---
 # Time Series Chat
 
+Answer users questions about data, time series data, that is stored in Google BigQuery.  This agent example interacts with tools setup with the MCP Toolbox for Databases to query BigQuery and returns data related to the users questions to the agent.  A term for this is agentic retrieval.  
+
 
 
 
