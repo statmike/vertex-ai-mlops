@@ -65,7 +65,7 @@ pip install -r requirements.txt
 
 Running the agent requires first running the MCP Toolbox Server, locally in this case, and then starting the ADK test UI, also locally.
 
-### Start The MCP Toolbox Server
+### 1 - Start The MCP Toolbox Server
 
 Use a new terminal window to start the MCP server locally on port 7000.  
 
@@ -82,7 +82,7 @@ A futher check is reviewing the hosted toolsets on the server that were loaded f
 
 When done, **but not yet**, you can stop the local server with `ctrl+c`.
 
-### Run The Agents Locally With A Test UI
+### 2 - Run The Agents Locally With A Test UI
 
 To test this agent you can use the `adk web` command from inside the `concept-bq` folder. 
 
@@ -93,7 +93,7 @@ adk web
 
 This will start the test user interface and you can `ctrl+click` on the `http://localhost:8000` address.
 
-Stop the service with `ctrl+c` in the terminal.
+When finished, stop the service with `ctrl+c` in the terminal.
 
 ### Example Questions
 
