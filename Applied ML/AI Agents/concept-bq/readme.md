@@ -139,9 +139,11 @@ Some example questions:
 These trigger the funtion tools:
 1.  What years had the most hurricanes?
 2.  How many hurricanes were in 2015?
+
 These trigger the MCP Toolbox tools `bigquery-sql`
 3.  What were the biggest hurricanes by wind speed?
 4.  What was the biggest hurricane by wind speed in 2015?
+
 These force the dynamic creation of SQL and execute it with MCP Toolbox tools `bigquery-execute-sql`
 5. What was the last hurricane of 2008?
 6. What was the first hurricane of the 2009 year in the North Atlantic Basin?
