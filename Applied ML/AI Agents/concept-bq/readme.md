@@ -1,12 +1,17 @@
 # Concept: Agentic Retrieval With BigQuery
 
-This ADK agent concept shows tools that interact with Google BigQuery using different methods to execute pre-defined SQL, parameterized SQL, and LLM generated SQL (leverging table metadata as context):
+This project demonstrates how an ADK agent can interact with Google BigQuery using three distinct methods: executing pre-defined SQL, using parameterized SQL queries, and leveraging an LLM to dynamically generate SQL based on table metadata.
 
-- Custom Tools, called Function Tools, to **execute pre-defined SQL**
-- MCP Toolbox for Databases
-    - Uses [kind: bigquery_sql](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-sql/) to **execute pre-defined SQL**. Can **include parameters** for dynamic queries.
-    - Uses [kind: bigquery-execute-sql](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-sql/) to **execute LLM generated SQL** as input. 
-      - Also incorporate: [kind: bigqueryget-table-info](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-get-table-info/) to retrieve table metadata to help with LLM query writing.
+> **Why do this?** Retrieving context for an LLM goes beyond standard retrieval-augmented generation (RAG) and semantic search. With **agentic retrieval**, the LLM gets access to tools (via function calling) that allow it to translate a user's request directly into a structured query. This enables the agent to filter, aggregate, and transform data during retrieval and unlocks real-time access to operational databases that are constantly changing.
+
+The agent uses a combination of custom Python tools and the MCP Toolbox for Databases:
+
+- **Custom Python Tools:**
+  - Used to execute simple, pre-defined SQL queries.
+- **MCP Toolbox for Databases:**
+  - [kind: bigquery_sql](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-sql/): Executes pre-defined SQL statements that can include parameters for dynamic filtering.
+  - [kind: bigquery-execute-sql](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-sql/): Executes an LLM-generated SQL query.
+  - [kind: bigqueryget-table-info](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-get-table-info/): Retrieves table metadata, which is provided to the LLM as context to help it write accurate SQL queries.
 
 ---
 ## Environment Setup
