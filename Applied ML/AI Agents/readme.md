@@ -92,4 +92,7 @@ The [Solution Prototypes](../Solution%20Prototypes/readme.md) folder has example
 
 This folder has examples based on core functionality of agents interacting with GCP services.  These are meant to help learn and explore core concepts.
 
+- [Agentic Retrieval with BigQuery](./concept-bq/readme.md)
+  - Use tools to retrieval contectual data from Google BigQuery
+  - This exampel shows multiple ways of using and creating tools that execute SQL to retrieve data from BigQuery
 

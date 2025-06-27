@@ -1,0 +1,70 @@
+toolsets:
+  bq-concept:
+    - hurricane-wind-speed
+    - hurricane-wind-speed-filtered
+  bq-dynamic:
+    - execute_sql_tool
+    - bigquery_get_dataset_info
+    - bigquery_get_table_info
+sources:
+  bq-query-project:
+    kind: bigquery
+    project: statmike-mlops-349915
+    location: us
+tools:
+  execute_sql_tool:
+    kind: bigquery-execute-sql
+    source: bq-query-project
+    description: This tool execute SQL in BigQuery
+  bigquery_get_dataset_info:
+    kind: bigquery-get-dataset-info
+    source: bq-query-project
+    description: Use this tool to get dataset metadata.
+  bigquery_get_table_info:
+    kind: bigquery-get-table-info
+    source: bq-query-project
+    description: Use this tool to get table metadata.
+  hurricane-wind-speed:
+    kind: bigquery-sql
+    source: bq-query-project
+    description: Use this tool to get list of hurricanes with highest wind speeds
+    statement: |
+      SELECT
+        ANY_VALUE(name) AS name,
+        EXTRACT(YEAR FROM iso_time) AS report_year,
+        MAX(usa_wind) AS max_wind_knots
+      FROM `bigquery-public-data.noaa_hurricanes.hurricanes`
+      WHERE
+        iso_time IS NOT NULL
+        AND basin = 'NA' -- North Atlantic Basin
+        AND usa_wind IS NOT NULL
+      GROUP BY sid, report_year
+      ORDER BY max_wind_knots DESC
+      LIMIT 15
+  hurricane-wind-speed-filtered:
+    kind: bigquery-sql
+    source: bq-query-project
+    description: |
+      Use this tool to get list of hurricanes with highest wind speeds in filtered range of year and minimum threshold wind speed in max_wind_knots.
+      Example:
+      {{
+          "year": 2000
+      }}
+    parameters:
+      - name: year
+        type: integer
+        description: the 4 digit year for the filter
+    statement: |
+      SELECT
+        ANY_VALUE(name) AS name,
+        EXTRACT(YEAR FROM iso_time) AS report_year,
+        MAX(usa_wind) AS max_wind_knots
+      FROM `bigquery-public-data.noaa_hurricanes.hurricanes`
+      WHERE
+        iso_time IS NOT NULL
+        AND basin = 'NA' -- North Atlantic Basin
+        AND usa_wind IS NOT NULL
+        AND EXTRACT(YEAR FROM iso_time) = @year
+      GROUP BY sid, report_year
+      ORDER BY max_wind_knots DESC
+      LIMIT 15
