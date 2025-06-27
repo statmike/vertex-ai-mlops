@@ -122,6 +122,8 @@ When done, **but not yet**, you can stop the local server with `ctrl+c`.
 
 ### 2 - Run The Agents Locally With A Test UI
 
+Edit the `.env` file to include the name of your GCP project.
+
 To test this agent you can use the `adk web` command from inside the `concept-bq` folder. 
 
 ```bash
