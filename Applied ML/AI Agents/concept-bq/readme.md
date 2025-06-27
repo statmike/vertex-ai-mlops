@@ -33,11 +33,11 @@
 ---
 # Concept: Agentic Retrieval With BigQuery
 
-This project demonstrates how an ADK agent can interact with Google BigQuery using three distinct methods: executing pre-defined SQL, using parameterized SQL queries, and leveraging an LLM to dynamically generate SQL based on table metadata.
+This project demonstrates how an [ADK](https://google.github.io/adk-docs/) agent can interact with Google BigQuery using three distinct methods: executing pre-defined SQL, using parameterized SQL queries, and leveraging an LLM to dynamically generate SQL based on table metadata.
 
 > **Why do this?** Retrieving context for an LLM goes beyond standard retrieval-augmented generation (RAG) and semantic search. With **agentic retrieval**, the LLM gets access to tools (via function calling) that allow it to translate a user's request directly into a structured query. This enables the agent to filter, aggregate, and transform data during retrieval and unlocks real-time access to operational databases that are constantly changing.
 
-The agent uses a combination of custom Python tools and the MCP Toolbox for Databases:
+The agent uses a combination of [function tools](https://google.github.io/adk-docs/tools/function-tools/) (custom Python tools) and the [MCP Toolbox for Databases](https://googleapis.github.io/genai-toolbox/getting-started/introduction/):
 
 - **Custom Python Tools:**
   - Used to execute simple, pre-defined SQL queries.
