@@ -4,25 +4,23 @@ toolsets:
     - hurricane-wind-speed-filtered
   bq-dynamic:
     - execute_sql_tool
-    - bigquery_get_dataset_info
     - bigquery_get_table_info
 sources:
   bq-query-project:
     kind: bigquery
     project: statmike-mlops-349915
     location: us
+  bq-query-source:
+    kind: bigquery
+    project: bigquery-public-data
 tools:
   execute_sql_tool:
     kind: bigquery-execute-sql
     source: bq-query-project
     description: This tool execute SQL in BigQuery
-  bigquery_get_dataset_info:
-    kind: bigquery-get-dataset-info
-    source: bq-query-project
-    description: Use this tool to get dataset metadata.
   bigquery_get_table_info:
     kind: bigquery-get-table-info
-    source: bq-query-project
+    source: bq-query-source
     description: Use this tool to get table metadata.
   hurricane-wind-speed:
     kind: bigquery-sql

@@ -1,10 +1,12 @@
 # Concept: Agentic Retrieval With BigQuery
 
-This ADK agent concept shows tools that interact with Google BigQuery using different methods:
+This ADK agent concept shows tools that interact with Google BigQuery using different methods to execute pre-defined SQL, parameterized SQL, and LLM generated SQL (leverging table metadata as context):
+
+- Custom Tools, called Function Tools, to **execute pre-defined SQL**
 - MCP Toolbox for Databases
-- Tools included with the SDK
-- Custom Tools, called Function Tools
-- More to come...
+    - Uses [kind: bigquery_sql](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-sql/) to **execute pre-defined SQL**. Can **include parameters** for dynamic queries.
+    - Uses [kind: bigquery-execute-sql](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-sql/) to **execute LLM generated SQL** as input. 
+      - Also incorporate: [kind: bigqueryget-table-info](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-get-table-info/) to retrieve table metadata to help with LLM query writing.
 
 ---
 ## Environment Setup
@@ -76,13 +78,7 @@ cd 'Applied ML/AI Agents/concept-bq'
 
 Check the server by using a browser and going to `http://localhost:7000/`.  You should see 'Hello, World!'.
 
-A futher check is reviewing the hosted toolsets on the server that were loaded form this project by going to `http://localhost:7000/api/toolset`.  You should see:
-
-```json
-{
-
-}
-```
+A futher check is reviewing the hosted toolsets on the server that were loaded form this project by going to `http://localhost:7000/api/toolset`.  You should see JSON formatted specs for the tools defined in the `tools.yaml` file.
 
 When done, **but not yet**, you can stop the local server with `ctrl+c`.
 
@@ -109,5 +105,6 @@ These trigger the MCP Toolbox tools `bigquery-sql`
 3.  What were the biggest hurricanes by wind speed?
 4.  What was the biggest hurricane by wind speed in 2015?
 These force the dynamic creation of SQL and execute it with MCP Toolbox tools `bigquery-execute-sql`
-5. here
-6. here
+5. What was the last hurricane of 2008?
+6. What was the first hurricane of the 2009 year in the North Atlantic Basin?
+7. What was the last hurricane of 2008 in the North Atlantic Basin?
