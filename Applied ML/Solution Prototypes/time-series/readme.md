@@ -33,12 +33,7 @@
 ---
 # Time Series Chat
 
-Answer users questions about data, time series data, that is stored in Google BigQuery.  This agent example interacts with tools setup with the MCP Toolbox for Databases to query BigQuery and returns data related to the users questions to the agent.  A term for this is agentic retrieval.  
-
-
-
-
-
+Answer users questions about data, time series data, that is stored in Google BigQuery.  This agent example interacts with tools setup with the MCP Toolbox for Databases to query BigQuery and returns data related to the users questions to the agent.  A term for this is agentic retrieval.  The results of the tool are passed to a Function tool that include Python code to create an interative visual for the data that is them passed to the user as a response.
 
 ---
 ## Environment Setup
@@ -157,6 +152,8 @@ A futher check is reviewing the hosted toolsets on the server that were loaded f
 When done, **but not yet**, you can stop the local server with `ctrl+c`.
 
 ### Run The Agents Locally With A Test UI
+
+Edit the `.env` file to include the name of your GCP project.
 
 To test this agent you can use the `adk web` command from inside the `time-series` folder. 
 
