@@ -37,7 +37,7 @@ This project demonstrates how an [ADK](https://google.github.io/adk-docs/) agent
 
 > **Why do this?** Retrieving context for an LLM goes beyond standard retrieval-augmented generation (RAG) and semantic search. With **agentic retrieval**, the LLM gets access to tools (via function calling) that allow it to translate a user's request directly into a structured query. This enables the agent to filter, aggregate, and transform data during retrieval and unlocks real-time access to operational databases that are constantly changing.
 
-The agent uses a combination of [function tools](https://google.github.io/adk-docs/tools/function-tools/) (custom Python tools) and the [MCP Toolbox for Databases](https://googleapis.github.io/genai-toolbox/getting-started/introduction/):
+The agent uses a combination of [function tools](https://google.github.io/adk-docs/tools/function-tools/) (custom Python tools), the [built-in tools for BigQuery](https://google.github.io/adk-docs/tools/built-in-tools/#bigquery), and the [MCP Toolbox for Databases](https://googleapis.github.io/genai-toolbox/getting-started/introduction/):
 
 - **Custom Python Tools:**
   - Used to execute simple, pre-defined SQL queries.
@@ -45,6 +45,8 @@ The agent uses a combination of [function tools](https://google.github.io/adk-do
   - [kind: bigquery_sql](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-sql/): Executes pre-defined SQL statements that can include parameters for dynamic filtering.
   - [kind: bigquery-execute-sql](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-sql/): Executes an LLM-generated SQL query.
   - [kind: bigqueryget-table-info](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-get-table-info/): Retrieves table metadata, which is provided to the LLM as context to help it write accurate SQL queries.
+- **Built-in tools for BigQuery:**
+  - Built-in tools used to interact with BigQuery that fetch metadata and execute SQL queries.
 
 ---
 ## Environment Setup
@@ -150,3 +152,10 @@ These force the dynamic creation of SQL and execute it with MCP Toolbox tools `b
 5. What was the last hurricane of 2008?
 6. What was the first hurricane of the 2009 year in the North Atlantic Basin?
 7. What was the last hurricane of 2008 in the North Atlantic Basin?
+
+These trigger the more general sub-agent that uses built-in BigQuery tools to find tables and generate SQl to answer the users questions:
+8. Are there any weather datasets other than hurricanes?
+9. What does the tsunami dataset have?
+10. Do Tsunami's have names and seasons/years?
+11. How many tsunamis across what date range is information available for?
+12. How many records are from BC years?
