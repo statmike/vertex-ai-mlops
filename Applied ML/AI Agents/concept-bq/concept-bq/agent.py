@@ -15,12 +15,15 @@ MCP_TOOLS_PREDEFINED = toolbox_client.load_toolset('bq-concept')
 MCP_TOOLS_DYNAMIC = toolbox_client.load_toolset('bq-dynamic')
 
 # Built-in Tools
-import google.auth
-application_default_credentials, _ = google.auth.default()
+
+# dont need auth for this local testing method which uses the authed user session
+#import google.auth
+#application_default_credentials, _ = google.auth.default()
+#credentials_config = bq_tools.BigQueryCredentialsConfig(credentials = application_default_credentials),
 
 from google.adk.tools import bigquery as bq_tools 
 bq_toolset = bq_tools.BigQueryToolset(
-    credentials_config = bq_tools.BigQueryCredentialsConfig(credentials = application_default_credentials),
+    #credentials_config = credentials_config,
     bigquery_tool_config = bq_tools.config.BigQueryToolConfig(write_mode = bq_tools.config.WriteMode.BLOCKED)
 )
 BUILTIN_BQ_TOOLS = [bq_toolset]
