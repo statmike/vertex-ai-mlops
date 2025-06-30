@@ -145,15 +145,18 @@ These trigger the funtion tools:
 2.  How many hurricanes were in 2015?
 
 These trigger the MCP Toolbox tools `bigquery-sql`
+
 3.  What were the biggest hurricanes by wind speed?
 4.  What was the biggest hurricane by wind speed in 2015?
 
 These force the dynamic creation of SQL and execute it with MCP Toolbox tools `bigquery-execute-sql`
+
 5. What was the last hurricane of 2008?
 6. What was the first hurricane of the 2009 year in the North Atlantic Basin?
 7. What was the last hurricane of 2008 in the North Atlantic Basin?
 
 These trigger the more general sub-agent that uses built-in BigQuery tools to find tables and generate SQl to answer the users questions:
+
 8. Are there any weather datasets other than hurricanes?
 9. What does the tsunami dataset have?
 10. Do Tsunami's have names and seasons/years?

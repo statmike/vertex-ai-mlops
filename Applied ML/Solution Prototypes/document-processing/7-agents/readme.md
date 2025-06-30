@@ -183,3 +183,14 @@ Open the Mesop app at the address reported in the terminal with a `ctrl+click`. 
   <img src="../resources/images/adk/mesop.png" alt="Document Processing App: Mesop" width="80%"/>
 </div>
 
+
+## Example Questions
+
+1. What can you help me with?
+2. Attache one of the created document and add something like: lets use this file
+3. Redact the document first
+4. Now extract the contents
+5. Classify the document
+6. Now compare the doucment to the most likely vendors template
+
+
