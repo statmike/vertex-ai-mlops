@@ -107,8 +107,11 @@ The project uses environment variables defined in the `.env` file.
 3.  Launch the remote agents from their respective directories. Each agent is configured to run on a different port (8001, 8002, 8003, 8004).
 
     `uvicorn a2a_root_agent.remote_a2a.travel_brainstormer_agent.agent:a2a_app1 --host localhost --port 8001`
+
     `uvicorn a2a_root_agent.remote_a2a.attractions_planner_agent.agent:a2a_app2 --host localhost --port 8002`
+
     `uvicorn a2a_root_agent.remote_a2a.travel_history_agent.agent:a2a_app3 --host localhost --port 8003`
+    
     `uvicorn a2a_root_agent.remote_a2a.places_of_interest_agent.agent:a2a_app4 --host localhost --port 8004`
     
 4.  Launch the main `a2a_root_agent` to start the application using `adk web`.
