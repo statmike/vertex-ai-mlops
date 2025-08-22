@@ -111,4 +111,4 @@ The project uses environment variables defined in the `.env` file.
     `uvicorn a2a_root_agent.remote_a2a.travel_history_agent.agent:a2a_app3 --host localhost --port 8003`
     `uvicorn a2a_root_agent.remote_a2a.places_of_interest_agent.agent:a2a_app4 --host localhost --port 8004`
     
-4.  Launch the main `a2a_root_agent` to start the application.
+4.  Launch the main `a2a_root_agent` to start the application using `adk web`.
