@@ -101,6 +101,12 @@ source .venv/bin/activate
 
 # 6. Install the required Python packages
 pip install -r requirements.txt
+
+
+
+
+poetry install --no-root
+poetry run adk web --reload
 ```
 
 ---
@@ -142,8 +148,10 @@ When finished, stop the service with `ctrl+c` in the terminal.
 
 ### Example Questions
 
-Some example questions:
+Some example questions that trigger the different types of tools:
+
 These trigger the funtion tools:
+
 1.  What years had the most hurricanes?
 2.  How many hurricanes were in 2015?
 
@@ -166,3 +174,10 @@ These trigger the more general sub-agent that uses built-in BigQuery tools to fi
 11. How many tsunamis across what date range is information available for?
 12. How many records are from BC years?
 13. Describe one of these based on available data.
+
+
+#git configuration
+git config --list
+git config --global user.name "Mike Henderson"
+git config --global user.email "statmike@gmail.com"
+git config --list
