@@ -163,7 +163,7 @@ To test this agent you can use the `adk web` command from inside the `time-serie
 # 7. Run the ADK web interface
 adk web
 
-poetry run adk web --reload
+poetry run adk web --reload --port 8001
 ```
 
 This will start the test user interface and you can `ctrl+click` on the `http://localhost:8000` address.
