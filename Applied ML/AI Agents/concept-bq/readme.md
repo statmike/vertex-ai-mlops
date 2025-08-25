@@ -60,6 +60,9 @@ This is a solution that makes connecting to, authorizing to, and querying data s
 Install [MCP Toolbox for Databases](https://googleapis.github.io/genai-toolbox/getting-started/introduction/).  I prefer to do this once in the home folder and reuse the toolbox for all projects during development.
 
 ```bash
+# detect the environment OS and Architecture:
+uname -s -m
+
 cd ~
 export OS="linux/amd64" # one of linux/amd64, darwin/arm64, darwin/amd64, or windows/amd64
 curl -O https://storage.googleapis.com/genai-toolbox/v0.7.0/$OS/toolbox
