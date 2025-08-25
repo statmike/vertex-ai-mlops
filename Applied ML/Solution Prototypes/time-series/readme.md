@@ -85,6 +85,8 @@ source .venv/bin/activate
 
 # 6. Install the required Python packages
 pip install -r requirements.txt
+
+poetry install --no-root
 ```
 
 ---
@@ -100,7 +102,7 @@ Use a new terminal window to start the MCP server locally on port 7000.
 
 ```bash
 cd 'Applied ML/Solution Prototypes/time-series'
-~/toolbox --tools-file="./mcp/tools.yaml" --port 7000
+~/toolbox --tools-file="./tools.yaml" --port 7000
 ```
 
 Check the server by using a browser and going to `http://localhost:7000/`.  You should see 'Hello, World!'.
@@ -160,6 +162,8 @@ To test this agent you can use the `adk web` command from inside the `time-serie
 ```bash
 # 7. Run the ADK web interface
 adk web
+
+poetry run adk web --reload
 ```
 
 This will start the test user interface and you can `ctrl+click` on the `http://localhost:8000` address.
@@ -170,7 +174,7 @@ Stop the service with `ctrl+c` in the terminal.
 
 Some example questions:
 1.  What are the recent daily totals?
-2.  What are the numer like for stations along 72 st?
+2.  What are the numbers like for stations along 72 st?
 3.  What are the expected values for stations near central park?
 
 Example results:
