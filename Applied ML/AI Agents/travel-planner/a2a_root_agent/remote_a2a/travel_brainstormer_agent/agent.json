@@ -1,0 +1,17 @@
+{
+  "capabilities": {},
+  "defaultInputModes": ["text/plain"],
+  "defaultOutputModes": ["application/json"],
+  "description": "Agent that handles questions related to travel brainstorming.",
+  "name": "travel_brainstormer_agent",
+  "skills": [
+    {
+      "id": "travel_brainstormer_agent",
+      "name": "Travel Brainstormer",
+      "description": "Agent that handles questions related to travel brainstorming.",
+      "tags": ["Travel", "Trip Planner", "Travel Brainstormer"]
+    }
+  ],
+  "url": "http://localhost:8001/a2a_root_agent/remote_a2a/travel_brainstormer_agent",
+  "version": "1.0.0"
+}

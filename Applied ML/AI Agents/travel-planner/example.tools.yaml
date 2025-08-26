@@ -1,0 +1,25 @@
+toolsets:
+  my_bq_toolset:
+    - search_places
+    - execute_sql_tool
+    - bigquery_get_table_info
+sources:
+  my-bq-source:
+    kind: bigquery
+    project: <your-gcp-project>
+tools:
+  search_places:
+    kind: bigquery-sql
+    source: my-bq-source
+    statement: |
+      SELECT place FROM `<your-gcp-project>.bq_adk_ds.attractions_list`;
+    description: >
+      Use this tool to list the places visited by the user previously.
+  execute_sql_tool:
+    kind: bigquery-execute-sql
+    source: my-bq-source
+    description: This tool execute SQL in BigQuery
+  bigquery_get_table_info:
+    kind: bigquery-get-table-info
+    source: my-bq-source
+    description: Use this tool to get table metadata.

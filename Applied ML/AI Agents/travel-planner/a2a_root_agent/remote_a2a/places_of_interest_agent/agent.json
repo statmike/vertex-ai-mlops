@@ -1,0 +1,17 @@
+{
+  "capabilities": {},
+  "defaultInputModes": ["text/plain"],
+  "defaultOutputModes": ["application/json"],
+  "description": "Agent that handles questions related to attractions planning.",
+  "name": "attractions_planner_agent",
+  "skills": [
+    {
+      "id": "attractions_planner",
+      "name": "Attraction Planner",
+      "description": "Agent that handles questions related to attractions planning.",
+      "tags": ["Travel", "Trip Planner", "Travel Brainstormer"]
+    }
+  ],
+  "url": "http://localhost:8002/a2a_root_agent/remote_a2a/attractions_planner_agent",
+  "version": "1.0.0"
+}
