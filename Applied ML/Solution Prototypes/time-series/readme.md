@@ -141,7 +141,7 @@ Use a new terminal window to start the MCP server locally on port 7000.
 > **Note:** The Python `venv` is not needed for toolbox to run.
 
 ```bash
-cd 'Applied ML/AI Agents/concept-bq'
+# from inside the project folder:
 ~/toolbox --tools-file="./tools.yaml" --port 7000
 ```
 
