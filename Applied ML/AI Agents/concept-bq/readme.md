@@ -89,7 +89,7 @@ Open your terminal and run the following commands to clone the repository and na
 cd ~/repos # Or your preferred location
 
 # Clone the repository from GitHub
-git clone [https://github.com/statmike/vertex-ai-mlops.git](https://github.com/statmike/vertex-ai-mlops.git)
+git clone https://github.com/statmike/vertex-ai-mlops.git
 
 # Change into the correct project sub-directory
 cd 'vertex-ai-mlops/Applied ML/AI Agents/concept-bq'
@@ -171,10 +171,11 @@ Edit the `.env` file to include the name of your GCP project.
 To test this agent you can use the `adk web` command from inside the `concept-bq` folder. 
 
 ```bash
-# Run the ADK web interface with one of:
-# options include:
+# adk web options include:
 #   --reload
 #   --port 8000
+
+# Run the ADK web interface with one of:
 
 # venv:
 adk web --reload
