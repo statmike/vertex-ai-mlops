@@ -53,7 +53,7 @@ The agent uses a combination of [function tools](https://google.github.io/adk-do
 
 Install the prerequisite tools and setup the Python environment.
 
-### MCP Toolbox For Databases
+### 🧰 MCP Toolbox For Databases
 
 This is a solution that makes connecting to, authorizing to, and querying data simple!
 
@@ -63,48 +63,84 @@ Install [MCP Toolbox for Databases](https://googleapis.github.io/genai-toolbox/g
 # detect the environment OS and Architecture:
 uname -s -m
 
+# install in home folder
 cd ~
 export OS="linux/amd64" # one of linux/amd64, darwin/arm64, darwin/amd64, or windows/amd64
 curl -O https://storage.googleapis.com/genai-toolbox/v0.7.0/$OS/toolbox
 
+# make toolbox executable
 chmod +x toolbox
 ./toolbox --version
 ```
 
-### Python Enviornment
+### ⚙️ Python Environment Setup
 
-This project uses a Python environment.  You can replicate the exact environment with [`pyenv`](https://github.com/pyenv/pyenv) and the [`venv`](https://docs.python.org/3/library/venv.html) library (included in Python >= 3.3):
+This guide provides two methods for setting up the Python environment. Follow the "Initial Steps" first, then choose **one** of the two options to install the dependencies.
 
-> **Note:** This code does assume you have [git](https://github.com/git-guides/install-git) installed and relies on having installed the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install) and [initialized](https://cloud.google.com/sdk/docs/initializing) it with `gcloud init`.  This code manages Python environments with `venv` and Python versions with `pyenv`.
+> **Note:** This project requires [Git](https://github.com/git-guides/install-git), the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install) (initialized via `gcloud init`), and [pyenv](https://github.com/pyenv/pyenv) for managing Python versions.
+
+---
+### Initial Steps (Required for both methods)
+
+#### 1. Clone the Repository
+Open your terminal and run the following commands to clone the repository and navigate into the project directory.
+```bash
+# Navigate to the directory where you store your projects
+cd ~/repos # Or your preferred location
+
+# Clone the repository from GitHub
+git clone [https://github.com/statmike/vertex-ai-mlops.git](https://github.com/statmike/vertex-ai-mlops.git)
+
+# Change into the correct project sub-directory
+cd 'vertex-ai-mlops/Applied ML/AI Agents/concept-bq'
+```
+
+#### 2. Set the Python Version
+This project is standardized on Python 3.13.3. Use pyenv to install and activate this version for the project.
 
 ```bash
-# 0. change to the directory where you want to store the git repository:
-cd ~/repos # change to your preference
+# Install Python 3.13.3 if it's not already installed
+pyenv install --skip-existing 3.13.3
 
-# 1. Clone the repository
-git clone https://github.com/statmike/vertex-ai-mlops.git
-
-# 2. Change into the cloned repository directory
-cd 'vertex-ai-mlops/Applied ML/AI Agents/concept-bq'
-
-# 3. Set up the Python environment using pyenv
-# (Install Python 3.13.3 if you don't have it)
-pyenv install 3.13.3
-# (Set Python 3.13.3 as the local version for this project)
+# Set the local Python version for this directory
 pyenv local 3.13.3
+```
 
-# 4. Create a virtual environment
-python -m venv .venv
+#### Install Dependencies (Choose One Option)
+Now, choose your preferred method to install the Python packages.
 
-# 5. Activate the virtual environment
-source .venv/bin/activate
+<details>
+<summary>✅ Option 1: Using Poetry (Recommended)</summary>
 
-# 6. Install the required Python packages
-pip install -r requirements.txt
+This is the simplest method if you have Poetry installed. It uses the poetry.lock file to perfectly replicate the development environment.
 
-
+```bash
+# Install all project dependencies
 poetry install --no-root
 ```
+
+>The `--no-root` flag is used because this project is a collection of scripts and not an installable package itself.
+</details>
+<details>
+<summary>🐍 Option 2: Using `venv` and `pip`</summary>
+
+If you prefer to use Python's built-in tools, you can use `venv` and `pip` with the `requirements.txt` file.
+
+```bash
+# 1. Create a virtual environment folder named .venv
+python -m venv .venv
+
+# 2. Activate the virtual environment
+# On macOS and Linux:
+source .venv/bin/activate
+
+# On Windows (Command Prompt):
+# .venv\Scripts\activate
+
+# 3. Install the required packages from requirements.txt
+pip install -r requirements.txt
+```
+</details>
 
 ---
 ## Running The Agent
@@ -135,8 +171,15 @@ Edit the `.env` file to include the name of your GCP project.
 To test this agent you can use the `adk web` command from inside the `concept-bq` folder. 
 
 ```bash
-# 7. Run the ADK web interface
-adk web
+# Run the ADK web interface with one of:
+# options include:
+#   --reload
+#   --port 8000
+
+# venv:
+adk web --reload
+
+# poetry:
 poetry run adk web --reload
 ```
 
@@ -144,6 +187,7 @@ This will start the test user interface and you can `ctrl+click` on the `http://
 
 When finished, stop the service with `ctrl+c` in the terminal.
 
+---
 ### Example Questions
 
 Some example questions that trigger the different types of tools:
@@ -173,9 +217,3 @@ These trigger the more general sub-agent that uses built-in BigQuery tools to fi
 12. How many records are from BC years?
 13. Describe one of these based on available data.
 
-
-#git configuration
-git config --list
-git config --global user.name "Mike Henderson"
-git config --global user.email "statmike@gmail.com"
-git config --list
