@@ -6,7 +6,7 @@ from a2a.utils.constants import AGENT_CARD_WELL_KNOWN_PATH
 from google.genai import types
 from typing import List
 from google.adk.tools.tool_context import ToolContext
-from prompts import root_agent_prompt
+from .prompts import root_agent_prompt
 
 load_dotenv()
 model_name = os.getenv("MODEL")
