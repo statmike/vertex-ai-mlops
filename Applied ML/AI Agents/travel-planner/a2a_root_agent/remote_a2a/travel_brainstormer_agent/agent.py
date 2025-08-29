@@ -1,10 +1,10 @@
 import os
-from callback_logging import log_query_to_model, log_model_response
+from a2a_root_agent.callback_logging import log_query_to_model, log_model_response
 from dotenv import load_dotenv
 from google.adk import Agent
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
 from toolbox_core import ToolboxSyncClient
-from prompts import travel_brainstormer_prompt
+from a2a_root_agent.prompts import travel_brainstormer_prompt
 
 load_dotenv()
 model_name = os.getenv("MODEL")

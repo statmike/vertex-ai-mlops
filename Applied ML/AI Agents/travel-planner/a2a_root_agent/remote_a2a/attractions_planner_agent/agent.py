@@ -1,11 +1,11 @@
 import os
-from callback_logging import log_query_to_model, log_model_response
+from a2a_root_agent.callback_logging import log_query_to_model, log_model_response
 from dotenv import load_dotenv
 from google.adk.agents import Agent
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
 from typing import List
 from google.adk.tools.tool_context import ToolContext
-from prompts import attractions_planner_prompt
+from a2a_root_agent.prompts import attractions_planner_prompt
 
 
 load_dotenv()

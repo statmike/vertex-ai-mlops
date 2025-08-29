@@ -115,3 +115,17 @@ The project uses environment variables defined in the `.env` file.
     `uvicorn a2a_root_agent.remote_a2a.places_of_interest_agent.agent:a2a_app4 --host localhost --port 8004`
     
 4.  Launch the main `a2a_root_agent` to start the application using `adk web`.
+
+#### How to invoke remote agents via JSON RPC
+
+1. Launch the remote agents from their respective directories. I am using travel_brainstormer_agent as an example here:
+
+ `uvicorn a2a_root_agent.remote_a2a.travel_brainstormer_agent.agent:a2a_app1 --host localhost --port 8001`
+
+2. Open a new terminal window and run the following curl command which uses JSON RPC:
+
+```curl --request POST --url http://localhost:8001 --header 'content-type: application/json' --data '{"jsonrpc": "2.0","id": 33,"method": "message/send","params": {"message": {"role": "user","parts": [{ "type": "text", "text": "I need help deciding where to travel." }],"messageId":"foo4","kind": "message"}}}'```
+
+3. Here is the sample response:
+
+```{"id":33,"jsonrpc":"2.0","result":{"artifacts":[{"artifactId":"d2ddbe71-336c-46da-9555-8a0ada99639c","parts":[{"kind":"text","text":"I can help with that! To narrow down the options, what are your primary goals for this trip? Are you looking for adventure, relaxation, learning, shopping, or experiencing art and culture?"}]}],"contextId":"39ca1a61-2521-4a9c-bcf0-0e3e42a4cfd0","history":[{"contextId":"39ca1a61-2521-4a9c-bcf0-0e3e42a4cfd0","kind":"message","messageId":"foo4","parts":[{"kind":"text","text":"I need help deciding where to travel."}],"role":"user","taskId":"2a1d5699-8e7c-4efa-8af0-ea8a6e340705"},{"contextId":"39ca1a61-2521-4a9c-bcf0-0e3e42a4cfd0","kind":"message","messageId":"foo4","parts":[{"kind":"text","text":"I need help deciding where to travel."}],"role":"user","taskId":"2a1d5699-8e7c-4efa-8af0-ea8a6e340705"},{"kind":"message","messageId":"2d304b6a-8407-4ecb-bd56-9855e9c7650e","parts":[{"kind":"text","text":"I can help with that! To narrow down the options, what are your primary goals for this trip? Are you looking for adventure, relaxation, learning, shopping, or experiencing art and culture?"}],"role":"agent"}],"id":"2a1d5699-8e7c-4efa-8af0-ea8a6e340705","kind":"task","metadata":{"adk_app_name":"travel_brainstormer","adk_user_id":"A2A_USER_39ca1a61-2521-4a9c-bcf0-0e3e42a4cfd0","adk_session_id":"39ca1a61-2521-4a9c-bcf0-0e3e42a4cfd0","adk_invocation_id":"e-7c7bfa15-9413-489b-8411-9400a9c81483","adk_author":"travel_brainstormer","adk_usage_metadata":{"candidatesTokenCount":39,"candidatesTokensDetails":[{"modality":"TEXT","tokenCount":39}],"promptTokenCount":324,"promptTokensDetails":[{"modality":"TEXT","tokenCount":324}],"thoughtsTokenCount":78,"totalTokenCount":441,"trafficType":"ON_DEMAND"}},"status":{"state":"completed","timestamp":"2025-08-28T14:21:50.289022+00:00"}}} ```
