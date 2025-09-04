@@ -6,13 +6,13 @@ from . import prompts
 
 # Function Tools
 from . import tools
-FUNCTION_TOOLS = tools.BQ_QUERY_TOOLS
+BQ_FUNCTION_TOOLS = tools.BQ_QUERY_TOOLS
 
 # MCP Tools:
 import toolbox_core
 toolbox_client = toolbox_core.ToolboxSyncClient("http://localhost:7000")
-MCP_TOOLS_PREDEFINED = toolbox_client.load_toolset('bq-concept')
-MCP_TOOLS_DYNAMIC = toolbox_client.load_toolset('bq-dynamic')
+MCP_TOOLBOX_DB_PREDEFINED = toolbox_client.load_toolset('bq-concept')
+MCP_TOOLBOX_DB_DYNAMIC = toolbox_client.load_toolset('bq-dynamic')
 
 # Built-in Tools
 
@@ -30,7 +30,7 @@ BUILTIN_BQ_TOOLS = [bq_toolset]
 
 ############################################################################
 
-builtin_query_agent = agents.Agent(
+builtin_tools_query_agent = agents.Agent(
     name = 'builtin_query_agent',
     model = "gemini-2.0-flash",
     description = 'An agent that can use bigquery to try to answer any user question.',
@@ -39,13 +39,13 @@ builtin_query_agent = agents.Agent(
     tools = BUILTIN_BQ_TOOLS,
 )
 
-mcp_query_agent = agents.Agent(
-    name = 'mcp_query_agent',
+mcp_toolbox_query_agent = agents.Agent(
+    name = 'mcp_toolbox_query_agent',
     model = "gemini-2.0-flash",
     description = "An agent that can query table metadata and write SQL queries based on user questions about hurricanes.",
     global_instruction = prompts.global_instructions,
     instruction = prompts.mcp_query_agent_instructions,
-    tools = MCP_TOOLS_DYNAMIC,
+    tools = MCP_TOOLBOX_DB_DYNAMIC,
 )
 
 root_agent = agents.Agent(
@@ -55,10 +55,10 @@ root_agent = agents.Agent(
     global_instruction = prompts.global_instructions,
     instruction = prompts.root_agent_instuctions,
     sub_agents = [
-        mcp_query_agent,
-        builtin_query_agent
+        mcp_toolbox_query_agent,
+        builtin_tools_query_agent
     ],
-    tools =  MCP_TOOLS_PREDEFINED + FUNCTION_TOOLS,
+    tools =  MCP_TOOLBOX_DB_PREDEFINED + BQ_FUNCTION_TOOLS,
     #after_tool_callback = callbacks.process_toolbox_output,
 )
 
