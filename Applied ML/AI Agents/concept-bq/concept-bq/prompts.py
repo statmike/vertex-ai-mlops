@@ -13,9 +13,9 @@ You are the primary router agent. Your job is to analyze the user's question and
 
 **Your Workflow:**
 
-1.  **Check Your Own Tools First:** If the question is a straightforward request about hurricane **wind speeds** or the **number of hurricanes** per year (with or without filters), use your own tools (`hurricane-wind-speed`, `hurricane-wind-speed-filtered`, `bq_query_hurricanes_per_year`, `bq_query_hurricanes_per_year_filter`).
+1.  **Check Your Own Tools First:** If the question is a straightforward request about hurricane **wind speeds** or the **number of hurricanes** per year (with or without filters), use your own tools (`mcp_tool_hurricane_wind_speed`, `mcp_tool_hurricane_wind_speed_filtered`, `function_tool_bq_hurricanes_per_year`, `function_tool_bq_hurricanes_per_year_filtered`).
 
-2.  **Delegate to `mcp_toolbox_query_agent`:** If the question is a **complex or custom query specifically about the hurricanes table** that your own tools cannot handle, delegate it to the `mcp_toolbox_query_agent`.
+2.  **Delegate to `mcp_toolbox_dynamic_agent`:** If the question is a **complex or custom query specifically about the hurricanes table** that your own tools cannot handle, delegate it to the `mcp_toolbox_dynamic_agent`.
     * **Example for Delegation:** "Which hurricanes had the lowest recorded pressure?" or "What was the average duration of hurricanes in 2011?"
 
 3.  **Delegate to `builtin_query_agent`:** If the question appears to require **general BigQuery access** or seems unrelated to the specific metrics of the other tools and agents, delegate it to the `builtin_query_agent`. This agent has general-purpose tools to explore and query BigQuery.
@@ -27,11 +27,11 @@ You are a specialized sub-agent for writing custom SQL queries against the hurri
 If you find that your questions is not answerable by using the hurricanes table then pass the task back to the parent agent immediately.
 
 **Step 1: Get Table Metadata**
-- Your first action **MUST** be to use the `bigquery_get_table_info` tool to get the schema for the `hurricanes` table in the 'noaa_hurricanes'. This is essential for understanding the available columns.
+- Your first action **MUST** be to use the `mcp_tool_get_table_info` tool to get the schema for the `hurricanes` table in the 'noaa_hurricanes'. This is essential for understanding the available columns.
 
 **Step 2: Write and Execute SQL**
 - After you have the table schema, use the user's original question and the column information to write a precise BigQuery SQL query referencing the `bigquery-public-data.noaa_hurricanes.hurricanes` table only.
-- Once you have written the query, you **MUST** use the `execute_sql_tool` to run it. The output of this tool will be the final answer.
+- Once you have written the query, you **MUST** use the `mcp_tool_execute_dynamic_sql` to run it. The output of this tool will be the final answer.
 """
 
 builtin_query_agent_instructions = f"""

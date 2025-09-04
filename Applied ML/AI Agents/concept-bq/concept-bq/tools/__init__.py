@@ -1,7 +1,7 @@
-from .bq_query_hurricanes_per_year import bq_query_hurricanes_per_year
-from .bq_query_hurricanes_per_year_filter import bq_query_hurricanes_per_year_filter
+from .function_tool_bq_hurricanes_per_year import function_tool_bq_hurricanes_per_year
+from .function_tool_bq_hurricanes_per_year_filtered import function_tool_bq_hurricanes_per_year_filtered
 
-BQ_QUERY_TOOLS = [
-    bq_query_hurricanes_per_year,
-    bq_query_hurricanes_per_year_filter,
+PYTHON_FUNCTION_TOOLS = [
+    function_tool_bq_hurricanes_per_year,
+    function_tool_bq_hurricanes_per_year_filtered,
 ]

@@ -1,10 +1,10 @@
 toolsets:
-  bq-concept:
-    - hurricane-wind-speed
-    - hurricane-wind-speed-filtered
-  bq-dynamic:
-    - execute_sql_tool
-    - bigquery_get_table_info
+  mcp_toolbox_predefined_sql:
+    - mcp_tool_hurricane_wind_speed
+    - mcp_tool_hurricane_wind_speed_filtered
+  mcp_toolbox_dynamic_sql:
+    - mcp_tool_execute_dynamic_sql
+    - mcp_tool_get_table_info
 sources:
   bq-query-project:
     kind: bigquery
@@ -14,15 +14,15 @@ sources:
     kind: bigquery
     project: bigquery-public-data
 tools:
-  execute_sql_tool:
+  mcp_tool_execute_dynamic_sql:
     kind: bigquery-execute-sql
     source: bq-query-project
     description: This tool execute SQL in BigQuery
-  bigquery_get_table_info:
+  mcp_tool_get_table_info:
     kind: bigquery-get-table-info
     source: bq-query-source
     description: Use this tool to get table metadata.
-  hurricane-wind-speed:
+  mcp_tool_hurricane_wind_speed:
     kind: bigquery-sql
     source: bq-query-project
     description: Use this tool to get list of hurricanes with highest wind speeds
@@ -39,7 +39,7 @@ tools:
       GROUP BY sid, report_year
       ORDER BY max_wind_knots DESC
       LIMIT 15
-  hurricane-wind-speed-filtered:
+  mcp_tool_hurricane_wind_speed_filtered:
     kind: bigquery-sql
     source: bq-query-project
     description: |

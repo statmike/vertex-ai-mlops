@@ -4,7 +4,7 @@ from google.cloud import bigquery
 
 bq = bigquery.Client(project = os.getenv('GOOGLE_CLOUD_PROJECT'))
 
-async def bq_query_hurricanes_per_year_filter(min_year: int, max_year: int, tool_context: tools.ToolContext) -> str:
+async def function_tool_bq_hurricanes_per_year_filtered(min_year: int, max_year: int, tool_context: tools.ToolContext) -> str:
     """
     Queries the BigQuery NOAA public dataset to count hurricanes per year within a specified range.
 
@@ -58,4 +58,4 @@ async def bq_query_hurricanes_per_year_filter(min_year: int, max_year: int, tool
         return results
 
     except Exception as e:
-        return f"Error with tool `bq_query_hurricanes_per_year_filter` during the query. Error: {str(e)}"
+        return f"Error with tool `function_tool_bq_hurricanes_per_year_filtered` during the query. Error: {str(e)}"

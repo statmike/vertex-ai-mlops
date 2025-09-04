@@ -39,14 +39,15 @@ This project demonstrates how an [ADK](https://google.github.io/adk-docs/) agent
 
 The agent uses a combination of [function tools](https://google.github.io/adk-docs/tools/function-tools/) (custom Python tools), the [built-in tools for BigQuery](https://google.github.io/adk-docs/tools/built-in-tools/#bigquery), and the [MCP Toolbox for Databases](https://googleapis.github.io/genai-toolbox/getting-started/introduction/):
 
-- **Custom Python Tools:**
-  - Used to execute simple, pre-defined SQL queries.
-- **MCP Toolbox for Databases:**
-  - [kind: bigquery_sql](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-sql/): Executes pre-defined SQL statements that can include parameters for dynamic filtering.
-  - [kind: bigquery-execute-sql](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-sql/): Executes an LLM-generated SQL query.
-  - [kind: bigqueryget-table-info](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-get-table-info/): Retrieves table metadata, which is provided to the LLM as context to help it write accurate SQL queries.
-- **Built-in tools for BigQuery:**
-  - Built-in tools used to interact with BigQuery that fetch metadata and execute SQL queries.
+- **Python Function Tools:**
+  - Custom Python functions that use the BigQuery client library to execute pre-defined, non-parameterized or parameterized SQL queries.
+- **MCP Toolbox for Databases (Pre-defined SQL):**
+  - [kind: bigquery-sql](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-sql/): Executes pre-defined SQL statements from the `tools.yaml` file, which can include parameters for dynamic filtering.
+- **MCP Toolbox for Databases (Dynamic SQL Generation):**
+  - [kind: bigquery-get-table-info](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-get-table-info/): Retrieves table metadata, which is provided to the LLM as context to help it write accurate SQL queries.
+  - [kind: bigquery-execute-sql](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-execute-sql/): Executes an LLM-generated SQL query.
+- **ADK Built-in Tools for BigQuery:**
+  - General-purpose tools that are part of the ADK for interacting with BigQuery, capable of fetching metadata and executing SQL queries.
 
 ---
 ## Environment Setup
@@ -193,23 +194,23 @@ When finished, stop the service with `ctrl+c` in the terminal.
 
 Some example questions that trigger the different types of tools:
 
-These trigger the funtion tools:
+These trigger the **Python Function Tools**:
 
 1.  What years had the most hurricanes?
 2.  How many hurricanes were in 2015?
 
-These trigger the MCP Toolbox tools `bigquery-sql`
+These trigger the **MCP Toolbox for Databases (Pre-defined SQL)** tools:
 
 3.  What were the biggest hurricanes by wind speed?
 4.  What was the biggest hurricane by wind speed in 2015?
 
-These force the dynamic creation of SQL and execute it with MCP Toolbox tools `bigquery-execute-sql`
+These force the dynamic creation of SQL and execute it with the **MCP Toolbox for Databases (Dynamic SQL Generation)** tools:
 
 5. What was the last hurricane of 2008?
 6. What was the first hurricane of the 2009 year in the North Atlantic Basin?
 7. What was the last hurricane of 2008 in the North Atlantic Basin?
 
-These trigger the more general sub-agent that uses built-in BigQuery tools to find tables and generate SQl to answer the users questions:
+These trigger the more general sub-agent that uses the **ADK Built-in Tools for BigQuery** to find tables and generate SQL to answer the user's questions:
 
 8. Are there any weather datasets other than hurricanes?
 9. What does the tsunami dataset have?
@@ -217,4 +218,3 @@ These trigger the more general sub-agent that uses built-in BigQuery tools to fi
 11. How many tsunamis across what date range is information available for?
 12. How many records are from BC years?
 13. Describe one of these based on available data.
-
