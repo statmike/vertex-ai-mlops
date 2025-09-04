@@ -1,6 +1,6 @@
 from google.adk import agents
 from . import prompts
-#from . import callbacks
+from . import callbacks
 
 ############################### IMPORT TOOLS ###############################
 
@@ -15,11 +15,13 @@ MCP_TOOLBOX_PREDEFINED_TOOLS = toolbox_client.load_toolset('mcp_toolbox_predefin
 MCP_TOOLBOX_DYNAMIC_TOOLS = toolbox_client.load_toolset('mcp_toolbox_dynamic_sql')
 
 # Built-in Tools
-from google.adk.tools import bigquery as bq_tools
+
 # dont need auth for this local testing method which uses the authed user session
 #import google.auth
 #application_default_credentials, _ = google.auth.default()
 #credentials_config = bq_tools.BigQueryCredentialsConfig(credentials = application_default_credentials),
+
+from google.adk.tools import bigquery as bq_tools 
 bq_toolset = bq_tools.BigQueryToolset(
     #credentials_config = credentials_config,
     bigquery_tool_config = bq_tools.config.BigQueryToolConfig(write_mode = bq_tools.config.WriteMode.BLOCKED)
@@ -44,6 +46,7 @@ mcp_toolbox_dynamic_agent = agents.Agent(
     global_instruction = prompts.global_instructions,
     instruction = prompts.mcp_query_agent_instructions,
     tools = MCP_TOOLBOX_DYNAMIC_TOOLS,
+    before_tool_callback = callbacks.sql_dry_run_callback
 )
 
 root_agent = agents.Agent(
@@ -57,4 +60,5 @@ root_agent = agents.Agent(
         builtin_query_agent
     ],
     tools =  MCP_TOOLBOX_PREDEFINED_TOOLS + PYTHON_FUNCTION_TOOLS,
+    #after_tool_callback = callbacks.process_toolbox_output,
 )

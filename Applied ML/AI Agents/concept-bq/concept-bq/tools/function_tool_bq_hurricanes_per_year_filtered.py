@@ -1,8 +1,13 @@
 import os
 from google.adk import tools
 from google.cloud import bigquery
+from dotenv import load_dotenv
+
+# Load environment variables from .env file located in the parent directory
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 bq = bigquery.Client(project = os.getenv('GOOGLE_CLOUD_PROJECT'))
+MAX_BYTES = int(os.getenv('max_bq_bytes', 10000))
 
 async def function_tool_bq_hurricanes_per_year_filtered(min_year: int, max_year: int, tool_context: tools.ToolContext) -> str:
     """
@@ -25,8 +30,6 @@ async def function_tool_bq_hurricanes_per_year_filtered(min_year: int, max_year:
     """
 
     try:
-
-        # 1. Setup the query for BigQuery
         query = f"""
             SELECT
                 EXTRACT(YEAR FROM iso_time) AS report_year,
@@ -45,17 +48,22 @@ async def function_tool_bq_hurricanes_per_year_filtered(min_year: int, max_year:
             query_parameters=[
                 bigquery.ScalarQueryParameter("min_year", "INT64", min_year),
                 bigquery.ScalarQueryParameter("max_year", "INT64", max_year),
-            ]
+            ],
+            maximum_bytes_billed=MAX_BYTES,
+            use_query_cache=False
         )
 
-        # 2. Execute the BigQuery Query and retrieve results to local dataframe
-        results = bq.query(query, job_config = job_config).to_dataframe()
+        query_job = bq.query(query, job_config = job_config)
 
-        # 3. Convert the dataframe to Markdown
-        results = results.to_markdown(index=False)
+        if query_job.error_result:
+            if 'maximumBytesBilled' in str(query_job.error_result):
+                return f"Error: Query would process {query_job.total_bytes_processed} bytes, which exceeds the limit of {MAX_BYTES} bytes."
+            else:
+                return f"Error: {query_job.error_result}"
 
-        # 4. Return the results
-        return results
+        results = query_job.to_dataframe()
+        bytes_processed_message = f"\n*Query successful. Bytes processed: {query_job.total_bytes_processed}*"
+        return results.to_markdown(index=False) + bytes_processed_message
 
     except Exception as e:
         return f"Error with tool `function_tool_bq_hurricanes_per_year_filtered` during the query. Error: {str(e)}"
