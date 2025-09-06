@@ -192,29 +192,42 @@ When finished, stop the service with `ctrl+c` in the terminal.
 ---
 ### Example Questions
 
-Some example questions that trigger the different types of tools:
+When you run the ADK web interface, you can interact with the agents. In the top-left corner of the window, there is a dropdown menu to select the agent you want to interact with.
 
-These trigger the **Python Function Tools**:
+#### Router Agent: `agent_concept_bq`
 
-1.  What years had the most hurricanes?
-2.  How many hurricanes were in 2015?
+If you select the `agent_concept_bq`, you can ask any of the questions below and observe how it delegates the task to the appropriate sub-agent. This is a great way to see the routing logic in action.  Do this and ask the questions in the order they are presented below to see the routing as well as the memory between questions within the agents.
 
-These trigger the **MCP Toolbox for Databases (Pre-defined SQL)** tools:
+#### Sub-Agent: `agent_bq_python_tools` (Python Function Tools)
 
-3.  What were the biggest hurricanes by wind speed?
-4.  What was the biggest hurricane by wind speed in 2015?
+This agent uses custom Python functions to query BigQuery. It is specialized for questions about the number of hurricanes.
 
-These force the dynamic creation of SQL and execute it with the **MCP Toolbox for Databases (Dynamic SQL Generation)** tools:
+- What years had the most hurricanes?
+- How many hurricanes were in 2015?
 
-5. What was the last hurricane of 2008?
-6. What was the first hurricane of the 2009 year in the North Atlantic Basin?
-7. What was the last hurricane of 2008 in the North Atlantic Basin?
+#### Sub-Agent: `agent_mcp_toolbox_prewritten` (MCP Toolbox - Pre-written SQL)
 
-These trigger the more general sub-agent that uses the **ADK Built-in Tools for BigQuery** to find tables and generate SQL to answer the user's questions:
+This agent uses pre-defined SQL queries from the `tools.yaml` file. It is specialized for questions about hurricane wind speeds.
 
-8. Are there any weather datasets other than hurricanes?
-9. What does the tsunami dataset have?
-10. Do Tsunami's have names and seasons/years?
-11. How many tsunamis across what date range is information available for?
-12. How many records are from BC years?
-13. Describe one of these based on available data.
+- What were the biggest hurricanes by wind speed?
+- What was the biggest hurricane by wind speed in 2015?
+
+#### Sub-Agent: `agent_mcp_toolbox_dynamic` (MCP Toolbox - Dynamic SQL)
+
+This agent can dynamically generate SQL queries based on the table metadata. It is designed to handle more complex or custom questions about hurricanes.
+
+- What was the last hurricane of 2008?
+- What was the first hurricane of the 2009 year in the North Atlantic Basin?
+- What was the last hurricane of 2008 in the North Atlantic Basin?
+
+#### Sub-Agent: `agent_bq_builtin` (ADK Built-in Tools)
+
+This is a general-purpose agent that uses the built-in BigQuery tools from the ADK. It is designed to handle questions that are not about hurricanes, and can explore other datasets.
+
+- Are there any weather datasets other than hurricanes?
+- Are there any datasets or tables about tsunamis?
+- What does the tsunami dataset have?
+- Do Tsunami's have names and seasons/years?
+- How many tsunamis across what date range is information available for?
+- How many records are from BC years?
+- Describe one of these based on available data.
