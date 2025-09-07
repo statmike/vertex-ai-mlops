@@ -1,3 +1,4 @@
+import os
 from google.adk import agents
 from . import prompts
 
@@ -5,7 +6,10 @@ from . import prompts
 from google.adk.tools import bigquery as bq_tools 
 bq_toolset = bq_tools.BigQueryToolset(
     #credentials_config = credentials_config,
-    bigquery_tool_config = bq_tools.config.BigQueryToolConfig(write_mode = bq_tools.config.WriteMode.BLOCKED)
+    bigquery_tool_config = bq_tools.config.BigQueryToolConfig(
+        write_mode = bq_tools.config.WriteMode.BLOCKED, # BLOCKED=no writes, PROTECTED=only writes to temporary tables allowed, ALLOWED=write to permamnent tables also
+        compute_project_id=os.getenv('GOOGLE_CLOUD_PROJECT') # set the compute project
+    )
 )
 BUILTIN_BQ_TOOLS = [bq_toolset]
 
