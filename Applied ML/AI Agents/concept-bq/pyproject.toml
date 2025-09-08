@@ -1,24 +1,17 @@
-[project]
+[tool.poetry]
 name = "concept-bq"
-version = "0.1.0"
-description = "An ADK example that shows multiple ways of having Agent Query BigQuery"
-authors = [
-    {name = "Mike Henderson",email = "statmike@gmail.com"}
-]
+description = "An ADK example that shows multiple ways of having agents directly query BigQuery"
+authors = ["Mike Henderson <statmike@gmail.com>"]
 readme = "readme.md"
-requires-python = "^3.13"
-dependencies = [
-    "google-cloud-bigquery (>=3.36.0,<4.0.0)",
-    "google-adk[eval] (>=1.12.0,<2.0.0)",
-    "toolbox-core (>=0.5.0,<0.6.0)",
-    "pandas (>=2.3.2,<3.0.0)",
-    "db-dtypes (>=1.4.3,<2.0.0)",
-    "tabulate (>=0.9.0,<0.10.0)",
-    "python-dotenv (>=1.0.0,<2.0.0)"
-]
+package-mode = false
 
-
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.poetry.dependencies]
+python = "^3.13"
+google-cloud-bigquery = ">=3.36.0,<4.0.0"
+google-adk = {extras = ["eval"], version = ">=1.12.0,<2.0.0"}
+toolbox-core = ">=0.5.0,<0.6.0"
+pandas = ">=2.3.2,<3.0.0"
+db-dtypes = ">=1.4.3,<2.0.0"
+tabulate =  ">=0.9.0,<0.10.0"
+python-dotenv = ">=1.0.0,<2.0.0"
 
