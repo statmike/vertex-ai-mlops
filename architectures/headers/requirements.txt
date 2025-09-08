@@ -1,36 +1,41 @@
-asttokens==3.0.0
-attrs==25.3.0
-comm==0.2.2
-debugpy==1.8.14
-decorator==5.2.1
-executing==2.2.0
-fastjsonschema==2.21.1
-ipykernel==6.29.5
-ipython==9.3.0
-ipython_pygments_lexers==1.1.1
-jedi==0.19.2
-jsonschema==4.24.0
-jsonschema-specifications==2025.4.1
-jupyter_client==8.6.3
-jupyter_core==5.8.1
-matplotlib-inline==0.1.7
-nbformat==5.10.4
-nest-asyncio==1.6.0
-packaging==25.0
-parso==0.8.4
-pexpect==4.9.0
-platformdirs==4.3.8
-prompt_toolkit==3.0.51
-psutil==7.0.0
-ptyprocess==0.7.0
-pure_eval==0.2.3
-Pygments==2.19.1
-python-dateutil==2.9.0.post0
-pyzmq==26.4.0
-referencing==0.36.2
-rpds-py==0.25.1
-six==1.17.0
-stack-data==0.6.3
-tornado==6.5.1
-traitlets==5.14.3
-wcwidth==0.2.13
+appnope==0.1.4 ; python_version >= "3.13" and python_version < "4.0" and platform_system == "Darwin"
+asttokens==3.0.0 ; python_version >= "3.13" and python_version < "4.0"
+attrs==25.3.0 ; python_version >= "3.13" and python_version < "4.0"
+cffi==1.17.1 ; python_version >= "3.13" and python_version < "4.0" and implementation_name == "pypy"
+colorama==0.4.6 ; python_version >= "3.13" and python_version < "4.0" and sys_platform == "win32"
+comm==0.2.3 ; python_version >= "3.13" and python_version < "4.0"
+debugpy==1.8.16 ; python_version >= "3.13" and python_version < "4.0"
+decorator==5.2.1 ; python_version >= "3.13" and python_version < "4.0"
+executing==2.2.1 ; python_version >= "3.13" and python_version < "4.0"
+fastjsonschema==2.21.2 ; python_version >= "3.13" and python_version < "4.0"
+ipykernel==6.30.1 ; python_version >= "3.13" and python_version < "4.0"
+ipython-pygments-lexers==1.1.1 ; python_version >= "3.13" and python_version < "4.0"
+ipython==9.5.0 ; python_version >= "3.13" and python_version < "4.0"
+jedi==0.19.2 ; python_version >= "3.13" and python_version < "4.0"
+jsonschema-specifications==2025.4.1 ; python_version >= "3.13" and python_version < "4.0"
+jsonschema==4.25.1 ; python_version >= "3.13" and python_version < "4.0"
+jupyter-client==8.6.3 ; python_version >= "3.13" and python_version < "4.0"
+jupyter-core==5.8.1 ; python_version >= "3.13" and python_version < "4.0"
+matplotlib-inline==0.1.7 ; python_version >= "3.13" and python_version < "4.0"
+nbformat==5.10.4 ; python_version >= "3.13" and python_version < "4.0"
+nest-asyncio==1.6.0 ; python_version >= "3.13" and python_version < "4.0"
+packaging==25.0 ; python_version >= "3.13" and python_version < "4.0"
+parso==0.8.5 ; python_version >= "3.13" and python_version < "4.0"
+pexpect==4.9.0 ; python_version >= "3.13" and python_version < "4.0" and sys_platform != "win32" and sys_platform != "emscripten"
+platformdirs==4.4.0 ; python_version >= "3.13" and python_version < "4.0"
+prompt-toolkit==3.0.52 ; python_version >= "3.13" and python_version < "4.0"
+psutil==7.0.0 ; python_version >= "3.13" and python_version < "4.0"
+ptyprocess==0.7.0 ; python_version >= "3.13" and python_version < "4.0" and sys_platform != "win32" and sys_platform != "emscripten"
+pure-eval==0.2.3 ; python_version >= "3.13" and python_version < "4.0"
+pycparser==2.22 ; python_version >= "3.13" and python_version < "4.0" and implementation_name == "pypy"
+pygments==2.19.2 ; python_version >= "3.13" and python_version < "4.0"
+python-dateutil==2.9.0.post0 ; python_version >= "3.13" and python_version < "4.0"
+pywin32==311 ; python_version >= "3.13" and python_version < "4.0" and sys_platform == "win32" and platform_python_implementation != "PyPy"
+pyzmq==27.0.2 ; python_version >= "3.13" and python_version < "4.0"
+referencing==0.36.2 ; python_version >= "3.13" and python_version < "4.0"
+rpds-py==0.27.1 ; python_version >= "3.13" and python_version < "4.0"
+six==1.17.0 ; python_version >= "3.13" and python_version < "4.0"
+stack-data==0.6.3 ; python_version >= "3.13" and python_version < "4.0"
+tornado==6.5.2 ; python_version >= "3.13" and python_version < "4.0"
+traitlets==5.14.3 ; python_version >= "3.13" and python_version < "4.0"
+wcwidth==0.2.13 ; python_version >= "3.13" and python_version < "4.0"

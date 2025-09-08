@@ -1,18 +1,12 @@
-[project]
+[tool.poetry]
 name = "headers"
-version = "0.1.0"
-description = ""
-authors = [
-    {name = "Mike Henderson",email = "statmike@gmail.com"}
-]
-readme = "README.md"
-requires-python = "^3.13"
-dependencies = [
-    "ipykernel (>=6.30.1,<7.0.0)",
-    "nbformat (>=5.10.4,<6.0.0)"
-]
+description = "Tools for adding headers to notebooks and markdown files."
+authors = ["Mike Henderson <statmike@gmail.com>"]
+readme = "readme.md"
+package-mode = false
 
+[tool.poetry.dependencies]
+python = "^3.13"
+ipykernel = ">=6.30.1,<7.0.0"
+nbformat = ">=5.10.4,<6.0.0"
 
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
