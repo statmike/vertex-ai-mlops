@@ -1,21 +1,15 @@
-[project]
+[tool.poetry]
 name = "conversational-analytics-api"
 version = "0.1.0"
 description = "An overview of using the Conversational Analytics API."
-authors = [
-    {name = "Mike Henderson",email = "statmike@gmail.com"}
-]
-readme = "README.md"
-requires-python = "^3.13"
-dependencies = [
-    "google-cloud-geminidataanalytics (>=0.3.0,<0.4.0)",
-    "ipykernel (>=6.30.1,<7.0.0)",
-    "pandas (>=2.3.2,<3.0.0)",
-    "altair (>=5.5.0,<6.0.0)",
-    "ipython (>=9.5.0,<10.0.0)"
-]
+authors = ["Mike Henderson <statmike@gmail.com>"]
+readme = "readme.md"
+package-mode = false
 
-
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.poetry.dependencies]
+python = "^3.13"
+google-cloud-geminidataanalytics = ">=0.3.0,<0.4.0"
+ipykernel = ">=6.30.1,<7.0.0"
+pandas = ">=2.3.2,<3.0.0"
+altair = ">=5.5.0,<6.0.0"
+ipython = ">=9.5.0,<10.0.0"
