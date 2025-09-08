@@ -94,5 +94,11 @@ This folder has examples based on core functionality of agents interacting with 
 
 - [Agentic Retrieval with BigQuery](./concept-bq/readme.md)
   - Use tools to retrieval contectual data from Google BigQuery
-  - This exampel shows multiple ways of using and creating tools that execute SQL to retrieve data from BigQuery
+  - This example shows multiple ways of using and creating tools that execute SQL to retrieve data from BigQuery
+
+- [Conversational Analytics API](./conversational-analytics-api/readme.md)
+  - An overview of using the Conversational Analytics API to build conversational experiences on top of your data.
+
+- [Travel Planner Agent](./travel-planner/README.md)
+  - A multi-agent system that helps users plan their travels, built using the ADK framework.
 
