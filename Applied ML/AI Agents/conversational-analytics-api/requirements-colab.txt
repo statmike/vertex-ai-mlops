@@ -1,3 +1,4 @@
 altair==5.5.0
+google-auth==2.40.3
 google-cloud-geminidataanalytics==0.3.0
 pandas==2.3.2
