@@ -1,10 +1,7 @@
 import os
 from google.adk import tools
 from google.cloud import bigquery
-from dotenv import load_dotenv
 
-# Load environment variables from .env file located in the parent directory
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 bq = bigquery.Client(project = os.getenv('GOOGLE_CLOUD_PROJECT')) # set the compute project
 MAX_BYTES = int(os.getenv('max_bq_bytes', 10000))

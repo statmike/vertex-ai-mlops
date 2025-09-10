@@ -1,10 +1,7 @@
 import os
 from google.adk import tools
 from google.cloud import bigquery
-from dotenv import load_dotenv
 
-# Load environment variables from .env file located in the parent directory
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 bq = bigquery.Client(project = os.getenv('GOOGLE_CLOUD_PROJECT')) # sets the compute project
 MAX_BYTES = int(os.getenv('max_bq_bytes', 10000))
@@ -37,7 +34,7 @@ async def function_tool_bq_hurricanes_per_year_filtered(min_year: int, max_year:
             FROM `bigquery-public-data.noaa_hurricanes.hurricanes`
             WHERE
                 iso_time IS NOT NULL
-                AND basin = 'NA' -- North Atlantic Basin
+                AND basin = 'NA' # North Atlantic Basin
                 AND EXTRACT(YEAR FROM iso_time) >= @min_year
                 AND EXTRACT(YEAR FROM iso_time) <= @max_year
             GROUP BY report_year

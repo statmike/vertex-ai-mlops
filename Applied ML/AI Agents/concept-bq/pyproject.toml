@@ -14,4 +14,7 @@ pandas = ">=2.3.2,<3.0.0"
 db-dtypes = ">=1.4.3,<2.0.0"
 tabulate =  ">=0.9.0,<0.10.0"
 python-dotenv = ">=1.0.0,<2.0.0"
+google-cloud-geminidataanalytics = "^0.3.0"
+altair = "^5.5.0"
+vl-convert-python = "^1.8.0"
 
