@@ -9,7 +9,13 @@ bq_toolset = bq_tools.BigQueryToolset(
     bigquery_tool_config=bq_tools.config.BigQueryToolConfig(
         write_mode=bq_tools.config.WriteMode.BLOCKED,
         compute_project_id=os.getenv('GOOGLE_CLOUD_PROJECT')
-    )
+    ),
+    tool_filter = [
+        'list_dataset_ids',
+        'list_table_ids',
+        'get_dataset_info',
+        'get_table_info',
+    ]
 )
 BUILTIN_BQ_TOOLS = [bq_toolset]
 
