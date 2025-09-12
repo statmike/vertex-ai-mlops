@@ -6,6 +6,7 @@ from agent_bq_builtin.agent import root_agent as agent_bq_builtin
 from agent_mcp_toolbox_dynamic.agent import root_agent as agent_mcp_toolbox_dynamic
 from agent_mcp_toolbox_prewritten.agent import root_agent as agent_mcp_toolbox_prewritten
 from agent_bq_python_tools.agent import root_agent as agent_bq_python_tools
+from agent_convo_api.agent import root_agent as agent_convo_api
 
 root_agent = agents.Agent(
     name = "agent_concept_bq",
@@ -17,7 +18,8 @@ root_agent = agents.Agent(
         agent_mcp_toolbox_dynamic,
         agent_bq_builtin,
         agent_mcp_toolbox_prewritten,
-        agent_bq_python_tools
+        agent_bq_python_tools,
+        agent_convo_api
     ],
     #tools =  [],
     #disallow_transfer_to_parent=False,  # Allows transfers to parent (default)

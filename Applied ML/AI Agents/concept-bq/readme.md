@@ -41,6 +41,9 @@ The agent uses a combination of [function tools](https://google.github.io/adk-do
 
 - **Python Function Tools:**
   - Custom Python functions that use the BigQuery client library to execute pre-defined, non-parameterized or parameterized SQL queries.
+- **Conversational Analytics API via Python Function Tool:**
+  - A custom Python function that calls the powerful Conversational Analytics API, enabling rich, stateful conversations about data, including the generation of summaries and charts.
+    - Check out the stand-alone deep dive into this offering in [Conversational Analytics API](../conversational-analytics-api/readme.md) which offers a notebook overview of all three usage modes of the API along with all the steps to setup and connect to it.
 - **MCP Toolbox for Databases (Pre-defined SQL):**
   - [kind: bigquery-sql](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-sql/): Executes pre-defined SQL statements from the `tools.yaml` file, which can include parameters for dynamic filtering.
 - **MCP Toolbox for Databases (Dynamic SQL Generation):**
@@ -117,15 +120,15 @@ This is the simplest method if you have Poetry installed. It uses the poetry.loc
 
 ```bash
 # Install all project dependencies
-poetry install --no-root
+poetry install
 ```
 
->The `--no-root` flag is used because this project is a collection of scripts and not an installable package itself.
 </details>
 <details>
 <summary>🐍 Option 2: Using `venv` and `pip`</summary>
 
 If you prefer to use Python's built-in tools, you can use `venv` and `pip` with the `requirements.txt` file.
+> **Note:** In an ephemeral environment, you might choose to bypass `venv` and install packages directly with `pip`.
 
 ```bash
 # 1. Create a virtual environment folder named .venv
@@ -174,7 +177,7 @@ To test this agent you can use the `adk web` command from inside the `concept-bq
 ```bash
 # adk web options include:
 #   --reload
-#   --port 8000
+#   --port 8000 # the default port
 
 # Run the ADK web interface with one of:
 
@@ -197,6 +200,12 @@ When you run the ADK web interface, you can interact with the agents. In the top
 #### Router Agent: `agent_concept_bq`
 
 If you select the `agent_concept_bq`, you can ask any of the questions below and observe how it delegates the task to the appropriate sub-agent. This is a great way to see the routing logic in action.  Do this and ask the questions in the order they are presented below to see the routing as well as the memory between questions within the agents.
+
+**Notes On Behavior of Sub-Agents**
+- The first question for a new topic will trigger a handoff to the appropriate sub-agent. That sub-agent will then remain engaged to handle follow-up questions on the same topic.
+- If a sub-agent cannot answer a question, it will pass the task back to the parent router agent. This behavior is controlled by the `disallow_transfer_to_parent=False` and `disallow_transfer_to_peers=True` parameters in the agent's configuration.
+- To switch topics and trigger a different sub-agent during the demo, you can explicitly ask the current agent to "pass the task back to the parent."
+- > **Remember**: This project is a demonstration of various data interaction methods. In a real-world application, you would likely choose the single best method for your use case rather than combining all of them.
 
 #### Sub-Agent: `agent_bq_python_tools` (Python Function Tools)
 
@@ -222,12 +231,24 @@ This agent can dynamically generate SQL queries based on the table metadata. It 
 
 #### Sub-Agent: `agent_bq_builtin` (ADK Built-in Tools)
 
-This is a general-purpose agent that uses the built-in BigQuery tools from the ADK. It is designed to handle questions that are not about hurricanes, and can explore other datasets.
+This agent is best for showing the step-by-step process of building and executing a SQL query. It is triggered when a question for a non-hurricane topic explicitly mentions `SQL` or `query`.
 
-- Are there any weather datasets other than hurricanes?
+- I want to use SQL to query but first, are there any weather datasets other than hurricanes?
 - Are there any datasets or tables about tsunamis?
 - What does the tsunami dataset have?
 - Do Tsunami's have names and seasons/years?
 - How many tsunamis across what date range is information available for?
 - How many records are from BC years?
 - Describe one of these based on available data.
+
+#### Sub-Agent: `agent_convo_api` (Conversational Analytics API)
+
+For any other general or conversational question **not about hurricanes**, this agent will be used. It is best for answering questions conversationally and can create tables and charts as well.
+
+- Pass back to the parent agent
+- What is the average number of earthquakes that occur each year?
+- Over what range of years did these occur?
+- Make a table of the top 10 years with most earthquakes.
+- What is the average number of earthquakes for the years 1900 forward?
+- Make a time series chart of the count of earthquakes by yeaf.
+- Make an updated chart for only the year 1940 through current.

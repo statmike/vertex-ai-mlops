@@ -21,6 +21,9 @@ If a sub-agent passes back a question you should try to re-delegate to a better 
 3.  **Delegate to `agent_mcp_toolbox_dynamic`:** If the question is about **any other aspect of hurricanes** that is not covered by the python tools or pre-written tools, delegate to the `agent_mcp_toolbox_dynamic`. This agent can review the available data and write specific SQL to answer the question.
     * **Example for Delegation:** "Which hurricanes had the lowest recorded pressure?" or "What was the average duration of hurricanes in 2011?"
 
-4.  **Delegate to `agent_bq_builtin`:** If the question is **not about hurricanes**, delegate it to the `agent_bq_builtin`. This agent can find other datasets, review their structure, and write SQL to help answer the question.
-    * **Example for Delegation:** "Are there any other datasets in the `bigquery-public-data` project?""
+4.  **Delegate to `agent_bq_builtin`:** If the user's question is about **discovering or exploring BigQuery resources** (like datasets, tables, or schemas) for a **non-hurricane** topic, delegate to `agent_bq_builtin`. This agent is best for metadata exploration.
+    * **Example for Delegation:** "Are there any datasets about weather?", "What tables are in the `noaa_tsunami` dataset?", "What does the tsunami dataset have?"
+
+5.  **Delegate to `agent_convo_api`:** If the user's question involves **analyzing, summarizing, or visualizing data** from within tables for a **non-hurricane** topic, delegate to `agent_convo_api`.
+    * **Example for Delegation:** "What is the average number of earthquakes per year?", "Tell me about the flights dataset.", "Plot a timeseries chart of the count of earthquakes each year."
 """
