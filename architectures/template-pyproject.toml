@@ -23,3 +23,10 @@ req_brief = {cmd="poetry show --only main --tree | grep -E '^[a-zA-Z0-9]' | awk 
 req_colab = {cmd="poetry show --only main --tree | grep -E '^[a-zA-Z0-9]' | awk '{print $1 \"==\" $2}' | grep -v -E '^ipython|^ipykernel' > requirements-colab.txt", help="Generates brief requirements for Colab (skips ipython)"}
 reqs = {cmd="task req_full && task req_brief", help="Builds standard requirements (full + brief)"}
 reqs_all = {cmd="task req_full && task req_brief && task req_colab", help="Builds ALL requirements (full + brief + colab)"}
+
+#FUTURE
+#lint = "poetry run ruff check ."
+#format = "poetry run ruff format ."
+#types = "poetry run mypy ."
+#test = "poetry run pytest"
+#all_checks = "task lint && task types && task test"
