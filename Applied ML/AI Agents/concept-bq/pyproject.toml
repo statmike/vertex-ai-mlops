@@ -18,3 +18,18 @@ google-cloud-geminidataanalytics = "^0.3.0"
 altair = "^5.5.0"
 vl-convert-python = "^1.8.0"
 
+################################# DEVELOPMENT FOCUSED CONTENT #################################
+
+[tool.poetry.group.dev]
+optional = true
+# use poetry install --with dev to include these:
+
+[tool.poetry.group.dev.dependencies]
+taskipy = "^1.14.1"
+
+[tool.taskipy.tasks]
+req_full = {cmd="poetry export -f requirements.txt --output requirements.txt --without-hashes", help="Generates full requirements.txt (from poetry.lock)"}
+req_brief = {cmd="poetry show --only main --tree | grep -E '^[a-zA-Z0-9]' | awk '{print $1 \"==\" $2}' > requirements-brief.txt", help="Generates brief requirements.txt (top-level packages only)"}
+req_colab = {cmd="poetry show --only main --tree | grep -E '^[a-zA-Z0-9]' | awk '{print $1 \"==\" $2}' | grep -v -E '^ipython|^ipykernel' > requirements-colab.txt", help="Generates brief requirements for Colab (skips ipython)"}
+reqs = {cmd="task req_full && task req_brief", help="Builds standard requirements (full + brief)"}
+reqs_all = {cmd="task req_full && task req_brief && task req_colab", help="Builds ALL requirements (full + brief + colab)"}
