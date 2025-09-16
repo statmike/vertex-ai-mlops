@@ -54,6 +54,12 @@ Embeddings are condensed representation of data, usually in the form of an array
 Incorporating feature store in model serving helps prevent **training-serving skew**.  Check out the following workflow for a detail guide to implementing feature store in model serving locally or with a custom container than can be used locally, on Cloud Run, or with Vertex AI Endpoints:
 - [CatBoost Prediction With Vertex AI Feature Store](../../Framework%20Workflows/CatBoost/CatBoost%20Prediction%20With%20Vertex%20AI%20Feature%20Store.ipynb)
 
+### Helper Script
+
+For convenience, a helper script is provided to simplify reading from the online feature store. This script, `helper.py`, contains the `OnlineStoreReader` class that can be used to asynchronously fetch features from one or more feature views within a single online store. It also includes caching for feature view objects to optimize performance.
+
+- [helper.py](./helper.py)
+
 
 [Documentation](https://cloud.google.com/vertex-ai/docs/featurestore/latest/overview)
 
