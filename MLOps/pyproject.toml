@@ -1,0 +1,48 @@
+[tool.poetry]
+name = "MLOps Worflows"
+description = "A collection of workflow based examples for GCP services including Vertex AI."
+authors = ["Mike Henderson <statmike@gmail.com>"]
+readme = "readme.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.13"
+google-cloud-aiplatform = "^1.113.0"
+google-genai = "^1.37.0"
+google-cloud-bigquery = "^3.37.0"
+kfp = "^2.14.3"
+google-cloud-bigquery-datatransfer = "^3.19.2"
+numpy = "^2.3.3"
+pandas = "^2.3.2"
+bigframes = "^2.19.0"
+scikit-learn = "^1.7.2"
+shap = "^0.48.0"
+bigquery-magics = "^0.10.3"
+matplotlib = "^3.10.6"
+pydantic = "^2.11.9"
+mlflow = "^3.3.2"
+
+
+
+
+
+[tool.poetry.group.dev]
+optional = true
+# use poetry install --with dev to include these:
+
+[tool.poetry.group.dev.dependencies]
+taskipy = "^1.14.1"
+
+[tool.taskipy.tasks]
+req_full = {cmd="poetry export -f requirements.txt --output requirements.txt --without-hashes", help="Generates full requirements.txt (from poetry.lock)"}
+req_brief = {cmd="poetry show --only main --tree | grep -E '^[a-zA-Z0-9]' | awk '{print $1 \"==\" $2}' > requirements-brief.txt", help="Generates brief requirements.txt (top-level packages only)"}
+req_colab = {cmd="poetry show --only main --tree | grep -E '^[a-zA-Z0-9]' | awk '{print $1 \"==\" $2}' | grep -v -E '^ipython|^ipykernel' > requirements-colab.txt", help="Generates brief requirements for Colab (skips ipython)"}
+reqs = {cmd="task req_full && task req_brief", help="Builds standard requirements (full + brief)"}
+reqs_all = {cmd="task req_full && task req_brief && task req_colab", help="Builds ALL requirements (full + brief + colab)"}
+
+#FUTURE
+#lint = "poetry run ruff check ."
+#format = "poetry run ruff format ."
+#types = "poetry run mypy ."
+#test = "poetry run pytest"
+#all_checks = "task lint && task types && task test"
