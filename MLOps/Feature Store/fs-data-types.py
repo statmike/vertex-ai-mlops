@@ -263,12 +263,12 @@ print("\nLogical View Feature View:")
 features_list = logical_view_feature_view.read(key = key).to_dict()['features']
 print(features_to_dict(features_list))
 
-# retrive for multiple entities:
+# retrive for multiple entities - ooops this requires bigtable serving:
 from google.cloud.aiplatform_v1beta1 import FeatureOnlineStoreServiceClient
 from google.cloud.aiplatform_v1beta1.types import feature_online_store_service as feature_online_store_service_pb2
 
 data_client = FeatureOnlineStoreServiceClient(
-  client_options={"api_endpoint": f"LOCATION_ID-aiplatform.googleapis.com"}
+  client_options={"api_endpoint": f"{LOCATION}-aiplatform.googleapis.com"}
 )
 
 keys = [['entity-1'], ['entity-2'],]
