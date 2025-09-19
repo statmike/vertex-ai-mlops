@@ -442,6 +442,8 @@ print(f"Created view: {view_id}")
 view = bq_client.get_table(view_id)
 view.description = "Dense view of sparse table using ML.FEATURES_AT_TIME to get latest feature values"
 bq_client.update_table(view, ["description"])
+print("="*60)
+
 
 
 
@@ -472,5 +474,71 @@ print(f"Created view: {view_id}")
 view = bq_client.get_table(view_id)
 view.description = "Sparse wide format view of EAV table, pivoted from entity-attribute-value to columnar format"
 bq_client.update_table(view, ["description"])
+print("="*60)
+
+
+
+
+# Create individual views for each feature in ex_shape_eav_2 using procedural SQL
+print("\nCreating individual feature views for ex_shape_eav_2...")
+
+# Execute procedural SQL to create views dynamically
+create_views_sql = f"""
+DECLARE feature_list ARRAY<STRUCT<feature_name STRING, value_field STRING>>;
+DECLARE i INT64 DEFAULT 0;
+DECLARE current_feature STRING;
+DECLARE current_value_field STRING;
+DECLARE view_sql STRING;
+
+-- Determine the data type for each feature by checking which field is populated
+SET feature_list = ARRAY(
+  SELECT AS STRUCT
+    feature_name,
+    CASE
+      WHEN COUNT(feature_value.bool_value) > 0 THEN 'bool_value'
+      WHEN COUNT(feature_value.int_value) > 0 THEN 'int_value'
+      WHEN COUNT(feature_value.float_value) > 0 THEN 'float_value'
+      WHEN COUNT(feature_value.string_value) > 0 THEN 'string_value'
+    END AS value_field
+  FROM `{dataset_id}.ex_shape_eav_2`
+  GROUP BY feature_name
+  ORDER BY feature_name
+);
+
+-- Loop through each feature and create a view
+WHILE i < ARRAY_LENGTH(feature_list) DO
+  SET current_feature = feature_list[OFFSET(i)].feature_name;
+  SET current_value_field = feature_list[OFFSET(i)].value_field;
+
+  -- Build and execute the CREATE VIEW statement
+  SET view_sql = FORMAT('''
+    CREATE OR REPLACE VIEW `{dataset_id}.ex_shape_eav_2_%s`
+    OPTIONS(description="Sparse view for %s from EAV table ex_shape_eav_2")
+    AS
+    SELECT
+      entity_key,
+      timestamp,
+      feature_value.%s AS %s
+    FROM `{dataset_id}.ex_shape_eav_2`
+    WHERE feature_name = '%s'
+    ORDER BY entity_key, timestamp
+  ''', current_feature, current_feature, current_value_field, current_feature, current_feature);
+
+  EXECUTE IMMEDIATE view_sql;
+
+  SET i = i + 1;
+END WHILE;
+
+-- Return list of created views
+SELECT CONCAT('Created view: {dataset_id}.ex_shape_eav_2_', feature_name) as result
+FROM UNNEST(feature_list);
+"""
+
+# Execute the procedural SQL
+results = bq_client.query(create_views_sql).to_dataframe()
+for result in results['result']:
+    print(result)
+
+print("="*60)
 
 
