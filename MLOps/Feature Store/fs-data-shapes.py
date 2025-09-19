@@ -69,6 +69,43 @@ def pydantic_to_bq_field(field_name: str, field_type: Type, field_info) -> bigqu
         description=getattr(field_info, 'description', f"{field_name} field")
     )
 
+def transform_to_eav(df: pd.DataFrame, make_eav: bool) -> pd.DataFrame:
+    """Transform DataFrame to Entity-Attribute-Value format."""
+    if not make_eav:
+        return df
+
+    # Identify feature columns (exclude entity_key and timestamp)
+    metadata_cols = ['entity_key']
+    if 'timestamp' in df.columns:
+        metadata_cols.append('timestamp')
+
+    feature_cols = [col for col in df.columns if col not in metadata_cols]
+
+    # Reshape to EAV format
+    eav_rows = []
+    for _, row in df.iterrows():
+        metadata = {col: row[col] for col in metadata_cols}
+
+        for feature_col in feature_cols:
+            value = row[feature_col]
+            if pd.notna(value):  # Skip null values
+                eav_row = metadata.copy()
+                eav_row['feature_name'] = feature_col
+
+                # Create struct with type and value
+                if isinstance(value, bool):
+                    eav_row['feature_value'] = {'bool_value': value}
+                elif isinstance(value, int):
+                    eav_row['feature_value'] = {'int_value': value}
+                elif isinstance(value, float):
+                    eav_row['feature_value'] = {'float_value': value}
+                else:
+                    eav_row['feature_value'] = {'string_value': str(value)}
+
+                eav_rows.append(eav_row)
+
+    return pd.DataFrame(eav_rows)
+
 def apply_sparseness(df: pd.DataFrame, make_sparse: bool) -> pd.DataFrame:
     """Apply sparseness to a DataFrame by randomly deleting values."""
     if not make_sparse:
@@ -115,7 +152,8 @@ def create_table_from_schema(
     num_records: int = 1,
     num_entity: int = 10,
     table_description: str = None,
-    make_sparse: bool = False
+    make_sparse: bool = False,
+    make_eav: bool = False
 ) -> pd.DataFrame:
     """Create a BigQuery table from a Pydantic schema."""
     total_records = num_entity * num_records
@@ -159,7 +197,10 @@ def create_table_from_schema(
     # Apply sparseness if requested
     df = apply_sparseness(df, make_sparse)
 
-    print(f"Generated {len(df)} records{'(sparse)' if make_sparse else ''}")
+    # Transform to EAV if requested
+    df = transform_to_eav(df, make_eav)
+
+    print(f"Generated {len(df)} records{'(sparse)' if make_sparse else ''}{'(EAV)' if make_eav else ''}")
 
     # Save to GCS - convert NaN to None and handle data types
     records = []
@@ -182,26 +223,45 @@ def create_table_from_schema(
     gcs_uri = f"gs://{bucket_name}/{blob_path}"
     print(f"Saved to GCS: {gcs_uri}")
 
-    # Create BigQuery schema from Pydantic
-    type_hints = get_type_hints(record_schema)
-    bq_schema = []
+    # Create BigQuery schema
+    if make_eav:
+        # EAV schema
+        bq_schema = [
+            bigquery.SchemaField("entity_key", "STRING", mode="NULLABLE", description="Unique identifier for each entity"),
+            bigquery.SchemaField("feature_name", "STRING", mode="NULLABLE", description="Name of the feature"),
+            bigquery.SchemaField(
+                "feature_value", "RECORD", mode="NULLABLE", description="Feature value as struct",
+                fields=[
+                    bigquery.SchemaField("bool_value", "BOOLEAN", mode="NULLABLE", description="Boolean value"),
+                    bigquery.SchemaField("int_value", "INTEGER", mode="NULLABLE", description="Integer value"),
+                    bigquery.SchemaField("float_value", "FLOAT", mode="NULLABLE", description="Float value"),
+                    bigquery.SchemaField("string_value", "STRING", mode="NULLABLE", description="String value")
+                ]
+            )
+        ]
+        if make_sparse:
+            bq_schema.insert(1, bigquery.SchemaField("timestamp", "TIMESTAMP", mode="NULLABLE", description="Timestamp for the observation"))
+    else:
+        # Regular schema from Pydantic
+        type_hints = get_type_hints(record_schema)
+        bq_schema = []
 
-    for field_name, field_type in type_hints.items():
-        field_info = record_schema.model_fields.get(field_name)
-        bq_field = pydantic_to_bq_field(field_name, field_type, field_info)
-        bq_schema.append(bq_field)
+        for field_name, field_type in type_hints.items():
+            field_info = record_schema.model_fields.get(field_name)
+            bq_field = pydantic_to_bq_field(field_name, field_type, field_info)
+            bq_schema.append(bq_field)
 
-    # Add entity_key field if not in schema
-    if 'entity_key' not in type_hints:
-        bq_schema.append(
-            bigquery.SchemaField("entity_key", "STRING", mode="NULLABLE", description="Unique identifier for each entity")
-        )
+        # Add entity_key field if not in schema
+        if 'entity_key' not in type_hints:
+            bq_schema.append(
+                bigquery.SchemaField("entity_key", "STRING", mode="NULLABLE", description="Unique identifier for each entity")
+            )
 
-    # Add timestamp field if sparse
-    if make_sparse:
-        bq_schema.insert(0,
-            bigquery.SchemaField("timestamp", "TIMESTAMP", mode="NULLABLE", description="Timestamp for the observation")
-        )
+        # Add timestamp field if sparse
+        if make_sparse:
+            bq_schema.insert(0,
+                bigquery.SchemaField("timestamp", "TIMESTAMP", mode="NULLABLE", description="Timestamp for the observation")
+            )
 
     # Load into BigQuery
     table_id = f"{dataset_id}.{table_name}"
@@ -302,11 +362,86 @@ df4 = create_table_from_schema(
     make_sparse=True
 )
 
+# Create fifth table (EAV format sparse table)
+class EAVRecord(BaseModel):
+    """Table 5 with features 21-25 (will be made sparse and EAV)"""
+    feature_21: bool = Field(..., description="Boolean feature from table 5")
+    feature_22: int = Field(..., description="Integer feature (0-200) from table 5", ge=0, le=200)
+    feature_23: Literal['Alpha', 'Beta', 'Gamma', 'Delta'] = Field(..., description="String feature from table 5")
+    feature_24: float = Field(..., description="Float feature (0.0-10.0) from table 5", ge=0.0, le=10.0)
+    feature_25: bool = Field(..., description="Boolean feature from table 5")
+
+df5 = create_table_from_schema(
+    table_name="ex_shape_eav_1",
+    record_schema=EAVRecord,
+    num_records=5,  # per entity
+    num_entity=10,
+    table_description="EAV format sparse table with features 21-25",
+    make_sparse=True,
+    make_eav=True
+)
+
+# Create sixth table (second EAV format sparse table)
+class EAVRecord2(BaseModel):
+    """Table 6 with features 26-30 (will be made sparse and EAV)"""
+    feature_26: bool = Field(..., description="Boolean feature from table 6")
+    feature_27: int = Field(..., description="Integer feature (0-500) from table 6", ge=0, le=500)
+    feature_28: Literal['Red', 'Blue', 'Green', 'Yellow', 'Purple'] = Field(..., description="String feature from table 6")
+    feature_29: float = Field(..., description="Float feature (-1.0-1.0) from table 6", ge=-1.0, le=1.0)
+    feature_30: bool = Field(..., description="Boolean feature from table 6")
+
+df6 = create_table_from_schema(
+    table_name="ex_shape_eav_2",
+    record_schema=EAVRecord2,
+    num_records=5,  # per entity (different density)
+    num_entity=10,
+    table_description="EAV format sparse table with features 26-30",
+    make_sparse=True,
+    make_eav=True
+)
+
 print("\n" + "="*60)
 print("All tables created successfully!")
 print(f"Table 1: {dataset_id}.ex_shape_dense_1")
 print(f"Table 2: {dataset_id}.ex_shape_dense_2")
 print(f"Table 3: {dataset_id}.ex_shape_sparse_1")
 print(f"Table 4: {dataset_id}.ex_shape_sparse_2")
+print(f"Table 5: {dataset_id}.ex_shape_eav_1")
+print(f"Table 6: {dataset_id}.ex_shape_eav_2")
 print("="*60)
+
+# ============================================================================
+# CREATE VIEWS
+# ============================================================================
+
+print("\nCreating BigQuery views...")
+
+# Create view for ex_shape_sparse_2 using ML.FEATURES_AT_TIME
+view_name = "ex_shape_sparse_2_dense"
+view_id = f"{dataset_id}.{view_name}"
+
+# Create view using ML.FEATURES_AT_TIME (defaults to current time and all entities)
+view_query = f"""
+CREATE OR REPLACE VIEW `{view_id}` AS
+SELECT * EXCEPT (entity_id, feature_timestamp),
+    entity_id AS entity_key,
+    feature_timestamp AS timestamp
+FROM ML.FEATURES_AT_TIME(
+    (SELECT * EXCEPT(entity_key, timestamp), entity_key AS entity_id, timestamp AS feature_timestamp FROM `{dataset_id}.ex_shape_sparse_2`),
+    time => CURRENT_TIMESTAMP(),
+    num_rows => 1,
+    ignore_feature_nulls => TRUE
+)
+"""
+
+# Execute the view creation
+bq_client.query(view_query).result()
+print(f"Created view: {view_id}")
+
+# Add description to the view
+view = bq_client.get_table(view_id)
+view.description = "Dense view of sparse table using ML.FEATURES_AT_TIME to get latest feature values"
+bq_client.update_table(view, ["description"])
+
+
 
