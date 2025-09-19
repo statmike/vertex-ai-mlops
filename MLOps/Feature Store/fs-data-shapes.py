@@ -445,3 +445,32 @@ bq_client.update_table(view, ["description"])
 
 
 
+# Create view to convert EAV to sparse format
+view_name = "ex_shape_eav_1_sparse"
+view_id = f"{dataset_id}.{view_name}"
+
+view_query = f"""
+CREATE OR REPLACE VIEW `{view_id}` AS
+SELECT
+  entity_key,
+  timestamp,
+  MAX(IF(feature_name = 'feature_21', feature_value.bool_value, NULL)) AS feature_21,
+  MAX(IF(feature_name = 'feature_22', feature_value.int_value, NULL)) AS feature_22,
+  MAX(IF(feature_name = 'feature_23', feature_value.string_value, NULL)) AS feature_23,
+  MAX(IF(feature_name = 'feature_24', feature_value.float_value, NULL)) AS feature_24,
+  MAX(IF(feature_name = 'feature_25', feature_value.bool_value, NULL)) AS feature_25
+FROM `{dataset_id}.ex_shape_eav_1`
+GROUP BY entity_key, timestamp
+ORDER BY entity_key, timestamp
+"""
+
+# Execute the view creation
+bq_client.query(view_query).result()
+print(f"Created view: {view_id}")
+
+# Add description to the view
+view = bq_client.get_table(view_id)
+view.description = "Sparse wide format view of EAV table, pivoted from entity-attribute-value to columnar format"
+bq_client.update_table(view, ["description"])
+
+
