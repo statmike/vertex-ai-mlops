@@ -18,8 +18,6 @@ LOCATION = 'us-central1'
 
 # derived variables
 PROJECT_ID = subprocess.run(['gcloud', 'config', 'get-value', 'project'], capture_output=True, text=True).stdout.strip()
-SERIES = 'feature-store'
-EXPERIMENT = 'fs-data-types'
 TOPICS = ['mlops', 'feature-store', 'data-sources']
 
 # client setup
@@ -78,7 +76,7 @@ if not bucket.exists():
     print(f"Bucket {bucket_name} does not exist. Creating bucket.")
     storage_client.create_bucket(bucket_name, location=LOCATION)
 
-blob_path = f"{SERIES}/{EXPERIMENT}/data.jsonl"
+blob_path = '/'.join(TOPICS) + f"/data.jsonl"
 blob = bucket.blob(blob_path)
 blob.upload_from_string(jsonl_data)
 
