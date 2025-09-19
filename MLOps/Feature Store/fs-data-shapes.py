@@ -10,6 +10,8 @@ import json
 from google.cloud import storage
 from google.cloud import bigquery
 from google.cloud import aiplatform
+from vertexai.resources.preview import feature_store
+
 
 # static variable definitions
 LOCATION = 'us-central1'
@@ -74,10 +76,10 @@ def transform_to_eav(df: pd.DataFrame, make_eav: bool) -> pd.DataFrame:
     if not make_eav:
         return df
 
-    # Identify feature columns (exclude entity_key and timestamp)
+    # Identify feature columns (exclude entity_key and feature_timestamp)
     metadata_cols = ['entity_key']
-    if 'timestamp' in df.columns:
-        metadata_cols.append('timestamp')
+    if 'feature_timestamp' in df.columns:
+        metadata_cols.append('feature_timestamp')
 
     feature_cols = [col for col in df.columns if col not in metadata_cols]
 
@@ -122,10 +124,10 @@ def apply_sparseness(df: pd.DataFrame, make_sparse: bool) -> pd.DataFrame:
         timestamp = base_date + timedelta(days=random_days, hours=random_hours)
         timestamps.append(timestamp)
 
-    df.insert(0, 'timestamp', timestamps)
+    df.insert(0, 'feature_timestamp', timestamps)
 
-    # Apply sparseness - skip entity_key and timestamp columns
-    cols_to_sparse = [col for col in df.columns if col not in ['entity_key', 'timestamp']]
+    # Apply sparseness - skip entity_key and feature_timestamp columns
+    cols_to_sparse = [col for col in df.columns if col not in ['entity_key', 'feature_timestamp']]
 
     for idx in range(len(df)):
         # Dynamic probability: early records less sparse, later records more sparse
@@ -240,7 +242,7 @@ def create_table_from_schema(
             )
         ]
         if make_sparse:
-            bq_schema.insert(1, bigquery.SchemaField("timestamp", "TIMESTAMP", mode="NULLABLE", description="Timestamp for the observation"))
+            bq_schema.insert(1, bigquery.SchemaField("feature_timestamp", "TIMESTAMP", mode="NULLABLE", description="Timestamp for the observation"))
     else:
         # Regular schema from Pydantic
         type_hints = get_type_hints(record_schema)
@@ -257,10 +259,10 @@ def create_table_from_schema(
                 bigquery.SchemaField("entity_key", "STRING", mode="NULLABLE", description="Unique identifier for each entity")
             )
 
-        # Add timestamp field if sparse
+        # Add feature_timestamp field if sparse
         if make_sparse:
             bq_schema.insert(0,
-                bigquery.SchemaField("timestamp", "TIMESTAMP", mode="NULLABLE", description="Timestamp for the observation")
+                bigquery.SchemaField("feature_timestamp", "TIMESTAMP", mode="NULLABLE", description="Timestamp for the observation")
             )
 
     # Load into BigQuery
@@ -422,12 +424,23 @@ view_id = f"{dataset_id}.{view_name}"
 
 # Create view using ML.FEATURES_AT_TIME (defaults to current time and all entities)
 view_query = f"""
-CREATE OR REPLACE VIEW `{view_id}` AS
-SELECT * EXCEPT (entity_id, feature_timestamp),
-    entity_id AS entity_key,
-    feature_timestamp AS timestamp
+CREATE OR REPLACE VIEW `{view_id}` (
+    entity_key OPTIONS(DESCRIPTION='Unique identifier for each entity'),
+    feature_16 OPTIONS(DESCRIPTION='Boolean feature from table 4'),
+    feature_17 OPTIONS(DESCRIPTION='Integer feature (0-50) from table 4'),
+    feature_18 OPTIONS(DESCRIPTION='String feature from table 4'),
+    feature_19 OPTIONS(DESCRIPTION='Float feature (0.0-100.0) from table 4'),
+    feature_20 OPTIONS(DESCRIPTION='Boolean feature from table 4'),
+    feature_timestamp OPTIONS(DESCRIPTION='Timestamp for the observation')
+)
+OPTIONS(
+    description = "Dense view of sparse table using ML.FEATURES_AT_TIME to get latest feature values"
+)
+AS
+SELECT * EXCEPT (entity_id),
+    entity_id AS entity_key
 FROM ML.FEATURES_AT_TIME(
-    (SELECT * EXCEPT(entity_key, timestamp), entity_key AS entity_id, timestamp AS feature_timestamp FROM `{dataset_id}.ex_shape_sparse_2`),
+    (SELECT * EXCEPT(entity_key, feature_timestamp), entity_key AS entity_id, feature_timestamp FROM `{dataset_id}.ex_shape_sparse_2`),
     time => CURRENT_TIMESTAMP(),
     num_rows => 1,
     ignore_feature_nulls => TRUE
@@ -452,18 +465,30 @@ view_name = "ex_shape_eav_1_sparse"
 view_id = f"{dataset_id}.{view_name}"
 
 view_query = f"""
-CREATE OR REPLACE VIEW `{view_id}` AS
+CREATE OR REPLACE VIEW `{view_id}` (
+    entity_key OPTIONS(DESCRIPTION='Unique identifier for each entity'),
+    feature_timestamp OPTIONS(DESCRIPTION='Timestamp for the observation'),
+    feature_21 OPTIONS(DESCRIPTION='Boolean feature from table 5'),
+    feature_22 OPTIONS(DESCRIPTION='Integer feature (0-200) from table 5'),
+    feature_23 OPTIONS(DESCRIPTION='String feature from table 5'),
+    feature_24 OPTIONS(DESCRIPTION='Float feature (0.0-10.0) from table 5'),
+    feature_25 OPTIONS(DESCRIPTION='Boolean feature from table 5')
+)
+OPTIONS(
+    description = "Sparse wide format view of EAV table, pivoted from entity-attribute-value to columnar format"
+)
+AS
 SELECT
   entity_key,
-  timestamp,
+  feature_timestamp,
   MAX(IF(feature_name = 'feature_21', feature_value.bool_value, NULL)) AS feature_21,
   MAX(IF(feature_name = 'feature_22', feature_value.int_value, NULL)) AS feature_22,
   MAX(IF(feature_name = 'feature_23', feature_value.string_value, NULL)) AS feature_23,
   MAX(IF(feature_name = 'feature_24', feature_value.float_value, NULL)) AS feature_24,
   MAX(IF(feature_name = 'feature_25', feature_value.bool_value, NULL)) AS feature_25
 FROM `{dataset_id}.ex_shape_eav_1`
-GROUP BY entity_key, timestamp
-ORDER BY entity_key, timestamp
+GROUP BY entity_key, feature_timestamp
+ORDER BY entity_key, feature_timestamp
 """
 
 # Execute the view creation
@@ -512,17 +537,21 @@ WHILE i < ARRAY_LENGTH(feature_list) DO
 
   -- Build and execute the CREATE VIEW statement
   SET view_sql = FORMAT('''
-    CREATE OR REPLACE VIEW `{dataset_id}.ex_shape_eav_2_%s`
+    CREATE OR REPLACE VIEW `{dataset_id}.ex_shape_eav_2_%s` (
+      entity_key OPTIONS(DESCRIPTION="Unique identifier for each entity"),
+      feature_timestamp OPTIONS(DESCRIPTION="Timestamp for the observation"),
+      %s OPTIONS(DESCRIPTION="Feature %s from table 6")
+    )
     OPTIONS(description="Sparse view for %s from EAV table ex_shape_eav_2")
     AS
     SELECT
       entity_key,
-      timestamp,
+      feature_timestamp,
       feature_value.%s AS %s
     FROM `{dataset_id}.ex_shape_eav_2`
     WHERE feature_name = '%s'
-    ORDER BY entity_key, timestamp
-  ''', current_feature, current_feature, current_value_field, current_feature, current_feature);
+    ORDER BY entity_key, feature_timestamp
+  ''', current_feature, current_feature, current_feature, current_feature, current_value_field, current_feature, current_feature);
 
   EXECUTE IMMEDIATE view_sql;
 
@@ -540,5 +569,124 @@ for result in results['result']:
     print(result)
 
 print("="*60)
+
+
+
+
+
+
+
+# Get/Create Feature Store
+FEATURE_STORE_NAME = PROJECT_ID.replace('-', '_') + '_bigtable'
+try:
+    online_store = feature_store.FeatureOnlineStore(name = FEATURE_STORE_NAME)
+    # Check if it's a BigTable serving type
+    if online_store.feature_online_store_type.name == 'BIGTABLE':
+        print(f"Found the BigTable feature store:\n{online_store.resource_name}")
+    else:
+        raise Exception(f"Existing store is {online_store.feature_online_store_type}, not bigtable")
+except Exception as e:
+    print(f"Creating BigTable feature store... (reason: {e})")
+    online_store = feature_store.FeatureOnlineStore.create_bigtable_store(
+        name = FEATURE_STORE_NAME,
+        min_node_count = 1,
+        max_node_count = 2
+    )
+    print(f"Created the BigTable feature store:\n{online_store.resource_name}")
+
+
+# create Feature Groups
+
+def create_feature_group(name: str, bq_table_id: str, description: str) -> feature_store.FeatureGroup:
+    """Create or get a feature group for a BigQuery table or view."""
+    try:
+        # Try to get existing feature group
+        fg = feature_store.FeatureGroup(name=name)
+        print(f"Feature Group '{name}' already exists.")
+    except Exception:
+        # Create new feature group
+        print(f"Creating Feature Group '{name}'...")
+        fg = feature_store.FeatureGroup.create(
+            name=name,
+            description=description,
+            source=feature_store.utils.FeatureGroupBigQuerySource(
+                uri=f"bq://{bq_table_id}",
+                entity_id_columns=['entity_key']
+            )
+        )
+        print(f"Created Feature Group '{name}'")
+    return fg
+
+print("\n" + "="*60)
+print("Creating Feature Groups for tables and views...")
+print("="*60)
+
+# Create feature groups for all tables
+feature_groups = {}
+
+# Tables
+feature_groups['ex_shape_dense_1'] = create_feature_group(
+    'ex_shape_dense_1', f"{dataset_id}.ex_shape_dense_1",
+    'Dense feature table 1 with features 1-5 (boolean, integer 0-100, string High/Low, float 0.0-1.0, boolean)'
+)
+
+feature_groups['ex_shape_dense_2'] = create_feature_group(
+    'ex_shape_dense_2', f"{dataset_id}.ex_shape_dense_2",
+    'Dense feature table 2 with features 6-10 (boolean, integer 0-10, string High/Medium/Low, float 0.0-1.0, boolean)'
+)
+
+feature_groups['ex_shape_sparse_1'] = create_feature_group(
+    'ex_shape_sparse_1', f"{dataset_id}.ex_shape_sparse_1",
+    'Temporal sparse table with features 11-15, multiple timestamps per entity with increasing sparseness over time'
+)
+
+feature_groups['ex_shape_sparse_2'] = create_feature_group(
+    'ex_shape_sparse_2', f"{dataset_id}.ex_shape_sparse_2",
+    'Temporal sparse table with features 16-20 (boolean, integer 0-50, string Excellent/Good/Fair/Poor, float 0.0-100.0, boolean)'
+)
+
+feature_groups['ex_shape_eav_1'] = create_feature_group(
+    'ex_shape_eav_1', f"{dataset_id}.ex_shape_eav_1",
+    'EAV format sparse table with features 21-25 in entity-attribute-value structure with typed feature_value STRUCT'
+)
+
+feature_groups['ex_shape_eav_2'] = create_feature_group(
+    'ex_shape_eav_2', f"{dataset_id}.ex_shape_eav_2",
+    'EAV format sparse table with features 26-30 (boolean, integer 0-500, string colors, float -1.0-1.0, boolean) in entity-attribute-value structure'
+)
+
+# Views
+feature_groups['ex_shape_sparse_2_dense'] = create_feature_group(
+    'ex_shape_sparse_2_dense', f"{dataset_id}.ex_shape_sparse_2_dense",
+    'Dense view of sparse table using ML.FEATURES_AT_TIME to get latest feature values for all entities'
+)
+
+feature_groups['ex_shape_eav_1_sparse'] = create_feature_group(
+    'ex_shape_eav_1_sparse', f"{dataset_id}.ex_shape_eav_1_sparse",
+    'Sparse wide format view of EAV table, pivoted from entity-attribute-value to columnar format with features 21-25'
+)
+
+# Individual feature views from ex_shape_eav_2
+for feature_num in range(26, 31):
+    view_name = f"ex_shape_eav_2_feature_{feature_num}"
+    feature_types = {
+        26: 'boolean',
+        27: 'integer (0-500)',
+        28: 'string (Red/Blue/Green/Yellow/Purple)',
+        29: 'float (-1.0 to 1.0)',
+        30: 'boolean'
+    }
+    feature_groups[view_name] = create_feature_group(
+        view_name, f"{dataset_id}.{view_name}",
+        f'Individual sparse view for feature_{feature_num} ({feature_types[feature_num]}) extracted from EAV table ex_shape_eav_2'
+    )
+
+print("\n" + "="*60)
+print(f"Created {len(feature_groups)} Feature Groups")
+print("="*60)
+
+
+
+
 
 

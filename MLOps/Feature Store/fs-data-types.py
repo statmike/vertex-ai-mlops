@@ -201,7 +201,7 @@ FEATURE_STORE_NAME = PROJECT_ID.replace('-', '_') + '_bigtable'
 try:
     online_store = feature_store.FeatureOnlineStore(name = FEATURE_STORE_NAME)
     # Check if it's a BigTable serving type
-    if online_store.feature_online_store_type == 'bigtable':
+    if online_store.feature_online_store_type.name == 'BIGTABLE':
         print(f"Found the BigTable feature store:\n{online_store.resource_name}")
     else:
         raise Exception(f"Existing store is {online_store.feature_online_store_type}, not bigtable")
