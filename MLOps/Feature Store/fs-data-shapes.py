@@ -586,184 +586,121 @@ print("="*60)
 
 
 
+# ============================================================================
+# FEATURE GROUP AND FEATURE REGISTRATION
+# ============================================================================
 
+def register_source_as_feature_group(source_id: str, dataset_id: str) -> tuple[feature_store.FeatureGroup, dict]:
+    """
+    Creates a Feature Group for a given BigQuery source (table/view) and
+    registers its columns as Features.
 
+    Args:
+        source_id (str): The name of the BigQuery table or view.
+        dataset_id (str): The BigQuery dataset ID (e.g., 'project.dataset').
 
+    Returns:
+        tuple: A tuple containing:
+            - The created or retrieved feature_store.FeatureGroup object.
+            - A dictionary of the registered features for this group.
+            Returns (None, None) if the source can't be processed.
+    """
+    full_table_id = f"{dataset_id}.{source_id}"
+    bq_source_uri = f"bq://{full_table_id}"
 
-# create Feature Groups
-
-def create_feature_group(name: str, bq_table_id: str, description: str) -> feature_store.FeatureGroup:
-    """Create or get a feature group for a BigQuery table or view."""
     try:
-        # Try to get existing feature group
-        fg = feature_store.FeatureGroup(name=name)
-        print(f"Feature Group '{name}' already exists.")
+        table = bq_client.get_table(full_table_id)
+        description = table.description or f"Feature group for {source_id}"
+    except Exception as e:
+        print(f"  Warning: Could not retrieve metadata for {source_id}. Skipping. Error: {e}")
+        return None, None
+
+    # 1. Create or Get Feature Group
+    print(f"\nProcessing source: {source_id}")
+    try:
+        fg = feature_store.FeatureGroup(name=source_id)
+        print(f"  Feature Group '{source_id}' already exists.")
     except Exception:
-        # Create new feature group
-        print(f"Creating Feature Group '{name}'...")
+        print(f"  Creating Feature Group '{source_id}'...")
         fg = feature_store.FeatureGroup.create(
-            name=name,
+            name=source_id,
             description=description,
             source=feature_store.utils.FeatureGroupBigQuerySource(
-                uri=f"bq://{bq_table_id}",
+                uri=bq_source_uri,
                 entity_id_columns=['entity_key']
             )
         )
-        print(f"Created Feature Group '{name}'")
-    return fg
+        print(f"  Created Feature Group '{source_id}'")
 
-print("\n" + "="*60)
-print("Creating Feature Groups for tables and views...")
-print("="*60)
-
-# Create feature groups for all tables
-feature_groups = {}
-
-# Tables
-feature_groups['ex_shape_dense_1'] = create_feature_group(
-    'ex_shape_dense_1', f"{dataset_id}.ex_shape_dense_1",
-    'Dense feature table 1 with features 1-5 (boolean, integer 0-100, string High/Low, float 0.0-1.0, boolean)'
-)
-
-feature_groups['ex_shape_dense_2'] = create_feature_group(
-    'ex_shape_dense_2', f"{dataset_id}.ex_shape_dense_2",
-    'Dense feature table 2 with features 6-10 (boolean, integer 0-10, string High/Medium/Low, float 0.0-1.0, boolean)'
-)
-
-feature_groups['ex_shape_sparse_1'] = create_feature_group(
-    'ex_shape_sparse_1', f"{dataset_id}.ex_shape_sparse_1",
-    'Temporal sparse table with features 11-15, multiple timestamps per entity with increasing sparseness over time'
-)
-
-# Views
-feature_groups['ex_shape_sparse_2_dense'] = create_feature_group(
-    'ex_shape_sparse_2_dense', f"{dataset_id}.ex_shape_sparse_2_dense",
-    'Dense view of sparse table using ML.FEATURES_AT_TIME to get latest feature values for all entities'
-)
-
-feature_groups['ex_shape_eav_1_sparse'] = create_feature_group(
-    'ex_shape_eav_1_sparse', f"{dataset_id}.ex_shape_eav_1_sparse",
-    'Sparse wide format view of EAV table, pivoted from entity-attribute-value to columnar format with features 21-25'
-)
-
-# Individual feature views from ex_shape_eav_2
-for feature_num in range(26, 31):
-    view_name = f"ex_shape_eav_2_feature_{feature_num}"
-    feature_types = {
-        26: 'boolean',
-        27: 'integer (0-500)',
-        28: 'string (Red/Blue/Green/Yellow/Purple)',
-        29: 'float (-1.0 to 1.0)',
-        30: 'boolean'
-    }
-    feature_groups[view_name] = create_feature_group(
-        view_name, f"{dataset_id}.{view_name}",
-        f'Individual sparse view for feature_{feature_num} ({feature_types[feature_num]}) extracted from EAV table ex_shape_eav_2'
-    )
-
-print("\n" + "="*60)
-print(f"Created {len(feature_groups)} Feature Groups")
-print("="*60)
-
-
-
-
-# Get column descriptions from BigQuery tables/views
-def get_column_descriptions(table_id: str) -> dict:
-    """Retrieve column descriptions from BigQuery table schema."""
-    descriptions = {}
-    try:
-        table = bq_client.get_table(table_id)
-        for field in table.schema:
-            descriptions[field.name] = field.description or f"{field.name} field"
-    except Exception as e:
-        print(f"  Warning: Could not retrieve schema for {table_id}: {e}")
-    return descriptions
-
-# Register features within each feature group
-def register_features(feature_group, feature_names: list, descriptions: dict = None) -> dict:
-    """Register features for a feature group, checking if they exist first."""
+    # 2. Register Features from table schema
     registered_features = {}
-    descriptions = descriptions or {}
-
-    for feature_name in feature_names:
-        # Skip entity_key and feature_timestamp as they are not features
-        if feature_name in ['entity_key', 'feature_timestamp']:
+    for field in table.schema:
+        feature_name = field.name
+        # Skip columns that are not features
+        if feature_name in ['entity_key', 'feature_timestamp', 'feature_name', 'feature_value']:
             continue
 
-        feature_description = descriptions.get(feature_name, f"{feature_name} feature")
-
+        feature_description = field.description or f"Feature: {feature_name}"
         try:
-            # Try to get existing feature
-            feature = feature_group.get_feature(feature_id=feature_name)
-            print(f"  Feature '{feature_name}' already exists in group '{feature_group.name}'")
+            feature = fg.get_feature(feature_id=feature_name)
+            print(f"    - Feature '{feature_name}' already exists.")
         except Exception:
-            # Create new feature with description
-            feature = feature_group.create_feature(
+            print(f"    - Registering feature '{feature_name}'...")
+            feature = fg.create_feature(
                 name=feature_name,
                 description=feature_description
             )
-            print(f"  Created feature '{feature_name}' in group '{feature_group.name}'")
-
         registered_features[feature_name] = feature
+    
+    if registered_features:
+        print(f"  Registered {len(registered_features)} features for group '{source_id}'.")
+    else:
+        print(f"  No new features to register for group '{source_id}'.")
 
-    return registered_features
+    return fg, registered_features
 
 print("\n" + "="*60)
-print("Registering features in Feature Groups...")
+print("Starting Feature Group and Feature Registration...")
 print("="*60)
 
-# Define features for each group based on their source tables
-feature_definitions = {
-    'ex_shape_dense_1': ['feature_1', 'feature_2', 'feature_3', 'feature_4', 'feature_5'],
-    'ex_shape_dense_2': ['feature_6', 'feature_7', 'feature_8', 'feature_9', 'feature_10'],
-    'ex_shape_sparse_1': ['feature_11', 'feature_12', 'feature_13', 'feature_14', 'feature_15'],
-    'ex_shape_sparse_2_dense': ['feature_16', 'feature_17', 'feature_18', 'feature_19', 'feature_20'],
-    'ex_shape_eav_1_sparse': ['feature_21', 'feature_22', 'feature_23', 'feature_24', 'feature_25']
-}
-
-# Add individual feature views from ex_shape_eav_2 (features 26-30)
+# Define the list of sources (tables and views) to register.
+# This list matches the sources that have a direct columnar feature representation.
+sources_to_register = [
+    "ex_shape_dense_1",
+    "ex_shape_dense_2",
+    "ex_shape_sparse_1",
+    "ex_shape_sparse_2_dense",
+    "ex_shape_eav_1_sparse",
+]
+# Add the dynamically created views for ex_shape_eav_2
 for feature_num in range(26, 31):
-    view_name = f"ex_shape_eav_2_feature_{feature_num}"
-    feature_definitions[view_name] = [f'feature_{feature_num}']
+    sources_to_register.append(f"ex_shape_eav_2_feature_{feature_num}")
 
-# Map feature groups to their source tables/views for description retrieval
-source_tables = {
-    'ex_shape_dense_1': f"{dataset_id}.ex_shape_dense_1",
-    'ex_shape_dense_2': f"{dataset_id}.ex_shape_dense_2",
-    'ex_shape_sparse_1': f"{dataset_id}.ex_shape_sparse_1",
-    'ex_shape_sparse_2_dense': f"{dataset_id}.ex_shape_sparse_2_dense",
-    'ex_shape_eav_1_sparse': f"{dataset_id}.ex_shape_eav_1_sparse"
-}
-
-# Add individual feature view sources
-for feature_num in range(26, 31):
-    view_name = f"ex_shape_eav_2_feature_{feature_num}"
-    source_tables[view_name] = f"{dataset_id}.{view_name}"
-
-# Register features for each group with descriptions from source
 all_features = {}
-for group_name, feature_list in feature_definitions.items():
-    if group_name in feature_groups:
-        print(f"\nRegistering features for {group_name}:")
+feature_groups = {}
 
-        # Get descriptions from the source table/view
-        source_table = source_tables.get(group_name)
-        if source_table:
-            descriptions = get_column_descriptions(source_table)
-        else:
-            descriptions = {}
-
-        all_features[group_name] = register_features(
-            feature_groups[group_name],
-            feature_list,
-            descriptions
-        )
+# Loop through the sources and register them
+for source_id in sources_to_register:
+    fg, features = register_source_as_feature_group(source_id, dataset_id)
+    if fg:
+        feature_groups[source_id] = fg
+        if features:
+            all_features[source_id] = features
 
 print("\n" + "="*60)
-print(f"Feature registration complete!")
-print(f"Total features registered: {sum(len(features) for features in all_features.values())}")
+print(f"Registration complete!")
+total_groups = len(feature_groups)
+total_features = sum(len(features) for features in all_features.values())
+print(f"Total Feature Groups processed: {total_groups}")
+print(f"Total Features registered: {total_features}")
 print("="*60)
+
+
+
+
+
+
+
 
 
 
