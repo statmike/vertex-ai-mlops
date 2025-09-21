@@ -602,7 +602,7 @@ def register_source_as_feature_group(source_id: str, dataset_id: str) -> tuple[f
     Returns:
         tuple: A tuple containing:
             - The created or retrieved feature_store.FeatureGroup object.
-            - A dictionary of the registered features for this group.
+            - A dictionary of all features for this group (both new and existing).
             Returns (None, None) if the source can't be processed.
     """
     full_table_id = f"{dataset_id}.{source_id}"
@@ -633,7 +633,8 @@ def register_source_as_feature_group(source_id: str, dataset_id: str) -> tuple[f
         print(f"  Created Feature Group '{source_id}'")
 
     # 2. Register Features from table schema
-    registered_features = {}
+    newly_registered_features = {}
+    all_group_features = {}
     for field in table.schema:
         feature_name = field.name
         # Skip columns that are not features
@@ -650,14 +651,16 @@ def register_source_as_feature_group(source_id: str, dataset_id: str) -> tuple[f
                 name=feature_name,
                 description=feature_description
             )
-        registered_features[feature_name] = feature
+            newly_registered_features[feature_name] = feature
+        
+        all_group_features[feature_name] = feature
     
-    if registered_features:
-        print(f"  Registered {len(registered_features)} features for group '{source_id}'.")
+    if newly_registered_features:
+        print(f"  Registered {len(newly_registered_features)} new features for group '{source_id}'.")
     else:
         print(f"  No new features to register for group '{source_id}'.")
 
-    return fg, registered_features
+    return fg, all_group_features
 
 print("\n" + "="*60)
 print("Starting Feature Group and Feature Registration...")
