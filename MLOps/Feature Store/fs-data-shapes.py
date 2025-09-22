@@ -712,18 +712,29 @@ print("="*60)
 # Get/Create Feature Store
 FEATURE_STORE_NAME = PROJECT_ID.replace('-', '_') + '_bigtable'
 try:
-    online_store = feature_store.FeatureOnlineStore(name = FEATURE_STORE_NAME)
-    # Check if it's a BigTable serving type
+    online_store = feature_store.FeatureOnlineStore(name=FEATURE_STORE_NAME)
+    # If the store exists, verify it's the correct type
     if online_store.feature_online_store_type.name == 'BIGTABLE':
         print(f"Found the BigTable feature store:\n{online_store.resource_name}")
     else:
-        raise Exception(f"Existing store is {online_store.feature_online_store_type}, not bigtable")
+        # If it's the wrong type, raise an error as the script cannot proceed.
+        raise TypeError(
+            f"Store '{FEATURE_STORE_NAME}' exists but is type "
+            f"'{online_store.feature_online_store_type.name}', not 'BIGTABLE'."
+        )
 except Exception as e:
-    print(f"Creating BigTable feature store... (reason: {e})")
+    # Re-raise the specific TypeError to halt execution.
+    if isinstance(e, TypeError):
+        raise
+    
+    # Otherwise, assume the store was not found and create it.
+    # A more specific exception catch (e.g., for google.api_core.exceptions.NotFound)
+    # would be better if the specific exception class were known and importable.
+    print(f"Creating BigTable feature store '{FEATURE_STORE_NAME}'... (Reason: {e})")
     online_store = feature_store.FeatureOnlineStore.create_bigtable_store(
-        name = FEATURE_STORE_NAME,
-        min_node_count = 1,
-        max_node_count = 2
+        name=FEATURE_STORE_NAME,
+        min_node_count=1,
+        max_node_count=2
     )
     print(f"Created the BigTable feature store:\n{online_store.resource_name}")
 
@@ -732,271 +743,314 @@ except Exception as e:
 
 
 
-# function to get/create a feature view in the store
-def get_or_create_feature_view(feature_view_name: str, features_list: list, online_store: feature_store.FeatureOnlineStore) -> feature_store.FeatureView:
-    """Create or get a feature view using registry source with format 'featuregroup.feature'."""
+# function to sync a feature view in the store
+def sync_feature_view(
+    feature_view_name: str,
+    features_list: list,
+    online_store: feature_store.FeatureOnlineStore,
+    sync_config: str
+) -> feature_store.FeatureView:
+    """
+    Ensures a Feature View is synced with the provided feature list.
+
+    This function is idempotent. It checks if a view exists. If it does, it
+    compares its feature list with the desired list. If different, it recreates
+    the view. If the view does not exist, it creates it.
+    """
+    desired_features = sorted(features_list)
+
     try:
         feature_view = feature_store.FeatureView(
-            name = feature_view_name,
-            feature_online_store_id = online_store.resource_name
+            name=feature_view_name,
+            feature_online_store_id=online_store.resource_name
         )
-        print(f"Feature View '{feature_view_name}' already exists.")
+
+        # View exists, get its current features to check for drift
+        current_features = []
+        source = feature_view.gca_resource.feature_registry_source
+        if source:
+            for group in source.feature_groups:
+                for feature_id in group.feature_ids:
+                    current_features.append(f"{group.feature_group_id}.{feature_id}")
+        current_features = sorted(current_features)
+
+        # If the features are the same, no update is needed
+        if current_features == desired_features:
+            print(f"Feature View '{feature_view_name}' already exists and is up-to-date.")
+            return feature_view
+        
+        # Otherwise, recreate the view to update the feature list
+        print(f"Feature View '{feature_view_name}' is outdated. Recreating...")
+        feature_view.delete()
+        
+        # Create the view again with the updated feature list
+        new_view = online_store.create_feature_view(
+            name=feature_view_name,
+            source=feature_store.utils.FeatureViewRegistrySource(features=desired_features),
+            sync_config=sync_config
+        )
+        print(f"Feature View '{feature_view_name}' recreated successfully.")
+        return new_view
+
     except Exception:
+        # This block is triggered if the view is not found initially.
         print(f"Creating Feature View '{feature_view_name}'...")
         feature_view = online_store.create_feature_view(
-            name = feature_view_name,
-            source = feature_store.utils.FeatureViewRegistrySource(
-                features = features_list
-            ),
-            sync_config = 'TZ=America/New_York 0 0 1 * *' # Ex: first day of every month at 00:00
+            name=feature_view_name,
+            source=feature_store.utils.FeatureViewRegistrySource(features=desired_features),
+            sync_config=sync_config
         )
-        print(f"Feature View '{feature_view_name}' created.")
-    return feature_view
+        print(f"Feature View '{feature_view_name}' created successfully.")
+        return feature_view
 
 # Create feature views for different feature combinations
-print("\n" + "="*60)
-print("Creating Feature Views...")
-print("="*60)
-
-# Build lists of features in 'featuregroup.feature' format
-all_features_list = []
-odd_features_list = []
-even_features_list = []
-
-# Iterate through all registered features to build the lists
-for group_name, features in all_features.items():
-    for feature_name in features.keys():
-        feature_ref = f"{group_name}.{feature_name}"
-        all_features_list.append(feature_ref)
-
-        # Extract feature number from feature_name (e.g., 'feature_1' -> 1)
-        feature_num = int(feature_name.split('_')[1])
-
-        if feature_num % 2 == 0:
-            even_features_list.append(feature_ref)
-        else:
-            odd_features_list.append(feature_ref)
-
-# Create the three feature views
-print(f"\nAll features list ({len(all_features_list)} features):")
-print(f"  Features: {', '.join(sorted(all_features_list)[:5])}... (showing first 5)")
-
-all_features_view = get_or_create_feature_view(
-    feature_view_name="all_features",
-    features_list=all_features_list,
-    online_store=online_store
-)
-
-print(f"\nOdd features list ({len(odd_features_list)} features):")
-print(f"  Features: {', '.join(sorted(odd_features_list)[:5])}... (showing first 5)")
-
-odd_features_view = get_or_create_feature_view(
-    feature_view_name="odd_features",
-    features_list=odd_features_list,
-    online_store=online_store
-)
-
-print(f"\nEven features list ({len(even_features_list)} features):")
-print(f"  Features: {', '.join(sorted(even_features_list)[:5])}... (showing first 5)")
-
-even_features_view = get_or_create_feature_view(
-    feature_view_name="even_features",
-    features_list=even_features_list,
-    online_store=online_store
-)
-
-print("\n" + "="*60)
-print("Feature Views created successfully!")
-print("="*60)
-
-
-
-
-# Manually sync the three feature views
 print("\n" + "="*60)
 print("Syncing Feature Views...")
 print("="*60)
 
-all_sync = all_features_view.sync()
-odd_sync = odd_features_view.sync()
-even_sync = even_features_view.sync()
+# Build lists of features in 'featuregroup.feature' format using list comprehensions
+all_features_list = [
+    f"{group_name}.{feature_name}"
+    for group_name, features in all_features.items()
+    for feature_name in features.keys()
+]
+odd_features_list = [
+    f for f in all_features_list if int(f.split('.')[-1].split('_')[1]) % 2 != 0
+]
+even_features_list = [
+    f for f in all_features_list if int(f.split('.')[-1].split('_')[1]) % 2 == 0
+]
 
-sync_jobs = {
-    'all_features': {'job': all_sync, 'view': all_features_view, 'completed': False},
-    'odd_features': {'job': odd_sync, 'view': odd_features_view, 'completed': False},
-    'even_features': {'job': even_sync, 'view': even_features_view, 'completed': False},
+# Define the feature views to be created or updated
+SYNC_CONFIG = 'TZ=America/New_York 0 0 1 * *' # Ex: first day of every month at 00:00
+feature_view_definitions = {
+    "all_features": all_features_list,
+    "odd_features": odd_features_list,
+    "even_features": even_features_list,
 }
 
-import time
-import datetime as dt
+# Sync each feature view
+feature_views = {}
+for view_name, features in feature_view_definitions.items():
+    print(f"\nSyncing view: {view_name} ({len(features)} features)")
+    if features:
+        print(f"  Sample features: {', '.join(sorted(features)[:5])}...")
+    feature_views[view_name] = sync_feature_view(
+        feature_view_name=view_name,
+        features_list=features,
+        online_store=online_store,
+        sync_config=SYNC_CONFIG
+    )
 
-waited = 0
-while True:
-    all_completed = True
-    for job_name, job_info in sync_jobs.items():
-        if not job_info['completed']:
-            all_completed = False
-            sync_status = job_info['view'].get_sync(name = job_info['job'].name).to_dict()
-            if 'endTime' in list(sync_status['runTime'].keys()):
-                job_info['completed'] = True
-                seconds = (
-                    dt.datetime.fromisoformat(sync_status['runTime']['endTime'].replace('Z', '+00:00'))
-                    -
-                    dt.datetime.fromisoformat(sync_status['runTime']['startTime'].replace('Z', '+00:00'))
-                ).total_seconds()
-                rows = sync_status['syncSummary']['rowSynced']
-                print(f"Sync for {job_name} completed in {seconds} seconds and synced {rows} rows.")
+# Unpack views into the original variables for downstream compatibility
+all_features_view = feature_views['all_features']
+odd_features_view = feature_views['odd_features']
+even_features_view = feature_views['even_features']
 
-    if all_completed:
-        print("All sync jobs completed.")
-        break
-    else:
-        print(f"Waited {waited} seconds, Update again in 30 seconds...")
-        time.sleep(30)
-        waited += 30
+print("\n" + "="*60)
+print("Feature Views updated successfully!")
+print("="*60)
 
+
+
+# function to start and monitor sync jobs for a set of feature views
+def wait_for_sync_jobs(feature_views: dict):
+    """
+    Starts sync jobs for all given feature views and polls until they complete.
+
+    Args:
+        feature_views (dict): A dictionary mapping view names to FeatureView objects.
+    """
+    import time
+    import datetime as dt
+
+    # Start a sync job for each view and store the job object
+    active_jobs = {
+        view_name: view.sync() for view_name, view in feature_views.items()
+    }
+    print(f"Started {len(active_jobs)} sync jobs: {list(active_jobs.keys())}")
+
+    while active_jobs:
+        # Iterate over a copy of keys since we modify the dict in the loop
+        for view_name in list(active_jobs.keys()):
+            job = active_jobs[view_name]
+            view = feature_views[view_name]
+            
+            try:
+                # Fetch the latest status of the sync job
+                sync_status = view.get_sync(name=job.name).to_dict()
+                
+                # Check for completion by looking for an 'endTime'
+                if 'endTime' in sync_status.get('runTime', {}):
+                    start_time = dt.datetime.fromisoformat(sync_status['runTime']['startTime'].replace('Z', '+00:00'))
+                    end_time = dt.datetime.fromisoformat(sync_status['runTime']['endTime'].replace('Z', '+00:00'))
+                    duration_sec = (end_time - start_time).total_seconds()
+                    rows_synced = sync_status.get('syncSummary', {}).get('rowSynced', 'N/A')
+                    
+                    print(f"✓ Sync for '{view_name}' completed in {duration_sec:.2f}s ({rows_synced} rows).")
+                    del active_jobs[view_name] # Remove completed job from tracking
+            except Exception as e:
+                print(f"✗ Error checking status for '{view_name}': {e}. Removing from watch list.")
+                del active_jobs[view_name]
+                
+        if active_jobs:
+            print(f"Waiting for {len(active_jobs)} jobs to complete: {list(active_jobs.keys())}. Checking again in 10s...")
+            time.sleep(10)
+
+    print("\nAll sync jobs have been processed.")
+
+# Start and wait for all feature view sync jobs to complete
+print("\n" + "="*60)
+print("Starting and monitoring sync jobs for all feature views...")
+print("="*60)
+# Create the dictionary of views to pass to the monitoring function
+views_to_sync = {
+    'all_features': all_features_view,
+    'odd_features': odd_features_view,
+    'even_features': even_features_view,
+}
+wait_for_sync_jobs(views_to_sync)
 print("="*60)
 
 
 
 
+# Helper function to parse the inner value of a feature struct
+def _parse_feature_value(feature_struct: dict):
+    """Extracts the typed value from a feature's value dictionary."""
+    value_dict = feature_struct.get('value', {})
+    if not value_dict:
+        return None
+    
+    # The original code casts int64 from string to int.
+    if 'int64_value' in value_dict:
+        return int(value_dict['int64_value'])
+    
+    # For other types, just return the first value found in the dictionary.
+    try:
+        return next(iter(value_dict.values()))
+    except StopIteration:
+        return None
+
 # Retrieve features from feature view for a single entity:
-def features_to_dict(features_list):
-    """Converts a list of feature objects to a simple dictionary."""
+def features_to_dict(features_list: list):
+    """Converts a list of raw feature structs to a simple name:value dictionary."""
     if not features_list:
         return {}
+    
+    return {
+        f.get('name'): _parse_feature_value(f)
+        for f in features_list
+        if f.get('name') and f.get('name') != 'feature_timestamp'
+    }
 
-    result = {}
-    for feature in features_list:
-        name = feature.get('name')
-        if not name:
-            continue
-
-        # Skip metadata fields
-        if name == 'feature_timestamp':
-            continue
-
-        # Handle features that might not have a value
-        if 'value' not in feature:
-            result[name] = None
-            continue
-
-        # Extract the actual value from the typed value dict
-        value_dict = feature['value']
-        if 'bool_value' in value_dict:
-            result[name] = value_dict['bool_value']
-        elif 'int64_value' in value_dict:
-            result[name] = int(value_dict['int64_value'])
-        elif 'double_value' in value_dict:
-            result[name] = value_dict['double_value']
-        elif 'string_value' in value_dict:
-            result[name] = value_dict['string_value']
-        else:
-            result[name] = None
-
-    return result
-
+# --- Main retrieval and display logic ---
 print("\n" + "="*60)
 print("Single Entity Feature Retrieval...")
 print("="*60)
 
-# Retrieve from each of the three feature views
 key = ['entity-1']
+views_to_read = {
+    "All Features": all_features_view,
+    "Odd Features": odd_features_view,
+    "Even Features": even_features_view,
+}
 
-print("\nAll Features View:")
-features_list = all_features_view.read(key = key).to_dict()['features']
-all_features_dict = features_to_dict(features_list)
-print(f"  Total features: {len(all_features_dict)}")
-print(f"  Sample features: {dict(list(all_features_dict.items())[:5])}...")
-
-print("\nOdd Features View:")
-features_list = odd_features_view.read(key = key).to_dict()['features']
-odd_features_dict = features_to_dict(features_list)
-print(f"  Total features: {len(odd_features_dict)}")
-print(f"  Features: {odd_features_dict}")
-
-print("\nEven Features View:")
-features_list = even_features_view.read(key = key).to_dict()['features']
-even_features_dict = features_to_dict(features_list)
-print(f"  Total features: {len(even_features_dict)}")
-print(f"  Features: {even_features_dict}")
+for view_name, view_obj in views_to_read.items():
+    print(f"\n{view_name} View (for entity: '{key[0]}'):")
+    
+    try:
+        # Read features from the view and get the list of feature structs
+        raw_features = view_obj.read(key=key).to_dict().get('features', [])
+        
+        # Parse into a simple dictionary
+        parsed_features = features_to_dict(raw_features)
+        
+        print(f"  Total features retrieved: {len(parsed_features)}")
+        
+        # Display all features for smaller views, and a sample for the large one
+        if 'All' in view_name:
+            print(f"  Sample features: {dict(list(parsed_features.items())[:5])}...")
+        else:
+            print(f"  Features: {parsed_features}")
+            
+    except Exception as e:
+        print(f"  Could not retrieve features for this view. Error: {e}")
 
 print("="*60)
-
 
 
 
 # Retrieve features for multiple entities - requires bigtable serving:
 
+# This client uses the lower-level GAPIC library for streaming performance.
+# Note: The imports for these clients are assumed to be in the environment, e.g.:
+# from google.cloud.aiplatform_v1.services.feature_online_store_service.client import FeatureOnlineStoreServiceClient
+# from google.cloud.aiplatform_v1.types import feature_online_store_service as feature_online_store_service_pb2
+
+from google.cloud.aiplatform_v1beta1 import FeatureOnlineStoreServiceClient
+from google.cloud.aiplatform_v1beta1.types import feature_online_store_service as feature_online_store_service_pb2
+
 data_client = FeatureOnlineStoreServiceClient(
     client_options={"api_endpoint": f"{LOCATION}-aiplatform.googleapis.com"}
 )
 
-# Which entities to request:
-keys = [['entity-1'], ['entity-2'], ['entity-3']]
+# Define entities to request
+entity_keys = [['entity-1'], ['entity-2'], ['entity-3']]
 
 print("\n" + "="*60)
-print("Retrieving features from Feature Views...")
+print(f"Streaming Feature Retrieval for entities: {[k[0] for k in entity_keys]}...")
 print("="*60)
 
-# Test retrieval from each of the three feature views
-feature_views_to_test = {
+# Define which views to test
+views_to_test = {
     'all_features': all_features_view,
     'odd_features': odd_features_view,
     'even_features': even_features_view
 }
 
-for view_name, feature_view in feature_views_to_test.items():
+for view_name, view_obj in views_to_test.items():
     print(f"\n--- Fetching from {view_name} view ---")
-
-    # Prepare the request for this feature view
-    requests = []
-    for key in keys:
-        requests.append(
+    
+    try:
+        # Prepare one request for each entity key
+        requests = [
             feature_online_store_service_pb2.StreamingFetchFeatureValuesRequest(
-                feature_view=feature_view.resource_name,
-                data_keys=[
-                    feature_online_store_service_pb2.FeatureViewDataKey(key=k)
-                    for k in key
-                ]
+                feature_view=view_obj.resource_name,
+                data_keys=[feature_online_store_service_pb2.FeatureViewDataKey(key=k) for k in key_list]
             )
-        )
+            for key_list in entity_keys
+        ]
 
-    # Retrieve the responses
-    responses = data_client.streaming_fetch_feature_values(
-        requests=iter(requests)
-    )
+        # Retrieve and process the streaming responses
+        responses = data_client.streaming_fetch_feature_values(requests=iter(requests))
+        
+        print(f"Results from {view_name}:")
+        for i, response in enumerate(responses):
+            if response.status and response.status.code != 0:
+                print(f"  Request for entity {entity_keys[i]} failed: {response.status.message}")
+                continue
 
-    # Process streaming responses
-    print(f"Results from {view_name}:")
+            for data_item in response.data:
+                entity_id = data_item.data_key.key
+                
+                # Parse features from the response
+                features = {
+                    feature.name: (feature.value.string_value or
+                                  feature.value.int64_value or
+                                  feature.value.double_value or
+                                  feature.value.bool_value or
+                                  None)
+                    for feature in data_item.key_values.features
+                } if data_item.key_values else {}
 
-    for i, response in enumerate(responses):
-        # Handle errors
-        if response.status and response.status.code != 0:
-            print(f"  Entity {i+1} Error: {response.status.message}")
-            continue
-
-        # Process each entity's data
-        for data_item in response.data:
-            entity_id = data_item.data_key.key if data_item.data_key else 'unknown'
-
-            # Extract features
-            features = {
-                feature.name: (feature.value.string_value or
-                              feature.value.int64_value or
-                              feature.value.double_value or
-                              feature.value.bool_value or
-                              None)
-                for feature in data_item.key_values.features
-            } if data_item.key_values else {}
-
-            # Show entity and feature count (full features would be too verbose)
-            print(f"  Entity: {entity_id}, Features retrieved: {len(features)}")
-
-            # Show first 3 features as sample
-            if features:
-                sample_features = dict(list(features.items())[:3])
-                print(f"    Sample features: {sample_features}...")
+                print(f"  Entity: {entity_id}, Features retrieved: {len(features)}")
+                if features:
+                    sample = dict(list(features.items())[:3])
+                    print(f"    Sample features: {sample}...")
+                    
+    except Exception as e:
+        print(f"  An error occurred while fetching from '{view_name}': {e}")
 
 print("\n" + "="*60)
 
