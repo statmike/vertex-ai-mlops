@@ -1170,23 +1170,54 @@ def get_training_data_from_view(
     cte_queries = []
     all_features = []
 
+    # Get entity columns from first feature group (should be same for all)
+    first_fg = feature_store.FeatureGroup(name=feature_groups[0].feature_group_id)
+    entity_columns = first_fg.gca_resource.big_query.entity_id_columns
+
     for idx, group_spec in enumerate(feature_groups):
         # Get source table/view
         fg = feature_store.FeatureGroup(name=group_spec.feature_group_id)
         table_uri = fg.gca_resource.big_query.big_query_source.input_uri
         table_id = table_uri.replace('bq://', '')
 
+        # Build entity_id expression (concatenate if multiple columns)
+        if len(entity_columns) > 1:
+            entity_id_expr = "CONCAT(" + ", '-', ".join([f"CAST({col} AS STRING)" for col in entity_columns]) + ")"
+        else:
+            entity_id_expr = f"CAST({entity_columns[0]} AS STRING)"
+
+        # Map feature IDs to actual BigQuery column names
+        feature_mappings = []
+        feature_select_list = []
+        for feature_id in group_spec.feature_ids:
+            try:
+                feature = fg.get_feature(feature_id=feature_id)
+                bq_column = feature.gca_resource.version_column_name
+                # If version_column_name is set and different from feature_id, create alias
+                if bq_column and bq_column != feature_id:
+                    feature_select_list.append(f"{bq_column} AS {feature_id}")
+                else:
+                    # No mapping needed, use feature_id directly
+                    feature_select_list.append(feature_id)
+            except Exception:
+                # If we can't get the feature metadata, assume column name matches feature_id
+                feature_select_list.append(feature_id)
+
+        # Build the feature selection string for the inner query
+        features_inner = ', '.join(feature_select_list)
+        # Build the feature list for the outer SELECT (just the feature IDs)
+        features_outer = ', '.join(group_spec.feature_ids)
+
         # Build the CTE using ML.FEATURES_AT_TIME
         # This works for both tables and views, handles all deduplication
-        features = ', '.join(group_spec.feature_ids)
-
+        # Note: ML.FEATURES_AT_TIME returns a feature_timestamp column
         cte = f"""fg{idx} AS (
-  SELECT entity_id, {features}
+  SELECT entity_id, feature_timestamp, {features_outer}
   FROM ML.FEATURES_AT_TIME(
     (SELECT
-       CAST(entity_key AS STRING) AS entity_id,
+       {entity_id_expr} AS entity_id,
        CAST(feature_timestamp AS TIMESTAMP) AS feature_timestamp,
-       {features}
+       {features_inner}
      FROM `{table_id}`),
     time => CURRENT_TIMESTAMP(),
     num_rows => 1,
@@ -1202,14 +1233,50 @@ def get_training_data_from_view(
 
     # 4. Build final query
     if len(cte_queries) == 1:
-        final_query = f"WITH {cte_queries[0]} SELECT * FROM fg0"
+        # Single CTE - need to handle entity column naming even here
+        if len(entity_columns) > 1:
+            # Split concatenated entity_id back into original columns
+            entity_select = [f"SPLIT(entity_id, '-')[OFFSET({i})] AS {col}" for i, col in enumerate(entity_columns)]
+            entity_cols_str = ', '.join(entity_select)
+        else:
+            # Single entity column - just rename
+            entity_cols_str = f"entity_id AS {entity_columns[0]}"
+
+        # Select with renamed entity columns and feature_timestamp
+        final_query = f"""
+WITH {cte_queries[0]}
+SELECT {entity_cols_str}, feature_timestamp, {', '.join(group_spec.feature_ids)}
+FROM fg0
+ORDER BY entity_id
+"""
     else:
         # Join all CTEs on entity_id
         joins = ' '.join([f"FULL OUTER JOIN fg{i} USING (entity_id)" for i in range(1, len(cte_queries))])
 
+        # Build timestamp expression to get minimum across all CTEs, ignoring NULLs
+        # Use array functions to cleanly handle NULL values
+        timestamp_expressions = [f"fg{i}.feature_timestamp" for i in range(len(cte_queries))]
+
+        # Create an array of all timestamps, filter out NULLs, and get the minimum
+        timestamp_array = f"[{', '.join(timestamp_expressions)}]"
+        min_timestamp_expr = f"""(
+  SELECT MIN(ts)
+  FROM UNNEST({timestamp_array}) AS ts
+  WHERE ts IS NOT NULL
+) AS feature_timestamp"""
+
+        # Prepare entity column selection with split logic if needed
+        if len(entity_columns) > 1:
+            # Split concatenated entity_id back into original columns
+            entity_select = [f"SPLIT(entity_id, '-')[OFFSET({i})] AS {col}" for i, col in enumerate(entity_columns)]
+            entity_cols_str = ', '.join(entity_select)
+        else:
+            # Single entity column - just rename
+            entity_cols_str = f"entity_id AS {entity_columns[0]}"
+
         final_query = f"""
 WITH {','.join(cte_queries)}
-SELECT entity_id, {', '.join(all_features)}
+SELECT {entity_cols_str}, {min_timestamp_expr}, {', '.join(all_features)}
 FROM fg0 {joins}
 ORDER BY entity_id
 """
