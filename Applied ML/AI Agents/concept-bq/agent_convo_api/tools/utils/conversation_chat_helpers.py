@@ -90,12 +90,15 @@ def handle_chart_response(resp):
   if 'query' in resp:
     return resp.query.instructions
   elif 'result' in resp:
+    # updated to create PNG - source in documenation create images with Altair but those are just JSON specs in Vega-Lite grammar.
     vegaConfig = resp.result.vega_config
+    # 1. Convert proto to dict (this is correct)
     vegaConfig_dict = _map_to_dict(vegaConfig)
-    chart = alt.Chart.from_json(json_lib.dumps(vegaConfig_dict))
-    chart.width = 1200
-    chart.height = alt.Undefined
-    return vlc.vegalite_to_png(vl_spec=chart.to_dict())
+    # 2. Modify the dictionary directly: removing height lets it be set automaticaly
+    vegaConfig_dict['width'] = 1200
+    vegaConfig_dict.pop('height', None)
+    # 3. Pass the *modified* dict directly to vl_convert
+    return vlc.vegalite_to_png(vl_spec=vegaConfig_dict)    
 
 def show_message(msg):
   m = msg.system_message

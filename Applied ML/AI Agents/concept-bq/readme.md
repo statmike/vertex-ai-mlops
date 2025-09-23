@@ -249,6 +249,6 @@ For any other general or conversational question **not about hurricanes**, this 
 - What is the average number of earthquakes that occur each year?
 - Over what range of years did these occur?
 - Make a table of the top 10 years with most earthquakes.
-- What is the average number of earthquakes for the years 1900 forward?
-- Make a time series chart of the count of earthquakes by yeaf.
-- Make an updated chart for only the year 1940 through current.
+- What is the average number of earthquakes for the years 1900 through most recent dates?
+- Make a time series chart of the count of earthquakes by year.
+- Make an updated chart for only the year 1940 through most recent dates.
