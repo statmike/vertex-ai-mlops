@@ -474,11 +474,9 @@ def _get_eav_pivot_expressions(record_schema: Type[BaseModel]) -> str:
 
 # Create dense view from sparse table
 view_name = "ex_shape_sparse_2_dense"
-column_defs = _get_bq_column_definitions(SparseRecord2)
+# Simplified: Let BigQuery handle column naming naturally
 view_query = f"""
-CREATE OR REPLACE VIEW `{{view_id}}` (
-    {column_defs}
-)
+CREATE OR REPLACE VIEW `{{view_id}}`
 OPTIONS(
     description = "Dense view of sparse table using ML.FEATURES_AT_TIME to get latest feature values"
 )
@@ -497,12 +495,10 @@ print("="*60)
 
 # Create sparse view from EAV table
 view_name = "ex_shape_eav_1_sparse"
-column_defs = _get_bq_column_definitions(EAVRecord)
 pivot_expressions = _get_eav_pivot_expressions(EAVRecord)
+# Simplified: Let BigQuery infer column names from SELECT, avoiding position mismatch
 view_query = f"""
-CREATE OR REPLACE VIEW `{{view_id}}` (
-    {column_defs}
-)
+CREATE OR REPLACE VIEW `{{view_id}}`
 OPTIONS(
     description = "Sparse wide format view of EAV table, pivoted from entity-attribute-value to columnar format"
 )
@@ -915,6 +911,13 @@ print("="*60)
 
 
 
+
+
+
+
+
+
+
 # Helper function to parse the inner value of a feature struct
 def _parse_feature_value(feature_struct: dict):
     """Extracts the typed value from a feature's value dictionary."""
@@ -1057,8 +1060,10 @@ print("\n" + "="*60)
 
 
 
-# fetch historical features
 
+
+
+# fetch historical features - this works very poortly
 
 features = []
 for g in all_features_view.gca_resource.feature_registry_source.feature_groups:
@@ -1075,11 +1080,149 @@ entity_df = pd.DataFrame(
     }
 )
 
-
 test = offline_store.fetch_historical_feature_values(
     entity_df = entity_df,
     features = features
 )
-
 test
 
+
+
+
+
+
+
+
+# Retrieve Training Data Using Feature Registry
+# need: online_store, view name
+
+# list views in feature store
+for v in online_store.list_feature_views():
+    print(v.name)
+
+# retrieve view from feature store by name
+target_feature_view = feature_store.FeatureView(
+    name='all_features',
+    feature_online_store_id=online_store.resource_name
+)
+print(target_feature_view.name)
+
+# get feature groups and features for feature view
+for g in target_feature_view.gca_resource.feature_registry_source.feature_groups:
+    print(g.feature_group_id, len(g.feature_ids))
+    # group has key attributes: gca_resource.big_query.big_query_source.input_uri, gca_resource.big_query.entity_id_columns, gca_resource.big_query.time_series.timestamp_column
+    group = feature_store.FeatureGroup(name = g.feature_group_id)
+    for f in g.feature_ids:
+        # feature has key attributes: description, version_column_name
+        feature = group.get_feature(feature_id = f)
+        print(feature.gca_resource.version_column_name)
+
+
+
+
+
+
+
+
+
+
+
+
+
+#group.gca_resource
+#feature.gca_resource 
+
+
+
+
+
+
+
+def get_training_data_from_view(
+    online_store: feature_store.FeatureOnlineStore,
+    feature_view_name: str
+) -> pd.DataFrame:
+    """
+    Fetches the latest feature values for all entities in a feature view using ML.FEATURES_AT_TIME.
+    """
+    print(f"Building training data query for feature view: '{feature_view_name}'")
+
+    # 1. Get the feature view
+    try:
+        target_view = feature_store.FeatureView(
+            name=feature_view_name,
+            feature_online_store_id=online_store.resource_name
+        )
+        print(f"  Successfully retrieved feature view: {target_view.name}")
+    except Exception as e:
+        print(f"  Error: Could not retrieve feature view '{feature_view_name}': {e}")
+        return pd.DataFrame()
+
+    # 2. Get feature groups from the view
+    feature_groups = target_view.gca_resource.feature_registry_source.feature_groups
+    if not feature_groups:
+        print("  No feature groups found in the view.")
+        return pd.DataFrame()
+
+    print(f"  Found {len(feature_groups)} feature group(s)")
+
+    # 3. Build CTEs for each feature group
+    cte_queries = []
+    all_features = []
+
+    for idx, group_spec in enumerate(feature_groups):
+        # Get source table/view
+        fg = feature_store.FeatureGroup(name=group_spec.feature_group_id)
+        table_uri = fg.gca_resource.big_query.big_query_source.input_uri
+        table_id = table_uri.replace('bq://', '')
+
+        # Build the CTE using ML.FEATURES_AT_TIME
+        # This works for both tables and views, handles all deduplication
+        features = ', '.join(group_spec.feature_ids)
+
+        cte = f"""fg{idx} AS (
+  SELECT entity_id, {features}
+  FROM ML.FEATURES_AT_TIME(
+    (SELECT
+       CAST(entity_key AS STRING) AS entity_id,
+       CAST(feature_timestamp AS TIMESTAMP) AS feature_timestamp,
+       {features}
+     FROM `{table_id}`),
+    time => CURRENT_TIMESTAMP(),
+    num_rows => 1,
+    ignore_feature_nulls => TRUE
+  )
+)"""
+        cte_queries.append(cte)
+
+        # Track all features for final SELECT
+        all_features.extend([f"fg{idx}.{fid}" for fid in group_spec.feature_ids])
+
+        print(f"    - Prepared CTE for group {idx}: {group_spec.feature_group_id}")
+
+    # 4. Build final query
+    if len(cte_queries) == 1:
+        final_query = f"WITH {cte_queries[0]} SELECT * FROM fg0"
+    else:
+        # Join all CTEs on entity_id
+        joins = ' '.join([f"FULL OUTER JOIN fg{i} USING (entity_id)" for i in range(1, len(cte_queries))])
+
+        final_query = f"""
+WITH {','.join(cte_queries)}
+SELECT entity_id, {', '.join(all_features)}
+FROM fg0 {joins}
+ORDER BY entity_id
+"""
+
+    # 5. Execute query
+    try:
+        df = bq_client.query(final_query).to_dataframe()
+        print(f"✓ Retrieved {len(df)} rows with {len(df.columns)} columns")
+        return df
+
+    except Exception as e:
+        print(f"Error executing query: {e}")
+        return pd.DataFrame()
+
+training_data = get_training_data_from_view(online_store, 'all_features')
+training_data
