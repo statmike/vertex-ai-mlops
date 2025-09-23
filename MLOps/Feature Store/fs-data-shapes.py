@@ -1140,12 +1140,25 @@ for g in target_feature_view.gca_resource.feature_registry_source.feature_groups
 
 def get_training_data_from_view(
     online_store: feature_store.FeatureOnlineStore,
-    feature_view_name: str
+    feature_view_name: str,
+    timestamp: str = None
 ) -> pd.DataFrame:
     """
     Fetches the latest feature values for all entities in a feature view using ML.FEATURES_AT_TIME.
+
+    Args:
+        online_store: The feature online store instance
+        feature_view_name: Name of the feature view to retrieve data from
+        timestamp: Optional timestamp in BigQuery format (e.g., '2022-06-11 10:00:00+00').
+                  If not provided, uses current timestamp.
     """
-    print(f"Building training data query for feature view: '{feature_view_name}'")
+    # If no timestamp provided, use current time in BigQuery format
+    if timestamp is None:
+        from datetime import datetime, timezone
+        current_time = datetime.now(timezone.utc)
+        timestamp = current_time.strftime('%Y-%m-%d %H:%M:%S+00')
+
+    print(f"Building training data query for feature view: '{feature_view_name}' at timestamp: {timestamp}")
 
     # 1. Get the feature view
     try:
@@ -1219,7 +1232,7 @@ def get_training_data_from_view(
        CAST(feature_timestamp AS TIMESTAMP) AS feature_timestamp,
        {features_inner}
      FROM `{table_id}`),
-    time => CURRENT_TIMESTAMP(),
+    time => TIMESTAMP '{timestamp}',
     num_rows => 1,
     ignore_feature_nulls => TRUE
   )
