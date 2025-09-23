@@ -1141,24 +1141,35 @@ for g in target_feature_view.gca_resource.feature_registry_source.feature_groups
 def get_training_data_from_view(
     online_store: feature_store.FeatureOnlineStore,
     feature_view_name: str,
-    timestamp: str = None
+    timestamp: str = None,
+    entity_df: pd.DataFrame = None
 ) -> pd.DataFrame:
     """
-    Fetches the latest feature values for all entities in a feature view using ML.FEATURES_AT_TIME.
+    Fetches feature values for entities in a feature view using ML.FEATURES_AT_TIME or ML.ENTITY_FEATURES_AT_TIME.
 
     Args:
         online_store: The feature online store instance
         feature_view_name: Name of the feature view to retrieve data from
         timestamp: Optional timestamp in BigQuery format (e.g., '2022-06-11 10:00:00+00').
-                  If not provided, uses current timestamp.
+                  If not provided, uses current timestamp. Ignored if entity_df is provided.
+        entity_df: Optional DataFrame with 'entity_id' and 'time' columns.
+                  If provided, uses ML.ENTITY_FEATURES_AT_TIME for entity-specific timestamps.
     """
-    # If no timestamp provided, use current time in BigQuery format
-    if timestamp is None:
-        from datetime import datetime, timezone
-        current_time = datetime.now(timezone.utc)
-        timestamp = current_time.strftime('%Y-%m-%d %H:%M:%S+00')
+    # Determine which mode to use
+    use_entity_mode = entity_df is not None
 
-    print(f"Building training data query for feature view: '{feature_view_name}' at timestamp: {timestamp}")
+    if use_entity_mode:
+        # Validate entity_df has required columns
+        if 'entity_id' not in entity_df.columns or 'time' not in entity_df.columns:
+            raise ValueError("entity_df must have 'entity_id' and 'time' columns")
+        print(f"Building training data query for feature view: '{feature_view_name}' with {len(entity_df)} entity/timestamp pairs")
+    else:
+        # If no timestamp provided, use current time in BigQuery format
+        if timestamp is None:
+            from datetime import datetime, timezone
+            current_time = datetime.now(timezone.utc)
+            timestamp = current_time.strftime('%Y-%m-%d %H:%M:%S+00')
+        print(f"Building training data query for feature view: '{feature_view_name}' at timestamp: {timestamp}")
 
     # 1. Get the feature view
     try:
@@ -1182,10 +1193,31 @@ def get_training_data_from_view(
     # 3. Build CTEs for each feature group
     cte_queries = []
     all_features = []
+    entity_cte_queries = []  # Separate list for entity CTE
 
     # Get entity columns from first feature group (should be same for all)
     first_fg = feature_store.FeatureGroup(name=feature_groups[0].feature_group_id)
     entity_columns = first_fg.gca_resource.big_query.entity_id_columns
+
+    # If using entity mode, create the entity table CTE
+    if use_entity_mode:
+        # Convert DataFrame to SQL VALUES clause
+        entity_structs = []
+        for _, row in entity_df.iterrows():
+            # Format timestamp properly for BigQuery
+            ts = pd.to_datetime(row['time'])
+            ts_str = ts.strftime('%Y-%m-%d %H:%M:%S')
+            # ML.ENTITY_FEATURES_AT_TIME expects 'time' column
+            entity_structs.append(f"STRUCT('{row['entity_id']}' AS entity_id, TIMESTAMP '{ts_str}' AS time)")
+
+        entity_array = ',\n      '.join(entity_structs)
+        entity_cte = f"""entity_table AS (
+  SELECT entity_id, time
+  FROM UNNEST([
+    {entity_array}
+  ])
+)"""
+        entity_cte_queries.append(entity_cte)
 
     for idx, group_spec in enumerate(feature_groups):
         # Get source table/view
@@ -1221,10 +1253,27 @@ def get_training_data_from_view(
         # Build the feature list for the outer SELECT (just the feature IDs)
         features_outer = ', '.join(group_spec.feature_ids)
 
-        # Build the CTE using ML.FEATURES_AT_TIME
+        # Build the CTE using ML.FEATURES_AT_TIME or ML.ENTITY_FEATURES_AT_TIME
         # This works for both tables and views, handles all deduplication
-        # Note: ML.FEATURES_AT_TIME returns a feature_timestamp column
-        cte = f"""fg{idx} AS (
+        # Note: Both functions return a feature_timestamp column
+        if use_entity_mode:
+            # Use ML.ENTITY_FEATURES_AT_TIME with entity table
+            cte = f"""fg{idx} AS (
+  SELECT entity_id, feature_timestamp, {features_outer}
+  FROM ML.ENTITY_FEATURES_AT_TIME(
+    (SELECT
+       {entity_id_expr} AS entity_id,
+       CAST(feature_timestamp AS TIMESTAMP) AS feature_timestamp,
+       {features_inner}
+     FROM `{table_id}`),
+    TABLE entity_table,
+    num_rows => 1,
+    ignore_feature_nulls => TRUE
+  )
+)"""
+        else:
+            # Use ML.FEATURES_AT_TIME with single timestamp
+            cte = f"""fg{idx} AS (
   SELECT entity_id, feature_timestamp, {features_outer}
   FROM ML.FEATURES_AT_TIME(
     (SELECT
@@ -1245,6 +1294,9 @@ def get_training_data_from_view(
         print(f"    - Prepared CTE for group {idx}: {group_spec.feature_group_id}")
 
     # 4. Build final query
+    # Combine entity CTE (if exists) with feature CTEs
+    all_ctes = entity_cte_queries + cte_queries
+
     if len(cte_queries) == 1:
         # Single CTE - need to handle entity column naming even here
         if len(entity_columns) > 1:
@@ -1257,22 +1309,30 @@ def get_training_data_from_view(
 
         # Select with renamed entity columns and feature_timestamp
         final_query = f"""
-WITH {cte_queries[0]}
+WITH {','.join(all_ctes)}
 SELECT {entity_cols_str}, feature_timestamp, {', '.join(group_spec.feature_ids)}
 FROM fg0
 ORDER BY entity_id
 """
     else:
-        # Join all CTEs on entity_id
-        joins = ' '.join([f"FULL OUTER JOIN fg{i} USING (entity_id)" for i in range(1, len(cte_queries))])
+        # Join all CTEs on entity_id AND feature_timestamp when using entity mode
+        if use_entity_mode:
+            # Must join on both entity_id and feature_timestamp to maintain the entity-time relationship
+            joins = ' '.join([f"FULL OUTER JOIN fg{i} USING (entity_id, feature_timestamp)" for i in range(1, len(cte_queries))])
+        else:
+            # For single timestamp mode, just join on entity_id
+            joins = ' '.join([f"FULL OUTER JOIN fg{i} USING (entity_id)" for i in range(1, len(cte_queries))])
 
-        # Build timestamp expression to get minimum across all CTEs, ignoring NULLs
-        # Use array functions to cleanly handle NULL values
-        timestamp_expressions = [f"fg{i}.feature_timestamp" for i in range(len(cte_queries))]
-
-        # Create an array of all timestamps, filter out NULLs, and get the minimum
-        timestamp_array = f"[{', '.join(timestamp_expressions)}]"
-        min_timestamp_expr = f"""(
+        # Build timestamp expression
+        if use_entity_mode:
+            # When joining on feature_timestamp, we can just use it directly
+            timestamp_expr = "feature_timestamp"
+        else:
+            # For single timestamp mode, get minimum across all CTEs, ignoring NULLs
+            timestamp_expressions = [f"fg{i}.feature_timestamp" for i in range(len(cte_queries))]
+            # Create an array of all timestamps, filter out NULLs, and get the minimum
+            timestamp_array = f"[{', '.join(timestamp_expressions)}]"
+            timestamp_expr = f"""(
   SELECT MIN(ts)
   FROM UNNEST({timestamp_array}) AS ts
   WHERE ts IS NOT NULL
@@ -1287,11 +1347,14 @@ ORDER BY entity_id
             # Single entity column - just rename
             entity_cols_str = f"entity_id AS {entity_columns[0]}"
 
+        # Build ORDER BY clause based on mode
+        order_by = "ORDER BY entity_id, feature_timestamp" if use_entity_mode else "ORDER BY entity_id"
+
         final_query = f"""
-WITH {','.join(cte_queries)}
-SELECT {entity_cols_str}, {min_timestamp_expr}, {', '.join(all_features)}
+WITH {','.join(all_ctes)}
+SELECT {entity_cols_str}, {timestamp_expr}, {', '.join(all_features)}
 FROM fg0 {joins}
-ORDER BY entity_id
+{order_by}
 """
 
     # 5. Execute query
@@ -1304,5 +1367,18 @@ ORDER BY entity_id
         print(f"Error executing query: {e}")
         return pd.DataFrame()
 
+# all entities for current timestamp:
 training_data = get_training_data_from_view(online_store, 'all_features')
+training_data
+
+# all entities for specific timestamp:
+training_data = get_training_data_from_view(online_store, 'all_features', timestamp='2025-04-01 10:00:00+00')
+training_data
+
+# specific entities at specic timestamps:
+entity_df = pd.DataFrame({
+    'entity_id': ['entity-1', 'entity-1', 'entity-1', 'entity-1', 'entity-1', 'entity-1'],
+    'time': ['2025-01-15 10:00:00', '2025-02-15 11:00:00', '2025-03-15 12:00:00', '2025-04-15 12:00:00', '2025-05-15 12:00:00', '2025-09-23 22:00:00']
+})
+training_data = get_training_data_from_view(online_store, 'all_features', entity_df=entity_df)
 training_data
