@@ -9,6 +9,7 @@ from google.api_core import exceptions
 import vertexai
 from vertexai.preview import rag
 #from vertexai import rag
+#from google import genai
 
 # static variable definitions
 LOCATION = 'us-east4' #'us-central1'
@@ -18,6 +19,7 @@ TOPICS = ['applied-genai', 'rag-engine', 'simple']
 PROJECT_ID = subprocess.run(['gcloud', 'config', 'get-value', 'project'], capture_output=True, text=True).stdout.strip()
 vertexai.init(project = PROJECT_ID, location = LOCATION)
 storage_client = storage.Client(project=PROJECT_ID)
+#genai_client = genai.Client(vertexai = True, project = PROJECT_ID, location = LOCATION)
 
 # get the pdf: MLB Rules 2025
 url = "https://mktg.mlbstatic.com/mlb/official-information/2025-official-baseball-rules.pdf"
@@ -109,9 +111,152 @@ for f in files:
 
 
 # Retrieval Options
-query = 'What are the dimensions of second base?'
+query = 'How big is second?'
 
 
+# Context Retrieval - Chunks
+matches = rag.retrieval_query(
+    rag_resources = [
+        rag.RagResource(rag_corpus = corpus.name)
+    ],
+    text = query
+).contexts.contexts
+print(len(matches), matches[0].distance, matches[-1].distance)
+# defaults to k=10, distance: lower is better, higher is worse
+
+matches = rag.retrieval_query(
+    rag_resources = [
+        rag.RagResource(rag_corpus = corpus.name)
+    ],
+    text = query,
+    rag_retrieval_config = rag.RagRetrievalConfig(
+        top_k = 20,  # Optional
+    )
+).contexts.contexts
+print(len(matches), matches[0].distance, matches[-1].distance)
+# while 20 are requested, there seem to be an threshold filter preventing a full 20
+
+matches = rag.retrieval_query(
+    rag_resources = [
+        rag.RagResource(rag_corpus = corpus.name)
+    ],
+    text = query,
+    rag_retrieval_config = rag.RagRetrievalConfig(
+        top_k = 20,  # Optional
+        filter = rag.Filter(vector_distance_threshold = 1)
+    )
+).contexts.contexts
+print(len(matches), matches[0].distance, matches[-1].distance)
+print(matches[0].text)
+# raising the threshold to allow any match works to retrieve all of top_k
+
+matches = rag.retrieval_query(
+    rag_resources = [
+        rag.RagResource(rag_corpus = corpus.name)
+    ],
+    text = query,
+    rag_retrieval_config = rag.RagRetrievalConfig(
+        top_k = 200,  # Optional
+        filter = rag.Filter(vector_distance_threshold = 1)
+    )
+).contexts.contexts
+print(len(matches), matches[0].distance, matches[-1].distance)
+# top_k max is 100 so asking for more returns an error
+
+# Re-Ranked Context Retrieval - Chunks
+matches = rag.retrieval_query(
+    rag_resources = [
+        rag.RagResource(rag_corpus = corpus.name)
+    ],
+    text = query,
+    rag_retrieval_config = rag.RagRetrievalConfig(
+        top_k = 20,  # Optional
+        filter = rag.Filter(vector_distance_threshold = 1),
+        ranking = rag.Ranking(
+            rank_service = rag.RankService(
+                model_name = 'semantic-ranker-default@latest'
+            )
+        )
+    )
+).contexts.contexts
+print(len(matches), matches[0].distance, matches[-1].distance)
+print(matches[0].text)
+
+# Response With Context Retrieval
+rag_tool = vertexai.generative_models.Tool.from_retrieval(
+    retrieval = rag.Retrieval(
+        source = rag.VertexRagStore(
+            rag_resources = [
+                rag.RagResource(rag_corpus = corpus.name)
+            ],
+            rag_retrieval_config = rag.RagRetrievalConfig(
+                top_k = 20,  # Optional
+                filter = rag.Filter(vector_distance_threshold = 1),
+            )
+        )
+    )
+)
+
+response = vertexai.generative_models.GenerativeModel(
+    model_name = 'gemini-2.5-flash',
+    tools = [rag_tool]
+).generate_content(query)
+print(response.text)
+
+
+
+# Response With Re-Ranked Context Retrieval
+rag_tool = vertexai.generative_models.Tool.from_retrieval(
+    retrieval = rag.Retrieval(
+        source = rag.VertexRagStore(
+            rag_resources = [
+                rag.RagResource(rag_corpus = corpus.name)
+            ],
+            rag_retrieval_config = rag.RagRetrievalConfig(
+                top_k = 20,  # Optional
+                filter = rag.Filter(vector_distance_threshold = 1),
+                ranking = rag.Ranking(
+                    rank_service = rag.RankService(
+                        model_name = 'semantic-ranker-default@latest'
+                    )
+                )
+            )
+        )
+    )
+)
+
+response = vertexai.generative_models.GenerativeModel(
+    model_name = 'gemini-2.5-flash',
+    tools = [rag_tool]
+).generate_content(query)
+print(response.text)
+
+
+# Response With Re-Ranked Context Retrieval (LLM as Reranker)
+rag_tool = vertexai.generative_models.Tool.from_retrieval(
+    retrieval = rag.Retrieval(
+        source = rag.VertexRagStore(
+            rag_resources = [
+                rag.RagResource(rag_corpus = corpus.name)
+            ],
+            rag_retrieval_config = rag.RagRetrievalConfig(
+                top_k = 20,  # Optional
+                filter = rag.Filter(vector_distance_threshold = 1),
+                ranking = rag.Ranking(
+                    llm_ranker = rag.LlmRanker(
+                        model_name = 'gemini-2.5-flash'
+                    )
+                )
+            )
+        )
+    )
+)
+
+response = vertexai.generative_models.GenerativeModel(
+    model_name = 'gemini-2.5-flash',
+    tools = [rag_tool]
+).generate_content(query)
+print(response.text)
 
 
 
