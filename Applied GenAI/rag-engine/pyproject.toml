@@ -8,10 +8,8 @@ package-mode = false
 [tool.poetry.dependencies]
 python = "^3.13"
 google-cloud-aiplatform = "^1.117.0"
-
-
-################################# DEVELOPMENT FOCUSED CONTENT #################################
 requests = "^2.32.5"
+
 [tool.poetry.group.dev]
 optional = true
 # use poetry install --with dev to include these:
