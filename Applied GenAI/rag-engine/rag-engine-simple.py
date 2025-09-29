@@ -258,6 +258,15 @@ response = vertexai.generative_models.GenerativeModel(
 ).generate_content(query)
 print(response.text)
 
+# try to import the file(s) again without any changes:
+import_job = rag.import_files(
+    corpus_name = corpus.name,
+    paths = [gcs_uri],
+    transformation_config = chunking_config,
+    llm_parser = parsing_config,
+    max_embedding_requests_per_min = 500,
+)
+print(import_job)
 
 
 
