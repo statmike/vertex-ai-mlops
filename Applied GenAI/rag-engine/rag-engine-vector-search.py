@@ -8,7 +8,7 @@ from google.cloud import aiplatform
 import vertexai
 from vertexai.preview import rag
 #from vertexai import rag
-#from google import genai
+from google import genai
 
 # static variable definitions
 LOCATION = 'us-east4' #'us-central1'
@@ -19,7 +19,7 @@ PROJECT_ID = subprocess.run(['gcloud', 'config', 'get-value', 'project'], captur
 aiplatform.init(project=PROJECT_ID, location=LOCATION)
 vertexai.init(project = PROJECT_ID, location = LOCATION)
 storage_client = storage.Client(project=PROJECT_ID)
-#genai_client = genai.Client(vertexai = True, project = PROJECT_ID, location = LOCATION)
+genai_client = genai.Client(vertexai = True, project = PROJECT_ID, location = LOCATION)
 
 # get the pdf: MLB Rules 2025
 url = "https://mktg.mlbstatic.com/mlb/official-information/2025-official-baseball-rules.pdf"
@@ -99,5 +99,274 @@ else:
     if not vvs_endpoint:
         print("Endpoint not found, skipping deployment.")
 
+# RAG Engine Setup
+
+# configs: 
+
+# parser: rag.LlmParserConfig | rag.LayoutParserConfig
+parsing_config = rag.LlmParserConfig(
+    model_name = f'gemini-2.5-flash',
+    max_parsing_requests_per_min = 120, # default
+    custom_parsing_prompt = 'Look for white space on the page and use it to set the boundary between chunks.'
+)
+
+# chunking: optional
+chunking_config = rag.TransformationConfig(
+    chunking_config = rag.ChunkingConfig(
+        chunk_size = 1000,
+        chunk_overlap = 100
+    )
+)
+
+# embedding model for parsing and retrieval
+embedding_config= rag.RagEmbeddingModelConfig(
+    vertex_prediction_endpoint = rag.VertexPredictionEndpoint(
+        publisher_model = f'publishers/google/models/text-embedding-005'
+    )
+)
+
+# vector db: defaults to RagMangedDb, options for VertexVectorSearch, Pinecone, ...
+#vectorDb_config = rag.Pinecone()
+#vectorDb_config = rag.Weaviate()
+#vectorDb_config = rag.VertexFeatureStore()
+#vectorDb_config = rag.RagManagedDb(retrieval_strategy = rag.KNN(), # preview_rag.ANN())
+vectorDb_config = rag.VertexVectorSearch(
+    index = vvs_index.resource_name,
+    index_endpoint = vvs_endpoint.resource_name
+)
+
+# backend: the vector database choice with settings
+backend_config = rag.RagVectorDbConfig(
+    rag_embedding_model_config = embedding_config,
+    vector_db = vectorDb_config,
+)
+backend_config.rag_embedding_model_config.publisher_model = f'publishers/google/models/text-embedding-005'
+backend_config.rag_embedding_model_config.endpoint = None
 
 
+# setup
+
+# retrieve/create a corpus
+CORPUS_NAME = '-'.join(TOPICS)
+
+corpora = rag.list_corpora()
+corpus = next((c for c in corpora if c.display_name == CORPUS_NAME), None)
+if corpus is None:
+    corpus = rag.create_corpus(
+        display_name = CORPUS_NAME,
+        description = 'Example corpus',
+        backend_config = backend_config
+    )
+
+
+# import file(s)
+import_job = rag.import_files(
+    corpus_name = corpus.name,
+    paths = [gcs_uri],
+    transformation_config = chunking_config,
+    llm_parser = parsing_config,
+    max_embedding_requests_per_min = 500,
+)
+print(import_job)
+
+# manage corpus
+files = rag.list_files(corpus_name = corpus.name)
+for f in files:
+    print(f.display_name)
+
+
+# Retrieval Options
+query = 'How big is second?'
+
+
+# Context Retrieval - Chunks
+matches = rag.retrieval_query(
+    rag_resources = [
+        rag.RagResource(rag_corpus = corpus.name)
+    ],
+    text = query
+).contexts.contexts
+print(len(matches), matches[0].distance, matches[-1].distance)
+# defaults to k=10, distance: higher is better, lower is worse
+
+matches = rag.retrieval_query(
+    rag_resources = [
+        rag.RagResource(rag_corpus = corpus.name)
+    ],
+    text = query,
+    rag_retrieval_config = rag.RagRetrievalConfig(
+        top_k = 20,  # Optional
+    )
+).contexts.contexts
+print(len(matches), matches[0].distance, matches[-1].distance)
+# while 20 are requested and returned
+
+matches = rag.retrieval_query(
+    rag_resources = [
+        rag.RagResource(rag_corpus = corpus.name)
+    ],
+    text = query,
+    rag_retrieval_config = rag.RagRetrievalConfig(
+        top_k = 20,  # Optional
+        filter = rag.Filter(vector_distance_threshold = 0)
+    )
+).contexts.contexts
+print(len(matches), matches[0].distance, matches[-1].distance)
+print(matches[0].text)
+# set a lower threshold of 0 to prevent any filtering
+
+matches = rag.retrieval_query(
+    rag_resources = [
+        rag.RagResource(rag_corpus = corpus.name)
+    ],
+    text = query,
+    rag_retrieval_config = rag.RagRetrievalConfig(
+        top_k = 200,  # Optional
+        filter = rag.Filter(vector_distance_threshold = 1)
+    )
+).contexts.contexts
+print(len(matches), matches[0].distance, matches[-1].distance)
+# top_k max is 100 so asking for more returns an error
+
+
+matches = rag.retrieval_query(
+    rag_resources = [
+        rag.RagResource(rag_corpus = corpus.name)
+    ],
+    text = query,
+    rag_retrieval_config = rag.RagRetrievalConfig(
+        top_k = 20,  # Optional
+        filter = rag.Filter(vector_distance_threshold = 1),
+        hybrid_search = rag.HybridSearch(alpha = 0) # [0, 1], [all sparse, all dense]
+    )
+).contexts.contexts
+print(len(matches))#, matches[0].distance, matches[-1].distance)
+# tying hybrid search out of the box - nothing returned
+
+
+
+# directly query the endpoint using Vertex AI Vector Search SDK
+query_embedding = (
+    genai_client.models.embed_content(
+        model = 'text-embedding-005',
+        contents = [query]
+    )
+).embeddings[0].values
+
+matches = vvs_endpoint.find_neighbors(
+    deployed_index_id = deployed_index_id,
+    num_neighbors = 200,
+    #embedding_ids = [''],
+    queries = [query_embedding]
+)[0]
+print(len(matches), matches[0].distance, matches[-1].distance)
+
+
+# Re-Ranked Context Retrieval - Chunks
+matches = rag.retrieval_query(
+    rag_resources = [
+        rag.RagResource(rag_corpus = corpus.name)
+    ],
+    text = query,
+    rag_retrieval_config = rag.RagRetrievalConfig(
+        top_k = 20,  # Optional
+        filter = rag.Filter(vector_distance_threshold = 0),
+        ranking = rag.Ranking(
+            rank_service = rag.RankService(
+                model_name = 'semantic-ranker-default@latest'
+            )
+        )
+    )
+).contexts.contexts
+print(len(matches), matches[0].distance, matches[-1].distance)
+print(matches[0].text)
+
+# Response With Context Retrieval
+rag_tool = vertexai.generative_models.Tool.from_retrieval(
+    retrieval = rag.Retrieval(
+        source = rag.VertexRagStore(
+            rag_resources = [
+                rag.RagResource(rag_corpus = corpus.name)
+            ],
+            rag_retrieval_config = rag.RagRetrievalConfig(
+                top_k = 20,  # Optional
+                filter = rag.Filter(vector_distance_threshold = 0),
+            )
+        )
+    )
+)
+
+response = vertexai.generative_models.GenerativeModel(
+    model_name = 'gemini-2.5-flash',
+    tools = [rag_tool]
+).generate_content(query)
+print(response.text)
+
+
+
+# Response With Re-Ranked Context Retrieval
+rag_tool = vertexai.generative_models.Tool.from_retrieval(
+    retrieval = rag.Retrieval(
+        source = rag.VertexRagStore(
+            rag_resources = [
+                rag.RagResource(rag_corpus = corpus.name)
+            ],
+            rag_retrieval_config = rag.RagRetrievalConfig(
+                top_k = 20,  # Optional
+                filter = rag.Filter(vector_distance_threshold = 0),
+                ranking = rag.Ranking(
+                    rank_service = rag.RankService(
+                        model_name = 'semantic-ranker-default@latest'
+                    )
+                )
+            )
+        )
+    )
+)
+
+response = vertexai.generative_models.GenerativeModel(
+    model_name = 'gemini-2.5-flash',
+    tools = [rag_tool]
+).generate_content(query)
+print(response.text)
+
+
+# Response With Re-Ranked Context Retrieval (LLM as Reranker)
+rag_tool = vertexai.generative_models.Tool.from_retrieval(
+    retrieval = rag.Retrieval(
+        source = rag.VertexRagStore(
+            rag_resources = [
+                rag.RagResource(rag_corpus = corpus.name)
+            ],
+            rag_retrieval_config = rag.RagRetrievalConfig(
+                top_k = 20,  # Optional
+                filter = rag.Filter(vector_distance_threshold = 0),
+                ranking = rag.Ranking(
+                    llm_ranker = rag.LlmRanker(
+                        model_name = 'gemini-2.5-flash'
+                    )
+                )
+            )
+        )
+    )
+)
+
+response = vertexai.generative_models.GenerativeModel(
+    model_name = 'gemini-2.5-flash',
+    tools = [rag_tool]
+).generate_content(query)
+print(response.text)
+
+# try to import the file(s) again without any changes:
+import_job = rag.import_files(
+    corpus_name = corpus.name,
+    paths = [gcs_uri],
+    transformation_config = chunking_config,
+    llm_parser = parsing_config,
+    max_embedding_requests_per_min = 500,
+)
+print(import_job)
+
+
+
+#rag.delete_corpus(corpus.name)

@@ -35,6 +35,7 @@ if not blob.exists():
     response.raise_for_status()
     blob.upload_from_string(response.content, content_type='application/pdf')
 
+# RAG Engine Setup
 
 # configs: 
 
@@ -160,6 +161,20 @@ matches = rag.retrieval_query(
 ).contexts.contexts
 print(len(matches), matches[0].distance, matches[-1].distance)
 # top_k max is 100 so asking for more returns an error
+
+matches = rag.retrieval_query(
+    rag_resources = [
+        rag.RagResource(rag_corpus = corpus.name)
+    ],
+    text = query,
+    rag_retrieval_config = rag.RagRetrievalConfig(
+        top_k = 2,  # Optional
+        filter = rag.Filter(vector_distance_threshold = 1),
+        hybrid_search = rag.HybridSearch(alpha = 1) # [0, 1], [all sparse, all dense]
+    )
+).contexts.contexts
+print(len(matches), matches[0].distance, matches[-1].distance, matches[0].text, matches[-1].text)
+# tying hybrid search out of the box - same result regardless the alpha value
 
 # Re-Ranked Context Retrieval - Chunks
 matches = rag.retrieval_query(

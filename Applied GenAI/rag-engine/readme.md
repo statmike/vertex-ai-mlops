@@ -15,5 +15,5 @@ RAG Engine Setup:
 
 Workflows
 - [Simple RAG Engine Workflow](./rag-engine-simple.py): This workflow demonstrates an end-to-end RAG implementation using the RAG Engine SDK with its default managed vector database. It covers creating a corpus, importing a PDF document form GCS, and then demonstrates multiple retrieval strategies: retrieval with basic vector search, retrieval with re-ranking, and using an LLM as a re-ranker. Finally, it shows how to use the RAG corpus and retrieval settings as a tool for a generative model to answer questions based on the document with a single call.
-- Customizable RAG Engine usage With Vertex AI Vector Search
+- [RAG Engine With a Custom Vector Search Backend](./rag-engine-vector-search.py): This workflow shows how to configure the RAG Engine to use a pre-existing Vertex AI Vector Search index as its vector database. It walks through creating a streaming Vector Search index and an endpoint, deploying the index, and then passing these resources to the RAG Engine during corpus creation. This allows for more control over the vector database while still leveraging the RAG Engine's orchestration for ingestion and retrieval.
 - Augmenting Vertex AI Vector Search For Hybrid Search
