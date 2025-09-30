@@ -5,7 +5,6 @@
 import os, subprocess
 import requests
 from google.cloud import storage
-from google.api_core import exceptions
 import vertexai
 from vertexai.preview import rag
 #from vertexai import rag
@@ -23,7 +22,6 @@ storage_client = storage.Client(project=PROJECT_ID)
 
 # get the pdf: MLB Rules 2025
 url = "https://mktg.mlbstatic.com/mlb/official-information/2025-official-baseball-rules.pdf"
-
 
 # upload the pdf to GCS to be used by the RAG engine
 file_name = os.path.basename(url)
