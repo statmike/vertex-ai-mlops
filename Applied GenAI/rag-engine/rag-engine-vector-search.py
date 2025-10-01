@@ -237,7 +237,7 @@ matches = rag.retrieval_query(
     rag_retrieval_config = rag.RagRetrievalConfig(
         top_k = 20,  # Optional
         filter = rag.Filter(vector_distance_threshold = 1),
-        hybrid_search = rag.HybridSearch(alpha = 0) # [0, 1], [all sparse, all dense]
+        hybrid_search = rag.HybridSearch(alpha = 0) # [0, 1], [all sparse, all dense] - ONLY WORKS WITH WEAVIATE
     )
 ).contexts.contexts
 print(len(matches))#, matches[0].distance, matches[-1].distance)
