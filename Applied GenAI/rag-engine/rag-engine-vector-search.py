@@ -58,7 +58,7 @@ else:
 ENDPOINT_NAME = '-'.join(TOPICS + ['endpoint'])
 endpoints = aiplatform.MatchingEngineIndexEndpoint.list(filter=f'display_name="{ENDPOINT_NAME}"')
 if endpoints:
-    vvs_endpoint = endpoints[0]
+    vvs_endpoint = aiplatform.MatchingEngineIndexEndpoint(endpoints[0].resource_name)
     print(f"Found existing endpoint: {vvs_endpoint.display_name}")
 else:
     print('Not Found. Creating endpoint...')
@@ -255,12 +255,13 @@ query_embedding = (
 
 matches = vvs_endpoint.find_neighbors(
     deployed_index_id = deployed_index_id,
-    num_neighbors = 200,
+    num_neighbors = 20,
     #embedding_ids = [''],
-    queries = [query_embedding]
+    queries = [query_embedding],
+    return_full_datapoint = True # chunk text is in the restricts!
 )[0]
 print(len(matches), matches[0].distance, matches[-1].distance)
-
+matches[0]
 
 # Re-Ranked Context Retrieval - Chunks
 matches = rag.retrieval_query(
