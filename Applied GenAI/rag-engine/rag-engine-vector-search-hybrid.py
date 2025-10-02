@@ -1,15 +1,16 @@
 # build on the vector search index created by rag-engine-vector-search.py
 
-import os, subprocess
-import requests
+import os, re, subprocess
 from google.cloud import storage
 from google.cloud import aiplatform
+from google.cloud.aiplatform.matching_engine.matching_engine_index_endpoint import HybridQuery
 import vertexai
 from vertexai.preview import rag
 #from vertexai import rag
 import pandas as pd
 from google import genai
 from sklearn.feature_extraction.text import TfidfVectorizer
+from rank_bm25 import BM25Okapi
 
 # static variable definitions
 LOCATION = 'us-east4' #'us-central1'
@@ -78,7 +79,7 @@ else:
     print(f'Warning: Corpus "{CORPUS_NAME}" not found. Please create it first using rag-engine-vector-search.py.')
 
 # Retrieval Options
-query = 'How big is second?'
+query = "What size is the pitcher's plate"
 
 
 # Context Retrieval - Chunks
@@ -136,8 +137,58 @@ chunk_data = [{
 print(chunk_data[:5])
 
 # create tf-idf vectorizer
-vectorizer = TfidfVectorizer()
+vectorizer = TfidfVectorizer(
+    ngram_range=(1, 2), # handles all one and two word phrases in the vocabulary
+    lowercase = True, # this is a default value
+    max_features = 100000, # default is 10000 - max vocabulary size
+    min_df = 1, # minimum document frequency (int or floast/pct)
+    max_df = 0.75, # maximum document frequency (int or float/pct)
+    sublinear_tf = True, # replace tf with (1+log(tf)) - reduces outsized impact of keyword density in short chunks
+)
 vectorizer.fit_transform([d['chunk_text'] for d in chunk_data if d['chunk_text']])
+#vectorizer.vocabulary_
+
+# create BM25 Model And Embedding
+
+def chunk_prep(chunk_text):
+    unigrams = [token for token in re.sub(r'[^\w\s]', '', chunk_text.lower()).split() if len(token) > 1]
+    bigrams = [' '.join(grams) for grams in zip(unigrams, unigrams[1:])]
+    return unigrams + bigrams  
+
+for chunk in chunk_data:
+    chunk['tokenized_text'] = chunk_prep(chunk['chunk_text'])
+
+bm25_model = BM25Okapi(
+    [chunk['tokenized_text'] for chunk in chunk_data],
+    k1 = 2, # term frequency saturation, lower saturates more quickly, higher more slowly, typical 1.2-2
+    b = 0.6, # document length normalization, lower (0) means length matters less, higher (1) matters more
+    epsilon = 0.25, # smoothing - small constant to be floor to scores and prevent terms not in corpus from having negative idf 
+)
+print(f'The bm25 vocabulary size is {len(bm25_model.idf.keys())}')
+
+# convert model score to embedding
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # embedder function: sparse and dense
 def embedder(query):
@@ -232,6 +283,108 @@ print("Upsert of all datapoints with sparse embeddings is complete.")
 
 
 
+
+
+
+
+# retrieve with rag to show no change
+# Context Retrieval - Chunks
+matches = rag.retrieval_query(
+    rag_resources = [
+        rag.RagResource(rag_corpus = corpus.name)
+    ],
+    text = query,
+    rag_retrieval_config = rag.RagRetrievalConfig(
+        top_k = 20,  # Optional
+        filter = rag.Filter(vector_distance_threshold = 0)
+    )
+).contexts.contexts
+print(len(matches), matches[0].distance, matches[-1].distance)
+# set a lower threshold of 0 to prevent any filtering
+
+# retreive dense matches with VVS to show no change
+# directly query the endpoint using Vertex AI Vector Search SDK
+matches = vvs_endpoint.find_neighbors(
+    deployed_index_id = deployed_index_id,
+    num_neighbors = 20,
+    #embedding_ids = [''],
+    queries = [embedder(query)['dense']],
+    return_full_datapoint = True # chunk text is in the restricts!
+)[0]
+print(len(matches), matches[0].distance, matches[-1].distance)
+
+
+
+
+
+
+# retreive sparse matches
+print("Retrieving matches with a sparse-only hybrid query...")
+embedding_dict = embedder(query)
+hybrid_query = HybridQuery(
+    sparse_embedding_dimensions = embedding_dict['sparse']['dimensions'],
+    sparse_embedding_values = embedding_dict['sparse']['values']
+)
+matches = vvs_endpoint.find_neighbors(
+    deployed_index_id = deployed_index_id,
+    num_neighbors = 20,
+    queries = [hybrid_query],
+    return_full_datapoint = True # chunk text is in the restricts!
+)[0]
+print(f"Found {len(matches)} matches.")
+if matches:
+    print(f"Sparse Distances: from {matches[0].sparse_distance} to {matches[-1].sparse_distance}")
+
+
+query = "What size is the pitcher's plate"
+# retrieve mix of matches with alpha
+print("\nRetrieving matches with a hybrid query (alpha=0.5)...")
+embedding_dict = embedder(query)
+
+hybrid_query = HybridQuery(
+    dense_embedding=embedding_dict['dense'],
+    sparse_embedding_dimensions=embedding_dict['sparse']['dimensions'],
+    sparse_embedding_values=embedding_dict['sparse']['values'],
+    rrf_ranking_alpha = 0.5
+)
+
+matches = vvs_endpoint.find_neighbors(
+    deployed_index_id = deployed_index_id,
+    num_neighbors = 20,
+    queries = [hybrid_query],
+    return_full_datapoint = True
+)[0]
+
+match_data = [{
+    'id': n.id,
+    'distance': n.distance,
+    'sparse_distance': getattr(n, 'sparse_distance', None),
+    'chunk_text': next((r.allow_tokens[0] for r in n.restricts if r.name == 'chunk_data'), None)
+    } for n in matches]
+
+print(f"Found {len(match_data)} matches:")
+if match_data:
+    print("Distance | Sparse Distance")
+    print("-------------------------")
+    for item in match_data:
+        dist_str = f"{item['distance']:.4f}"
+        
+        sparse_dist = item['sparse_distance']
+        
+        if sparse_dist is not None:
+            sparse_dist_str = f"{sparse_dist:.4f}"
+        else:
+            sparse_dist_str = "N/A"
+            
+        print(f"{dist_str:<9} | {sparse_dist_str}")
+
+print(match_data[1]['chunk_text'])
+
+
+
+
+
+# show how to manually supply context to ranking and|or gemini for answer
 
 
 
