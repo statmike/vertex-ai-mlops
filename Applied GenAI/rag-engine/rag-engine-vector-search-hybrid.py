@@ -1,6 +1,6 @@
 # build on the vector search index created by rag-engine-vector-search.py
 
-import os, re, subprocess
+import os, re, subprocess, string
 from collections import Counter
 from google.cloud import storage
 from google.cloud import aiplatform
@@ -12,6 +12,7 @@ import pandas as pd
 from google import genai
 from sklearn.feature_extraction.text import TfidfVectorizer
 from rank_bm25 import BM25Okapi
+import nltk
 import torch
 from transformers import AutoTokenizer, AutoModelForMaskedLM
 
@@ -144,12 +145,12 @@ print(chunk_data[:5])
 
 # create tf-idf vectorizer
 vectorizer = TfidfVectorizer(
-    ngram_range=(2, 2), # handles all one and two word phrases in the vocabulary
+    ngram_range = (1, 2), # handles all one and two word phrases in the vocabulary
     lowercase = True, # this is a default value
-    max_features = 100000, # default is 10000 - max vocabulary size
-    min_df = 1, # minimum document frequency (int or floast/pct)
-    max_df = 0.2, # maximum document frequency (int or float/pct)
-    sublinear_tf = False, # replace tf with (1+log(tf)) - reduces outsized impact of keyword density in short chunks
+    max_features = 100, # default is 10000 - max vocabulary size
+    min_df = 2, # minimum document frequency (int or floast/pct)
+    max_df = 0.9, # maximum document frequency (int or float/pct)
+    sublinear_tf = True, # replace tf with (1+log(tf)) - reduces outsized impact of keyword density in short chunks
 )
 vectorizer.fit_transform([d['chunk_text'] for d in chunk_data if d['chunk_text']])
 #vectorizer.vocabulary_
@@ -158,17 +159,46 @@ vectorizer.fit_transform([d['chunk_text'] for d in chunk_data if d['chunk_text']
 
 # create BM25 Model And Embedding
 
-def chunk_prep(chunk_text):
-    unigrams = [token for token in re.sub(r'[^\w\s]', '', chunk_text.lower()).split() if len(token) > 1]
-    bigrams = [' '.join(grams) for grams in zip(unigrams, unigrams[1:])]
-    return unigrams + bigrams  
+nltk.download('stopwords')
+nltk.download('punkt_tab')
+nltk.download('wordnet')
+lemmatizer = nltk.stem.WordNetLemmatizer()
+stemmer = nltk.stem.PorterStemmer()
+stop_words = set(stopwords.words('english'))
+
+def chunk_prep(chunk_text, lemmatize = True, stem = False, ngrams = 2):
+    #unigrams = [token for token in re.sub(r'[^\w\s]', '', chunk_text.lower()).split() if len(token) > 1]
+    #bigrams = [' '.join(grams) for grams in zip(unigrams, unigrams[1:])]
+    #return unigrams + bigrams
+
+    text = chunk_text
+    text = re.sub(r'\{[^{}]*\}', '', text) # remove {...}
+    text = re.sub(r'\[[^\[\]]*\]', '', text) # remove [...]
+    text = re.sub(r'[,:"\']', ' ', text) # remove
+    text = ' '.join(text.split()) 
+
+    text = text.lower().translate(str.maketrans('', '', string.punctuation))
+    tokens = nltk.tokenize.word_tokenize(text)
+    if lemmatize:
+        unigrams = [lemmatizer.lemmatize(token) for token in tokens if len(token) > 1 and token not in stop_words]
+    elif stem:
+        unigrams = [stemmer.stem(token) for token in tokens if len(token) > 1 and token not in stop_words]
+    else:
+        unigrams = [token for token in tokens if len(token) > 1 and token not in stop_words]
+
+    if ngrams == 2:
+        bigrams = [' '.join(grams) for grams in zip(unigrams, unigrams[1:])]
+        return unigrams + bigrams
+    else:
+        return unigrams
+       
 
 for chunk in chunk_data:
     chunk['tokenized_text'] = chunk_prep(chunk['chunk_text'])
 
 bm25_model = BM25Okapi(
     [chunk['tokenized_text'] for chunk in chunk_data],
-    k1 = 2, # term frequency saturation, lower saturates more quickly, higher more slowly, typical 1.2-2
+    k1 = 1.2, # term frequency saturation, lower saturates more quickly, higher more slowly, typical 1.2-2
     b = 0.6, # document length normalization, lower (0) means length matters less, higher (1) matters more
     epsilon = 0.25, # smoothing - small constant to be floor to scores and prevent terms not in corpus from having negative idf 
 )
@@ -272,12 +302,12 @@ def embedder(query, dense_api = True):
     else:
         dense = None
 
-    tfidf_vector = vectorizer.transform([query])
-    sparse = dict(
-        values = [float(tfidf_value) for tfidf_value in tfidf_vector.data],
-        dimensions = [int(tfidf_vector.indices[i]) for i, tfidf_value in enumerate(tfidf_vector.data)]
-    )
-    #sparse = create_bm25_sparse_embedding(query, bm25_model, vocab_map)
+    # tfidf_vector = vectorizer.transform([query])
+    # sparse = dict(
+    #     values = [float(tfidf_value) for tfidf_value in tfidf_vector.data],
+    #     dimensions = [int(tfidf_vector.indices[i]) for i, tfidf_value in enumerate(tfidf_vector.data)]
+    # )
+    sparse = create_bm25_sparse_embedding(query, bm25_model, vocab_map)
     #sparse = compute_splade_vector(query)
     return dict(dense = dense, sparse = sparse)
 
@@ -456,6 +486,17 @@ if match_data:
             sparse_dist_str = "N/A"
             
         print(f"{dist_str:<9} | {sparse_dist_str} | {item['id']}")
+
+
+
+
+
+
+
+
+
+
+
 
 
 # 5536094114968600211_5536094115973747828
