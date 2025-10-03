@@ -1,6 +1,7 @@
 # build on the vector search index created by rag-engine-vector-search.py
 
 import os, re, subprocess
+from collections import Counter
 from google.cloud import storage
 from google.cloud import aiplatform
 from google.cloud.aiplatform.matching_engine.matching_engine_index_endpoint import HybridQuery
@@ -11,6 +12,8 @@ import pandas as pd
 from google import genai
 from sklearn.feature_extraction.text import TfidfVectorizer
 from rank_bm25 import BM25Okapi
+import torch
+from transformers import AutoTokenizer, AutoModelForMaskedLM
 
 # static variable definitions
 LOCATION = 'us-east4' #'us-central1'
@@ -167,23 +170,86 @@ bm25_model = BM25Okapi(
 print(f'The bm25 vocabulary size is {len(bm25_model.idf.keys())}')
 
 # convert model score to embedding
+vocabulary = bm25_model.idf.keys()
+vocab_map = {word: i for i, word in enumerate(vocabulary)}
+def create_bm25_sparse_embedding(text, bm25_model, vocab_mapping):
+    """
+    Creates a BM25 sparse embedding for any given tokenized text.
+    """
+    indices = []
+    values = []
+    tokenized_text = chunk_prep(text)
+
+    # 1. Calculate term frequencies and doc length for the INPUT text
+    term_freqs = Counter(tokenized_text)
+    doc_len = len(tokenized_text)
+    
+    # 2. Get model parameters from the trained bm25_model
+    k1 = bm25_model.k1
+    b = bm25_model.b
+    avgdl = bm25_model.avgdl
+    
+    # 3. Calculate BM25 score for each term in the input text
+    for term, freq in term_freqs.items():
+        # Ignore words not in the original vocabulary
+        if term not in vocab_mapping:
+            continue
+
+        term_index = vocab_mapping[term]
+        idf = bm25_model.idf[term]
+        
+        # Core BM25 formula
+        numerator = freq * (k1 + 1)
+        denominator = freq + k1 * (1 - b + b * doc_len / avgdl)
+        term_score = idf * (numerator / denominator)
+        
+        indices.append(term_index)
+        values.append(term_score)
+        
+    return {"dimensions": indices, "values": values}
 
 
+# SPLADE - Bert for Sparse - a learned embedding, sparse, interpretabled
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
 
+# Load the tokenizer and model from Hugging Face
+model_id = 'naver/splade-cocondenser-ensembledistil'
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+model = AutoModelForMaskedLM.from_pretrained(model_id)
 
+# Move the model to the GPU if available
+model.to(device)
 
+def compute_splade_vector(text):
+    """Computes the SPLADE sparse vector for a given text."""
+    # Tokenize the input text
+    tokens = tokenizer(text, return_tensors='pt', padding=True, truncation=True)
+    # Move tokens to the GPU if available
+    tokens = {k: v.to(device) for k, v in tokens.items()}
 
+    # Pass tokens through the model
+    with torch.no_grad():
+        output = model(**tokens)
 
+    # The model's output is a dense vector of "logits"
+    # We apply a ReLU activation to zero out negative values
+    relu_output = torch.relu(output.logits)
 
+    # Logarithmically scale the weights and sum across the sequence length
+    # This creates a single vector representing the document
+    pooled_output = torch.sum(torch.log(1 + relu_output) * tokens['attention_mask'].unsqueeze(-1), dim=1)
 
+    # Find the non-zero dimensions (indices) and their values
+    indices = pooled_output.squeeze().nonzero().squeeze().cpu().tolist()
+    values = pooled_output.squeeze()[indices].cpu().tolist()
+    
+    # Handle the case of a single non-zero value
+    if not isinstance(indices, list):
+        indices = [indices]
+        values = [values]
 
-
-
-
-
-
-
-
+    return {"dimensions": indices, "values": values}
 
 
 
@@ -196,11 +262,13 @@ def embedder(query):
         model = 'text-embedding-005',
         contents = [query]
     ).embeddings[0].values
-    tfidf_vector = vectorizer.transform([query])
-    sparse = dict(
-        values = [float(tfidf_value) for tfidf_value in tfidf_vector.data],
-        dimensions = [int(tfidf_vector.indices[i]) for i, tfidf_value in enumerate(tfidf_vector.data)]
-    )
+    # tfidf_vector = vectorizer.transform([query])
+    # sparse = dict(
+    #     values = [float(tfidf_value) for tfidf_value in tfidf_vector.data],
+    #     dimensions = [int(tfidf_vector.indices[i]) for i, tfidf_value in enumerate(tfidf_vector.data)]
+    # )
+    #sparse = create_bm25_sparse_embedding(query, bm25_model, vocab_map)
+    sparse = compute_splade_vector(query)
     return dict(dense = dense, sparse = sparse)
 
 # example                
@@ -336,10 +404,15 @@ if matches:
     print(f"Sparse Distances: from {matches[0].sparse_distance} to {matches[-1].sparse_distance}")
 
 
-query = "What size is the pitcher's plate"
+query2 = """First, second and third bases shall be marked by white canvas or
+rubber-covered bags, securely attached to the ground as indicated in
+Diagram 2. The first and third base bags shall be entirely within the
+infield. The second base bag shall be centered on second base. The
+bags shall be 18 inches square, not less than three nor more than five
+inches thick, and filled with soft material."""
 # retrieve mix of matches with alpha
 print("\nRetrieving matches with a hybrid query (alpha=0.5)...")
-embedding_dict = embedder(query)
+embedding_dict = embedder(query2)
 
 hybrid_query = HybridQuery(
     dense_embedding=embedding_dict['dense'],
@@ -350,7 +423,7 @@ hybrid_query = HybridQuery(
 
 matches = vvs_endpoint.find_neighbors(
     deployed_index_id = deployed_index_id,
-    num_neighbors = 20,
+    num_neighbors = 0,
     queries = [hybrid_query],
     return_full_datapoint = True
 )[0]
@@ -378,7 +451,7 @@ if match_data:
             
         print(f"{dist_str:<9} | {sparse_dist_str}")
 
-print(match_data[1]['chunk_text'])
+print(match_data[0]['chunk_text'])
 
 
 
