@@ -82,7 +82,7 @@ else:
     print(f'Warning: Corpus "{CORPUS_NAME}" not found. Please create it first using rag-engine-vector-search.py.')
 
 # Retrieval Options
-query = "What size is the pitcher's plate"
+query = "How big is second base?"
 
 
 # Context Retrieval - Chunks
@@ -139,17 +139,22 @@ chunk_data = [{
     } for n in index_data]
 print(chunk_data[:5])
 
+
+###################################################################################################
+
 # create tf-idf vectorizer
 vectorizer = TfidfVectorizer(
-    ngram_range=(1, 2), # handles all one and two word phrases in the vocabulary
+    ngram_range=(2, 2), # handles all one and two word phrases in the vocabulary
     lowercase = True, # this is a default value
     max_features = 100000, # default is 10000 - max vocabulary size
     min_df = 1, # minimum document frequency (int or floast/pct)
-    max_df = 0.75, # maximum document frequency (int or float/pct)
-    sublinear_tf = True, # replace tf with (1+log(tf)) - reduces outsized impact of keyword density in short chunks
+    max_df = 0.2, # maximum document frequency (int or float/pct)
+    sublinear_tf = False, # replace tf with (1+log(tf)) - reduces outsized impact of keyword density in short chunks
 )
 vectorizer.fit_transform([d['chunk_text'] for d in chunk_data if d['chunk_text']])
 #vectorizer.vocabulary_
+
+###################################################################################################
 
 # create BM25 Model And Embedding
 
@@ -208,6 +213,7 @@ def create_bm25_sparse_embedding(text, bm25_model, vocab_mapping):
         
     return {"dimensions": indices, "values": values}
 
+###################################################################################################
 
 # SPLADE - Bert for Sparse - a learned embedding, sparse, interpretabled
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -252,23 +258,27 @@ def compute_splade_vector(text):
     return {"dimensions": indices, "values": values}
 
 
-
+###################################################################################################
 
 
 
 # embedder function: sparse and dense
-def embedder(query):
-    dense = genai_client.models.embed_content(
-        model = 'text-embedding-005',
-        contents = [query]
-    ).embeddings[0].values
-    # tfidf_vector = vectorizer.transform([query])
-    # sparse = dict(
-    #     values = [float(tfidf_value) for tfidf_value in tfidf_vector.data],
-    #     dimensions = [int(tfidf_vector.indices[i]) for i, tfidf_value in enumerate(tfidf_vector.data)]
-    # )
+def embedder(query, dense_api = True):
+    if dense_api:
+        dense = genai_client.models.embed_content(
+            model = 'text-embedding-005',
+            contents = [query]
+        ).embeddings[0].values
+    else:
+        dense = None
+
+    tfidf_vector = vectorizer.transform([query])
+    sparse = dict(
+        values = [float(tfidf_value) for tfidf_value in tfidf_vector.data],
+        dimensions = [int(tfidf_vector.indices[i]) for i, tfidf_value in enumerate(tfidf_vector.data)]
+    )
     #sparse = create_bm25_sparse_embedding(query, bm25_model, vocab_map)
-    sparse = compute_splade_vector(query)
+    #sparse = compute_splade_vector(query)
     return dict(dense = dense, sparse = sparse)
 
 # example                
@@ -291,7 +301,7 @@ if datapoint_id and chunk_text:
         print("Datapoint before update:", mod_upsert)
 
         # 2. Modify it by adding the sparse embedding
-        embedding = embedder(chunk_text)
+        embedding = embedder(chunk_text, dense_api = False)
         
         # Convert to dict to safely modify
         mod_upsert_dict = type(mod_upsert).to_dict(mod_upsert)
@@ -340,7 +350,7 @@ for dp in existing_datapoints:
     dp_dict = type(dp).to_dict(dp)
     chunk_text = id_to_text_map.get(dp.datapoint_id)
     if chunk_text:
-        embedding = embedder(chunk_text)
+        embedding = embedder(chunk_text, dense_api = False)
         dp_dict['sparse_embedding'] = embedding['sparse']
     datapoints_to_upsert.append(dp_dict)
 
@@ -404,15 +414,11 @@ if matches:
     print(f"Sparse Distances: from {matches[0].sparse_distance} to {matches[-1].sparse_distance}")
 
 
-query2 = """First, second and third bases shall be marked by white canvas or
-rubber-covered bags, securely attached to the ground as indicated in
-Diagram 2. The first and third base bags shall be entirely within the
-infield. The second base bag shall be centered on second base. The
-bags shall be 18 inches square, not less than three nor more than five
-inches thick, and filled with soft material."""
+
+
 # retrieve mix of matches with alpha
 print("\nRetrieving matches with a hybrid query (alpha=0.5)...")
-embedding_dict = embedder(query2)
+embedding_dict = embedder(query)
 
 hybrid_query = HybridQuery(
     dense_embedding=embedding_dict['dense'],
@@ -437,7 +443,7 @@ match_data = [{
 
 print(f"Found {len(match_data)} matches:")
 if match_data:
-    print("Distance | Sparse Distance")
+    print("Distance | Sparse Distance | ID")
     print("-------------------------")
     for item in match_data:
         dist_str = f"{item['distance']:.4f}"
@@ -449,9 +455,22 @@ if match_data:
         else:
             sparse_dist_str = "N/A"
             
-        print(f"{dist_str:<9} | {sparse_dist_str}")
+        print(f"{dist_str:<9} | {sparse_dist_str} | {item['id']}")
 
-print(match_data[0]['chunk_text'])
+
+# 5536094114968600211_5536094115973747828
+query_indices = embedder(query, dense_api = False)['sparse']['dimensions']
+trythis = """# Rule 2.02 to 2.05\n\nhome base shall be beveled and the base shall be fixed in the ground level with the ground surface. (See drawing D in Appendix 2.)\n\n## 2.03 The Bases\n\nFirst, second and third bases shall be marked by white canvas or rubber-covered bags, securely attached to the ground as indicated in Diagram 2. The first and third base bags shall be entirely within the infield. The second base bag shall be centered on second base. The bags shall be 18 inches square, not less than three nor more than five inches thick, and filled with soft material.\n\n## 2.04 The Pitcher's Plate\n\nThe pitcher's plate shall be a rectangular slab of whitened rubber, 24 inches by 6 inches. It shall be set in the ground as shown in Diagrams 1 and 2, so that the distance between the pitcher's plate and home base (the rear point of home plate) shall be 60 feet, 6 inches.\n\n## 2.05 Benches\n\nThe home Club shall furnish players' benches, one each for the home and visiting teams."""
+chunk_indices = embedder(trythis, dense_api = False)['sparse']['dimensions']
+
+
+idf_scores = dict(zip(range(len(vectorizer.idf_)), vectorizer.idf_))
+index_to_word = {i: word for word, i in vectorizer.vocabulary_.items()}
+query_indices = [3470, 9895, 10941, 17581, 17584]
+for index in query_indices:
+    word = index_to_word[index]
+    idf = idf_scores[index]
+    print(f"Word: '{word}' (Index: {index}) -> IDF Score: {idf:.2f}")
 
 
 
