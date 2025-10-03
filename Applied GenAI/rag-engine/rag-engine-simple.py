@@ -110,7 +110,7 @@ for f in files:
 
 
 # Retrieval Options
-query = 'How big is second?'
+query = 'What is rule 2.03?'
 
 
 # Context Retrieval - Chunks

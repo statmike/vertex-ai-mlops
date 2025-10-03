@@ -1,6 +1,7 @@
 # build on the vector search index created by rag-engine-vector-search.py
 
 import os, re, subprocess, string
+from typing import Literal
 from collections import Counter
 from google.cloud import storage
 from google.cloud import aiplatform
@@ -10,11 +11,8 @@ from vertexai.preview import rag
 #from vertexai import rag
 import pandas as pd
 from google import genai
-from sklearn.feature_extraction.text import TfidfVectorizer
-from rank_bm25 import BM25Okapi
-import nltk
-import torch
-from transformers import AutoTokenizer, AutoModelForMaskedLM
+
+
 
 # static variable definitions
 LOCATION = 'us-east4' #'us-central1'
@@ -83,7 +81,7 @@ else:
     print(f'Warning: Corpus "{CORPUS_NAME}" not found. Please create it first using rag-engine-vector-search.py.')
 
 # Retrieval Options
-query = "How big is second base?"
+query = "What is rule 2.03?"
 
 
 # Context Retrieval - Chunks
@@ -144,51 +142,65 @@ print(chunk_data[:5])
 ###################################################################################################
 
 # create tf-idf vectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
+
 vectorizer = TfidfVectorizer(
     ngram_range = (1, 2), # handles all one and two word phrases in the vocabulary
     lowercase = True, # this is a default value
-    max_features = 100, # default is 10000 - max vocabulary size
+    max_features = 10000, # default is 10000 - max vocabulary size
     min_df = 2, # minimum document frequency (int or floast/pct)
     max_df = 0.9, # maximum document frequency (int or float/pct)
     sublinear_tf = True, # replace tf with (1+log(tf)) - reduces outsized impact of keyword density in short chunks
 )
 vectorizer.fit_transform([d['chunk_text'] for d in chunk_data if d['chunk_text']])
-#vectorizer.vocabulary_
+print(f"The vocabular size is: {len(vectorizer.vocabulary_)}")
 
 ###################################################################################################
 
 # create BM25 Model And Embedding
+from rank_bm25 import BM25Okapi
+import nltk
 
 nltk.download('stopwords')
 nltk.download('punkt_tab')
 nltk.download('wordnet')
+
 lemmatizer = nltk.stem.WordNetLemmatizer()
 stemmer = nltk.stem.PorterStemmer()
-stop_words = set(stopwords.words('english'))
+stop_words = set(nltk.corpus.stopwords.words('english'))
 
-def chunk_prep(chunk_text, lemmatize = True, stem = False, ngrams = 2):
-    #unigrams = [token for token in re.sub(r'[^\w\s]', '', chunk_text.lower()).split() if len(token) > 1]
-    #bigrams = [' '.join(grams) for grams in zip(unigrams, unigrams[1:])]
-    #return unigrams + bigrams
+def chunk_prep(chunk_text, normalize: Literal['lemmatize', 'stem', None] = 'lemmatize', ngrams = 2):
+    """
+    Args:
+        normalize: 
+            'lemmatize' for lemmatization, change words to their root
+            'stem' for stemming, basically truncating words
+            None for no normalization
+    """
 
     text = chunk_text
-    text = re.sub(r'\{[^{}]*\}', '', text) # remove {...}
-    text = re.sub(r'\[[^\[\]]*\]', '', text) # remove [...]
-    text = re.sub(r'[,:"\']', ' ', text) # remove
-    text = ' '.join(text.split()) 
+
+    # this part would remove json parts
+    #text = re.sub(r'\{[^{}]*\}', '', text) # remove {...}
+    #text = re.sub(r'\[[^\[\]]*\]', '', text) # remove [...]
+    #text = re.sub(r'[,:"\']', ' ', text) # remove
+    #text = ' '.join(text.split()) 
 
     text = text.lower().translate(str.maketrans('', '', string.punctuation))
     tokens = nltk.tokenize.word_tokenize(text)
-    if lemmatize:
+    if normalize == 'lemmatize':
         unigrams = [lemmatizer.lemmatize(token) for token in tokens if len(token) > 1 and token not in stop_words]
-    elif stem:
+    elif normalize == 'stem':
         unigrams = [stemmer.stem(token) for token in tokens if len(token) > 1 and token not in stop_words]
-    else:
+    else: # None or any other value
         unigrams = [token for token in tokens if len(token) > 1 and token not in stop_words]
 
-    if ngrams == 2:
-        bigrams = [' '.join(grams) for grams in zip(unigrams, unigrams[1:])]
-        return unigrams + bigrams
+    if ngrams >= 2:
+        all_grams = unigrams.copy()
+        for n in range(2, ngrams + 1):
+            n_grams = [' '.join(grams) for grams in zip(*[unigrams[i:] for i in range(n)])]
+            all_grams.extend(n_grams)
+        return all_grams
     else:
         return unigrams
        
@@ -246,6 +258,9 @@ def create_bm25_sparse_embedding(text, bm25_model, vocab_mapping):
 ###################################################################################################
 
 # SPLADE - Bert for Sparse - a learned embedding, sparse, interpretabled
+import torch
+from transformers import AutoTokenizer, AutoModelForMaskedLM
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
@@ -426,6 +441,45 @@ print(len(matches), matches[0].distance, matches[-1].distance)
 
 
 
+
+
+
+
+# retreive dense matches
+print("Retrieving matches with a dense-only query...")
+embedding_dict = embedder(query)
+matches = vvs_endpoint.find_neighbors(
+    deployed_index_id = deployed_index_id,
+    num_neighbors = 10,
+    #embedding_ids = [''],
+    queries = [embedding_dict['dense']],
+    return_full_datapoint = True # chunk text is in the restricts!
+)[0]
+match_data = [{
+    'id': n.id,
+    'distance': n.distance,
+    'sparse_distance': getattr(n, 'sparse_distance', None),
+    'chunk_text': next((r.allow_tokens[0] for r in n.restricts if r.name == 'chunk_data'), None)
+    } for n in matches]
+print(f"Found {len(match_data)} matches:")
+if match_data:
+    print("Distance | Sparse Distance | ID")
+    print("-------------------------")
+    for item in match_data:
+        dist_str = f"{item['distance']:.4f}"
+        
+        sparse_dist = item['sparse_distance']
+        
+        if sparse_dist is not None:
+            sparse_dist_str = f"{sparse_dist:.4f}"
+        else:
+            sparse_dist_str = "N/A"
+            
+        print(f"{dist_str:<9} | {sparse_dist_str} | {item['id']}")
+
+
+
+
 # retreive sparse matches
 print("Retrieving matches with a sparse-only hybrid query...")
 embedding_dict = embedder(query)
@@ -435,13 +489,32 @@ hybrid_query = HybridQuery(
 )
 matches = vvs_endpoint.find_neighbors(
     deployed_index_id = deployed_index_id,
-    num_neighbors = 20,
+    num_neighbors = 10,
     queries = [hybrid_query],
     return_full_datapoint = True # chunk text is in the restricts!
 )[0]
-print(f"Found {len(matches)} matches.")
-if matches:
-    print(f"Sparse Distances: from {matches[0].sparse_distance} to {matches[-1].sparse_distance}")
+match_data = [{
+    'id': n.id,
+    'distance': n.distance,
+    'sparse_distance': getattr(n, 'sparse_distance', None),
+    'chunk_text': next((r.allow_tokens[0] for r in n.restricts if r.name == 'chunk_data'), None)
+    } for n in matches]
+print(f"Found {len(match_data)} matches:")
+if match_data:
+    print("Distance | Sparse Distance | ID")
+    print("-------------------------")
+    for item in match_data:
+        dist_str = f"{item['distance']:.4f}"
+        
+        sparse_dist = item['sparse_distance']
+        
+        if sparse_dist is not None:
+            sparse_dist_str = f"{sparse_dist:.4f}"
+        else:
+            sparse_dist_str = "N/A"
+            
+        print(f"{dist_str:<9} | {sparse_dist_str} | {item['id']}")
+
 
 
 
@@ -449,28 +522,24 @@ if matches:
 # retrieve mix of matches with alpha
 print("\nRetrieving matches with a hybrid query (alpha=0.5)...")
 embedding_dict = embedder(query)
-
 hybrid_query = HybridQuery(
     dense_embedding=embedding_dict['dense'],
     sparse_embedding_dimensions=embedding_dict['sparse']['dimensions'],
     sparse_embedding_values=embedding_dict['sparse']['values'],
     rrf_ranking_alpha = 0.5
 )
-
 matches = vvs_endpoint.find_neighbors(
     deployed_index_id = deployed_index_id,
-    num_neighbors = 0,
+    num_neighbors = 10,
     queries = [hybrid_query],
     return_full_datapoint = True
 )[0]
-
 match_data = [{
     'id': n.id,
     'distance': n.distance,
     'sparse_distance': getattr(n, 'sparse_distance', None),
     'chunk_text': next((r.allow_tokens[0] for r in n.restricts if r.name == 'chunk_data'), None)
     } for n in matches]
-
 print(f"Found {len(match_data)} matches:")
 if match_data:
     print("Distance | Sparse Distance | ID")
@@ -499,19 +568,11 @@ if match_data:
 
 
 
-# 5536094114968600211_5536094115973747828
+# CORRECT_ID: 5536094114968600211_5536094115973747828
 query_indices = embedder(query, dense_api = False)['sparse']['dimensions']
-trythis = """# Rule 2.02 to 2.05\n\nhome base shall be beveled and the base shall be fixed in the ground level with the ground surface. (See drawing D in Appendix 2.)\n\n## 2.03 The Bases\n\nFirst, second and third bases shall be marked by white canvas or rubber-covered bags, securely attached to the ground as indicated in Diagram 2. The first and third base bags shall be entirely within the infield. The second base bag shall be centered on second base. The bags shall be 18 inches square, not less than three nor more than five inches thick, and filled with soft material.\n\n## 2.04 The Pitcher's Plate\n\nThe pitcher's plate shall be a rectangular slab of whitened rubber, 24 inches by 6 inches. It shall be set in the ground as shown in Diagrams 1 and 2, so that the distance between the pitcher's plate and home base (the rear point of home plate) shall be 60 feet, 6 inches.\n\n## 2.05 Benches\n\nThe home Club shall furnish players' benches, one each for the home and visiting teams."""
-chunk_indices = embedder(trythis, dense_api = False)['sparse']['dimensions']
+correct_chunk_text = """# Rule 2.02 to 2.05\n\nhome base shall be beveled and the base shall be fixed in the ground level with the ground surface. (See drawing D in Appendix 2.)\n\n## 2.03 The Bases\n\nFirst, second and third bases shall be marked by white canvas or rubber-covered bags, securely attached to the ground as indicated in Diagram 2. The first and third base bags shall be entirely within the infield. The second base bag shall be centered on second base. The bags shall be 18 inches square, not less than three nor more than five inches thick, and filled with soft material.\n\n## 2.04 The Pitcher's Plate\n\nThe pitcher's plate shall be a rectangular slab of whitened rubber, 24 inches by 6 inches. It shall be set in the ground as shown in Diagrams 1 and 2, so that the distance between the pitcher's plate and home base (the rear point of home plate) shall be 60 feet, 6 inches.\n\n## 2.05 Benches\n\nThe home Club shall furnish players' benches, one each for the home and visiting teams."""
+chunk_indices = embedder(correct_chunk_text, dense_api = False)['sparse']['dimensions']
 
-
-idf_scores = dict(zip(range(len(vectorizer.idf_)), vectorizer.idf_))
-index_to_word = {i: word for word, i in vectorizer.vocabulary_.items()}
-query_indices = [3470, 9895, 10941, 17581, 17584]
-for index in query_indices:
-    word = index_to_word[index]
-    idf = idf_scores[index]
-    print(f"Word: '{word}' (Index: {index}) -> IDF Score: {idf:.2f}")
 
 
 

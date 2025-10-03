@@ -182,7 +182,9 @@ for f in files:
 
 
 # Retrieval Options
-query = "How big is second?"
+query = "What is rule 2.03?"
+# notice that this is not really a semantic question... 
+# Check out rag-engine-vector-search-hybrid.py for a way to include keywords (sparse embeddings)
 
 
 # Context Retrieval - Chunks
