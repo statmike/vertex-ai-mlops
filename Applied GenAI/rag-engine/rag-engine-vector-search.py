@@ -104,17 +104,22 @@ else:
 # configs: 
 
 # parser: rag.LlmParserConfig | rag.LayoutParserConfig
-parsing_config = rag.LlmParserConfig(
-    model_name = f'gemini-2.5-flash',
+# parsing_config = rag.LlmParserConfig(
+#     model_name = f'gemini-2.5-flash',
+#     max_parsing_requests_per_min = 120, # default
+#     custom_parsing_prompt = 'Look for white space on the page and use it to set the boundary between chunks.'
+# )
+# https://cloud.google.com/vertex-ai/generative-ai/docs/rag-engine/layout-parser-integration
+parsing_config = rag.LayoutParserConfig(
+    processor_name = f"projects/{PROJECT_ID}/locations/us/processors/519de454053ea980/processorVersions/pretrained",
     max_parsing_requests_per_min = 120, # default
-    custom_parsing_prompt = 'Look for white space on the page and use it to set the boundary between chunks.'
 )
 
 # chunking: optional
 chunking_config = rag.TransformationConfig(
     chunking_config = rag.ChunkingConfig(
-        chunk_size = 1000,
-        chunk_overlap = 100
+        chunk_size = 300, # smaller for technical documents were concepts are like compact 
+        chunk_overlap = 60 # 20% of chunk size, range of 15-25 is common
     )
 )
 
@@ -164,7 +169,8 @@ import_job = rag.import_files(
     corpus_name = corpus.name,
     paths = [gcs_uri],
     transformation_config = chunking_config,
-    llm_parser = parsing_config,
+    #llm_parser = parsing_config,
+    layout_parser = parsing_config,
     max_embedding_requests_per_min = 500,
 )
 print(import_job)
@@ -176,7 +182,7 @@ for f in files:
 
 
 # Retrieval Options
-query = 'How big is second?'
+query = "How big is second?"
 
 
 # Context Retrieval - Chunks
@@ -215,18 +221,21 @@ print(len(matches), matches[0].distance, matches[-1].distance)
 print(matches[0].text)
 # set a lower threshold of 0 to prevent any filtering
 
-matches = rag.retrieval_query(
-    rag_resources = [
-        rag.RagResource(rag_corpus = corpus.name)
-    ],
-    text = query,
-    rag_retrieval_config = rag.RagRetrievalConfig(
-        top_k = 200,  # Optional
-        filter = rag.Filter(vector_distance_threshold = 1)
-    )
-).contexts.contexts
-print(len(matches), matches[0].distance, matches[-1].distance)
-# top_k max is 100 so asking for more returns an error
+try:
+    matches = rag.retrieval_query(
+        rag_resources = [
+            rag.RagResource(rag_corpus = corpus.name)
+        ],
+        text = query,
+        rag_retrieval_config = rag.RagRetrievalConfig(
+            top_k = 200,  # Optional
+            filter = rag.Filter(vector_distance_threshold = 1)
+        )
+    ).contexts.contexts
+    print(len(matches), matches[0].distance, matches[-1].distance)
+    # top_k max is 100 so asking for more returns an error
+except Exception as e:
+    print(e)
 
 
 matches = rag.retrieval_query(
@@ -363,7 +372,7 @@ import_job = rag.import_files(
     corpus_name = corpus.name,
     paths = [gcs_uri],
     transformation_config = chunking_config,
-    llm_parser = parsing_config,
+    layout_parser = parsing_config,
     max_embedding_requests_per_min = 500,
 )
 print(import_job)
