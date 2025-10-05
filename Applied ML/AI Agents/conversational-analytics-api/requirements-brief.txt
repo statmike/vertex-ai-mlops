@@ -4,4 +4,5 @@ google-cloud-geminidataanalytics==0.3.0
 ipykernel==6.30.1
 ipython==9.5.0
 pandas==2.3.2
+requests==2.32.5
 vl-convert-python==1.8.0
