@@ -1,3 +1,6 @@
+# Mostly a copy from documentation: https://cloud.google.com/gemini/docs/conversational-analytics-api/build-agent-sdk#define_helper_functions
+# include modification of `handle_chart_response` that returns png files using package vl_convert 
+
 import pandas as pd
 import json as json_lib
 import altair as alt

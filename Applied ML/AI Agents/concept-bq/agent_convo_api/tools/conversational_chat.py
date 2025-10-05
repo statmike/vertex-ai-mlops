@@ -4,7 +4,7 @@ from google.adk import tools
 from google.cloud import geminidataanalytics_v1alpha as geminidataanalytics
 from google.protobuf.json_format import MessageToDict, ParseDict
 from google.genai.types import Part
-from .utils.conversation_chat_helpers import show_message
+from .utils.conversational_analytics_api_helpers import show_message
 
 async def conversational_chat(question: str, chart: bool, bigquery_tables: List[Dict[str, str]], tool_context: tools.ToolContext) -> str:
     """Answers a question using the Conversational Analytics API.
