@@ -52,6 +52,14 @@ The agent uses a combination of [function tools](https://google.github.io/adk-do
 - **ADK Built-in Tools for BigQuery:**
   - General-purpose tools that are part of the ADK for interacting with BigQuery, capable of fetching metadata and executing SQL queries.
 
+**More Resources:**
+- Excellent blog: [BigQuery meets ADK: 10 tips to safeguard your data (and wallet) from agents](https://medium.com/google-cloud/bigquery-meets-adk-10-tips-to-safeguard-your-data-and-wallet-from-agents-8c8ea72a9d4e)
+- DevRel Blog Series on ADK Agents for BigQuery:
+  - [Part 1: Build a baseline agent for BigQuery with ADK](https://medium.com/google-cloud/adk-agents-for-bigquery-series-40de8cf4e3ca)
+  - [Part 2: Evaluate your agent](https://medium.com/google-cloud/adk-agents-for-bigquery-series-fcd237452898)
+  - [Part 3: Optimize the agent’s environment and model](https://medium.com/google-cloud/adk-agents-for-bigquery-series-part-3-optimize-the-agents-environment-and-model-552cad1d53a3)
+  - [Part 4: System Instructions and beyond](https://medium.com/google-cloud/adk-agents-for-bigquery-series-part-4-system-instructions-and-beyond-934aa769db4a)
+
 ---
 ## Environment Setup
 

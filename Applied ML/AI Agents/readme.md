@@ -63,8 +63,11 @@ This is made easier by the Google [Agent Development Kit (ADK)](https://google.g
 * **Connecting agents to services via Model Context Protocol (MCP)**
     * Use existing MCP servers with ADK ([ADK as an MCP Client](https://google.github.io/adk-docs/tools/mcp-tools/#1-using-mcp-servers-with-adk-agents-adk-as-an-mcp-client)).
     * Build an [MCP server exposing ADK Tools](https://google.github.io/adk-docs/tools/mcp-tools/).
+    * Use Google Cloud Databases with [MCP Toolbox for Databases](https://googleapis.github.io/genai-toolbox/getting-started/introduction/)
 
-
+Learn More about ADK:
+- [Agent Developement Kit](https://google.github.io/adk-docs/) has excellent documentation
+- [Bo Yang (Author and Tech Lead) on Medium](https://medium.com/me/following-feed/writers/5e6030bc9788) has excellent short blogs on key functionality of ADK
 
 Sometimes agents need to interact across boundaries (departments, companies, networks). The need for a standard protocol for agent-to-agent communication is met by the [A2A protocol](https://google.github.io/A2A/#/?id=unlock-collaborative-agent-to-agent-scenarios-with-a-new-open-protocol).
 
