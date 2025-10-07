@@ -10,6 +10,9 @@ python = "^3.13"
 google-cloud-bigquery = "^3.38.0"
 google-cloud-aiplatform = "^1.119.0"
 timesfm = {git = "https://github.com/google-research/timesfm.git"}
+pandas = "^2.3.3"
+matplotlib = "^3.10.6"
+db-dtypes = "^1.4.3"
 
 [tool.poetry.group.dev]
 optional = true
