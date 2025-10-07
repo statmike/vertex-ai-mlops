@@ -1,14 +1,15 @@
 [tool.poetry]
-name = ""
-description = ""
+name = "applied-forecasting"
+description = "Applied Forecasting Examples"
 authors = ["Mike Henderson <statmike@gmail.com>"]
 readme = "readme.md"
 package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.13"
-
-################################# DEVELOPMENT FOCUSED CONTENT #################################
+google-cloud-bigquery = "^3.38.0"
+google-cloud-aiplatform = "^1.119.0"
+timesfm = {git = "https://github.com/google-research/timesfm.git"}
 
 [tool.poetry.group.dev]
 optional = true
