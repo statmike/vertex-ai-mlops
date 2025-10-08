@@ -97,15 +97,10 @@ def manage_packages(REQUIREMENTS_URLS, REQ_TYPE):
         REQ_TYPE: Type of requirements (e.g., 'COLAB', 'LOCAL')
     """
     import sys
-    import subprocess
 
     url = REQUIREMENTS_URLS[REQ_TYPE]
     print(f"Checking and installing dependencies from: {url}")
-    result = subprocess.run(
-        [sys.executable, '-m', 'pip', 'install', '-r', url, '--upgrade'],
-        capture_output=True, text=True
-    )
-    install_log = result.stdout.splitlines() + result.stderr.splitlines()
+    install_log = !{sys.executable} -m pip install -r {url} --upgrade
     install_log = [line for line in install_log if line.strip() and "WARNING: You are using pip version" not in line]
     install_action_words = ["Successfully installed", "Downloading", "Attempting uninstall"]
     install = False
