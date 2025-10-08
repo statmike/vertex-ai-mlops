@@ -1,5 +1,5 @@
 
-def authenticate(PROJECT_ID):
+def authenticate(PROJECT_ID, REQ_TYPE):
     """
     Authenticate user and set the Google Cloud project.
 
@@ -11,7 +11,6 @@ def authenticate(PROJECT_ID):
     """
     import subprocess
     authenticated = False
-    REQ_TYPE = 'LOCAL'
 
     try:
         from google.colab import auth
