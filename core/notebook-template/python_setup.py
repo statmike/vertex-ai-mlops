@@ -286,9 +286,9 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
         if REQ_TYPE == 'COLAB':
             print("\n🚨 Restarting kernel to apply changes...")
             print("   After restart, you can continue from the next cell (no need to rerun earlier cells).")
-            import IPython
-            app = IPython.Application.instance()
-            app.kernel.do_shutdown(True)
+            #import IPython
+            #app = IPython.Application.instance()
+            #app.kernel.do_shutdown(True)
         else:
             print("\n⚠️  Note: If you experience import errors, restart the kernel manually.")
             print("   After restart, you can continue from the next cell (no need to rerun earlier cells).")
