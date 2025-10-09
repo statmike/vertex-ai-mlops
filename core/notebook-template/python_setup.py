@@ -322,6 +322,7 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
             capture_output=True, text=True
         )
         install_log = result.stdout.splitlines() + result.stderr.splitlines()
+        print(install_log)
     elif INSTALL_TOOL == 'pip':
         print(f"Checking and installing dependencies from: {url}")
         result = subprocess.run(
