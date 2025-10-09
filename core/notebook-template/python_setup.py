@@ -289,6 +289,7 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
             #import IPython
             #app = IPython.Application.instance()
             #app.kernel.do_shutdown(True)
+            print(install_log)
         else:
             print("\n⚠️  Note: If you experience import errors, restart the kernel manually.")
             print("   After restart, you can continue from the next cell (no need to rerun earlier cells).")
