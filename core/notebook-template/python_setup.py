@@ -32,6 +32,11 @@
 #   - requirements-brief.txt: Primary packages only (REQ_TYPE='PRIMARY')
 #   - requirements-colab.txt: Colab-optimized list (REQ_TYPE='COLAB')
 #
+# Installation Tools:
+#   - pip: Standard Python package installer (default, always available)
+#   - uv: Modern, fast Python package installer (implemented, requires installation)
+#   - poetry: Dependency management tool (not yet implemented)
+#
 # Author: statmike
 # Repository: https://github.com/statmike/vertex-ai-mlops
 # ==============================================================================
@@ -237,9 +242,11 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
 
     # Handle different package managers
     if INSTALL_TOOL == 'uv':
-        print(f"⚠️  WARNING: 'uv' installation method is not yet implemented.")
-        print(f"   Please use INSTALL_TOOL='pip' for now.")
-        return None
+        result = subprocess.run(
+            ['uv', 'pip', 'install', '-r', url, '--upgrade'],
+            capture_output=True, text=True
+        )
+        install_log = result.stdout.splitlines() + result.stderr.splitlines()
     elif INSTALL_TOOL == 'poetry':
         print(f"⚠️  WARNING: 'poetry' installation method is not yet implemented.")
         print(f"   Please use INSTALL_TOOL='pip' for now.")
@@ -254,9 +261,16 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
         # This shouldn't happen due to validation above, but just in case
         return None
 
-    # Continue with installation log processing (only for pip currently)
+    # Continue with installation log processing (for pip and uv)
     install_log = [line for line in install_log if line.strip() and "WARNING: You are using pip version" not in line]
-    install_action_words = ["Successfully installed", "Downloading", "Attempting uninstall"]
+    # Keywords that indicate package installation activity (works for both pip and uv)
+    install_action_words = [
+        "Successfully installed",
+        "Downloading",
+        "Attempting uninstall",
+        "Resolved",  # uv specific
+        "Installed",  # uv specific
+    ]
     install = False
 
     for line in install_log:
