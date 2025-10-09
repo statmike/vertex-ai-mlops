@@ -322,7 +322,7 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
             capture_output=True, text=True
         )
         install_log = result.stdout.splitlines() + result.stderr.splitlines()
-        print(install_log)
+
     elif INSTALL_TOOL == 'pip':
         print(f"Checking and installing dependencies from: {url}")
         result = subprocess.run(
@@ -336,23 +336,28 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
 
     # Continue with installation log processing (for pip, uv, and poetry)
     install_log = [line for line in install_log if line.strip() and "WARNING: You are using pip version" not in line]
-    # Keywords that indicate package installation activity
-    install_action_words = [
-        "Successfully installed", # pip specific
-        "Downloading", # pip specific
-        "Attempting uninstall", # pip specific
-        "Uninstalled", "Removed", # uv specific
-        "Updated",  # uv specific
-        "Installed",  # uv and poetry specific
-        "Installing dependencies",  # poetry specific
-        "Package operations:",  # poetry specific
-    ]
-    install = False
 
-    for line in install_log:
-        if any(keyword in line for keyword in install_action_words):
-            install = True
-            break
+    # Check for poetry-specific "no changes" message
+    if INSTALL_TOOL == 'poetry' and any("No dependencies to install or update" in line for line in install_log):
+        install = False
+    else:
+        # Keywords that indicate package installation activity
+        install_action_words = [
+            "Successfully installed", # pip specific
+            "Downloading", # pip specific
+            "Attempting uninstall", # pip specific
+            "Uninstalled", "Removed", # uv specific
+            "Updated",  # uv specific
+            "Installed",  # uv and poetry specific
+            "Installing dependencies",  # poetry specific
+            "Package operations:",  # poetry specific
+        ]
+        install = False
+
+        for line in install_log:
+            if any(keyword in line for keyword in install_action_words):
+                install = True
+                break
 
     if not install:
         print("✅ All packages are already installed and up to date.")
