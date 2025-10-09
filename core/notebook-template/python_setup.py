@@ -168,6 +168,7 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
     print("\n" + "="*50)
     print("PACKAGE MANAGEMENT")
     print("="*50)
+    print(f"Installation Tool: {INSTALL_TOOL}")
 
     # Adapt URL based on REQ_TYPE
     if REQ_TYPE == 'PRIMARY':
@@ -330,6 +331,7 @@ def setup_environment(PROJECT_ID, REQ_TYPE, REQUIREMENTS_URL, REQUIRED_APIS, INS
     print(f"✅ Authentication:    {'Success' if authenticated else 'Failed'}")
     print(f"✅ API Configuration: {'Success' if apis_success else 'Failed'}")
     print(f"✅ Package Install:   {'Installed' if packages_result else 'Already up to date'}")
+    print(f"✅ Installation Tool: {INSTALL_TOOL}")
     print(f"✅ Project ID:        {PROJECT_ID_current}")
     print(f"✅ Project Number:    {PROJECT_NUMBER}")
     print("="*50 + "\n")
@@ -339,6 +341,7 @@ def setup_environment(PROJECT_ID, REQ_TYPE, REQUIREMENTS_URL, REQUIRED_APIS, INS
         'authenticated': authenticated,
         'apis_enabled': apis_success,
         'packages_installed': packages_result,
+        'INSTALL_TOOL': INSTALL_TOOL,
         'PROJECT_ID': PROJECT_ID_current,
         'PROJECT_NUMBER': PROJECT_NUMBER,
         'REQ_TYPE': updated_req_type
