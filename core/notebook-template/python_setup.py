@@ -265,11 +265,13 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
     install_log = [line for line in install_log if line.strip() and "WARNING: You are using pip version" not in line]
     # Keywords that indicate package installation activity (works for both pip and uv)
     install_action_words = [
-        "Successfully installed",
-        "Downloading",
-        "Attempting uninstall",
-        "Resolved",  # uv specific
+        "Successfully installed", # pip specific
+        "Downloading", # pip specific
+        "Attempting uninstall", # pip specific
+        "Uninstalled", "Removed", # uv specific
+        "Updated",  # uv specific
         "Installed",  # uv specific
+
     ]
     install = False
 
@@ -289,7 +291,6 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
             #import IPython
             #app = IPython.Application.instance()
             #app.kernel.do_shutdown(True)
-            print(install_log)
         else:
             print("\n⚠️  Note: If you experience import errors, restart the kernel manually.")
             print("   After restart, you can continue from the next cell (no need to rerun earlier cells).")
