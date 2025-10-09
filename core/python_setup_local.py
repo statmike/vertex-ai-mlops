@@ -23,15 +23,21 @@ def authenticate(PROJECT_ID, REQ_TYPE):
         project_id = subprocess.run(['gcloud', 'config', 'get-value', 'project'], capture_output=True, text=True, check=True).stdout.strip()
     except ImportError:
         print("Checking for existing ADC...")
-        import google.auth
-        import google.auth.exceptions
         try:
-            credentials, project_id = google.auth.default()
-            print("✅ Existing ADC found.")
-            authenticated = True
-        except google.auth.exceptions.DefaultCredentialsError:
-            print("❌ ERROR: ADC are not set in this environment.")
-            print("   Please run from your local terminal: gcloud auth application-default login")
+            # Check if ADC is configured by trying to get an access token
+            result = subprocess.run(
+                ['gcloud', 'auth', 'application-default', 'print-access-token'],
+                capture_output=True, text=True
+            )
+            if result.returncode == 0:
+                print("✅ Existing ADC found.")
+                authenticated = True
+                project_id = subprocess.run(['gcloud', 'config', 'get-value', 'project'], capture_output=True, text=True, check=True).stdout.strip()
+            else:
+                print("❌ ERROR: ADC are not set in this environment.")
+                print("   Please run from your local terminal: gcloud auth application-default login")
+        except FileNotFoundError:
+            print("❌ ERROR: gcloud CLI not found. Please install Google Cloud SDK.")
 
     if authenticated:
         if project_id == PROJECT_ID:

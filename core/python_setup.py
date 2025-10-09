@@ -11,6 +11,11 @@ def authenticate(PROJECT_ID, REQ_TYPE):
     """
     import subprocess
     authenticated = False
+    project_id = None
+
+    print("\n" + "="*50)
+    print("AUTHENTICATION")
+    print("="*50)
 
     try:
         from google.colab import auth
@@ -56,7 +61,10 @@ def authenticate(PROJECT_ID, REQ_TYPE):
             try:
                 subprocess.run(['gcloud', 'config', 'set', 'project', PROJECT_ID], capture_output=True, text=True, check=True)
                 print(f"✅ Project successfully switched to '{PROJECT_ID}'.")
-            except (FileNotFoundError, subprocess.CalledProcessError) as e:
+            except FileNotFoundError:
+                print(f"❌ ERROR: Failed to switch project.")
+                print(f"   gcloud CLI not found. Please install Google Cloud SDK.")
+            except subprocess.CalledProcessError as e:
                 print(f"❌ ERROR: Failed to switch project.")
                 print(f"   The active user may not have permissions for the desired project '{PROJECT_ID}'.")
                 print(f"   Details: {e.stderr}")
@@ -70,8 +78,15 @@ def check_and_enable_apis(PROJECT_ID, REQUIRED_APIS):
     Args:
         PROJECT_ID: The Google Cloud project ID
         REQUIRED_APIS: List of required API service names
+
+    Returns:
+        bool: True if successful, False if errors occurred
     """
     import subprocess
+
+    print("\n" + "="*50)
+    print("API CHECK & ENABLE")
+    print("="*50)
 
     try:
         enabled_services = subprocess.run(
@@ -88,9 +103,11 @@ def check_and_enable_apis(PROJECT_ID, REQUIRED_APIS):
                     capture_output=True, check=True # Hides output unless there's an error.
                 )
                 print(f"✅ Successfully enabled {api}.")
+        return True
     except subprocess.CalledProcessError as e:
         print(f"❌ ERROR: A gcloud command failed. Your account may not have the required permissions.")
         print(f"   Details: {e.stderr}")
+        return False
 
 
 def manage_packages(REQUIREMENTS_URLS, REQ_TYPE):
@@ -100,9 +117,16 @@ def manage_packages(REQUIREMENTS_URLS, REQ_TYPE):
     Args:
         REQUIREMENTS_URLS: Dictionary mapping REQ_TYPE to requirements URLs
         REQ_TYPE: Type of requirements (e.g., 'COLAB', 'LOCAL')
+
+    Returns:
+        bool: True if packages were installed, False if already up to date
     """
     import sys
     import subprocess
+
+    print("\n" + "="*50)
+    print("PACKAGE MANAGEMENT")
+    print("="*50)
 
     url = REQUIREMENTS_URLS[REQ_TYPE]
     print(f"Checking and installing dependencies from: {url}")
@@ -122,32 +146,91 @@ def manage_packages(REQUIREMENTS_URLS, REQ_TYPE):
 
     if not install:
         print("✅ All packages are already installed and up to date.")
+        return False
     else:
         print("\n✅ Installation complete.")
-        print("\n🚨 Restarting kernel to apply changes...")
-        import IPython
-        app = IPython.Application.instance()
-        app.kernel.do_shutdown(True)
+        if REQ_TYPE == 'COLAB':
+            print("\n🚨 Restarting kernel to apply changes...")
+            print("   After restart, you can continue from the next cell (no need to rerun earlier cells).")
+            import IPython
+            app = IPython.Application.instance()
+            app.kernel.do_shutdown(True)
+        else:
+            print("\n⚠️  Note: If you experience import errors, restart the kernel manually.")
+            print("   After restart, you can continue from the next cell (no need to rerun earlier cells).")
+        return True
 
 
-def get_project_info():
+def setup_environment(PROJECT_ID, REQ_TYPE, REQUIREMENTS_URLS, REQUIRED_APIS):
     """
-    Get and display Google Cloud project information.
+    Main orchestrator function to set up the complete Python GCP environment.
+
+    Args:
+        PROJECT_ID: The desired Google Cloud project ID
+        REQ_TYPE: Type of requirements (e.g., 'COLAB', 'PRIMARY', 'ALL')
+        REQUIREMENTS_URLS: Dictionary mapping REQ_TYPE to requirements URLs
+        REQUIRED_APIS: List of required API service names
 
     Returns:
-        tuple: (PROJECT_ID, PROJECT_NUMBER)
+        dict: Summary of setup results including PROJECT_ID, PROJECT_NUMBER, and status flags
+
+    Note:
+        In Colab, if packages are installed, the kernel will restart and this function
+        will not complete. You should re-run this function after restart to complete setup.
     """
     import subprocess
 
-    PROJECT_ID = subprocess.run(['gcloud', 'config', 'get-value', 'project'], capture_output=True, text=True, check=True).stdout.strip()
-    PROJECT_NUMBER = subprocess.run(['gcloud', 'projects', 'describe', PROJECT_ID, '--format=value(projectNumber)'], capture_output=True, text=True, check=True).stdout.strip()
+    print("\n" + "="*50)
+    print("PYTHON GCP ENVIRONMENT SETUP")
+    print("="*50)
+
+    # Step 1: Authenticate
+    authenticated, updated_req_type = authenticate(PROJECT_ID, REQ_TYPE)
+
+    if not authenticated:
+        print("\n" + "="*50)
+        print("SETUP FAILED: Authentication required")
+        print("="*50)
+        return {'success': False, 'authenticated': False}
+
+    # Step 2: Check and enable APIs
+    apis_success = check_and_enable_apis(PROJECT_ID, REQUIRED_APIS)
+
+    # Step 3: Manage packages (may trigger kernel restart in Colab)
+    packages_installed = manage_packages(REQUIREMENTS_URLS, updated_req_type)
+
+    # If we reach here, kernel didn't restart (or already restarted and we're running again)
+    # Step 4: Get project information
+    PROJECT_ID_current = subprocess.run(['gcloud', 'config', 'get-value', 'project'], capture_output=True, text=True, check=True).stdout.strip()
+    PROJECT_NUMBER = subprocess.run(['gcloud', 'projects', 'describe', PROJECT_ID_current, '--format=value(projectNumber)'], capture_output=True, text=True, check=True).stdout.strip()
 
     print("\n" + "="*50)
     print("Google Cloud Project Information")
     print("="*50)
-    print(f"PROJECT_ID     = {PROJECT_ID}")
+    print(f"PROJECT_ID     = {PROJECT_ID_current}")
     print(f"PROJECT_NUMBER = {PROJECT_NUMBER}")
     print("="*50 + "\n")
 
-    return PROJECT_ID, PROJECT_NUMBER
+    # Overall summary
+    print("\n" + "="*50)
+    print("SETUP SUMMARY")
+    print("="*50)
+    print(f"✅ Authentication:    {'Success' if authenticated else 'Failed'}")
+    print(f"✅ API Configuration: {'Success' if apis_success else 'Failed'}")
+    print(f"✅ Package Install:   {'Installed' if packages_installed else 'Already up to date'}")
+    print(f"✅ Project ID:        {PROJECT_ID_current}")
+    print(f"✅ Project Number:    {PROJECT_NUMBER}")
+    print("="*50 + "\n")
+
+    return {
+        'success': True,
+        'authenticated': authenticated,
+        'apis_enabled': apis_success,
+        'packages_installed': packages_installed,
+        'PROJECT_ID': PROJECT_ID_current,
+        'PROJECT_NUMBER': PROJECT_NUMBER,
+        'REQ_TYPE': updated_req_type
+    }
+
+
 
