@@ -157,7 +157,7 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE):
         REQ_TYPE: Type of requirements (e.g., 'COLAB', 'PRIMARY', 'ALL')
 
     Returns:
-        bool: True if packages were installed, False if already up to date
+        bool or None: True if packages were installed, False if already up to date, None on error
     """
     import sys
     import subprocess
@@ -198,11 +198,11 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE):
             else:
                 print(f"❌ ERROR: Base requirements file also not found at: {REQUIREMENTS_URL}")
                 print(f"   Please verify the REQUIREMENTS_URL is correct and accessible.")
-                return False
+                return None
         else:
             print(f"❌ ERROR: Requirements file not found at: {REQUIREMENTS_URL}")
             print(f"   Please verify the REQUIREMENTS_URL is correct and accessible.")
-            return False
+            return None
 
     print(f"Checking and installing dependencies from: {url}")
     result = subprocess.run(
@@ -272,7 +272,20 @@ def setup_environment(PROJECT_ID, REQ_TYPE, REQUIREMENTS_URL, REQUIRED_APIS):
     apis_success = check_and_enable_apis(PROJECT_ID, REQUIRED_APIS)
 
     # Step 3: Manage packages (may trigger kernel restart in Colab)
-    packages_installed = manage_packages(REQUIREMENTS_URL, updated_req_type)
+    packages_result = manage_packages(REQUIREMENTS_URL, updated_req_type)
+
+    # Check if package installation failed
+    if packages_result is None:
+        print("\n" + "="*50)
+        print("SETUP FAILED: Package installation error")
+        print("="*50)
+        return {
+            'success': False,
+            'authenticated': authenticated,
+            'apis_enabled': apis_success,
+            'packages_installed': None,
+            'error': 'Package installation failed - requirements URL not accessible'
+        }
 
     # If we reach here, kernel didn't restart (or already restarted and we're running again)
     # Step 4: Get project information
@@ -292,7 +305,7 @@ def setup_environment(PROJECT_ID, REQ_TYPE, REQUIREMENTS_URL, REQUIRED_APIS):
     print("="*50)
     print(f"✅ Authentication:    {'Success' if authenticated else 'Failed'}")
     print(f"✅ API Configuration: {'Success' if apis_success else 'Failed'}")
-    print(f"✅ Package Install:   {'Installed' if packages_installed else 'Already up to date'}")
+    print(f"✅ Package Install:   {'Installed' if packages_result else 'Already up to date'}")
     print(f"✅ Project ID:        {PROJECT_ID_current}")
     print(f"✅ Project Number:    {PROJECT_NUMBER}")
     print("="*50 + "\n")
@@ -301,7 +314,7 @@ def setup_environment(PROJECT_ID, REQ_TYPE, REQUIREMENTS_URL, REQUIRED_APIS):
         'success': True,
         'authenticated': authenticated,
         'apis_enabled': apis_success,
-        'packages_installed': packages_installed,
+        'packages_installed': packages_result,
         'PROJECT_ID': PROJECT_ID_current,
         'PROJECT_NUMBER': PROJECT_NUMBER,
         'REQ_TYPE': updated_req_type
