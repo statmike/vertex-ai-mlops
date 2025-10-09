@@ -1,6 +1,8 @@
 db-dtypes==1.4.3 ; python_version >= "3.13" and python_version < "4.0"
 google-cloud-aiplatform==1.119.0 ; python_version >= "3.13" and python_version < "4.0"
 google-cloud-bigquery==3.38.0 ; python_version >= "3.13" and python_version < "4.0"
+ipykernel==6.30.1 ; python_version >= "3.13" and python_version < "4.0"
+matplotlib-inline==0.1.7 ; python_version >= "3.13" and python_version < "4.0"
 matplotlib==3.10.6 ; python_version >= "3.13" and python_version < "4.0"
 pandas==2.3.3 ; python_version >= "3.13" and python_version < "4.0"
 timesfm @ git+https://github.com/google-research/timesfm.git@dc35e580d916e7d49e5f3b3733a82dd093253536 ; python_version >= "3.13" and python_version < "4.0"

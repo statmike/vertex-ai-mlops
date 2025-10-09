@@ -1,6 +1,6 @@
-altair==5.5.0
-google-auth==2.40.3
-google-cloud-geminidataanalytics==0.3.0
-pandas==2.3.2
-requests==2.32.5
-vl-convert-python==1.8.0
+altair==5.5.0 ; python_version >= "3.13" and python_version < "4.0"
+google-auth==2.40.3 ; python_version >= "3.13" and python_version < "4.0"
+google-cloud-geminidataanalytics==0.3.0 ; python_version >= "3.13" and python_version < "4.0"
+pandas==2.3.2 ; python_version >= "3.13" and python_version < "4.0"
+requests==2.32.5 ; python_version >= "3.13" and python_version < "4.0"
+vl-convert-python==1.8.0 ; python_version >= "3.13" and python_version < "4.0"
