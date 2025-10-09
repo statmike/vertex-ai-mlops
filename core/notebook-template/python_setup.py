@@ -35,7 +35,7 @@
 # Installation Tools:
 #   - pip: Standard Python package installer (default, always available)
 #   - uv: Modern, fast Python package installer (implemented, requires installation)
-#   - poetry: Dependency management tool (not yet implemented)
+#   - poetry: Dependency management tool (implemented, requires poetry environment)
 #
 # Author: statmike
 # Repository: https://github.com/statmike/vertex-ai-mlops
@@ -170,11 +170,30 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
     import urllib.request
     import urllib.error
     import shutil
+    import os
 
     print("\n" + "="*50)
     print("PACKAGE MANAGEMENT")
     print("="*50)
     print(f"Installation Tool: {INSTALL_TOOL}")
+
+    # Helper function to check if running in poetry environment
+    def is_running_in_poetry_env():
+        """Check if current Python environment is managed by poetry."""
+        try:
+            result = subprocess.run(['poetry', 'env', 'info', '--path'],
+                                  capture_output=True, text=True)
+            if result.returncode == 0:
+                poetry_env_path = result.stdout.strip()
+                current_python = sys.executable
+
+                # Check if current Python is within poetry's venv path
+                if poetry_env_path and current_python.startswith(poetry_env_path):
+                    return True, poetry_env_path
+        except Exception:
+            pass
+
+        return False, None
 
     # Adapt URL based on REQ_TYPE
     if REQ_TYPE == 'PRIMARY':
@@ -222,7 +241,32 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
     if INSTALL_TOOL == 'pip':
         # pip is assumed to be available with Python
         tool_available = True
+    elif INSTALL_TOOL == 'poetry':
+        tool_path = shutil.which(INSTALL_TOOL)
+        tool_available = tool_path is not None
+
+        if not tool_available:
+            print(f"❌ ERROR: '{INSTALL_TOOL}' command not found on this system.")
+            print(f"   Please install {INSTALL_TOOL} or use INSTALL_TOOL='pip' instead.")
+            print(f"   To install {INSTALL_TOOL}:")
+            print(f"     - See: https://python-poetry.org/docs/#installation")
+            return None
+        else:
+            print(f"✅ Found {INSTALL_TOOL} at: {tool_path}")
+
+            # Additional check: verify we're running in a poetry environment
+            in_poetry_env, poetry_path = is_running_in_poetry_env()
+            if not in_poetry_env:
+                print(f"❌ ERROR: Poetry is available but current kernel is NOT running in a poetry environment.")
+                print(f"   Current Python: {sys.executable}")
+                print(f"   To use poetry, please start your notebook within a poetry environment:")
+                print(f"     - Run: poetry shell")
+                print(f"     - Or: poetry run jupyter lab")
+                return None
+            else:
+                print(f"✅ Running in poetry environment: {poetry_path}")
     else:
+        # For other tools like uv
         tool_path = shutil.which(INSTALL_TOOL)
         tool_available = tool_path is not None
 
@@ -232,26 +276,54 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
             print(f"   To install {INSTALL_TOOL}:")
             if INSTALL_TOOL == 'uv':
                 print(f"     - See: https://github.com/astral-sh/uv")
-            elif INSTALL_TOOL == 'poetry':
-                print(f"     - See: https://python-poetry.org/docs/#installation")
             return None
         else:
             print(f"✅ Found {INSTALL_TOOL} at: {tool_path}")
 
-    print(f"Checking and installing dependencies from: {url}")
-
     # Handle different package managers
     if INSTALL_TOOL == 'uv':
+        print(f"Checking and installing dependencies from: {url}")
         result = subprocess.run(
             ['uv', 'pip', 'install', '-r', url, '--upgrade'],
             capture_output=True, text=True
         )
         install_log = result.stdout.splitlines() + result.stderr.splitlines()
     elif INSTALL_TOOL == 'poetry':
-        print(f"⚠️  WARNING: 'poetry' installation method is not yet implemented.")
-        print(f"   Please use INSTALL_TOOL='pip' for now.")
-        return None
+        # Poetry uses pyproject.toml instead of requirements.txt
+        print(f"ℹ️  Poetry mode: Installing from pyproject.toml (REQUIREMENTS_URL ignored)")
+
+        # Check for local pyproject.toml first
+        if os.path.exists('pyproject.toml'):
+            print("✅ Found local pyproject.toml")
+            pyproject_file = 'pyproject.toml'
+        else:
+            # Try to download from URL (replace requirements.txt with pyproject.toml)
+            pyproject_url = REQUIREMENTS_URL.replace('requirements.txt', 'pyproject.toml')
+            print(f"⚠️  No local pyproject.toml found")
+            print(f"   Attempting to download from: {pyproject_url}")
+
+            if check_url_exists(pyproject_url):
+                try:
+                    urllib.request.urlretrieve(pyproject_url, 'pyproject.toml')
+                    print("✅ Downloaded pyproject.toml")
+                    pyproject_file = 'pyproject.toml'
+                except Exception as e:
+                    print(f"❌ ERROR: Failed to download pyproject.toml: {e}")
+                    return None
+            else:
+                print(f"❌ ERROR: No local pyproject.toml and URL not accessible")
+                print(f"   Poetry requires a pyproject.toml file to install dependencies")
+                return None
+
+        # Run poetry install
+        print(f"Running poetry install...")
+        result = subprocess.run(
+            ['poetry', 'install'],
+            capture_output=True, text=True
+        )
+        install_log = result.stdout.splitlines() + result.stderr.splitlines()
     elif INSTALL_TOOL == 'pip':
+        print(f"Checking and installing dependencies from: {url}")
         result = subprocess.run(
             [sys.executable, '-m', 'pip', 'install', '-r', url, '--upgrade'],
             capture_output=True, text=True
@@ -261,17 +333,18 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
         # This shouldn't happen due to validation above, but just in case
         return None
 
-    # Continue with installation log processing (for pip and uv)
+    # Continue with installation log processing (for pip, uv, and poetry)
     install_log = [line for line in install_log if line.strip() and "WARNING: You are using pip version" not in line]
-    # Keywords that indicate package installation activity (works for both pip and uv)
+    # Keywords that indicate package installation activity
     install_action_words = [
         "Successfully installed", # pip specific
         "Downloading", # pip specific
         "Attempting uninstall", # pip specific
         "Uninstalled", "Removed", # uv specific
         "Updated",  # uv specific
-        "Installed",  # uv specific
-
+        "Installed",  # uv and poetry specific
+        "Installing dependencies",  # poetry specific
+        "Package operations:",  # poetry specific
     ]
     install = False
 
@@ -288,9 +361,9 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
         if REQ_TYPE == 'COLAB':
             print("\n🚨 Restarting kernel to apply changes...")
             print("   After restart, you can continue from the next cell (no need to rerun earlier cells).")
-            #import IPython
-            #app = IPython.Application.instance()
-            #app.kernel.do_shutdown(True)
+            import IPython
+            app = IPython.Application.instance()
+            app.kernel.do_shutdown(True)
         else:
             print("\n⚠️  Note: If you experience import errors, restart the kernel manually.")
             print("   After restart, you can continue from the next cell (no need to rerun earlier cells).")
