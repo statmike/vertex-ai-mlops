@@ -148,13 +148,14 @@ def check_and_enable_apis(PROJECT_ID, REQUIRED_APIS):
         return False
 
 
-def manage_packages(REQUIREMENTS_URL, REQ_TYPE):
+def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
     """
     Check and install required Python packages.
 
     Args:
         REQUIREMENTS_URL: Base URL for requirements.txt file
         REQ_TYPE: Type of requirements (e.g., 'COLAB', 'PRIMARY', 'ALL')
+        INSTALL_TOOL: Package installation tool to use ('pip', 'uv', or 'poetry'). Default: 'pip'
 
     Returns:
         bool or None: True if packages were installed, False if already up to date, None on error
@@ -204,12 +205,34 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE):
             print(f"   Please verify the REQUIREMENTS_URL is correct and accessible.")
             return None
 
+    # Validate INSTALL_TOOL and prepare installation command
+    if INSTALL_TOOL not in ['pip', 'uv', 'poetry']:
+        print(f"❌ ERROR: Invalid INSTALL_TOOL '{INSTALL_TOOL}'")
+        print(f"   Allowed values: 'pip', 'uv', 'poetry'")
+        return None
+
     print(f"Checking and installing dependencies from: {url}")
-    result = subprocess.run(
-        [sys.executable, '-m', 'pip', 'install', '-r', url, '--upgrade'],
-        capture_output=True, text=True
-    )
-    install_log = result.stdout.splitlines() + result.stderr.splitlines()
+
+    # Handle different package managers
+    if INSTALL_TOOL == 'uv':
+        print(f"⚠️  WARNING: 'uv' installation method is not yet implemented.")
+        print(f"   Please use INSTALL_TOOL='pip' for now.")
+        return None
+    elif INSTALL_TOOL == 'poetry':
+        print(f"⚠️  WARNING: 'poetry' installation method is not yet implemented.")
+        print(f"   Please use INSTALL_TOOL='pip' for now.")
+        return None
+    elif INSTALL_TOOL == 'pip':
+        result = subprocess.run(
+            [sys.executable, '-m', 'pip', 'install', '-r', url, '--upgrade'],
+            capture_output=True, text=True
+        )
+        install_log = result.stdout.splitlines() + result.stderr.splitlines()
+    else:
+        # This shouldn't happen due to validation above, but just in case
+        return None
+
+    # Continue with installation log processing (only for pip currently)
     install_log = [line for line in install_log if line.strip() and "WARNING: You are using pip version" not in line]
     install_action_words = ["Successfully installed", "Downloading", "Attempting uninstall"]
     install = False
@@ -236,7 +259,7 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE):
         return True
 
 
-def setup_environment(PROJECT_ID, REQ_TYPE, REQUIREMENTS_URL, REQUIRED_APIS):
+def setup_environment(PROJECT_ID, REQ_TYPE, REQUIREMENTS_URL, REQUIRED_APIS, INSTALL_TOOL='pip'):
     """
     Main orchestrator function to set up the complete Python GCP environment.
 
@@ -245,6 +268,7 @@ def setup_environment(PROJECT_ID, REQ_TYPE, REQUIREMENTS_URL, REQUIRED_APIS):
         REQ_TYPE: Type of requirements (e.g., 'COLAB', 'PRIMARY', 'ALL')
         REQUIREMENTS_URL: Base URL for requirements.txt file (will be adapted based on REQ_TYPE)
         REQUIRED_APIS: List of required API service names
+        INSTALL_TOOL: Package installation tool to use ('pip', 'uv', or 'poetry'). Default: 'pip'
 
     Returns:
         dict: Summary of setup results including PROJECT_ID, PROJECT_NUMBER, and status flags
@@ -272,7 +296,7 @@ def setup_environment(PROJECT_ID, REQ_TYPE, REQUIREMENTS_URL, REQUIRED_APIS):
     apis_success = check_and_enable_apis(PROJECT_ID, REQUIRED_APIS)
 
     # Step 3: Manage packages (may trigger kernel restart in Colab)
-    packages_result = manage_packages(REQUIREMENTS_URL, updated_req_type)
+    packages_result = manage_packages(REQUIREMENTS_URL, updated_req_type, INSTALL_TOOL)
 
     # Check if package installation failed
     if packages_result is None:
