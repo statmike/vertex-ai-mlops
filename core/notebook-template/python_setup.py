@@ -164,6 +164,7 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
     import subprocess
     import urllib.request
     import urllib.error
+    import shutil
 
     print("\n" + "="*50)
     print("PACKAGE MANAGEMENT")
@@ -211,6 +212,26 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
         print(f"❌ ERROR: Invalid INSTALL_TOOL '{INSTALL_TOOL}'")
         print(f"   Allowed values: 'pip', 'uv', 'poetry'")
         return None
+
+    # Check if the requested tool is available
+    if INSTALL_TOOL == 'pip':
+        # pip is assumed to be available with Python
+        tool_available = True
+    else:
+        tool_path = shutil.which(INSTALL_TOOL)
+        tool_available = tool_path is not None
+
+        if not tool_available:
+            print(f"❌ ERROR: '{INSTALL_TOOL}' command not found on this system.")
+            print(f"   Please install {INSTALL_TOOL} or use INSTALL_TOOL='pip' instead.")
+            print(f"   To install {INSTALL_TOOL}:")
+            if INSTALL_TOOL == 'uv':
+                print(f"     - See: https://github.com/astral-sh/uv")
+            elif INSTALL_TOOL == 'poetry':
+                print(f"     - See: https://python-poetry.org/docs/#installation")
+            return None
+        else:
+            print(f"✅ Found {INSTALL_TOOL} at: {tool_path}")
 
     print(f"Checking and installing dependencies from: {url}")
 
