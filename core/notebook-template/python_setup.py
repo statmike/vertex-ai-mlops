@@ -1,3 +1,41 @@
+# ==============================================================================
+# Python GCP Environment Setup Module
+# ==============================================================================
+#
+# This module provides centralized setup functions for Python-based Google Cloud
+# notebooks, including authentication, API enablement, and package management.
+#
+# Main Functions:
+#   - authenticate(): Handles GCP authentication for both Colab and local environments
+#   - check_and_enable_apis(): Verifies and enables required Google Cloud APIs
+#   - manage_packages(): Installs Python packages from requirements files with validation
+#   - setup_environment(): Main orchestrator that runs complete environment setup
+#
+# Usage:
+#   This file is designed to be downloaded and imported dynamically in notebooks:
+#
+#   import os, urllib.request
+#   url = 'https://raw.githubusercontent.com/.../python_setup.py'
+#   urllib.request.urlretrieve(url, 'python_setup_local.py')
+#   import python_setup_local as python_setup
+#   os.remove('python_setup_local.py')
+#
+#   setup_info = python_setup.setup_environment(
+#       PROJECT_ID='your-project-id',
+#       REQ_TYPE='ALL',  # or 'PRIMARY' or 'COLAB'
+#       REQUIREMENTS_URL='https://path/to/requirements.txt',
+#       REQUIRED_APIS=['bigquery.googleapis.com', 'storage.googleapis.com']
+#   )
+#
+# Requirements File Naming Convention:
+#   - requirements.txt: Full environment with all dependencies (REQ_TYPE='ALL')
+#   - requirements-brief.txt: Primary packages only (REQ_TYPE='PRIMARY')
+#   - requirements-colab.txt: Colab-optimized list (REQ_TYPE='COLAB')
+#
+# Author: statmike
+# Repository: https://github.com/statmike/vertex-ai-mlops
+# ==============================================================================
+
 
 def authenticate(PROJECT_ID, REQ_TYPE):
     """
@@ -110,25 +148,62 @@ def check_and_enable_apis(PROJECT_ID, REQUIRED_APIS):
         return False
 
 
-def manage_packages(REQUIREMENTS_URLS, REQ_TYPE):
+def manage_packages(REQUIREMENTS_URL, REQ_TYPE):
     """
     Check and install required Python packages.
 
     Args:
-        REQUIREMENTS_URLS: Dictionary mapping REQ_TYPE to requirements URLs
-        REQ_TYPE: Type of requirements (e.g., 'COLAB', 'LOCAL')
+        REQUIREMENTS_URL: Base URL for requirements.txt file
+        REQ_TYPE: Type of requirements (e.g., 'COLAB', 'PRIMARY', 'ALL')
 
     Returns:
         bool: True if packages were installed, False if already up to date
     """
     import sys
     import subprocess
+    import urllib.request
+    import urllib.error
 
     print("\n" + "="*50)
     print("PACKAGE MANAGEMENT")
     print("="*50)
 
-    url = REQUIREMENTS_URLS[REQ_TYPE]
+    # Adapt URL based on REQ_TYPE
+    if REQ_TYPE == 'PRIMARY':
+        url = REQUIREMENTS_URL.replace('requirements.txt', 'requirements-brief.txt')
+    elif REQ_TYPE == 'COLAB':
+        url = REQUIREMENTS_URL.replace('requirements.txt', 'requirements-colab.txt')
+    else:  # ALL
+        url = REQUIREMENTS_URL
+
+    # Validate the adapted URL exists, with fallback to base URL
+    def check_url_exists(test_url):
+        """Check if URL is accessible."""
+        try:
+            urllib.request.urlopen(test_url, timeout=5)
+            return True
+        except (urllib.error.URLError, urllib.error.HTTPError):
+            return False
+
+    # Check if adapted URL exists
+    if not check_url_exists(url):
+        print(f"⚠️  Requirements file not found at: {url}")
+
+        # Try fallback to base URL if we adapted it
+        if url != REQUIREMENTS_URL:
+            print(f"   Attempting fallback to base requirements: {REQUIREMENTS_URL}")
+            if check_url_exists(REQUIREMENTS_URL):
+                url = REQUIREMENTS_URL
+                print(f"✅ Using base requirements file.")
+            else:
+                print(f"❌ ERROR: Base requirements file also not found at: {REQUIREMENTS_URL}")
+                print(f"   Please verify the REQUIREMENTS_URL is correct and accessible.")
+                return False
+        else:
+            print(f"❌ ERROR: Requirements file not found at: {REQUIREMENTS_URL}")
+            print(f"   Please verify the REQUIREMENTS_URL is correct and accessible.")
+            return False
+
     print(f"Checking and installing dependencies from: {url}")
     result = subprocess.run(
         [sys.executable, '-m', 'pip', 'install', '-r', url, '--upgrade'],
@@ -161,14 +236,14 @@ def manage_packages(REQUIREMENTS_URLS, REQ_TYPE):
         return True
 
 
-def setup_environment(PROJECT_ID, REQ_TYPE, REQUIREMENTS_URLS, REQUIRED_APIS):
+def setup_environment(PROJECT_ID, REQ_TYPE, REQUIREMENTS_URL, REQUIRED_APIS):
     """
     Main orchestrator function to set up the complete Python GCP environment.
 
     Args:
         PROJECT_ID: The desired Google Cloud project ID
         REQ_TYPE: Type of requirements (e.g., 'COLAB', 'PRIMARY', 'ALL')
-        REQUIREMENTS_URLS: Dictionary mapping REQ_TYPE to requirements URLs
+        REQUIREMENTS_URL: Base URL for requirements.txt file (will be adapted based on REQ_TYPE)
         REQUIRED_APIS: List of required API service names
 
     Returns:
@@ -197,7 +272,7 @@ def setup_environment(PROJECT_ID, REQ_TYPE, REQUIREMENTS_URLS, REQUIRED_APIS):
     apis_success = check_and_enable_apis(PROJECT_ID, REQUIRED_APIS)
 
     # Step 3: Manage packages (may trigger kernel restart in Colab)
-    packages_installed = manage_packages(REQUIREMENTS_URLS, updated_req_type)
+    packages_installed = manage_packages(REQUIREMENTS_URL, updated_req_type)
 
     # If we reach here, kernel didn't restart (or already restarted and we're running again)
     # Step 4: Get project information
