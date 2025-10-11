@@ -3270,13 +3270,17 @@ develop = false
 huggingface_hub = {version = ">=0.23.0", extras = ["cli"]}
 numpy = ">=1.26.4"
 safetensors = ">=0.5.3"
-torch = {version = ">=2.0.0", extras = ["cuda"]}
+torch = {version = ">=2.0.0", optional = true}
+
+[package.extras]
+flax = ["einshape", "flax", "jax[cuda]", "jaxtyping", "optax", "orbax-checkpoint"]
+torch = ["torch (>=2.0.0)"]
 
 [package.source]
 type = "git"
 url = "https://github.com/google-research/timesfm.git"
 reference = "HEAD"
-resolved_reference = "dc35e580d916e7d49e5f3b3733a82dd093253536"
+resolved_reference = "58e01ad82fec7f4e975d708409d51fd5c0131bbd"
 
 [[package]]
 name = "tomli"
@@ -3617,5 +3621,5 @@ files = [
 
 [metadata]
 lock-version = "2.1"
-python-versions = "^3.13"
-content-hash = "48e67f1664925204b91e94b47e66a915434cc8f6dcf85188149c783c725eda65"
+python-versions = ">=3.13,<4.0"
+content-hash = "798b1dcb8028b50690d8a90f05727ca552c7d86059328c08de50f955b0eb3af8"
