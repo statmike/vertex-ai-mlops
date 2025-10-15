@@ -12,7 +12,7 @@ tools:
     kind: bigquery-sql
     source: my-bq-source
     statement: |
-      SELECT place FROM `<your-gcp-project>.bq_adk_ds.attractions_list`;
+      SELECT country FROM `<your-gcp-project>.bq_adk_ds.travel_history`;
     description: >
       Use this tool to list the places visited by the user previously.
   execute_sql_tool:
