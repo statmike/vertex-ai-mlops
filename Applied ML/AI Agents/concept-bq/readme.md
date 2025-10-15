@@ -78,7 +78,7 @@ uname -s -m
 # install in home folder
 cd ~
 export OS="linux/amd64" # one of linux/amd64, darwin/arm64, darwin/amd64, or windows/amd64
-curl -O https://storage.googleapis.com/genai-toolbox/v0.7.0/$OS/toolbox
+curl -O https://storage.googleapis.com/genai-toolbox/v0.17.0/$OS/toolbox
 
 # make toolbox executable
 chmod +x toolbox
