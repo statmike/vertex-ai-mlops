@@ -91,9 +91,42 @@ This project requires a BigQuery dataset and table to store and retrieve travel 
 
 * **Project ID**: `vertexai-demo-ltfpzhaw`
 * **Dataset ID**: `bq_adk_ds`
-* **Table**: `attractions_list`
+* **Table**: `attractions` and `travel_history`
 
-The `search-places` tool queries the `attractions_list` table. The table schema is inferred to have at least a `place` column, as shown in the SQL statement `SELECT place FROM...`. You will need to create this dataset and table in your BigQuery project with the appropriate schema before running the application.
+The `search_places` tool queries the `travel_history` table. The table schema is inferred to have `country` column, as shown in the SQL statement in `tools.yaml` file. 
+The `execute_sql_tool` tool questions the `attractions` table using the sql that's dynamically generated based on the user's request.
+You will need to create this dataset and tables in your BigQuery project with the appropriate schema before running the application.
+
+SQL for creating the dataset bq_adk_ds:
+
+```sql
+CREATE SCHEMA IF NOT EXISTS `vertexai-demo-ltfpzhaw`.`bq_adk_ds`;
+```
+
+SQL for attractions Table: 
+
+```sql
+CREATE TABLE
+  `vertexai-demo-ltfpzhaw`.`bq_adk_ds`.`attractions`( attraction_name STRING,
+    country STRING);
+```
+
+SQL for travel_history Table:
+
+```sql
+CREATE TABLE 
+`vertexai-demo-ltfpzhaw`.`bq_adk_ds`.`travel_history`( country STRING);
+```
+Insert following sample countries into travel_history table:
+
+```sql
+INSERT INTO
+  `vertexai-demo-ltfpzhaw`.`bq_adk_ds`.`travel_history` (country)
+VALUES
+  ('Germany'),
+  ('Japan'),
+  ('France');
+```
 
 #### Prerequisites
 
@@ -135,9 +168,13 @@ The project uses environment variables defined in the `.env` file.
 
 #### How to Run
 
-1.  Make sure you have the required dependencies installed from `pyproject.toml`.
+1.  Make sure you have the required dependencies installed from `pyproject.toml` and at `travel_planner_a2a_mcp_demo` folder level.
 2.  Set up the environment variables in a `.env` file.
-3.  Launch the remote agents from their respective directories. Each agent is configured to run on a different port (8001, 8002, 8003, 8004).
+3.  Run MCP Toolbox using the following:
+
+    `./toolbox --tools-file="tools.yaml"`
+
+4.  Launch the remote agents from their respective directories. Each agent is configured to run on a different port (8001, 8002, 8003, 8004).
 
     `uvicorn a2a_root_agent.remote_a2a.travel_brainstormer_agent.agent:a2a_app1 --host localhost --port 8001`
 
@@ -146,8 +183,9 @@ The project uses environment variables defined in the `.env` file.
     `uvicorn a2a_root_agent.remote_a2a.travel_history_agent.agent:a2a_app3 --host localhost --port 8003`
     
     `uvicorn a2a_root_agent.remote_a2a.places_of_interest_agent.agent:a2a_app4 --host localhost --port 8004`
+
     
-4.  Launch the main `a2a_root_agent` to start the application using `adk web`.
+5.  Launch the main `a2a_root_agent` to start the application using `adk web`.
 
 #### How to invoke remote agents via JSON RPC
 

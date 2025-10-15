@@ -57,7 +57,7 @@ travel_history_remote_agent = RemoteA2aAgent(
 )
 
 places_of_interest_remote_agent = RemoteA2aAgent(
-    name="places_of_interest_remote_agent",
+    name="places_of_interest_agent",
     description="Agent gathers the attraction picked by the user and stores it in BigQuery table.",
     agent_card=(
         f"http://localhost:8004/{AGENT_CARD_WELL_KNOWN_PATH}"
