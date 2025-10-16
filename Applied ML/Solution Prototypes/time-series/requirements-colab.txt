@@ -1,7 +1,6 @@
 db-dtypes==1.4.3 ; python_version >= "3.13" and python_version < "4.0"
 google-adk==1.16.0 ; python_version >= "3.13" and python_version < "4.0"
 google-cloud-bigquery==3.38.0 ; python_version >= "3.13" and python_version < "4.0"
-ipykernel==7.0.1 ; python_version >= "3.13" and python_version < "4.0"
 numpy==2.3.4 ; python_version >= "3.13" and python_version < "4.0"
 pandas==2.3.3 ; python_version >= "3.13" and python_version < "4.0"
 plotly==6.3.1 ; python_version >= "3.13" and python_version < "4.0"
