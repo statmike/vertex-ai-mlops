@@ -9,7 +9,7 @@ MCP_TOOLBOX_DYNAMIC_TOOLS = toolbox_client.load_toolset('mcp_toolbox_dynamic_sql
 
 root_agent = agents.Agent(
     name = 'agent_mcp_toolbox_dynamic',
-    model = "gemini-2.0-flash",
+    model = "gemini-2.5-flash",
     description = "An agent that can query table metadata and write SQL queries based on user questions about hurricanes.",
     global_instruction = prompts.global_instructions,
     instruction = prompts.mcp_query_agent_instructions,

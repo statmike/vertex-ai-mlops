@@ -15,7 +15,7 @@ BUILTIN_BQ_TOOLS = [bq_toolset]
 
 root_agent = agents.Agent(
     name = 'agent_bq_builtin',
-    model = "gemini-2.0-flash",
+    model = "gemini-2.5-flash",
     description = 'An agent that can use bigquery to try to answer any user question.',
     global_instruction = prompts.global_instructions,
     instruction = prompts.builtin_query_agent_instructions,

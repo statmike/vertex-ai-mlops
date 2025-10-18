@@ -8,7 +8,7 @@ MCP_TOOLBOX_PREDEFINED_TOOLS = toolbox_client.load_toolset('mcp_toolbox_predefin
 
 root_agent = agents.Agent(
     name = 'agent_mcp_toolbox_prewritten',
-    model = "gemini-2.0-flash",
+    model = "gemini-2.5-flash",
     description = "An agent that can use pre-written SQL queries to answer questions about hurricane wind speeds.",
     global_instruction = prompts.global_instructions,
     instruction = prompts.prewritten_query_agent_instructions,

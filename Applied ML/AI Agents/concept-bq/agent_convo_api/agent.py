@@ -24,7 +24,7 @@ PYTHON_FUNCTION_TOOLS = tools.PYTHON_FUNCTION_TOOLS
 
 root_agent = agents.Agent(
     name='agent_convo_api',
-    model="gemini-2.0-flash",
+    model="gemini-2.5-flash",
     description='An agent that can answer questions about BigQuery data using the Conversational Analytics API.',
     global_instruction=prompts.global_instructions,
     instruction=prompts.agent_instructions,

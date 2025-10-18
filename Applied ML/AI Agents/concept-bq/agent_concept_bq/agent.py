@@ -10,7 +10,7 @@ from agent_convo_api.agent import root_agent as agent_convo_api
 
 root_agent = agents.Agent(
     name = "agent_concept_bq",
-    model = "gemini-2.0-flash",
+    model = "gemini-2.5-flash",
     description = 'The primary agent that processes users questions.',
     global_instruction = prompts.global_instructions,
     instruction = prompts.root_agent_instuctions,
