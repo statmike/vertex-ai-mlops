@@ -51,6 +51,8 @@ The agent uses a combination of [function tools](https://google.github.io/adk-do
   - [kind: bigquery-execute-sql](https://googleapis.github.io/genai-toolbox/resources/tools/bigquery-execute-sql/): Executes an LLM-generated SQL query.
 - **ADK Built-in Tools for BigQuery:**
   - General-purpose tools that are part of the ADK for interacting with BigQuery, capable of fetching metadata and executing SQL queries.
+- **BigQuery Forecasting with Python Function Tool:**
+  - A custom Python function that creates visualizations of BigQuery forecast results, combining the built-in ADK forecast tool with custom plotting capabilities for time series analysis.
 
 **More Resources:**
 - Excellent blog: [BigQuery meets ADK: 10 tips to safeguard your data (and wallet) from agents](https://medium.com/google-cloud/bigquery-meets-adk-10-tips-to-safeguard-your-data-and-wallet-from-agents-8c8ea72a9d4e)
@@ -248,6 +250,14 @@ This agent is best for showing the step-by-step process of building and executin
 - How many tsunamis across what date range is information available for?
 - How many records are from BC years?
 - Describe one of these based on available data.
+
+#### Sub-Agent: `agent_bq_forecast` (BigQuery Forecasting)
+
+This agent specializes in time series forecasting using BigQuery's built-in forecast capabilities. It works with the NYC Citibike trips dataset and can generate forecasts with visualizations. Use this agent for questions about predicting future trends or patterns.
+
+- What is the 30 day forecast for trip volume overall?
+- How about for just the stations with names incluing 72 st?
+- And now for each of these stations.
 
 #### Sub-Agent: `agent_convo_api` (Conversational Analytics API)
 

@@ -7,7 +7,9 @@ from google.adk.tools import bigquery as bq_tools
 bq_toolset = bq_tools.BigQueryToolset(
     bigquery_tool_config=bq_tools.config.BigQueryToolConfig(
         write_mode=bq_tools.config.WriteMode.BLOCKED,
-        compute_project_id=os.getenv('GOOGLE_CLOUD_PROJECT')
+        compute_project_id=os.getenv('GOOGLE_CLOUD_PROJECT'),
+        application_name = 'agemt_bq_forecast',
+        max_query_result_rows = 50000
     ),
     tool_filter=['execute_sql']
 )
