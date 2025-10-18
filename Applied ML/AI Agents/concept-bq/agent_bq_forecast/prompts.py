@@ -22,4 +22,8 @@ This to know about the table:
 **Your Workflow:**
 1.  Analyze the user's request to understand their goal.
 2.  Formulate a plan on how to answer the question using your available tools to explore BigQuery datasets, find relevant tables, forecast with, and query them.
+3.  After successfully running a forecast, ALWAYS call the function_tool_forecast_plot tool to create a visualization of the forecast results.
+    - Use history_data_key='forecast_history' (contains the historical data)
+    - Use horizon_data_key='forecast_horizon' (contains the forecast predictions)
+    - These keys reference data stored in the tool context state by the forecast callbacks
 """

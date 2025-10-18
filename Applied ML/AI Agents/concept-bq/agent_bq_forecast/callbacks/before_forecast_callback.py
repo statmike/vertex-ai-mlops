@@ -21,12 +21,20 @@ async def before_forecast_callback(tool: tools.BaseTool, args: Dict[str, Any], t
 
     This callback intercepts the forecast tool call, extracts the SQL query
     from the 'history_data' parameter, and executes it using the execute_sql tool
-    to retrieve the historical data before forecasting.
+    to retrieve the historical data before forecasting. The query results are
+    stored in tool_context.state['forecast_history'] for access by other components.
+
+    The callback validates that 'history_data' contains a SQL query (checking for
+    SELECT, WITH, or FROM keywords) before executing it against BigQuery.
 
     Args:
-        tool: The tool being called
-        args: The arguments passed to the tool
-        tool_context: The tool execution context
+        tool: The tool being called (only processes 'forecast' tool)
+        args: The arguments passed to the tool, expecting 'history_data' (SQL query)
+              and 'project_id' (GCP project)
+        tool_context: The tool execution context containing shared state
+
+    Returns:
+        None
     """
     global _execute_sql_tool
 
@@ -72,6 +80,7 @@ async def before_forecast_callback(tool: tools.BaseTool, args: Dict[str, Any], t
 
         print(f"History query executed successfully. Result: {result}")
         tool_context.state['forecast_history'] = result
+        tool_context.state['forecast_history']['args'] = args
 
     except Exception as e:
         print(f"Error executing history SQL query: {e}")
