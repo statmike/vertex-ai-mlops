@@ -1,0 +1,8 @@
+{
+  "resource_id": "projects/statmike-mlops-349915/locations/us-central1/reasoningEngines/6919838002059411456",
+  "deployed_at": "2025-10-19T00:24:24.622473",
+  "display_name": "agent_convo_api",
+  "description": "An agent that can answer questions about BigQuery data using the Conversational Analytics API.",
+  "gemini_enterprise_agent_id": "projects/1026793852137/locations/global/collections/default_collection/engines/enterprise-search-17381091_1738109128316/assistants/default_assistant/agents/18337555184602126877",
+  "registered_at": "2025-10-15T16:55:46.864540Z"
+}

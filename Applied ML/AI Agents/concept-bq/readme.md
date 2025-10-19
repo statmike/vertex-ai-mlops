@@ -263,6 +263,8 @@ This agent specializes in time series forecasting using BigQuery's built-in fore
 
 For any other general or conversational question **not about hurricanes**, this agent will be used. It is best for answering questions conversationally and can create tables and charts as well.
 
+**Deployment:** This agent has been prepared for production deployment. See the [Deployment Guide](#deployment) below and [agent_convo_api/deploy/readme.md](./agent_convo_api/deploy/readme.md) for full deployment instructions.
+
 - Pass back to the parent agent
 - What is the average number of earthquakes that occur each year?
 - Over what range of years did these occur?
@@ -270,3 +272,154 @@ For any other general or conversational question **not about hurricanes**, this 
 - What is the average number of earthquakes for the years 1900 through most recent dates?
 - Make a time series chart of the count of earthquakes by year.
 - Make an updated chart for only the year 1940 through most recent dates.
+
+---
+## Deployment
+
+After developing and testing agents locally, the next step is deploying them to production environments. This project includes a complete deployment workflow for deploying ADK agents to **Vertex AI Agent Engine** and optionally registering them with **Gemini Enterprise**.
+
+### Deployment Architecture
+
+Agents are deployed to [Vertex AI Agent Engine](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/overview), which provides:
+- **Managed Infrastructure** - Serverless deployment with automatic scaling
+- **Session Management** - Built-in user session tracking and state management
+- **Integration** - Direct SDK and REST API access
+- **Observability** - Integrated logging, tracing, and monitoring
+- **Gemini Enterprise** - Optional registration for access through Gemini interface
+
+### Deployment Structure
+
+Each agent that is prepared for deployment has a dedicated `deploy/` folder with everything needed:
+
+```
+agent_name/
+├── agent.py              # Agent implementation
+├── tools/                # Agent-specific tools
+└── deploy/               # Deployment resources
+    ├── deployment.json   # Deployment metadata (auto-managed)
+    ├── deploy-vertex-ai-agent-engine.ipynb
+    ├── use-vertex-ai-agent-engine.ipynb
+    ├── register-adk-on-agent-engine-with-gemini-enterprise.ipynb
+    └── readme.md         # Agent-specific deployment guide
+```
+
+### Deployment Workflow
+
+The deployment process consists of three notebooks that should be run in order:
+
+1. **Deploy to Vertex AI Agent Engine**
+   - Local testing before deployment
+   - Creates/updates deployment on Vertex AI
+   - Configures IAM permissions
+   - Stores deployment metadata
+
+2. **Use the Deployed Agent**
+   - Test via Python SDK
+   - Test via REST API
+   - Manage sessions
+   - View conversation history
+
+3. **Register with Gemini Enterprise** (Optional)
+   - Makes agent available in Gemini interface
+   - Enables user access through Gemini Enterprise
+
+### Currently Deployed Agents
+
+| Agent | Status | Deployment Guide |
+|-------|--------|-----------------|
+| `agent_convo_api` | ✅ Ready | [Deploy Guide](./agent_convo_api/deploy/readme.md) |
+
+### Quick Start: Deploy an Agent
+
+To deploy the `agent_convo_api` (or any prepared agent):
+
+```bash
+# 1. Navigate to the agent's deployment folder
+cd agent_convo_api/deploy
+
+# 2. Open the deployment notebook in Jupyter or your IDE
+# 3. Run: deploy-vertex-ai-agent-engine.ipynb
+# 4. Run: use-vertex-ai-agent-engine.ipynb
+# 5. (Optional) Run: register-adk-on-agent-engine-with-gemini-enterprise.ipynb
+```
+
+**The notebooks are fully templated and auto-configure based on their location** - no code changes required!
+
+### Prerequisites for Deployment
+
+Before deploying any agent, ensure you have:
+
+1. **Google Cloud Project Setup**
+   - Active GCP project with billing enabled
+   - Vertex AI API enabled
+   - Agent Engine API enabled
+
+2. **Configuration**
+   - Main `.env` file configured with:
+     - `GOOGLE_CLOUD_PROJECT`
+     - `GOOGLE_CLOUD_LOCATION`
+     - `GOOGLE_CLOUD_STORAGE_BUCKET`
+
+3. **Authentication**
+   - Authenticated via `gcloud auth login`
+   - Application default credentials configured
+
+4. **Required Permissions**
+   - `roles/aiplatform.user` or `roles/aiplatform.admin`
+   - `roles/storage.objectAdmin` (for GCS staging)
+   - Additional permissions based on agent tools
+
+### Deployment Configuration
+
+The deployment notebooks automatically:
+- **Detect the agent** by importing from `../agent.py`
+- **Load project config** from `../../.env`
+- **Use shared dependencies** from `../../requirements.txt`
+- **Store deployment state** in `./deployment.json`
+
+No manual path configuration needed!
+
+### Deploying Additional Agents
+
+To prepare a new agent for deployment:
+
+```bash
+# 1. Create the deploy folder
+mkdir -p path/to/new_agent/deploy
+
+# 2. Copy the deployment templates
+cp agent_convo_api/deploy/*.ipynb path/to/new_agent/deploy/
+cp agent_convo_api/deploy/deployment.json path/to/new_agent/deploy/
+cp agent_convo_api/deploy/readme.md path/to/new_agent/deploy/
+
+# 3. Run the notebooks from the new agent's deploy folder
+# That's it! The templates auto-configure for the new agent.
+```
+
+### Key Features
+
+- **Template-Based** - Copy deployment notebooks to any agent, no changes needed
+- **Auto-Discovery** - Notebooks automatically find and import the agent
+- **Metadata Tracking** - Deployment state stored in `deployment.json`
+- **Shared Configuration** - Uses project-level `.env` and `requirements.txt`
+- **Update-Friendly** - Easy to update deployed agents with code changes
+- **Permission Management** - Guided setup for agent service account permissions
+
+### Documentation
+
+- **Project-Level Guide** - This section (you are here)
+- **Agent-Specific Guides** - Each agent's `deploy/readme.md`
+- **Official Docs**:
+  - [Vertex AI Agent Engine](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/overview)
+  - [ADK Deployment Guide](https://google.github.io/adk-docs/deploy/)
+
+### Troubleshooting
+
+Common deployment issues and solutions are documented in each agent's deployment guide. For general help:
+
+- Review the [agent_convo_api deployment guide](./agent_convo_api/deploy/readme.md) for detailed examples
+- Check [Vertex AI Agent Engine docs](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/overview)
+- Verify all prerequisites are met
+- Ensure APIs are enabled in your GCP project
+
+---
