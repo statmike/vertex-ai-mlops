@@ -170,12 +170,12 @@ Use a new terminal window to start the MCP server locally on port 7000.
 ```bash
 # from inside the project folder:
 TOOL_FILES=$(echo ./agent_*/toolbox_tools.yaml | tr ' ' ',')
-  ~/toolbox --port 7000 --tools-files="$TOOL_FILES"
+  ~/toolbox --port 7000 --tools-files="$TOOL_FILES" --ui
 ```
 
-Check the server by using a browser and going to `http://localhost:7000/`.  You should see 'Hello, World!'.
+Check the server by using a browser and going to `http://localhost:7000/`.  You should see 'Hello, World!'.  By including the `--ui` flag you can also go to the [Toolbox UI](https://googleapis.github.io/genai-toolbox/how-to/toolbox-ui/) at `http://localhost:7000/ui` for a web interface for visually inspecting and testing the defined tools.
 
-A futher check is reviewing the hosted toolsets on the server that were loaded form this project by going to `http://localhost:7000/api/toolset`.  You should see JSON formatted specs for the tools defined in the `tools.yaml` file.
+>A futher check is reviewing the hosted toolsets on the server that were loaded form this project by going to `http://localhost:7000/api/toolset`.  You should see JSON formatted specs for the tools defined in the `tools.yaml` file.
 
 When done, **but not yet**, you can stop the local server with `ctrl+c`.
 
