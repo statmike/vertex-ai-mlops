@@ -45,14 +45,61 @@ The work in this part of the repository will make use of:
 - MLOps techniques which are covered in detail in [MLOps](../MLOps/readme.md)
 
 **Application Areas:**
-- [Forecasting](./Forecasting/readme.md)
-- [Generative AI (GenAI)](./GenAI/readme.md)
-- [AI Agents](./AI%20Agents/readme.md)
-- [Anomaly Detection](./Anomaly%20Detection/readme.md)
-- [Optimization](./Optimization/readme.md)
+
+- **[Forecasting](./Forecasting/readme.md)**
+  - Time series analysis with trend exploration, seasonality, holidays, and special events
+  - BigQuery ML hierarchical forecasting models with bottom-up and top-down approaches
+  - Forecast disaggregation using forecast proportions
+  - Integration with Vertex AI and open source frameworks
+
+- **[Generative AI (GenAI)](./GenAI/readme.md)**
+  - Large language models (LLMs) with Vertex AI Generative AI
+  - Retrieval Augmented Generation (RAG) for grounding responses in personal data
+  - Prompt optimization with evaluation metrics
+  - Supervised tuning for targeted response types
+  - Controlled generation with JSON structures and function calling
+  - Business use cases: search with citations, classification, summarization, schema-based extraction
+
+- **[AI Agents](./AI%20Agents/readme.md)**
+  - Agent Development Kit (ADK) for building LLM-based, workflow, and custom agents
+  - Tools for API integration, code execution, and external service interaction
+  - Deployment to Vertex AI Agent Engine for fully managed scaling
+  - Model Context Protocol (MCP) integration including MCP Toolbox for Google Cloud Databases
+  - Agent-to-Agent (A2A) protocol for cross-boundary communication
+  - Concept examples: Agentic retrieval with BigQuery, Conversational Analytics API, Travel Planner
+  - Production examples: Document Processing Agent, Time Series Forecasting Agent (see Solution Prototypes)
+
+- **[Anomaly Detection](./Anomaly%20Detection/readme.md)**
+  - Model-based recognition of anomalous patterns in data
+  - Custom autoencoder models built with Keras for anomaly detection
+  - BigQuery ML anomaly detection with PCA, k-means, and autoencoder models
+  - Time series forecasting-based anomaly detection (univariate and multivariate ARIMA+)
+  - Identification of data points driving anomalous indicators
+  - Examples for detecting precursors to system failures
+
+- **[Optimization](./Optimization/readme.md)**
+  - Systematic optimization of decision variables to maximize/minimize objective functions
+  - Vertex AI Vizier for black-box optimization and hyperparameter tuning
+  - Multi-objective optimization with Pareto-optimal solutions
+  - Safety thresholds and constraint handling
+  - Contextual bandits and conditional optimization
+  - Comprehensive documentation with parameter specs, metrics, trials, and advanced configurations
+  - Integration with scipy.optimize for continuous problems and Google OR-Tools for discrete/combinatorial problems
 
 **Solution Prototypes**
 
 Some workflows require complex applications or the combination of multiple applications.  These **solutions** can solve complex business scenarios.
 
-- [Solution Prototypes](./Solution%20Prototypes/readme.md)
+- **[Solution Prototypes](./Solution%20Prototypes/readme.md)**
+  - **Document Processing**: End-to-end invoice processing with variable vendor formats
+    - Custom Document AI extraction for key information across formats
+    - Multimodal embeddings for document similarity analysis
+    - Nearest neighbor search to detect format changes and potential fraud
+    - Conditional GenAI comparison for human review of dissimilar documents
+    - Automated processing with BigQuery Object Tables
+    - Agentic workflow using ADK with deployment to Vertex AI Agent Engine
+  - **Time Series Forecasting Agent**: Interactive forecasting with conversational interface
+    - ADK-based agent with MCP Toolbox integration for BigQuery data retrieval
+    - On-demand forecasting using BigQuery's AI.FORECAST function
+    - Interactive visualization of historical demand and forecasts
+    - Natural language queries for time series data exploration

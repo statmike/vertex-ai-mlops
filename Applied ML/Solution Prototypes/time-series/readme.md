@@ -206,3 +206,28 @@ Question 3 will trigger the tool for visualizing the station level daily totals 
     <p style="margin-top: 12px; font-size: 0.9em; font-style: italic; text-aign: center;">Right-Click and open in new tab for interactive view</p>
   </a>
 </div><br><br>
+
+---
+## Production-Ready Deployment
+
+For a production-ready version of this forecasting agent with complete deployment capabilities, see the **[agent_bq_forecast](../../AI%20Agents/concept-bq/readme.md#sub-agent-agent_bq_forecast-bigquery-forecasting)** example.
+
+### Key Architectural Differences
+
+The `agent_bq_forecast` implementation rebuilds this prototype with production-focused improvements:
+
+- **ADK Built-in BigQuery Tools**: Uses ADK's native BigQuery tools instead of MCP Toolbox for simplified deployment
+- **Callback-Based Architecture**: Implements callbacks to manage forecast data retrieval and visualization preparation
+- **Enhanced Tool Integration**: Combines BigQuery's `AI.FORECAST` function with custom Python visualization tools
+- **Streamlined Dependencies**: Reduces external dependencies by leveraging ADK's built-in capabilities
+
+### Production Features
+
+- **Templated Deployment Notebooks**: Auto-configured deployment to Vertex AI Agent Engine
+- **Complete Deployment Workflow**: Three-notebook process covering deployment, testing, and Gemini Enterprise registration
+- **Session Management**: Built-in user session tracking and state management via Agent Engine
+- **Scalable Infrastructure**: Serverless deployment with automatic scaling
+- **Integration Examples**: SDK and REST API usage patterns
+- **Deployment Guide**: Step-by-step instructions in [agent_bq_forecast/deploy/readme.md](../../AI%20Agents/concept-bq/agent_bq_forecast/deploy/readme.md)
+
+The production agent demonstrates how to take this prototype concept and deploy it as a fully managed, scalable service ready for integration into applications.

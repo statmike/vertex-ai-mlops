@@ -38,26 +38,44 @@ This folder contains solution prototypes that integrate multiple aspects of Appl
 
 **Solutions**
 
-- [Document Processing](./document-processing/readme.md)
-  - **Challenge: Variable Document Formats**
-    - Invoices are received from numerous vendors.
-    - Each vendor uses a unique invoice format.
-    - Subtle changes in a vendor's invoice format can occur, sometimes legitimately, sometimes as fraud.
-  - **Solution Components:**
-    - **Custom Document Extraction with Document AI:**
-      - Develop a custom extractor to accurately extract key invoice information across various formats.
-    - **Multimodal Embeddings:**
-      - Generate multimodal embeddings for document images and extracted text.
-      - Create a numerical representation of each document.
-    - **Nearest Neighbor Search:**
-      - Use embeddings to find the nearest neighbors of new documents.
-      - Determine the similarity of a current document to previous documents from the same vendor.
-    - **Conditional Generative AI Comparison:**
-      - If a current document is dissimilar to previous documents from the same vendor, generate a comparison of the formatting for human review.
-    - **Automated Processing:**
-      - Automate document processing using BigQuery Object Tables.
-    - **Agentic Workflow:**
-      - Create an agentic workflow using the Google ADK including deployment to Vertex AI Agent Engine and example of application integration.
-- [Time Series](./time-series/readme.md)
-  - Users interact with agents built with ADK that select MCP tools and retrieve results from BigQuery and present interactive charts.
+- **[Document Processing](./document-processing/readme.md)** - End-to-end invoice processing with fraud detection
+  - **Challenge**: Variable invoice formats across vendors with potential fraud detection needs
+  - **Step 1: Custom Document Extraction**
+    - Document AI Custom Extractor with generative AI for zero-shot, few-shot, and fine-tuned parsing
+    - Extract structured data from variable format documents (invoices, forms, etc.)
+    - Online and batch processing capabilities with BigQuery integration
+  - **Step 2: Document Preparation**
+    - BigQuery Object Tables for managing documents in Google Cloud Storage
+    - `ML.PROCESS_DOCUMENT` function for SQL-based extraction at scale
+    - Structured storage of extracted invoice data and metadata
+  - **Step 3: Multimodal Embeddings**
+    - Vertex AI multimodal embedding models for document representation
+    - `ML.GENERATE_EMBEDDING` function in BigQuery for batch embedding generation
+    - Vector representations enabling similarity search and classification
+  - **Step 4: Document Similarity & Classification**
+    - `VECTOR_SEARCH` function for nearest neighbor analysis
+    - PCA-based 2D visualization of document relationships
+    - ML-based vendor classification using embedding features
+  - **Step 5: Anomaly Detection**
+    - Statistical analysis to identify potentially fraudulent or mislabeled documents
+    - Detection of format changes and unusual patterns
+    - Flagging system for human review
+  - **Step 6: Document Comparison**
+    - Gemini multimodal prompts for automated fraud indicator identification
+    - Side-by-side document comparison highlighting formatting differences
+    - Descriptive analysis of layout and content anomalies
+  - **Step 7: Agent Workflow**
+    - ADK-based agent orchestrating the complete fraud analysis workflow
+    - Integration of extraction, classification, anomaly detection, and comparison
+    - Deployment to Vertex AI Agent Engine with application integration examples
+    - Interactive UI for fraud analysts to review and investigate flagged documents
+
+- **[Time Series](./time-series/readme.md)** - Conversational forecasting with interactive visualizations
+  - **Agentic Retrieval**: Natural language queries for time series data stored in BigQuery
+  - **MCP Toolbox Integration**: Pre-defined tools for querying historical data and generating forecasts
+  - **BigQuery AI.FORECAST**: On-demand time series forecasting using BigQuery's built-in ML capabilities
+  - **Interactive Visualizations**: Python-based plotting tools creating interactive charts from query results
+  - **Station-Level Analysis**: Drill-down capabilities for analyzing specific locations or subsets
+  - **ADK Web UI**: Local testing environment with example questions and visual outputs
+  - **Use Cases**: Daily totals analysis, station-specific trends, forecast generation with historical context
 

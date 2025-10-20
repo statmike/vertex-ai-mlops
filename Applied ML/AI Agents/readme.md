@@ -95,13 +95,32 @@ The [Solution Prototypes](../Solution%20Prototypes/readme.md) folder has example
 
 This folder has examples based on core functionality of agents interacting with GCP services.  These are meant to help learn and explore core concepts.
 
-- [Agentic Retrieval with BigQuery](./concept-bq/readme.md)
-  - Use tools to retrieval contectual data from Google BigQuery
-  - This example shows multiple ways of using and creating tools that execute SQL to retrieve data from BigQuery
+- **[Agentic Retrieval with BigQuery](./concept-bq/readme.md)**
+  - Demonstrates three distinct methods for agents to interact with BigQuery
+  - **Python Function Tools**: Custom functions using BigQuery client library for pre-defined and parameterized SQL queries
+  - **MCP Toolbox for Databases**: Pre-defined SQL execution and dynamic SQL generation using table metadata
+  - **ADK Built-in Tools**: General-purpose BigQuery tools for metadata and query execution
+  - **Conversational Analytics API**: Stateful conversations with automatic chart and summary generation
+  - **BigQuery Forecasting**: Time series forecasting with interactive visualizations using AI.FORECAST
+  - Router agent pattern demonstrating sub-agent delegation and memory management
+  - Complete deployment workflows to Vertex AI Agent Engine with templated notebooks
+  - Production-ready agents: `agent_convo_api` and `agent_bq_forecast` with deployment guides
 
-- [Conversational Analytics API](./conversational-analytics-api/readme.md)
-  - An overview of using the Conversational Analytics API to build conversational experiences on top of your data.
+- **[Conversational Analytics API](./conversational-analytics-api/readme.md)**
+  - Build conversational experiences on top of data with stateful and stateless chat modes
+  - Clear hierarchy: Data Source → Context → Agent → Conversation → Chat
+  - Support for BigQuery tables, Looker, and Looker Studio reports
+  - Stateful sessions with automatic conversation history management
+  - Stateless inline queries for one-off questions without pre-configured agents
+  - Comprehensive notebook walkthrough covering all usage modes
+  - Integration examples with ADK agents as function tools
 
-- [Travel Planner Agent](./travel-planner/README.md)
-  - A multi-agent system that helps users plan their travels, built using the ADK framework.
+- **[Travel Planner Agent](./travel-planner/README.md)**
+  - Multi-agent system using Agent-to-Agent (A2A) protocol for cross-agent communication
+  - Four specialized remote agents: Travel Brainstormer, Attractions Planner, Travel History, Places of Interest
+  - Steering agent pattern for intelligent request delegation
+  - MCP server integration with custom BigQuery tools for travel data management
+  - Remote agents served as web services communicating via A2A protocol
+  - Session state management for tracking user-selected attractions
+  - JSON RPC invocation support for programmatic agent access
 
