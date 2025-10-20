@@ -1,0 +1,21 @@
+toolsets:
+  mcp_toolbox_dynamic_sql:
+    - mcp_tool_execute_dynamic_sql
+    - mcp_tool_get_table_info
+sources:
+  bq-query-project-dynamic:
+    kind: bigquery
+    project: statmike-mlops-349915
+    location: us
+  bq-query-source-dynamic:
+    kind: bigquery
+    project: bigquery-public-data
+tools:
+  mcp_tool_execute_dynamic_sql:
+    kind: bigquery-execute-sql
+    source: bq-query-project-dynamic
+    description: This tool execute SQL in BigQuery
+  mcp_tool_get_table_info:
+    kind: bigquery-get-table-info
+    source: bq-query-source-dynamic
+    description: Use this tool to get table metadata.

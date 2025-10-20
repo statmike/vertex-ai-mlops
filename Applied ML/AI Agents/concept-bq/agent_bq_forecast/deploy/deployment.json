@@ -1,0 +1,8 @@
+{
+  "resource_id": "projects/1026793852137/locations/us-central1/reasoningEngines/2255516162987130880",
+  "deployed_at": "2025-10-19T20:01:41.999333",
+  "display_name": "agent_bq_forecast",
+  "description": "An agent that can use bigquery with tools to answer questions with time series data including forecasting.",
+  "gemini_enterprise_agent_id": "projects/1026793852137/locations/global/collections/default_collection/engines/enterprise-search-17381091_1738109128316/assistants/default_assistant/agents/9862578113183617741",
+  "registered_at": "2025-10-19T20:09:17.486065859Z"
+}

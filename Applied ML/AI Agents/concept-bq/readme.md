@@ -163,13 +163,14 @@ Running the agent requires first running the MCP Toolbox Server, locally in this
 
 ### 1 - Start The MCP Toolbox Server
 
-Use a new terminal window to start the MCP server locally on port 7000.  
+Use a new terminal window to start the MCP server locally on port 7000.
 
 > **Note:** The Python `venv` is not needed for toolbox to run.
 
 ```bash
 # from inside the project folder:
-~/toolbox --tools-file="./tools.yaml" --port 7000
+TOOL_FILES=$(echo ./agent_*/toolbox_tools.yaml | tr ' ' ',')
+  ~/toolbox --port 7000 --tools-files="$TOOL_FILES"
 ```
 
 Check the server by using a browser and going to `http://localhost:7000/`.  You should see 'Hello, World!'.
@@ -182,7 +183,7 @@ When done, **but not yet**, you can stop the local server with `ctrl+c`.
 
 Edit the `.env` file to include the name of your GCP project.
 
-To test this agent you can use the `adk web` command from inside the `concept-bq` folder. 
+To test this agent you can use the `adk web` command from inside the `concept-bq` folder.
 
 ```bash
 # adk web options include:
@@ -201,6 +202,28 @@ poetry run adk web --reload
 This will start the test user interface and you can `ctrl+click` on the `http://localhost:8000` address.
 
 When finished, stop the service with `ctrl+c` in the terminal.
+
+### 3 - Test Deployed Agents Locally (Optional)
+
+If you have deployed an agent to Vertex AI Agent Engine, you can test it locally using the same ADK web interface with sessions managed by the deployed instance:
+
+```bash
+# Get the agent_engine_id from the deployment.json file:
+# agent_convo_api: cat agent_convo_api/deploy/deployment.json
+# agent_bq_forecast: cat agent_bq_forecast/deploy/deployment.json
+
+# Run with deployed session service:
+poetry run adk web --session_service_uri=agentengine://${agent_engine_id}
+
+# Example for agent_convo_api:
+poetry run adk web --session_service_uri=agentengine://projects/1026793852137/locations/us-central1/reasoningEngines/YOUR_ENGINE_ID
+```
+
+This allows you to:
+- Test the deployed agent without redeploying
+- Use production session management locally
+- Debug deployed agent behavior
+- Verify deployed agent permissions and tool access
 
 ---
 ### Example Questions
@@ -254,6 +277,8 @@ This agent is best for showing the step-by-step process of building and executin
 #### Sub-Agent: `agent_bq_forecast` (BigQuery Forecasting)
 
 This agent specializes in time series forecasting using BigQuery's built-in forecast capabilities. It works with the NYC Citibike trips dataset and can generate forecasts with visualizations. Use this agent for questions about predicting future trends or patterns.
+
+**Deployment:** This agent has been prepared for production deployment. See the [Deployment Guide](#deployment) below and [agent_bq_forecast/deploy/readme.md](./agent_bq_forecast/deploy/readme.md) for full deployment instructions.
 
 - What is the 30 day forecast for trip volume overall?
 - How about for just the stations with names incluing 72 st?
@@ -328,6 +353,7 @@ The deployment process consists of three notebooks that should be run in order:
 | Agent | Status | Deployment Guide |
 |-------|--------|-----------------|
 | `agent_convo_api` | ✅ Ready | [Deploy Guide](./agent_convo_api/deploy/readme.md) |
+| `agent_bq_forecast` | ✅ Ready | [Deploy Guide](./agent_bq_forecast/deploy/readme.md) |
 
 ### Quick Start: Deploy an Agent
 
