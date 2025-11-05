@@ -46,7 +46,9 @@
 
 ## Workflows
 
-### [PyTorch Autoencoder Overview](./pytorch-autoencoder.ipynb)
+### Training
+
+#### [PyTorch Autoencoder Overview](./pytorch-autoencoder.ipynb)
 
 A comprehensive workflow demonstrating pure PyTorch for building an autoencoder for anomaly detection. This notebook is designed as a **direct comparison** to the Keras JAX version.
 
@@ -68,6 +70,31 @@ A comprehensive workflow demonstrating pure PyTorch for building an autoencoder 
 - Explicit training loops provide full transparency and control
 - .mar file format ready for TorchServe production deployment
 - Direct architecture comparison with Keras JAX implementation
+
+### Serving
+
+#### [Model Serving Overview](./serving/readme.md)
+
+Learn about different approaches for deploying and serving PyTorch models for inference.
+
+**Deployment Options:**
+- **Vertex AI Endpoints**: Fully managed online prediction service
+  - [Pre-built Container](./serving/vertex-ai-endpoint-prebuilt-container.ipynb) - Quick deployment with TorchServe, returns full model output
+  - [Custom Container](./serving/vertex-ai-endpoint-custom-container.ipynb) - FastAPI wrapper with custom output formatting (~70% size reduction)
+  - Real-time predictions with auto-scaling
+  - SDK and REST API access
+  - Built-in monitoring and logging
+- **Dataflow RunInference**: Batch and streaming inference
+  - [Setup](./serving/dataflow-setup.ipynb) - One-time infrastructure setup
+  - [Batch Processing](./serving/dataflow-batch-runinference.ipynb) - Process BigQuery tables (bounded)
+  - [Streaming](./serving/dataflow-streaming-runinference.ipynb) - Process Pub/Sub streams (unbounded)
+  - [Endpoint Calls](./serving/dataflow-vertex-endpoint.ipynb) - Call Vertex Endpoint from Dataflow
+  - Cost-effective for large-scale batch jobs
+- **TorchServe**: Self-managed model server
+  - Full control over infrastructure
+  - Custom deployment environments
+
+See the [serving folder](./serving/) for detailed examples and comparisons.
 
 ## Framework Comparison
 
