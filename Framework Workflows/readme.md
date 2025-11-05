@@ -54,12 +54,12 @@ In-Progress
 - [Vertex AI AutoML](./Vertex%20AI%20AutoML/readme.md)
 - [BigQuery ML](./BQML/readme.md)
 - [R](./R/readme.md)
+- [PyTorch](./PyTorch/readme.md)
 
 Planning:
 - LightGBM
 - scikit-learn
 - XGBoost
-- PyTorch
 - Pycaret
 - statsmodels
 - scipy
