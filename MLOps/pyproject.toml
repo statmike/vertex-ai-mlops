@@ -33,12 +33,29 @@ optional = true
 [tool.poetry.group.dev.dependencies]
 taskipy = "^1.14.1"
 
-[tool.taskipy.tasks]
-req_full = {cmd="poetry export -f requirements.txt --output requirements.txt --without-hashes", help="Generates full requirements.txt (from poetry.lock)"}
-req_brief = {cmd="poetry show --only main --tree | grep -E '^[a-zA-Z0-9]' | awk '{print $1 \"==\" $2}' > requirements-brief.txt", help="Generates brief requirements.txt (top-level packages only)"}
-req_colab = {cmd="poetry show --only main --tree | grep -E '^[a-zA-Z0-9]' | awk '{print $1 \"==\" $2}' | grep -v -E '^ipython|^ipykernel' > requirements-colab.txt", help="Generates brief requirements for Colab (skips ipython)"}
-reqs = {cmd="task req_full && task req_brief", help="Builds standard requirements (full + brief)"}
-reqs_all = {cmd="task req_full && task req_brief && task req_colab", help="Builds ALL requirements (full + brief + colab)"}
+[tool.taskipy.tasks.req_full]
+cmd = "poetry export -f requirements.txt --output requirements.txt --without-hashes"
+help = "Generates full requirements.txt (from poetry.lock)"
+
+[tool.taskipy.tasks.req_brief]
+cmd = "poetry export --only main --without-hashes | grep -f <(poetry show --only main --tree | grep -E '^[a-zA-Z0-9]' | awk '{print $1}') > requirements-brief.txt"
+help = "Generates brief requirements.txt (top-level packages only)"
+
+[tool.taskipy.tasks.req_colab]
+cmd = "poetry export --only main --without-hashes | grep -f <(poetry show --only main --tree | grep -E '^[a-zA-Z0-9]' | awk '{print $1}') | grep -v -E '^ipython|^ipykernel' > requirements-colab.txt"
+help = "Generates brief requirements for Colab (skips ipython)"
+
+[tool.taskipy.tasks.reqs]
+cmd = "task req_full && task req_brief"
+help = "Builds standard requirements (full + brief)"
+
+[tool.taskipy.tasks.reqs_all]
+cmd = "task req_full && task req_brief && task req_colab"
+help = "Builds ALL requirements (full + brief + colab)"
+
+[tool.taskipy.tasks.kernel]
+cmd = "PROJECT_NAME=$(poetry version | awk '{print $1}'); poetry run python -m ipykernel install --user --name \"$PROJECT_NAME\" --display-name \"Python ($PROJECT_NAME)\""
+help = "Registers the Poetry environment as a Jupyter kernel with the project's name."
 
 #FUTURE
 #lint = "poetry run ruff check ."
