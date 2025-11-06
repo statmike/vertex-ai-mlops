@@ -280,6 +280,40 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
         else:
             print(f"✅ Found {INSTALL_TOOL} at: {tool_path}")
 
+    # Helper function to find pyproject.toml in current or parent directories
+    def find_pyproject_toml(stop_at_dir='vertex-ai-mlops'):
+        """
+        Search for pyproject.toml in current directory and parent directories.
+
+        Args:
+            stop_at_dir: Directory name to stop searching at (default: 'vertex-ai-mlops')
+
+        Returns:
+            str or None: Path to pyproject.toml if found, None otherwise
+        """
+        current_dir = os.path.abspath(os.getcwd())
+
+        while True:
+            pyproject_path = os.path.join(current_dir, 'pyproject.toml')
+
+            if os.path.exists(pyproject_path):
+                return pyproject_path
+
+            # Check if we've reached the stop directory
+            if os.path.basename(current_dir) == stop_at_dir:
+                break
+
+            # Move to parent directory
+            parent_dir = os.path.dirname(current_dir)
+
+            # Stop if we've reached the root directory
+            if parent_dir == current_dir:
+                break
+
+            current_dir = parent_dir
+
+        return None
+
     # Handle different package managers
     if INSTALL_TOOL == 'uv':
         print(f"Checking and installing dependencies from: {url}")
@@ -292,21 +326,28 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
         # Poetry uses pyproject.toml instead of requirements.txt
         print(f"ℹ️  Poetry mode: Installing from pyproject.toml (REQUIREMENTS_URL ignored)")
 
-        # Check for local pyproject.toml first
-        if os.path.exists('pyproject.toml'):
-            print("✅ Found local pyproject.toml")
-            pyproject_file = 'pyproject.toml'
+        # Search for pyproject.toml in current or parent directories
+        pyproject_path = find_pyproject_toml()
+
+        if pyproject_path:
+            print(f"✅ Found pyproject.toml at: {pyproject_path}")
+            pyproject_dir = os.path.dirname(pyproject_path)
+
+            # Change to the directory containing pyproject.toml for poetry install
+            original_dir = os.getcwd()
+            os.chdir(pyproject_dir)
+            print(f"   Changed working directory to: {pyproject_dir}")
         else:
             # Try to download from URL (replace requirements.txt with pyproject.toml)
             pyproject_url = REQUIREMENTS_URL.replace('requirements.txt', 'pyproject.toml')
-            print(f"⚠️  No local pyproject.toml found")
+            print(f"⚠️  No pyproject.toml found in current or parent directories")
             print(f"   Attempting to download from: {pyproject_url}")
 
             if check_url_exists(pyproject_url):
                 try:
                     urllib.request.urlretrieve(pyproject_url, 'pyproject.toml')
                     print("✅ Downloaded pyproject.toml")
-                    pyproject_file = 'pyproject.toml'
+                    pyproject_path = 'pyproject.toml'
                 except Exception as e:
                     print(f"❌ ERROR: Failed to download pyproject.toml: {e}")
                     return None
@@ -322,6 +363,11 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
             capture_output=True, text=True
         )
         install_log = result.stdout.splitlines() + result.stderr.splitlines()
+
+        # Change back to original directory if we changed it
+        if pyproject_path and pyproject_path != 'pyproject.toml':
+            os.chdir(original_dir)
+            print(f"   Restored working directory to: {original_dir}")
 
     elif INSTALL_TOOL == 'pip':
         print(f"Checking and installing dependencies from: {url}")
