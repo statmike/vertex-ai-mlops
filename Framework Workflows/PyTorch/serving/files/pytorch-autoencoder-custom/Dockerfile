@@ -1,8 +1,10 @@
-# Start from Google's PyTorch pre-built container for base dependencies
-FROM us-docker.pkg.dev/vertex-ai/prediction/pytorch-cpu.1-13:latest
+# Use official Python runtime as base image
+FROM python:3.11-slim
 
-# Install FastAPI and dependencies
+# Install Python dependencies
 RUN pip install --no-cache-dir \
+    torch==2.0.1 --extra-index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir \
     fastapi==0.104.1 \
     uvicorn[standard]==0.24.0 \
     google-cloud-storage

@@ -55,7 +55,15 @@ async def startup_event():
         logger.error(f"❌ Failed to load model: {str(e)}")
         raise
 
-# Health check endpoint
+# Health check endpoint - Vertex AI custom container format
+@app.get("/v1/endpoints/{endpoint_id}/deployedModels/{deployed_model_id}", status_code=200)
+def vertex_health(endpoint_id: str, deployed_model_id: str):
+    """Health check endpoint for Vertex AI custom containers"""
+    if _model is None:
+        return {"status": "unhealthy", "reason": "model not loaded"}
+    return {"status": "healthy"}
+
+# Health check endpoint - Standard route (for compatibility)
 @app.get(os.environ.get('AIP_HEALTH_ROUTE', '/health'), status_code=200)
 def health():
     """Health check endpoint"""
@@ -63,11 +71,25 @@ def health():
         return {"status": "unhealthy", "reason": "model not loaded"}
     return {"status": "healthy"}
 
-# Prediction endpoint with custom output
+# Prediction endpoint - Vertex AI custom container format
+@app.post("/v1/endpoints/{endpoint_id}/deployedModels/{deployed_model_id}:predict")
+async def vertex_predict(endpoint_id: str, deployed_model_id: str, request: Request):
+    """
+    Prediction endpoint for Vertex AI custom containers.
+
+    Vertex AI sends predictions to this path format, not the configured AIP_PREDICT_ROUTE.
+    """
+    return await predict_impl(request)
+
+# Prediction endpoint - Standard route (for compatibility)
 @app.post(os.environ.get('AIP_PREDICT_ROUTE', '/predict'))
 async def predict(request: Request):
+    """Prediction endpoint (standard route)"""
+    return await predict_impl(request)
+
+async def predict_impl(request: Request):
     """
-    Prediction endpoint that returns simplified output.
+    Core prediction implementation.
 
     Returns only anomaly scores and embeddings (2 fields)
     instead of all 13 model outputs, reducing response size by ~70%
