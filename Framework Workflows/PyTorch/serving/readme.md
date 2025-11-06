@@ -36,6 +36,27 @@ After training a PyTorch model (see [../pytorch-autoencoder.ipynb](../pytorch-au
 - [vertex-ai-endpoint-prebuilt-container.ipynb](./vertex-ai-endpoint-prebuilt-container.ipynb) - Deploy with Google's pre-built PyTorch container
 - [vertex-ai-endpoint-custom-container.ipynb](./vertex-ai-endpoint-custom-container.ipynb) - Deploy with custom FastAPI container for output control
 
+#### Pre-built vs Custom Container Decision Guide
+
+**Use Pre-built Container when:**
+- ✅ Quick deployment is priority
+- ✅ Full model output needed (all 13 metrics)
+- ✅ Standard TorchServe setup works
+- ✅ Minimal configuration preferred
+
+**Use Custom Container when:**
+- ✅ Custom output formatting needed (e.g., only anomaly scores)
+- ✅ Want to reduce network traffic (~70% size reduction)
+- ✅ Need custom preprocessing/postprocessing logic
+- ✅ Framework flexibility beyond TorchServe
+
+**Key Differences:**
+- **Permissions**: Pre-built gets automatic GCS access; custom needs service account setup
+- **Routing**: Custom containers use Vertex AI's default `/v1/endpoints/{id}/deployedModels/{id}` paths (not configurable via environment variables)
+- **Complexity**: Custom requires Dockerfile, Cloud Build, and IAM configuration
+- **Output Control**: Custom allows complete control over response format
+- **Deployment Time**: Pre-built is faster; custom requires container build step
+
 ---
 
 ### 2. Dataflow RunInference

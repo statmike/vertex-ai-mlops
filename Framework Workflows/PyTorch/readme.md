@@ -79,8 +79,12 @@ Learn about different approaches for deploying and serving PyTorch models for in
 
 **Deployment Options:**
 - **Vertex AI Endpoints**: Fully managed online prediction service
-  - [Pre-built Container](./serving/vertex-ai-endpoint-prebuilt-container.ipynb) - Quick deployment with TorchServe, returns full model output
-  - [Custom Container](./serving/vertex-ai-endpoint-custom-container.ipynb) - FastAPI wrapper with custom output formatting (~70% size reduction)
+  - [Pre-built Container](./serving/vertex-ai-endpoint-prebuilt-container.ipynb) - Quick deployment with TorchServe, returns full model output (13 metrics)
+  - [Custom Container](./serving/vertex-ai-endpoint-custom-container.ipynb) - FastAPI wrapper with custom output formatting
+    - ~70% response size reduction (2 fields vs 13)
+    - Requires service account setup for GCS access
+    - Uses Vertex AI's default routing paths
+    - Complete control over response format
   - Real-time predictions with auto-scaling
   - SDK and REST API access
   - Built-in monitoring and logging
