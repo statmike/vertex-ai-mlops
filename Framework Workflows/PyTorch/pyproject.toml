@@ -19,6 +19,8 @@ matplotlib = "^3.10.7"
 numpy = ">=1.26,<2.3"
 apache-beam = {extras = ["gcp"], version = "^2.69.0"}
 google-cloud-pubsub = "^2.33.0"
+google-cloud-build = "^3.33.0"
+google-cloud-artifact-registry = "^1.17.0"
 
 
 [tool.poetry.group.dev]
