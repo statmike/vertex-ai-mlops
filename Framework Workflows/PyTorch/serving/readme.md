@@ -1,59 +1,34 @@
-![tracker](https://us-central1-vertex-ai-mlops-369716.cloudfunctions.net/pixel-tracking?path=statmike%2Fvertex-ai-mlops%2FFramework+Workflows%2FPyTorch%2Fserving&file=readme.md)
-<!--- header table --->
-<table>
-<tr>     
-  <td style="text-align: center">
-    <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/Framework%20Workflows/PyTorch/serving/readme.md">
-      <img width="32px" src="https://www.svgrepo.com/download/217753/github.svg" alt="GitHub logo">
-      <br>View on<br>GitHub
-    </a>
-  </td>
-</tr>
-<tr>
-  <td style="text-align: right">
-    <b>Share On: </b> 
-    <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://github.com/statmike/vertex-ai-mlops/blob/main/Framework%2520Workflows/PyTorch/serving/readme.md"><img src="https://upload.wikimedia.org/wikipedia/commons/8/81/LinkedIn_icon.svg" alt="Linkedin Logo" width="20px"></a> 
-    <a href="https://reddit.com/submit?url=https://github.com/statmike/vertex-ai-mlops/blob/main/Framework%2520Workflows/PyTorch/serving/readme.md"><img src="https://redditinc.com/hubfs/Reddit%20Inc/Brand/Reddit_Logo.png" alt="Reddit Logo" width="20px"></a> 
-    <a href="https://bsky.app/intent/compose?text=https://github.com/statmike/vertex-ai-mlops/blob/main/Framework%2520Workflows/PyTorch/serving/readme.md"><img src="https://upload.wikimedia.org/wikipedia/commons/7/7a/Bluesky_Logo.svg" alt="BlueSky Logo" width="20px"></a> 
-    <a href="https://twitter.com/intent/tweet?url=https://github.com/statmike/vertex-ai-mlops/blob/main/Framework%2520Workflows/PyTorch/serving/readme.md"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5a/X_icon_2.svg" alt="X (Twitter) Logo" width="20px"></a> 
-  </td>
-</tr>
-<tr>
-  <td style="text-align: right">
-    <b>Connect With Author On: </b> 
-    <a href="https://www.linkedin.com/in/statmike"><img src="https://upload.wikimedia.org/wikipedia/commons/8/81/LinkedIn_icon.svg" alt="Linkedin Logo" width="20px"></a>
-    <a href="https://www.github.com/statmike"><img src="https://www.svgrepo.com/download/217753/github.svg" alt="GitHub Logo" width="20px"></a> 
-    <a href="https://www.youtube.com/@statmike-channel"><img src="https://upload.wikimedia.org/wikipedia/commons/f/fd/YouTube_full-color_icon_%282024%29.svg" alt="YouTube Logo" width="20px"></a>
-    <a href="https://bsky.app/profile/statmike.bsky.social"><img src="https://upload.wikimedia.org/wikipedia/commons/7/7a/Bluesky_Logo.svg" alt="BlueSky Logo" width="20px"></a> 
-    <a href="https://x.com/statmike"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5a/X_icon_2.svg" alt="X (Twitter) Logo" width="20px"></a>
-  </td>
-</tr>
-</table><br/><br/>
-
----
 # PyTorch Model Serving
 
-This folder contains examples of deploying and serving PyTorch models for inference.
+This folder contains complete examples of deploying and serving PyTorch models for inference across different platforms and use cases.
 
 ## Overview
 
-After training a PyTorch model (see [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)), you have several options for serving predictions:
+After training a PyTorch model (see [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)), you have three main approaches for serving predictions:
 
-1. **Vertex AI Endpoints** - Managed online prediction service (this folder)
-2. **Dataflow RunInference** - Batch and streaming inference pipelines (coming soon)
-3. **TorchServe** - Self-managed model server (local or cloud)
+1. **[Vertex AI Endpoints](#1-vertex-ai-endpoints)** - Managed online prediction service
+2. **[Dataflow Integration](#2-dataflow-integration)** - Batch and streaming inference pipelines
+3. **[TorchServe Deployments](#3-torchserve-deployments)** - Portable serving from local to cloud
 
-## Serving Approaches
+### Quick Comparison
 
-### 1. Vertex AI Endpoints (Recommended for Online Predictions)
+| Approach | Best For | Management | Cost Model |
+|----------|----------|------------|------------|
+| **Vertex AI** | Real-time predictions | Fully managed | Hourly (always on) |
+| **Dataflow** | Batch/streaming processing | Managed pipeline | Per-second (when running) |
+| **TorchServe** | Custom/on-premise | Self-managed | Infrastructure only |
 
-**What it is**: Fully managed service for deploying ML models to production endpoints.
+---
+
+## 1. Vertex AI Endpoints
+
+**What it is**: Fully managed service for deploying ML models to production endpoints with auto-scaling and monitoring.
 
 **Best for**:
 - Real-time online predictions
 - Low-latency requirements (<100ms)
 - Automatic scaling based on traffic
-- No infrastructure management
+- Minimal infrastructure management
 
 **Key Features**:
 - ✅ Pre-built PyTorch containers with TorchServe
@@ -65,11 +40,27 @@ After training a PyTorch model (see [../pytorch-autoencoder.ipynb](../pytorch-au
 
 **Cost**: Pay per hour for deployed compute resources (even when idle)
 
-**Examples**:
-- [vertex-ai-endpoint-prebuilt-container.ipynb](./vertex-ai-endpoint-prebuilt-container.ipynb) - Deploy with Google's pre-built PyTorch container
-- [vertex-ai-endpoint-custom-container.ipynb](./vertex-ai-endpoint-custom-container.ipynb) - Deploy with custom FastAPI container for output control
+### Deployment Options
 
-#### Pre-built vs Custom Container Decision Guide
+#### Pre-built Container
+[vertex-ai-endpoint-prebuilt-container.ipynb](./vertex-ai-endpoint-prebuilt-container.ipynb)
+
+- Quick deployment with Google's pre-built PyTorch container
+- Uses TorchServe under the hood
+- Returns full model output (13 metrics)
+- Automatic GCS access permissions
+- Minimal configuration required
+
+#### Custom Container
+[vertex-ai-endpoint-custom-container.ipynb](./vertex-ai-endpoint-custom-container.ipynb)
+
+- Custom FastAPI wrapper for complete output control
+- ~70% response size reduction (2 fields vs 13)
+- Requires service account setup for GCS access
+- Uses Vertex AI's default routing paths
+- Full control over preprocessing/postprocessing
+
+### Decision Guide: Pre-built vs Custom
 
 **Use Pre-built Container when:**
 - ✅ Quick deployment is priority
@@ -78,23 +69,44 @@ After training a PyTorch model (see [../pytorch-autoencoder.ipynb](../pytorch-au
 - ✅ Minimal configuration preferred
 
 **Use Custom Container when:**
-- ✅ Custom output formatting needed (e.g., only anomaly scores)
-- ✅ Want to reduce network traffic (~70% size reduction)
+- ✅ Custom output formatting needed
+- ✅ Want to reduce network traffic
 - ✅ Need custom preprocessing/postprocessing logic
 - ✅ Framework flexibility beyond TorchServe
 
 **Key Differences:**
 - **Permissions**: Pre-built gets automatic GCS access; custom needs service account setup
-- **Routing**: Custom containers use Vertex AI's default `/v1/endpoints/{id}/deployedModels/{id}` paths (not configurable via environment variables)
+- **Routing**: Custom containers use Vertex AI's default `/v1/endpoints/{id}/deployedModels/{id}` paths
 - **Complexity**: Custom requires Dockerfile, Cloud Build, and IAM configuration
 - **Output Control**: Custom allows complete control over response format
 - **Deployment Time**: Pre-built is faster; custom requires container build step
 
+### Cost Considerations
+
+With `n1-standard-4` machine (4 vCPU, 15 GB RAM):
+- **Hourly**: ~$0.20/hour per replica
+- **Daily**: ~$4.80/day (1 replica always on)
+- **Monthly**: ~$144/month
+
+**Best practices**:
+- Delete endpoints when not in use
+- Use minimum replicas based on traffic
+- Consider batch predictions for large datasets
+
+### Quick Start
+
+1. Train model: [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)
+2. Deploy to endpoint:
+   - **Pre-built**: [vertex-ai-endpoint-prebuilt-container.ipynb](./vertex-ai-endpoint-prebuilt-container.ipynb)
+   - **Custom**: [vertex-ai-endpoint-custom-container.ipynb](./vertex-ai-endpoint-custom-container.ipynb)
+3. Make predictions via SDK or REST API
+4. Clean up resources when done
+
 ---
 
-### 2. Dataflow RunInference
+## 2. Dataflow Integration
 
-**What it is**: Apache Beam's ML inference API integrated with Google Cloud Dataflow.
+**What it is**: Apache Beam's ML inference API integrated with Google Cloud Dataflow for scalable batch and streaming inference.
 
 **Best for**:
 - Batch processing of large datasets
@@ -112,28 +124,62 @@ After training a PyTorch model (see [../pytorch-autoencoder.ipynb](../pytorch-au
 
 **Cost**: Pay per second of worker compute time (no cost when not running)
 
-**Setup**:
-- [dataflow-setup.ipynb](./dataflow-setup.ipynb) - One-time infrastructure setup (extracts .pt from .mar, creates BigQuery tables, Pub/Sub topics)
+**Example**: Processing 1M transactions might cost $1-5 depending on worker configuration.
 
-**Local Model Inference** (loads .pt file in workers):
-- [dataflow-batch-runinference.ipynb](./dataflow-batch-runinference.ipynb) - Batch processing with in-process model
-- [dataflow-streaming-runinference.ipynb](./dataflow-streaming-runinference.ipynb) - Streaming with in-process model
+### Infrastructure Setup
 
-**Vertex Endpoint Inference** (calls deployed endpoint):
-- [dataflow-batch-runinference-vertex.ipynb](./dataflow-batch-runinference-vertex.ipynb) - Batch processing via Vertex Endpoint
-- [dataflow-streaming-runinference-vertex.ipynb](./dataflow-streaming-runinference-vertex.ipynb) - Streaming via Vertex Endpoint
+[dataflow-setup.ipynb](./dataflow-setup.ipynb) - One-time setup that:
+- Downloads .mar file from GCS
+- Extracts .pt file from .mar archive
+- Uploads .pt to GCS for RunInference workers
+- Creates BigQuery tables for results
+- Creates Pub/Sub topics and subscriptions
+
+### Workflow Matrix
+
+Dataflow offers a 2×2 matrix of workflows combining data sources with inference approaches:
+
+|  | **Batch (BigQuery)** | **Streaming (Pub/Sub)** |
+|---|---|---|
+| **Local Model** | [dataflow-batch-runinference.ipynb](./dataflow-batch-runinference.ipynb) | [dataflow-streaming-runinference.ipynb](./dataflow-streaming-runinference.ipynb) |
+| **Vertex Endpoint** | [dataflow-batch-runinference-vertex.ipynb](./dataflow-batch-runinference-vertex.ipynb) | [dataflow-streaming-runinference-vertex.ipynb](./dataflow-streaming-runinference-vertex.ipynb) |
+
+#### Local Model Inference
+Loads .pt file directly in Dataflow workers (in-process):
+- **Lower cost**: No endpoint overhead
+- **Higher performance**: No network calls
+- **Simpler setup**: No endpoint deployment needed
+- **Best for**: High-throughput batch jobs
+
+#### Vertex Endpoint Inference
+Calls deployed Vertex AI Endpoint via API:
+- **Centralized model**: Same endpoint used by multiple pipelines
+- **Model updates**: Update endpoint without redeploying pipeline
+- **Resource separation**: Endpoint scales independently
+- **Best for**: Shared model across services
+
+### Quick Start
+
+1. Train model: [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)
+2. Setup infrastructure: [dataflow-setup.ipynb](./dataflow-setup.ipynb)
+3. Choose your workflow based on the matrix above
+
+**For Vertex Endpoint workflows**, also deploy an endpoint first:
+- [vertex-ai-endpoint-prebuilt-container.ipynb](./vertex-ai-endpoint-prebuilt-container.ipynb) OR
+- [vertex-ai-endpoint-custom-container.ipynb](./vertex-ai-endpoint-custom-container.ipynb)
 
 ---
 
-### 3. TorchServe (Self-Managed)
+## 3. TorchServe Deployments
 
-**What it is**: PyTorch's official model serving framework.
+**What it is**: PyTorch's official model serving framework - portable solution that scales from local development to enterprise Kubernetes.
 
 **Best for**:
+- Local development and testing
 - Custom deployment environments
 - On-premise deployments
 - Full control over infrastructure
-- Development and testing
+- Multi-model serving needs
 
 **Key Features**:
 - ✅ Load .mar files directly
@@ -141,28 +187,94 @@ After training a PyTorch model (see [../pytorch-autoencoder.ipynb](../pytorch-au
 - ✅ Multi-model serving
 - ✅ Model versioning
 - ✅ Metrics and logging
+- ✅ Portable across environments
 
 **Cost**: Infrastructure costs only (you manage servers)
 
 **Note**: Vertex AI Endpoints use TorchServe under the hood with pre-built containers.
 
+### Deployment Paths
+
+TorchServe offers a progressive deployment path from local development to production:
+
+```
+Local Development → Cloud Run (Serverless) → GCE (VMs) → GKE (Kubernetes)
+```
+
+### Getting Started
+
+#### Local Development
+[torchserve-local.ipynb](./torchserve-local.ipynb)
+
+- Start TorchServe on your machine
+- Load .mar file from training
+- Make predictions via REST API
+- Perfect for development and testing
+- Zero cloud costs
+
+**Use this for**:
+- Local testing before cloud deployment
+- Development and debugging
+- Learning TorchServe basics
+- Offline inference
+
+#### Serverless Deployment
+[torchserve-cloud-run.ipynb](./torchserve-cloud-run.ipynb)
+
+- Containerize TorchServe application
+- Deploy to Cloud Run (fully managed)
+- Auto-scaling, pay-per-use model
+- Scales to zero when idle
+- Production-ready with minimal ops
+
+**Use this for**:
+- Production deployments with minimal ops
+- Variable/unpredictable traffic
+- Cost-effective serving
+- Quick cloud deployment
+
+### Scaling to Production
+
+For advanced production scenarios, detailed guides are available:
+
+#### Compute Engine Deployment
+[serve-gce.md](./serve-gce.md) - Deploy TorchServe to GCE VMs
+
+- Long-running dedicated servers
+- Persistent serving workloads
+- Predictable, constant traffic
+- Full VM control
+
+**When to use**:
+- Consistent 24/7 traffic
+- Need dedicated resources
+- Specific VM configurations required
+- Cost-effective for steady loads
+
+#### Kubernetes Deployment
+[serve-gke.md](./serve-gke.md) - Deploy TorchServe to GKE
+
+- Multi-model orchestration
+- Advanced scaling strategies
+- High availability requirements
+- Enterprise production needs
+
+**When to use**:
+- Multiple models to serve
+- Complex deployment strategies
+- Need rolling updates/canary deployments
+- Enterprise-scale infrastructure
+
+### Quick Start
+
+1. Train model: [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)
+2. Start locally: [torchserve-local.ipynb](./torchserve-local.ipynb)
+3. Deploy serverless: [torchserve-cloud-run.ipynb](./torchserve-cloud-run.ipynb)
+4. Scale up as needed: [serve-gce.md](./serve-gce.md) or [serve-gke.md](./serve-gke.md)
+
 ---
 
-## Comparison
-
-| Feature | Vertex AI Endpoint | Dataflow RunInference | TorchServe |
-|---------|-------------------|----------------------|------------|
-| **Managed** | Fully managed | Managed pipeline | Self-managed |
-| **Use Case** | Online predictions | Batch/streaming | Custom deployments |
-| **Latency** | Low (<100ms) | Higher (batch optimized) | Configurable |
-| **Scaling** | Auto (vertical) | Auto (horizontal) | Manual |
-| **Cost Model** | Hourly (always on) | Per-second (when running) | Infrastructure only |
-| **Setup Complexity** | Low | Medium | High |
-| **Infrastructure** | None | None | You manage |
-
----
-
-## PyTorch Model Artifacts
+## Model Artifacts
 
 All serving approaches use the **.mar (Model Archive)** format created during training:
 
@@ -174,7 +286,7 @@ pytorch_autoencoder.mar
 ```
 
 **Creating a .mar file:**
-```python
+```bash
 torch-model-archiver \
     --model-name pytorch_autoencoder \
     --version 1.0 \
@@ -184,58 +296,6 @@ torch-model-archiver \
 ```
 
 See [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb) for complete example.
-
----
-
-## Quick Start
-
-### Deploy to Vertex AI Endpoint
-
-1. Train model: [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)
-2. Deploy to endpoint:
-   - **Pre-built container**: [vertex-ai-endpoint-prebuilt-container.ipynb](./vertex-ai-endpoint-prebuilt-container.ipynb) - Quick deployment with TorchServe
-   - **Custom container**: [vertex-ai-endpoint-custom-container.ipynb](./vertex-ai-endpoint-custom-container.ipynb) - Custom output format with FastAPI
-3. Make predictions via SDK or REST API
-4. Clean up resources when done
-
-### Use with Dataflow
-
-1. Train model: [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)
-2. Setup infrastructure: [dataflow-setup.ipynb](./dataflow-setup.ipynb) - One-time setup
-3. Choose your workflow:
-
-   **Local Model Inference** (lower cost, higher performance):
-   - **Batch**: [dataflow-batch-runinference.ipynb](./dataflow-batch-runinference.ipynb)
-   - **Streaming**: [dataflow-streaming-runinference.ipynb](./dataflow-streaming-runinference.ipynb)
-
-   **Vertex Endpoint Inference** (centralized model management):
-   - **Batch**: [dataflow-batch-runinference-vertex.ipynb](./dataflow-batch-runinference-vertex.ipynb)
-   - **Streaming**: [dataflow-streaming-runinference-vertex.ipynb](./dataflow-streaming-runinference-vertex.ipynb)
-
----
-
-## Cost Considerations
-
-### Vertex AI Endpoint Costs
-
-With `n1-standard-4` machine (4 vCPU, 15 GB RAM):
-- **Hourly**: ~$0.20/hour per replica
-- **Daily**: ~$4.80/day (1 replica always on)
-- **Monthly**: ~$144/month
-
-**Best practices**:
-- Delete endpoints when not in use
-- Use minimum replicas based on traffic
-- Consider batch predictions for large datasets
-
-### Dataflow Costs
-
-Charged per second of worker time:
-- **Batch jobs**: Pay only during execution
-- **Streaming jobs**: Pay while pipeline runs
-- **No cost** when pipelines are not running
-
-**Example**: Processing 1M transactions might cost $1-5 depending on worker configuration.
 
 ---
 
@@ -250,7 +310,7 @@ Charged per second of worker time:
 }
 ```
 
-### Output
+### Output (Pre-built Container / TorchServe)
 ```json
 {
   "predictions": [{
@@ -271,8 +331,16 @@ Charged per second of worker time:
 }
 ```
 
+### Output (Custom Container)
+```json
+{
+  "anomaly_score": 26.99,
+  "encoded": [0.17, 0.0, 0.19, 0.41]
+}
+```
+
 **Key metrics**:
-- `denormalized_MAE`: Anomaly score (higher = more anomalous)
+- `denormalized_MAE` / `anomaly_score`: Anomaly score (higher = more anomalous)
 - `encoded`: Latent space representation (4D)
 - `*_reconstruction`: Reconstructed input values
 - `*_reconstruction_errors`: Per-feature reconstruction errors
@@ -306,14 +374,22 @@ Charged per second of worker time:
 ## Navigation
 
 - [← Back to PyTorch Folder](../readme.md)
-- Deploy to Vertex AI Endpoint:
-  - [Pre-built Container →](./vertex-ai-endpoint-prebuilt-container.ipynb)
-  - [Custom Container →](./vertex-ai-endpoint-custom-container.ipynb)
-- Dataflow Workflows:
-  - [Setup Infrastructure →](./dataflow-setup.ipynb)
-  - Local Model Inference:
-    - [Batch RunInference →](./dataflow-batch-runinference.ipynb)
-    - [Streaming RunInference →](./dataflow-streaming-runinference.ipynb)
-  - Vertex Endpoint Inference:
-    - [Batch RunInference →](./dataflow-batch-runinference-vertex.ipynb)
-    - [Streaming RunInference →](./dataflow-streaming-runinference-vertex.ipynb)
+
+### Vertex AI Endpoints
+- [Pre-built Container →](./vertex-ai-endpoint-prebuilt-container.ipynb)
+- [Custom Container →](./vertex-ai-endpoint-custom-container.ipynb)
+
+### Dataflow Workflows
+- [Setup Infrastructure →](./dataflow-setup.ipynb)
+- Local Model Inference:
+  - [Batch RunInference →](./dataflow-batch-runinference.ipynb)
+  - [Streaming RunInference →](./dataflow-streaming-runinference.ipynb)
+- Vertex Endpoint Inference:
+  - [Batch RunInference →](./dataflow-batch-runinference-vertex.ipynb)
+  - [Streaming RunInference →](./dataflow-streaming-runinference-vertex.ipynb)
+
+### TorchServe Deployments
+- [Local Development →](./torchserve-local.ipynb)
+- [Cloud Run Deployment →](./torchserve-cloud-run.ipynb)
+- [GCE Deployment Guide →](./serve-gce.md)
+- [GKE Deployment Guide →](./serve-gke.md)
