@@ -24,6 +24,7 @@ google-cloud-artifact-registry = "^1.17.0"
 torchserve = "^0.12.0"
 torch-workflow-archiver = "^0.2.15"
 google-cloud-run = "^0.12.0"
+google-cloud-dataflow-client = "^0.10.0"
 
 
 [tool.poetry.group.dev]

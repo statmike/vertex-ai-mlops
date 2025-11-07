@@ -1698,6 +1698,28 @@ google-auth = ">=1.25.0,<3.0.0"
 grpc = ["grpcio (>=1.38.0,<2.0.0) ; python_version < \"3.14\"", "grpcio (>=1.75.1,<2.0.0) ; python_version >= \"3.14\"", "grpcio-status (>=1.38.0,<2.0.0)"]
 
 [[package]]
+name = "google-cloud-dataflow-client"
+version = "0.10.0"
+description = "Google Cloud Dataflow Client API client library"
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "google_cloud_dataflow_client-0.10.0-py3-none-any.whl", hash = "sha256:a70b3db387ef2168dac792db05692368ee862a5f56f59afd170394575272f116"},
+    {file = "google_cloud_dataflow_client-0.10.0.tar.gz", hash = "sha256:04b11aa52db6f17f599ace38776ff4247b93116167d4bf765e2f6ece52fd8f12"},
+]
+
+[package.dependencies]
+google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0", extras = ["grpc"]}
+google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0"
+grpcio = [
+    {version = ">=1.75.1,<2.0.0", markers = "python_version >= \"3.14\""},
+    {version = ">=1.33.2,<2.0.0", markers = "python_version < \"3.14\""},
+]
+proto-plus = {version = ">=1.25.0,<2.0.0", markers = "python_version >= \"3.13\""}
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<7.0.0"
+
+[[package]]
 name = "google-cloud-datastore"
 version = "2.21.0"
 description = "Google Cloud Datastore API client library"
@@ -1871,7 +1893,7 @@ google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0"
 grpc-google-iam-v1 = ">=0.14.0,<1.0.0"
 grpcio = [
     {version = ">=1.75.1,<2.0.0", markers = "python_version >= \"3.14\""},
-    {version = ">=1.33.2,<2.0.0", markers = "python_version < \"3.14\""},
+    {version = ">=1.33.2,<2.0.0"},
 ]
 proto-plus = {version = ">=1.25.0,<2.0.0", markers = "python_version >= \"3.13\""}
 protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<7.0.0"
@@ -6243,4 +6265,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<3.15"
-content-hash = "38dc28a865ee4a07fb2eaa2993b5d31b5b889100c01139b2eec86ffe4308adb3"
+content-hash = "93710c7c5c0f190ab2ba0d8d844cf5417c2148e4e6c6085393610cf807446571"
