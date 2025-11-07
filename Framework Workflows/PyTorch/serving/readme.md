@@ -1,3 +1,36 @@
+![tracker](https://us-central1-vertex-ai-mlops-369716.cloudfunctions.net/pixel-tracking?path=statmike%2Fvertex-ai-mlops%2FFramework+Workflows%2FPyTorch%2Fserving&file=readme.md)
+<!--- header table --->
+<table>
+<tr>     
+  <td style="text-align: center">
+    <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/Framework%20Workflows/PyTorch/serving/readme.md">
+      <img width="32px" src="https://www.svgrepo.com/download/217753/github.svg" alt="GitHub logo">
+      <br>View on<br>GitHub
+    </a>
+  </td>
+</tr>
+<tr>
+  <td style="text-align: right">
+    <b>Share On: </b> 
+    <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://github.com/statmike/vertex-ai-mlops/blob/main/Framework%2520Workflows/PyTorch/serving/readme.md"><img src="https://upload.wikimedia.org/wikipedia/commons/8/81/LinkedIn_icon.svg" alt="Linkedin Logo" width="20px"></a> 
+    <a href="https://reddit.com/submit?url=https://github.com/statmike/vertex-ai-mlops/blob/main/Framework%2520Workflows/PyTorch/serving/readme.md"><img src="https://redditinc.com/hubfs/Reddit%20Inc/Brand/Reddit_Logo.png" alt="Reddit Logo" width="20px"></a> 
+    <a href="https://bsky.app/intent/compose?text=https://github.com/statmike/vertex-ai-mlops/blob/main/Framework%2520Workflows/PyTorch/serving/readme.md"><img src="https://upload.wikimedia.org/wikipedia/commons/7/7a/Bluesky_Logo.svg" alt="BlueSky Logo" width="20px"></a> 
+    <a href="https://twitter.com/intent/tweet?url=https://github.com/statmike/vertex-ai-mlops/blob/main/Framework%2520Workflows/PyTorch/serving/readme.md"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5a/X_icon_2.svg" alt="X (Twitter) Logo" width="20px"></a> 
+  </td>
+</tr>
+<tr>
+  <td style="text-align: right">
+    <b>Connect With Author On: </b> 
+    <a href="https://www.linkedin.com/in/statmike"><img src="https://upload.wikimedia.org/wikipedia/commons/8/81/LinkedIn_icon.svg" alt="Linkedin Logo" width="20px"></a>
+    <a href="https://www.github.com/statmike"><img src="https://www.svgrepo.com/download/217753/github.svg" alt="GitHub Logo" width="20px"></a> 
+    <a href="https://www.youtube.com/@statmike-channel"><img src="https://upload.wikimedia.org/wikipedia/commons/f/fd/YouTube_full-color_icon_%282024%29.svg" alt="YouTube Logo" width="20px"></a>
+    <a href="https://bsky.app/profile/statmike.bsky.social"><img src="https://upload.wikimedia.org/wikipedia/commons/7/7a/Bluesky_Logo.svg" alt="BlueSky Logo" width="20px"></a> 
+    <a href="https://x.com/statmike"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5a/X_icon_2.svg" alt="X (Twitter) Logo" width="20px"></a>
+  </td>
+</tr>
+</table><br/><br/>
+
+---
 # PyTorch Model Serving
 
 This folder contains examples of deploying and serving PyTorch models for inference.
@@ -75,14 +108,20 @@ After training a PyTorch model (see [../pytorch-autoencoder.ipynb](../pytorch-au
 - ✅ Automatic batching for efficiency
 - ✅ Horizontal scaling
 - ✅ Pay only when pipeline runs
+- ✅ Supports both local models and Vertex AI Endpoints
 
 **Cost**: Pay per second of worker compute time (no cost when not running)
 
-**Examples**:
-- [dataflow-setup.ipynb](./dataflow-setup.ipynb) - One-time infrastructure setup
-- [dataflow-batch-runinference.ipynb](./dataflow-batch-runinference.ipynb) - Batch inference on BigQuery data
-- [dataflow-streaming-runinference.ipynb](./dataflow-streaming-runinference.ipynb) - Real-time streaming inference from Pub/Sub
-- [dataflow-vertex-endpoint.ipynb](./dataflow-vertex-endpoint.ipynb) - Call Vertex Endpoint from Dataflow
+**Setup**:
+- [dataflow-setup.ipynb](./dataflow-setup.ipynb) - One-time infrastructure setup (extracts .pt from .mar, creates BigQuery tables, Pub/Sub topics)
+
+**Local Model Inference** (loads .pt file in workers):
+- [dataflow-batch-runinference.ipynb](./dataflow-batch-runinference.ipynb) - Batch processing with in-process model
+- [dataflow-streaming-runinference.ipynb](./dataflow-streaming-runinference.ipynb) - Streaming with in-process model
+
+**Vertex Endpoint Inference** (calls deployed endpoint):
+- [dataflow-batch-runinference-vertex.ipynb](./dataflow-batch-runinference-vertex.ipynb) - Batch processing via Vertex Endpoint
+- [dataflow-streaming-runinference-vertex.ipynb](./dataflow-streaming-runinference-vertex.ipynb) - Streaming via Vertex Endpoint
 
 ---
 
@@ -164,9 +203,14 @@ See [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb) for complete ex
 1. Train model: [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)
 2. Setup infrastructure: [dataflow-setup.ipynb](./dataflow-setup.ipynb) - One-time setup
 3. Choose your workflow:
-   - **Batch processing**: [dataflow-batch-runinference.ipynb](./dataflow-batch-runinference.ipynb)
+
+   **Local Model Inference** (lower cost, higher performance):
+   - **Batch**: [dataflow-batch-runinference.ipynb](./dataflow-batch-runinference.ipynb)
    - **Streaming**: [dataflow-streaming-runinference.ipynb](./dataflow-streaming-runinference.ipynb)
-   - **Endpoint calls**: [dataflow-vertex-endpoint.ipynb](./dataflow-vertex-endpoint.ipynb)
+
+   **Vertex Endpoint Inference** (centralized model management):
+   - **Batch**: [dataflow-batch-runinference-vertex.ipynb](./dataflow-batch-runinference-vertex.ipynb)
+   - **Streaming**: [dataflow-streaming-runinference-vertex.ipynb](./dataflow-streaming-runinference-vertex.ipynb)
 
 ---
 
@@ -267,6 +311,9 @@ Charged per second of worker time:
   - [Custom Container →](./vertex-ai-endpoint-custom-container.ipynb)
 - Dataflow Workflows:
   - [Setup Infrastructure →](./dataflow-setup.ipynb)
-  - [Batch RunInference →](./dataflow-batch-runinference.ipynb)
-  - [Streaming RunInference →](./dataflow-streaming-runinference.ipynb)
-  - [Endpoint Calls →](./dataflow-vertex-endpoint.ipynb)
+  - Local Model Inference:
+    - [Batch RunInference →](./dataflow-batch-runinference.ipynb)
+    - [Streaming RunInference →](./dataflow-streaming-runinference.ipynb)
+  - Vertex Endpoint Inference:
+    - [Batch RunInference →](./dataflow-batch-runinference-vertex.ipynb)
+    - [Streaming RunInference →](./dataflow-streaming-runinference-vertex.ipynb)
