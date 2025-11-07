@@ -1,0 +1,77 @@
+2025-11-07T15:15:01,358 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - s_name_part0=/tmp/.ts.sock, s_name_part1=9005, pid=1734536
+2025-11-07T15:15:01,360 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Listening on port: /tmp/.ts.sock.9005
+2025-11-07T15:15:01,378 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Successfully loaded /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml.
+2025-11-07T15:15:01,379 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - [PID]1734536
+2025-11-07T15:15:01,379 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Torch worker started.
+2025-11-07T15:15:01,380 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Python runtime: 3.13.3
+2025-11-07T15:15:01,424 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Connection accepted: /tmp/.ts.sock.9005.
+2025-11-07T15:15:01,502 [INFO ] W-9001-pytorch_autoencoder_1.0-stdout MODEL_LOG - s_name_part0=/tmp/.ts.sock, s_name_part1=9001, pid=1734524
+2025-11-07T15:15:01,504 [INFO ] W-9001-pytorch_autoencoder_1.0-stdout MODEL_LOG - Listening on port: /tmp/.ts.sock.9001
+2025-11-07T15:15:01,510 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - model_name: pytorch_autoencoder, batchSize: 1
+2025-11-07T15:15:01,529 [INFO ] W-9003-pytorch_autoencoder_1.0-stdout MODEL_LOG - s_name_part0=/tmp/.ts.sock, s_name_part1=9003, pid=1734532
+2025-11-07T15:15:01,531 [INFO ] W-9003-pytorch_autoencoder_1.0-stdout MODEL_LOG - Listening on port: /tmp/.ts.sock.9003
+2025-11-07T15:15:01,537 [INFO ] W-9001-pytorch_autoencoder_1.0-stdout MODEL_LOG - Successfully loaded /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml.
+2025-11-07T15:15:01,537 [INFO ] W-9001-pytorch_autoencoder_1.0-stdout MODEL_LOG - [PID]1734524
+2025-11-07T15:15:01,538 [INFO ] W-9001-pytorch_autoencoder_1.0-stdout MODEL_LOG - Torch worker started.
+2025-11-07T15:15:01,542 [INFO ] W-9001-pytorch_autoencoder_1.0-stdout MODEL_LOG - Python runtime: 3.13.3
+2025-11-07T15:15:01,549 [INFO ] W-9001-pytorch_autoencoder_1.0-stdout MODEL_LOG - Connection accepted: /tmp/.ts.sock.9001.
+2025-11-07T15:15:01,557 [INFO ] W-9003-pytorch_autoencoder_1.0-stdout MODEL_LOG - Successfully loaded /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml.
+2025-11-07T15:15:01,560 [INFO ] W-9003-pytorch_autoencoder_1.0-stdout MODEL_LOG - [PID]1734532
+2025-11-07T15:15:01,572 [INFO ] W-9003-pytorch_autoencoder_1.0-stdout MODEL_LOG - Torch worker started.
+2025-11-07T15:15:01,572 [INFO ] W-9003-pytorch_autoencoder_1.0-stdout MODEL_LOG - Python runtime: 3.13.3
+2025-11-07T15:15:01,582 [INFO ] W-9003-pytorch_autoencoder_1.0-stdout MODEL_LOG - Connection accepted: /tmp/.ts.sock.9003.
+2025-11-07T15:15:01,596 [INFO ] W-9001-pytorch_autoencoder_1.0-stdout MODEL_LOG - model_name: pytorch_autoencoder, batchSize: 1
+2025-11-07T15:15:01,597 [INFO ] W-9004-pytorch_autoencoder_1.0-stdout MODEL_LOG - s_name_part0=/tmp/.ts.sock, s_name_part1=9004, pid=1734530
+2025-11-07T15:15:01,599 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Model loaded successfully on cpu
+2025-11-07T15:15:01,600 [INFO ] W-9004-pytorch_autoencoder_1.0-stdout MODEL_LOG - Listening on port: /tmp/.ts.sock.9004
+2025-11-07T15:15:01,613 [INFO ] W-9003-pytorch_autoencoder_1.0-stdout MODEL_LOG - model_name: pytorch_autoencoder, batchSize: 1
+2025-11-07T15:15:01,621 [INFO ] W-9004-pytorch_autoencoder_1.0-stdout MODEL_LOG - Successfully loaded /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml.
+2025-11-07T15:15:01,624 [INFO ] W-9004-pytorch_autoencoder_1.0-stdout MODEL_LOG - [PID]1734530
+2025-11-07T15:15:01,627 [INFO ] W-9004-pytorch_autoencoder_1.0-stdout MODEL_LOG - Torch worker started.
+2025-11-07T15:15:01,629 [INFO ] W-9004-pytorch_autoencoder_1.0-stdout MODEL_LOG - Python runtime: 3.13.3
+2025-11-07T15:15:01,632 [INFO ] W-9004-pytorch_autoencoder_1.0-stdout MODEL_LOG - Connection accepted: /tmp/.ts.sock.9004.
+2025-11-07T15:15:01,671 [INFO ] W-9004-pytorch_autoencoder_1.0-stdout MODEL_LOG - model_name: pytorch_autoencoder, batchSize: 1
+2025-11-07T15:15:01,680 [INFO ] W-9007-pytorch_autoencoder_1.0-stdout MODEL_LOG - s_name_part0=/tmp/.ts.sock, s_name_part1=9007, pid=1734535
+2025-11-07T15:15:01,685 [INFO ] W-9007-pytorch_autoencoder_1.0-stdout MODEL_LOG - Listening on port: /tmp/.ts.sock.9007
+2025-11-07T15:15:01,695 [INFO ] W-9003-pytorch_autoencoder_1.0-stdout MODEL_LOG - Model loaded successfully on cpu
+2025-11-07T15:15:01,704 [INFO ] W-9001-pytorch_autoencoder_1.0-stdout MODEL_LOG - Model loaded successfully on cpu
+2025-11-07T15:15:01,709 [INFO ] W-9007-pytorch_autoencoder_1.0-stdout MODEL_LOG - Successfully loaded /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml.
+2025-11-07T15:15:01,709 [INFO ] W-9007-pytorch_autoencoder_1.0-stdout MODEL_LOG - [PID]1734535
+2025-11-07T15:15:01,710 [INFO ] W-9007-pytorch_autoencoder_1.0-stdout MODEL_LOG - Torch worker started.
+2025-11-07T15:15:01,710 [INFO ] W-9007-pytorch_autoencoder_1.0-stdout MODEL_LOG - Python runtime: 3.13.3
+2025-11-07T15:15:01,714 [INFO ] W-9007-pytorch_autoencoder_1.0-stdout MODEL_LOG - Connection accepted: /tmp/.ts.sock.9007.
+2025-11-07T15:15:01,722 [INFO ] W-9006-pytorch_autoencoder_1.0-stdout MODEL_LOG - s_name_part0=/tmp/.ts.sock, s_name_part1=9006, pid=1734533
+2025-11-07T15:15:01,723 [INFO ] W-9006-pytorch_autoencoder_1.0-stdout MODEL_LOG - Listening on port: /tmp/.ts.sock.9006
+2025-11-07T15:15:01,728 [INFO ] W-9004-pytorch_autoencoder_1.0-stdout MODEL_LOG - Model loaded successfully on cpu
+2025-11-07T15:15:01,742 [INFO ] W-9007-pytorch_autoencoder_1.0-stdout MODEL_LOG - model_name: pytorch_autoencoder, batchSize: 1
+2025-11-07T15:15:01,742 [INFO ] W-9006-pytorch_autoencoder_1.0-stdout MODEL_LOG - Successfully loaded /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml.
+2025-11-07T15:15:01,743 [INFO ] W-9006-pytorch_autoencoder_1.0-stdout MODEL_LOG - [PID]1734533
+2025-11-07T15:15:01,745 [INFO ] W-9006-pytorch_autoencoder_1.0-stdout MODEL_LOG - Torch worker started.
+2025-11-07T15:15:01,745 [INFO ] W-9006-pytorch_autoencoder_1.0-stdout MODEL_LOG - Python runtime: 3.13.3
+2025-11-07T15:15:01,748 [INFO ] W-9006-pytorch_autoencoder_1.0-stdout MODEL_LOG - Connection accepted: /tmp/.ts.sock.9006.
+2025-11-07T15:15:01,774 [INFO ] W-9006-pytorch_autoencoder_1.0-stdout MODEL_LOG - model_name: pytorch_autoencoder, batchSize: 1
+2025-11-07T15:15:01,800 [INFO ] W-9007-pytorch_autoencoder_1.0-stdout MODEL_LOG - Model loaded successfully on cpu
+2025-11-07T15:15:01,823 [INFO ] W-9006-pytorch_autoencoder_1.0-stdout MODEL_LOG - Model loaded successfully on cpu
+2025-11-07T15:15:01,914 [INFO ] W-9002-pytorch_autoencoder_1.0-stdout MODEL_LOG - s_name_part0=/tmp/.ts.sock, s_name_part1=9002, pid=1734531
+2025-11-07T15:15:01,915 [INFO ] W-9002-pytorch_autoencoder_1.0-stdout MODEL_LOG - Listening on port: /tmp/.ts.sock.9002
+2025-11-07T15:15:01,927 [INFO ] W-9002-pytorch_autoencoder_1.0-stdout MODEL_LOG - Successfully loaded /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml.
+2025-11-07T15:15:01,927 [INFO ] W-9002-pytorch_autoencoder_1.0-stdout MODEL_LOG - [PID]1734531
+2025-11-07T15:15:01,928 [INFO ] W-9002-pytorch_autoencoder_1.0-stdout MODEL_LOG - Torch worker started.
+2025-11-07T15:15:01,928 [INFO ] W-9002-pytorch_autoencoder_1.0-stdout MODEL_LOG - Python runtime: 3.13.3
+2025-11-07T15:15:01,949 [INFO ] W-9002-pytorch_autoencoder_1.0-stdout MODEL_LOG - Connection accepted: /tmp/.ts.sock.9002.
+2025-11-07T15:15:01,970 [INFO ] W-9002-pytorch_autoencoder_1.0-stdout MODEL_LOG - model_name: pytorch_autoencoder, batchSize: 1
+2025-11-07T15:15:01,978 [INFO ] W-9000-pytorch_autoencoder_1.0-stdout MODEL_LOG - s_name_part0=/tmp/.ts.sock, s_name_part1=9000, pid=1734534
+2025-11-07T15:15:01,980 [INFO ] W-9000-pytorch_autoencoder_1.0-stdout MODEL_LOG - Listening on port: /tmp/.ts.sock.9000
+2025-11-07T15:15:01,992 [INFO ] W-9000-pytorch_autoencoder_1.0-stdout MODEL_LOG - Successfully loaded /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml.
+2025-11-07T15:15:01,992 [INFO ] W-9000-pytorch_autoencoder_1.0-stdout MODEL_LOG - [PID]1734534
+2025-11-07T15:15:01,993 [INFO ] W-9000-pytorch_autoencoder_1.0-stdout MODEL_LOG - Torch worker started.
+2025-11-07T15:15:01,993 [INFO ] W-9000-pytorch_autoencoder_1.0-stdout MODEL_LOG - Python runtime: 3.13.3
+2025-11-07T15:15:01,995 [INFO ] W-9000-pytorch_autoencoder_1.0-stdout MODEL_LOG - Connection accepted: /tmp/.ts.sock.9000.
+2025-11-07T15:15:02,016 [INFO ] W-9002-pytorch_autoencoder_1.0-stdout MODEL_LOG - Model loaded successfully on cpu
+2025-11-07T15:15:02,017 [INFO ] W-9000-pytorch_autoencoder_1.0-stdout MODEL_LOG - model_name: pytorch_autoencoder, batchSize: 1
+2025-11-07T15:15:02,061 [INFO ] W-9000-pytorch_autoencoder_1.0-stdout MODEL_LOG - Model loaded successfully on cpu
+2025-11-07T15:15:16,699 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Backend received inference at: 1762528516
+2025-11-07T15:15:16,699 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Received 1 request(s)
+2025-11-07T15:15:16,699 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Preprocessing 1 instances
+2025-11-07T15:15:16,700 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Input tensor shape: torch.Size([1, 30])
+2025-11-07T15:15:16,778 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Postprocessing 1 predictions

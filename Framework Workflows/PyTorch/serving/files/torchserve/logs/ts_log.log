@@ -1,0 +1,356 @@
+2025-11-07T15:14:55,455 [DEBUG] main org.pytorch.serve.util.ConfigManager - xpu-smi not available or failed: Cannot run program "xpu-smi": Exec failed, error: 2 (No such file or directory) 
+2025-11-07T15:14:55,455 [DEBUG] main org.pytorch.serve.util.ConfigManager - xpu-smi not available or failed: Cannot run program "xpu-smi": Exec failed, error: 2 (No such file or directory) 
+2025-11-07T15:14:55,462 [WARN ] main org.pytorch.serve.util.ConfigManager - Your torchserve instance can access any URL to load models. When deploying to production, make sure to limit the set of allowed_urls in config.properties
+2025-11-07T15:14:55,462 [WARN ] main org.pytorch.serve.util.ConfigManager - Your torchserve instance can access any URL to load models. When deploying to production, make sure to limit the set of allowed_urls in config.properties
+2025-11-07T15:14:55,481 [INFO ] main org.pytorch.serve.servingsdk.impl.PluginsManager - Initializing plugins manager...
+2025-11-07T15:14:55,481 [INFO ] main org.pytorch.serve.servingsdk.impl.PluginsManager - Initializing plugins manager...
+2025-11-07T15:14:55,587 [INFO ] main org.pytorch.serve.metrics.configuration.MetricConfiguration - Successfully loaded metrics configuration from /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml
+2025-11-07T15:14:55,587 [INFO ] main org.pytorch.serve.metrics.configuration.MetricConfiguration - Successfully loaded metrics configuration from /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml
+2025-11-07T15:14:55,709 [INFO ] main org.pytorch.serve.ModelServer - 
+Torchserve version: 0.12.0
+TS Home: /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages
+Current directory: /usr/local/google/home/statmike/Git/vertex-ai-mlops/Framework Workflows/PyTorch/serving/files/torchserve
+Temp directory: /tmp
+Metrics config path: /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml
+Number of GPUs: 0
+Number of CPUs: 8
+Max heap size: 8032 M
+Python executable: /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/bin/python
+Config file: config.properties
+Inference address: http://0.0.0.0:8080
+Management address: http://0.0.0.0:8081
+Metrics address: http://0.0.0.0:8082
+Model Store: /usr/local/google/home/statmike/Git/vertex-ai-mlops/Framework Workflows/PyTorch/serving/files/torchserve/model_store
+Initial Models: pytorch_autoencoder=pytorch_autoencoder.mar
+Log dir: /usr/local/google/home/statmike/Git/vertex-ai-mlops/Framework Workflows/PyTorch/serving/files/torchserve/logs
+Metrics dir: /usr/local/google/home/statmike/Git/vertex-ai-mlops/Framework Workflows/PyTorch/serving/files/torchserve/logs
+Netty threads: 0
+Netty client threads: 0
+Default workers per model: 8
+Blacklist Regex: N/A
+Maximum Response Size: 6553500
+Maximum Request Size: 6553500
+Limit Maximum Image Pixels: true
+Prefer direct buffer: false
+Allowed Urls: [file://.*|http(s)?://.*]
+Custom python dependency for model allowed: false
+Enable metrics API: true
+Metrics mode: LOG
+Disable system metrics: false
+Workflow Store: /usr/local/google/home/statmike/Git/vertex-ai-mlops/Framework Workflows/PyTorch/serving/files/torchserve/model_store
+CPP log config: N/A
+Model config: N/A
+System metrics command: default
+Model API enabled: false
+2025-11-07T15:14:55,709 [INFO ] main org.pytorch.serve.ModelServer - 
+Torchserve version: 0.12.0
+TS Home: /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages
+Current directory: /usr/local/google/home/statmike/Git/vertex-ai-mlops/Framework Workflows/PyTorch/serving/files/torchserve
+Temp directory: /tmp
+Metrics config path: /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml
+Number of GPUs: 0
+Number of CPUs: 8
+Max heap size: 8032 M
+Python executable: /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/bin/python
+Config file: config.properties
+Inference address: http://0.0.0.0:8080
+Management address: http://0.0.0.0:8081
+Metrics address: http://0.0.0.0:8082
+Model Store: /usr/local/google/home/statmike/Git/vertex-ai-mlops/Framework Workflows/PyTorch/serving/files/torchserve/model_store
+Initial Models: pytorch_autoencoder=pytorch_autoencoder.mar
+Log dir: /usr/local/google/home/statmike/Git/vertex-ai-mlops/Framework Workflows/PyTorch/serving/files/torchserve/logs
+Metrics dir: /usr/local/google/home/statmike/Git/vertex-ai-mlops/Framework Workflows/PyTorch/serving/files/torchserve/logs
+Netty threads: 0
+Netty client threads: 0
+Default workers per model: 8
+Blacklist Regex: N/A
+Maximum Response Size: 6553500
+Maximum Request Size: 6553500
+Limit Maximum Image Pixels: true
+Prefer direct buffer: false
+Allowed Urls: [file://.*|http(s)?://.*]
+Custom python dependency for model allowed: false
+Enable metrics API: true
+Metrics mode: LOG
+Disable system metrics: false
+Workflow Store: /usr/local/google/home/statmike/Git/vertex-ai-mlops/Framework Workflows/PyTorch/serving/files/torchserve/model_store
+CPP log config: N/A
+Model config: N/A
+System metrics command: default
+Model API enabled: false
+2025-11-07T15:14:55,726 [INFO ] main org.pytorch.serve.servingsdk.impl.PluginsManager -  Loading snapshot serializer plugin...
+2025-11-07T15:14:55,726 [INFO ] main org.pytorch.serve.servingsdk.impl.PluginsManager -  Loading snapshot serializer plugin...
+2025-11-07T15:14:55,756 [INFO ] main org.pytorch.serve.ModelServer - Loading initial models: pytorch_autoencoder.mar
+2025-11-07T15:14:55,756 [INFO ] main org.pytorch.serve.ModelServer - Loading initial models: pytorch_autoencoder.mar
+2025-11-07T15:14:55,809 [DEBUG] main org.pytorch.serve.wlm.ModelVersionedRefs - Adding new version 1.0 for model pytorch_autoencoder
+2025-11-07T15:14:55,809 [DEBUG] main org.pytorch.serve.wlm.ModelVersionedRefs - Adding new version 1.0 for model pytorch_autoencoder
+2025-11-07T15:14:55,810 [DEBUG] main org.pytorch.serve.wlm.ModelVersionedRefs - Setting default version to 1.0 for model pytorch_autoencoder
+2025-11-07T15:14:55,810 [DEBUG] main org.pytorch.serve.wlm.ModelVersionedRefs - Setting default version to 1.0 for model pytorch_autoencoder
+2025-11-07T15:14:55,810 [INFO ] main org.pytorch.serve.wlm.ModelManager - Model pytorch_autoencoder loaded.
+2025-11-07T15:14:55,810 [INFO ] main org.pytorch.serve.wlm.ModelManager - Model pytorch_autoencoder loaded.
+2025-11-07T15:14:55,811 [DEBUG] main org.pytorch.serve.wlm.ModelManager - updateModel: pytorch_autoencoder, count: 8
+2025-11-07T15:14:55,811 [DEBUG] main org.pytorch.serve.wlm.ModelManager - updateModel: pytorch_autoencoder, count: 8
+2025-11-07T15:14:55,825 [DEBUG] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerLifeCycle - Worker cmdline: [/usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/bin/python, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/model_service_worker.py, --sock-type, unix, --sock-name, /tmp/.ts.sock.9005, --metrics-config, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml]
+2025-11-07T15:14:55,825 [DEBUG] W-9004-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerLifeCycle - Worker cmdline: [/usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/bin/python, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/model_service_worker.py, --sock-type, unix, --sock-name, /tmp/.ts.sock.9004, --metrics-config, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml]
+2025-11-07T15:14:55,825 [DEBUG] W-9002-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerLifeCycle - Worker cmdline: [/usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/bin/python, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/model_service_worker.py, --sock-type, unix, --sock-name, /tmp/.ts.sock.9002, --metrics-config, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml]
+2025-11-07T15:14:55,826 [DEBUG] W-9001-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerLifeCycle - Worker cmdline: [/usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/bin/python, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/model_service_worker.py, --sock-type, unix, --sock-name, /tmp/.ts.sock.9001, --metrics-config, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml]
+2025-11-07T15:14:55,826 [DEBUG] W-9000-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerLifeCycle - Worker cmdline: [/usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/bin/python, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/model_service_worker.py, --sock-type, unix, --sock-name, /tmp/.ts.sock.9000, --metrics-config, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml]
+2025-11-07T15:14:55,826 [DEBUG] W-9006-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerLifeCycle - Worker cmdline: [/usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/bin/python, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/model_service_worker.py, --sock-type, unix, --sock-name, /tmp/.ts.sock.9006, --metrics-config, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml]
+2025-11-07T15:14:55,826 [DEBUG] W-9001-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerLifeCycle - Worker cmdline: [/usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/bin/python, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/model_service_worker.py, --sock-type, unix, --sock-name, /tmp/.ts.sock.9001, --metrics-config, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml]
+2025-11-07T15:14:55,826 [DEBUG] W-9006-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerLifeCycle - Worker cmdline: [/usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/bin/python, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/model_service_worker.py, --sock-type, unix, --sock-name, /tmp/.ts.sock.9006, --metrics-config, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml]
+2025-11-07T15:14:55,825 [DEBUG] W-9004-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerLifeCycle - Worker cmdline: [/usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/bin/python, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/model_service_worker.py, --sock-type, unix, --sock-name, /tmp/.ts.sock.9004, --metrics-config, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml]
+2025-11-07T15:14:55,825 [DEBUG] W-9003-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerLifeCycle - Worker cmdline: [/usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/bin/python, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/model_service_worker.py, --sock-type, unix, --sock-name, /tmp/.ts.sock.9003, --metrics-config, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml]
+2025-11-07T15:14:55,825 [DEBUG] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerLifeCycle - Worker cmdline: [/usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/bin/python, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/model_service_worker.py, --sock-type, unix, --sock-name, /tmp/.ts.sock.9005, --metrics-config, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml]
+2025-11-07T15:14:55,825 [DEBUG] W-9002-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerLifeCycle - Worker cmdline: [/usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/bin/python, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/model_service_worker.py, --sock-type, unix, --sock-name, /tmp/.ts.sock.9002, --metrics-config, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml]
+2025-11-07T15:14:55,825 [DEBUG] W-9003-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerLifeCycle - Worker cmdline: [/usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/bin/python, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/model_service_worker.py, --sock-type, unix, --sock-name, /tmp/.ts.sock.9003, --metrics-config, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml]
+2025-11-07T15:14:55,826 [DEBUG] W-9000-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerLifeCycle - Worker cmdline: [/usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/bin/python, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/model_service_worker.py, --sock-type, unix, --sock-name, /tmp/.ts.sock.9000, --metrics-config, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml]
+2025-11-07T15:14:55,829 [DEBUG] W-9007-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerLifeCycle - Worker cmdline: [/usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/bin/python, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/model_service_worker.py, --sock-type, unix, --sock-name, /tmp/.ts.sock.9007, --metrics-config, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml]
+2025-11-07T15:14:55,829 [INFO ] main org.pytorch.serve.ModelServer - Initialize Inference server with: EpollServerSocketChannel.
+2025-11-07T15:14:55,829 [INFO ] main org.pytorch.serve.ModelServer - Initialize Inference server with: EpollServerSocketChannel.
+2025-11-07T15:14:55,829 [DEBUG] W-9007-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerLifeCycle - Worker cmdline: [/usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/bin/python, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/model_service_worker.py, --sock-type, unix, --sock-name, /tmp/.ts.sock.9007, --metrics-config, /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml]
+2025-11-07T15:14:56,046 [INFO ] main org.pytorch.serve.ModelServer - Inference API bind to: http://0.0.0.0:8080
+2025-11-07T15:14:56,046 [INFO ] main org.pytorch.serve.ModelServer - Inference API bind to: http://0.0.0.0:8080
+2025-11-07T15:14:56,047 [INFO ] main org.pytorch.serve.ModelServer - Initialize Management server with: EpollServerSocketChannel.
+2025-11-07T15:14:56,047 [INFO ] main org.pytorch.serve.ModelServer - Initialize Management server with: EpollServerSocketChannel.
+2025-11-07T15:14:56,055 [INFO ] main org.pytorch.serve.ModelServer - Management API bind to: http://0.0.0.0:8081
+2025-11-07T15:14:56,055 [INFO ] main org.pytorch.serve.ModelServer - Management API bind to: http://0.0.0.0:8081
+2025-11-07T15:14:56,055 [INFO ] main org.pytorch.serve.ModelServer - Initialize Metrics server with: EpollServerSocketChannel.
+2025-11-07T15:14:56,055 [INFO ] main org.pytorch.serve.ModelServer - Initialize Metrics server with: EpollServerSocketChannel.
+2025-11-07T15:14:56,062 [INFO ] main org.pytorch.serve.ModelServer - Metrics API bind to: http://0.0.0.0:8082
+2025-11-07T15:14:56,062 [INFO ] main org.pytorch.serve.ModelServer - Metrics API bind to: http://0.0.0.0:8082
+2025-11-07T15:14:56,824 [INFO ] epollEventLoopGroup-3-1 ACCESS_LOG - /[0:0:0:0:0:0:0:1%0]:34166 "GET /models HTTP/1.1" 200 30
+2025-11-07T15:14:56,828 [INFO ] epollEventLoopGroup-3-1 TS_METRICS - Requests2XX.Count:1.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528496
+2025-11-07T15:14:56,958 [WARN ] pool-3-thread-1 org.pytorch.serve.metrics.MetricCollector - worker pid is not available yet.
+2025-11-07T15:14:56,958 [WARN ] pool-3-thread-1 org.pytorch.serve.metrics.MetricCollector - worker pid is not available yet.
+2025-11-07T15:14:57,255 [INFO ] pool-3-thread-1 TS_METRICS - CPUUtilization.Percent:100.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528497
+2025-11-07T15:14:57,262 [INFO ] pool-3-thread-1 TS_METRICS - DiskAvailable.Gigabytes:320.6967468261719|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528497
+2025-11-07T15:14:57,263 [INFO ] pool-3-thread-1 TS_METRICS - DiskUsage.Gigabytes:117.39075469970703|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528497
+2025-11-07T15:14:57,264 [INFO ] pool-3-thread-1 TS_METRICS - DiskUtilization.Percent:26.8|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528497
+2025-11-07T15:14:57,264 [INFO ] pool-3-thread-1 TS_METRICS - MemoryAvailable.Megabytes:18832.859375|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528497
+2025-11-07T15:14:57,264 [INFO ] pool-3-thread-1 TS_METRICS - MemoryUsed.Megabytes:12773.8828125|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528497
+2025-11-07T15:14:57,265 [INFO ] pool-3-thread-1 TS_METRICS - MemoryUtilization.Percent:41.3|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528497
+2025-11-07T15:15:01,358 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - s_name_part0=/tmp/.ts.sock, s_name_part1=9005, pid=1734536
+2025-11-07T15:15:01,360 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Listening on port: /tmp/.ts.sock.9005
+2025-11-07T15:15:01,378 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Successfully loaded /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml.
+2025-11-07T15:15:01,379 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - [PID]1734536
+2025-11-07T15:15:01,379 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Torch worker started.
+2025-11-07T15:15:01,379 [DEBUG] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9005-pytorch_autoencoder_1.0 State change null -> WORKER_STARTED
+2025-11-07T15:15:01,380 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Python runtime: 3.13.3
+2025-11-07T15:15:01,379 [DEBUG] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9005-pytorch_autoencoder_1.0 State change null -> WORKER_STARTED
+2025-11-07T15:15:01,396 [INFO ] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Connecting to: /tmp/.ts.sock.9005
+2025-11-07T15:15:01,396 [INFO ] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Connecting to: /tmp/.ts.sock.9005
+2025-11-07T15:15:01,424 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Connection accepted: /tmp/.ts.sock.9005.
+2025-11-07T15:15:01,436 [DEBUG] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Flushing req.cmd LOAD repeats 1 to backend at: 1762528501436
+2025-11-07T15:15:01,436 [DEBUG] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Flushing req.cmd LOAD repeats 1 to backend at: 1762528501436
+2025-11-07T15:15:01,451 [INFO ] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Looping backend response at: 1762528501451
+2025-11-07T15:15:01,451 [INFO ] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Looping backend response at: 1762528501451
+2025-11-07T15:15:01,502 [INFO ] W-9001-pytorch_autoencoder_1.0-stdout MODEL_LOG - s_name_part0=/tmp/.ts.sock, s_name_part1=9001, pid=1734524
+2025-11-07T15:15:01,504 [INFO ] W-9001-pytorch_autoencoder_1.0-stdout MODEL_LOG - Listening on port: /tmp/.ts.sock.9001
+2025-11-07T15:15:01,510 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - model_name: pytorch_autoencoder, batchSize: 1
+2025-11-07T15:15:01,529 [INFO ] W-9003-pytorch_autoencoder_1.0-stdout MODEL_LOG - s_name_part0=/tmp/.ts.sock, s_name_part1=9003, pid=1734532
+2025-11-07T15:15:01,531 [INFO ] W-9003-pytorch_autoencoder_1.0-stdout MODEL_LOG - Listening on port: /tmp/.ts.sock.9003
+2025-11-07T15:15:01,537 [INFO ] W-9001-pytorch_autoencoder_1.0-stdout MODEL_LOG - Successfully loaded /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml.
+2025-11-07T15:15:01,537 [INFO ] W-9001-pytorch_autoencoder_1.0-stdout MODEL_LOG - [PID]1734524
+2025-11-07T15:15:01,538 [INFO ] W-9001-pytorch_autoencoder_1.0-stdout MODEL_LOG - Torch worker started.
+2025-11-07T15:15:01,542 [INFO ] W-9001-pytorch_autoencoder_1.0-stdout MODEL_LOG - Python runtime: 3.13.3
+2025-11-07T15:15:01,544 [DEBUG] W-9001-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9001-pytorch_autoencoder_1.0 State change null -> WORKER_STARTED
+2025-11-07T15:15:01,544 [DEBUG] W-9001-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9001-pytorch_autoencoder_1.0 State change null -> WORKER_STARTED
+2025-11-07T15:15:01,544 [INFO ] W-9001-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Connecting to: /tmp/.ts.sock.9001
+2025-11-07T15:15:01,544 [INFO ] W-9001-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Connecting to: /tmp/.ts.sock.9001
+2025-11-07T15:15:01,549 [INFO ] W-9001-pytorch_autoencoder_1.0-stdout MODEL_LOG - Connection accepted: /tmp/.ts.sock.9001.
+2025-11-07T15:15:01,552 [DEBUG] W-9001-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Flushing req.cmd LOAD repeats 1 to backend at: 1762528501552
+2025-11-07T15:15:01,552 [DEBUG] W-9001-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Flushing req.cmd LOAD repeats 1 to backend at: 1762528501552
+2025-11-07T15:15:01,552 [INFO ] W-9001-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Looping backend response at: 1762528501552
+2025-11-07T15:15:01,552 [INFO ] W-9001-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Looping backend response at: 1762528501552
+2025-11-07T15:15:01,557 [INFO ] W-9003-pytorch_autoencoder_1.0-stdout MODEL_LOG - Successfully loaded /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml.
+2025-11-07T15:15:01,560 [INFO ] W-9003-pytorch_autoencoder_1.0-stdout MODEL_LOG - [PID]1734532
+2025-11-07T15:15:01,562 [DEBUG] W-9003-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9003-pytorch_autoencoder_1.0 State change null -> WORKER_STARTED
+2025-11-07T15:15:01,562 [DEBUG] W-9003-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9003-pytorch_autoencoder_1.0 State change null -> WORKER_STARTED
+2025-11-07T15:15:01,568 [INFO ] W-9003-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Connecting to: /tmp/.ts.sock.9003
+2025-11-07T15:15:01,568 [INFO ] W-9003-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Connecting to: /tmp/.ts.sock.9003
+2025-11-07T15:15:01,572 [INFO ] W-9003-pytorch_autoencoder_1.0-stdout MODEL_LOG - Torch worker started.
+2025-11-07T15:15:01,572 [INFO ] W-9003-pytorch_autoencoder_1.0-stdout MODEL_LOG - Python runtime: 3.13.3
+2025-11-07T15:15:01,582 [INFO ] W-9003-pytorch_autoencoder_1.0-stdout MODEL_LOG - Connection accepted: /tmp/.ts.sock.9003.
+2025-11-07T15:15:01,583 [DEBUG] W-9003-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Flushing req.cmd LOAD repeats 1 to backend at: 1762528501583
+2025-11-07T15:15:01,583 [DEBUG] W-9003-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Flushing req.cmd LOAD repeats 1 to backend at: 1762528501583
+2025-11-07T15:15:01,586 [INFO ] W-9003-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Looping backend response at: 1762528501586
+2025-11-07T15:15:01,586 [INFO ] W-9003-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Looping backend response at: 1762528501586
+2025-11-07T15:15:01,596 [INFO ] W-9001-pytorch_autoencoder_1.0-stdout MODEL_LOG - model_name: pytorch_autoencoder, batchSize: 1
+2025-11-07T15:15:01,597 [INFO ] W-9004-pytorch_autoencoder_1.0-stdout MODEL_LOG - s_name_part0=/tmp/.ts.sock, s_name_part1=9004, pid=1734530
+2025-11-07T15:15:01,599 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Model loaded successfully on cpu
+2025-11-07T15:15:01,600 [INFO ] W-9004-pytorch_autoencoder_1.0-stdout MODEL_LOG - Listening on port: /tmp/.ts.sock.9004
+2025-11-07T15:15:01,606 [INFO ] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Backend response time: 151
+2025-11-07T15:15:01,606 [INFO ] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Backend response time: 151
+2025-11-07T15:15:01,607 [DEBUG] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9005-pytorch_autoencoder_1.0 State change WORKER_STARTED -> WORKER_MODEL_LOADED
+2025-11-07T15:15:01,607 [DEBUG] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9005-pytorch_autoencoder_1.0 State change WORKER_STARTED -> WORKER_MODEL_LOADED
+2025-11-07T15:15:01,608 [INFO ] W-9005-pytorch_autoencoder_1.0 TS_METRICS - WorkerLoadTime.Milliseconds:5784.0|#WorkerName:W-9005-pytorch_autoencoder_1.0,Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528501
+2025-11-07T15:15:01,609 [INFO ] W-9005-pytorch_autoencoder_1.0 TS_METRICS - WorkerThreadTime.Milliseconds:21.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528501
+2025-11-07T15:15:01,613 [INFO ] W-9003-pytorch_autoencoder_1.0-stdout MODEL_LOG - model_name: pytorch_autoencoder, batchSize: 1
+2025-11-07T15:15:01,621 [INFO ] W-9004-pytorch_autoencoder_1.0-stdout MODEL_LOG - Successfully loaded /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml.
+2025-11-07T15:15:01,624 [INFO ] W-9004-pytorch_autoencoder_1.0-stdout MODEL_LOG - [PID]1734530
+2025-11-07T15:15:01,626 [DEBUG] W-9004-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9004-pytorch_autoencoder_1.0 State change null -> WORKER_STARTED
+2025-11-07T15:15:01,626 [DEBUG] W-9004-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9004-pytorch_autoencoder_1.0 State change null -> WORKER_STARTED
+2025-11-07T15:15:01,627 [INFO ] W-9004-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Connecting to: /tmp/.ts.sock.9004
+2025-11-07T15:15:01,627 [INFO ] W-9004-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Connecting to: /tmp/.ts.sock.9004
+2025-11-07T15:15:01,627 [INFO ] W-9004-pytorch_autoencoder_1.0-stdout MODEL_LOG - Torch worker started.
+2025-11-07T15:15:01,629 [INFO ] W-9004-pytorch_autoencoder_1.0-stdout MODEL_LOG - Python runtime: 3.13.3
+2025-11-07T15:15:01,632 [INFO ] W-9004-pytorch_autoencoder_1.0-stdout MODEL_LOG - Connection accepted: /tmp/.ts.sock.9004.
+2025-11-07T15:15:01,634 [DEBUG] W-9004-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Flushing req.cmd LOAD repeats 1 to backend at: 1762528501634
+2025-11-07T15:15:01,634 [DEBUG] W-9004-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Flushing req.cmd LOAD repeats 1 to backend at: 1762528501634
+2025-11-07T15:15:01,635 [INFO ] W-9004-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Looping backend response at: 1762528501635
+2025-11-07T15:15:01,635 [INFO ] W-9004-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Looping backend response at: 1762528501635
+2025-11-07T15:15:01,671 [INFO ] W-9004-pytorch_autoencoder_1.0-stdout MODEL_LOG - model_name: pytorch_autoencoder, batchSize: 1
+2025-11-07T15:15:01,680 [INFO ] W-9007-pytorch_autoencoder_1.0-stdout MODEL_LOG - s_name_part0=/tmp/.ts.sock, s_name_part1=9007, pid=1734535
+2025-11-07T15:15:01,685 [INFO ] W-9007-pytorch_autoencoder_1.0-stdout MODEL_LOG - Listening on port: /tmp/.ts.sock.9007
+2025-11-07T15:15:01,695 [INFO ] W-9003-pytorch_autoencoder_1.0-stdout MODEL_LOG - Model loaded successfully on cpu
+2025-11-07T15:15:01,697 [INFO ] W-9003-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Backend response time: 111
+2025-11-07T15:15:01,697 [INFO ] W-9003-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Backend response time: 111
+2025-11-07T15:15:01,698 [DEBUG] W-9003-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9003-pytorch_autoencoder_1.0 State change WORKER_STARTED -> WORKER_MODEL_LOADED
+2025-11-07T15:15:01,698 [DEBUG] W-9003-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9003-pytorch_autoencoder_1.0 State change WORKER_STARTED -> WORKER_MODEL_LOADED
+2025-11-07T15:15:01,698 [INFO ] W-9003-pytorch_autoencoder_1.0 TS_METRICS - WorkerLoadTime.Milliseconds:5876.0|#WorkerName:W-9003-pytorch_autoencoder_1.0,Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528501
+2025-11-07T15:15:01,699 [INFO ] W-9003-pytorch_autoencoder_1.0 TS_METRICS - WorkerThreadTime.Milliseconds:5.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528501
+2025-11-07T15:15:01,704 [INFO ] W-9001-pytorch_autoencoder_1.0-stdout MODEL_LOG - Model loaded successfully on cpu
+2025-11-07T15:15:01,705 [INFO ] W-9001-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Backend response time: 152
+2025-11-07T15:15:01,705 [INFO ] W-9001-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Backend response time: 152
+2025-11-07T15:15:01,706 [DEBUG] W-9001-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9001-pytorch_autoencoder_1.0 State change WORKER_STARTED -> WORKER_MODEL_LOADED
+2025-11-07T15:15:01,706 [DEBUG] W-9001-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9001-pytorch_autoencoder_1.0 State change WORKER_STARTED -> WORKER_MODEL_LOADED
+2025-11-07T15:15:01,707 [INFO ] W-9001-pytorch_autoencoder_1.0 TS_METRICS - WorkerLoadTime.Milliseconds:5886.0|#WorkerName:W-9001-pytorch_autoencoder_1.0,Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528501
+2025-11-07T15:15:01,709 [INFO ] W-9007-pytorch_autoencoder_1.0-stdout MODEL_LOG - Successfully loaded /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml.
+2025-11-07T15:15:01,709 [INFO ] W-9007-pytorch_autoencoder_1.0-stdout MODEL_LOG - [PID]1734535
+2025-11-07T15:15:01,709 [INFO ] W-9001-pytorch_autoencoder_1.0 TS_METRICS - WorkerThreadTime.Milliseconds:5.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528501
+2025-11-07T15:15:01,710 [INFO ] W-9007-pytorch_autoencoder_1.0-stdout MODEL_LOG - Torch worker started.
+2025-11-07T15:15:01,710 [INFO ] W-9007-pytorch_autoencoder_1.0-stdout MODEL_LOG - Python runtime: 3.13.3
+2025-11-07T15:15:01,711 [DEBUG] W-9007-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9007-pytorch_autoencoder_1.0 State change null -> WORKER_STARTED
+2025-11-07T15:15:01,711 [DEBUG] W-9007-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9007-pytorch_autoencoder_1.0 State change null -> WORKER_STARTED
+2025-11-07T15:15:01,711 [INFO ] W-9007-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Connecting to: /tmp/.ts.sock.9007
+2025-11-07T15:15:01,711 [INFO ] W-9007-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Connecting to: /tmp/.ts.sock.9007
+2025-11-07T15:15:01,714 [DEBUG] W-9007-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Flushing req.cmd LOAD repeats 1 to backend at: 1762528501714
+2025-11-07T15:15:01,714 [DEBUG] W-9007-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Flushing req.cmd LOAD repeats 1 to backend at: 1762528501714
+2025-11-07T15:15:01,714 [INFO ] W-9007-pytorch_autoencoder_1.0-stdout MODEL_LOG - Connection accepted: /tmp/.ts.sock.9007.
+2025-11-07T15:15:01,716 [INFO ] W-9007-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Looping backend response at: 1762528501716
+2025-11-07T15:15:01,716 [INFO ] W-9007-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Looping backend response at: 1762528501716
+2025-11-07T15:15:01,722 [INFO ] W-9006-pytorch_autoencoder_1.0-stdout MODEL_LOG - s_name_part0=/tmp/.ts.sock, s_name_part1=9006, pid=1734533
+2025-11-07T15:15:01,723 [INFO ] W-9006-pytorch_autoencoder_1.0-stdout MODEL_LOG - Listening on port: /tmp/.ts.sock.9006
+2025-11-07T15:15:01,728 [INFO ] W-9004-pytorch_autoencoder_1.0-stdout MODEL_LOG - Model loaded successfully on cpu
+2025-11-07T15:15:01,730 [INFO ] W-9004-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Backend response time: 95
+2025-11-07T15:15:01,730 [INFO ] W-9004-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Backend response time: 95
+2025-11-07T15:15:01,730 [DEBUG] W-9004-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9004-pytorch_autoencoder_1.0 State change WORKER_STARTED -> WORKER_MODEL_LOADED
+2025-11-07T15:15:01,730 [DEBUG] W-9004-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9004-pytorch_autoencoder_1.0 State change WORKER_STARTED -> WORKER_MODEL_LOADED
+2025-11-07T15:15:01,731 [INFO ] W-9004-pytorch_autoencoder_1.0 TS_METRICS - WorkerLoadTime.Milliseconds:5908.0|#WorkerName:W-9004-pytorch_autoencoder_1.0,Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528501
+2025-11-07T15:15:01,731 [INFO ] W-9004-pytorch_autoencoder_1.0 TS_METRICS - WorkerThreadTime.Milliseconds:2.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528501
+2025-11-07T15:15:01,742 [INFO ] W-9006-pytorch_autoencoder_1.0-stdout MODEL_LOG - Successfully loaded /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml.
+2025-11-07T15:15:01,743 [INFO ] W-9006-pytorch_autoencoder_1.0-stdout MODEL_LOG - [PID]1734533
+2025-11-07T15:15:01,742 [INFO ] W-9007-pytorch_autoencoder_1.0-stdout MODEL_LOG - model_name: pytorch_autoencoder, batchSize: 1
+2025-11-07T15:15:01,744 [DEBUG] W-9006-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9006-pytorch_autoencoder_1.0 State change null -> WORKER_STARTED
+2025-11-07T15:15:01,744 [DEBUG] W-9006-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9006-pytorch_autoencoder_1.0 State change null -> WORKER_STARTED
+2025-11-07T15:15:01,744 [INFO ] W-9006-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Connecting to: /tmp/.ts.sock.9006
+2025-11-07T15:15:01,744 [INFO ] W-9006-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Connecting to: /tmp/.ts.sock.9006
+2025-11-07T15:15:01,745 [INFO ] W-9006-pytorch_autoencoder_1.0-stdout MODEL_LOG - Torch worker started.
+2025-11-07T15:15:01,745 [INFO ] W-9006-pytorch_autoencoder_1.0-stdout MODEL_LOG - Python runtime: 3.13.3
+2025-11-07T15:15:01,748 [DEBUG] W-9006-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Flushing req.cmd LOAD repeats 1 to backend at: 1762528501748
+2025-11-07T15:15:01,748 [DEBUG] W-9006-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Flushing req.cmd LOAD repeats 1 to backend at: 1762528501748
+2025-11-07T15:15:01,748 [INFO ] W-9006-pytorch_autoencoder_1.0-stdout MODEL_LOG - Connection accepted: /tmp/.ts.sock.9006.
+2025-11-07T15:15:01,749 [INFO ] W-9006-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Looping backend response at: 1762528501749
+2025-11-07T15:15:01,749 [INFO ] W-9006-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Looping backend response at: 1762528501749
+2025-11-07T15:15:01,774 [INFO ] W-9006-pytorch_autoencoder_1.0-stdout MODEL_LOG - model_name: pytorch_autoencoder, batchSize: 1
+2025-11-07T15:15:01,800 [INFO ] W-9007-pytorch_autoencoder_1.0-stdout MODEL_LOG - Model loaded successfully on cpu
+2025-11-07T15:15:01,801 [INFO ] W-9007-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Backend response time: 85
+2025-11-07T15:15:01,801 [INFO ] W-9007-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Backend response time: 85
+2025-11-07T15:15:01,801 [DEBUG] W-9007-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9007-pytorch_autoencoder_1.0 State change WORKER_STARTED -> WORKER_MODEL_LOADED
+2025-11-07T15:15:01,801 [DEBUG] W-9007-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9007-pytorch_autoencoder_1.0 State change WORKER_STARTED -> WORKER_MODEL_LOADED
+2025-11-07T15:15:01,801 [INFO ] W-9007-pytorch_autoencoder_1.0 TS_METRICS - WorkerLoadTime.Milliseconds:5977.0|#WorkerName:W-9007-pytorch_autoencoder_1.0,Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528501
+2025-11-07T15:15:01,802 [INFO ] W-9007-pytorch_autoencoder_1.0 TS_METRICS - WorkerThreadTime.Milliseconds:3.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528501
+2025-11-07T15:15:01,823 [INFO ] W-9006-pytorch_autoencoder_1.0-stdout MODEL_LOG - Model loaded successfully on cpu
+2025-11-07T15:15:01,823 [INFO ] W-9006-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Backend response time: 74
+2025-11-07T15:15:01,823 [INFO ] W-9006-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Backend response time: 74
+2025-11-07T15:15:01,824 [DEBUG] W-9006-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9006-pytorch_autoencoder_1.0 State change WORKER_STARTED -> WORKER_MODEL_LOADED
+2025-11-07T15:15:01,824 [DEBUG] W-9006-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9006-pytorch_autoencoder_1.0 State change WORKER_STARTED -> WORKER_MODEL_LOADED
+2025-11-07T15:15:01,824 [INFO ] W-9006-pytorch_autoencoder_1.0 TS_METRICS - WorkerLoadTime.Milliseconds:6001.0|#WorkerName:W-9006-pytorch_autoencoder_1.0,Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528501
+2025-11-07T15:15:01,824 [INFO ] W-9006-pytorch_autoencoder_1.0 TS_METRICS - WorkerThreadTime.Milliseconds:2.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528501
+2025-11-07T15:15:01,914 [INFO ] W-9002-pytorch_autoencoder_1.0-stdout MODEL_LOG - s_name_part0=/tmp/.ts.sock, s_name_part1=9002, pid=1734531
+2025-11-07T15:15:01,915 [INFO ] W-9002-pytorch_autoencoder_1.0-stdout MODEL_LOG - Listening on port: /tmp/.ts.sock.9002
+2025-11-07T15:15:01,927 [INFO ] W-9002-pytorch_autoencoder_1.0-stdout MODEL_LOG - Successfully loaded /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml.
+2025-11-07T15:15:01,927 [INFO ] W-9002-pytorch_autoencoder_1.0-stdout MODEL_LOG - [PID]1734531
+2025-11-07T15:15:01,928 [INFO ] W-9002-pytorch_autoencoder_1.0-stdout MODEL_LOG - Torch worker started.
+2025-11-07T15:15:01,928 [INFO ] W-9002-pytorch_autoencoder_1.0-stdout MODEL_LOG - Python runtime: 3.13.3
+2025-11-07T15:15:01,928 [DEBUG] W-9002-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9002-pytorch_autoencoder_1.0 State change null -> WORKER_STARTED
+2025-11-07T15:15:01,928 [DEBUG] W-9002-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9002-pytorch_autoencoder_1.0 State change null -> WORKER_STARTED
+2025-11-07T15:15:01,929 [INFO ] W-9002-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Connecting to: /tmp/.ts.sock.9002
+2025-11-07T15:15:01,929 [INFO ] W-9002-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Connecting to: /tmp/.ts.sock.9002
+2025-11-07T15:15:01,949 [DEBUG] W-9002-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Flushing req.cmd LOAD repeats 1 to backend at: 1762528501949
+2025-11-07T15:15:01,949 [INFO ] W-9002-pytorch_autoencoder_1.0-stdout MODEL_LOG - Connection accepted: /tmp/.ts.sock.9002.
+2025-11-07T15:15:01,949 [DEBUG] W-9002-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Flushing req.cmd LOAD repeats 1 to backend at: 1762528501949
+2025-11-07T15:15:01,949 [INFO ] W-9002-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Looping backend response at: 1762528501949
+2025-11-07T15:15:01,949 [INFO ] W-9002-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Looping backend response at: 1762528501949
+2025-11-07T15:15:01,970 [INFO ] W-9002-pytorch_autoencoder_1.0-stdout MODEL_LOG - model_name: pytorch_autoencoder, batchSize: 1
+2025-11-07T15:15:01,978 [INFO ] W-9000-pytorch_autoencoder_1.0-stdout MODEL_LOG - s_name_part0=/tmp/.ts.sock, s_name_part1=9000, pid=1734534
+2025-11-07T15:15:01,980 [INFO ] W-9000-pytorch_autoencoder_1.0-stdout MODEL_LOG - Listening on port: /tmp/.ts.sock.9000
+2025-11-07T15:15:01,992 [INFO ] W-9000-pytorch_autoencoder_1.0-stdout MODEL_LOG - Successfully loaded /usr/local/google/home/statmike/.cache/pypoetry/virtualenvs/frameworks-pytorch-0KVJlKeQ-py3.13/lib/python3.13/site-packages/ts/configs/metrics.yaml.
+2025-11-07T15:15:01,992 [INFO ] W-9000-pytorch_autoencoder_1.0-stdout MODEL_LOG - [PID]1734534
+2025-11-07T15:15:01,993 [DEBUG] W-9000-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9000-pytorch_autoencoder_1.0 State change null -> WORKER_STARTED
+2025-11-07T15:15:01,993 [DEBUG] W-9000-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9000-pytorch_autoencoder_1.0 State change null -> WORKER_STARTED
+2025-11-07T15:15:01,993 [INFO ] W-9000-pytorch_autoencoder_1.0-stdout MODEL_LOG - Torch worker started.
+2025-11-07T15:15:01,993 [INFO ] W-9000-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Connecting to: /tmp/.ts.sock.9000
+2025-11-07T15:15:01,993 [INFO ] W-9000-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Connecting to: /tmp/.ts.sock.9000
+2025-11-07T15:15:01,993 [INFO ] W-9000-pytorch_autoencoder_1.0-stdout MODEL_LOG - Python runtime: 3.13.3
+2025-11-07T15:15:01,995 [DEBUG] W-9000-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Flushing req.cmd LOAD repeats 1 to backend at: 1762528501995
+2025-11-07T15:15:01,995 [DEBUG] W-9000-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Flushing req.cmd LOAD repeats 1 to backend at: 1762528501995
+2025-11-07T15:15:01,995 [INFO ] W-9000-pytorch_autoencoder_1.0-stdout MODEL_LOG - Connection accepted: /tmp/.ts.sock.9000.
+2025-11-07T15:15:01,995 [INFO ] W-9000-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Looping backend response at: 1762528501995
+2025-11-07T15:15:01,995 [INFO ] W-9000-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Looping backend response at: 1762528501995
+2025-11-07T15:15:02,016 [INFO ] W-9002-pytorch_autoencoder_1.0-stdout MODEL_LOG - Model loaded successfully on cpu
+2025-11-07T15:15:02,016 [INFO ] W-9002-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Backend response time: 67
+2025-11-07T15:15:02,016 [INFO ] W-9002-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Backend response time: 67
+2025-11-07T15:15:02,017 [DEBUG] W-9002-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9002-pytorch_autoencoder_1.0 State change WORKER_STARTED -> WORKER_MODEL_LOADED
+2025-11-07T15:15:02,017 [INFO ] W-9000-pytorch_autoencoder_1.0-stdout MODEL_LOG - model_name: pytorch_autoencoder, batchSize: 1
+2025-11-07T15:15:02,017 [DEBUG] W-9002-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9002-pytorch_autoencoder_1.0 State change WORKER_STARTED -> WORKER_MODEL_LOADED
+2025-11-07T15:15:02,017 [INFO ] W-9002-pytorch_autoencoder_1.0 TS_METRICS - WorkerLoadTime.Milliseconds:6195.0|#WorkerName:W-9002-pytorch_autoencoder_1.0,Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528502
+2025-11-07T15:15:02,018 [INFO ] W-9002-pytorch_autoencoder_1.0 TS_METRICS - WorkerThreadTime.Milliseconds:1.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528502
+2025-11-07T15:15:02,061 [INFO ] W-9000-pytorch_autoencoder_1.0-stdout MODEL_LOG - Model loaded successfully on cpu
+2025-11-07T15:15:02,062 [INFO ] W-9000-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Backend response time: 67
+2025-11-07T15:15:02,062 [INFO ] W-9000-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Backend response time: 67
+2025-11-07T15:15:02,063 [DEBUG] W-9000-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9000-pytorch_autoencoder_1.0 State change WORKER_STARTED -> WORKER_MODEL_LOADED
+2025-11-07T15:15:02,063 [DEBUG] W-9000-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - W-9000-pytorch_autoencoder_1.0 State change WORKER_STARTED -> WORKER_MODEL_LOADED
+2025-11-07T15:15:02,063 [INFO ] W-9000-pytorch_autoencoder_1.0 TS_METRICS - WorkerLoadTime.Milliseconds:6244.0|#WorkerName:W-9000-pytorch_autoencoder_1.0,Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528502
+2025-11-07T15:15:02,064 [INFO ] W-9000-pytorch_autoencoder_1.0 TS_METRICS - WorkerThreadTime.Milliseconds:1.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528502
+2025-11-07T15:15:16,680 [INFO ] epollEventLoopGroup-3-2 TS_METRICS - ts_inference_requests_total.Count:1.0|#model_name:pytorch_autoencoder,model_version:default|#hostname:statmike.c.googlers.com,timestamp:1762528516
+2025-11-07T15:15:16,696 [DEBUG] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Flushing req.cmd PREDICT repeats 1 to backend at: 1762528516681
+2025-11-07T15:15:16,696 [DEBUG] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Flushing req.cmd PREDICT repeats 1 to backend at: 1762528516681
+2025-11-07T15:15:16,697 [INFO ] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Looping backend response at: 1762528516697
+2025-11-07T15:15:16,697 [INFO ] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Looping backend response at: 1762528516697
+2025-11-07T15:15:16,699 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Backend received inference at: 1762528516
+2025-11-07T15:15:16,699 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Received 1 request(s)
+2025-11-07T15:15:16,699 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Preprocessing 1 instances
+2025-11-07T15:15:16,700 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Input tensor shape: torch.Size([1, 30])
+2025-11-07T15:15:16,778 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_LOG - Postprocessing 1 predictions
+2025-11-07T15:15:16,778 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout org.pytorch.serve.wlm.WorkerLifeCycle - result=[METRICS]PredictionTime.Milliseconds:79.11|#ModelName:pytorch_autoencoder,Level:Model|#type:GAUGE|#hostname:statmike.c.googlers.com,1762528516,89cf30a1-93af-4f39-8b10-39c1b6f015ce, pattern=[METRICS]
+2025-11-07T15:15:16,778 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout org.pytorch.serve.wlm.WorkerLifeCycle - result=[METRICS]PredictionTime.Milliseconds:79.11|#ModelName:pytorch_autoencoder,Level:Model|#type:GAUGE|#hostname:statmike.c.googlers.com,1762528516,89cf30a1-93af-4f39-8b10-39c1b6f015ce, pattern=[METRICS]
+2025-11-07T15:15:16,779 [INFO ] W-9005-pytorch_autoencoder_1.0-stdout MODEL_METRICS - PredictionTime.ms:79.11|#ModelName:pytorch_autoencoder,Level:Model|#hostname:statmike.c.googlers.com,requestID:89cf30a1-93af-4f39-8b10-39c1b6f015ce,timestamp:1762528516
+2025-11-07T15:15:16,780 [INFO ] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.BatchAggregator - Sending response for jobId 89cf30a1-93af-4f39-8b10-39c1b6f015ce
+2025-11-07T15:15:16,780 [INFO ] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.BatchAggregator - Sending response for jobId 89cf30a1-93af-4f39-8b10-39c1b6f015ce
+2025-11-07T15:15:16,781 [INFO ] W-9005-pytorch_autoencoder_1.0 ACCESS_LOG - /[0:0:0:0:0:0:0:1%0]:37592 "POST /predictions/pytorch_autoencoder HTTP/1.1" 200 104
+2025-11-07T15:15:16,781 [INFO ] W-9005-pytorch_autoencoder_1.0 TS_METRICS - Requests2XX.Count:1.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528516
+2025-11-07T15:15:16,782 [INFO ] W-9005-pytorch_autoencoder_1.0 TS_METRICS - ts_inference_latency_microseconds.Microseconds:100262.079|#model_name:pytorch_autoencoder,model_version:default|#hostname:statmike.c.googlers.com,timestamp:1762528516
+2025-11-07T15:15:16,782 [INFO ] W-9005-pytorch_autoencoder_1.0 TS_METRICS - ts_queue_latency_microseconds.Microseconds:368.912|#model_name:pytorch_autoencoder,model_version:default|#hostname:statmike.c.googlers.com,timestamp:1762528516
+2025-11-07T15:15:16,782 [DEBUG] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.job.RestJob - Waiting time ns: 368912, Backend time ns: 101616203
+2025-11-07T15:15:16,782 [DEBUG] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.job.RestJob - Waiting time ns: 368912, Backend time ns: 101616203
+2025-11-07T15:15:16,783 [INFO ] W-9005-pytorch_autoencoder_1.0 TS_METRICS - QueueTime.Milliseconds:0.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528516
+2025-11-07T15:15:16,783 [INFO ] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Backend response time: 83
+2025-11-07T15:15:16,783 [INFO ] W-9005-pytorch_autoencoder_1.0 org.pytorch.serve.wlm.WorkerThread - Backend response time: 83
+2025-11-07T15:15:16,783 [INFO ] W-9005-pytorch_autoencoder_1.0 TS_METRICS - WorkerThreadTime.Milliseconds:19.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528516
+2025-11-07T15:15:20,593 [INFO ] epollEventLoopGroup-3-3 ACCESS_LOG - /[0:0:0:0:0:0:0:1%0]:56840 "GET /models HTTP/1.1" 200 1
+2025-11-07T15:15:20,594 [INFO ] epollEventLoopGroup-3-3 TS_METRICS - Requests2XX.Count:1.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528520
+2025-11-07T15:15:20,626 [INFO ] epollEventLoopGroup-3-4 ACCESS_LOG - /[0:0:0:0:0:0:0:1%0]:56844 "GET /models/pytorch_autoencoder HTTP/1.1" 200 11
+2025-11-07T15:15:20,627 [INFO ] epollEventLoopGroup-3-4 TS_METRICS - Requests2XX.Count:1.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528520
+2025-11-07T15:15:23,876 [INFO ] epollEventLoopGroup-4-1 ACCESS_LOG - /[0:0:0:0:0:0:0:1%0]:56268 "GET /metrics HTTP/1.1" 200 3
+2025-11-07T15:15:23,876 [INFO ] epollEventLoopGroup-4-1 TS_METRICS - Requests2XX.Count:1.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528523
+2025-11-07T15:15:33,583 [INFO ] epollEventLoopGroup-4-1 ACCESS_LOG - /[0:0:0:0:0:0:0:1%0]:37882 "GET /metrics HTTP/1.1" 200 0
+2025-11-07T15:15:33,584 [INFO ] epollEventLoopGroup-4-1 TS_METRICS - Requests2XX.Count:1.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528533
+2025-11-07T15:15:35,633 [INFO ] epollEventLoopGroup-4-1 ACCESS_LOG - /[0:0:0:0:0:0:0:1%0]:37886 "GET /metrics HTTP/1.1" 200 1
+2025-11-07T15:15:35,633 [INFO ] epollEventLoopGroup-4-1 TS_METRICS - Requests2XX.Count:1.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528535
+2025-11-07T15:15:38,312 [INFO ] epollEventLoopGroup-4-1 ACCESS_LOG - /[0:0:0:0:0:0:0:1%0]:48242 "GET /metrics HTTP/1.1" 200 0
+2025-11-07T15:15:38,312 [INFO ] epollEventLoopGroup-4-1 TS_METRICS - Requests2XX.Count:1.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528538
+2025-11-07T15:15:43,708 [INFO ] epollEventLoopGroup-4-1 ACCESS_LOG - /[0:0:0:0:0:0:0:1%0]:48244 "GET /metrics HTTP/1.1" 200 1
+2025-11-07T15:15:43,708 [INFO ] epollEventLoopGroup-4-1 TS_METRICS - Requests2XX.Count:1.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528543
+2025-11-07T15:15:45,798 [INFO ] epollEventLoopGroup-4-1 ACCESS_LOG - /[0:0:0:0:0:0:0:1%0]:48248 "GET /metrics HTTP/1.1" 200 0
+2025-11-07T15:15:45,799 [INFO ] epollEventLoopGroup-4-1 TS_METRICS - Requests2XX.Count:1.0|#Level:Host|#hostname:statmike.c.googlers.com,timestamp:1762528545
