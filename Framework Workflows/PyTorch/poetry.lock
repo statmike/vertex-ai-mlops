@@ -1566,7 +1566,7 @@ google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0"
 grpc-google-iam-v1 = ">=0.14.0,<1.0.0"
 grpcio = [
     {version = ">=1.75.1,<2.0.0", markers = "python_version >= \"3.14\""},
-    {version = ">=1.33.2,<2.0.0", markers = "python_version < \"3.14\""},
+    {version = ">=1.33.2,<2.0.0"},
 ]
 proto-plus = {version = ">=1.25.0,<2.0.0", markers = "python_version >= \"3.13\""}
 protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<7.0.0"
@@ -1849,6 +1849,29 @@ grpc-google-iam-v1 = ">=0.14.0,<1.0.0"
 grpcio = [
     {version = ">=1.75.1,<2.0.0", markers = "python_version >= \"3.14\""},
     {version = ">=1.33.2,<2.0.0"},
+]
+proto-plus = {version = ">=1.25.0,<2.0.0", markers = "python_version >= \"3.13\""}
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<7.0.0"
+
+[[package]]
+name = "google-cloud-run"
+version = "0.12.0"
+description = "Google Cloud Run API client library"
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "google_cloud_run-0.12.0-py3-none-any.whl", hash = "sha256:396d52c366a2febdd9be806813f71fc7701262458674f376fe649f92a25652f1"},
+    {file = "google_cloud_run-0.12.0.tar.gz", hash = "sha256:b97ac4c4abdb495f49163105494cc9f95d7a07b9dd8d5f4fdb3fb0f3a674325e"},
+]
+
+[package.dependencies]
+google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0", extras = ["grpc"]}
+google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0"
+grpc-google-iam-v1 = ">=0.14.0,<1.0.0"
+grpcio = [
+    {version = ">=1.75.1,<2.0.0", markers = "python_version >= \"3.14\""},
+    {version = ">=1.33.2,<2.0.0", markers = "python_version < \"3.14\""},
 ]
 proto-plus = {version = ">=1.25.0,<2.0.0", markers = "python_version >= \"3.13\""}
 protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<7.0.0"
@@ -5631,6 +5654,38 @@ files = [
 enum-compat = "*"
 
 [[package]]
+name = "torch-workflow-archiver"
+version = "0.2.15"
+description = "Torch Workflow Archiver is used for creating archives of workflow designed using trained neural net models that can be consumed by TorchServe inference"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "torch_workflow_archiver-0.2.15-py3-none-any.whl", hash = "sha256:0c7a478bcd2f6bfdd32d9f84458588ccd42ec8ef42a18093eac4c129bc896844"},
+]
+
+[[package]]
+name = "torchserve"
+version = "0.12.0"
+description = "TorchServe is a tool for serving neural net models for inference"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "torchserve-0.12.0-py3-none-any.whl", hash = "sha256:db127160102d29f390964f758b7ecc5039d3d278fafc85bf9994c273b3ef6954"},
+]
+
+[package.dependencies]
+packaging = "*"
+Pillow = "*"
+psutil = "*"
+wheel = "*"
+
+[package.extras]
+ipex = ["intel-extension-for-pytorch"]
+onnx = ["numpy", "onnx", "onnx-runtime"]
+
+[[package]]
 name = "torchvision"
 version = "0.24.0"
 description = "image and video datasets and models for torch deep learning"
@@ -5892,6 +5947,21 @@ files = [
     {file = "websockets-15.0.1-py3-none-any.whl", hash = "sha256:f7a866fbc1e97b5c617ee4116daaa09b722101d4a3c170c787450ba409f9736f"},
     {file = "websockets-15.0.1.tar.gz", hash = "sha256:82544de02076bafba038ce055ee6412d68da13ab47f0c60cab827346de828dee"},
 ]
+
+[[package]]
+name = "wheel"
+version = "0.45.1"
+description = "A built-package format for Python"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "wheel-0.45.1-py3-none-any.whl", hash = "sha256:708e7481cc80179af0e556bbf0cc00b8444c7321e2700b8d8580231d13017248"},
+    {file = "wheel-0.45.1.tar.gz", hash = "sha256:661e1abd9198507b1409a20c02106d9670b2576e916d58f520316666abca6729"},
+]
+
+[package.extras]
+test = ["pytest (>=6.0.0)", "setuptools (>=65)"]
 
 [[package]]
 name = "yarl"
@@ -6173,4 +6243,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<3.15"
-content-hash = "54b56c0762a20e6e190f9b85727f5c667b2906b236b735ef6140a9380e693762"
+content-hash = "38dc28a865ee4a07fb2eaa2993b5d31b5b889100c01139b2eec86ffe4308adb3"
