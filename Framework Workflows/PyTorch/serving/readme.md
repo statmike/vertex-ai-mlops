@@ -151,9 +151,12 @@ With `n1-standard-4` machine (4 vCPU, 15 GB RAM):
 - ✅ Process BigQuery tables (bounded source)
 - ✅ Process Pub/Sub streams (unbounded source)
 - ✅ Automatic batching for efficiency
-- ✅ Horizontal scaling
+- ✅ Horizontal scaling with autoscaling
+- ✅ Configurable worker machine types and scaling limits
 - ✅ Pay only when pipeline runs
 - ✅ Supports both local models and Vertex AI Endpoints
+- ✅ Job monitoring via SDK
+- ✅ Centralized cleanup for all resources
 
 **Cost**: Pay per second of worker compute time (no cost when not running)
 
@@ -165,8 +168,25 @@ With `n1-standard-4` machine (4 vCPU, 15 GB RAM):
 - Downloads .mar file from GCS
 - Extracts .pt file from .mar archive
 - Uploads .pt to GCS for RunInference workers
-- Creates BigQuery tables for results
-- Creates Pub/Sub topics and subscriptions
+- Creates BigQuery tables for results (4 tables: batch/streaming × local/vertex)
+- Creates Pub/Sub topics and subscriptions for streaming
+
+### Resource Cleanup
+
+[dataflow-cleanup.ipynb](./dataflow-cleanup.ipynb) - Centralized cleanup for all Dataflow resources:
+- ✅ Stop running Dataflow jobs (streaming and batch)
+- ✅ Clean BigQuery tables (truncate or delete)
+- ✅ Delete Pub/Sub topics and subscriptions
+- ✅ Delete GCS model files
+- ✅ Granular control via configuration flags
+- ✅ Safety checks and confirmation prompts
+- ✅ Pattern-based job filtering
+
+**Why centralized cleanup?**
+- Streaming jobs run continuously until cancelled (avoiding ongoing costs)
+- One location to manage all test resources
+- Flexible cleanup during testing (e.g., truncate tables without deleting schema)
+- Prevents resource accumulation across multiple test runs
 
 ### Workflow Matrix
 
@@ -182,14 +202,57 @@ Loads .pt file directly in Dataflow workers (in-process):
 - **Lower cost**: No endpoint overhead
 - **Higher performance**: No network calls
 - **Simpler setup**: No endpoint deployment needed
+- **Worker requirements**: Need sufficient memory to load PyTorch model
 - **Best for**: High-throughput batch jobs
+
+**Notebooks:**
+- [dataflow-batch-runinference.ipynb](./dataflow-batch-runinference.ipynb) - Batch processing with local model
+- [dataflow-streaming-runinference.ipynb](./dataflow-streaming-runinference.ipynb) - Streaming with local model
 
 #### Vertex Endpoint Inference
 Calls deployed Vertex AI Endpoint via API:
 - **Centralized model**: Same endpoint used by multiple pipelines
 - **Model updates**: Update endpoint without redeploying pipeline
 - **Resource separation**: Endpoint scales independently
+- **Worker requirements**: Lower memory needs (only API client)
 - **Best for**: Shared model across services
+
+**Notebooks:**
+- [dataflow-batch-runinference-vertex.ipynb](./dataflow-batch-runinference-vertex.ipynb) - Batch processing via endpoint
+- [dataflow-streaming-runinference-vertex.ipynb](./dataflow-streaming-runinference-vertex.ipynb) - Streaming via endpoint
+
+### Worker Configuration
+
+All Dataflow notebooks include configurable worker resources:
+
+**Machine Type**: `n1-standard-4` (4 vCPUs, 15 GB memory)
+- Adjust based on model size and throughput needs
+- Local model: Higher memory for model loading
+- Vertex endpoint: Lower memory (API calls only)
+
+**Autoscaling**:
+- **Batch jobs**: MIN_WORKERS=2, MAX_WORKERS=10
+  - Jobs complete automatically when data exhausted
+  - Lower max to control costs for bounded datasets
+- **Streaming jobs**: MIN_WORKERS=2, MAX_WORKERS=20
+  - Jobs run continuously until cancelled
+  - Higher max to handle traffic bursts
+
+**GPU Support**: Optional for local model inference (not applicable for Vertex endpoints)
+
+### Job Monitoring
+
+All Dataflow notebooks include job monitoring:
+
+**Batch Jobs**:
+- Non-blocking pipeline execution
+- Programmatic status polling (30-second intervals)
+- Automatic completion detection
+- Final status summary with elapsed time
+
+**Streaming Jobs**:
+- Link to Dataflow Console for real-time metrics
+- Use centralized cleanup notebook to stop jobs
 
 ### Quick Start
 
@@ -200,6 +263,8 @@ Calls deployed Vertex AI Endpoint via API:
 **For Vertex Endpoint workflows**, also deploy an endpoint first:
 - [vertex-ai-endpoint-prebuilt-container.ipynb](./vertex-ai-endpoint-prebuilt-container.ipynb) OR
 - [vertex-ai-endpoint-custom-container.ipynb](./vertex-ai-endpoint-custom-container.ipynb)
+
+4. When done testing: [dataflow-cleanup.ipynb](./dataflow-cleanup.ipynb)
 
 ---
 
@@ -271,7 +336,7 @@ Local Development → Cloud Run (Serverless) → GCE (VMs) → GKE (Kubernetes)
 For advanced production scenarios, detailed guides are available:
 
 #### Compute Engine Deployment
-[serve-gce.md](./serve-gce.md) - Deploy TorchServe to GCE VMs
+[torchserve-gce.md](./torchserve-gce.md) - Deploy TorchServe to GCE VMs
 
 - Long-running dedicated servers
 - Persistent serving workloads
@@ -285,7 +350,7 @@ For advanced production scenarios, detailed guides are available:
 - Cost-effective for steady loads
 
 #### Kubernetes Deployment
-[serve-gke.md](./serve-gke.md) - Deploy TorchServe to GKE
+[torchserve-gke.md](./torchserve-gke.md) - Deploy TorchServe to GKE
 
 - Multi-model orchestration
 - Advanced scaling strategies
@@ -303,7 +368,7 @@ For advanced production scenarios, detailed guides are available:
 1. Train model: [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)
 2. Start locally: [torchserve-local.ipynb](./torchserve-local.ipynb)
 3. Deploy serverless: [torchserve-cloud-run.ipynb](./torchserve-cloud-run.ipynb)
-4. Scale up as needed: [serve-gce.md](./serve-gce.md) or [serve-gke.md](./serve-gke.md)
+4. Scale up as needed: [torchserve-gce.md](./torchserve-gce.md) or [torchserve-gke.md](./torchserve-gke.md)
 
 ---
 
@@ -420,9 +485,10 @@ See [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb) for complete ex
 - Vertex Endpoint Inference:
   - [Batch RunInference →](./dataflow-batch-runinference-vertex.ipynb)
   - [Streaming RunInference →](./dataflow-streaming-runinference-vertex.ipynb)
+- [Cleanup Resources →](./dataflow-cleanup.ipynb)
 
 ### TorchServe Deployments
 - [Local Development →](./torchserve-local.ipynb)
 - [Cloud Run Deployment →](./torchserve-cloud-run.ipynb)
-- [GCE Deployment Guide →](./serve-gce.md)
-- [GKE Deployment Guide →](./serve-gke.md)
+- [GCE Deployment Guide →](./torchserve-gce.md)
+- [GKE Deployment Guide →](./torchserve-gke.md)
