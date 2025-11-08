@@ -45,9 +45,11 @@ Deploy TorchServe on Google Compute Engine VMs for long-running, dedicated servi
 - **Full control**: Root access, custom networking, persistent storage
 
 **Choose GCE over**:
-- **Cloud Run**: When you need always-on serving (no cold starts acceptable) or specific VM configurations
-- **Local Development**: When you need production deployment with proper infrastructure and uptime
-- **GKE**: When you don't need Kubernetes orchestration complexity (single model, straightforward scaling)
+- **Cloud Run** (`torchserve-cloud-run.ipynb`): When you need always-on serving (no cold starts acceptable) or specific VM configurations
+  - *Tip: Try Cloud Run first to understand containerization and troubleshooting*
+- **Local Development** (`torchserve-local.ipynb`): When you need production deployment with proper infrastructure and uptime
+  - *Tip: Start with local testing to understand TorchServe basics before VM deployment*
+- **GKE** (`torchserve-gke.md`): When you don't need Kubernetes orchestration complexity (single model, straightforward scaling)
 
 **Cost Comparison** (n1-standard-4):
 - **GCE Always-On**: ~$146/month (24/7)

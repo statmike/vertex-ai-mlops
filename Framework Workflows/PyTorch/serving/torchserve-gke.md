@@ -46,9 +46,11 @@ Deploy TorchServe on Google Kubernetes Engine (GKE) for enterprise-scale, multi-
 - **Microservices**: Integration with existing Kubernetes ecosystem
 
 **Choose GKE over**:
-- **Cloud Run**: When you need GPU support, advanced orchestration, or multi-model serving
-- **GCE**: When you need Kubernetes benefits (self-healing, rolling updates, declarative config)
-- **Local**: When you need production-grade deployment with high availability
+- **Cloud Run** (`torchserve-cloud-run.ipynb`): When you need GPU support, advanced orchestration, or multi-model serving
+  - *Tip: Try Cloud Run first for simpler deployments and troubleshooting before moving to Kubernetes*
+- **GCE** (`torchserve-gce.md`): When you need Kubernetes benefits (self-healing, rolling updates, declarative config)
+- **Local** (`torchserve-local.ipynb`): When you need production-grade deployment with high availability
+  - *Tip: Start with local testing to understand TorchServe fundamentals*
 
 **Cost Comparison** (3 n1-standard-4 nodes):
 - **GKE Cluster**: ~$438/month (3 nodes always on) + $73/month cluster management fee
