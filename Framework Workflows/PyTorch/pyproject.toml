@@ -25,9 +25,11 @@ torchserve = "^0.12.0"
 torch-workflow-archiver = "^0.2.15"
 google-cloud-run = "^0.12.0"
 google-cloud-dataflow-client = "^0.10.0"
-locust = "^2.42.2"
 google-cloud-monitoring = "^2.28.0"
 plotly = "^6.4.0"
+nbformat = "^5.10.4"
+aiohttp = {extras = ["speedups"], version = "^3.13.2"}
+google-cloud-bigquery-connection = "^1.19.0"
 
 
 [tool.poetry.group.dev]
