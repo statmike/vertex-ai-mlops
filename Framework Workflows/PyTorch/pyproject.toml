@@ -30,6 +30,9 @@ plotly = "^6.4.0"
 nbformat = "^5.10.4"
 aiohttp = {extras = ["speedups"], version = "^3.13.2"}
 google-cloud-bigquery-connection = "^1.19.0"
+onnx = "^1.19.1"
+onnxruntime = "^1.23.2"
+onnxscript = "^0.5.6"
 
 
 [tool.poetry.group.dev]

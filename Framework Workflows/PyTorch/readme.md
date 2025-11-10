@@ -88,8 +88,22 @@ Learn about different approaches for deploying and serving PyTorch models for in
   - Real-time predictions with auto-scaling
   - SDK and REST API access
   - Built-in monitoring and logging
+- **BigQuery ML**: SQL-based inference directly in BigQuery
+  - [ONNX Import](./serving/bigquery-bqml-import-model-onnx.ipynb) - Convert PyTorch to ONNX and import to BigQuery ML
+    - Model runs natively in BigQuery (no endpoints!)
+    - Lower latency, no endpoint costs
+    - Best for models < 250 MB
+    - SQL-native predictions with `ML.PREDICT()`
+  - [Remote Model](./serving/bigquery-bqml-remote-model-vertex.ipynb) - Call Vertex AI endpoints from BigQuery SQL
+    - Reuse existing Vertex AI endpoints
+    - SQL-based batch scoring
+    - No size limits
+    - Ideal for large models or existing deployments
+  - Batch scoring, scheduled queries, continuous predictions
+  - Perfect for data warehouse integration
 - **Dataflow RunInference**: Batch and streaming inference
   - [Setup](./serving/dataflow-setup.ipynb) - One-time infrastructure setup
+  - [Cleanup](./serving/dataflow-cleanup.ipynb) - Remove Dataflow resources
   - Local Model Inference (in-process):
     - [Batch Processing](./serving/dataflow-batch-runinference.ipynb) - Process BigQuery tables
     - [Streaming Processing](./serving/dataflow-streaming-runinference.ipynb) - Process Pub/Sub streams
@@ -98,8 +112,13 @@ Learn about different approaches for deploying and serving PyTorch models for in
     - [Streaming Processing](./serving/dataflow-streaming-runinference-vertex.ipynb) - Call endpoint for Pub/Sub data
   - Cost-effective for large-scale batch and streaming jobs
 - **TorchServe**: Self-managed model server
+  - [Local Testing](./serving/torchserve-local.ipynb) - Test TorchServe locally before deployment
+  - [Cloud Run Deployment](./serving/torchserve-cloud-run.ipynb) - Serverless TorchServe with auto-scaling
+  - [Google Compute Engine Guide](./serving/torchserve-gce.md) - Deploy on VM instances
+  - [Google Kubernetes Engine Guide](./serving/torchserve-gke.md) - Deploy on GKE clusters
   - Full control over infrastructure
   - Custom deployment environments
+  - Production-grade model serving
 
 See the [serving folder](./serving/) for detailed examples and comparisons.
 
@@ -193,7 +212,7 @@ jupyter lab
 
 Planned additions:
 - PyTorch Lightning integration
-- ONNX export for cross-framework compatibility
 - Distributed training with PyTorch DDP
 - Custom CUDA kernels for performance
 - Quantization and mobile deployment
+- Model monitoring and drift detection

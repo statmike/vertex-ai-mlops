@@ -1,0 +1,11 @@
+{
+  "createdOn": "10/11/2025 13:14:20",
+  "runtime": "python",
+  "model": {
+    "modelName": "pytorch_autoencoder",
+    "serializedFile": "final_model_traced.pt",
+    "handler": "handler.py",
+    "modelVersion": "1.0"
+  },
+  "archiverVersion": "0.12.0"
+}

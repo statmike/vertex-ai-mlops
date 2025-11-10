@@ -37,17 +37,19 @@ This folder contains complete examples of deploying and serving PyTorch models f
 
 ## Overview
 
-After training a PyTorch model (see [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)), you have three main approaches for serving predictions:
+After training a PyTorch model (see [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)), you have four main approaches for serving predictions:
 
 1. **[Vertex AI Endpoints](#1-vertex-ai-endpoints)** - Managed online prediction service
-2. **[Dataflow Integration](#2-dataflow-integration)** - Batch and streaming inference pipelines
-3. **[TorchServe Deployments](#3-torchserve-deployments)** - Portable serving from local to cloud
+2. **[BigQuery ML](#2-bigquery-ml)** - SQL-based inference in BigQuery
+3. **[Dataflow Integration](#3-dataflow-integration)** - Batch and streaming inference pipelines
+4. **[TorchServe Deployments](#4-torchserve-deployments)** - Portable serving from local to cloud
 
 ### Quick Comparison
 
 | Approach | Best For | Management | Cost Model |
 |----------|----------|------------|------------|
 | **Vertex AI** | Real-time predictions | Fully managed | Hourly (always on) |
+| **BigQuery ML** | SQL-based batch scoring | Fully managed | Query-based (ONNX) or Query + Endpoint (Remote) |
 | **Dataflow** | Batch/streaming processing | Managed pipeline | Per-second (when running) |
 | **TorchServe** | Custom/on-premise | Self-managed | Infrastructure only |
 
@@ -137,7 +139,158 @@ With `n1-standard-4` machine (4 vCPU, 15 GB RAM):
 
 ---
 
-## 2. Dataflow Integration
+## 2. BigQuery ML
+
+**What it is**: SQL-based machine learning inference directly in BigQuery, enabling data analysts to make predictions without Python or endpoint management.
+
+**Best for**:
+- Batch scoring large datasets already in BigQuery
+- SQL analysts needing predictions without Python knowledge
+- Scheduled/recurring inference jobs
+- Data warehouse integration with predictions
+- Cost-sensitive applications
+
+**Key Features**:
+- ✅ Pure SQL predictions with `ML.PREDICT()`
+- ✅ Two deployment approaches (ONNX Import or Remote Model)
+- ✅ Seamless joins with BigQuery tables
+- ✅ Scheduled queries for automated scoring
+- ✅ No endpoint management overhead (ONNX import)
+- ✅ Leverage existing endpoints (Remote model)
+
+**Cost**:
+- **ONNX Import**: BigQuery slot usage only (no endpoint costs)
+- **Remote Model**: BigQuery slots + Vertex AI endpoint charges
+
+### Deployment Options
+
+#### ONNX Import
+[bigquery-bqml-import-model-onnx.ipynb](./bigquery-bqml-import-model-onnx.ipynb)
+
+- Convert PyTorch model to ONNX format
+- Import ONNX directly into BigQuery ML
+- Model runs natively within BigQuery workers
+- No external endpoints needed
+- Lower latency (in-process execution)
+- Cost-effective (no endpoint uptime charges)
+
+**Use this for**:
+- Models < 250 MB
+- Periodic batch scoring workloads
+- Simplified deployment without endpoints
+- Cost optimization (avoid endpoint charges)
+
+**Workflow**:
+1. Extract .pt model from .mar file
+2. Convert to ONNX format
+3. Upload ONNX to Cloud Storage
+4. Import as BigQuery ML model
+5. Use `ML.PREDICT()` in SQL queries
+
+#### Remote Model
+[bigquery-bqml-remote-model-vertex.ipynb](./bigquery-bqml-remote-model-vertex.ipynb)
+
+- Call deployed Vertex AI Endpoint from BigQuery SQL
+- Reuse existing endpoint deployments
+- No model size limits
+- SQL-based batch scoring
+
+**Use this for**:
+- Models > 250 MB (too large for ONNX import)
+- Reusing endpoints already deployed for real-time serving
+- Complex models with custom preprocessing
+- Shared endpoints across multiple services
+
+**Workflow**:
+1. Deploy model to Vertex AI Endpoint (see section 1)
+2. Create BigQuery Cloud Resource Connection
+3. Grant IAM permissions
+4. Register endpoint as BigQuery ML remote model
+5. Use `ML.PREDICT()` in SQL queries
+
+### Decision Guide: ONNX Import vs Remote Model
+
+**Use ONNX Import when:**
+- ✅ Model is < 250 MB
+- ✅ Batch inference only (not real-time serving)
+- ✅ Want to minimize costs (no endpoint charges)
+- ✅ Prefer simplified deployment (no endpoint management)
+- ✅ Need lowest latency (in-process execution)
+
+**Use Remote Model when:**
+- ✅ Model is > 250 MB
+- ✅ Already have deployed Vertex AI endpoint
+- ✅ Need real-time predictions + batch scoring
+- ✅ Complex preprocessing/postprocessing requirements
+- ✅ Want centralized model updates
+
+**Key Differences:**
+
+| Aspect | ONNX Import | Remote Model |
+|--------|-------------|--------------|
+| **Deployment** | Upload ONNX to GCS | Deploy Vertex AI endpoint |
+| **Infrastructure** | None (runs in BigQuery) | Vertex AI endpoint |
+| **Latency** | Very low (in-process) | Higher (network calls) |
+| **Cost** | BigQuery slots only | BigQuery + endpoint |
+| **Model Size** | < 250 MB | No limit |
+| **Best For** | Batch scoring | Hybrid (real-time + batch) |
+
+### SQL Usage Examples
+
+Both approaches use `ML.PREDICT()` for inference:
+
+```sql
+-- Simple prediction
+SELECT *
+FROM ML.PREDICT(
+    MODEL `project.dataset.model_name`,
+    (SELECT * FROM `project.dataset.transactions` WHERE date = CURRENT_DATE())
+)
+
+-- With business logic
+SELECT
+    transaction_id,
+    anomaly_score,
+    CASE
+        WHEN anomaly_score > 200 THEN 'HIGH_RISK'
+        WHEN anomaly_score > 100 THEN 'MEDIUM_RISK'
+        ELSE 'NORMAL'
+    END as risk_category
+FROM ML.PREDICT(...)
+```
+
+### Cost Comparison Example
+
+**Scenario**: Score 1M transactions daily
+
+**ONNX Import**:
+- BigQuery: ~$5/day (slot time)
+- Vertex AI: $0/day (no endpoint)
+- **Total**: ~$5/day
+
+**Remote Model**:
+- BigQuery: ~$5/day (slot time)
+- Vertex AI: ~$5/day (endpoint uptime)
+- **Total**: ~$10/day
+
+💡 **Savings**: ONNX import is ~50% cheaper for periodic batch workloads.
+
+### Quick Start
+
+**ONNX Import Path**:
+1. Train model: [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)
+2. Convert and import: [bigquery-bqml-import-model-onnx.ipynb](./bigquery-bqml-import-model-onnx.ipynb)
+3. Make predictions with SQL `ML.PREDICT()`
+
+**Remote Model Path**:
+1. Train model: [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)
+2. Deploy endpoint: [vertex-ai-endpoint-prebuilt-container.ipynb](./vertex-ai-endpoint-prebuilt-container.ipynb)
+3. Create remote model: [bigquery-bqml-remote-model-vertex.ipynb](./bigquery-bqml-remote-model-vertex.ipynb)
+4. Make predictions with SQL `ML.PREDICT()`
+
+---
+
+## 3. Dataflow Integration
 
 **What it is**: Apache Beam's ML inference API integrated with Google Cloud Dataflow for scalable batch and streaming inference.
 
@@ -268,7 +421,7 @@ All Dataflow notebooks include job monitoring:
 
 ---
 
-## 3. TorchServe Deployments
+## 4. TorchServe Deployments
 
 **What it is**: PyTorch's official model serving framework - portable solution that scales from local development to enterprise Kubernetes.
 
@@ -452,6 +605,13 @@ See [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb) for complete ex
 - [Pre-built PyTorch Containers](https://cloud.google.com/vertex-ai/docs/predictions/pre-built-containers#pytorch)
 - [Vertex AI Pricing](https://cloud.google.com/vertex-ai/pricing)
 
+### BigQuery ML
+- [BigQuery ML Documentation](https://cloud.google.com/bigquery-ml/docs)
+- [BigQuery ML ONNX Models](https://cloud.google.com/bigquery-ml/docs/reference/standard-sql/bigqueryml-syntax-create-onnx)
+- [BigQuery ML Remote Models](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-create-remote-model)
+- [ML.PREDICT Function](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-predict)
+- [BigQuery Pricing](https://cloud.google.com/bigquery/pricing)
+
 ### Dataflow
 - [Dataflow ML Documentation](https://cloud.google.com/dataflow/docs/machine-learning)
 - [Apache Beam RunInference](https://beam.apache.org/documentation/ml/about-ml/)
@@ -476,6 +636,10 @@ See [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb) for complete ex
 ### Vertex AI Endpoints
 - [Pre-built Container →](./vertex-ai-endpoint-prebuilt-container.ipynb)
 - [Custom Container →](./vertex-ai-endpoint-custom-container.ipynb)
+
+### BigQuery ML
+- [ONNX Import →](./bigquery-bqml-import-model-onnx.ipynb)
+- [Remote Model →](./bigquery-bqml-remote-model-vertex.ipynb)
 
 ### Dataflow Workflows
 - [Setup Infrastructure →](./dataflow-setup.ipynb)
