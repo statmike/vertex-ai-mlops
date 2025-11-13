@@ -245,12 +245,12 @@ class PubSubLoadGenerator:
         test_id: str,
         test_name: str
     ) -> Dict:
-        """Gradually increase rate from 0 to target over duration."""
+        """Gradually increase rate from 1 msg/sec to target over duration."""
         print(f"\n{'='*70}")
         print(f"{test_name}")
         print(f"{'='*70}")
         print(f"Pattern: RAMP")
-        print(f"Ramp: 0 → {target_rate} messages/sec over {duration}s ({duration//60} mins {duration%60}s)")
+        print(f"Ramp: 1 → {target_rate} messages/sec over {duration}s ({duration//60} mins {duration%60}s)")
         print(f"\n⏳ Running ramp test...")
         print(f"   Progress updates every 60 seconds...")
 
@@ -265,7 +265,8 @@ class PubSubLoadGenerator:
             elapsed = time.time() - test_start
 
             # Calculate current rate (linear ramp)
-            current_rate = (elapsed / duration) * target_rate
+            # Start at 1 msg/sec minimum to avoid extremely long intervals
+            current_rate = max(1.0, (elapsed / duration) * target_rate)
 
             if current_rate > 0:
                 interval = 1.0 / current_rate
@@ -544,20 +545,19 @@ class DataflowMetricsCollector:
         Latency Metrics Explained:
         - pipeline_latency_ms: Time from publish to arriving in output queue (PIPELINE PERFORMANCE)
                                = pipeline_output_time - publish_time
-                               This is what matters for understanding pipeline efficiency.
+                               This is the ONLY metric that matters for pipeline efficiency.
+                               Includes all processing: model inference, transforms, windowing, etc.
 
-        - window_wait_ms: Time waiting for window to close
-                         = window_end - publish_time
-
-        - processing_ms: Time from window close to output
-                        = pipeline_output_time - window_end
-
-        - queue_wait_ms: Time sitting in output subscription before consumption
+        - queue_wait_ms: Time sitting in output subscription before test framework pulls it
                         = receive_time - pipeline_output_time
-                        This is NOT pipeline latency - it's how long the test waits to pull.
+                        This is NOT pipeline latency - it's test framework overhead.
 
         - total_e2e_ms: Complete journey including queue wait
                        = receive_time - publish_time
+                       = pipeline_latency_ms + queue_wait_ms
+
+        Note: window_start and window_end are included as metadata but are NOT used
+              for latency calculation. Windowing time is already included in pipeline_latency_ms.
 
         Args:
             test_id: Test identifier to filter messages
@@ -565,7 +565,7 @@ class DataflowMetricsCollector:
             timeout: Timeout in seconds
 
         Returns:
-            DataFrame with latency breakdown per message
+            DataFrame with latency measurements per message
         """
         print(f"\n📊 Collecting end-to-end latency from Pub/Sub output...")
         print(f"   Subscription: {self.output_subscription}")
@@ -618,11 +618,10 @@ class DataflowMetricsCollector:
                             "window_end": data["window_end"],
                             "pipeline_output_time": data["pipeline_output_time"],
                             "receive_time": receive_time,
-                            # PIPELINE PERFORMANCE METRICS (what matters for pipeline efficiency)
+                            # PIPELINE PERFORMANCE METRICS
+                            # This is the ONLY metric that matters - time from publish to pipeline output
                             "pipeline_latency_ms": (data["pipeline_output_time"] - data["publish_time"]) * 1000,
-                            "window_wait_ms": (data["window_end"] - data["publish_time"]) * 1000,
-                            "processing_ms": (data["pipeline_output_time"] - data["window_end"]) * 1000,
-                            # TEST FRAMEWORK METRICS (includes queue wait time)
+                            # TEST FRAMEWORK METRICS (includes queue wait time before we pull it)
                             "queue_wait_ms": (receive_time - data["pipeline_output_time"]) * 1000,
                             "total_e2e_ms": (receive_time - data["publish_time"]) * 1000
                         })
@@ -665,7 +664,7 @@ class DataflowMetricsCollector:
             return pd.DataFrame(columns=[
                 'message_id', 'publish_time', 'window_start', 'window_end',
                 'pipeline_output_time', 'receive_time', 'pipeline_latency_ms',
-                'window_wait_ms', 'processing_ms', 'queue_wait_ms', 'total_e2e_ms'
+                'queue_wait_ms', 'total_e2e_ms'
             ])
 
         return pd.DataFrame(latencies)
@@ -741,10 +740,10 @@ def plot_dataflow_timeline(
         rows=5, cols=1,
         shared_xaxes=True,
         subplot_titles=(
-            'Message Rate (msg/sec)',
+            'Incoming Message Rate',
             'Worker Count (Autoscaling)',
-            'System Lag (Processing Delay)',
-            'Backlog Size (Unprocessed Messages)',
+            'System Lag (Processing Delay: Oldest To Current Message)',
+            'Output Subscription Queue',
             'P95 Pipeline Latency (publish → output queue, excludes queue wait)'
         ),
         vertical_spacing=0.06
@@ -803,6 +802,13 @@ def plot_dataflow_timeline(
             x=p95_latency['window'], y=p95_latency['pipeline_latency_ms'],
             name='P95 Pipeline Latency', mode='lines', line=dict(color='purple', width=2)
         ), row=5, col=1)
+
+        # Smart Y-axis scaling: Use 99th percentile to ignore outlier spikes
+        # This keeps the axis focused on steady-state latency, not shutdown artifacts
+        if len(p95_latency) > 0:
+            y_99th = p95_latency['pipeline_latency_ms'].quantile(0.99)
+            y_max = y_99th * 1.2  # Add 20% headroom
+            fig.update_yaxes(range=[0, y_max], row=5, col=1)
 
     # Update layout
     fig.update_layout(
