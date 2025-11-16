@@ -784,18 +784,22 @@ def plot_dataflow_timeline(
 
     # Row 1: Message Rate
     if 'message_data' in test_results and len(test_results['message_data']) > 0:
-        msg_df = test_results['message_data']
-        msg_df['timestamp'] = pd.to_datetime(msg_df['publish_time'], unit='s')
+        try:
+            msg_df = test_results['message_data'].copy()
+            msg_df['timestamp'] = pd.to_datetime(msg_df['publish_time'], unit='s')
 
-        # Calculate rate (messages per 10-second window)
-        msg_df['window'] = msg_df['timestamp'].dt.floor('10s')
-        rate = msg_df.groupby('window').size().reset_index(name='count')
-        rate['rate'] = rate['count'] / 10  # Convert to messages/sec
+            # Calculate rate (messages per 10-second window)
+            msg_df['window'] = msg_df['timestamp'].dt.floor('10s')
+            rate = msg_df.groupby('window').size().reset_index(name='count')
+            rate['rate'] = rate['count'] / 10  # Convert to messages/sec
 
-        fig.add_trace(go.Scatter(
-            x=rate['window'], y=rate['rate'],
-            name='Publish Rate', mode='lines', line=dict(color='blue', width=2)
-        ), row=1, col=1)
+            fig.add_trace(go.Scatter(
+                x=rate['window'], y=rate['rate'],
+                name='Publish Rate', mode='lines', line=dict(color='blue', width=2)
+            ), row=1, col=1)
+        except Exception as e:
+            print(f"⚠️  Could not plot message rate: {e}")
+            # Continue without message rate panel rather than failing entire plot
 
     # Row 2: Worker Count
     if 'workers' in metrics and len(metrics['workers']) > 0:
@@ -825,7 +829,8 @@ def plot_dataflow_timeline(
 
     # Row 5: P95 Latency
     if len(latency_df) > 0:
-        latency_df['timestamp'] = pd.to_datetime(latency_df['receive_time'], unit='s')
+        # Use publish_time for timeline alignment (not receive_time which shows when test pulled messages)
+        latency_df['timestamp'] = pd.to_datetime(latency_df['publish_time'], unit='s')
         latency_df['window'] = latency_df['timestamp'].dt.floor('10s')
 
         # Use pipeline_latency_ms (the actual pipeline performance metric)
@@ -940,9 +945,15 @@ def create_queuing_diagnostic(
         horizontal_spacing=0.15
     )
 
-    # Panel 1: Pie chart showing attribution
+    # Panel 1: Pie chart showing attribution with average times for context
+    window_avg = total_window_time / len(df)
+    queue_avg = total_queue_time / len(df)
+
     fig.add_trace(go.Pie(
-        labels=['Window Assignment<br>(metadata)', 'Internal Queue<br>(BOTTLENECK)'],
+        labels=[
+            f'Window Assignment<br>(metadata)<br>avg: {window_avg:.2f}s',
+            f'Internal Queue<br>(BOTTLENECK)<br>avg: {queue_avg:.2f}s'
+        ],
         values=[window_pct, queue_pct],
         marker=dict(colors=['lightblue', 'red']),
         textinfo='label+percent',
@@ -974,6 +985,30 @@ def create_queuing_diagnostic(
         fillcolor='red',
         hovertemplate='Queue: %{y:.2f}s<extra></extra>'
     ), row=1, col=2)
+
+    # Smart Y-axis limiting for Panel 2 to handle extreme queue times
+    if len(df_sampled) > 0:
+        max_total = (df_sampled['window_wait_sec'] + df_sampled['internal_queue_sec']).max()
+        p99_total = (df_sampled['window_wait_sec'] + df_sampled['internal_queue_sec']).quantile(0.99)
+
+        # If max is more than 3x the p99, cap at p99 * 1.5 to improve readability
+        if max_total > p99_total * 3:
+            y_limit = p99_total * 1.5
+            fig.update_yaxes(range=[0, y_limit], row=1, col=2)
+
+            # Add annotation about clipping
+            fig.add_annotation(
+                text=f"Y-axis capped at {y_limit:.1f}s (P99×1.5)<br>for readability",
+                xref="x2", yref="y2",
+                x=df_sampled['publish_datetime'].iloc[len(df_sampled)//2],
+                y=y_limit * 0.85,
+                showarrow=False,
+                font=dict(size=10, color="gray"),
+                bgcolor="rgba(255,255,255,0.8)",
+                bordercolor="gray",
+                borderwidth=1,
+                borderpad=4
+            )
 
     # Panel 3: Queue depth over time
     df_heatmap = df.copy()
