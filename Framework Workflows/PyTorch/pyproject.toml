@@ -33,6 +33,7 @@ google-cloud-bigquery-connection = "^1.19.0"
 onnx = "^1.19.1"
 onnxruntime = "^1.23.2"
 onnxscript = "^0.5.6"
+kaleido = "^1.2.0"
 
 
 [tool.poetry.group.dev]
