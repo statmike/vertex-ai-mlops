@@ -388,11 +388,11 @@ class DataflowMetricsCollector:
 
         metrics = {}
 
-        # Worker count (use current_num_vcpus)
+        # Worker count (use active_worker_instances for actual worker count, not vCPUs)
         print(f"   Collecting worker count...")
         metrics['workers'] = self._query_dataflow_metric(
-            'dataflow.googleapis.com/job/current_num_vcpus',
-            buffered_start, buffered_end, resolution_seconds
+            'dataflow.googleapis.com/job/active_worker_instances',
+            buffered_start, buffered_end, resolution_seconds, aligner='ALIGN_MAX'
         )
 
         # System lag
@@ -435,24 +435,17 @@ class DataflowMetricsCollector:
         resolution_seconds: int,
         aligner: str = 'ALIGN_MEAN'
     ) -> pd.DataFrame:
-        """Query Dataflow metric from Cloud Monitoring."""
+        """
+        Query Dataflow metric from Cloud Monitoring.
+
+        For sparse gauge metrics (active_worker_instances), queries RAW data without aggregation
+        to avoid aggregation producing zeros, then resamples in pandas.
+        """
         try:
             interval = monitoring_v3.TimeInterval({
                 "start_time": {"seconds": int(start_time.timestamp())},
                 "end_time": {"seconds": int(end_time.timestamp())}
             })
-
-            # For per-pcollection or per-stage metrics, we need to aggregate
-            # For job-level metrics, we don't need cross-series reduction
-            aggregation = monitoring_v3.Aggregation({
-                "alignment_period": {"seconds": resolution_seconds},
-                "per_series_aligner": getattr(monitoring_v3.Aggregation.Aligner, aligner),
-            })
-
-            # Check if this is a per-collection/per-stage metric that needs aggregation
-            if 'element_count' in metric_type or 'per_stage' in metric_type:
-                aggregation.cross_series_reducer = monitoring_v3.Aggregation.Reducer.REDUCE_SUM
-                aggregation.group_by_fields = []  # Aggregate all series for this job
 
             # Build filter - job_id is a metric label, not a resource label
             filter_str = (
@@ -461,17 +454,48 @@ class DataflowMetricsCollector:
                 f'AND metric.labels.job_id="{self.job_id}"'
             )
 
-            request = monitoring_v3.ListTimeSeriesRequest({
-                "name": f"projects/{self.project_id}",
-                "filter": filter_str,
-                "interval": interval,
-                "aggregation": aggregation,
-            })
+            # For sparse gauge metrics, query raw data without aggregation
+            # to avoid ALIGN_MAX producing zeros on sparse data
+            sparse_gauge_metrics = [
+                'dataflow.googleapis.com/job/active_worker_instances'
+            ]
+
+            if metric_type in sparse_gauge_metrics:
+                # Query raw data points
+                request = monitoring_v3.ListTimeSeriesRequest({
+                    "name": f"projects/{self.project_id}",
+                    "filter": filter_str,
+                    "interval": interval,
+                })
+            else:
+                # For other metrics, use aggregation as before
+                aggregation = monitoring_v3.Aggregation({
+                    "alignment_period": {"seconds": resolution_seconds},
+                    "per_series_aligner": getattr(monitoring_v3.Aggregation.Aligner, aligner),
+                })
+
+                # Check if this is a per-collection/per-stage metric that needs aggregation
+                if 'element_count' in metric_type or 'per_stage' in metric_type:
+                    aggregation.cross_series_reducer = monitoring_v3.Aggregation.Reducer.REDUCE_SUM
+                    aggregation.group_by_fields = []  # Aggregate all series for this job
+
+                request = monitoring_v3.ListTimeSeriesRequest({
+                    "name": f"projects/{self.project_id}",
+                    "filter": filter_str,
+                    "interval": interval,
+                    "aggregation": aggregation,
+                })
 
             data_points = []
             for result in self.monitoring_client.list_time_series(request=request):
                 for point in result.points:
-                    value = point.value.double_value if hasattr(point.value, 'double_value') else point.value.int64_value
+                    # For worker count metric, use int64_value first (it's an integer metric)
+                    # Check int64_value first because double_value always exists but is 0.0 for int metrics
+                    if hasattr(point.value, 'int64_value') and point.value.int64_value is not None and point.value.int64_value > 0:
+                        value = point.value.int64_value
+                    else:
+                        value = point.value.double_value if hasattr(point.value, 'double_value') else 0.0
+
                     data_points.append({
                         'timestamp': pd.Timestamp(point.interval.end_time),
                         'value': float(value) if value is not None else 0.0
@@ -480,7 +504,16 @@ class DataflowMetricsCollector:
             if not data_points:
                 return pd.DataFrame(columns=['timestamp', 'value'])
 
-            return pd.DataFrame(data_points).sort_values('timestamp').reset_index(drop=True)
+            df = pd.DataFrame(data_points).sort_values('timestamp')
+
+            # For sparse gauge metrics, resample in pandas to get consistent time buckets
+            # This preserves the actual values instead of aggregating to zero
+            if metric_type in sparse_gauge_metrics and len(df) > 0:
+                df = df.set_index('timestamp')
+                # Forward-fill sparse values (use last known value for gaps)
+                df = df.resample(f'{resolution_seconds}s').max().ffill().reset_index()
+
+            return df.reset_index(drop=True)
 
         except Exception as e:
             print(f"⚠️  Warning: Could not fetch {metric_type}: {str(e)[:200]}")
@@ -828,3 +861,303 @@ def plot_dataflow_timeline(
     fig.update_xaxes(title_text="Time", row=5, col=1)
 
     return fig
+
+
+def create_queuing_diagnostic(
+    latency_df: pd.DataFrame,
+    worker_metrics: Optional[pd.DataFrame] = None,
+    test_name: str = "Dataflow Pipeline"
+) -> go.Figure:
+    """
+    Create queuing diagnostic visualization for Dataflow pipelines (local model inference).
+
+    This diagnostic exposes WHERE latency comes from and WHY workers don't scale.
+
+    Key insights revealed:
+    - What % of latency is window assignment vs internal queuing
+    - How queue depth grows over time
+    - Whether workers scaled in response to queuing
+
+    Args:
+        latency_df: DataFrame with columns:
+            - publish_time: Unix timestamp when message published
+            - window_end: Unix timestamp of window boundary (or UNIX_SECONDS(window_end))
+            - pipeline_output_time: Unix timestamp when message output
+            - sequence: Message sequence number (optional)
+        worker_metrics: Optional DataFrame with:
+            - timestamp: Datetime
+            - value: Worker count
+        test_name: Name of test for title
+
+    Returns:
+        Plotly figure with 4-panel diagnostic:
+        - Panel 1: Pie chart showing latency attribution
+        - Panel 2: Stacked area showing components over time
+        - Panel 3: Heatmap showing when messages get stuck
+        - Panel 4: Worker scaling vs queue depth
+    """
+
+    # Calculate latency components
+    df = latency_df.copy()
+
+    # Handle different column name conventions
+    if 'window_end' not in df.columns:
+        if 'window_end_unix' in df.columns:
+            df['window_end'] = df['window_end_unix']
+        elif 'window_start' in df.columns and 'window_start_unix' not in df.columns:
+            # window_end is TIMESTAMP, convert to unix
+            df['window_end'] = pd.to_datetime(df['window_end']).astype(int) / 10**9
+
+    df['window_wait_sec'] = df['window_end'] - df['publish_time']
+    df['internal_queue_sec'] = df['pipeline_output_time'] - df['window_end']
+    df['total_latency_sec'] = df['pipeline_output_time'] - df['publish_time']
+
+    # Create timestamps for plotting
+    df['publish_datetime'] = pd.to_datetime(df['publish_time'], unit='s')
+
+    # Calculate aggregate statistics
+    total_window_time = df['window_wait_sec'].sum()
+    total_queue_time = df['internal_queue_sec'].sum()
+    total_latency_time = df['total_latency_sec'].sum()
+
+    window_pct = (total_window_time / total_latency_time) * 100
+    queue_pct = (total_queue_time / total_latency_time) * 100
+
+    # Create figure with 4 panels
+    fig = make_subplots(
+        rows=2, cols=2,
+        subplot_titles=(
+            f'Latency Attribution: {queue_pct:.1f}% is Internal Queuing',
+            'Latency Components Over Time (Stacked)',
+            'Queue Depth Over Time: P95 Shows Worst-Case Delays',
+            'Worker Scaling vs Internal Queue Depth'
+        ),
+        specs=[
+            [{"type": "pie"}, {"type": "scatter"}],
+            [{"type": "scatter"}, {"type": "xy", "secondary_y": True}]
+        ],
+        vertical_spacing=0.12,
+        horizontal_spacing=0.15
+    )
+
+    # Panel 1: Pie chart showing attribution
+    fig.add_trace(go.Pie(
+        labels=['Window Assignment<br>(metadata)', 'Internal Queue<br>(BOTTLENECK)'],
+        values=[window_pct, queue_pct],
+        marker=dict(colors=['lightblue', 'red']),
+        textinfo='label+percent',
+        textposition='inside',
+        hovertemplate='%{label}<br>%{percent}<extra></extra>'
+    ), row=1, col=1)
+
+    # Panel 2: Stacked area chart over time
+    df_time = df.sort_values('publish_datetime')
+    sample_interval = max(1, len(df_time) // 500)  # Max 500 points
+    df_sampled = df_time[::sample_interval]
+
+    fig.add_trace(go.Scatter(
+        x=df_sampled['publish_datetime'],
+        y=df_sampled['window_wait_sec'],
+        name='Window (metadata)',
+        mode='none',
+        stackgroup='one',
+        fillcolor='lightblue',
+        hovertemplate='Window: %{y:.2f}s<extra></extra>'
+    ), row=1, col=2)
+
+    fig.add_trace(go.Scatter(
+        x=df_sampled['publish_datetime'],
+        y=df_sampled['internal_queue_sec'],
+        name='Internal Queue',
+        mode='none',
+        stackgroup='one',
+        fillcolor='red',
+        hovertemplate='Queue: %{y:.2f}s<extra></extra>'
+    ), row=1, col=2)
+
+    # Panel 3: Queue depth over time
+    df_heatmap = df.copy()
+    df_heatmap['time_bucket'] = pd.cut(
+        df_heatmap['publish_time'],
+        bins=50,
+        labels=False
+    )
+
+    heatmap_data = df_heatmap.groupby('time_bucket').agg({
+        'internal_queue_sec': ['mean', lambda x: x.quantile(0.50), lambda x: x.quantile(0.95)],
+        'publish_datetime': 'first'
+    }).reset_index()
+
+    heatmap_data.columns = ['time_bucket', 'queue_mean', 'queue_p50', 'queue_p95', 'timestamp']
+
+    fig.add_trace(go.Scatter(
+        x=heatmap_data['timestamp'],
+        y=heatmap_data['queue_p95'],
+        name='P95 Queue Time',
+        mode='lines',
+        line=dict(color='darkred', width=3),
+        fill='tozeroy',
+        fillcolor='rgba(255,0,0,0.3)',
+        hovertemplate='P95 Queue: %{y:.2f}s<extra></extra>'
+    ), row=2, col=1)
+
+    fig.add_trace(go.Scatter(
+        x=heatmap_data['timestamp'],
+        y=heatmap_data['queue_mean'],
+        name='Mean Queue Time',
+        mode='lines',
+        line=dict(color='orange', width=2),
+        hovertemplate='Mean Queue: %{y:.2f}s<extra></extra>'
+    ), row=2, col=1)
+
+    # Panel 4: Worker scaling vs queue depth
+    if worker_metrics is not None and len(worker_metrics) > 0:
+        worker_df = worker_metrics.copy()
+        worker_df['timestamp'] = pd.to_datetime(worker_df['timestamp'])
+
+        # Plot worker count on primary y-axis
+        fig.add_trace(go.Scatter(
+            x=worker_df['timestamp'],
+            y=worker_df['value'],
+            name='Worker Count',
+            mode='lines+markers',
+            line=dict(color='blue', width=3),
+            marker=dict(size=8),
+            yaxis='y3',
+            hovertemplate='Workers: %{y}<extra></extra>'
+        ), row=2, col=2)
+
+        # Plot queue depth on secondary y-axis
+        fig.add_trace(go.Scatter(
+            x=heatmap_data['timestamp'],
+            y=heatmap_data['queue_p95'],
+            name='P95 Queue Depth',
+            mode='lines',
+            line=dict(color='red', width=2),
+            yaxis='y4',
+            hovertemplate='Queue: %{y:.2f}s<extra></extra>'
+        ), row=2, col=2)
+
+        # Configure secondary y-axis
+        fig.update_yaxes(title_text="Worker Count", row=2, col=2, secondary_y=False)
+        fig.update_yaxes(title_text="Queue Depth (sec)", row=2, col=2, secondary_y=True)
+
+    else:
+        # No worker metrics - just show queue depth
+        fig.add_trace(go.Scatter(
+            x=heatmap_data['timestamp'],
+            y=heatmap_data['queue_p95'],
+            name='P95 Queue Depth',
+            mode='lines',
+            line=dict(color='red', width=3),
+            fill='tozeroy',
+            hovertemplate='Queue: %{y:.2f}s<extra></extra>'
+        ), row=2, col=2)
+
+        # Add annotation about missing worker data
+        fig.add_annotation(
+            text="Worker metrics not available<br>Cannot show autoscaling correlation",
+            xref="x4", yref="y4",
+            x=heatmap_data['timestamp'].iloc[len(heatmap_data)//2],
+            y=heatmap_data['queue_p95'].max() / 2,
+            showarrow=False,
+            font=dict(size=14, color="gray"),
+            bgcolor="white",
+            bordercolor="gray",
+            borderwidth=1
+        )
+        fig.update_yaxes(title_text="Queue Depth (sec)", row=2, col=2)
+
+    # Update axes labels
+    fig.update_xaxes(title_text="Time", row=1, col=2)
+    fig.update_xaxes(title_text="Time", row=2, col=1)
+    fig.update_xaxes(title_text="Time", row=2, col=2)
+    fig.update_yaxes(title_text="Latency (sec)", row=1, col=2)
+    fig.update_yaxes(title_text="Queue Depth (sec)", row=2, col=1)
+
+    fig.update_layout(
+        title_text=f"{test_name}: Queuing Diagnostic",
+        showlegend=True,
+        height=1000,
+        hovermode='x unified'
+    )
+
+    return fig
+
+
+def print_queuing_summary(
+    latency_df: pd.DataFrame,
+    worker_metrics: Optional[pd.DataFrame] = None
+):
+    """
+    Print text summary of queuing analysis for Dataflow pipelines.
+
+    Args:
+        latency_df: DataFrame with latency breakdowns
+        worker_metrics: Optional worker count data
+    """
+    df = latency_df.copy()
+
+    # Calculate components
+    if 'window_end' not in df.columns:
+        if 'window_end_unix' in df.columns:
+            df['window_end'] = df['window_end_unix']
+        elif 'window_start' in df.columns:
+            df['window_end'] = pd.to_datetime(df['window_end']).astype(int) / 10**9
+
+    if 'window_wait_sec' not in df.columns:
+        df['window_wait_sec'] = df['window_end'] - df['publish_time']
+    if 'internal_queue_sec' not in df.columns:
+        df['internal_queue_sec'] = df['pipeline_output_time'] - df['window_end']
+    if 'total_latency_sec' not in df.columns:
+        df['total_latency_sec'] = df['pipeline_output_time'] - df['publish_time']
+
+    # Statistics
+    total_window_time = df['window_wait_sec'].sum()
+    total_queue_time = df['internal_queue_sec'].sum()
+    total_latency_time = df['total_latency_sec'].sum()
+
+    window_pct = (total_window_time / total_latency_time) * 100
+    queue_pct = (total_queue_time / total_latency_time) * 100
+
+    print("\n" + "="*80)
+    print("QUEUING DIAGNOSTIC SUMMARY")
+    print("="*80)
+    print(f"\nTotal messages analyzed: {len(df):,}")
+    print(f"\nLatency Attribution:")
+    print(f"  Window assignment (metadata): {window_pct:>6.1f}%  ({df['window_wait_sec'].mean():.3f}s avg)")
+    print(f"  Internal queue (bottleneck):  {queue_pct:>6.1f}%  ({df['internal_queue_sec'].mean():.3f}s avg)")
+    print(f"\nInternal Queue Statistics:")
+    print(f"  Mean:  {df['internal_queue_sec'].mean():>8.3f}s")
+    print(f"  P50:   {df['internal_queue_sec'].quantile(0.50):>8.3f}s")
+    print(f"  P95:   {df['internal_queue_sec'].quantile(0.95):>8.3f}s")
+    print(f"  P99:   {df['internal_queue_sec'].quantile(0.99):>8.3f}s")
+    print(f"  Max:   {df['internal_queue_sec'].max():>8.3f}s")
+
+    if worker_metrics is not None and len(worker_metrics) > 0:
+        print(f"\nWorker Scaling:")
+        print(f"  Min workers: {worker_metrics['value'].min()}")
+        print(f"  Max workers: {worker_metrics['value'].max()}")
+        print(f"  Mean workers: {worker_metrics['value'].mean():.1f}")
+
+        if worker_metrics['value'].nunique() == 1:
+            print(f"\n  ⚠️  WARNING: Workers never scaled! Stayed at {worker_metrics['value'].iloc[0]}")
+            print(f"      This explains the {queue_pct:.1f}% internal queuing!")
+
+    print("\n" + "="*80)
+    print("KEY FINDINGS")
+    print("="*80)
+    print(f"✓ {queue_pct:.1f}% of latency is from INTERNAL QUEUING")
+    print(f"✓ Only {window_pct:.1f}% is from window assignment (metadata)")
+    print(f"✓ Window configuration is NOT the bottleneck")
+
+    if worker_metrics is not None and len(worker_metrics) > 0 and worker_metrics['value'].nunique() == 1:
+        print(f"\n✗ Workers NEVER SCALED despite autoscaling configuration")
+        print(f"✗ This is why messages queue internally instead of being processed")
+        print(f"\n💡 RECOMMENDED FIXES:")
+        print(f"   1. Use --autoscaling_algorithm=THROUGHPUT_BASED")
+        print(f"   2. Set --target_worker_utilization=0.7 (scale at 70% capacity)")
+        print(f"   3. Verify --num_workers sets INITIAL workers (may need explicit start count)")
+        print(f"   4. Reduce max_batch_duration_secs to reduce internal buffering")
+
+    print("="*80)

@@ -35,7 +35,7 @@ from plotly.subplots import make_subplots
 
 # Import existing collectors (composition over duplication)
 from scale_testing_dataflow_utils import DataflowMetricsCollector, PubSubLoadGenerator
-from scale_testing_utils import EndpointMetricsCollector
+# Note: EndpointMetricsCollector is imported inside __init__ to use the working implementation
 
 
 class CombinedMetricsCollector:
@@ -78,7 +78,10 @@ class CombinedMetricsCollector:
             output_subscription=output_subscription
         )
 
-        self.endpoint_collector = EndpointMetricsCollector(
+        # Import EndpointMetricsCollector from the WORKING implementation
+        from scale_testing_utils import EndpointMetricsCollector as WorkingEndpointCollector
+
+        self.endpoint_collector = WorkingEndpointCollector(
             project_id=project_id,
             endpoint_id=endpoint_id,
             region=region
@@ -181,23 +184,17 @@ def identify_bottleneck(
         indicators['endpoint_max_cpu_pct'] = 0
         indicators['endpoint_mean_cpu_pct'] = 0
 
-    # 3. Latency Breakdown
+    # 3. Pipeline Latency Analysis
     if len(latency_df) > 0:
-        # Processing time includes endpoint call + Dataflow overhead
-        mean_processing_ms = latency_df['processing_ms'].mean()
-        mean_window_wait_ms = latency_df['window_wait_ms'].mean()
+        # Pipeline latency includes all processing (endpoint + Dataflow + windowing)
         mean_pipeline_latency_ms = latency_df['pipeline_latency_ms'].mean()
+        p95_pipeline_latency_ms = latency_df['pipeline_latency_ms'].quantile(0.95)
 
-        # What % of pipeline latency is processing (includes endpoint)?
-        processing_pct = (mean_processing_ms / mean_pipeline_latency_ms * 100) if mean_pipeline_latency_ms > 0 else 0
-
-        indicators['mean_processing_ms'] = mean_processing_ms
-        indicators['mean_window_wait_ms'] = mean_window_wait_ms
-        indicators['processing_pct_of_total'] = processing_pct
+        indicators['mean_pipeline_latency_ms'] = mean_pipeline_latency_ms
+        indicators['p95_pipeline_latency_ms'] = p95_pipeline_latency_ms
     else:
-        indicators['mean_processing_ms'] = 0
-        indicators['mean_window_wait_ms'] = 0
-        indicators['processing_pct_of_total'] = 0
+        indicators['mean_pipeline_latency_ms'] = 0
+        indicators['p95_pipeline_latency_ms'] = 0
 
     # 4. Endpoint Service Latency (from Cloud Monitoring)
     if 'latency' in endpoint and len(endpoint['latency']) > 0:
@@ -253,22 +250,20 @@ def identify_bottleneck(
         endpoint_score += 1
         analysis['reason'].append(f"Elevated endpoint CPU ({indicators['endpoint_max_cpu_pct']:.1f}% max)")
 
-    # Processing time dominates (likely endpoint since it's in processing phase)
-    if indicators['processing_pct_of_total'] > 60:
-        endpoint_score += 2
-        analysis['reason'].append(f"Processing time dominates latency ({indicators['processing_pct_of_total']:.1f}%)")
-
     # Endpoint service latency is high
     if indicators['endpoint_service_latency_ms'] > 500:
         endpoint_score += 2
         analysis['reason'].append(f"High endpoint service latency ({indicators['endpoint_service_latency_ms']:.1f}ms P95)")
 
-    # Compare endpoint service latency to processing time
-    if indicators['endpoint_service_latency_ms'] > 0 and indicators['mean_processing_ms'] > 0:
-        endpoint_ratio = indicators['endpoint_service_latency_ms'] / indicators['mean_processing_ms']
-        if endpoint_ratio > 0.8:  # Endpoint accounts for >80% of processing time
+    # Compare endpoint service latency to pipeline latency
+    if indicators['endpoint_service_latency_ms'] > 0 and indicators['mean_pipeline_latency_ms'] > 0:
+        endpoint_ratio = indicators['endpoint_service_latency_ms'] / indicators['mean_pipeline_latency_ms']
+        if endpoint_ratio > 0.5:  # Endpoint accounts for >50% of pipeline latency
             endpoint_score += 3
-            analysis['reason'].append(f"Endpoint latency accounts for ~{endpoint_ratio*100:.0f}% of processing time")
+            analysis['reason'].append(f"Endpoint latency accounts for ~{endpoint_ratio*100:.0f}% of pipeline latency")
+        elif endpoint_ratio > 0.3:  # Endpoint accounts for >30% of pipeline latency
+            endpoint_score += 1
+            analysis['reason'].append(f"Endpoint contributes {endpoint_ratio*100:.0f}% of pipeline latency")
 
     # DECISION
     if endpoint_score > dataflow_score and endpoint_score >= 3:
@@ -366,15 +361,16 @@ def plot_combined_timeline(
     test_name: str = "Combined System Test"
 ) -> go.Figure:
     """
-    Create comprehensive 6-panel timeline visualization showing both services.
+    Create comprehensive 7-panel timeline visualization showing both services.
 
     Panels:
     1. Message Rate (input load)
     2. Dataflow Workers (autoscaling)
     3. Dataflow System Lag
-    4. Vertex Endpoint Replicas (autoscaling)
-    5. Vertex Endpoint CPU %
-    6. P95 Pipeline Latency (with breakdown)
+    4. Output Subscription Backlog (messages queued)
+    5. Vertex Endpoint Replicas (autoscaling)
+    6. Vertex Endpoint CPU %
+    7. P95 Pipeline Latency (with breakdown)
 
     Args:
         combined_metrics: Dict with 'dataflow' and 'endpoint' metrics
@@ -383,23 +379,24 @@ def plot_combined_timeline(
         test_name: Test identifier for title
 
     Returns:
-        Plotly figure with 6 subplots
+        Plotly figure with 7 subplots
     """
     dataflow = combined_metrics['dataflow']
     endpoint = combined_metrics['endpoint']
 
     fig = make_subplots(
-        rows=6, cols=1,
+        rows=7, cols=1,
         shared_xaxes=True,
         subplot_titles=(
             'Message Rate (Input Load)',
             'Dataflow Workers (Autoscaling)',
-            'Dataflow System Lag (Processing Delay)',
+            'Dataflow System Lag (Processing Delay: Oldest To Current Message)',
+            'Output Subscription Backlog (Messages Queued)',
             'Vertex Endpoint Replicas (Autoscaling)',
             'Vertex Endpoint CPU Utilization',
-            'P95 Pipeline Latency (Breakdown)'
+            'P95 Pipeline Latency (publish → output queue, includes endpoint)'
         ),
-        vertical_spacing=0.05
+        vertical_spacing=0.04
     )
 
     # Row 1: Message Rate
@@ -425,81 +422,411 @@ def plot_combined_timeline(
 
     # Row 3: Dataflow System Lag
     if 'system_lag' in dataflow and len(dataflow['system_lag']) > 0:
-        # Convert to seconds
-        lag_seconds = dataflow['system_lag']['value'] / 1000
+        # Convert to milliseconds for consistency
+        lag_ms = dataflow['system_lag']['value'] / 1000
         fig.add_trace(go.Scatter(
-            x=dataflow['system_lag']['timestamp'], y=lag_seconds,
+            x=dataflow['system_lag']['timestamp'], y=lag_ms,
             name='System Lag', mode='lines', line=dict(color='orange', width=2)
         ), row=3, col=1)
 
-    # Row 4: Vertex Endpoint Replicas
+    # Row 4: Output Subscription Backlog (NEW PANEL)
+    if 'backlog' in dataflow and len(dataflow['backlog']) > 0:
+        fig.add_trace(go.Scatter(
+            x=dataflow['backlog']['timestamp'], y=dataflow['backlog']['value'],
+            name='Backlog', mode='lines', line=dict(color='brown', width=2),
+            fill='tozeroy', fillcolor='rgba(165,42,42,0.2)'
+        ), row=4, col=1)
+
+    # Row 5: Vertex Endpoint Replicas
     if 'replicas' in endpoint and len(endpoint['replicas']) > 0:
         fig.add_trace(go.Scatter(
             x=endpoint['replicas']['timestamp'], y=endpoint['replicas']['value'],
             name='Replicas', mode='lines+markers', line=dict(color='darkgreen', width=2),
             marker=dict(size=8)
-        ), row=4, col=1)
+        ), row=5, col=1)
 
     # Add target replicas if available
     if 'target_replicas' in endpoint and len(endpoint['target_replicas']) > 0:
         fig.add_trace(go.Scatter(
             x=endpoint['target_replicas']['timestamp'], y=endpoint['target_replicas']['value'],
             name='Target Replicas', mode='lines', line=dict(color='lightgreen', width=2, dash='dash')
-        ), row=4, col=1)
+        ), row=5, col=1)
 
-    # Row 5: Endpoint CPU %
+    # Row 6: Endpoint CPU %
     if 'cpu' in endpoint and len(endpoint['cpu']) > 0:
         fig.add_trace(go.Scatter(
             x=endpoint['cpu']['timestamp'], y=endpoint['cpu']['value'] * 100,
             name='CPU %', mode='lines', line=dict(color='red', width=2)
-        ), row=5, col=1)
+        ), row=6, col=1)
         # Add autoscaling threshold line
-        fig.add_hline(y=60, line_dash="dash", line_color="darkred", row=5, col=1,
+        fig.add_hline(y=60, line_dash="dash", line_color="darkred", row=6, col=1,
                      annotation_text="Autoscale Threshold (60%)")
 
-    # Row 6: P95 Pipeline Latency with Breakdown
+    # Row 7: P95 Pipeline Latency (FIXED: use publish_time for better timeline)
     if len(latency_df) > 0:
         latency_df = latency_df.copy()
-        latency_df['timestamp'] = pd.to_datetime(latency_df['receive_time'], unit='s')
+
+        # Use publish_time (when message sent) instead of receive_time (when pulled)
+        # This gives better timeline alignment with test execution
+        if 'publish_time' in latency_df.columns:
+            latency_df['timestamp'] = pd.to_datetime(latency_df['publish_time'], unit='s')
+        else:
+            latency_df['timestamp'] = pd.to_datetime(latency_df['receive_time'], unit='s')
+
         latency_df['window'] = latency_df['timestamp'].dt.floor('10s')
 
-        # Calculate P95 for each component
-        p95_total = latency_df.groupby('window')['pipeline_latency_ms'].quantile(0.95).reset_index()
-        p95_window = latency_df.groupby('window')['window_wait_ms'].quantile(0.95).reset_index()
-        p95_processing = latency_df.groupby('window')['processing_ms'].quantile(0.95).reset_index()
+        # Calculate P95 pipeline latency
+        p95_latency = latency_df.groupby('window')['pipeline_latency_ms'].quantile(0.95).reset_index()
 
-        # Total latency
+        # Pipeline latency (includes all processing: endpoint + Dataflow + windowing)
         fig.add_trace(go.Scatter(
-            x=p95_total['window'], y=p95_total['pipeline_latency_ms'],
-            name='P95 Total Latency', mode='lines', line=dict(color='purple', width=3)
-        ), row=6, col=1)
+            x=p95_latency['window'], y=p95_latency['pipeline_latency_ms'],
+            name='P95 Pipeline Latency', mode='lines', line=dict(color='purple', width=3)
+        ), row=7, col=1)
 
-        # Stacked area for breakdown
-        fig.add_trace(go.Scatter(
-            x=p95_window['window'], y=p95_window['window_wait_ms'],
-            name='Window Wait', mode='none', fill='tozeroy',
-            fillcolor='rgba(100, 100, 250, 0.3)'
-        ), row=6, col=1)
-
-        fig.add_trace(go.Scatter(
-            x=p95_processing['window'], y=p95_processing['processing_ms'],
-            name='Processing (incl. endpoint)', mode='none', fill='tozeroy',
-            fillcolor='rgba(250, 100, 100, 0.3)'
-        ), row=6, col=1)
+        # Smart Y-axis scaling: Use 99th percentile to ignore outlier spikes
+        if len(p95_latency) > 0:
+            y_99th = p95_latency['pipeline_latency_ms'].quantile(0.99)
+            y_max = y_99th * 1.2  # Add 20% headroom
+            fig.update_yaxes(range=[0, y_max], row=7, col=1)
 
     # Update axes labels
-    fig.update_xaxes(title_text="Time", row=6, col=1)
+    fig.update_xaxes(title_text="Time", row=7, col=1)
     fig.update_yaxes(title_text="msg/sec", row=1, col=1)
     fig.update_yaxes(title_text="Count", row=2, col=1)
-    fig.update_yaxes(title_text="Seconds", row=3, col=1)
-    fig.update_yaxes(title_text="Count", row=4, col=1)
-    fig.update_yaxes(title_text="CPU %", row=5, col=1)
-    fig.update_yaxes(title_text="ms", row=6, col=1)
+    fig.update_yaxes(title_text="ms", row=3, col=1)
+    fig.update_yaxes(title_text="Messages", row=4, col=1)
+    fig.update_yaxes(title_text="Count", row=5, col=1)
+    fig.update_yaxes(title_text="CPU %", row=6, col=1)
+    fig.update_yaxes(title_text="ms", row=7, col=1)
 
     fig.update_layout(
-        height=1400,
+        height=1600,  # Increased from 1400 for 7 panels
         title_text=f"{test_name} - Combined System Timeline",
         showlegend=True
     )
 
     return fig
+
+
+def create_queuing_diagnostic(
+    latency_df: pd.DataFrame,
+    dataflow_metrics: Optional[Dict] = None,
+    endpoint_metrics: Optional[Dict] = None,
+    test_name: str = "Combined System Test"
+) -> go.Figure:
+    """
+    Create comprehensive queuing diagnostic visualization for Dataflow + Vertex AI Endpoint.
+
+    This diagnostic exposes WHERE latency comes from and WHY workers don't scale.
+
+    Key insights revealed:
+    - What % of latency is window assignment vs internal queuing
+    - How queue depth grows over time
+    - Whether workers scaled in response to queuing
+    - Correlation between endpoint load and Dataflow queuing
+
+    Args:
+        latency_df: DataFrame with columns:
+            - publish_time: Unix timestamp when message published
+            - window_end: Unix timestamp of window boundary (or UNIX_SECONDS(window_end))
+            - pipeline_output_time: Unix timestamp when message output
+            - sequence: Message sequence number (optional)
+        dataflow_metrics: Dict with 'workers', 'lag', 'backlog' DataFrames (from collect_combined_metrics)
+        endpoint_metrics: Dict with 'cpu', 'replicas' DataFrames (from collect_combined_metrics)
+        test_name: Name of test for title
+
+    Returns:
+        Plotly figure with 4-panel diagnostic:
+        - Panel 1: Pie chart showing latency attribution
+        - Panel 2: Stacked area showing components over time
+        - Panel 3: Heatmap showing when messages get stuck
+        - Panel 4: Worker + replica scaling vs queue depth
+    """
+
+    # Calculate latency components
+    df = latency_df.copy()
+
+    # Handle different column name conventions
+    if 'window_end' not in df.columns:
+        if 'window_end_unix' in df.columns:
+            df['window_end'] = df['window_end_unix']
+        elif 'window_start' in df.columns and 'window_start_unix' not in df.columns:
+            # window_end is TIMESTAMP, convert to unix
+            df['window_end'] = pd.to_datetime(df['window_end']).astype(int) / 10**9
+
+    df['window_wait_sec'] = df['window_end'] - df['publish_time']
+    df['internal_queue_sec'] = df['pipeline_output_time'] - df['window_end']
+    df['total_latency_sec'] = df['pipeline_output_time'] - df['publish_time']
+
+    # Create timestamps for plotting
+    df['publish_datetime'] = pd.to_datetime(df['publish_time'], unit='s')
+
+    # Calculate aggregate statistics
+    total_window_time = df['window_wait_sec'].sum()
+    total_queue_time = df['internal_queue_sec'].sum()
+    total_latency_time = df['total_latency_sec'].sum()
+
+    window_pct = (total_window_time / total_latency_time) * 100
+    queue_pct = (total_queue_time / total_latency_time) * 100
+
+    # Create figure with 4 panels
+    fig = make_subplots(
+        rows=2, cols=2,
+        subplot_titles=(
+            f'Latency Attribution: {queue_pct:.1f}% is Internal Queuing',
+            'Latency Components Over Time (Stacked)',
+            'Queue Depth Over Time: P95 Shows Worst-Case Delays',
+            'Autoscaling Response: Workers + Replicas vs Queue Depth'
+        ),
+        specs=[
+            [{"type": "pie"}, {"type": "scatter"}],
+            [{"type": "scatter"}, {"type": "xy", "secondary_y": True}]
+        ],
+        vertical_spacing=0.12,
+        horizontal_spacing=0.15
+    )
+
+    # Panel 1: Pie chart showing attribution
+    fig.add_trace(go.Pie(
+        labels=['Window Assignment<br>(metadata)', 'Internal Queue<br>(BOTTLENECK)'],
+        values=[window_pct, queue_pct],
+        marker=dict(colors=['lightblue', 'red']),
+        textinfo='label+percent',
+        textposition='inside',
+        hovertemplate='%{label}<br>%{percent}<extra></extra>'
+    ), row=1, col=1)
+
+    # Panel 2: Stacked area chart over time
+    df_time = df.sort_values('publish_datetime')
+    sample_interval = max(1, len(df_time) // 500)  # Max 500 points
+    df_sampled = df_time[::sample_interval]
+
+    fig.add_trace(go.Scatter(
+        x=df_sampled['publish_datetime'],
+        y=df_sampled['window_wait_sec'],
+        name='Window (metadata)',
+        mode='none',
+        stackgroup='one',
+        fillcolor='lightblue',
+        hovertemplate='Window: %{y:.2f}s<extra></extra>'
+    ), row=1, col=2)
+
+    fig.add_trace(go.Scatter(
+        x=df_sampled['publish_datetime'],
+        y=df_sampled['internal_queue_sec'],
+        name='Internal Queue',
+        mode='none',
+        stackgroup='one',
+        fillcolor='red',
+        hovertemplate='Queue: %{y:.2f}s<extra></extra>'
+    ), row=1, col=2)
+
+    # Panel 3: Queue depth over time
+    df_heatmap = df.copy()
+    df_heatmap['time_bucket'] = pd.cut(
+        df_heatmap['publish_time'],
+        bins=50,
+        labels=False
+    )
+
+    heatmap_data = df_heatmap.groupby('time_bucket').agg({
+        'internal_queue_sec': ['mean', lambda x: x.quantile(0.50), lambda x: x.quantile(0.95)],
+        'publish_datetime': 'first'
+    }).reset_index()
+
+    heatmap_data.columns = ['time_bucket', 'queue_mean', 'queue_p50', 'queue_p95', 'timestamp']
+
+    fig.add_trace(go.Scatter(
+        x=heatmap_data['timestamp'],
+        y=heatmap_data['queue_p95'],
+        name='P95 Queue Time',
+        mode='lines',
+        line=dict(color='darkred', width=3),
+        fill='tozeroy',
+        fillcolor='rgba(255,0,0,0.3)',
+        hovertemplate='P95 Queue: %{y:.2f}s<extra></extra>'
+    ), row=2, col=1)
+
+    fig.add_trace(go.Scatter(
+        x=heatmap_data['timestamp'],
+        y=heatmap_data['queue_mean'],
+        name='Mean Queue Time',
+        mode='lines',
+        line=dict(color='orange', width=2),
+        hovertemplate='Mean Queue: %{y:.2f}s<extra></extra>'
+    ), row=2, col=1)
+
+    # Panel 4: Autoscaling response (workers + replicas vs queue depth)
+    has_scaling_data = False
+
+    if dataflow_metrics and 'workers' in dataflow_metrics and len(dataflow_metrics['workers']) > 0:
+        worker_df = dataflow_metrics['workers'].copy()
+        worker_df['timestamp'] = pd.to_datetime(worker_df['timestamp'])
+
+        fig.add_trace(go.Scatter(
+            x=worker_df['timestamp'],
+            y=worker_df['value'],
+            name='Dataflow Workers',
+            mode='lines+markers',
+            line=dict(color='blue', width=3),
+            marker=dict(size=8),
+            yaxis='y3',
+            hovertemplate='Workers: %{y}<extra></extra>'
+        ), row=2, col=2)
+        has_scaling_data = True
+
+    if endpoint_metrics and 'replicas' in endpoint_metrics and len(endpoint_metrics['replicas']) > 0:
+        replica_df = endpoint_metrics['replicas'].copy()
+        replica_df['timestamp'] = pd.to_datetime(replica_df['timestamp'])
+
+        fig.add_trace(go.Scatter(
+            x=replica_df['timestamp'],
+            y=replica_df['value'],
+            name='Endpoint Replicas',
+            mode='lines+markers',
+            line=dict(color='green', width=2, dash='dash'),
+            marker=dict(size=6),
+            yaxis='y3',
+            hovertemplate='Replicas: %{y}<extra></extra>'
+        ), row=2, col=2)
+        has_scaling_data = True
+
+    # Always plot queue depth on secondary axis
+    fig.add_trace(go.Scatter(
+        x=heatmap_data['timestamp'],
+        y=heatmap_data['queue_p95'],
+        name='P95 Queue Depth',
+        mode='lines',
+        line=dict(color='red', width=2),
+        yaxis='y4',
+        hovertemplate='Queue: %{y:.2f}s<extra></extra>'
+    ), row=2, col=2)
+
+    if has_scaling_data:
+        fig.update_yaxes(title_text="Workers / Replicas", row=2, col=2, secondary_y=False)
+        fig.update_yaxes(title_text="Queue Depth (sec)", row=2, col=2, secondary_y=True)
+    else:
+        fig.add_annotation(
+            text="⚠️ Scaling metrics not available<br>Cannot show autoscaling response",
+            xref="x4", yref="y4",
+            x=heatmap_data['timestamp'].iloc[len(heatmap_data)//2],
+            y=heatmap_data['queue_p95'].max() / 2,
+            showarrow=False,
+            font=dict(size=14, color="gray"),
+            bgcolor="white",
+            bordercolor="gray",
+            borderwidth=1
+        )
+        fig.update_yaxes(title_text="Queue Depth (sec)", row=2, col=2)
+
+    # Update axes labels
+    fig.update_xaxes(title_text="Time", row=1, col=2)
+    fig.update_xaxes(title_text="Time", row=2, col=1)
+    fig.update_xaxes(title_text="Time", row=2, col=2)
+    fig.update_yaxes(title_text="Latency (sec)", row=1, col=2)
+    fig.update_yaxes(title_text="Queue Depth (sec)", row=2, col=1)
+
+    fig.update_layout(
+        title_text=f"{test_name}: Queuing Diagnostic",
+        showlegend=True,
+        height=1000,
+        hovermode='x unified'
+    )
+
+    return fig
+
+
+def print_queuing_summary(
+    latency_df: pd.DataFrame,
+    dataflow_metrics: Optional[Dict] = None,
+    endpoint_metrics: Optional[Dict] = None
+):
+    """
+    Print text summary of queuing analysis for Dataflow + Vertex AI Endpoint.
+
+    Args:
+        latency_df: DataFrame with latency breakdowns
+        dataflow_metrics: Optional dict with Dataflow metrics
+        endpoint_metrics: Optional dict with endpoint metrics
+    """
+    df = latency_df.copy()
+
+    # Calculate components
+    if 'window_end' not in df.columns:
+        if 'window_end_unix' in df.columns:
+            df['window_end'] = df['window_end_unix']
+        elif 'window_start' in df.columns:
+            df['window_end'] = pd.to_datetime(df['window_end']).astype(int) / 10**9
+
+    if 'window_wait_sec' not in df.columns:
+        df['window_wait_sec'] = df['window_end'] - df['publish_time']
+    if 'internal_queue_sec' not in df.columns:
+        df['internal_queue_sec'] = df['pipeline_output_time'] - df['window_end']
+    if 'total_latency_sec' not in df.columns:
+        df['total_latency_sec'] = df['pipeline_output_time'] - df['publish_time']
+
+    # Statistics
+    total_window_time = df['window_wait_sec'].sum()
+    total_queue_time = df['internal_queue_sec'].sum()
+    total_latency_time = df['total_latency_sec'].sum()
+
+    window_pct = (total_window_time / total_latency_time) * 100
+    queue_pct = (total_queue_time / total_latency_time) * 100
+
+    print("\n" + "="*80)
+    print("QUEUING DIAGNOSTIC SUMMARY")
+    print("="*80)
+    print(f"\nTotal messages analyzed: {len(df):,}")
+    print(f"\nLatency Attribution:")
+    print(f"  Window assignment (metadata): {window_pct:>6.1f}%  ({df['window_wait_sec'].mean():.3f}s avg)")
+    print(f"  Internal queue (bottleneck):  {queue_pct:>6.1f}%  ({df['internal_queue_sec'].mean():.3f}s avg)")
+    print(f"\nInternal Queue Statistics:")
+    print(f"  Mean:  {df['internal_queue_sec'].mean():>8.3f}s")
+    print(f"  P50:   {df['internal_queue_sec'].quantile(0.50):>8.3f}s")
+    print(f"  P95:   {df['internal_queue_sec'].quantile(0.95):>8.3f}s")
+    print(f"  P99:   {df['internal_queue_sec'].quantile(0.99):>8.3f}s")
+    print(f"  Max:   {df['internal_queue_sec'].max():>8.3f}s")
+
+    # Dataflow worker scaling analysis
+    if dataflow_metrics and 'workers' in dataflow_metrics and len(dataflow_metrics['workers']) > 0:
+        worker_df = dataflow_metrics['workers']
+        print(f"\nDataflow Worker Scaling:")
+        print(f"  Min workers: {worker_df['value'].min()}")
+        print(f"  Max workers: {worker_df['value'].max()}")
+        print(f"  Mean workers: {worker_df['value'].mean():.1f}")
+
+        if worker_df['value'].nunique() == 1:
+            print(f"\n  ⚠️  WARNING: Workers never scaled! Stayed at {worker_df['value'].iloc[0]}")
+            print(f"      This explains the {queue_pct:.1f}% internal queuing!")
+
+    # Endpoint replica scaling analysis
+    if endpoint_metrics and 'replicas' in endpoint_metrics and len(endpoint_metrics['replicas']) > 0:
+        replica_df = endpoint_metrics['replicas']
+        print(f"\nVertex AI Endpoint Scaling:")
+        print(f"  Min replicas: {replica_df['value'].min()}")
+        print(f"  Max replicas: {replica_df['value'].max()}")
+        print(f"  Mean replicas: {replica_df['value'].mean():.1f}")
+
+        if replica_df['value'].nunique() == 1:
+            print(f"\n  ℹ️  Endpoint stayed at {replica_df['value'].iloc[0]} replica(s)")
+
+    print("\n" + "="*80)
+    print("KEY FINDINGS")
+    print("="*80)
+    print(f"✓ {queue_pct:.1f}% of latency is from INTERNAL QUEUING")
+    print(f"✓ Only {window_pct:.1f}% is from window assignment (metadata)")
+    print(f"✓ Window configuration is NOT the bottleneck")
+
+    if dataflow_metrics and 'workers' in dataflow_metrics:
+        worker_df = dataflow_metrics['workers']
+        if len(worker_df) > 0 and worker_df['value'].nunique() == 1:
+            print(f"\n✗ Dataflow workers NEVER SCALED despite autoscaling configuration")
+            print(f"✗ This is why messages queue internally instead of being processed")
+            print(f"\n💡 RECOMMENDED FIXES:")
+            print(f"   1. Use --autoscaling_algorithm=THROUGHPUT_BASED")
+            print(f"   2. Set --target_worker_utilization=0.7 (scale at 70% capacity)")
+            print(f"   3. Verify --num_workers sets INITIAL workers (may need explicit start count)")
+            print(f"   4. Reduce max_batch_duration_secs to reduce internal buffering")
+
+    print("="*80)

@@ -283,7 +283,12 @@ class EndpointMetricsCollector:
         self.project_name = f"projects/{project_id}"
 
     def _query_metric(self, metric_type, start_time, end_time, resolution_seconds=10, aligner='ALIGN_MEAN'):
-        """Query a single metric from Cloud Monitoring"""
+        """
+        Query a single metric from Cloud Monitoring.
+
+        For sparse metrics (CPU, memory, latency), queries RAW data points without aggregation,
+        then resamples in pandas to avoid aggregation producing zeros.
+        """
         interval = monitoring_v3.TimeInterval({
             "end_time": {"seconds": int(end_time.timestamp())},
             "start_time": {"seconds": int(start_time.timestamp())}
@@ -296,19 +301,35 @@ class EndpointMetricsCollector:
             f'metric.type="{metric_type}"'
         )
 
-        # Aggregation
-        aggregation = monitoring_v3.Aggregation({
-            "alignment_period": {"seconds": resolution_seconds},
-            "per_series_aligner": getattr(monitoring_v3.Aggregation.Aligner, aligner),
-        })
+        # For sparse metrics (CPU, memory, latency), query RAW data without aggregation
+        # to avoid ALIGN_MEAN producing zeros. We'll resample in pandas instead.
+        sparse_metrics = [
+            'aiplatform.googleapis.com/prediction/online/cpu/utilization',
+            'aiplatform.googleapis.com/prediction/online/memory/bytes_used',
+            'aiplatform.googleapis.com/prediction/online/prediction_latencies'
+        ]
 
-        request = monitoring_v3.ListTimeSeriesRequest({
-            "name": self.project_name,
-            "filter": metric_filter,
-            "interval": interval,
-            "aggregation": aggregation,
-            "view": monitoring_v3.ListTimeSeriesRequest.TimeSeriesView.FULL
-        })
+        if metric_type in sparse_metrics:
+            # Query raw data points without aggregation
+            request = monitoring_v3.ListTimeSeriesRequest({
+                "name": self.project_name,
+                "filter": metric_filter,
+                "interval": interval,
+                "view": monitoring_v3.ListTimeSeriesRequest.TimeSeriesView.FULL
+            })
+        else:
+            # For dense metrics (replica count, prediction count), use aggregation
+            aggregation = monitoring_v3.Aggregation({
+                "alignment_period": {"seconds": resolution_seconds},
+                "per_series_aligner": getattr(monitoring_v3.Aggregation.Aligner, aligner),
+            })
+            request = monitoring_v3.ListTimeSeriesRequest({
+                "name": self.project_name,
+                "filter": metric_filter,
+                "interval": interval,
+                "aggregation": aggregation,
+                "view": monitoring_v3.ListTimeSeriesRequest.TimeSeriesView.FULL
+            })
 
         # Collect data points
         data_points = []
@@ -316,15 +337,17 @@ class EndpointMetricsCollector:
             for result in self.monitoring_client.list_time_series(request=request):
                 for point in result.points:
                     # Extract value based on type
-                    if hasattr(point.value, 'int64_value'):
+                    # Check for non-zero values first (both int64 and double exist but one is usually 0)
+                    if hasattr(point.value, 'int64_value') and point.value.int64_value != 0:
                         value = float(point.value.int64_value)
-                    elif hasattr(point.value, 'double_value'):
+                    elif hasattr(point.value, 'double_value') and point.value.double_value != 0.0:
                         value = point.value.double_value
                     elif hasattr(point.value, 'distribution_value'):
                         # For distribution metrics (like latency), use the mean
                         value = point.value.distribution_value.mean
                     else:
-                        continue  # Skip if we can't extract a value
+                        # Both int64 and double are 0, so the actual value is 0
+                        value = 0.0
 
                     data_points.append({
                         'timestamp': pd.Timestamp(point.interval.end_time),
@@ -337,7 +360,19 @@ class EndpointMetricsCollector:
             else:
                 print(f"⚠️  Warning: Could not fetch {metric_type}: {error_msg[:200]}")
 
-        return pd.DataFrame(data_points).sort_values('timestamp') if data_points else pd.DataFrame(columns=['timestamp', 'value'])
+        if not data_points:
+            return pd.DataFrame(columns=['timestamp', 'value'])
+
+        df = pd.DataFrame(data_points).sort_values('timestamp')
+
+        # For sparse metrics, resample in pandas to get consistent time buckets
+        # This preserves the actual values instead of aggregating to zero
+        if metric_type in sparse_metrics and len(df) > 0:
+            df = df.set_index('timestamp')
+            # Forward-fill sparse values (use last known value for gaps)
+            df = df.resample(f'{resolution_seconds}s').mean().ffill().reset_index()
+
+        return df
 
     def collect_metrics(self, start_time, end_time, resolution_seconds=10):
         """
