@@ -95,6 +95,20 @@ After training a PyTorch model (see [../pytorch-autoencoder.ipynb](../pytorch-au
 - Uses Vertex AI's default routing paths
 - Full control over preprocessing/postprocessing
 
+#### Scale Testing
+[scale-tests-vertex-ai-endpoints.ipynb](./scale-tests-vertex-ai-endpoints.ipynb)
+
+Comprehensive performance testing for deployed Vertex AI Endpoints (works with both pre-built and custom containers)
+
+After deploying an endpoint (pre-built or custom), use this notebook to understand performance characteristics:
+- **Progressive Load Testing**: Test batch sizes (1-1000 instances) and request rates (1-100+ RPS)
+- **Load Pattern Analysis**: Constant load, gradual ramp-up, traffic spikes
+- **Performance Metrics**: P50/P95/P99 latency percentiles, throughput vs latency tradeoffs
+- **Autoscaling Behavior**: Observe replica scaling, cold-start latency, CPU utilization
+- **Tuning Recommendations**: Data-driven guidance on min/max replicas and machine types
+
+**When to run**: Before production launch, after model changes, for capacity planning, during incidents
+
 ### Decision Guide: Pre-built vs Custom
 
 **Use Pre-built Container when:**
@@ -362,6 +376,14 @@ Loads .pt file directly in Dataflow workers (in-process):
 - [dataflow-batch-runinference.ipynb](./dataflow-batch-runinference.ipynb) - Batch processing with local model
 - [dataflow-streaming-runinference.ipynb](./dataflow-streaming-runinference.ipynb) - Streaming with local model
 
+**Scale Testing for Streaming** ([scale-tests-dataflow-streaming-runinference.ipynb](./scale-tests-dataflow-streaming-runinference.ipynb)):
+
+Comprehensive performance testing for streaming pipelines with local model inference:
+- **Progressive Load Testing**: Find where pipeline performance degrades (10-1000+ msg/sec)
+- **Latency Analysis**: Measure end-to-end latency breakdown (window wait vs processing)
+- **Autoscaling Behavior**: Understand worker scaling patterns and provisioning time
+- **Tuning Recommendations**: Data-driven configuration guidance for workers and machine types
+
 #### Vertex Endpoint Inference
 Calls deployed Vertex AI Endpoint via API:
 - **Centralized model**: Same endpoint used by multiple pipelines
@@ -373,6 +395,15 @@ Calls deployed Vertex AI Endpoint via API:
 **Notebooks:**
 - [dataflow-batch-runinference-vertex.ipynb](./dataflow-batch-runinference-vertex.ipynb) - Batch processing via endpoint
 - [dataflow-streaming-runinference-vertex.ipynb](./dataflow-streaming-runinference-vertex.ipynb) - Streaming via endpoint
+
+**Scale Testing for Streaming** ([scale-tests-dataflow-streaming-vertex.ipynb](./scale-tests-dataflow-streaming-vertex.ipynb)):
+
+Comprehensive performance testing for streaming pipelines calling Vertex AI Endpoints:
+- **Bottleneck Identification**: Determine if Dataflow or Vertex AI Endpoint is the bottleneck
+- **Dual-Autoscaling Analysis**: Correlate Dataflow worker scaling with endpoint replica scaling
+- **Worker-to-Replica Ratio**: Find optimal configuration for cost vs performance
+- **Combined System Performance**: Understand how both services interact under load
+- **Unified Recommendations**: Configuration guidance for both Dataflow and Vertex AI together
 
 ### Worker Configuration
 
@@ -636,6 +667,7 @@ See [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb) for complete ex
 ### Vertex AI Endpoints
 - [Pre-built Container →](./vertex-ai-endpoint-prebuilt-container.ipynb)
 - [Custom Container →](./vertex-ai-endpoint-custom-container.ipynb)
+- [Scale Testing →](./scale-tests-vertex-ai-endpoints.ipynb)
 
 ### BigQuery ML
 - [ONNX Import →](./bigquery-bqml-import-model-onnx.ipynb)
@@ -646,9 +678,11 @@ See [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb) for complete ex
 - Local Model Inference:
   - [Batch RunInference →](./dataflow-batch-runinference.ipynb)
   - [Streaming RunInference →](./dataflow-streaming-runinference.ipynb)
+  - [Scale Testing (Streaming) →](./scale-tests-dataflow-streaming-runinference.ipynb)
 - Vertex Endpoint Inference:
   - [Batch RunInference →](./dataflow-batch-runinference-vertex.ipynb)
   - [Streaming RunInference →](./dataflow-streaming-runinference-vertex.ipynb)
+  - [Scale Testing (Combined System) →](./scale-tests-dataflow-streaming-vertex.ipynb)
 - [Cleanup Resources →](./dataflow-cleanup.ipynb)
 
 ### TorchServe Deployments

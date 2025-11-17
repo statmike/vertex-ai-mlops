@@ -874,21 +874,20 @@ def create_queuing_diagnostic(
     test_name: str = "Dataflow Pipeline"
 ) -> go.Figure:
     """
-    Create queuing diagnostic visualization for Dataflow pipelines (local model inference).
+    Create latency diagnostic visualization for Dataflow pipelines (local model inference).
 
-    This diagnostic exposes WHERE latency comes from and WHY workers don't scale.
+    This diagnostic reveals WHERE latency comes from and WHY workers don't scale.
 
     Key insights revealed:
-    - What % of latency is window assignment vs internal queuing
-    - How queue depth grows over time
-    - Whether workers scaled in response to queuing
+    - What % of latency is pipeline processing vs test framework overhead
+    - How pipeline latency changes over time
+    - Whether workers scaled in response to latency increases
 
     Args:
         latency_df: DataFrame with columns:
             - publish_time: Unix timestamp when message published
-            - window_end: Unix timestamp of window boundary (or UNIX_SECONDS(window_end))
-            - pipeline_output_time: Unix timestamp when message output
-            - sequence: Message sequence number (optional)
+            - pipeline_output_time: Unix timestamp when message output from pipeline
+            - receive_time: Unix timestamp when test framework pulled message
         worker_metrics: Optional DataFrame with:
             - timestamp: Datetime
             - value: Worker count
@@ -896,46 +895,43 @@ def create_queuing_diagnostic(
 
     Returns:
         Plotly figure with 4-panel diagnostic:
-        - Panel 1: Pie chart showing latency attribution
-        - Panel 2: Stacked area showing components over time
-        - Panel 3: Heatmap showing when messages get stuck
-        - Panel 4: Worker scaling vs queue depth
+        - Panel 1: Pie chart showing latency attribution (pipeline vs test overhead)
+        - Panel 2: P95 pipeline latency trends over time
+        - Panel 3: Mean and P95 pipeline latency distribution
+        - Panel 4: Worker scaling vs pipeline latency (autoscaling correlation)
     """
 
-    # Calculate latency components
+    # Calculate REAL latency components (not window-based)
     df = latency_df.copy()
 
-    # Handle different column name conventions
-    if 'window_end' not in df.columns:
-        if 'window_end_unix' in df.columns:
-            df['window_end'] = df['window_end_unix']
-        elif 'window_start' in df.columns and 'window_start_unix' not in df.columns:
-            # window_end is TIMESTAMP, convert to unix
-            df['window_end'] = pd.to_datetime(df['window_end']).astype(int) / 10**9
+    # Pipeline processing = time inside the Dataflow pipeline
+    df['pipeline_processing_sec'] = df['pipeline_output_time'] - df['publish_time']
 
-    df['window_wait_sec'] = df['window_end'] - df['publish_time']
-    df['internal_queue_sec'] = df['pipeline_output_time'] - df['window_end']
-    df['total_latency_sec'] = df['pipeline_output_time'] - df['publish_time']
+    # Test framework overhead = time sitting in output Pub/Sub before test pulls it
+    df['test_overhead_sec'] = df['receive_time'] - df['pipeline_output_time']
+
+    # Total end-to-end
+    df['total_e2e_sec'] = df['receive_time'] - df['publish_time']
 
     # Create timestamps for plotting
     df['publish_datetime'] = pd.to_datetime(df['publish_time'], unit='s')
 
     # Calculate aggregate statistics
-    total_window_time = df['window_wait_sec'].sum()
-    total_queue_time = df['internal_queue_sec'].sum()
-    total_latency_time = df['total_latency_sec'].sum()
+    total_pipeline_time = df['pipeline_processing_sec'].sum()
+    total_overhead_time = df['test_overhead_sec'].sum()
+    total_e2e_time = df['total_e2e_sec'].sum()
 
-    window_pct = (total_window_time / total_latency_time) * 100
-    queue_pct = (total_queue_time / total_latency_time) * 100
+    pipeline_pct = (total_pipeline_time / total_e2e_time) * 100
+    overhead_pct = (total_overhead_time / total_e2e_time) * 100
 
     # Create figure with 4 panels
     fig = make_subplots(
         rows=2, cols=2,
         subplot_titles=(
-            f'Latency Attribution: {queue_pct:.1f}% is Internal Queuing',
-            'Latency Components Over Time (Stacked)',
-            'Queue Depth Over Time: P95 Shows Worst-Case Delays',
-            'Worker Scaling vs Internal Queue Depth'
+            f'Latency Attribution: {pipeline_pct:.1f}% is Pipeline Processing',
+            'P95 Pipeline Latency Trends Over Time',
+            'Pipeline Latency Distribution: Mean and P95',
+            'Worker Scaling vs Pipeline Latency (Autoscaling Correlation)'
         ),
         specs=[
             [{"type": "pie"}, {"type": "scatter"}],
@@ -945,62 +941,56 @@ def create_queuing_diagnostic(
         horizontal_spacing=0.15
     )
 
-    # Panel 1: Pie chart showing attribution with average times for context
-    window_avg = total_window_time / len(df)
-    queue_avg = total_queue_time / len(df)
+    # Panel 1: Pie chart showing REAL latency attribution
+    pipeline_avg = total_pipeline_time / len(df)
+    overhead_avg = total_overhead_time / len(df)
 
     fig.add_trace(go.Pie(
         labels=[
-            f'Window Assignment<br>(metadata)<br>avg: {window_avg:.2f}s',
-            f'Internal Queue<br>(BOTTLENECK)<br>avg: {queue_avg:.2f}s'
+            f'Pipeline Processing<br>(actual work)<br>avg: {pipeline_avg:.2f}s',
+            f'Test Framework Overhead<br>(output queue wait)<br>avg: {overhead_avg:.2f}s'
         ],
-        values=[window_pct, queue_pct],
-        marker=dict(colors=['lightblue', 'red']),
+        values=[pipeline_pct, overhead_pct],
+        marker=dict(colors=['#2E86AB', '#A23B72']),  # Blue for pipeline, purple for overhead
         textinfo='label+percent',
         textposition='inside',
         hovertemplate='%{label}<br>%{percent}<extra></extra>'
     ), row=1, col=1)
 
-    # Panel 2: Stacked area chart over time
-    df_time = df.sort_values('publish_datetime')
-    sample_interval = max(1, len(df_time) // 500)  # Max 500 points
-    df_sampled = df_time[::sample_interval]
+    # Panel 2: P95 pipeline latency trends over time
+    # Bucket into time windows to calculate P95
+    df_time = df.copy()
+    df_time['time_bucket'] = df_time['publish_datetime'].dt.floor('10s')
+
+    p95_trend = df_time.groupby('time_bucket')['pipeline_processing_sec'].quantile(0.95).reset_index()
+    p95_trend.columns = ['time_bucket', 'p95_latency']
 
     fig.add_trace(go.Scatter(
-        x=df_sampled['publish_datetime'],
-        y=df_sampled['window_wait_sec'],
-        name='Window (metadata)',
-        mode='none',
-        stackgroup='one',
-        fillcolor='lightblue',
-        hovertemplate='Window: %{y:.2f}s<extra></extra>'
+        x=p95_trend['time_bucket'],
+        y=p95_trend['p95_latency'],
+        name='P95 Pipeline Latency',
+        mode='lines',
+        line=dict(color='#2E86AB', width=2),
+        fill='tozeroy',
+        fillcolor='rgba(46, 134, 171, 0.2)',
+        hovertemplate='P95: %{y:.2f}s<extra></extra>'
     ), row=1, col=2)
 
-    fig.add_trace(go.Scatter(
-        x=df_sampled['publish_datetime'],
-        y=df_sampled['internal_queue_sec'],
-        name='Internal Queue',
-        mode='none',
-        stackgroup='one',
-        fillcolor='red',
-        hovertemplate='Queue: %{y:.2f}s<extra></extra>'
-    ), row=1, col=2)
-
-    # Smart Y-axis limiting for Panel 2 to handle extreme queue times
-    if len(df_sampled) > 0:
-        max_total = (df_sampled['window_wait_sec'] + df_sampled['internal_queue_sec']).max()
-        p99_total = (df_sampled['window_wait_sec'] + df_sampled['internal_queue_sec']).quantile(0.99)
+    # Smart Y-axis limiting for Panel 2
+    if len(p95_trend) > 0:
+        max_latency = p95_trend['p95_latency'].max()
+        p99_latency = p95_trend['p95_latency'].quantile(0.99)
 
         # If max is more than 3x the p99, cap at p99 * 1.5 to improve readability
-        if max_total > p99_total * 3:
-            y_limit = p99_total * 1.5
+        if max_latency > p99_latency * 3:
+            y_limit = p99_latency * 1.5
             fig.update_yaxes(range=[0, y_limit], row=1, col=2)
 
             # Add annotation about clipping
             fig.add_annotation(
                 text=f"Y-axis capped at {y_limit:.1f}s (P99×1.5)<br>for readability",
                 xref="x2", yref="y2",
-                x=df_sampled['publish_datetime'].iloc[len(df_sampled)//2],
+                x=p95_trend['time_bucket'].iloc[len(p95_trend)//2],
                 y=y_limit * 0.85,
                 showarrow=False,
                 font=dict(size=10, color="gray"),
@@ -1010,42 +1000,42 @@ def create_queuing_diagnostic(
                 borderpad=4
             )
 
-    # Panel 3: Queue depth over time
-    df_heatmap = df.copy()
-    df_heatmap['time_bucket'] = pd.cut(
-        df_heatmap['publish_time'],
+    # Panel 3: Pipeline latency distribution (mean and P95)
+    df_distribution = df.copy()
+    df_distribution['time_bucket'] = pd.cut(
+        df_distribution['publish_time'],
         bins=50,
         labels=False
     )
 
-    heatmap_data = df_heatmap.groupby('time_bucket').agg({
-        'internal_queue_sec': ['mean', lambda x: x.quantile(0.50), lambda x: x.quantile(0.95)],
+    distribution_data = df_distribution.groupby('time_bucket').agg({
+        'pipeline_processing_sec': ['mean', lambda x: x.quantile(0.95)],
         'publish_datetime': 'first'
     }).reset_index()
 
-    heatmap_data.columns = ['time_bucket', 'queue_mean', 'queue_p50', 'queue_p95', 'timestamp']
+    distribution_data.columns = ['time_bucket', 'latency_mean', 'latency_p95', 'timestamp']
 
     fig.add_trace(go.Scatter(
-        x=heatmap_data['timestamp'],
-        y=heatmap_data['queue_p95'],
-        name='P95 Queue Time',
+        x=distribution_data['timestamp'],
+        y=distribution_data['latency_p95'],
+        name='P95 Pipeline Latency',
         mode='lines',
-        line=dict(color='darkred', width=3),
+        line=dict(color='#A23B72', width=3),
         fill='tozeroy',
-        fillcolor='rgba(255,0,0,0.3)',
-        hovertemplate='P95 Queue: %{y:.2f}s<extra></extra>'
+        fillcolor='rgba(162, 59, 114, 0.2)',
+        hovertemplate='P95: %{y:.2f}s<extra></extra>'
     ), row=2, col=1)
 
     fig.add_trace(go.Scatter(
-        x=heatmap_data['timestamp'],
-        y=heatmap_data['queue_mean'],
-        name='Mean Queue Time',
+        x=distribution_data['timestamp'],
+        y=distribution_data['latency_mean'],
+        name='Mean Pipeline Latency',
         mode='lines',
-        line=dict(color='orange', width=2),
-        hovertemplate='Mean Queue: %{y:.2f}s<extra></extra>'
+        line=dict(color='#F18F01', width=2),
+        hovertemplate='Mean: %{y:.2f}s<extra></extra>'
     ), row=2, col=1)
 
-    # Panel 4: Worker scaling vs queue depth
+    # Panel 4: Worker scaling vs pipeline latency (THE MOST VALUABLE PANEL)
     if worker_metrics is not None and len(worker_metrics) > 0:
         worker_df = worker_metrics.copy()
         worker_df['timestamp'] = pd.to_datetime(worker_df['timestamp'])
@@ -1056,62 +1046,62 @@ def create_queuing_diagnostic(
             y=worker_df['value'],
             name='Worker Count',
             mode='lines+markers',
-            line=dict(color='blue', width=3),
+            line=dict(color='#2E86AB', width=3),
             marker=dict(size=8),
             yaxis='y3',
             hovertemplate='Workers: %{y}<extra></extra>'
         ), row=2, col=2)
 
-        # Plot queue depth on secondary y-axis
+        # Plot P95 pipeline latency on secondary y-axis
         fig.add_trace(go.Scatter(
-            x=heatmap_data['timestamp'],
-            y=heatmap_data['queue_p95'],
-            name='P95 Queue Depth',
+            x=distribution_data['timestamp'],
+            y=distribution_data['latency_p95'],
+            name='P95 Pipeline Latency',
             mode='lines',
-            line=dict(color='red', width=2),
+            line=dict(color='#A23B72', width=2),
             yaxis='y4',
-            hovertemplate='Queue: %{y:.2f}s<extra></extra>'
+            hovertemplate='P95 Latency: %{y:.2f}s<extra></extra>'
         ), row=2, col=2)
 
         # Configure secondary y-axis
         fig.update_yaxes(title_text="Worker Count", row=2, col=2, secondary_y=False)
-        fig.update_yaxes(title_text="Queue Depth (sec)", row=2, col=2, secondary_y=True)
+        fig.update_yaxes(title_text="Pipeline Latency (sec)", row=2, col=2, secondary_y=True)
 
     else:
-        # No worker metrics - just show queue depth
+        # No worker metrics - just show pipeline latency
         fig.add_trace(go.Scatter(
-            x=heatmap_data['timestamp'],
-            y=heatmap_data['queue_p95'],
-            name='P95 Queue Depth',
+            x=distribution_data['timestamp'],
+            y=distribution_data['latency_p95'],
+            name='P95 Pipeline Latency',
             mode='lines',
-            line=dict(color='red', width=3),
+            line=dict(color='#A23B72', width=3),
             fill='tozeroy',
-            hovertemplate='Queue: %{y:.2f}s<extra></extra>'
+            hovertemplate='P95 Latency: %{y:.2f}s<extra></extra>'
         ), row=2, col=2)
 
         # Add annotation about missing worker data
         fig.add_annotation(
             text="Worker metrics not available<br>Cannot show autoscaling correlation",
             xref="x4", yref="y4",
-            x=heatmap_data['timestamp'].iloc[len(heatmap_data)//2],
-            y=heatmap_data['queue_p95'].max() / 2,
+            x=distribution_data['timestamp'].iloc[len(distribution_data)//2],
+            y=distribution_data['latency_p95'].max() / 2,
             showarrow=False,
             font=dict(size=14, color="gray"),
             bgcolor="white",
             bordercolor="gray",
             borderwidth=1
         )
-        fig.update_yaxes(title_text="Queue Depth (sec)", row=2, col=2)
+        fig.update_yaxes(title_text="Pipeline Latency (sec)", row=2, col=2)
 
     # Update axes labels
     fig.update_xaxes(title_text="Time", row=1, col=2)
     fig.update_xaxes(title_text="Time", row=2, col=1)
     fig.update_xaxes(title_text="Time", row=2, col=2)
     fig.update_yaxes(title_text="Latency (sec)", row=1, col=2)
-    fig.update_yaxes(title_text="Queue Depth (sec)", row=2, col=1)
+    fig.update_yaxes(title_text="Latency (sec)", row=2, col=1)
 
     fig.update_layout(
-        title_text=f"{test_name}: Queuing Diagnostic",
+        title_text=f"{test_name}: Latency Diagnostic & Autoscaling Analysis",
         showlegend=True,
         height=1000,
         hovermode='x unified'
@@ -1125,7 +1115,7 @@ def print_queuing_summary(
     worker_metrics: Optional[pd.DataFrame] = None
 ):
     """
-    Print text summary of queuing analysis for Dataflow pipelines.
+    Print text summary of latency analysis for Dataflow pipelines.
 
     Args:
         latency_df: DataFrame with latency breakdowns
@@ -1133,41 +1123,35 @@ def print_queuing_summary(
     """
     df = latency_df.copy()
 
-    # Calculate components
-    if 'window_end' not in df.columns:
-        if 'window_end_unix' in df.columns:
-            df['window_end'] = df['window_end_unix']
-        elif 'window_start' in df.columns:
-            df['window_end'] = pd.to_datetime(df['window_end']).astype(int) / 10**9
-
-    if 'window_wait_sec' not in df.columns:
-        df['window_wait_sec'] = df['window_end'] - df['publish_time']
-    if 'internal_queue_sec' not in df.columns:
-        df['internal_queue_sec'] = df['pipeline_output_time'] - df['window_end']
-    if 'total_latency_sec' not in df.columns:
-        df['total_latency_sec'] = df['pipeline_output_time'] - df['publish_time']
+    # Calculate REAL latency components
+    if 'pipeline_processing_sec' not in df.columns:
+        df['pipeline_processing_sec'] = df['pipeline_output_time'] - df['publish_time']
+    if 'test_overhead_sec' not in df.columns:
+        df['test_overhead_sec'] = df['receive_time'] - df['pipeline_output_time']
+    if 'total_e2e_sec' not in df.columns:
+        df['total_e2e_sec'] = df['receive_time'] - df['publish_time']
 
     # Statistics
-    total_window_time = df['window_wait_sec'].sum()
-    total_queue_time = df['internal_queue_sec'].sum()
-    total_latency_time = df['total_latency_sec'].sum()
+    total_pipeline_time = df['pipeline_processing_sec'].sum()
+    total_overhead_time = df['test_overhead_sec'].sum()
+    total_e2e_time = df['total_e2e_sec'].sum()
 
-    window_pct = (total_window_time / total_latency_time) * 100
-    queue_pct = (total_queue_time / total_latency_time) * 100
+    pipeline_pct = (total_pipeline_time / total_e2e_time) * 100
+    overhead_pct = (total_overhead_time / total_e2e_time) * 100
 
     print("\n" + "="*80)
-    print("QUEUING DIAGNOSTIC SUMMARY")
+    print("LATENCY DIAGNOSTIC SUMMARY")
     print("="*80)
     print(f"\nTotal messages analyzed: {len(df):,}")
     print(f"\nLatency Attribution:")
-    print(f"  Window assignment (metadata): {window_pct:>6.1f}%  ({df['window_wait_sec'].mean():.3f}s avg)")
-    print(f"  Internal queue (bottleneck):  {queue_pct:>6.1f}%  ({df['internal_queue_sec'].mean():.3f}s avg)")
-    print(f"\nInternal Queue Statistics:")
-    print(f"  Mean:  {df['internal_queue_sec'].mean():>8.3f}s")
-    print(f"  P50:   {df['internal_queue_sec'].quantile(0.50):>8.3f}s")
-    print(f"  P95:   {df['internal_queue_sec'].quantile(0.95):>8.3f}s")
-    print(f"  P99:   {df['internal_queue_sec'].quantile(0.99):>8.3f}s")
-    print(f"  Max:   {df['internal_queue_sec'].max():>8.3f}s")
+    print(f"  Pipeline processing (actual work): {pipeline_pct:>6.1f}%  ({df['pipeline_processing_sec'].mean():.3f}s avg)")
+    print(f"  Test framework overhead:           {overhead_pct:>6.1f}%  ({df['test_overhead_sec'].mean():.3f}s avg)")
+    print(f"\nPipeline Processing Statistics:")
+    print(f"  Mean:  {df['pipeline_processing_sec'].mean():>8.3f}s")
+    print(f"  P50:   {df['pipeline_processing_sec'].quantile(0.50):>8.3f}s")
+    print(f"  P95:   {df['pipeline_processing_sec'].quantile(0.95):>8.3f}s")
+    print(f"  P99:   {df['pipeline_processing_sec'].quantile(0.99):>8.3f}s")
+    print(f"  Max:   {df['pipeline_processing_sec'].max():>8.3f}s")
 
     if worker_metrics is not None and len(worker_metrics) > 0:
         print(f"\nWorker Scaling:")
@@ -1177,22 +1161,22 @@ def print_queuing_summary(
 
         if worker_metrics['value'].nunique() == 1:
             print(f"\n  ⚠️  WARNING: Workers never scaled! Stayed at {worker_metrics['value'].iloc[0]}")
-            print(f"      This explains the {queue_pct:.1f}% internal queuing!")
+            print(f"      Pipeline latency suffers when workers don't scale to handle load!")
 
     print("\n" + "="*80)
     print("KEY FINDINGS")
     print("="*80)
-    print(f"✓ {queue_pct:.1f}% of latency is from INTERNAL QUEUING")
-    print(f"✓ Only {window_pct:.1f}% is from window assignment (metadata)")
-    print(f"✓ Window configuration is NOT the bottleneck")
+    print(f"✓ {pipeline_pct:.1f}% of end-to-end latency is actual pipeline processing")
+    print(f"✓ Only {overhead_pct:.1f}% is test framework overhead (output queue wait)")
+    print(f"✓ Focus optimization efforts on pipeline processing, not test framework")
 
     if worker_metrics is not None and len(worker_metrics) > 0 and worker_metrics['value'].nunique() == 1:
         print(f"\n✗ Workers NEVER SCALED despite autoscaling configuration")
-        print(f"✗ This is why messages queue internally instead of being processed")
+        print(f"✗ This prevents pipeline from handling increased load efficiently")
         print(f"\n💡 RECOMMENDED FIXES:")
         print(f"   1. Use --autoscaling_algorithm=THROUGHPUT_BASED")
-        print(f"   2. Set --target_worker_utilization=0.7 (scale at 70% capacity)")
-        print(f"   3. Verify --num_workers sets INITIAL workers (may need explicit start count)")
-        print(f"   4. Reduce max_batch_duration_secs to reduce internal buffering")
+        print(f"   2. Set --max_num_workers higher (currently may be capped too low)")
+        print(f"   3. Reduce BatchElements max_batch_duration_secs for faster processing")
+        print(f"   4. Monitor Dataflow system lag and backlog metrics for scaling signals")
 
     print("="*80)
