@@ -660,6 +660,12 @@ See [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb) for complete ex
 
 ---
 
+## Advanced Topics
+
+- **[Advanced Topics: Scaling, GPUs, and Optimization](./advanced-topics.md)**: In-depth guidance on scale testing, performance tuning, and using GPUs for inference across Vertex AI and Dataflow.
+
+---
+
 ## Navigation
 
 - [← Back to PyTorch Folder](../readme.md)

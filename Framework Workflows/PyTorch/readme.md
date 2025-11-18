@@ -122,6 +122,8 @@ Learn about different approaches for deploying and serving PyTorch models for in
 
 See the [serving folder](./serving/) for detailed examples and comparisons.
 
+- **[Advanced Topics: Scaling, GPUs, and Optimization](./serving/advanced-topics.md)** - Guidance on scale testing, performance tuning, and using GPUs.
+
 ## Framework Comparison
 
 | Aspect | Keras (JAX/TF) | PyTorch |
