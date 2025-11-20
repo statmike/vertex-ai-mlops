@@ -37,12 +37,13 @@ This folder contains complete examples of deploying and serving PyTorch models f
 
 ## Overview
 
-After training a PyTorch model (see [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)), you have four main approaches for serving predictions:
+After training a PyTorch model (see [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)), you have five main approaches for serving predictions:
 
 1. **[Vertex AI Endpoints](#1-vertex-ai-endpoints)** - Managed online prediction service
 2. **[BigQuery ML](#2-bigquery-ml)** - SQL-based inference in BigQuery
-3. **[Dataflow Integration](#3-dataflow-integration)** - Batch and streaming inference pipelines
-4. **[TorchServe Deployments](#4-torchserve-deployments)** - Portable serving from local to cloud
+3. **[AlloyDB AI](#3-alloydb-ai)** - SQL-based inference in PostgreSQL database
+4. **[Dataflow Integration](#4-dataflow-integration)** - Batch and streaming inference pipelines
+5. **[TorchServe Deployments](#5-torchserve-deployments)** - Portable serving from local to cloud
 
 ### Quick Comparison
 
@@ -50,6 +51,7 @@ After training a PyTorch model (see [../pytorch-autoencoder.ipynb](../pytorch-au
 |----------|----------|------------|------------|
 | **Vertex AI** | Real-time predictions | Fully managed | Hourly (always on) |
 | **BigQuery ML** | SQL-based batch scoring | Fully managed | Query-based (ONNX) or Query + Endpoint (Remote) |
+| **AlloyDB AI** | Operational DB + ML | Fully managed | Hourly (instance + endpoint) |
 | **Dataflow** | Batch/streaming processing | Managed pipeline | Per-second (when running) |
 | **TorchServe** | Custom/on-premise | Self-managed | Infrastructure only |
 
@@ -304,7 +306,113 @@ FROM ML.PREDICT(...)
 
 ---
 
-## 3. Dataflow Integration
+## 3. AlloyDB AI
+
+**What it is**: PostgreSQL-compatible transactional database with built-in Vertex AI integration for SQL-based ML inference within operational databases.
+
+**Best for**:
+- Operational databases needing real-time predictions
+- Combining transactional (OLTP) workloads with ML inference
+- Low-latency queries with embedded predictions
+- PostgreSQL applications requiring ML capabilities
+- Hybrid vector search + relational queries
+
+**Key Features**:
+- ✅ PostgreSQL-compatible (100% standard PostgreSQL)
+- ✅ Built-in Vertex AI integration via `google_ml_integration` extension
+- ✅ SQL-native predictions with `google_ml.predict_row()`
+- ✅ Sub-millisecond database queries + ML predictions
+- ✅ 4x faster than standard PostgreSQL for transactions
+- ✅ 100x faster for analytical queries (columnar engine)
+- ✅ Vector search support (pgvector, ScaNN)
+- ✅ High availability with multi-zone support
+
+**Cost**:
+- AlloyDB instance: ~$0.30/hour (2 vCPU, 16 GB RAM, minimal config)
+- Vertex AI endpoint: ~$0.20/hour (if shared with other services)
+- Total: ~$0.50/hour for demo setup
+
+### SQL-Based Inference Workflow
+
+[alloydb-vertex-ai-endpoint.ipynb](./alloydb-vertex-ai-endpoint.ipynb)
+
+Complete workflow demonstrating:
+- AlloyDB infrastructure setup (cluster, instance, database)
+- Vertex AI endpoint registration in AlloyDB
+- Loading transaction data from BigQuery into AlloyDB
+- SQL-based predictions with `google_ml.predict_row()`
+- Multi-stage inference progression:
+  - Simple predictions
+  - Field extraction from JSON responses
+  - Business logic (risk categorization)
+  - Batch scoring with results tables
+- Cleanup of all resources
+
+**SQL Example**:
+```sql
+-- Register Vertex AI endpoint
+CALL google_ml.create_model(
+    model_id => 'pytorch_autoencoder',
+    model_request_url => 'https://us-central1-aiplatform.googleapis.com/v1/.../endpoints/...:predict',
+    model_provider => 'google',
+    model_auth_type => 'alloydb_service_agent_iam'
+);
+
+-- Make predictions in SQL
+SELECT
+    transaction_id,
+    amount,
+    (google_ml.predict_row(
+        'pytorch_autoencoder',
+        JSON_BUILD_OBJECT('instances', ARRAY[ARRAY[time, v1, v2, ..., amount]])
+    )::jsonb->'predictions'->0->>'denormalized_MAE')::FLOAT AS anomaly_score,
+    CASE
+        WHEN anomaly_score > 200 THEN 'HIGH_RISK'
+        WHEN anomaly_score > 100 THEN 'MEDIUM_RISK'
+        ELSE 'NORMAL'
+    END AS risk_category
+FROM transactions
+WHERE date = CURRENT_DATE;
+```
+
+### When to Use AlloyDB AI
+
+**Use AlloyDB when:**
+- ✅ Your data is already in PostgreSQL
+- ✅ Need transactional + analytical workloads in one database
+- ✅ Want SQL-based ML inference for operational data
+- ✅ Require low-latency predictions (sub-millisecond queries)
+- ✅ Need hybrid vector search + structured data
+- ✅ PostgreSQL compatibility is required
+- ✅ Enterprise features needed (HA, backup/recovery, compliance)
+
+**Use BigQuery ML instead when:**
+- ✅ Pure analytical workloads (OLAP)
+- ✅ Petabyte-scale data warehouse
+- ✅ Batch scoring only
+- ✅ Data already in BigQuery
+
+**Comparison: AlloyDB vs BigQuery**
+
+| Feature | AlloyDB | BigQuery |
+|---------|---------|----------|
+| **Workload** | OLTP + OLAP | OLAP only |
+| **Latency** | Sub-millisecond | Seconds |
+| **Data Scale** | Up to 64 TB | Petabytes |
+| **Use Case** | Operational DB + ML | Data warehouse |
+| **Cost Model** | Per-second compute | Per-query bytes scanned |
+| **SQL Function** | `google_ml.predict_row()` | `ML.PREDICT()` |
+
+### Quick Start
+
+1. Train model: [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)
+2. Deploy endpoint: [vertex-ai-endpoint-prebuilt-container.ipynb](./vertex-ai-endpoint-prebuilt-container.ipynb)
+3. Follow AlloyDB workflow: [alloydb-vertex-ai-endpoint.ipynb](./alloydb-vertex-ai-endpoint.ipynb)
+4. Make SQL-based predictions in your operational database
+
+---
+
+## 4. Dataflow Integration
 
 **What it is**: Apache Beam's ML inference API integrated with Google Cloud Dataflow for scalable batch and streaming inference.
 
@@ -452,7 +560,7 @@ All Dataflow notebooks include job monitoring:
 
 ---
 
-## 4. TorchServe Deployments
+## 5. TorchServe Deployments
 
 **What it is**: PyTorch's official model serving framework - portable solution that scales from local development to enterprise Kubernetes.
 
@@ -678,6 +786,9 @@ See [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb) for complete ex
 ### BigQuery ML
 - [ONNX Import →](./bigquery-bqml-import-model-onnx.ipynb)
 - [Remote Model →](./bigquery-bqml-remote-model-vertex.ipynb)
+
+### AlloyDB AI
+- [AlloyDB with Vertex AI Endpoints →](./alloydb-vertex-ai-endpoint.ipynb)
 
 ### Dataflow Workflows
 - [Setup Infrastructure →](./dataflow-setup.ipynb)

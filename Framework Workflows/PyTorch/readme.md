@@ -101,6 +101,13 @@ Learn about different approaches for deploying and serving PyTorch models for in
     - Ideal for large models or existing deployments
   - Batch scoring, scheduled queries, continuous predictions
   - Perfect for data warehouse integration
+- **AlloyDB AI**: SQL-based inference in PostgreSQL-compatible database
+  - [AlloyDB with Vertex AI Endpoints](./serving/alloydb-vertex-ai-endpoint.ipynb) - Call endpoints from AlloyDB SQL
+    - PostgreSQL-compatible transactional database with ML capabilities
+    - SQL-native predictions with `google_ml.predict_row()`
+    - Combine OLTP workloads with real-time ML inference
+    - Sub-millisecond database queries + ML predictions
+    - Ideal for operational databases needing predictions
 - **Dataflow RunInference**: Batch and streaming inference
   - [Setup](./serving/dataflow-setup.ipynb) - One-time infrastructure setup
   - [Cleanup](./serving/dataflow-cleanup.ipynb) - Remove Dataflow resources

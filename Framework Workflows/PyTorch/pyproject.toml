@@ -43,16 +43,27 @@ optional = true
 [tool.poetry.group.dev.dependencies]
 taskipy = "^1.14.1" 
 
+[tool.poetry.group.alloydb]
+optional = true
+
+[tool.poetry.group.alloydb.dependencies]
+google-cloud-alloydb = "^0.6.0"
+google-cloud-alloydb-connector = "^1.10.0"
+sqlalchemy = "^2.0.44"
+pg8000 = "^1.31.5"
+asyncpg = "^0.30.0"
+google-cloud-compute = "^1.40.0"
+
 [tool.taskipy.tasks.req_full]
-cmd = "poetry export -f requirements.txt --output requirements.txt --without-hashes"
+cmd = "poetry export --with alloydb -f requirements.txt --output requirements.txt --without-hashes"
 help = "Generates full requirements.txt (from poetry.lock)"
 
 [tool.taskipy.tasks.req_brief]
-cmd = "poetry export --only main --without-hashes | grep -f <(poetry show --only main --tree | grep -E '^[a-zA-Z0-9]' | awk '{print $1}') > requirements-brief.txt"
+cmd = "poetry export --only main,alloydb --without-hashes | grep -f <(poetry show --only main,alloydb --tree | grep -E '^[a-zA-Z0-9]' | awk '{print $1}') > requirements-brief.txt"
 help = "Generates brief requirements.txt (top-level packages only)"
 
 [tool.taskipy.tasks.req_colab]
-cmd = "poetry export --only main --without-hashes | grep -f <(poetry show --only main --tree | grep -E '^[a-zA-Z0-9]' | awk '{print $1}') | grep -v -E '^ipython|^ipykernel' > requirements-colab.txt"
+cmd = "poetry export --only main,alloydb --without-hashes | grep -f <(poetry show --only main,alloydb --tree | grep -E '^[a-zA-Z0-9]' | awk '{print $1}') | grep -v -E '^ipython|^ipykernel' > requirements-colab.txt"
 help = "Generates brief requirements for Colab (skips ipython)"
 
 [tool.taskipy.tasks.reqs]
