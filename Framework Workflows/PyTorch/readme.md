@@ -108,6 +108,13 @@ Learn about different approaches for deploying and serving PyTorch models for in
     - Combine OLTP workloads with real-time ML inference
     - Sub-millisecond database queries + ML predictions
     - Ideal for operational databases needing predictions
+- **Cloud Spanner**: SQL-based inference in globally distributed database
+  - [Spanner with Vertex AI Endpoints](./serving/spanner-vertex-ai-endpoint.ipynb) - Call endpoints from Spanner SQL
+    - Globally distributed, horizontally scalable relational database
+    - SQL-native predictions with `ML.PREDICT()` (GoogleSQL dialect)
+    - Combine OLTP workloads with ML inference at global scale
+    - Strong consistency with 99.999% SLA (multi-region)
+    - Ideal for globally distributed applications needing predictions
 - **Dataflow RunInference**: Batch and streaming inference
   - [Setup](./serving/dataflow-setup.ipynb) - One-time infrastructure setup
   - [Cleanup](./serving/dataflow-cleanup.ipynb) - Remove Dataflow resources

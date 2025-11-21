@@ -34,11 +34,11 @@ onnx = "^1.19.1"
 onnxruntime = "^1.23.2"
 onnxscript = "^0.5.6"
 kaleido = "^1.2.0"
-
+sqlalchemy = "^2.0.44"
+google-cloud-compute = "^1.40.0"
 
 [tool.poetry.group.dev]
 optional = true
-# use poetry install --with dev to include these:
 
 [tool.poetry.group.dev.dependencies]
 taskipy = "^1.14.1" 
@@ -49,21 +49,26 @@ optional = true
 [tool.poetry.group.alloydb.dependencies]
 google-cloud-alloydb = "^0.6.0"
 google-cloud-alloydb-connector = "^1.10.0"
-sqlalchemy = "^2.0.44"
 pg8000 = "^1.31.5"
 asyncpg = "^0.30.0"
-google-cloud-compute = "^1.40.0"
+
+[tool.poetry.group.spanner]
+optional = true
+
+[tool.poetry.group.spanner.dependencies]
+google-cloud-spanner = "^3.59.0"
+sqlalchemy-spanner = "^1.17.1"
 
 [tool.taskipy.tasks.req_full]
-cmd = "poetry export --with alloydb -f requirements.txt --output requirements.txt --without-hashes"
+cmd = "poetry export --with alloydb,spanner -f requirements.txt --output requirements.txt --without-hashes"
 help = "Generates full requirements.txt (from poetry.lock)"
 
 [tool.taskipy.tasks.req_brief]
-cmd = "poetry export --only main,alloydb --without-hashes | grep -f <(poetry show --only main,alloydb --tree | grep -E '^[a-zA-Z0-9]' | awk '{print $1}') > requirements-brief.txt"
+cmd = "poetry export --only main,alloydb,spanner --without-hashes | grep -f <(poetry show --only main,alloydb,spanner --tree | grep -E '^[a-zA-Z0-9]' | awk '{print $1}') > requirements-brief.txt"
 help = "Generates brief requirements.txt (top-level packages only)"
 
 [tool.taskipy.tasks.req_colab]
-cmd = "poetry export --only main,alloydb --without-hashes | grep -f <(poetry show --only main,alloydb --tree | grep -E '^[a-zA-Z0-9]' | awk '{print $1}') | grep -v -E '^ipython|^ipykernel' > requirements-colab.txt"
+cmd = "poetry export --only main,alloydb,spanner --without-hashes | grep -f <(poetry show --only main,alloydb,spanner --tree | grep -E '^[a-zA-Z0-9]' | awk '{print $1}') | grep -v -E '^ipython|^ipykernel' > requirements-colab.txt"
 help = "Generates brief requirements for Colab (skips ipython)"
 
 [tool.taskipy.tasks.reqs]

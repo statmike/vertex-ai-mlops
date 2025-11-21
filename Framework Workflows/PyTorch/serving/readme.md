@@ -37,13 +37,14 @@ This folder contains complete examples of deploying and serving PyTorch models f
 
 ## Overview
 
-After training a PyTorch model (see [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)), you have five main approaches for serving predictions:
+After training a PyTorch model (see [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)), you have six main approaches for serving predictions:
 
 1. **[Vertex AI Endpoints](#1-vertex-ai-endpoints)** - Managed online prediction service
 2. **[BigQuery ML](#2-bigquery-ml)** - SQL-based inference in BigQuery
 3. **[AlloyDB AI](#3-alloydb-ai)** - SQL-based inference in PostgreSQL database
-4. **[Dataflow Integration](#4-dataflow-integration)** - Batch and streaming inference pipelines
-5. **[TorchServe Deployments](#5-torchserve-deployments)** - Portable serving from local to cloud
+4. **[Cloud Spanner](#4-cloud-spanner)** - SQL-based inference in globally distributed database
+5. **[Dataflow Integration](#5-dataflow-integration)** - Batch and streaming inference pipelines
+6. **[TorchServe Deployments](#6-torchserve-deployments)** - Portable serving from local to cloud
 
 ### Quick Comparison
 
@@ -52,6 +53,7 @@ After training a PyTorch model (see [../pytorch-autoencoder.ipynb](../pytorch-au
 | **Vertex AI** | Real-time predictions | Fully managed | Hourly (always on) |
 | **BigQuery ML** | SQL-based batch scoring | Fully managed | Query-based (ONNX) or Query + Endpoint (Remote) |
 | **AlloyDB AI** | Operational DB + ML | Fully managed | Hourly (instance + endpoint) |
+| **Cloud Spanner** | Global apps + ML | Fully managed | Hourly (nodes + endpoint) |
 | **Dataflow** | Batch/streaming processing | Managed pipeline | Per-second (when running) |
 | **TorchServe** | Custom/on-premise | Self-managed | Infrastructure only |
 
@@ -412,7 +414,147 @@ WHERE date = CURRENT_DATE;
 
 ---
 
-## 4. Dataflow Integration
+## 4. Cloud Spanner
+
+**What it is**: Google Cloud's globally distributed, horizontally scalable relational database with built-in Vertex AI integration for SQL-based ML inference.
+
+**Best for**:
+- Globally distributed applications needing ML predictions
+- Applications requiring strong consistency worldwide
+- Horizontally scalable databases with ML capabilities
+- Multi-region deployments with 99.999% SLA
+- Applications needing both OLTP and ML at global scale
+
+**Key Features**:
+- ✅ Globally distributed with strong consistency
+- ✅ Horizontal scalability to petabyte scale
+- ✅ Built-in Vertex AI integration via `ML.PREDICT()` (GoogleSQL)
+- ✅ 99.999% SLA for multi-region configurations
+- ✅ No IAM permissions required for ML integration
+- ✅ Two SQL dialects: GoogleSQL (recommended for ML) and PostgreSQL
+- ✅ ACID transactions with serializable isolation
+- ✅ Automatic replication and failover
+
+**Cost**:
+- Spanner instance: ~$0.90/hour (1 node, Enterprise edition, regional)
+- Vertex AI endpoint: ~$0.20/hour (if shared with other services)
+- Total: ~$1.10/hour for demo setup
+- Multi-region configurations cost more but provide global distribution
+
+### SQL-Based Inference Workflow
+
+[spanner-vertex-ai-endpoint.ipynb](./spanner-vertex-ai-endpoint.ipynb)
+
+Complete workflow demonstrating:
+- Spanner infrastructure setup (instance, GoogleSQL database)
+- Vertex AI endpoint registration with `CREATE MODEL`
+- Loading transaction data from BigQuery into Spanner
+- SQL-based predictions with `ML.PREDICT()`
+- Multi-stage inference progression:
+  - Simple predictions
+  - Field extraction from JSON responses
+  - Business logic (risk categorization)
+  - Batch scoring with results tables
+- Cleanup of all resources
+
+**SQL Example**:
+```sql
+-- Register Vertex AI endpoint
+CREATE MODEL pytorch_autoencoder_endpoint
+INPUT (
+    Time FLOAT64,
+    V1 FLOAT64, V2 FLOAT64, ..., V28 FLOAT64,
+    Amount FLOAT64
+)
+OUTPUT (denormalized_MAE FLOAT64, ...)
+REMOTE OPTIONS (
+    endpoint = 'https://us-central1-aiplatform.googleapis.com/v1/projects/.../endpoints/...'
+);
+
+-- Make predictions in SQL
+SELECT
+    transaction_id,
+    amount,
+    denormalized_MAE AS anomaly_score,
+    CASE
+        WHEN anomaly_score > 200 THEN 'HIGH_RISK'
+        WHEN anomaly_score > 100 THEN 'MEDIUM_RISK'
+        ELSE 'NORMAL'
+    END AS risk_category
+FROM ML.PREDICT(
+    MODEL pytorch_autoencoder_endpoint,
+    (SELECT * FROM transactions WHERE date = CURRENT_DATE)
+);
+```
+
+### When to Use Cloud Spanner
+
+**Use Spanner when:**
+- ✅ Need global distribution with strong consistency
+- ✅ Require horizontal scalability (beyond single-region limits)
+- ✅ Need 99.999% SLA (multi-region)
+- ✅ Application spans multiple regions/continents
+- ✅ Want SQL-based ML inference at global scale
+- ✅ Need both OLTP and ML capabilities
+- ✅ Require automatic global replication
+
+**Use AlloyDB instead when:**
+- ✅ Single-region deployment is sufficient
+- ✅ Need PostgreSQL compatibility
+- ✅ Want sub-millisecond latency (vs <10ms in Spanner)
+- ✅ Lower cost is priority (AlloyDB ~$0.30/hr vs Spanner ~$0.90/hr)
+
+**Use BigQuery ML instead when:**
+- ✅ Pure analytical workloads (OLAP)
+- ✅ Petabyte-scale data warehouse
+- ✅ Batch scoring only
+- ✅ Data already in BigQuery
+
+**Comparison: Spanner vs AlloyDB vs BigQuery**
+
+| Feature | Spanner | AlloyDB | BigQuery |
+|---------|---------|---------|----------|
+| **Workload** | OLTP (global) | OLTP + OLAP | OLAP only |
+| **Distribution** | Multi-region | Single region | Global (query only) |
+| **Scale** | Petabytes | Up to 64 TB | Petabytes+ |
+| **Latency** | <10ms (regional) | Sub-millisecond | Seconds |
+| **SLA** | 99.999% (multi-region) | 99.99% | 99.99% |
+| **SQL Dialect** | GoogleSQL or PostgreSQL | PostgreSQL | GoogleSQL |
+| **ML Function** | `ML.PREDICT()` | `google_ml.predict_row()` | `ML.PREDICT()` |
+| **IAM for ML** | None required | Requires aiplatform.user | Requires connection |
+| **Best For ML** | Global inference | Low-latency inference | Batch scoring |
+| **Consistency** | Strong (global) | Strong (regional) | Eventual |
+
+### GoogleSQL vs PostgreSQL for ML
+
+**Important**: This notebook uses **GoogleSQL dialect only**.
+
+After extensive testing, Spanner's PostgreSQL dialect has critical limitations for ML workloads:
+- ❌ Missing JSON construction functions (`json_build_object`, `json_build_array`)
+- ❌ Cannot dynamically build payloads from table data
+- ❌ `spanner.ml_predict_row()` only works with hard-coded literal values
+- ❌ Impractical for real-world batch scoring
+
+**GoogleSQL advantages for ML:**
+- ✅ Full `ML.PREDICT()` support with table integration
+- ✅ Set-based operations (like BigQuery ML)
+- ✅ `CREATE MODEL` for endpoint registration
+- ✅ Production-ready for batch scoring
+
+### Key Advantage: No IAM Permissions Required
+
+Unlike AlloyDB, Spanner ML integration **does not require** granting IAM permissions to service accounts. Model registration and inference work immediately after `CREATE MODEL`.
+
+### Quick Start
+
+1. Train model: [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb)
+2. Deploy endpoint: [vertex-ai-endpoint-prebuilt-container.ipynb](./vertex-ai-endpoint-prebuilt-container.ipynb)
+3. Follow Spanner workflow: [spanner-vertex-ai-endpoint.ipynb](./spanner-vertex-ai-endpoint.ipynb)
+4. Make SQL-based predictions in your globally distributed database
+
+---
+
+## 5. Dataflow Integration
 
 **What it is**: Apache Beam's ML inference API integrated with Google Cloud Dataflow for scalable batch and streaming inference.
 
@@ -560,7 +702,7 @@ All Dataflow notebooks include job monitoring:
 
 ---
 
-## 5. TorchServe Deployments
+## 6. TorchServe Deployments
 
 **What it is**: PyTorch's official model serving framework - portable solution that scales from local development to enterprise Kubernetes.
 
@@ -789,6 +931,9 @@ See [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb) for complete ex
 
 ### AlloyDB AI
 - [AlloyDB with Vertex AI Endpoints →](./alloydb-vertex-ai-endpoint.ipynb)
+
+### Cloud Spanner
+- [Spanner with Vertex AI Endpoints →](./spanner-vertex-ai-endpoint.ipynb)
 
 ### Dataflow Workflows
 - [Setup Infrastructure →](./dataflow-setup.ipynb)
