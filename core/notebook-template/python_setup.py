@@ -37,6 +37,13 @@
 #   - uv: Modern, fast Python package installer (implemented, requires installation)
 #   - poetry: Dependency management tool (implemented, requires poetry environment)
 #
+# Poetry Optional Dependency Groups:
+#   When using INSTALL_TOOL='poetry', you can optionally define POETRY_GROUPS in your
+#   notebook to install additional dependency groups from pyproject.toml:
+#     POETRY_GROUPS = 'dev'       # Installs main + dev group
+#     POETRY_GROUPS = 'dev,test'  # Installs main + multiple groups (comma-separated)
+#     POETRY_GROUPS = None        # Installs main dependencies only (default)
+#
 # Author: statmike
 # Repository: https://github.com/statmike/vertex-ai-mlops
 # ==============================================================================
@@ -356,10 +363,22 @@ def manage_packages(REQUIREMENTS_URL, REQ_TYPE, INSTALL_TOOL='pip'):
                 print(f"   Poetry requires a pyproject.toml file to install dependencies")
                 return None
 
+        # Check if POETRY_GROUPS is defined in caller's scope
+        import inspect
+        caller_globals = inspect.currentframe().f_back.f_back.f_globals  # Go up two frames (manage_packages -> setup_environment -> notebook)
+        poetry_groups = caller_globals.get('POETRY_GROUPS', None)
+
+        # Build poetry install command with optional groups
+        if poetry_groups:
+            print(f"ℹ️  Installing with optional group(s): {poetry_groups}")
+            install_cmd = ['poetry', 'install', '--with', poetry_groups]
+        else:
+            install_cmd = ['poetry', 'install']
+
         # Run poetry install
         print(f"Running poetry install...")
         result = subprocess.run(
-            ['poetry', 'install'],
+            install_cmd,
             capture_output=True, text=True
         )
         install_log = result.stdout.splitlines() + result.stderr.splitlines()
