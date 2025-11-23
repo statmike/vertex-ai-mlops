@@ -73,3 +73,11 @@ The following table provides a comprehensive guide to training custom PyTorch mo
 - **[PyTorch Framework Guide](../Framework%20Workflows/PyTorch/readme.md)** - Complete PyTorch workflow documentation
 
 
+### TO BE ADDED
+
+- Training Options: Vertex, BQML
+- Solutions
+- Generative AI - Hosted Models
+- Generative AI - Private Models
+
+
