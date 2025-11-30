@@ -37,6 +37,6 @@ This initial notebook is used to do essential `pip install ...`, create a GCS st
 
 ## Setting Up the Environment
 - [00 - Environment Setup.ipynb](./00%20-%20Environment%20Setup.ipynb)
-    - does environment setup: create storage bucket, install/update Python packages
+    - does environment setup: create storage bucket, install/update Python package.
 
 
