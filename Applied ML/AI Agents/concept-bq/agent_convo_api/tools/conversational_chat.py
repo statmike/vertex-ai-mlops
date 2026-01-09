@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Dict, List
 from google.adk import tools
@@ -31,11 +32,11 @@ async def conversational_chat(question: str, chart: bool, bigquery_tables: List[
     )
     """
     try:
-        # Create a stable, hashable key from the list of datasource dictionaries
+        # Create a stable, JSON-compatible key from the list of datasource dictionaries
         # Sort outer list by project_id, then dataset_id, then table_id
         sorted_tables = sorted(bigquery_tables, key=lambda t: (t['project_id'], t['dataset_id'], t['table_id']))
-        # Create a tuple of tuples of sorted items for each dictionary
-        datasource_key = tuple(tuple(sorted(t.items())) for t in sorted_tables)
+        # Create a JSON string key (JSON keys must be str, not tuple)
+        datasource_key = json.dumps(sorted_tables, sort_keys=True)
 
         # Get the main session dictionary from state
         sessions = tool_context.state.get('conversational_api_sessions', {})
