@@ -226,6 +226,77 @@ This allows you to:
 - Verify deployed agent permissions and tool access
 
 ---
+## Agent Analytics
+
+All agents in this project are configured to log events to BigQuery using the [BigQuery Agent Analytics Plugin](https://google.github.io/adk-docs/observability/bigquery-agent-analytics/). This enables comprehensive analysis of agent behavior, including LLM calls, tool usage, latency metrics, and more.
+
+### Shared Analytics Infrastructure
+
+The `bq_plugin/` folder contains a shared analytics module used by all agents:
+
+```
+bq_plugin/
+├── __init__.py              # Package exports
+├── bq_plugin.py             # Plugin configuration
+└── setup_and_queries.ipynb  # Setup notebook + example queries
+```
+
+**Key Features:**
+- **Unified Logging** - All agents log to the same BigQuery table, enabling cross-agent analysis
+- **Easy Toggle** - Each agent's `agent.py` has a clearly marked section that can be commented out to disable logging
+- **GCS Offloading** - Large content (images, long text) is automatically stored in GCS with references in BigQuery
+
+### Setup
+
+Before running agents with analytics enabled, run the setup notebook to create the BigQuery dataset and table:
+
+1. Open `bq_plugin/setup_and_queries.ipynb`
+2. Run the setup cells to create:
+   - Dataset: `applied_ml_concept_bq`
+   - Table: `agent_events`
+3. Optionally truncate the table for demo resets
+
+### Configuration
+
+Analytics settings are configured in `.env`:
+
+```bash
+# BigQuery Agent Analytics Plugin
+BQ_ANALYTICS_DATASET=applied_ml_concept_bq
+BQ_ANALYTICS_TABLE=agent_events
+BQ_ANALYTICS_GCS_BUCKET=your-bucket-name
+BQ_ANALYTICS_GCS_PATH=applied-ml/ai-agents/concept-bq/bq_plugin
+```
+
+### Example Queries
+
+The setup notebook includes queries for:
+- Event type distribution
+- Agent activity comparison
+- Token usage analysis
+- Latency analysis (LLM & tools)
+- Tool usage statistics
+- Error analysis
+- Conversation tracing by `invocation_id`
+- Multimodal content queries (GCS references)
+- Daily activity summaries
+
+### Disabling Analytics
+
+To disable analytics for any agent, comment out the plugin section at the end of its `agent.py`:
+
+```python
+# ============================================================
+# BigQuery Agent Analytics Plugin
+# To disable: comment out the following 3 lines
+# ============================================================
+# from bq_plugin import bq_analytics_plugin
+# from google.adk.apps import App
+# app = App(name="agent_name", root_agent=root_agent, plugins=[bq_analytics_plugin])
+# ============================================================
+```
+
+---
 ### Example Questions
 
 When you run the ADK web interface, you can interact with the agents. In the top-left corner of the window, there is a dropdown menu to select the agent you want to interact with.

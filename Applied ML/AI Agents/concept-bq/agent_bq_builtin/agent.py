@@ -23,3 +23,13 @@ root_agent = agents.Agent(
     disallow_transfer_to_parent=False,  # Allows transfers to parent (default)
     disallow_transfer_to_peers=True     # Prevents transfers to peers
 )
+
+# ============================================================
+# BigQuery Agent Analytics Plugin
+# Logs agent events to BigQuery for analysis and debugging.
+# To disable: comment out the following 3 lines
+# ============================================================
+from bq_plugin import bq_analytics_plugin
+from google.adk.apps import App
+app = App(name="agent_bq_builtin", root_agent=root_agent, plugins=[bq_analytics_plugin])
+# ============================================================
