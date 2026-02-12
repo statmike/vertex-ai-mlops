@@ -624,7 +624,17 @@ Loads .pt file directly in Dataflow workers (in-process):
 
 **Notebooks:**
 - [dataflow-batch-runinference.ipynb](./dataflow-batch-runinference.ipynb) - Batch processing with local model
-- [dataflow-streaming-runinference.ipynb](./dataflow-streaming-runinference.ipynb) - Streaming with local model
+- [dataflow-streaming-runinference.ipynb](./dataflow-streaming-runinference.ipynb) - Streaming with local model (explicit BatchElements + custom DoFn)
+- [dataflow-streaming-runinference-keyed.ipynb](./dataflow-streaming-runinference-keyed.ipynb) - Streaming with Beam-native RunInference + KeyedModelHandler
+  - 5 pipeline steps instead of 7 (BatchElements + custom DoFn absorbed into RunInference)
+  - Metadata passthrough via JSON string key
+  - Model version tracking via `PredictionResult.model_id`
+- [dataflow-streaming-runinference-keyed-event-mode.ipynb](./dataflow-streaming-runinference-keyed-event-mode.ipynb) - Streaming with runtime model hot-swap
+  - Everything in the keyed notebook + `model_metadata_pcollection` parameter
+  - Vertex AI Model Registry integration for version tracking and artifact URI retrieval
+  - Publish model update events to Pub/Sub to swap models without restarting the pipeline
+  - Rollback to previous model version by publishing its registry path
+  - `model_id` in output automatically reflects which model produced each prediction
 
 **Scale Testing for Streaming** ([scale-tests-dataflow-streaming-runinference.ipynb](./scale-tests-dataflow-streaming-runinference.ipynb)):
 
@@ -940,6 +950,8 @@ See [../pytorch-autoencoder.ipynb](../pytorch-autoencoder.ipynb) for complete ex
 - Local Model Inference:
   - [Batch RunInference →](./dataflow-batch-runinference.ipynb)
   - [Streaming RunInference →](./dataflow-streaming-runinference.ipynb)
+  - [Streaming RunInference (Keyed) →](./dataflow-streaming-runinference-keyed.ipynb)
+  - [Streaming RunInference (Keyed + Event Mode) →](./dataflow-streaming-runinference-keyed-event-mode.ipynb)
   - [Scale Testing (Streaming) →](./scale-tests-dataflow-streaming-runinference.ipynb)
 - Vertex Endpoint Inference:
   - [Batch RunInference →](./dataflow-batch-runinference-vertex.ipynb)

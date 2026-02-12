@@ -121,6 +121,8 @@ Learn about different approaches for deploying and serving PyTorch models for in
   - Local Model Inference (in-process):
     - [Batch Processing](./serving/dataflow-batch-runinference.ipynb) - Process BigQuery tables
     - [Streaming Processing](./serving/dataflow-streaming-runinference.ipynb) - Process Pub/Sub streams
+    - [Streaming with KeyedModelHandler](./serving/dataflow-streaming-runinference-keyed.ipynb) - Beam-native RunInference with metadata passthrough
+    - [Streaming with Event-Mode Model Hot-Swap](./serving/dataflow-streaming-runinference-keyed-event-mode.ipynb) - Runtime model updates via Pub/Sub with Vertex AI Model Registry integration
   - Vertex Endpoint Inference (via API):
     - [Batch Processing](./serving/dataflow-batch-runinference-vertex.ipynb) - Call endpoint for BigQuery data
     - [Streaming Processing](./serving/dataflow-streaming-runinference-vertex.ipynb) - Call endpoint for Pub/Sub data
