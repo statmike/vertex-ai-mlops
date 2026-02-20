@@ -200,6 +200,10 @@ Separate collections per data type enforce strict schema validation and prevent 
 
 Will follow the same pattern as 4a and 4b once PDF parsing is implemented.
 
+### 4d. Create Combined Collection (Coming Soon)
+
+A single collection that accepts all data types (Reddit, Zoom, PDF) with a unified schema. This enables cross-type search — e.g., finding related discussion across a Reddit thread and a Zoom meeting about the same forecasting topic.
+
 ### 5a. Import Reddit Data Objects
 
 [import_reddit_objects.py](import_reddit_objects.py) reads all Reddit chunks from BigQuery and creates [Data Objects](https://cloud.google.com/vertex-ai/docs/vector-search-2/data-objects/data-objects) in the Reddit collection using individual creates (not batch). Each chunk becomes a DataObject with:
@@ -218,6 +222,10 @@ Uses direct (single-create) mode to simulate a continuously running system where
 
 Will follow the same pattern as 5a and 5b once PDF parsing and collection creation are implemented.
 
+### 5d. Import All Data Objects to Combined Collection (Coming Soon)
+
+Import chunks from all data types (Reddit, Zoom, PDF) into the combined collection from 4d, enabling unified cross-type retrieval.
+
 ### 6. Search & Query
 
 [search_and_query.ipynb](search_and_query.ipynb) is an interactive notebook demonstrating all search and query capabilities across both collections:
@@ -226,3 +234,15 @@ Will follow the same pattern as 5a and 5b once PDF parsing and collection creati
 - **Semantic Search**: Natural language queries like *"What machine learning methods work best for demand forecasting?"* that find conceptually relevant chunks via auto-generated embeddings. Uses `QUESTION_ANSWERING` task type to pair with documents indexed as `RETRIEVAL_DOCUMENT`.
 - **Text Search**: Keyword-based matching for specific terms like *"ARIMA"* or *"Prophet"* — useful for acronyms and method names that may not have strong semantic representation.
 - **Hybrid Search with RRF**: Combines semantic and text search using [Reciprocal Rank Fusion](https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf). A comparison table shows how the same query produces different rankings under three weight configurations (`[1,1]`, `[3,1]`, `[1,3]`), demonstrating how weight tuning shifts results between intent-based and keyword-based relevance.
+
+## Planned Enhancements
+
+Future work to augment this solution:
+
+- **Sparse Embeddings (BM25)**: Add BM25-based sparse embeddings alongside the existing dense embeddings for improved keyword-aware hybrid search. Vector Search 2.0 supports custom sparse vectors in the vector schema.
+- **ANN Indexes vs kNN**: Create [ANN indexes](https://cloud.google.com/vertex-ai/docs/vector-search-2/indexes/indexes) on collections and benchmark latency/recall against the current brute-force kNN search. Demonstrate the trade-off between index build time and query performance at scale.
+- **Grounded Generation with Gemini**: Connect retrieval results to Gemini for generating responses grounded in the retrieved chunks — turning the search pipeline into a full RAG (Retrieval-Augmented Generation) system.
+- **Evaluation**: Set up systematic evaluation of retrieval quality and generated responses using metrics like recall@k, MRR, and LLM-as-judge for answer faithfulness and relevance.
+- **ADK Agent Integration**: Connect the retrieval and generation pipeline to [Agent Development Kit (ADK)](https://google.github.io/adk-docs/) agents, enabling tool-use patterns where agents can search across collections, filter by metadata, and synthesize answers from multiple sources.
+- **ADK on Vertex AI Agent Engine**: Deploy the ADK agent to [Vertex AI Agent Engine](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/overview) for managed hosting with built-in scaling, authentication, and monitoring.
+- **ADK Agent in Gemini Enterprise**: Register the ADK agent as an extension in [Gemini for Google Cloud](https://cloud.google.com/gemini/docs/overview), making the retrieval pipeline accessible directly within the Gemini Enterprise experience.
