@@ -217,3 +217,12 @@ Uses direct (single-create) mode to simulate a continuously running system where
 ### 5c. Import PDF Data Objects (Coming Soon)
 
 Will follow the same pattern as 5a and 5b once PDF parsing and collection creation are implemented.
+
+### 6. Search & Query
+
+[search_and_query.ipynb](search_and_query.ipynb) is an interactive notebook demonstrating all search and query capabilities across both collections:
+
+- **Query**: Filter DataObjects by field values (`$gt`, `$eq`, `$and`, etc.) — analogous to SQL `WHERE` clauses. Examples include filtering Reddit chunks by karma threshold and combined filters (karma + image-enriched).
+- **Semantic Search**: Natural language queries like *"What machine learning methods work best for demand forecasting?"* that find conceptually relevant chunks via auto-generated embeddings. Uses `QUESTION_ANSWERING` task type to pair with documents indexed as `RETRIEVAL_DOCUMENT`.
+- **Text Search**: Keyword-based matching for specific terms like *"ARIMA"* or *"Prophet"* — useful for acronyms and method names that may not have strong semantic representation.
+- **Hybrid Search with RRF**: Combines semantic and text search using [Reciprocal Rank Fusion](https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf). A comparison table shows how the same query produces different rankings under three weight configurations (`[1,1]`, `[3,1]`, `[1,3]`), demonstrating how weight tuning shifts results between intent-based and keyword-based relevance.
