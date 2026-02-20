@@ -38,4 +38,4 @@ Solution workflows that combine multiple components from the [Applied GenAI](../
 
 ## Workflows
 
-- [Multi-Type File Parsing And Vertex Vector Search 2](./multi-type-parsing-and-vector-search-2/readme.md)
+- [Multi-Type File Parsing And Vertex Vector Search 2](./multi-type-parsing-and-vector-search-2/readme.md) — Parse multi-format source files (Reddit JSON, Zoom VTT, PDF) into structured chunks in BigQuery, then import into Vertex AI Vector Search 2.0 collections with auto-embeddings for semantic search, text search, and hybrid search with RRF reranking.
