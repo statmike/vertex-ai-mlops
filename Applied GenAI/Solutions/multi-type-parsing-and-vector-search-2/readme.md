@@ -34,6 +34,8 @@
 # Multi-Type File Parsing And Vertex Vector Search 2
 > You are here: `vertex-ai-mlops/Applied GenAI/Solutions/multi-type-parsing-and-vector-search-2/readme.md`
 
+Google Cloud offers fit-for-purpose managed services that automate much of the RAG pipeline — [connectors in Gemini Enterprise](https://cloud.google.com/gemini/docs/overview), [Vertex AI Search](https://cloud.google.com/enterprise-search), and [Vertex AI RAG Engine](https://cloud.google.com/vertex-ai/generative-ai/docs/rag-overview) all handle parsing, chunking, and retrieval out of the box. This project takes a more direct approach: full control over source file parsing, chunking strategy, and metadata tagging to build a fully tunable RAG system, while leveraging the automations provided by [Vector Search 2.0](https://cloud.google.com/vertex-ai/docs/vector-search-2/overview) — auto-embeddings, schema-enforced collections, and built-in hybrid search with RRF.
+
 ## Setup
 
 This project requires the packages listed in [pyproject.toml](pyproject.toml) and prefers the Python version specified there.
