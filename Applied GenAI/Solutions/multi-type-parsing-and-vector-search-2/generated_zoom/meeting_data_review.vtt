@@ -1,0 +1,106 @@
+WEBVTT
+
+00:00:02.150 --> 00:00:03.980
+Priya Sharma: Hey Leo, thanks for joining.
+
+00:00:04.220 --> 00:00:08.150
+Leo Chen: Hi Priya. No problem. I saw the notification, is the new sales data pipeline live?
+
+00:00:08.530 --> 00:00:14.740
+Priya Sharma: Yep, as of Monday morning. We're getting a steady stream of transaction data from the new point-of-sale systems across all locations.
+
+00:00:15.180 --> 00:00:21.010
+Leo Chen: That's great news. I did a quick exploratory pull this morning to get a feel for it before our chat.
+
+00:00:21.450 --> 00:00:22.910
+Priya Sharma: Oh, awesome. Any initial thoughts?
+
+00:00:23.360 --> 00:00:32.890
+Leo Chen: Mostly looks good. The schema is clean, which is a relief. But I'm seeing some... well, gaps. Specifically between last Friday and Sunday, sales drop to near zero across most stores.
+
+00:00:33.330 --> 00:00:39.950
+Leo Chen: I was worried it was a data ingestion issue, like a lag on weekends or something similar.
+
+00:00:40.480 --> 00:00:48.810
+Priya Sharma: Ah, no, that's expected behavior. Last weekend was the big national holiday. Almost all of our physical stores were closed. The few sales you see are probably from the online portal.
+
+00:00:49.250 --> 00:00:55.680
+Leo Chen: Oh, right! Of course. Okay, that's a relief. For the forecast, I'll need a proper holiday calendar. Does it cover regional holidays too?
+
+00:00:56.130 --> 01:02.940
+Priya Sharma: Absolutely. I can join that in or provide it as a separate table. We have a corporate calendar with all regional and national holidays marked.
+
+01:03.240 --> 01:11.370
+Leo Chen: Perfect. Okay, separate issue then. Store ID 73, there are no sales records at all for this past Tuesday. The whole day is just... missing. Not zero, just null.
+
+01:11.990 --> 01:18.560
+Priya Sharma: Let me check my logs... one second... Ah, yes. Store 73 had a localized network outage. They were offline for the entire business day.
+
+01:19.100 --> 01:25.820
+Priya Sharma: It's not data loss, per se. No electronic sales happened. They were running on a paper backup system that gets reconciled weekly, not transactionally.
+
+01:26.150 --> 01:33.990
+Leo Chen: So for my daily time series, that day will be a null. How should I handle that? I was thinking of imputing it, maybe using the average of the previous Tuesday?
+
+01:34.430 --> 01:43.120
+Priya Sharma: Hmm, you could, but I'd be careful. Let me check... yeah, that Tuesday was the day of a big local festival near that store. Traffic would have been higher than usual.
+
+01:43.570 --> 01:50.880
+Priya Sharma: Maybe an average of the last four Tuesdays would be a more stable proxy. And we should definitely add a flag column, something like 'is_imputed'.
+
+01:51.310 --> 01:57.950
+Leo Chen: That's a much better idea. Good call on the local event context. An 'is_imputed' flag is essential. I'll add that to my feature engineering plan.
+
+01:58.520 --> 02:05.780
+Leo Chen: Which brings me to my next question: granularity. The new feed is transactional, so I can get timestamps, right? I was hoping to build an hourly forecast.
+
+02:06.230 --> 02:14.850
+Priya Sharma: You can, yes... for data from this week onward. But the historical data we have, the past two years' worth, was migrated from the old system.
+
+02:15.110 --> 02:16.550
+Leo Chen: And let me guess...
+
+02:16.890 --> 02:24.140
+Priya Sharma: The old system only stored daily totals. We don't have hourly breakdowns for anything before this Monday. It's just a date and a total sales figure per store.
+
+02:24.780 --> 02:33.330
+Leo Chen: Ah. That's... a challenge. My whole plan was to model intra-day seasonality, capture lunch rushes, evening peaks... that's not possible if we use the full history.
+
+02:33.870 --> 02:37.150
+Priya Sharma: I'm sorry. It was a limitation of the legacy architecture we couldn't get around.
+
+02:37.660 --> 02:48.910
+Leo Chen: No, no, it's a classic data problem. Not your fault. Okay, I need to rethink this. We can't just ignore two years of history. Maybe... could we create 'typical day profiles' from the new hourly data and apply them?
+
+02:49.450 --> 02:56.500
+Priya Sharma: We could try, but I'd be worried about introducing artificial patterns into the historical data. It feels a bit risky.
+
+02:56.990 --> 03:04.330
+Leo Chen: You're right, it is. Too many assumptions. Okay, Plan B. The most pragmatic approach is to build a daily forecast first. That allows us to use the full, rich dataset.
+
+03:04.810 --> 03:12.550
+Priya Sharma: That makes sense. We can prove the value with a daily model, and maybe in a year, when we have enough hourly data, we can build a version 2.0.
+
+03:12.910 --> 03:19.120
+Leo Chen: Exactly my thinking. Okay, so daily it is. What about other external regressors? Like promotions? Do we know when products were on sale?
+
+03:19.580 --> 03:28.990
+Priya Sharma: Yes, we can link to the marketing campaign table via SKU and date. A small warning: the SKU-level data for the old, pre-migration records might be less reliable than the new stuff.
+
+03:29.450 --> 03:32.880
+Leo Chen: Understood. Something to watch out for during EDA. Okay, I think I have a clear path forward.
+
+03:33.320 --> 03:42.970
+Priya Sharma: Great. So, to formalize action items: I will create a clean base table for you, aggregated at the `(date, store_id)` level. I'll include the imputed value and flag, and the holiday flag.
+
+03:43.230 --> 03:47.180
+Leo Chen: And the marketing campaign data? Can you provide a dump of that as well?
+
+03:47.590 --> 03:54.410
+Priya Sharma: Yes, I'll get that for you. I should have it all ready by end of day tomorrow. I'll ping you on Slack with the table names.
+
+03:54.800 --> 03:58.910
+Leo Chen: Sounds like a plan. Thanks, Priya. This was really helpful for navigating the data realities.
+
+03:59.250 --> 04:01.770
+Priya Sharma: Of course. Happy to help. Talk to you tomorrow.

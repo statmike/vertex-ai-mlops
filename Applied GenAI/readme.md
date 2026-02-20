@@ -48,9 +48,9 @@ This section covers workflows for working with [Generative AI on Vertex AI](http
           </th> 
       </tr>
       <tr>
-        <td style="text-align: center;">Building with Generative AI</td>
-        <td style="text-align: center;">Customize</td>
-        <td style="text-align: center;">Augment</td>
+        <th style="text-align: center;">Building with Generative AI</th>
+        <th style="text-align: center;">Customize</th>
+        <th style="text-align: center;">Augment</th>
       </tr>
     </thead>
     <tbody>
@@ -83,6 +83,19 @@ This section covers workflows for working with [Generative AI on Vertex AI](http
         <td style="text-align: center;"><a href="./Validate/readme.md">Validate</a></td>
         <td style="border-bottom: none;"></td>
         <td style="border-bottom: none;"></td>
+      </tr>
+    </tbody>
+    <thead>
+      <tr>
+        <th colspan="3" style="text-align: center;"><a href="./Solutions/readme.md">Solution Workflows</a></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align: center;" colspan="3"><a href="./rag-engine/readme.md">Vertex AI RAG Engine</a></td>
+      </tr>
+      <tr>
+        <td style="text-align: center;" colspan="3"><a href="./Solutions/multi-type-parsing-and-vector-search-2/readme.md">Multi-Type File Parsing And Vertex Vector Search 2</a></td>
       </tr>
     </tbody>
   </table>

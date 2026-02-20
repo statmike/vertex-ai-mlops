@@ -1,0 +1,136 @@
+WEBVTT
+
+00:00:04.120 --> 00:00:08.880
+Sarah Chen: Alright, good morning everyone. Thanks for joining. Let's kick things off.
+
+00:00:09.350 --> 00:00:15.910
+Sarah Chen: The agenda today is to finalize our modeling approach for the Q3 demand forecast. We know last year's model struggled with the mid-summer slump.
+
+00:00:16.220 --> 00:00:21.150
+Sarah Chen: We need something more robust this time around. David, can you start us off with what you found in the data?
+
+00:00:21.890 --> 00:00:26.540
+David Lee: Sure, Sarah. I've spent the last week doing a deep dive into the last three years of sales data.
+
+00:00:26.980 --> 00:00:33.430
+David Lee: The seasonality is even stronger than we thought. We have a very clear 7-day weekly pattern, with peaks on weekends.
+
+00:00:33.810 --> 00:00:41.250
+David Lee: And annually, there's the expected holiday lift in Q4, but also a distinct dip in late July and August, which our previous moving-average-based model missed completely.
+
+00:00:41.780 --> 00:00:46.990
+David Lee: Holidays are also a huge factor. The 4th of July, in particular, creates a massive, sharp spike that skews the entire week.
+
+00:00:47.530 --> 00:00:50.110
+Sarah Chen: Okay, so strong multi-seasonal patterns and significant holiday effects.
+
+00:00:50.550 --> 00:00:54.890
+Sarah Chen: That's a great summary. Ben, from a statistical standpoint, what's your take?
+
+00:00:55.730 --> 00:01:02.140
+Dr. Ben Carter: Given these characteristics, I believe a classical approach is our most reliable starting point. I'm thinking SARIMA.
+
+00:01:02.500 --> 00:01:09.120
+Dr. Ben Carter: Seasonal ARIMA is designed specifically for this. It can explicitly model both the weekly and annual seasonality David mentioned.
+
+00:01:09.580 --> 00:01:16.880
+Dr. Ben Carter: We can also add exogenous regressors for holidays, so it would account for the 4th of July spike. It's robust, well-understood, and highly interpretable.
+
+00:01:17.340 --> 00:01:21.050
+Maria Garcia: Interpretable, yes, but isn't ARIMA a bit... rigid, Ben?
+
+00:01:21.430 --> 00:01:28.110
+Maria Garcia: If we have multiple, complex seasonalities or if the holiday effects aren't just simple spikes, it can get clunky. And finding the right p, d, q parameters can be time-consuming.
+
+00:01:28.520 --> 00:01:31.780
+Dr. Ben Carter: The Box-Jenkins methodology is rigorous for a reason. It ensures we're not just fitting to noise.
+
+00:01:32.330 --> 00:01:38.210
+Maria Garcia: I agree, but we have tools now that can handle this complexity more automatically. I'd propose we look at Prophet first.
+
+00:01:38.640 --> 00:01:45.930
+Maria Garcia: It's built to handle multiple seasonalities out of the box and has a simple interface for adding custom holidays with pre- and post-event windows.
+
+00:01:46.330 --> 00:01:50.800
+Maria Garcia: We could get a very strong baseline model up and running in a fraction of the time.
+
+00:01:51.150 --> 00:01:53.990
+Sarah Chen: Okay, so SARIMA vs. Prophet. What about performance?
+
+00:01:54.600 --> 00:02:02.140
+Maria Garcia: Exactly. And that's why my primary suggestion isn't actually Prophet, but a gradient boosting model, like LightGBM.
+
+00:02:02.660 --> 00:02:09.830
+Maria Garcia: We can turn this into a supervised learning problem. We can generate tons of features: lags, rolling means, day of week, week of year, holiday flags...
+
+00:02:10.150 --> 00:02:15.990
+Maria Garcia: Plus, we can incorporate other regressors that ARIMA can't handle as easily, like marketing promotions, competitor pricing, even weather data.
+
+00:02:16.570 --> 00:02:22.440
+Dr. Ben Carter: And there's the black box. We'll get a forecast, sure, but can we explain *why* the forecast is what it is?
+
+00:02:22.820 --> 00:02:29.410
+Dr. Ben Carter: When a stakeholder asks why we're predicting a 20% drop in week three, what's our answer? 'The model decided'?
+
+00:02:29.960 --> 00:02:37.400
+Maria Garcia: That's a fair concern, but we have tools for that now. We can use SHAP values to explain individual predictions and feature importance plots to see what drives the model overall.
+
+00:02:37.810 --> 00:02:44.200
+Maria Garcia: We can literally say, 'The forecast is lower because the rolling average from the prior week is down and there's no promotion scheduled.'
+
+00:02:44.880 --> 00:02:50.590
+David Lee: A practical question, Maria. What's the data engineering lift for that? My main concern is getting all those features prepped and into a pipeline.
+
+00:02:51.010 --> 00:02:57.170
+Maria Garcia: The initial lift is heavier than for SARIMA, I'll grant you that. We'd need to build a robust feature generation script.
+
+00:02:57.540 --> 00:03:04.900
+Maria Garcia: But once that pipeline is built, it's completely automated for retraining and inference. It's an investment that pays off in scalability and performance.
+
+00:03:05.630 --> 00:03:12.710
+Sarah Chen: Okay, so we have three strong contenders. SARIMA for interpretability, Prophet for speed and ease, and LightGBM for raw power and flexibility.
+
+00:03:13.190 --> 00:03:20.080
+Sarah Chen: I'm hesitant to put all our eggs in the LightGBM basket right away because of the setup cost. But I also don't want to leave performance on the table.
+
+00:03:20.550 --> 00:03:25.760
+Sarah Chen: What if we don't choose one? What if we run a bake-off?
+
+00:03:26.430 --> 00:03:33.810
+Dr. Ben Carter: I like that. A rigorous experiment. We can select a few representative product SKUs and have Maria and me build our respective models.
+
+00:03:34.200 --> 00:03:40.450
+Dr. Ben Carter: We'd use a fixed training set and then backtest against a hold-out period. We compare on MAPE, RMSE, and bias.
+
+00:03:41.010 --> 00:03:48.330
+Maria Garcia: Sounds good to me. I can probably build both a Prophet model and a baseline LightGBM model in that time. We can use Prophet's decomposition to inform feature engineering for LightGBM.
+
+00:03:48.770 --> 00:03:52.920
+David Lee: And I can prepare the datasets for both of you, making sure the holiday flags and any external data are consistent.
+
+00:03:53.480 --> 00:03:57.190
+Sarah Chen: Excellent. This feels like a solid plan. We get to compare the approaches on our own data.
+
+00:03:57.610 --> 00:04:02.850
+Sarah Chen: So, let's formalize the action items. Let's pick two SKUs: one high-volume, stable product and one more volatile one.
+
+00:04:03.240 --> 00:04:08.010
+Sarah Chen: David, you'll prepare the training and hold-out data for those two SKUs.
+
+00:04:08.560 --> 00:04:13.990
+Sarah Chen: Ben, you'll develop the SARIMA model. Maria, you'll develop Prophet and LightGBM models.
+
+00:04:14.370 --> 00:04:20.150
+Sarah Chen: Let's set a deadline of two weeks from today. We'll reconvene then to review the backtest results. Sound good?
+
+00:04:20.550 --> 00:04:21.210
+Maria Garcia: Works for me.
+
+00:04:21.430 --> 00:04:22.500
+Dr. Ben Carter: Agreed.
+
+00:04:22.680 --> 00:04:23.440
+David Lee: Yep, I can do that.
+
+00:04:23.970 --> 00:04:28.180
+Sarah Chen: Perfect. Thanks everyone. This was very productive. I'll send out a summary and the meeting invite. Have a great day.

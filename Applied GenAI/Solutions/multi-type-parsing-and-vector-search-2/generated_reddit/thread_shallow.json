@@ -1,0 +1,67 @@
+{
+  "title": "ARIMA vs. Prophet vs. ML for Demand Forecasting - What's your go-to in 2024?",
+  "author": "ts_rookie",
+  "subreddit": "r/datascience",
+  "body": "Hey everyone,\n\nI'm working on a demand forecasting project for our e-commerce platform (weekly sales data for about 4 years). I've built a baseline using auto_arima, and while it's okay, the process of diagnosing stationarity, seasonality, and tuning (p,d,q) feels a bit cumbersome and not very robust to shifts in our data (e.g., promotional events).\n\nI keep hearing about Prophet being the 'easy' button for forecasting, and my manager is pushing for it because it's fast. On the other hand, I've seen some impressive results using ML models like LightGBM or even LSTMs that can incorporate a ton of external regressors (holiday info, marketing spend, competitor pricing, etc.).\n\nI'm feeling a bit paralyzed by the options. What are your real-world experiences?\n\n- When is classic ARIMA still the king?\n- Is Prophet's simplicity a trap? Does it hold up for mission-critical forecasts?\n- How much data/effort is really needed to get an ML model to outperform the simpler methods?\n\nHere's a plot of my current best ARIMA forecast vs actuals. As you can see, it misses the big spikes. Any advice would be appreciated!",
+  "score": 152,
+  "url": "https://www.reddit.com/r/datascience/comments/1cqx4yc/arima_vs_prophet_vs_ml_for_demand_forecasting/",
+  "image_url": "https://i.redd.it/forecast_comparison_xyz.png",
+  "comments": [
+    {
+      "comment_id": "k1a2b3c4",
+      "parent_id": null,
+      "author": "stat_archon",
+      "body": "Great question. It's the classic trade-off. Don't discount ARIMA just yet. Its strength is its statistical rigor and interpretability. The parameters (p,d,q)(P,D,Q) directly tell you about the autoregressive, moving average, and seasonal components of your series. It's a 'white box'.\n\nProphet is excellent for quick baselines, especially with multiple seasonalities (weekly, yearly) and holiday effects. However, it can be a bit of a black box and can overfit if you're not careful with the changepoint_prior_scale. It essentially fits a generalized additive model (GAM).\n\nFor your use case, since you have promotional events, you're looking at a problem with exogenous variables. This is where ARIMA (as SARIMAX) or ML models shine. An ML approach with LightGBM is probably your best bet. You can create time-based features (day of week, week of year), lag features, and rolling window statistics, then throw in your promotional data as features. It's more of an engineering challenge but almost always yields higher accuracy for complex systems.",
+      "score": 85,
+      "image_url": null
+    },
+    {
+      "comment_id": "k1a9d8e7",
+      "parent_id": null,
+      "author": "BizGuy_Dave",
+      "body": "Just use Prophet. We implemented it in Q2 and our forecasting accuracy is 'good enough'. It's fast, automatic, and the plots are easy to show to management. Don't get bogged down in all the academic statistics stuff. Time to value is what matters.",
+      "score": 25,
+      "image_url": null
+    },
+    {
+      "comment_id": "k1b3f6g9",
+      "parent_id": "k1a2b3c4",
+      "author": "ts_rookie",
+      "body": "Thanks, this is super helpful! The 'white box' vs 'black box' point is what I've been struggling with. When you say SARIMAX, I'm assuming that's how I'd add the promotional data as an external regressor? I'll look into that. The LightGBM approach also sounds promising. I have a lot of feature ideas.",
+      "score": 15,
+      "image_url": null
+    },
+    {
+      "comment_id": "k1c8h2j1",
+      "parent_id": "k1a2b3c4",
+      "author": "causal_inference_fan",
+      "body": "Great summary. I'd add that for many business decisions, the 'why' is more important than a 2% accuracy lift. Being able to tell your boss 'sales are down because the 7-day moving average component has weakened' (from an ARIMA model) is more actionable than 'the model predicts sales are down because feature_47's SHAP value is negative'. Don't abandon interpretability lightly.",
+      "score": 32,
+      "image_url": null
+    },
+    {
+      "comment_id": "k1b5k9l3",
+      "parent_id": "k1a9d8e7",
+      "author": "data_janitor_4_life",
+      "body": "Respectfully, this is dangerous advice. 'Good enough' is fine until it's not. An 'automatic' tool you don't understand will eventually produce a garbage forecast that costs the company thousands because it didn't account for a known holiday shift or data anomaly. Prophet is a tool, not a magic wand.",
+      "score": 55,
+      "image_url": null
+    },
+    {
+      "comment_id": "k1a4m7n8",
+      "parent_id": null,
+      "author": "deep_learner_99",
+      "body": "Honestly, both ARIMA and Prophet are legacy. If you have enough data (4 years is plenty), an LSTM or a Transformer-based model will capture complex non-linear patterns that simpler models can't. The ability to handle multiple time series and external variables in an end-to-end model is a game-changer. It's more work upfront to set up the data pipelines and training infrastructure, but the performance ceiling is much higher.",
+      "score": 48,
+      "image_url": null
+    },
+    {
+      "comment_id": "k1d9p0q2",
+      "parent_id": "k1a4m7n8",
+      "author": "practical_ds",
+      "body": "LSTMs are notoriously difficult to train and often overkill for this kind of problem. You need a LOT of data, and they are very slow to train. For most business problems, a well-featured gradient boosting model (like LightGBM or XGBoost) will get you 95% of the performance for 20% of the effort and compute cost.",
+      "score": 28,
+      "image_url": null
+    }
+  ]
+}
