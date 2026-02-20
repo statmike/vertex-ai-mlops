@@ -3,7 +3,7 @@
 from pydantic import BaseModel
 from google import genai
 from pathlib import Path
-import google.auth
+from config import PROJECT_ID, REGION, GEMINI_MODEL
 import json
 
 # --- Pydantic schemas for transcript structure ---
@@ -21,9 +21,7 @@ class Transcript(BaseModel):
 
 # --- Gemini client (Vertex AI + ADC) ---
 
-_, project = google.auth.default()
-client = genai.Client(vertexai=True, project=project, location="us-central1")
-MODEL = "gemini-2.5-pro"
+client = genai.Client(vertexai=True, project=PROJECT_ID, location=REGION)
 
 # --- Output ---
 
@@ -53,7 +51,7 @@ configs = [
 
 for config in configs:
     response = client.models.generate_content(
-        model=MODEL,
+        model=GEMINI_MODEL,
         contents=f"""Generate a realistic Zoom meeting transcript about time series forecasting.
 Speakers: {config['speakers']} participants with realistic names and distinct roles.
 Duration: approximately {config['minutes']} minutes.

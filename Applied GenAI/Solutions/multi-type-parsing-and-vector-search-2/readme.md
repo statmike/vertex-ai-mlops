@@ -38,6 +38,18 @@
 
 This project requires the packages listed in [pyproject.toml](pyproject.toml) and prefers the Python version specified there.
 
+**Google Cloud APIs:**
+
+Enable the required APIs:
+```bash
+gcloud services enable \
+  aiplatform.googleapis.com \
+  vectorsearch.googleapis.com \
+  documentai.googleapis.com \
+  storage.googleapis.com \
+  bigquery.googleapis.com
+```
+
 **Google Cloud ADC:**
 
 This project uses [Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials) for Google Cloud APIs. Set up and verify with:
@@ -49,6 +61,10 @@ Verify ADC is active and check which identity it's using:
 curl -s -H "Authorization: Bearer $(gcloud auth application-default print-access-token)" \
   https://www.googleapis.com/oauth2/v3/userinfo
 ```
+
+**Project Configuration:**
+
+All shared parameters (project ID, BigQuery dataset/tables, GCS bucket/paths, processor IDs, etc.) are centralized in [config.py](config.py). Update the values there for your environment — all scripts import from it.
 
 **UV (recommended):**
 
@@ -96,3 +112,108 @@ Three scripts generate synthetic forecasting-themed data in different formats. E
 **Customization tips:**
 - **Reddit/Zoom**: Edit the prompt in the `contents` string to change the topic, tone, or participant mix. Adjust the `configs` list to control the number/complexity of generated files.
 - **PDF**: Replace the `urls` list at the top of the script with your own URLs.
+
+## Solution Workflow
+
+### 1. Files in GCS
+
+The workflow starts with documents in Google Cloud Storage. [upload_to_gcs.py](upload_to_gcs.py) uploads all generated files to the GCS bucket/path defined in [config.py](config.py) and sets custom metadata on each object:
+
+| Source Type | Metadata Keys |
+|-------------|--------------|
+| Reddit (JSON) | `source-type`, `file-format`, `content-domain`, `subreddit`, `thread-title`, `comment-count` |
+| Zoom (VTT) | `source-type`, `file-format`, `content-domain`, `cue-count` |
+| PDF | `source-type`, `file-format`, `content-domain` |
+
+Metadata is set during upload (single operation per file). The `source-type` metadata is used downstream to route files to the correct parser.
+
+### 2. BigQuery Object Table
+
+The pipeline involves multiple stages — parsing, chunking, augmenting metadata, and preparing Vector Search input — each adding data that relates back to source files. Rather than managing this across loose files, we use BigQuery as the central data layer:
+
+- **Object tables** give a queryable base over GCS files with their URIs, metadata, sizes — no ETL needed
+- **Relational joins** let each downstream table (chunks, embeddings, augmented metadata) key back to source files
+- **Inspectability** at every stage via SQL (e.g. "which files haven't been parsed?")
+- **Export** to JSONL for Vector Search input is a single `EXPORT DATA` statement
+
+[create_object_table.py](create_object_table.py) creates the BigQuery dataset and object table over the GCS path. The table name follows the convention `{BQ_TABLE_PREFIX}_source` from [config.py](config.py).
+
+**BigQuery Connection:** Object tables need a [Cloud Resource connection](https://cloud.google.com/bigquery/docs/create-cloud-resource-connection) — this is just a one-time setup for the project. The connection provides a service account that BigQuery uses to read from GCS on your behalf. The script handles this automatically: it checks for an existing connection (named per `BQ_CONNECTION` in [config.py](config.py)), creates one if needed, and grants its service account `objectViewer` on your GCS bucket. Nothing to configure manually.
+
+> **Note:** The object table is a live, auto-refreshing view over GCS with [configurable staleness](https://docs.cloud.google.com/bigquery/docs/object-table-introduction#metadata_caching_for_performance).
+
+### 3a. Parse Reddit Threads
+
+[parse_reddit.py](parse_reddit.py) reads Reddit JSON files from GCS (discovered via the object table) and produces chunked rows in BigQuery (`{BQ_TABLE_PREFIX}_reddit_chunks`).
+
+**Tree flattening:** Comments use `comment_id`/`parent_id` references. The parser walks up the parent chain for each comment to build a path-based text representation:
+```
+THREAD: Post Title | PARENT: Parent comment (truncated to 200 chars) | COMMENT: Full comment body
+```
+This preserves conversational context — each chunk carries its lineage from the thread root.
+
+**SNR filtering:** Non-top-level comments shorter than `SHORT_RESPONSE_THRESHOLD` (default: 15 tokens) are dropped. Top-level comments are always kept regardless of length. This removes low-signal replies like "this" or "+1" while preserving substantive short top-level posts.
+
+**VLM image enrichment:** When a comment has an `image_url`, Gemini generates a dense 2-3 sentence description anchored to the comment's text context. The description is appended as `| IMAGE: ...`. If the VLM call fails, the chunk is kept without an image description and `is_image_description` remains `true`.
+
+**Output schema:** `chunk_id`, `source_uri`, `text_content`, `subreddit`, `timestamp_unix`, `karma`, `is_image_description`, `processed_at`
+
+**Incremental:** Tracks staleness by comparing each chunk's `processed_at` timestamp against the GCS object's `updated` timestamp. On re-run, new Reddit files are parsed and appended, updated files have their old chunks replaced, and unchanged files are skipped.
+
+### 3b. Parse Zoom Transcripts
+
+[parse_zoom.py](parse_zoom.py) reads WebVTT files from GCS and produces chunked rows in BigQuery (`{BQ_TABLE_PREFIX}_zoom_chunks`).
+
+**VTT parsing:** Each cue is extracted with its timestamp range and speaker label. Speaker names are split from the text content (format: `Speaker Name: dialogue text`).
+
+**Sliding window:** Cues are grouped into overlapping windows of `WINDOW_SIZE` (default: 15) cues with `OVERLAP` (default: 5) cues shared between consecutive windows. This ensures no context is lost at chunk boundaries — each chunk overlaps with its neighbors.
+
+**Rolling summary:** For every window after the first, Gemini generates a 15-word summary of the previous window's content. This summary is prepended as `[Summary: ...] ` to provide continuity context for downstream retrieval. The first window has no summary prefix.
+
+**Output schema:** `chunk_id`, `source_uri`, `text_content`, `speaker_list` (repeated), `timestamp_start`, `timestamp_end`, `processed_at`
+
+**Incremental:** Tracks staleness by comparing each chunk's `processed_at` timestamp against the GCS object's `updated` timestamp. On re-run, new VTT files are parsed and appended, updated files have their old chunks replaced, and unchanged files are skipped.
+
+### 3c. Parse PDFs (Coming Soon)
+
+PDF parsing will use [Document AI](https://cloud.google.com/document-ai) with LLM-powered layout parsing combined with Gemini for content enrichment. Will follow the same incremental processing pattern as the other parsers.
+
+### 4a. Create Reddit Collection
+
+[create_collection_reddit.py](create_collection_reddit.py) creates a [Vector Search 2.0](https://cloud.google.com/vertex-ai/docs/vector-search-2/overview) collection for Reddit thread chunks. The collection defines:
+
+- **Data schema:** Mirrors the BigQuery `reddit_chunks` table — `chunk_id`, `text_content`, `source_uri`, `subreddit`, `timestamp_unix`, `karma`, `is_image_description`.
+- **Vector schema:** A single dense embedding field (`text_content_embedding`) with [auto-embeddings](https://cloud.google.com/vertex-ai/docs/vector-search-2/data-objects/data-objects#auto-populate-embeddings) configured to embed the `text_content` field using `gemini-embedding-001` (768 dimensions, `RETRIEVAL_DOCUMENT` task type).
+
+The script is idempotent — if the collection already exists, it skips creation and verifies the existing collection.
+
+### 4b. Create Zoom Collection
+
+[create_collection_zoom.py](create_collection_zoom.py) creates a Vector Search 2.0 collection for Zoom transcript chunks. Same pattern as 4a with a Zoom-specific data schema:
+
+- **Data schema:** `chunk_id`, `text_content`, `source_uri`, `speaker_list` (array of strings), `timestamp_start`, `timestamp_end`.
+- **Vector schema:** Same auto-embedding configuration as the Reddit collection — `text_content_embedding` using `gemini-embedding-001`.
+
+Separate collections per data type enforce strict schema validation and prevent cross-type field conflicts.
+
+### 4c. Create PDF Collection (Coming Soon)
+
+Will follow the same pattern as 4a and 4b once PDF parsing is implemented.
+
+### 5a. Import Reddit Data Objects
+
+[import_reddit_objects.py](import_reddit_objects.py) reads all Reddit chunks from BigQuery and creates [Data Objects](https://cloud.google.com/vertex-ai/docs/vector-search-2/data-objects/data-objects) in the Reddit collection using individual creates (not batch). Each chunk becomes a DataObject with:
+
+- **`data_object_id`:** The `chunk_id` from BigQuery.
+- **`data`:** All schema fields from the chunk row.
+- **`vectors`:** Empty — auto-embeddings generate the `text_content_embedding` automatically.
+
+Uses direct (single-create) mode to simulate a continuously running system where new chunks are imported as they arrive. Existing DataObjects are skipped on re-run.
+
+### 5b. Import Zoom Data Objects
+
+[import_zoom_objects.py](import_zoom_objects.py) follows the same pattern as 5a for Zoom transcript chunks. Reads from the BigQuery `zoom_chunks` table and creates DataObjects in the Zoom collection with auto-generated embeddings.
+
+### 5c. Import PDF Data Objects (Coming Soon)
+
+Will follow the same pattern as 5a and 5b once PDF parsing and collection creation are implemented.

@@ -1,136 +1,103 @@
 WEBVTT
 
-00:00:05.150 --> 00:00:09.850
-Sarah Jenkins (Project Manager): Okay, everyone, it's 10 AM, let's get started. Thanks for joining the Q3 sales forecast review.
+00:00:15.120 --> 00:00:28.850
+Tom Davis: Alright everyone, thanks for joining. It's 10:02 AM, so let's get started. The main agenda for today is the Data Science team's presentation of the Q3 sales forecast.
 
-00:00:10.200 --> 00:00:15.500
-Sarah Jenkins (Project Manager): The goal today is for the data science team to walk us through the new quarterly forecast. Then, we can discuss the business implications. Anya, the floor is yours.
+00:00:29.150 --> 00:00:32.410
+Tom Davis: Anya, the floor is yours.
 
-00:00:16.100 --> 00:00:21.350
-Dr. Anya Sharma (Lead Data Scientist): Thanks, Sarah. Good morning, everyone. I'm sharing my screen now... can you all see the main dashboard?
+00:00:33.050 --> 00:00:43.910
+Dr. Anya Sharma: Thanks, Tom. Good morning, everyone. As Tom mentioned, Ben and I will walk you through our demand forecast for the upcoming quarter. We'll cover the overall business forecast, and then we have some high-level product category breakdowns.
 
-00:00:21.600 --> 00:00:22.500
-David Chen (VP of Sales): Yep, looks good.
+00:00:44.520 --> 00:00:49.180
+Dr. Anya Sharma: Let me just share my screen... okay, can everyone see the main dashboard?
 
-00:00:23.000 --> 00:00:30.100
-Dr. Anya Sharma (Lead Data Scientist): Great. So, for this quarter's forecast, we've continued to use our SARIMAX model, which accounts for seasonality and external factors.
+00:00:50.010 --> 00:01:25.830
+Dr. Anya Sharma: Great. So, at a high level, our model projects a total revenue of $82.5 million for Q3. This represents a 4.5% growth quarter-over-quarter and a 9% growth year-over-year. This forecast was generated using our updated Prophet model, which now incorporates promotional calendars and three key macroeconomic indicators we've found to have a strong correlation.
 
-00:00:30.450 --> 00:00:37.900
-Dr. Anya Sharma (Lead Data Scientist): As you can see from the main chart, we're projecting a modest 2.5% overall growth for Q3 compared to last year, with a forecasted revenue of $58.2 million.
+00:01:26.450 --> 00:01:36.950
+Maria Rodriguez: Sorry to jump in so quickly, Anya, but $82.5 million feels... conservative. My regional managers are projecting closer to $85 million based on the pipeline strength, especially in the enterprise segment.
 
-00:00:38.500 --> 00:00:46.800
-Dr. Anya Sharma (Lead Data Scientist): The shaded blue area represents our 95% confidence interval. Now, if we break this down by product category, you'll notice something interesting in our 'Innovate' product line...
+00:01:37.610 --> 00:01:50.110
+Dr. Anya Sharma: That's a fair point, Maria. We did see the strong pipeline data. However, the model is weighting the recent slowdown in consumer spending, which is one of the macro indicators, a bit heavily. It's creating a dampening effect on the raw pipeline growth.
 
-00:04:47.100 --> 00:04:55.250
-Dr. Anya Sharma (Lead Data Scientist): We're forecasting a slight dip of around 4% in July before a recovery in late August. We believe this is driven by post-launch saturation and some recent competitor announcements.
+00:01:50.880 --> 00:01:56.540
+David Chen: And what's the confidence interval on that $82.5 million? Are we talking plus or minus one million, or five?
 
-00:04:55.800 --> 00:05:01.100
-David Chen (VP of Sales): Hold on, Anya. A 4% dip in 'Innovate'? I have to say, that doesn't track with what my team is seeing on the ground.
+00:01:57.010 --> 00:02:08.310
+Ben Carter: Hi David, Ben here. Our 95% confidence interval for the aggregate forecast is quite tight, it's between $80.5 million and $84.5 million. So, Maria's $85 million is just outside the upper bound of what the model considers likely.
 
-00:05:01.550 --> 00:05:08.300
-David Chen (VP of Sales): Our pipeline for July is the strongest it's been all year. We have two major enterprise deals that are about to close. Why is the model so pessimistic?
+00:02:08.990 --> 00:02:17.090
+David Chen: A four-million-dollar range is significant for our financial planning. That's the difference between hitting our EPS target and missing it. How did this compare to last quarter's accuracy?
 
-00:05:08.900 --> 00:05:15.900
-Dr. Anya Sharma (Lead Data Scientist): That's a fair question, David. The model is built on historical patterns and macro trends. It can't see specific deals in your pipeline unless we manually input them.
+00:02:17.750 --> 00:02:30.430
+Dr. Anya Sharma: Last quarter, our forecast was off by 2.1%, so we landed squarely within the predicted interval. Our backtesting shows this new model has a Mean Absolute Percentage Error, or MAPE, of about 3.5% over the last two years, which is an improvement on the old SARIMA model.
 
-00:05:16.200 --> 00:05:24.400
-Ben Carter (Data Scientist): Exactly. What the model is capturing is a broader market softening and the typical second-month-of-the-quarter seasonal dip that we've seen for the past three years.
+00:02:31.210 --> 00:02:45.380
+Maria Rodriguez: I appreciate the statistical rigor, I really do. But my concern is that the model is too reliant on historical data and these macro trends, and maybe not sensitive enough to the specific, high-value deals my team is actively working to close. These aren't just 'pipeline', these are deals with verbal commits.
 
-00:05:24.700 --> 00:05:25.500
-David Chen (VP of Sales): I see.
+00:02:46.150 --> 00:03:00.850
+Sarah Jenkins: I have a different concern. Maria is worried about the top line, I'm worried about the details. Can this model tell me what this means for Product SKU 75B in the Northeast? We were completely stocked out for three weeks last year, and it was a disaster. The aggregate number doesn't help me prevent that.
 
-00:05:26.100 --> 00:05:30.900
-Maria Rossi (Finance Director): Can we talk about accuracy? Anya, what was the Mean Absolute Percentage Error, the MAPE, on this forecast?
+00:03:01.410 --> 00:03:10.590
+Dr. Anya Sharma: An excellent question, Sarah. The current presentation is at the category level, not SKU. Granular SKU-level forecasting is our next big project. It's exponentially more complex due to sparsity and intermittency.
 
-00:05:31.500 --> 00:05:38.800
-Dr. Anya Sharma (Lead Data Scientist): Across all product lines, the back-tested MAPE for Q2 was 12.4%. For this Q3 forward-looking forecast, we're projecting a similar range, around 13%.
+00:03:11.100 --> 00:03:20.940
+Dr. Anya Sharma: For now, we can provide a directional forecast for the category that SKU 75B belongs to, and then apply a historical SKU-mix percentage. It's not as accurate as a direct SKU forecast, but it's the best we can do with the current model.
 
-00:05:39.300 --> 00:05:46.800
-Maria Rossi (Finance Director): Thirteen percent... That means our actual revenue could be off by over $7 million. That's a huge variance when we're setting budgets and talking to investors.
+00:03:21.570 --> 00:03:31.020
+Sarah Jenkins: Okay... that's... a start. But it feels like a big gamble. If the mix has shifted, we're either going to be holding useless inventory or stocking out again. Can we manually adjust the forecast for that specific SKU based on what we know?
 
-00:05:47.400 --> 00:05:55.900
-Ben Carter (Data Scientist): I understand the concern, Maria. Given the current market volatility, a 13% MAPE is actually quite strong. Last year, our legacy spreadsheet-based forecasting had an error rate closer to 25%.
+00:03:31.680 --> 00:03:41.220
+Ben Carter: We could potentially do that. We can take the model's output for the category and allow for a manual override on the SKU-mix percentages. But that introduces a subjective layer, and it makes it harder to measure the model's pure performance over time.
 
-00:05:56.200 --> 00:06:03.100
-Ben Carter (Data Scientist): The model provides a baseline. The value comes from us then layering on our collective business intelligence, like the deals David just mentioned.
+00:03:41.830 --> 00:03:50.530
+David Chen: I'm with Sarah on this. A purely statistical model that causes a stock-out is a failure, no matter how low its MAPE is. We need to be able to blend the model's output with expert domain knowledge from people like Sarah and Maria.
 
-00:06:03.700 --> 00:06:04.500
-Maria Rossi (Finance Director): Okay. I'll need to see the best and worst-case scenarios based on that confidence interval.
+00:03:51.110 --> 00:03:58.310
+Tom Davis: Okay, this is a good discussion. Anya, Ben, what would it take to incorporate some of these manual adjustments or expert overrides into the final number that we use for planning?
 
-00:06:05.100 --> 00:06:12.900
-Kevin Jones (Supply Chain Manager): My concern is more granular. Anya, can you pull up the forecast for SKU 75B-Alpha? I'm looking at your data pack and it shows a 40% spike in demand for August.
+00:03:58.850 --> 00:04:11.770
+Dr. Anya Sharma: We can definitely set up a process for that. Perhaps a two-stage review. Stage one is our purely model-driven forecast. Stage two is a review session with stakeholders like Maria and Sarah to apply their insights and create a consensus forecast. We just need to be diligent about tracking the 'before' and 'after' to keep refining the model.
 
-00:06:13.500 --> 00:06:16.200
-Dr. Anya Sharma (Lead Data Scientist): One moment, Kevin. Yes, pulling it up now.
+00:04:12.330 --> 00:04:20.190
+Maria Rodriguez: I like that. A consensus forecast. If we can adjust the enterprise segment projection up slightly and formalize that adjustment, I'd feel much more comfortable using this to set my team's quotas.
 
-00:06:20.100 --> 00:06:29.800
-Kevin Jones (Supply Chain Manager): Right, see that? A 40% jump is massive. Our lead time from the supplier is six weeks. If I place an order to cover that, and it doesn't materialize, I'm sitting on a mountain of expensive inventory.
+00:04:20.760 --> 00:04:27.420
+Sarah Jenkins: Same here. If I can put in a higher allocation for SKU 75B based on our early warning systems, I can place my procurement orders with more confidence.
 
-00:06:30.300 --> 00:06:33.000
-Kevin Jones (Supply Chain Manager): What on earth is driving that specific prediction?
+00:04:28.050 --> 00:04:36.450
+David Chen: From a finance perspective, I'm okay with that, as long as we have a clear audit trail of why the numbers were changed. I need to be able to explain the variance between the 'pure' forecast and the 'consensus' forecast to the CFO.
 
-00:06:33.600 --> 00:06:43.200
-Ben Carter (Data Scientist): Great question. For that SKU, two main features are driving the spike. First, the 'Back to School' marketing campaign that's scheduled to go live in mid-July. We've seen that campaign cause a similar uplift for the past two years.
+00:04:36.990 --> 00:04:44.970
+Tom Davis: Excellent. It sounds like we have a path forward. So, action items: Anya, your team will continue with the model. But we'll add a consensus review meeting to the quarterly process. For this quarter, let's get that scheduled for early next week.
 
-00:06:43.800 --> 00:06:51.500
-Ben Carter (Data Scientist): Second, one of our main competitors for that product just announced a price increase that takes effect August 1st. The model is predicting we'll capture some of their price-sensitive customers.
+00:04:45.540 --> 00:04:55.740
+Dr. Anya Sharma: We can do that. We'll come prepared with the category-level breakdown and the historical SKU-mix percentages, Sarah. And Maria, we can run a simulation to see what impact a 5% higher close rate on enterprise deals would have on the total.
 
-00:06:52.000 --> 00:06:58.300
-Kevin Jones (Supply Chain Manager): Okay, that makes sense. But a 40% jump still feels high. The marketing campaign is digital-only this year, less spend than before.
+00:04:56.230 --> 00:04:59.030
+Maria Rodriguez: Perfect, that would be very helpful. Thank you.
 
-00:06:58.900 --> 00:07:07.100
-Dr. Anya Sharma (Lead Data Scientist): That's a critical piece of information, Kevin. This is where the model needs your expertise. We can adjust the 'weight' of the marketing variable and re-run the forecast for that SKU.
+00:04:59.510 --> 00:05:01.890
+Sarah Jenkins: Appreciate it, Anya. Looking forward to it.
 
-00:07:07.500 --> 00:07:13.900
-Dr. Anya Sharma (Lead Data Scientist): Perhaps we could model a 10% and 20% lift instead of the 35% it learned from previous, larger campaigns. That would give you a range for inventory planning.
+00:05:02.400 --> 00:05:08.520
+David Chen: Sounds good. Just make sure the final output for me includes the base model forecast, the consensus forecast, and a list of the adjustments made.
 
-00:07:14.400 --> 00:07:17.000
-Kevin Jones (Supply Chain Manager): Yes, that would be much more helpful. Thank you.
+00:05:08.930 --> 00:05:12.710
+Ben Carter: No problem, David. We can build that into our reporting dashboard.
 
-00:07:17.600 --> 00:07:26.500
-David Chen (VP of Sales): Following on that, could we do something similar for regions? My West coast team is outperforming the model, but the East coast is lagging. A single national number isn't very actionable for me.
+00:05:13.250 --> 00:05:17.480
+Tom Davis: Great. Any other questions or points before we wrap up? We're at 44 minutes.
 
-00:07:27.100 --> 00:07:33.400
-Dr. Anya Sharma (Lead Data Scientist): We can definitely explore regional models. The challenge is data sparsity; some regions have less historical data, which can reduce model accuracy.
+00:05:18.060 --> 00:05:27.010
+Dr. Anya Sharma: Just one final thought. As we get more granular, we'll need cleaner data, especially from the supply chain and sales ops side. Things like real-time promotional flags and more structured pipeline data will make a huge difference in accuracy.
 
-00:07:33.800 --> 00:07:41.200
-Ben Carter (Data Scientist): But we could start with your top three regions, David. If your team can provide some structured data on pipeline strength or regional promotions, we can add those as regressors.
+00:05:27.650 --> 00:05:30.950
+Maria Rodriguez: Point taken. I can work with my team on pipeline data hygiene.
 
-00:07:41.600 --> 00:07:44.200
-David Chen (VP of Sales): Perfect. My team can get that to you by end of week.
+00:05:31.420 --> 00:05:34.120
+Sarah Jenkins: Same on our end for inventory and logistics data.
 
-00:07:44.800 --> 00:07:53.000
-Sarah Jenkins (Project Manager): This is a great discussion. It seems like the path forward is to use the model as a strong baseline and then refine it with specific, on-the-ground intelligence from each department.
-
-00:07:53.500 --> 00:07:59.800
-Maria Rossi (Finance Director): Exactly. Anya, Ben, can you commit to providing those scenario-based reports for Finance? I'll need the upper and lower confidence bounds translated into revenue dollars.
-
-00:08:00.100 --> 00:08:03.200
-Dr. Anya Sharma (Lead Data Scientist): Yes, absolutely. We can have that for you by tomorrow.
-
-00:08:03.700 --> 00:08:09.900
-Kevin Jones (Supply Chain Manager): And on my end, can we get a weekly refresh of the forecast for, say, our top 20 SKUs? Things change so fast that a quarterly forecast feels static.
-
-00:08:10.400 --> 00:08:16.800
-Ben Carter (Data Scientist): The pipeline is automated, so a weekly refresh is definitely feasible. We can set up an automated report for you and Kevin's team.
-
-00:08:17.300 --> 00:08:24.100
-Sarah Jenkins (Project Manager): Excellent. Okay, let's summarize the action items. One: Ben and Anya to incorporate regional data from David's team for a revised model.
-
-00:08:24.600 --> 00:08:31.200
-Sarah Jenkins (Project Manager): Two: The DS team will provide Maria with best-case and worst-case revenue scenarios based on the confidence intervals by tomorrow.
-
-00:08:31.700 --> 00:08:39.100
-Sarah Jenkins (Project Manager): Three: Ben will work with Kevin to run simulations on SKU 75B-Alpha with adjusted marketing data and set up weekly reports for top SKUs.
-
-00:08:39.500 --> 00:08:44.900
-Sarah Jenkins (Project Manager): We'll schedule a follow-up in two weeks to review the refined regional models. Does that sound right to everyone?
-
-00:08:45.100 --> 00:08:45.900
-David Chen (VP of Sales): Sounds good.
-
-00:08:46.050 --> 00:08:46.750
-Maria Rossi (Finance Director): Works for me.
-
-00:08:47.300 --> 00:08:50.900
-Sarah Jenkins (Project Manager): Great. Thanks everyone for a very productive session. We'll get these actions moving. Have a good day.
+00:05:34.660 --> 00:05:41.360
+Tom Davis: Fantastic collaboration, everyone. Thanks for the productive discussion. We'll send out the invite for the consensus review meeting shortly. Have a great day.

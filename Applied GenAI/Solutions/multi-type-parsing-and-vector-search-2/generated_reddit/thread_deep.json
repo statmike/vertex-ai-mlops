@@ -1,122 +1,164 @@
 {
-  "title": "Struggling with erratic demand forecasting - ARIMA, Prophet, or something else?",
-  "author": "DataDude_92",
+  "title": "ARIMA vs. Prophet vs. LightGBM for Demand Forecasting - What's your go-to and why?",
+  "author": "ds_practitioner",
   "subreddit": "r/datascience",
-  "body": "Hi everyone, I'm a data analyst at a mid-sized e-commerce company and I've hit a wall with a forecasting problem. I'm trying to predict daily demand for a specific product category that has high seasonality (weekly and annual), but is also heavily influenced by frequent, irregular promotions.\n\nI've tried a standard auto_arima, which captures the seasonality okay but completely fails to model the promotional spikes. I then moved to Prophet, which is better because I can include holidays and promotions as regressors. However, the forecasts still seem too 'rigid' and miss the magnitude of the peaks and troughs. The MAPE is still hovering around 40%, which is too high for our inventory planning.\n\nHere's a plot of my latest Prophet forecast vs actuals, you can see what I mean:\n\nI have about 3 years of daily sales data, along with flags for promotion days, promotion type, and major holidays. I'm starting to think I need to move beyond statistical models and into ML. Would something like XGBoost or LightGBM be a better fit here? How do you properly structure a time series problem for a tree-based model? Any advice or resources would be greatly appreciated!",
-  "score": 257,
-  "url": "https://www.reddit.com/r/datascience/comments/qrs7vx/struggling_with_erratic_demand_forecasting_arima/",
-  "image_url": "https://i.redd.it/forecast_fail_xyz.jpg",
+  "body": "Hi everyone, I'm working on a demand forecasting project for a retail client. The data has a clear weekly and yearly seasonality, a slight upward trend, and is affected by several major holidays. I've attached a plot of the last 3 years of data. I'm torn between a few approaches:\n\n1.  **SARIMA**: The classic statistical approach. I like its interpretability but I'm worried about fitting it correctly and incorporating holiday effects seems a bit manual.\n\n2.  **Prophet**: Seems very easy to use and automatically handles seasonality and holidays. However, I've read mixed reviews about its performance and 'black box' nature.\n\n3.  **ML (LightGBM/XGBoost)**: This seems the most flexible. I can engineer a ton of features (lags, rolling stats, date features, holiday flags). But I'm concerned about data leakage and the amount of feature engineering required.\n\nWhat are your experiences? For a typical business use case where interpretability is valued but accuracy is king, what's your weapon of choice and what are the key pitfalls to watch out for?",
+  "score": 256,
+  "created_utc": 1708451200,
+  "url": "https://www.reddit.com/r/datascience/comments/1avxofq/arima_vs_prophet_vs_lightgbm_for_demand/",
+  "image_url": "https://i.redd.it/ts_plot_abc123.jpg",
   "comments": [
     {
-      "comment_id": "hmd1aab",
+      "comment_id": "kjd01",
       "parent_id": null,
-      "author": "stats_master_flex",
-      "body": "Classic problem. You're right to think about ML models. For data with complex interactions and external regressors like promotions, gradient boosted trees (XGBoost, LightGBM) are often a superior choice. \n\nThe key is feature engineering. You'll want to transform your time series into a supervised learning problem. For each date you want to predict, your features will be:\n1.  **Lag features:** Sales from 1 day ago, 7 days ago, 365 days ago, etc.\n2.  **Rolling window features:** Mean/std/min/max sales over the last 7, 14, 30 days.\n3.  **Date features:** Day of week, week of year, month, year, day of month.\n4.  **Exogenous features:** Your promotion flags, holiday indicators, etc.\n\nBe very careful about data leakage during validation. Use a `TimeSeriesSplit` or similar forward-chaining cross-validation where your validation fold is always chronologically after your training fold. Libraries like `mlforecast` can automate a lot of this for you.",
-      "score": 85,
+      "author": "StatisticallySound",
+      "body": "For data with clear seasonal patterns, a well-specified SARIMA model is hard to beat. The key is rigorous diagnostics. Start by ensuring your series is stationary (use ADF test, differencing). Then, analyze the ACF and PACF plots of the stationary series to determine the p, d, q and P, D, Q parameters. It's more work upfront, but the model is statistically robust and the parameters are directly interpretable. Prophet often overfits and its uncertainty intervals are notoriously unreliable. Don't trade statistical rigor for convenience.",
+      "score": 82,
+      "created_utc": 1708453400,
       "image_url": null
     },
     {
-      "comment_id": "hmd1xef",
-      "parent_id": "hmd1aab",
-      "author": "DataDude_92",
-      "body": "Thanks, this is super helpful! This is the direction I was leaning but felt intimidated. For the lag features, how many lags would you typically start with? And when you mention data leakage, is using a `TimeSeriesSplit` from sklearn enough to prevent it, especially when creating the rolling window features?",
-      "score": 25,
-      "image_url": null
-    },
-    {
-      "comment_id": "hmd3bde",
-      "parent_id": "hmd1xef",
-      "author": "XGBoost_Fanatic",
-      "body": "Not OP, but can chime in. For lags on daily data with weekly patterns, start with what makes sense intuitively: 1-7, 14, 21, 28, and maybe 365 if you have enough data. You can check ACF/PACF plots for hints too. Yes, `TimeSeriesSplit` is exactly the right tool. The key is to calculate your rolling window features *on the training data only* within each split to avoid looking ahead. It ensures your model only uses information that would have been available at that point in time.",
-      "score": 30,
-      "image_url": null
-    },
-    {
-      "comment_id": "hmczz12",
+      "comment_id": "kjd02",
       "parent_id": null,
-      "author": "BizDevGuy_Dave",
-      "body": "Why are you making this so complicated? Just use a 12-week moving average and add a 15% uplift for promo periods. We did that at my last company and it worked fine. All these fancy models are just academic exercises that don't add real business value.",
-      "score": -15,
-      "image_url": null
+      "author": "GradientBooster",
+      "body": "I've moved almost exclusively to gradient boosting models (LightGBM) for these problems. The ability to incorporate unlimited exogenous variables is a game-changer. You're not just limited to holidays; you can add marketing spend, competitor pricing, weather data, etc. Feature engineering is where you win. Create lag features, rolling averages/stds of different windows, and date-based features (day of week, week of year, is_month_start). The model can discover complex non-linear relationships that SARIMA can't. Plus, you get feature importance plots for interpretability.",
+      "score": 121,
+      "created_utc": 1708454100,
+      "image_url": "https://i.imgur.com/feat_imp_plot.png"
     },
     {
-      "comment_id": "hmd0flm",
-      "parent_id": "hmczz12",
-      "author": "python_prophet",
-      "body": "That 'works fine' until it doesn't. A moving average can't handle multiple interacting seasonalities, holiday effects, or learn the complex impact of *different types* of promotions. OP's problem is exactly why we move beyond naive methods. Your approach leaves a ton of money on the table due to over/under-stocking, I guarantee it.",
-      "score": 45,
-      "image_url": null
-    },
-    {
-      "comment_id": "hmd1pqr",
-      "parent_id": "hmd0flm",
-      "author": "BizDevGuy_Dave",
-      "body": "I'm just saying, the goal is to sell products, not win a Kaggle competition. Keep it simple, stupid. A simple Excel sheet is more transparent to management than your black box XGBoost thing.",
-      "score": -22,
-      "image_url": null
-    },
-    {
-      "comment_id": "hmd5abc",
-      "parent_id": "hmd1pqr",
-      "author": "causal_inference_gal",
-      "body": "That's a false dichotomy. A well-documented ML model can be plenty transparent. You can use SHAP values to explain individual predictions and feature importance to stakeholders. It's about communicating results effectively, not dumbing down the methods. You can literally show them a chart that says 'This forecast is high because it's a Saturday, we have a 20% off promotion, and sales were high last week.'",
-      "score": 38,
-      "image_url": "https://i.redd.it/shap_plot_example.jpg"
-    },
-    {
-      "comment_id": "hmda123",
-      "parent_id": "hmd5abc",
-      "author": "BizDevGuy_Dave",
-      "body": "SHAP? Is that a new KPI? Look, I just need a number for next quarter's inventory order. Can your model give me one number, with a high/low range? That's all I need.",
-      "score": -5,
-      "image_url": null
-    },
-    {
-      "comment_id": "hmd7xyz",
-      "parent_id": "hmd1pqr",
-      "author": "pandas_bear",
-      "body": "lol, 'Excel sheet'. Tell me you haven't worked with real data volume without telling me you haven't worked with real data volume.",
-      "score": 55,
-      "image_url": null
-    },
-    {
-      "comment_id": "hmd0abc",
+      "comment_id": "kjd03",
       "parent_id": null,
-      "author": "fb_prophet_stan",
-      "body": "Don't give up on Prophet so quickly! Did you tune the hyperparameters? `changepoint_prior_scale` is key for flexibility. Also, make sure you're properly passing in your promotions and holidays as extra regressors. It's designed for exactly this kind of business problem and is much easier to interpret than a tree-based model. You can even set a `prior_scale` for specific regressors if you think some promos are more impactful than others.",
-      "score": 28,
-      "image_url": null
-    },
-    {
-      "comment_id": "hmd3rty",
-      "parent_id": "hmd0abc",
-      "author": "DataDude_92",
-      "body": "I did try tuning `changepoint_prior_scale` a bit and added the promotions, but the forecasts were still too rigid. The main issue is that the *type* of promotion seems to matter (e.g., '20% off' vs 'BOGO'), and Prophet treats them all the same unless I one-hot encode them, which gets messy. The regressor-specific `prior_scale` is a good tip though, I'll look into that!",
-      "score": 12,
-      "image_url": null
-    },
-    {
-      "comment_id": "hmd4ijk",
-      "parent_id": null,
-      "author": "NeuralNetNinja",
-      "body": "Everyone's talking about classical stats and trees, but for complex patterns with lots of external factors, you should really look into LSTMs or other RNN architectures. N-BEATS is also state-of-the-art for this stuff. More data hungry, but the performance can be incredible if you have a few years of daily data.",
+      "author": "BizDevGuy78",
+      "body": "Why is this so complicated? Our summer intern just used Prophet, clicked a few buttons, and gave us a forecast for the next year. It looked great. Seems like the fastest and easiest solution. We just need a number to put in the plan.",
       "score": 15,
+      "created_utc": 1708452800,
       "image_url": null
     },
     {
-      "comment_id": "hmd6mno",
-      "parent_id": "hmd4ijk",
-      "author": "Practical_DS",
-      "body": "For a mid-sized e-commerce company? That's probably overkill. The amount of data prep, hyperparameter tuning, and compute required for an LSTM is an order of magnitude higher than for LightGBM, for what is often a marginal gain (if any). Start with gradient boosting, get a solid baseline, and only move to deep learning if the business case justifies the complexity and cost.",
-      "score": 41,
+      "comment_id": "kjd04",
+      "parent_id": "kjd01",
+      "author": "ds_practitioner",
+      "body": "Thanks, this is super helpful. My main concern with SARIMA is the dual weekly/yearly seasonality. How would you recommend specifying that in statsmodels? I've seen some mentions of running two models or using a more complex state-space model but it seems daunting.",
+      "score": 18,
+      "created_utc": 1708455500,
       "image_url": null
     },
     {
-      "comment_id": "hmd8pqs",
-      "parent_id": "hmd6mno",
-      "author": "NeuralNetNinja",
-      "body": "Disagree, libraries like Darts and PyTorch Forecasting have made this much more accessible. It's not the 2017-era Keras boilerplate anymore. It's worth a shot if simpler models fail. The ability to do probabilistic forecasting and model long-range dependencies is a huge plus.",
+      "comment_id": "kjd05",
+      "parent_id": "kjd04",
+      "author": "StatisticallySound",
+      "body": "You're right, standard SARIMA handles only one seasonality. For multiple seasonalities, you can try a couple of things. The 'hacky' way is to deseasonalize for one period (e.g., weekly) and then fit a SARIMA for the other (yearly). The more rigorous way is to use a state-space model like `statsmodels.tsa.statespace.sarimax` which can handle more complex structures, or look into TBATS/BATS models which are designed for this. It has a higher learning curve but is the 'correct' way to do it within this framework.",
+      "score": 25,
+      "created_utc": 1708458900,
+      "image_url": null
+    },
+    {
+      "comment_id": "kjd06",
+      "parent_id": "kjd02",
+      "author": "ds_practitioner",
+      "body": "Great point on the feature engineering. My biggest fear with the ML approach is look-ahead bias or data leakage. When creating rolling mean features for a specific timestamp, you have to be careful not to use future data, right? How do you manage that in practice on your training set?",
+      "score": 14,
+      "created_utc": 1708455620,
+      "image_url": null
+    },
+    {
+      "comment_id": "kjd07",
+      "parent_id": "kjd06",
+      "author": "GradientBooster",
+      "body": "Absolutely crucial point. You ALWAYS need to lag your target-derived features. For a rolling 7-day mean of sales used to predict tomorrow, the most recent data point in that mean calculation must be from *yesterday*. Same for lags. The lag_1 feature is literally the value from the previous time step. For validation, use a walk-forward or expanding window cross-validation strategy. Scikit-learn's `TimeSeriesSplit` is your friend here. Never use a random k-fold split on time series data.",
+      "score": 35,
+      "created_utc": 1708459800,
+      "image_url": null
+    },
+    {
+      "comment_id": "kjd08",
+      "parent_id": "kjd03",
+      "author": "data_wizard_99",
+      "body": "Because 'looking great' and being accurate are two different things. An intern clicking buttons with Prophet can produce a confident-looking forecast that is completely wrong, because the model's assumptions weren't validated. OP's data has specific characteristics that require a thoughtful approach, not just a point-and-click solution.",
+      "score": 53,
+      "created_utc": 1708454500,
+      "image_url": null
+    },
+    {
+      "comment_id": "kjd09",
+      "parent_id": "kjd08",
+      "author": "BizDevGuy78",
+      "body": "It's worked for us for years. You data people always overcomplicate things to justify your salaries. Just give me the number for next quarter. Simple.",
+      "score": -11,
+      "created_utc": 1708456100,
+      "image_url": null
+    },
+    {
+      "comment_id": "kjd10",
+      "parent_id": "kjd02",
+      "author": "BizDevGuy78",
+      "body": "This sounds way too complicated. All these 'features' are just noise. Just look at the trend line.",
+      "score": 2,
+      "created_utc": 1708460100,
+      "image_url": null
+    },
+    {
+      "comment_id": "kjd11",
+      "parent_id": "kjd10",
+      "author": "GradientBooster",
+      "body": "I understand the desire for simplicity. The goal of adding these features is to give the model the same context a human would use. For example, we know that sales are different on a Monday vs. a Saturday, and different right before Christmas. By making 'day of week' or 'days until Christmas' a feature, we allow the model to learn these patterns explicitly, which leads to a more accurate forecast and better business planning.",
+      "score": 28,
+      "created_utc": 1708461500,
+      "image_url": null
+    },
+    {
+      "comment_id": "kjd12",
+      "parent_id": "kjd04",
+      "author": "practical_analyst",
+      "body": "For multiple seasonalities, this is where Prophet actually shines from a usability perspective. You can just add_seasonality(name='weekly', period=7, fourier_order=3) and add_seasonality(name='yearly', period=365.25, fourier_order=10). It's much simpler to implement than a state-space model. Your mileage may vary on accuracy, but it's great for a quick, strong baseline.",
+      "score": 22,
+      "created_utc": 1708462000,
+      "image_url": null
+    },
+    {
+      "comment_id": "kjd13",
+      "parent_id": "kjd12",
+      "author": "StatisticallySound",
+      "body": "Simpler, yes. Better? Rarely. You're just throwing Fourier terms at it without understanding the underlying process. The ease of use papers over a lot of statistical sins. For a serious project, I would always recommend building up from a more rigorous foundation.",
+      "score": 11,
+      "created_utc": 1708464500,
+      "image_url": null
+    },
+    {
+      "comment_id": "kjd14",
+      "parent_id": null,
+      "author": "newbie_ds_learner",
+      "body": "Can anyone recommend a good, practical resource for understanding ACF/PACF plots? The theory makes some sense but I get lost when trying to interpret them on real, messy data.",
+      "score": 26,
+      "created_utc": 1708452100,
+      "image_url": null
+    },
+    {
+      "comment_id": "kjd15",
+      "parent_id": "kjd14",
+      "author": "kind_mentor",
+      "body": "The bible for this is Rob J Hyndman's 'Forecasting: Principles and Practice' (FPP). It's available for free online. The chapters on time series decomposition, stationarity, and ARIMA models have excellent, intuitive explanations and R code examples. That's the best place to start.",
+      "score": 31,
+      "created_utc": 1708453900,
+      "image_url": null
+    },
+    {
+      "comment_id": "kjd16",
+      "parent_id": "kjd02",
+      "author": "DeepLearnDreamer",
+      "body": "If you're already going the ML route, have you considered deep learning models? N-BEATS and Temporal Fusion Transformers (TFT) are SOTA on many benchmarks. The TFT architecture is particularly cool because it's designed to be interpretable, giving you insights similar to traditional models but with the power of deep learning.",
       "score": 9,
+      "created_utc": 1708470500,
+      "image_url": null
+    },
+    {
+      "comment_id": "kjd17",
+      "parent_id": "kjd16",
+      "author": "GradientBooster",
+      "body": "Great shout. I've experimented with them. For this kind of standard business problem, I often find the data requirements and training time/cost to be prohibitive compared to LightGBM. A well-tuned GBM on a solid set of engineered features can get you 95% of the way there for 10% of the effort. But if you're at a company like Google or Amazon with massive, clean datasets, then yes, TFT is absolutely the way to go.",
+      "score": 15,
+      "created_utc": 1708472900,
       "image_url": null
     }
   ]

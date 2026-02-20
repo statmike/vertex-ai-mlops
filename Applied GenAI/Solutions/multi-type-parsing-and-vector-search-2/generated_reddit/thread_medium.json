@@ -1,90 +1,92 @@
 {
-  "title": "Best practices for demand forecasting with multiple seasonalities (daily, weekly, yearly)?",
-  "author": "ml_journey_man",
+  "title": "Beyond ARIMA and Prophet: What are your go-to advanced time series forecasting methods for complex data?",
+  "author": "ts_enthusiast",
   "subreddit": "r/datascience",
-  "body": "Hey everyone, I'm working on a demand forecasting project for an e-commerce platform and feeling a bit stuck. The sales data has clear daily patterns (quieter nights), weekly patterns (busier weekends), and yearly patterns (holiday season spike), plus specific one-off holidays like Black Friday. I've attached a plot of the last two years of data to show what I mean. \n\nI've tried a basic SARIMA model, but tuning it to handle multiple seasonalities feels overly complex and brittle. I'm considering using Facebook's Prophet since it's designed to handle this kind of data out of the box. Alternatively, I'm thinking of treating it as a standard supervised learning problem and using LightGBM with a bunch of engineered features (lags, rolling averages, date features, etc.).\n\nWhat are your experiences with this? Is Prophet reliable enough for production, or is it more of a 'quick and dirty' baseline tool? Is the feature engineering effort for a gradient boosting model worth the potential accuracy gains? Any advice or resources would be greatly appreciated!",
-  "score": 342,
-  "url": "https://www.reddit.com/r/datascience/comments/qrs7t8/best_practices_for_demand_forecasting_with/",
-  "image_url": "https://i.redd.it/ts_plot_abc123.jpg",
+  "body": "Hey everyone,\n\nI've been working on demand forecasting for a while. We started with classical methods like ARIMA/SARIMA and then moved to Prophet for its ease of use with holidays and multiple seasonalities. They work reasonably well for our main product lines.\n\nHowever, we're now facing a more complex problem with a new product that has multiple interacting seasonalities (weekly, monthly, and yearly), is heavily influenced by external factors (marketing spend, competitor pricing), and has some non-linear trends. The basic models are starting to fall short.\n\nI'm looking to explore more advanced methods. I've read about using tree-based models like LightGBM with feature engineering, and also deep learning approaches like LSTMs. What are you all using in production for these kinds of tricky forecasting problems? What are the practical trade-offs you've found between models like LSTMs, Transformers, N-BEATS, or even state-space models?\n\nHere's a sample of the kind of series I'm dealing with:\n[https://i.redd.it/example123abc.jpg](https://i.redd.it/example123abc.jpg)",
+  "score": 247,
+  "created_utc": 1708451200,
+  "url": "https://www.reddit.com/r/datascience/comments/1axxxxx/beyond_arima_and_prophet_what_are_your_goto/",
+  "image_url": "https://i.redd.it/example123abc.jpg",
   "comments": [
     {
-      "comment_id": "hmdg5kz",
+      "comment_id": "k8v1abc",
       "parent_id": null,
-      "author": "stats_guru_99",
-      "body": "Classic problem. For multiple, complex seasonalities, I'd suggest looking beyond standard ARIMA. A state-space model like TBATS (Trigonometric, Box-Cox, ARMA, Trend, and Seasonal components) is specifically designed for this. You could also use dynamic harmonic regression with an ARIMA error structure, which lets you model each seasonal component with Fourier terms. \n\nProphet is excellent for getting a strong baseline quickly and for its interpretability, but it can be rigid. ML models like LightGBM or XGBoost often win on pure accuracy, but as you noted, they require meticulous feature engineering. The risk of overfitting or data leakage with time-based features is high if you're not careful with your validation strategy (e.g., using a rolling forecast origin).",
-      "score": 85,
+      "author": "stat_prof_x",
+      "body": "Great question. For series with multiple seasonalities and exogenous regressors, I've had a lot of success with Dynamic Linear Models (DLMs) or State-Space Models in general. They provide a very flexible framework for explicitly modeling trend, different seasonal components, and the effect of external variables. The interpretability is a huge plus, as you get a posterior distribution for each component.\n\nOn the ML side, gradient boosting (LightGBM/XGBoost) is a workhorse. The key is proper feature engineering: create lags, rolling window statistics (mean, std, min, max), date-based features (day of week, week of year), and include your exogenous variables. It's often more effective and much faster to train than a complex DL model.\n\nFor deep learning, I'd only go there if you have a very large dataset (thousands of parallel time series). LSTMs are a bit dated; I'd look into architectures like N-BEATS for its interpretability or Temporal Fusion Transformers (TFTs) if you really need to model complex temporal patterns and have many covariates.",
+      "score": 98,
+      "created_utc": 1708453400,
       "image_url": null
     },
     {
-      "comment_id": "hmdia2c",
-      "parent_id": "hmdg5kz",
-      "author": "ml_journey_man",
-      "body": "Wow, thanks for the detailed breakdown! I haven't heard of TBATS, I'll definitely check it out. The feature engineering for ML models is my main concern, as it feels like a huge time sink with a high risk of getting it wrong. Do you have any go-to resources for time series feature engineering best practices?",
-      "score": 25,
-      "image_url": null
-    },
-    {
-      "comment_id": "hmdk3r1",
-      "parent_id": "hmdia2c",
-      "author": "feature_engineer_pro",
-      "body": "Not OP, but Rob Hyndman's textbook 'Forecasting: Principles and Practice' (it's free online!) is the bible for this. For a more ML-centric approach, check out the 'tsfresh' library in Python. It can automatically generate hundreds of potentially useful features, which you can then perform feature selection on. It's a great way to explore the feature space without manually coding dozens of lag/rolling window combinations.",
-      "score": 32,
-      "image_url": null
-    },
-    {
-      "comment_id": "hmdfz81",
-      "parent_id": null,
-      "author": "BizDevGuy_Steve",
-      "body": "Why make this so complicated? Just use a 12-week moving average. It's simple, everyone on the business side understands it, and it's good enough. We used it at my last company and sales were great. All this 'prophet' and 'xgboost' stuff is just academic navel-gazing that doesn't add real business value.",
-      "score": -12,
-      "image_url": null
-    },
-    {
-      "comment_id": "hmdh1p0",
-      "parent_id": "hmdfz81",
-      "author": "causal_inference_fan",
-      "body": "With all due respect, a moving average is a terrible choice for data with multiple seasonalities and specific holiday spikes. It can't forecast forward, it lags behind trends, and it will completely miss the impact of something like Black Friday until after it has happened. 'Good enough' often means leaving millions in lost sales or excess inventory costs on the table. The entire point of these more complex models is to capture those effects and provide actual business value.",
+      "comment_id": "k8v5def",
+      "parent_id": "k8v1abc",
+      "author": "gradient_surfer",
+      "body": "Seconding all of this. Especially the point about LightGBM. It's amazing how far you can get with clever feature engineering. We use it to forecast for hundreds of thousands of SKUs.\n\nRe: deep learning, the PyTorch Forecasting library is the best place to start for TFTs and N-BEATS. It handles a lot of the data loading and boilerplate. Be warned, though, the computational cost is no joke. A well-tuned LightGBM model often gets you 95% of the performance for 10% of the training time and complexity.",
       "score": 45,
+      "created_utc": 1708456000,
       "image_url": null
     },
     {
-      "comment_id": "hmdjvy4",
-      "parent_id": "hmdh1p0",
-      "author": "BizDevGuy_Steve",
-      "body": "You're overthinking it. Our numbers were fine. You data guys always want to build a perfect model instead of a profitable one. Keep It Simple, Stupid.",
-      "score": -25,
+      "comment_id": "k8v7ghi",
+      "parent_id": "k8v5def",
+      "author": "ts_enthusiast",
+      "body": "This is fantastic, thank you both. That's a great reality check on the DL models. I think I'll focus on a robust LightGBM implementation first. The PyTorch Forecasting library looks very promising for a future experiment though. Much appreciated!",
+      "score": 15,
+      "created_utc": 1708458100,
       "image_url": null
     },
     {
-      "comment_id": "hmdhr7d",
-      "parent_id": "hmdh1p0",
-      "author": "forecasting_fiend",
-      "body": "Exactly this. A simple model is only good if its assumptions match the data generating process. A moving average assumes the future is just the average of the recent past, which is demonstrably false for OP's problem. Telling them to use a moving average is like telling a carpenter to build a house using only a hammer.",
-      "score": 21,
-      "image_url": null
-    },
-    {
-      "comment_id": "hmdgtx9",
+      "comment_id": "k8v2jkl",
       "parent_id": null,
-      "author": "practical_prophet",
-      "body": "I see a lot of people knocking Prophet, but its true value in a business setting is its interpretability and ease of use. You can easily add custom holiday lists and external regressors (like marketing spend). The built-in component plots are fantastic for explaining the forecast to non-technical stakeholders. Being able to show a plot and say 'this is the weekly trend, this is the yearly trend, and here is the impact of Christmas' is incredibly powerful. Here's a component plot from a similar project I did.",
-      "score": 62,
-      "image_url": "https://i.redd.it/prophet_components_xyz789.png"
-    },
-    {
-      "comment_id": "hmdj3b4",
-      "parent_id": "hmdgtx9",
-      "author": "ml_journey_man",
-      "body": "That's a really good point. Explaining the 'why' to my manager is a huge part of the job. That plot looks super clean and easy to understand. Was it difficult to tune Prophet to get those results or is this a standard output?",
-      "score": 18,
+      "author": "BizDevGuy88",
+      "body": "Why is this so complicated? We just use a 12-month moving average in Excel for our annual planning and it's 'good enough'. Seems like you're over-engineering a solution to a simple problem. KISS principle, people.",
+      "score": -12,
+      "created_utc": 1708454500,
       "image_url": null
     },
     {
-      "comment_id": "hmdl9f0",
-      "parent_id": "hmdgtx9",
-      "author": "py_coder_22",
-      "body": "Don't forget newer libraries in this space! Check out `statsforecast` and `neuralforecast` from Nixtla. They have incredibly fast, `numba`-based implementations of classic statistical models and newer deep learning models. They benchmark really well against both Prophet and traditional R implementations, giving you a great middle ground of speed, accuracy, and scalability.",
+      "comment_id": "k8v9mno",
+      "parent_id": "k8v2jkl",
+      "author": "practical_prophet",
+      "body": "That works until it doesn't. A moving average is a lagging indicator. It can't predict a trend change or a seasonal peak; it only reacts to it after it has happened. If your business is stable with no growth, sure. But if you're running marketing campaigns, experiencing growth, or have any seasonality, you're either going to be understocked (lost sales) or overstocked (wasted capital) by relying on a simple average.\n\nThis image shows how a moving average (orange) completely misses the peaks and troughs of a seasonal series (blue): https://i.redd.it/failplot987xyz.jpg",
+      "score": 52,
+      "created_utc": 1708459300,
+      "image_url": "https://i.redd.it/failplot987xyz.jpg"
+    },
+    {
+      "comment_id": "k8vcpqr",
+      "parent_id": "k8v2jkl",
+      "author": "AgileCEO",
+      "body": "I'm with BizDevGuy88. What's the ROI on building these complex models? If it takes a data scientist 3 months to build a model that is 5% more accurate, is that worth it? We need to be agile and make fast decisions. If it can't be explained in two bullet points, it's a distraction.",
+      "score": -5,
+      "created_utc": 1708461200,
+      "image_url": null
+    },
+    {
+      "comment_id": "k8v3stu",
+      "parent_id": null,
+      "author": "newbie_data_analyst",
+      "body": "Slightly off-topic, but since Prophet was mentioned: I'm finding it hard to explain the component plots to my product manager. They see the squiggly lines for yearly and weekly seasonality and their eyes glaze over. Does anyone have tips for translating these into business insights?\n\nHere's an example of a plot I need to explain: https://i.redd.it/prophetplot456def.png",
       "score": 31,
+      "created_utc": 1708455100,
+      "image_url": "https://i.redd.it/prophetplot456def.png"
+    },
+    {
+      "comment_id": "k8vfwxy",
+      "parent_id": "k8v3stu",
+      "author": "viz_wiz_42",
+      "body": "Absolutely. The trick is to narrate the plot. Don't say 'the yearly seasonality component has a positive effect in Q4'. Say, 'As you can see here, our sales consistently build towards a peak in late November, which is our Black Friday rush, and they are lowest in February, right after the holidays'.\n\nFor the weekly plot, you can say 'This shows our customers primarily shop on weekends, with Saturday being our strongest day'. Turn the abstract 'component' into a concrete story about customer behavior. The trend component is the easiest: 'This shows our baseline growth, ignoring all seasonal effects.'",
+      "score": 41,
+      "created_utc": 1708462500,
+      "image_url": null
+    },
+    {
+      "comment_id": "k8vh123",
+      "parent_id": "k8vfwxy",
+      "author": "newbie_data_analyst",
+      "body": "That is incredibly helpful. 'Narrate the plot' is the perfect way to put it. Framing it as a story about the business and customers makes so much more sense. Thank you!",
+      "score": 11,
+      "created_utc": 1708464800,
       "image_url": null
     }
   ]

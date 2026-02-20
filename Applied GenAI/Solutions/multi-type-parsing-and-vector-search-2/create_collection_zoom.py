@@ -1,0 +1,67 @@
+"""Create Vector Search 2.0 collection for Zoom transcript chunks."""
+
+from google.cloud import vectorsearch_v1beta
+from google.api_core.exceptions import AlreadyExists
+from config import PROJECT_ID, REGION, EMBEDDING_MODEL, VS_COLLECTION_ZOOM
+
+# --- Client ---
+
+vs_client = vectorsearch_v1beta.VectorSearchServiceClient()
+
+# --- Collection schema ---
+
+# Data schema mirrors the BQ zoom_chunks table (minus processed_at)
+data_schema = {
+    "type": "object",
+    "properties": {
+        "chunk_id": {"type": "string"},
+        "text_content": {"type": "string"},
+        "source_uri": {"type": "string"},
+        "speaker_list": {"type": "array", "items": {"type": "string"}},
+        "timestamp_start": {"type": "number"},
+        "timestamp_end": {"type": "number"},
+    },
+}
+
+# Auto-embed text_content using the configured embedding model
+vector_schema = {
+    "text_content_embedding": {
+        "dense_vector": {
+            "dimensions": 768,
+            "vertex_embedding_config": {
+                "model_id": EMBEDDING_MODEL,
+                "text_template": "{text_content}",
+                "task_type": "RETRIEVAL_DOCUMENT",
+            },
+        },
+    },
+}
+
+# --- Create collection ---
+
+print(f"Creating collection: {VS_COLLECTION_ZOOM}")
+
+request = vectorsearch_v1beta.CreateCollectionRequest(
+    parent=f"projects/{PROJECT_ID}/locations/{REGION}",
+    collection_id=VS_COLLECTION_ZOOM,
+    collection={
+        "data_schema": data_schema,
+        "vector_schema": vector_schema,
+    },
+)
+
+try:
+    operation = vs_client.create_collection(request=request)
+    print("Waiting for collection creation...")
+    result = operation.result()
+    print(f"Created: {result.name}")
+except AlreadyExists:
+    print(f"Collection already exists: {VS_COLLECTION_ZOOM}")
+
+# --- Verify ---
+
+get_request = vectorsearch_v1beta.GetCollectionRequest(
+    name=f"projects/{PROJECT_ID}/locations/{REGION}/collections/{VS_COLLECTION_ZOOM}"
+)
+collection = vs_client.get_collection(get_request)
+print(f"\nCollection: {collection.name}")
