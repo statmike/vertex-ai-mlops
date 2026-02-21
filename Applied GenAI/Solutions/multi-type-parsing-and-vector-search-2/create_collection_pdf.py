@@ -1,8 +1,8 @@
-"""Create Vector Search 2.0 collection for Zoom transcript chunks."""
+"""Create Vector Search 2.0 collection for PDF document chunks."""
 
 from google.cloud import vectorsearch_v1beta
 from google.api_core.exceptions import AlreadyExists
-from config import PROJECT_ID, REGION, EMBEDDING_MODEL, VS_COLLECTION_ZOOM
+from config import PROJECT_ID, REGION, EMBEDDING_MODEL, VS_COLLECTION_PDF
 
 # --- Client ---
 
@@ -10,16 +10,15 @@ vs_client = vectorsearch_v1beta.VectorSearchServiceClient()
 
 # --- Collection schema ---
 
-# Data schema mirrors the BQ zoom_chunks table (minus processed_at)
+# Data schema mirrors the BQ pdf_chunks table (minus processed_at)
 data_schema = {
     "type": "object",
     "properties": {
         "chunk_id": {"type": "string"},
         "text_content": {"type": "string"},
         "source_uri": {"type": "string"},
-        "speaker_list": {"type": "array", "items": {"type": "string"}},
-        "timestamp_start": {"type": "number"},
-        "timestamp_end": {"type": "number"},
+        "page_start": {"type": "number"},
+        "page_end": {"type": "number"},
     },
 }
 
@@ -42,11 +41,11 @@ vector_schema = {
 
 # --- Create collection ---
 
-print(f"Creating collection: {VS_COLLECTION_ZOOM}")
+print(f"Creating collection: {VS_COLLECTION_PDF}")
 
 request = vectorsearch_v1beta.CreateCollectionRequest(
     parent=f"projects/{PROJECT_ID}/locations/{REGION}",
-    collection_id=VS_COLLECTION_ZOOM,
+    collection_id=VS_COLLECTION_PDF,
     collection={
         "data_schema": data_schema,
         "vector_schema": vector_schema,
@@ -59,12 +58,12 @@ try:
     result = operation.result()
     print(f"Created: {result.name}")
 except AlreadyExists:
-    print(f"Collection already exists: {VS_COLLECTION_ZOOM}")
+    print(f"Collection already exists: {VS_COLLECTION_PDF}")
 
 # --- Verify ---
 
 get_request = vectorsearch_v1beta.GetCollectionRequest(
-    name=f"projects/{PROJECT_ID}/locations/{REGION}/collections/{VS_COLLECTION_ZOOM}"
+    name=f"projects/{PROJECT_ID}/locations/{REGION}/collections/{VS_COLLECTION_PDF}"
 )
 collection = vs_client.get_collection(get_request)
 print(f"\nCollection: {collection.name}")

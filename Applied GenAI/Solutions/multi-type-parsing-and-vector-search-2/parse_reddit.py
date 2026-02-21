@@ -19,6 +19,8 @@ gemini = genai.Client(vertexai=True, project=PROJECT_ID, location=REGION)
 # --- Config ---
 
 SHORT_RESPONSE_THRESHOLD = 15  # min tokens to keep non-top-level comments
+SHORT_RESPONSE_MODE = "rollup"  # "drop" to discard short replies, "rollup" to merge into parent chunk
+MAX_DEPTH = 100  # max parent chain depth to walk (safety limit for malformed data)
 
 # --- Get Reddit source files, detect which need (re)processing ---
 
@@ -56,25 +58,43 @@ print(f"Found {len(source_rows)} Reddit files, {len(files_to_process)} need proc
 # --- Tree flattening: build path from root to each comment ---
 
 def build_comment_tree(post: dict) -> list[dict]:
-    """Flatten comment tree into path-based chunks."""
+    """Flatten comment tree into path-based chunks.
+
+    Each comment becomes a chunk with its conversational lineage:
+      THREAD: <post title> | PARENT: <immediate parent, truncated> | COMMENT: <body>
+
+    The parent chain is walked up to MAX_DEPTH levels. Comments are stored flat
+    with comment_id/parent_id references — this function reconstructs the path
+    from each comment back to the thread root.
+
+    Short non-top-level comments (below SHORT_RESPONSE_THRESHOLD tokens) are
+    handled based on SHORT_RESPONSE_MODE:
+      - "drop": discard them entirely
+      - "rollup": append their text to the nearest ancestor's chunk as | REPLY: ...
+    """
     comments_by_id = {c["comment_id"]: c for c in post["comments"]}
     chunks = []
+    short_comments = []  # collected when mode is "rollup"
 
     def get_path(comment_id: str) -> list[str]:
-        """Walk up the parent chain to build the path."""
+        """Walk up the parent chain to build the path (bounded by MAX_DEPTH)."""
         path = []
         current = comment_id
-        while current and current in comments_by_id:
+        depth = 0
+        while current and current in comments_by_id and depth < MAX_DEPTH:
             path.append(comments_by_id[current]["body"])
             current = comments_by_id[current].get("parent_id")
+            depth += 1
         path.reverse()
         return path
 
     for comment in post["comments"]:
-        # SNR filter: drop short non-top-level comments
+        # SNR filter: short non-top-level comments
         token_count = len(comment["body"].split())
         is_top_level = comment["parent_id"] is None
         if not is_top_level and token_count < SHORT_RESPONSE_THRESHOLD:
+            if SHORT_RESPONSE_MODE == "rollup":
+                short_comments.append(comment)
             continue
 
         path = get_path(comment["comment_id"])
@@ -87,6 +107,19 @@ def build_comment_tree(post: dict) -> list[dict]:
             "comment": comment,
             "text_content": path_text,
         })
+
+    # Rollup: merge short replies into nearest ancestor chunk
+    if SHORT_RESPONSE_MODE == "rollup" and short_comments:
+        chunk_by_id = {c["comment"]["comment_id"]: c for c in chunks}
+        for comment in short_comments:
+            # Walk up to find nearest ancestor that has its own chunk
+            current = comment["parent_id"]
+            depth = 0
+            while current and current not in chunk_by_id and depth < MAX_DEPTH:
+                current = comments_by_id[current].get("parent_id") if current in comments_by_id else None
+                depth += 1
+            if current and current in chunk_by_id:
+                chunk_by_id[current]["text_content"] += f" | REPLY: {comment['body']}"
 
     return chunks
 

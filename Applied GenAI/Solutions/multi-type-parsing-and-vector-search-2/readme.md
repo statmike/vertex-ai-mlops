@@ -148,13 +148,15 @@ The pipeline involves multiple stages — parsing, chunking, augmenting metadata
 
 [parse_reddit.py](parse_reddit.py) reads Reddit JSON files from GCS (discovered via the object table) and produces chunked rows in BigQuery (`{BQ_TABLE_PREFIX}_reddit_chunks`).
 
-**Tree flattening:** Comments use `comment_id`/`parent_id` references. The parser walks up the parent chain for each comment to build a path-based text representation:
+**Tree flattening:** Reddit comments are stored flat with `comment_id`/`parent_id` references rather than nested objects. The parser reconstructs the conversational lineage for each comment by walking up the parent chain (bounded by `MAX_DEPTH`, default: 100) to build a path-based text representation:
 ```
 THREAD: Post Title | PARENT: Parent comment (truncated to 200 chars) | COMMENT: Full comment body
 ```
-This preserves conversational context — each chunk carries its lineage from the thread root.
+This means each chunk is self-contained — it carries the thread title, the immediate parent's context, and the comment itself. A top-level comment (no parent) produces `THREAD: ... | COMMENT: ...` without the `PARENT` segment.
 
-**SNR filtering:** Non-top-level comments shorter than `SHORT_RESPONSE_THRESHOLD` (default: 15 tokens) are dropped. Top-level comments are always kept regardless of length. This removes low-signal replies like "this" or "+1" while preserving substantive short top-level posts.
+**SNR filtering:** Non-top-level comments shorter than `SHORT_RESPONSE_THRESHOLD` (default: 15 tokens) are filtered. Top-level comments are always kept regardless of length. The `SHORT_RESPONSE_MODE` parameter controls how short replies are handled:
+- `"drop"` — discard them entirely (removes noise like "this" or "+1")
+- `"rollup"` (default) — append their text to the nearest ancestor's chunk as `| REPLY: ...`, preserving the signal without creating low-value standalone chunks
 
 **VLM image enrichment:** When a comment has an `image_url`, Gemini generates a dense 2-3 sentence description anchored to the comment's text context. The description is appended as `| IMAGE: ...`. If the VLM call fails, the chunk is kept without an image description and `is_image_description` remains `true`.
 
@@ -166,7 +168,7 @@ This preserves conversational context — each chunk carries its lineage from th
 
 [parse_zoom.py](parse_zoom.py) reads WebVTT files from GCS and produces chunked rows in BigQuery (`{BQ_TABLE_PREFIX}_zoom_chunks`).
 
-**VTT parsing:** Each cue is extracted with its timestamp range and speaker label. Speaker names are split from the text content (format: `Speaker Name: dialogue text`).
+**VTT parsing:** A "cue" is the basic unit of a WebVTT transcript — a timestamp range paired with a speaker label and their spoken text. Each cue represents one uninterrupted segment of dialogue (e.g., `00:01:05.000 --> 00:01:12.000` followed by `Sarah: Let's review the data.`). The parser extracts each cue's timestamp range, speaker name, and spoken text. Speaker names are split from the text content (format: `Speaker Name: dialogue text`).
 
 **Sliding window:** Cues are grouped into overlapping windows of `WINDOW_SIZE` (default: 15) cues with `OVERLAP` (default: 5) cues shared between consecutive windows. This ensures no context is lost at chunk boundaries — each chunk overlaps with its neighbors.
 
@@ -176,35 +178,89 @@ This preserves conversational context — each chunk carries its lineage from th
 
 **Incremental:** Tracks staleness by comparing each chunk's `processed_at` timestamp against the GCS object's `updated` timestamp. On re-run, new VTT files are parsed and appended, updated files have their old chunks replaced, and unchanged files are skipped.
 
-### 3c. Parse PDFs (Coming Soon)
+### 3c. Parse PDFs
 
-PDF parsing will use [Document AI](https://cloud.google.com/document-ai) with LLM-powered layout parsing combined with Gemini for content enrichment. Will follow the same incremental processing pattern as the other parsers.
+PDF parsing uses the [Document AI Layout Parser](https://cloud.google.com/document-ai/docs/layout-parse-chunk) (`pretrained-layout-parser-v1.5-pro-2025-08-25`) to extract structured chunks from PDF files. This is split into two parts: an inspection notebook for understanding the response structure, and a batch processing script for the full pipeline.
 
-### 4a. Create Reddit Collection
+**Processor setup:** Both the notebook and script create a Layout Parser processor if one doesn't already exist in your project. The processor version and display name are configured in [config.py](config.py).
 
-[create_collection_reddit.py](create_collection_reddit.py) creates a [Vector Search 2.0](https://cloud.google.com/vertex-ai/docs/vector-search-2/overview) collection for Reddit thread chunks. The collection defines:
+#### Inspect Response — [inspect_docai_response.ipynb](inspect_docai_response.ipynb)
+
+Before building the batch pipeline, this notebook processes a single PDF (online mode) and inspects the full response structure. The source PDF is [bigquery_docs_reference_standard_sql_bigqueryml_syntax_create_time_series.pdf](generated_pdf/bigquery_docs_reference_standard_sql_bigqueryml_syntax_create_time_series.pdf) (826KB, 37 pages, contains diagrams and tables). The notebook writes the complete parsed response to [docai_response_sample.json](docai_response_sample.json) so you can compare the source PDF against the full JSON output. Key findings:
+
+- **`chunked_document`**: Chunks have 6 fields — `chunk_id`, `content`, `page_span`, `page_headers`, `page_footers`, `source_block_ids`. No new fields in v1.5 beyond these.
+- **`document_layout`**: Hierarchical blocks with `text_block` (subtypes: `heading-1`, `heading-2`, `heading-3`, `paragraph`, `footer`), `table_block` (with `header_rows`, `body_rows`, `caption`), and `list_block`.
+- **Tables** are rendered as markdown in the chunk `content` (e.g., `|-|-|\n| col1 | col2 |`).
+- **Images/diagrams** are OCR'd and extracted as inline text within chunks — the parser does not produce a separate image block type or flag image-derived content. Diagram labels and flowchart text appear as regular paragraphs.
+- **`include_ancestor_headings`** prepends the heading hierarchy to each chunk (e.g., `# Title\n\n## Section\n\nchunk text`), making chunks self-contained.
+- **Online processing limit** for v1.5 is 30 pages (up from 15 in v1.0). Use `from_start` to stay within the limit.
+
+#### Batch Processing — [parse_pdf.py](parse_pdf.py)
+
+Processes all PDFs in the GCS folder and produces chunked rows in BigQuery (`{BQ_TABLE_PREFIX}_pdf_chunks`).
+
+**Batch processing:** Uses Document AI's [batch processing](https://cloud.google.com/document-ai/docs/send-request) mode with `gcs_prefix` to process all PDFs in a single job. Batch mode supports files up to 40MB and 500 pages and processes multiple files concurrently. Results are written to a GCS output path and then read back to extract chunks.
+
+**Layout-aware chunking:** The Layout Parser detects document structure — headings, paragraphs, tables, lists, headers, footers — and produces chunks that respect these boundaries rather than splitting mid-sentence or mid-section. Configuration:
+- `CHUNK_SIZE` (default: 500) — target tokens per chunk
+- `INCLUDE_ANCESTOR_HEADINGS` (default: `True`) — prepend the heading hierarchy to each chunk, making chunks self-contained
+
+**Output schema:** `chunk_id`, `source_uri`, `text_content`, `page_start`, `page_end`, `processed_at`
+
+### 4. Create Collections
+
+Each collection in [Vector Search 2.0](https://cloud.google.com/vertex-ai/docs/vector-search-2/overview) defines a `data_schema` (the fields stored with each data object) and a `vector_schema` (the embedding fields). With [auto-embeddings](https://cloud.google.com/vertex-ai/docs/vector-search-2/data-objects/data-objects#auto-populate-embeddings), the vector schema specifies which embedding model to use and how to generate embeddings from data fields — no manual embedding calls needed.
+
+**Embedding task types:** A critical configuration choice in the vector schema is the [embedding task type](https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/task-types). Task types tell the embedding model the intended use of the text, which changes how the embedding is generated. There are two formatting patterns:
+
+- **Asymmetric format** — documents and queries use *different* task types. This is the pattern for retrieval use cases, where the document being indexed has a different intent than the query searching for it:
+
+| Use Case | Query Task Type | Document Task Type |
+|----------|----------------|--------------------|
+| Search Query | `RETRIEVAL_QUERY` | `RETRIEVAL_DOCUMENT` |
+| Question Answering | `QUESTION_ANSWERING` | `RETRIEVAL_DOCUMENT` |
+| Fact Checking | `FACT_VERIFICATION` | `RETRIEVAL_DOCUMENT` |
+| Code Retrieval | `CODE_RETRIEVAL_QUERY` | `RETRIEVAL_DOCUMENT` |
+
+- **Symmetric format** — both sides use the *same* task type (`SEMANTIC_SIMILARITY`, `CLASSIFICATION`, or `CLUSTERING`).
+
+> **Key point:** If your use case doesn't align with a documented use case, use `RETRIEVAL_QUERY` as the default query task type.
+
+In this project, we index documents with `RETRIEVAL_DOCUMENT` (set in the collection's vector schema) and search with `QUESTION_ANSWERING` (set at query time in step 6). This asymmetric pairing tells the embedding model that the indexed text is reference material and the search text is a question — producing embeddings optimized for matching questions to relevant documents.
+
+#### 4a. Create Reddit Collection
+
+[create_collection_reddit.py](create_collection_reddit.py) creates a collection for Reddit thread chunks. The collection defines:
 
 - **Data schema:** Mirrors the BigQuery `reddit_chunks` table — `chunk_id`, `text_content`, `source_uri`, `subreddit`, `timestamp_unix`, `karma`, `is_image_description`.
-- **Vector schema:** A single dense embedding field (`text_content_embedding`) with [auto-embeddings](https://cloud.google.com/vertex-ai/docs/vector-search-2/data-objects/data-objects#auto-populate-embeddings) configured to embed the `text_content` field using `gemini-embedding-001` (768 dimensions, `RETRIEVAL_DOCUMENT` task type).
+- **Vector schema:** A single dense embedding field (`text_content_embedding`) with auto-embeddings configured to embed the `text_content` field using `gemini-embedding-001` (768 dimensions, `RETRIEVAL_DOCUMENT` task type).
 
 The script is idempotent — if the collection already exists, it skips creation and verifies the existing collection.
 
-### 4b. Create Zoom Collection
+#### 4b. Create Zoom Collection
 
-[create_collection_zoom.py](create_collection_zoom.py) creates a Vector Search 2.0 collection for Zoom transcript chunks. Same pattern as 4a with a Zoom-specific data schema:
+[create_collection_zoom.py](create_collection_zoom.py) creates a collection for Zoom transcript chunks. Same pattern as 4a with a Zoom-specific data schema:
 
 - **Data schema:** `chunk_id`, `text_content`, `source_uri`, `speaker_list` (array of strings), `timestamp_start`, `timestamp_end`.
 - **Vector schema:** Same auto-embedding configuration as the Reddit collection — `text_content_embedding` using `gemini-embedding-001`.
 
 Separate collections per data type enforce strict schema validation and prevent cross-type field conflicts.
 
-### 4c. Create PDF Collection (Coming Soon)
+#### 4c. Create PDF Collection
 
-Will follow the same pattern as 4a and 4b once PDF parsing is implemented.
+[create_collection_pdf.py](create_collection_pdf.py) creates a collection for PDF document chunks. Same pattern as 4a with a PDF-specific data schema:
 
-### 4d. Create Combined Collection (Coming Soon)
+- **Data schema:** `chunk_id`, `text_content`, `source_uri`, `page_start`, `page_end`.
+- **Vector schema:** Same auto-embedding configuration — `text_content_embedding` using `gemini-embedding-001`.
 
-A single collection that accepts all data types (Reddit, Zoom, PDF) with a unified schema. This enables cross-type search — e.g., finding related discussion across a Reddit thread and a Zoom meeting about the same forecasting topic.
+#### 4d. Create Combined Collection
+
+[create_collection_combined.py](create_collection_combined.py) creates a single collection for cross-type search across all data types. The schema is the union of all fields from all per-type collections plus a `source_type` discriminator:
+
+- **Data schema:** Common fields (`chunk_id`, `text_content`, `source_uri`, `source_type`) plus all type-specific fields — Reddit (`subreddit`, `timestamp_unix`, `karma`, `is_image_description`), Zoom (`speaker_list`, `timestamp_start`, `timestamp_end`), and PDF (`page_start`, `page_end`). Fields not relevant to a given source type are left empty at import time.
+- **Vector schema:** Same auto-embedding configuration as the per-type collections.
+
+This enables cross-type search with full metadata — e.g., finding related content across a Reddit thread and a PDF document about the same forecasting topic, then filtering or inspecting type-specific fields in the results.
 
 ### 5a. Import Reddit Data Objects
 
@@ -220,22 +276,24 @@ Uses direct (single-create) mode to simulate a continuously running system where
 
 [import_zoom_objects.py](import_zoom_objects.py) follows the same pattern as 5a for Zoom transcript chunks. Reads from the BigQuery `zoom_chunks` table and creates DataObjects in the Zoom collection with auto-generated embeddings.
 
-### 5c. Import PDF Data Objects (Coming Soon)
+### 5c. Import PDF Data Objects
 
-Will follow the same pattern as 5a and 5b once PDF parsing and collection creation are implemented.
+[import_pdf_objects.py](import_pdf_objects.py) follows the same pattern as 5a for PDF document chunks. Reads from the BigQuery `pdf_chunks` table and creates DataObjects in the PDF collection with auto-generated embeddings.
 
-### 5d. Import All Data Objects to Combined Collection (Coming Soon)
+### 5d. Import All Data Objects to Combined Collection
 
-Import chunks from all data types (Reddit, Zoom, PDF) into the combined collection from 4d, enabling unified cross-type retrieval.
+[import_combined_objects.py](import_combined_objects.py) reads chunks from all three BigQuery tables (Reddit, Zoom, PDF), adds a `source_type` field to each, and imports them into the combined collection from step 4d. This enables unified cross-type retrieval — a single query can find relevant content across Reddit threads, Zoom transcripts, and PDF documents.
 
 ### 6. Search & Query
 
-[search_and_query.ipynb](search_and_query.ipynb) is an interactive notebook demonstrating all search and query capabilities across both collections:
+[search_and_query.ipynb](search_and_query.ipynb) is an interactive notebook demonstrating all search and query capabilities across all four collections (Reddit, Zoom, PDF, Combined):
 
-- **Query**: Filter DataObjects by field values (`$gt`, `$eq`, `$and`, etc.) — analogous to SQL `WHERE` clauses. Examples include filtering Reddit chunks by karma threshold and combined filters (karma + image-enriched).
-- **Semantic Search**: Natural language queries like *"What machine learning methods work best for demand forecasting?"* that find conceptually relevant chunks via auto-generated embeddings. Uses `QUESTION_ANSWERING` task type to pair with documents indexed as `RETRIEVAL_DOCUMENT`.
-- **Text Search**: Keyword-based matching for specific terms like *"ARIMA"* or *"Prophet"* — useful for acronyms and method names that may not have strong semantic representation.
+- **Query**: Filter DataObjects by field values (`$gt`, `$eq`, `$and`, etc.) — analogous to SQL `WHERE` clauses. Examples include filtering Reddit chunks by karma threshold, PDF chunks by page range, and combined filters (karma + image-enriched).
+- **Semantic Search**: Natural language queries like *"What machine learning methods work best for demand forecasting?"* that find conceptually relevant chunks via auto-generated embeddings. Uses `QUESTION_ANSWERING` task type at query time — the asymmetric counterpart to the `RETRIEVAL_DOCUMENT` task type used when the documents were indexed (see [embedding task types](#4-create-collections) in step 4).
+- **Text Search**: Keyword-based matching for specific terms like *"ARIMA"* or *"CREATE MODEL"* — useful for acronyms and method names that may not have strong semantic representation.
 - **Hybrid Search with RRF**: Combines semantic and text search using [Reciprocal Rank Fusion](https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf). A comparison table shows how the same query produces different rankings under three weight configurations (`[1,1]`, `[3,1]`, `[1,3]`), demonstrating how weight tuning shifts results between intent-based and keyword-based relevance.
+- **Filtered Semantic Search**: Pre-filters on `SemanticSearch` restrict vector similarity ranking to a metadata subset (e.g., `source_type == 'pdf'`) without affecting embedding comparison quality.
+- **Crowding/Diversity Search**: Retrieves top-k results per unique value of a metadata field (e.g., 2 results per `source_type`) using the `DataObjectSearchServiceAsyncClient` to run filtered semantic searches concurrently via `asyncio.gather`. Includes a reusable `crowded_search` helper that works with any metadata field — demonstrated with both `source_type` and `source_uri` crowding.
 
 ## Planned Enhancements
 

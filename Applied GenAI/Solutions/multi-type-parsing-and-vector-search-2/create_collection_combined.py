@@ -1,8 +1,8 @@
-"""Create Vector Search 2.0 collection for Zoom transcript chunks."""
+"""Create Vector Search 2.0 collection for combined cross-type search."""
 
 from google.cloud import vectorsearch_v1beta
 from google.api_core.exceptions import AlreadyExists
-from config import PROJECT_ID, REGION, EMBEDDING_MODEL, VS_COLLECTION_ZOOM
+from config import PROJECT_ID, REGION, EMBEDDING_MODEL, VS_COLLECTION_COMBINED
 
 # --- Client ---
 
@@ -10,16 +10,28 @@ vs_client = vectorsearch_v1beta.VectorSearchServiceClient()
 
 # --- Collection schema ---
 
-# Data schema mirrors the BQ zoom_chunks table (minus processed_at)
+# Union of all metadata fields across all data types plus a source_type discriminator.
+# Fields not relevant to a given source type are left empty/null at import time.
 data_schema = {
     "type": "object",
     "properties": {
+        # Common fields (all types)
         "chunk_id": {"type": "string"},
         "text_content": {"type": "string"},
         "source_uri": {"type": "string"},
+        "source_type": {"type": "string"},  # "reddit", "zoom", or "pdf"
+        # Reddit fields
+        "subreddit": {"type": "string"},
+        "timestamp_unix": {"type": "number"},
+        "karma": {"type": "number"},
+        "is_image_description": {"type": "boolean"},
+        # Zoom fields
         "speaker_list": {"type": "array", "items": {"type": "string"}},
         "timestamp_start": {"type": "number"},
         "timestamp_end": {"type": "number"},
+        # PDF fields
+        "page_start": {"type": "number"},
+        "page_end": {"type": "number"},
     },
 }
 
@@ -42,11 +54,11 @@ vector_schema = {
 
 # --- Create collection ---
 
-print(f"Creating collection: {VS_COLLECTION_ZOOM}")
+print(f"Creating collection: {VS_COLLECTION_COMBINED}")
 
 request = vectorsearch_v1beta.CreateCollectionRequest(
     parent=f"projects/{PROJECT_ID}/locations/{REGION}",
-    collection_id=VS_COLLECTION_ZOOM,
+    collection_id=VS_COLLECTION_COMBINED,
     collection={
         "data_schema": data_schema,
         "vector_schema": vector_schema,
@@ -59,12 +71,12 @@ try:
     result = operation.result()
     print(f"Created: {result.name}")
 except AlreadyExists:
-    print(f"Collection already exists: {VS_COLLECTION_ZOOM}")
+    print(f"Collection already exists: {VS_COLLECTION_COMBINED}")
 
 # --- Verify ---
 
 get_request = vectorsearch_v1beta.GetCollectionRequest(
-    name=f"projects/{PROJECT_ID}/locations/{REGION}/collections/{VS_COLLECTION_ZOOM}"
+    name=f"projects/{PROJECT_ID}/locations/{REGION}/collections/{VS_COLLECTION_COMBINED}"
 )
 collection = vs_client.get_collection(get_request)
 print(f"\nCollection: {collection.name}")

@@ -24,7 +24,10 @@ data_schema = {
     },
 }
 
-# Auto-embed text_content using the configured embedding model
+# Auto-embed text_content using the configured embedding model.
+# task_type="RETRIEVAL_DOCUMENT" tells the model this text is reference material being indexed.
+# At query time, use the asymmetric counterpart (e.g. QUESTION_ANSWERING or RETRIEVAL_QUERY).
+# See: https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/task-types
 vector_schema = {
     "text_content_embedding": {
         "dense_vector": {

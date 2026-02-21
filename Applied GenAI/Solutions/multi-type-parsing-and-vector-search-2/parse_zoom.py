@@ -18,6 +18,9 @@ gemini = genai.Client(vertexai=True, project=PROJECT_ID, location=REGION)
 
 # --- Config ---
 
+# A "cue" is the basic unit of a WebVTT transcript: a timestamp range paired with
+# a speaker label and their spoken text. Each cue represents one uninterrupted
+# segment of dialogue (e.g., "00:01:05.000 --> 00:01:12.000\nSarah: Let's review the data.").
 WINDOW_SIZE = 15  # cues per chunk
 OVERLAP = 5       # cues of overlap between chunks
 
@@ -57,7 +60,7 @@ print(f"Found {len(source_rows)} VTT files, {len(files_to_process)} need process
 # --- Parse VTT into cue list ---
 
 def parse_vtt(text: str) -> list[dict]:
-    """Parse WebVTT text into a list of cues with timestamp, speaker, and text."""
+    """Parse WebVTT text into a list of cues (timestamp + speaker + spoken text)."""
     cues = []
     lines = text.strip().splitlines()
     i = 0

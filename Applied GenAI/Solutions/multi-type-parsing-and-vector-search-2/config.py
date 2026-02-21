@@ -29,13 +29,17 @@ GCS_ROOT = '/'.join(PARTS[0:2])
 
 # --- Document AI ---
 
-#DOCAI_LOCATION = "us"
-#DOCAI_PROCESSOR_ID = ""  # fill in after creating a processor
+DOCAI_LOCATION = "us"
+DOCAI_PROCESSOR_DISPLAY_NAME = '-'.join(PARTS) + '-layout-parser'
+DOCAI_PROCESSOR_TYPE = "LAYOUT_PARSER_PROCESSOR"
+DOCAI_PROCESSOR_VERSION = "pretrained-layout-parser-v1.5-pro-2025-08-25"
 
 # --- Vertex AI Vector Search 2.0 ---
 
 VS_COLLECTION_REDDIT = '-'.join(PARTS) + '-reddit'
 VS_COLLECTION_ZOOM = '-'.join(PARTS) + '-zoom'
+VS_COLLECTION_PDF = '-'.join(PARTS) + '-pdf'
+VS_COLLECTION_COMBINED = '-'.join(PARTS) + '-combined'
 
 # --- Gemini ---
 
