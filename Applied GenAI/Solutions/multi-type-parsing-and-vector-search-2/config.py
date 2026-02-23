@@ -46,3 +46,17 @@ VS_COLLECTION_COMBINED = '-'.join(PARTS) + '-combined'
 GEMINI_MODEL = "gemini-2.5-pro"
 FAST_GEMINI_MODEL = "gemini-2.5-flash"
 EMBEDDING_MODEL = "gemini-embedding-001"
+EMBEDDING_DIMENSIONS = 768  # must match dimensions in collection vector_schema
+
+# --- BM25 ---
+
+BM25_K1 = 1.2          # term frequency saturation
+BM25_B = 0.6           # document length normalization
+BM25_EPSILON = 0.25    # IDF smoothing floor
+BM25_NGRAMS = 2        # unigrams + bigrams
+BM25_MODEL_VERSION = 1 # increment on retrain
+
+# BM25 maintenance thresholds (step 9)
+BM25_OOV_THRESHOLD = 0.10    # 10% new terms triggers rebuild
+BM25_STALE_THRESHOLD = 0.15  # 15% stale terms triggers rebuild
+BM25_CORPUS_DELTA = 0.20     # 20% corpus size change triggers rebuild

@@ -29,6 +29,8 @@ data_schema = {
 # task_type="RETRIEVAL_DOCUMENT" tells the model this text is reference material being indexed.
 # At query time, use the asymmetric counterpart (e.g. QUESTION_ANSWERING or RETRIEVAL_QUERY).
 # See: https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/task-types
+# bm25_embedding is not auto-populated — it's computed by apply_bm25.py (step 7b)
+# and written via batch_update_data_objects.
 vector_schema = {
     "text_content_embedding": {
         "dense_vector": {
@@ -39,6 +41,9 @@ vector_schema = {
                 "task_type": "RETRIEVAL_DOCUMENT",
             },
         },
+    },
+    "bm25_embedding": {
+        "sparse_vector": {},
     },
 }
 

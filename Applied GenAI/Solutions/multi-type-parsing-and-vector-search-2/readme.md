@@ -118,8 +118,8 @@ Three scripts generate synthetic forecasting-themed data in different formats. E
 ## Solution Workflow
 
 ```
-Generate ─► Upload ─► Object Table ─► Parse & Chunk ─► Enrich ─► Collections ─► Import ─► Search
- (0)         (1)         (2)           (3a-3c)         (4a-4c)     (5a-5d)      (6a-6d)    (7)
+Generate ─► Upload ─► Object Table ─► Parse ─► Enrich ─► Collections ─► Import ─► BM25 ──► Search ─► Refresh
+ (0)         (1)         (2)         (3a-3c)   (4a-4c)    (5a-5d)      (6a-6d)   (7a/7b)    (8)       (9)
 ```
 
 | Step | Input | Output | What Happens |
@@ -132,9 +132,12 @@ Generate ─► Upload ─► Object Table ─► Parse & Chunk ─► Enrich �
 | **4a. Enrich Reddit** | `reddit_chunks.text_content` | + `topics`, `methods_mentioned` columns | LangExtract extracts forecasting methods + data science topics per chunk |
 | **4b. Enrich Zoom** | `zoom_chunks.text_content` | + `topics`, `action_items` columns | LangExtract extracts discussion topics + action items per chunk |
 | **4c. Enrich PDF** | `pdf_chunks.text_content` | + `topics`, `functions_referenced` columns | LangExtract extracts BQML functions + technical concepts per chunk |
-| **5a-5d. Collections** | Schema definitions | 4 Vector Search 2.0 collections | Define data + vector schemas with auto-embeddings (`gemini-embedding-001`) |
+| **5a-5d. Collections** | Schema definitions | 4 Vector Search 2.0 collections | Define data + vector schemas with auto-embeddings + sparse vector field |
 | **6a-6d. Import** | BQ chunk tables | DataObjects in collections | Create DataObjects; embeddings auto-generated from `text_content` |
-| **7. Search** | Natural language queries | Ranked results with metadata | Semantic, text, hybrid/RRF, filtered, crowded, enrichment-filtered search |
+| **7a. Build BM25** | All chunks from BQ | Model + vocabulary in BQ | Train BM25 model, save vocabulary and metadata (version history preserved) |
+| **7b. Apply BM25** | BM25 model from BQ | Sparse embeddings in BQ + VS2 | Compute sparse embeddings, update chunk tables and DataObjects |
+| **8. Search** | Natural language queries | Ranked results with metadata | Query, semantic, text, sparse, hybrid/RRF, crowding (VertexRanker defined but not yet supported) |
+| **9. Refresh** | Current corpus vs stored vocabulary | Conditional retrain | Drift detection → retrain if needed; run apply_bm25.py after |
 
 <details>
 <summary><b>Example data at each transformation stage</b> (click to expand)</summary>
@@ -183,6 +186,26 @@ Input (text_content):
 Output (new BQ columns):
   topics:            ["demand forecasting", "holiday effects"]
   methods_mentioned: ["Prophet"]
+```
+
+**Step 7 — BM25 sparse embeddings** produce sparse vectors from text + enrichment tags:
+
+```
+Input (text_content + enrichment tags):
+  "THREAD: ARIMA vs. Prophet | COMMENT: Prophet handles holidays automatically..."
+  + topics: ["demand forecasting", "holiday effects"]
+  + methods_mentioned: ["Prophet"]
+  → BM25 text: "THREAD: ARIMA vs. Prophet | COMMENT: Prophet handles holidays automatically... demand forecasting holiday effects Prophet"
+
+Preprocessing (chunk_prep):
+  → lowercase, remove punctuation, lemmatize, remove stopwords, generate bigrams
+  → ["thread", "arima", "prophet", "comment", "prophet", "handle", "holiday", "automatically",
+     "demand", "forecasting", "thread arima", "arima prophet", "prophet comment", ...]
+
+Output (BQ columns + VS2 DataObject):
+  bm25_indices: [42, 187, 2041, 5893, ...]     # vocabulary term positions
+  bm25_values:  [1.82, 0.95, 2.14, 1.33, ...]  # BM25 scores (IDF × term frequency saturation)
+  bm25_model_version: 1
 ```
 
 </details>
@@ -311,6 +334,10 @@ This step uses `gemini-2.5-flash` (`FAST_GEMINI_MODEL` in [config.py](config.py)
 
 Each collection in [Vector Search 2.0](https://cloud.google.com/vertex-ai/docs/vector-search-2/overview) defines a `data_schema` (the fields stored with each data object) and a `vector_schema` (the embedding fields). With [auto-embeddings](https://cloud.google.com/vertex-ai/docs/vector-search-2/data-objects/data-objects#auto-populate-embeddings), the vector schema specifies which embedding model to use and how to generate embeddings from data fields — no manual embedding calls needed.
 
+The vector schema includes two fields:
+- **`text_content_embedding`** (dense) — Auto-populated using `gemini-embedding-001` at `EMBEDDING_DIMENSIONS` (768) with `RETRIEVAL_DOCUMENT` task type. Note: `gemini-embedding-001` natively produces 3072-dim vectors; the `dimensions` field in the vector schema controls truncation for auto-embedding.
+- **`bm25_embedding`** (sparse) — Not auto-populated. Computed by `apply_bm25.py` (step 7b) and written via `batch_update_data_objects`.
+
 **Embedding task types:** A critical configuration choice in the vector schema is the [embedding task type](https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/task-types). Task types tell the embedding model the intended use of the text, which changes how the embedding is generated. There are two formatting patterns:
 
 - **Asymmetric format** — documents and queries use *different* task types. This is the pattern for retrieval use cases, where the document being indexed has a different intent than the query searching for it:
@@ -326,14 +353,14 @@ Each collection in [Vector Search 2.0](https://cloud.google.com/vertex-ai/docs/v
 
 > **Key point:** If your use case doesn't align with a documented use case, use `RETRIEVAL_QUERY` as the default query task type.
 
-In this project, we index documents with `RETRIEVAL_DOCUMENT` (set in the collection's vector schema) and search with `QUESTION_ANSWERING` (set at query time in step 7). This asymmetric pairing tells the embedding model that the indexed text is reference material and the search text is a question — producing embeddings optimized for matching questions to relevant documents.
+In this project, we index documents with `RETRIEVAL_DOCUMENT` (set in the collection's vector schema) and search with `QUESTION_ANSWERING` (set at query time in step 8). This asymmetric pairing tells the embedding model that the indexed text is reference material and the search text is a question — producing embeddings optimized for matching questions to relevant documents.
 
 #### 5a. Create Reddit Collection
 
 [create_collection_reddit.py](create_collection_reddit.py) creates a collection for Reddit thread chunks. The collection defines:
 
 - **Data schema:** Mirrors the BigQuery `reddit_chunks` table — `chunk_id`, `text_content`, `source_uri`, `subreddit`, `timestamp_unix`, `karma`, `is_image_description`, plus enrichment fields `topics` and `methods_mentioned`.
-- **Vector schema:** A single dense embedding field (`text_content_embedding`) with auto-embeddings configured to embed the `text_content` field using `gemini-embedding-001` (768 dimensions, `RETRIEVAL_DOCUMENT` task type).
+- **Vector schema:** Dense auto-embedding (`text_content_embedding`) using `gemini-embedding-001` (`EMBEDDING_DIMENSIONS`=768, `RETRIEVAL_DOCUMENT` task type), plus a sparse vector field (`bm25_embedding`) populated by step 7b.
 
 The script is idempotent — if the collection already exists, it skips creation and verifies the existing collection.
 
@@ -342,7 +369,7 @@ The script is idempotent — if the collection already exists, it skips creation
 [create_collection_zoom.py](create_collection_zoom.py) creates a collection for Zoom transcript chunks. Same pattern as 5a with a Zoom-specific data schema:
 
 - **Data schema:** `chunk_id`, `text_content`, `source_uri`, `speaker_list` (array of strings), `timestamp_start`, `timestamp_end`, plus enrichment fields `topics` and `action_items`.
-- **Vector schema:** Same auto-embedding configuration as the Reddit collection — `text_content_embedding` using `gemini-embedding-001`.
+- **Vector schema:** Same as the Reddit collection — dense auto-embedding + sparse `bm25_embedding`.
 
 Separate collections per data type enforce strict schema validation and prevent cross-type field conflicts.
 
@@ -351,14 +378,14 @@ Separate collections per data type enforce strict schema validation and prevent 
 [create_collection_pdf.py](create_collection_pdf.py) creates a collection for PDF document chunks. Same pattern as 5a with a PDF-specific data schema:
 
 - **Data schema:** `chunk_id`, `text_content`, `source_uri`, `page_start`, `page_end`, plus enrichment fields `topics` and `functions_referenced`.
-- **Vector schema:** Same auto-embedding configuration — `text_content_embedding` using `gemini-embedding-001`.
+- **Vector schema:** Same as other collections — dense auto-embedding + sparse `bm25_embedding`.
 
 #### 5d. Create Combined Collection
 
 [create_collection_combined.py](create_collection_combined.py) creates a single collection for cross-type search across all data types. The schema is the union of all fields from all per-type collections plus a `source_type` discriminator:
 
 - **Data schema:** Common fields (`chunk_id`, `text_content`, `source_uri`, `source_type`) plus all type-specific fields — Reddit (`subreddit`, `timestamp_unix`, `karma`, `is_image_description`), Zoom (`speaker_list`, `timestamp_start`, `timestamp_end`), and PDF (`page_start`, `page_end`). Enrichment fields from all types: `topics`, `methods_mentioned`, `action_items`, `functions_referenced`. Fields not relevant to a given source type are left empty at import time.
-- **Vector schema:** Same auto-embedding configuration as the per-type collections.
+- **Vector schema:** Same as the per-type collections — dense auto-embedding + sparse `bm25_embedding`.
 
 This enables cross-type search with full metadata — e.g., finding related content across a Reddit thread and a PDF document about the same forecasting topic, then filtering or inspecting type-specific fields in the results.
 
@@ -444,17 +471,113 @@ Auto-embeddings are generated during import, just like with the API-based approa
 
 ---
 
-### 7. Search & Query
+### 7. Build & Apply BM25 Sparse Embeddings
 
-[search_and_query.ipynb](search_and_query.ipynb) is an interactive notebook demonstrating all search and query capabilities across all four collections (Reddit, Zoom, PDF, Combined):
+BM25 (Best Matching 25) is a statistical ranking function that scores documents based on term frequency and inverse document frequency. Unlike dense embeddings that capture semantic meaning in a fixed-size vector, BM25 produces sparse vectors — most dimensions are zero, with non-zero values only for terms that appear in the document.
 
-- **Query**: Filter DataObjects by field values (`$gt`, `$eq`, `$and`, etc.) — analogous to SQL `WHERE` clauses. Examples include filtering Reddit chunks by karma threshold, PDF chunks by page range, and combined filters (karma + image-enriched).
-- **Semantic Search**: Natural language queries like *"What machine learning methods work best for demand forecasting?"* that find conceptually relevant chunks via auto-generated embeddings. Uses `QUESTION_ANSWERING` task type at query time — the asymmetric counterpart to the `RETRIEVAL_DOCUMENT` task type used when the documents were indexed (see [embedding task types](#5-create-collections) in step 5).
-- **Text Search**: Keyword-based matching for specific terms like *"ARIMA"* or *"CREATE MODEL"* — useful for acronyms and method names that may not have strong semantic representation.
-- **Hybrid Search with RRF**: Combines semantic and text search using [Reciprocal Rank Fusion](https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf). A comparison table shows how the same query produces different rankings under three weight configurations (`[1,1]`, `[3,1]`, `[1,3]`), demonstrating how weight tuning shifts results between intent-based and keyword-based relevance.
-- **Filtered Semantic Search**: Pre-filters on `SemanticSearch` restrict vector similarity ranking to a metadata subset (e.g., `source_type == 'pdf'`) without affecting embedding comparison quality.
-- **Crowding/Diversity Search**: Retrieves top-k results per unique value of a metadata field (e.g., 2 results per `source_type`) using the `DataObjectSearchServiceAsyncClient` to run filtered semantic searches concurrently via `asyncio.gather`. Includes a reusable `crowded_search` helper that works with any metadata field — demonstrated with both `source_type` and `source_uri` crowding.
-- **Enrichment-Based Filtering**: Filter by semantic tags from step 4 (e.g., `topics`, `methods_mentioned`) to find chunks about specific subjects. Enrichment tags appear alongside structural metadata in search results, giving richer context for downstream RAG pipelines.
+**Model parameters:**
+- **k1** (1.2) — Term frequency saturation. Controls how quickly repeated terms stop increasing the score. Lower values (toward 0) saturate faster; higher values (toward 2) let frequency continue to matter.
+- **b** (0.6) — Document length normalization. Controls how much longer documents are penalized. 0 = no penalty, 1 = full penalty proportional to length.
+- **epsilon** (0.25) — IDF smoothing floor. Prevents terms not in the corpus from having negative IDF scores.
+
+**Approach B — text + enrichment tags:** BM25 input for each chunk is `text_content` concatenated with enrichment tag values (topics, methods, functions, action items). This normalizes extracted concepts into the BM25 vocabulary — a topic like "demand forecasting" tagged on both a Reddit chunk and a PDF chunk produces shared BM25 terms that wouldn't appear in the raw text of both. The alternative (text only) would miss this cross-type normalization.
+
+**Inspection notebook:** [inspect_bm25.ipynb](inspect_bm25.ipynb) demonstrates the BM25 pipeline on a small sample of chunks before running the full build — shows preprocessing, input construction, model training, sparse embedding computation, and query embedding.
+
+#### 7a. Train BM25 Model
+
+[build_bm25.py](build_bm25.py) trains the BM25 model and stores the vocabulary + metadata in BigQuery:
+
+1. Read all chunks from BigQuery (3 tables)
+2. Build BM25 input text for each chunk (Approach B)
+3. Preprocess → tokenized corpus (lowercase, lemmatize, stopwords, n-grams)
+4. Train `BM25Okapi` model
+5. Save vocabulary to BigQuery (`{prefix}_bm25_vocabulary` table: term, index, IDF, version)
+6. Save model metadata to BigQuery (`{prefix}_bm25_model` table: corpus size, vocab size, avgdl, parameters)
+
+**Version history:** Each training run writes a new version to BigQuery using `WRITE_APPEND`. All versions are preserved in both the vocabulary and model tables, enabling comparison across training runs and rollback to a previous version. Re-running with the same `BM25_MODEL_VERSION` in [config.py](config.py) is idempotent — it deletes the existing rows for that version before appending.
+
+#### 7b. Apply BM25 Sparse Embeddings
+
+[apply_bm25.py](apply_bm25.py) loads a trained BM25 model from BigQuery, computes sparse embeddings for chunks that need updating, and writes the results to BQ chunk tables and VS2 DataObjects. Schema updates are handled automatically — no need to recreate collections or alter tables manually:
+
+1. Load BM25 model from BigQuery (vocabulary, IDF values, parameters)
+2. Add BM25 columns to BQ chunk tables if they don't exist (idempotent `ALTER TABLE`)
+3. Find chunks needing update (`bm25_model_version IS NULL` or `< target version`)
+4. Compute sparse embedding for each chunk (indices + values)
+5. Update BigQuery chunk tables with BM25 columns (`bm25_indices`, `bm25_values`, `bm25_text`, `bm25_model_version`)
+6. Check each VS2 collection's vector schema for `bm25_embedding` — add the sparse vector field via `update_collection` if missing
+7. Update VS2 DataObjects with sparse vectors via `batch_update_data_objects` (all 4 collections)
+
+The apply script reconstructs the BM25 scoring function entirely from stored parameters — it does not need the `rank_bm25` library or a retrained model object. This means any version of the model stored in BigQuery can be applied at any time.
+
+**Usage:**
+```bash
+uv run python apply_bm25.py              # apply latest model version
+uv run python apply_bm25.py --version 1  # apply (or rollback to) version 1
+uv run python apply_bm25.py --all        # re-embed all chunks (ignore version check)
+```
+
+**Incremental updates:** Only chunks with `bm25_model_version IS NULL` (never embedded) or `< target version` (stale) are processed. After importing new chunks (step 6), re-running `apply_bm25.py` adds sparse embeddings to just the new chunks without reprocessing existing ones.
+
+**Rollback:** Use `--version N` to apply a previous model version's vocabulary to all chunks. This re-embeds everything using the older vocabulary and IDF values, effectively rolling back the sparse search behavior.
+
+The VS2 update uses `update_mask=FieldMask(paths=["vectors"])` to update only the sparse vector field without touching the data fields or dense auto-embeddings.
+
+---
+
+### 8. Search & Query
+
+[search_and_query.ipynb](search_and_query.ipynb) is an interactive notebook organized by **search taxonomy** — each section demonstrates a search method, making it a reference for "how do I do X?" All demonstrations use the Combined collection (117 DataObjects: 34 Reddit + 12 Zoom + 71 PDF).
+
+The notebook reveals how different search methods surface different content: SemanticSearch for "demand forecasting" returns all Reddit discussion chunks, TextSearch for "ARIMA" returns all PDF documentation chunks, and BM25 sparse search returns a different PDF ranking than TextSearch for the same keywords. Hybrid search and crowding address these source-type biases by combining multiple signals or enforcing diversity constraints.
+
+**Search Taxonomy:**
+
+| Method | API | What Drives Results |
+|--------|-----|---------------------|
+| **Query** | `query_data_objects` | Field filters (`$eq`, `$gt`, `$in`) |
+| **SemanticSearch** | `search_data_objects` | Auto-embedded dense similarity |
+| **TextSearch** | `search_data_objects` | Native keyword matching |
+| **VectorSearch (dense)** | `search_data_objects` | Dense vector you supply |
+| **VectorSearch (sparse)** | `search_data_objects` | Sparse BM25 vector you supply |
+| **VectorSearch (dense+sparse)** | `batch_search_data_objects` | Two VectorSearch channels via RRF |
+| **Hybrid: Semantic+Text (RRF)** | `batch_search_data_objects` | 2-channel RRF fusion |
+| **Hybrid: Semantic+Sparse (RRF)** | `batch_search_data_objects` | 2-channel RRF with BM25 |
+| **Hybrid: 3-way (RRF)** | `batch_search_data_objects` | 3-channel RRF (semantic + text + sparse) |
+| **Reranked: VertexRanker** | `batch_search_data_objects` | Cross-encoder reranking (not yet supported) |
+| **Crowding** | Async parallel filtered search | Per-group diversity |
+
+**Key distinctions:**
+- **Query vs Search** — Query = metadata filtering only, no relevance ranking (like SQL `WHERE`). Search = ranked results by relevance.
+- **Semantic vs Vector** — SemanticSearch = you provide text, VS2 auto-embeds it. VectorSearch = you provide raw vector(s) — required for sparse search and external embedding models.
+- **Dense + Sparse** — `VectorSearch` uses a `oneof` for `vector` (dense) and `sparse_vector` — you can supply one per search channel, not both. To combine dense + sparse vectors, use `batch_search_data_objects` with two VectorSearch channels fused via RRF.
+- **Manual embedding dimensions** — When supplying dense vectors manually via VectorSearch, set `output_dimensionality` to match the collection schema (`EMBEDDING_DIMENSIONS` in [config.py](config.py), currently 768). `gemini-embedding-001` natively produces 3072 dims; VS2 auto-embed handles truncation internally for SemanticSearch.
+- **RRF vs VertexRanker** — RRF is purely statistical rank fusion (fast, weight-tunable). VertexRanker is a model-based cross-encoder that scores each (query, document) pair (more accurate, slower). VertexRanker is defined in the `vectorsearch_v1beta` API but not yet implemented by the backend — use RRF for now.
+
+---
+
+### 9. BM25 Maintenance
+
+As the corpus evolves — new documents are added, existing documents are updated or removed — the BM25 vocabulary may drift from the current data. Step 9 provides tools for monitoring this drift and rebuilding when needed.
+
+**Inspection notebook:** [inspect_bm25_maintenance.ipynb](inspect_bm25_maintenance.ipynb) analyzes the BM25 vocabulary in BigQuery and evaluates whether a rebuild is needed. Computes three drift metrics:
+
+- **OOV rate** — % of terms in the current corpus not in the stored vocabulary (threshold: 10%)
+- **Stale rate** — % of vocabulary terms no longer in the current corpus (threshold: 15%)
+- **Corpus size delta** — % change in total chunks since last training (threshold: 20%)
+
+**Scheduled script:** [refresh_bm25.py](refresh_bm25.py) automates drift detection with conditional rebuild. Designed to be run on a schedule (e.g., Cloud Scheduler → Cloud Run function):
+
+1. Load current model metadata from BigQuery
+2. Read all current chunks and compute current terms
+3. Compare against stored vocabulary to compute drift metrics
+4. If any metric exceeds its threshold → retrain the BM25 model with an incremented version number and save the new vocabulary + metadata to BigQuery (the previous version is preserved for comparison and rollback)
+5. If no drift → exit early with "No rebuild needed"
+
+After a rebuild, run `apply_bm25.py` to compute new sparse embeddings and update BQ chunk tables + VS2 DataObjects. The separation between retrain (refresh) and apply means you can inspect the new model before committing to a full re-embedding.
+
+Thresholds are configurable in [config.py](config.py) (`BM25_OOV_THRESHOLD`, `BM25_STALE_THRESHOLD`, `BM25_CORPUS_DELTA`).
 
 ---
 
@@ -463,7 +586,6 @@ Auto-embeddings are generated during import, just like with the API-based approa
 Future work to augment this solution:
 
 - **Real-Time Pipeline Automation**: Replace the current batch-run scripts with an event-driven pipeline that reacts to GCS changes in real time. Use [Eventarc](https://cloud.google.com/eventarc/docs/overview) or [GCS notifications](https://cloud.google.com/storage/docs/pubsub-notifications) to trigger processing when files are added, updated, or deleted — routing each event through the full chain (parse → enrich → import). Handle document updates by detecting changed `updated` timestamps via the object table, re-parsing affected files, re-enriching their chunks, and updating the corresponding DataObjects in Vector Search. Handle deletions by removing orphaned chunks from BigQuery and their DataObjects from collections. Track metadata changes (e.g., updated karma scores, new speaker labels) independently of content changes so metadata-only updates skip re-parsing and re-embedding. Orchestrate with [Cloud Workflows](https://cloud.google.com/workflows/docs/overview) or [Cloud Run functions](https://cloud.google.com/functions/docs/concepts/overview) for lightweight per-event processing, or [Cloud Composer](https://cloud.google.com/composer/docs/concepts/overview) for complex DAG-based orchestration with retry and dependency management.
-- **Sparse Embeddings (BM25)**: Add BM25-based sparse embeddings alongside the existing dense embeddings for improved keyword-aware hybrid search. Vector Search 2.0 supports custom sparse vectors in the vector schema.
 - **ANN Indexes vs kNN**: Create [ANN indexes](https://cloud.google.com/vertex-ai/docs/vector-search-2/indexes/indexes) on collections and benchmark latency/recall against the current brute-force kNN search. Demonstrate the trade-off between index build time and query performance at scale.
 - **Grounded Generation with Gemini**: Connect retrieval results to Gemini for generating responses grounded in the retrieved chunks — turning the search pipeline into a full RAG (Retrieval-Augmented Generation) system.
 - **Evaluation**: Set up systematic evaluation of retrieval quality and generated responses using metrics like recall@k, MRR, and LLM-as-judge for answer faithfulness and relevance.
