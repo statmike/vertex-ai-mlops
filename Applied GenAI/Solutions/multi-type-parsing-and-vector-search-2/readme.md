@@ -382,9 +382,65 @@ Uses direct (single-create) mode to simulate a continuously running system where
 
 [import_pdf_objects.py](import_pdf_objects.py) follows the same pattern as 6a for PDF document chunks. Reads from the BigQuery `pdf_chunks` table and creates DataObjects in the PDF collection with auto-generated embeddings. Includes enrichment fields `topics` and `functions_referenced`.
 
-### 6d. Import All Data Objects to Combined Collection
+### 6d. Batch Import All Data Objects to Combined Collection
 
-[import_combined_objects.py](import_combined_objects.py) reads chunks from all three BigQuery tables (Reddit, Zoom, PDF), adds a `source_type` field to each, and imports them into the combined collection from step 5d. Each source's enrichment fields are included — `methods_mentioned` for Reddit, `action_items` for Zoom, `functions_referenced` for PDF, and `topics` for all types. This enables unified cross-type retrieval — a single query can find relevant content across Reddit threads, Zoom transcripts, and PDF documents.
+[import_combined_objects.py](import_combined_objects.py) reads chunks from all three BigQuery tables (Reddit, Zoom, PDF), adds a `source_type` field to each, deduplicates by `chunk_id`, and batch-imports them into the combined collection from step 5d. Each source's enrichment fields are included — `methods_mentioned` for Reddit, `action_items` for Zoom, `functions_referenced` for PDF, and `topics` for all types.
+
+Unlike steps 6a-6c which use individual `create_data_object` calls (simulating a continuously running system where chunks arrive one at a time), this step uses `batch_create_data_objects` to send up to 1,000 DataObjects per API call. This is more efficient for bulk loading scenarios where all data is available upfront. The batch API handles embedding generation for all objects in the batch.
+
+This enables unified cross-type retrieval — a single query can find relevant content across Reddit threads, Zoom transcripts, and PDF documents.
+
+#### Alternative: GCS Import for Large Datasets
+
+For large-scale imports, Vector Search 2.0 supports [importing DataObjects directly from JSONL files in GCS](https://cloud.google.com/vertex-ai/docs/vector-search-2/data-objects/data-objects#importing_data_objects) via the `import_data_objects` long-running operation. This is more efficient than API-based batch creation when loading thousands or millions of objects.
+
+**Step 1 — Export from BigQuery to JSONL in GCS.** Each line must be a JSON object with `data_object_id` (the chunk ID) and `data` (the schema fields). For the combined collection:
+
+```sql
+EXPORT DATA OPTIONS (
+  uri = 'gs://YOUR_BUCKET/path/to/export/*.jsonl',
+  format = 'JSON',
+  overwrite = true
+) AS
+SELECT
+  chunk_id AS data_object_id,
+  TO_JSON(STRUCT(
+    chunk_id, text_content, source_uri, source_type,
+    subreddit, timestamp_unix, karma, is_image_description,
+    speaker_list, timestamp_start, timestamp_end,
+    page_start, page_end,
+    topics, methods_mentioned, action_items, functions_referenced
+  )) AS data
+FROM (
+  SELECT *, 'reddit' AS source_type FROM `dataset.prefix_reddit_chunks`
+  UNION ALL
+  SELECT *, 'zoom' AS source_type FROM `dataset.prefix_zoom_chunks`
+  UNION ALL
+  SELECT *, 'pdf' AS source_type FROM `dataset.prefix_pdf_chunks`
+);
+```
+
+**Step 2 — Import into the collection.** The `contents_uri` points to the JSONL export path, and `error_uri` is a GCS path where any per-row errors are written:
+
+```python
+from google.cloud import vectorsearch_v1beta
+
+client = vectorsearch_v1beta.VectorSearchServiceClient()
+
+operation = client.import_data_objects(
+    vectorsearch_v1beta.ImportDataObjectsRequest(
+        name="projects/PROJECT_ID/locations/LOCATION/collections/COLLECTION_ID",
+        gcs_import={
+            "contents_uri": "gs://YOUR_BUCKET/path/to/export/",
+            "error_uri": "gs://YOUR_BUCKET/path/to/import-errors/",
+        },
+    )
+)
+
+response = operation.result()  # blocks until import completes
+```
+
+Auto-embeddings are generated during import, just like with the API-based approaches. This pattern keeps data preparation in BigQuery (SQL) and avoids loading data into Python memory, making it well-suited for pipelines where chunk counts grow beyond what fits in a single batch API call.
 
 ---
 
@@ -406,6 +462,7 @@ Uses direct (single-create) mode to simulate a continuously running system where
 
 Future work to augment this solution:
 
+- **Real-Time Pipeline Automation**: Replace the current batch-run scripts with an event-driven pipeline that reacts to GCS changes in real time. Use [Eventarc](https://cloud.google.com/eventarc/docs/overview) or [GCS notifications](https://cloud.google.com/storage/docs/pubsub-notifications) to trigger processing when files are added, updated, or deleted — routing each event through the full chain (parse → enrich → import). Handle document updates by detecting changed `updated` timestamps via the object table, re-parsing affected files, re-enriching their chunks, and updating the corresponding DataObjects in Vector Search. Handle deletions by removing orphaned chunks from BigQuery and their DataObjects from collections. Track metadata changes (e.g., updated karma scores, new speaker labels) independently of content changes so metadata-only updates skip re-parsing and re-embedding. Orchestrate with [Cloud Workflows](https://cloud.google.com/workflows/docs/overview) or [Cloud Run functions](https://cloud.google.com/functions/docs/concepts/overview) for lightweight per-event processing, or [Cloud Composer](https://cloud.google.com/composer/docs/concepts/overview) for complex DAG-based orchestration with retry and dependency management.
 - **Sparse Embeddings (BM25)**: Add BM25-based sparse embeddings alongside the existing dense embeddings for improved keyword-aware hybrid search. Vector Search 2.0 supports custom sparse vectors in the vector schema.
 - **ANN Indexes vs kNN**: Create [ANN indexes](https://cloud.google.com/vertex-ai/docs/vector-search-2/indexes/indexes) on collections and benchmark latency/recall against the current brute-force kNN search. Demonstrate the trade-off between index build time and query performance at scale.
 - **Grounded Generation with Gemini**: Connect retrieval results to Gemini for generating responses grounded in the retrieved chunks — turning the search pipeline into a full RAG (Retrieval-Augmented Generation) system.

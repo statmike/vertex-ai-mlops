@@ -20,6 +20,18 @@ query = f"SELECT chunk_id, text_content, source_uri, subreddit, timestamp_unix, 
 rows = list(bq.query(query).result())
 print(f"Found {len(rows)} Reddit chunks in BigQuery")
 
+# --- Check for duplicate chunk_ids in source data ---
+
+from collections import Counter
+chunk_id_counts = Counter(row.chunk_id for row in rows)
+duplicates = {cid: cnt for cid, cnt in chunk_id_counts.items() if cnt > 1}
+if duplicates:
+    print(f"\nERROR: Found {len(duplicates)} duplicate chunk_ids in source table:")
+    for cid, cnt in duplicates.items():
+        print(f"  {cid}: {cnt} copies")
+    print("Fix the source data before importing — duplicates indicate a bug in the parse script.")
+    exit(1)
+
 # --- Import each chunk as a DataObject ---
 
 parent = f"projects/{PROJECT_ID}/locations/{REGION}/collections/{VS_COLLECTION_REDDIT}"

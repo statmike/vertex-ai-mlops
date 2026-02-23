@@ -50,16 +50,72 @@ if processor is None:
     )
     print(f"Created processor: {processor.name}")
 
-# --- Submit batch job for all PDFs in the GCS path ---
+# --- Target table ---
 
-print(f"\nSubmitting batch job for: {GCS_PDF_PREFIX}")
+table_ref = f"{BQ_PROJECT}.{BQ_DATASET}.{BQ_TABLE_PREFIX}_pdf_chunks"
+
+schema = [
+    bigquery.SchemaField("chunk_id", "STRING"),
+    bigquery.SchemaField("source_uri", "STRING"),
+    bigquery.SchemaField("text_content", "STRING"),
+    bigquery.SchemaField("page_start", "INTEGER"),
+    bigquery.SchemaField("page_end", "INTEGER"),
+    bigquery.SchemaField("processed_at", "TIMESTAMP"),
+]
+
+# Create table if it doesn't exist
+table = bigquery.Table(table_ref, schema=schema)
+bq.create_table(table, exists_ok=True)
+
+# --- Get PDF source files, detect which need (re)processing ---
+
+source_query = f"""
+SELECT s.uri, s.updated AS source_updated
+FROM `{BQ_PROJECT}.{BQ_DATASET}.{BQ_TABLE_PREFIX}_source` s
+WHERE s.content_type = 'application/pdf'
+"""
+source_rows = list(bq.query(source_query).result())
+
+# Check which files already have up-to-date chunks
+try:
+    processed_query = f"""
+    SELECT source_uri, MAX(processed_at) as last_processed
+    FROM `{table_ref}`
+    GROUP BY source_uri
+    """
+    processed = {row.source_uri: row.last_processed for row in bq.query(processed_query).result()}
+except Exception:
+    processed = {}
+
+# Only process files that are new or updated since last processing
+files_to_process = []
+for row in source_rows:
+    last = processed.get(row.uri)
+    if last is None or row.source_updated > last:
+        files_to_process.append(row.uri)
+    else:
+        print(f"Skipping (up to date): {row.uri.split('/')[-1]}")
+
+print(f"Found {len(source_rows)} PDF files, {len(files_to_process)} need processing")
+
+if not files_to_process:
+    total = bq.query(f"SELECT COUNT(*) as n FROM `{table_ref}`").result()
+    print(f"\nTotal rows in {table_ref}: {list(total)[0].n}")
+    exit()
+
+# --- Submit batch job for files that need processing ---
+
+print(f"\nSubmitting batch job for {len(files_to_process)} PDF files...")
 
 batch_job = docai_client.batch_process_documents(
     request=documentai.BatchProcessRequest(
         name=processor.name,
         input_documents=documentai.BatchDocumentsInputConfig(
-            gcs_prefix=documentai.GcsPrefix(
-                gcs_uri_prefix=GCS_PDF_PREFIX,
+            gcs_documents=documentai.GcsDocuments(
+                documents=[
+                    documentai.GcsDocument(gcs_uri=uri, mime_type="application/pdf")
+                    for uri in files_to_process
+                ]
             )
         ),
         document_output_config=documentai.DocumentOutputConfig(
@@ -85,23 +141,6 @@ batch_job.result()
 metadata = documentai.BatchProcessMetadata(batch_job.metadata)
 print(f"Batch job state: {metadata.state}")
 
-# --- Target table ---
-
-table_ref = f"{BQ_PROJECT}.{BQ_DATASET}.{BQ_TABLE_PREFIX}_pdf_chunks"
-
-schema = [
-    bigquery.SchemaField("chunk_id", "STRING"),
-    bigquery.SchemaField("source_uri", "STRING"),
-    bigquery.SchemaField("text_content", "STRING"),
-    bigquery.SchemaField("page_start", "INTEGER"),
-    bigquery.SchemaField("page_end", "INTEGER"),
-    bigquery.SchemaField("processed_at", "TIMESTAMP"),
-]
-
-# Create table if it doesn't exist
-table = bigquery.Table(table_ref, schema=schema)
-bq.create_table(table, exists_ok=True)
-
 # --- Read batch results from GCS and load into BigQuery ---
 
 bucket = gcs.bucket(GCS_BUCKET)
@@ -121,6 +160,9 @@ for process in metadata.individual_process_statuses:
     # Read parsed document from the GCS output location
     output_match = re.match(r"gs://[^/]+/(.*)", output_dest)
     output_prefix = output_match.group(1)
+    # Ensure trailing slash so prefix "…/1/" doesn't match "…/10/" and "…/11/"
+    if not output_prefix.endswith("/"):
+        output_prefix += "/"
 
     # Hash filename to stay within the 64-char DataObjectId limit for Vector Search
     file_hash = hashlib.md5(filename.encode()).hexdigest()[:10]
