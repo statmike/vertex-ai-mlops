@@ -44,4 +44,5 @@ VS_COLLECTION_COMBINED = '-'.join(PARTS) + '-combined'
 # --- Gemini ---
 
 GEMINI_MODEL = "gemini-2.5-pro"
+FAST_GEMINI_MODEL = "gemini-2.5-flash"
 EMBEDDING_MODEL = "gemini-embedding-001"

@@ -16,7 +16,7 @@ do_client = vectorsearch_v1beta.DataObjectServiceClient()
 # --- Read chunks from BigQuery ---
 
 table_ref = f"{BQ_PROJECT}.{BQ_DATASET}.{BQ_TABLE_PREFIX}_pdf_chunks"
-query = f"SELECT chunk_id, text_content, source_uri, page_start, page_end FROM `{table_ref}`"
+query = f"SELECT chunk_id, text_content, source_uri, page_start, page_end, topics, functions_referenced FROM `{table_ref}`"
 rows = list(bq.query(query).result())
 print(f"Found {len(rows)} PDF chunks in BigQuery")
 
@@ -33,6 +33,8 @@ for row in rows:
         "source_uri": row.source_uri,
         "page_start": row.page_start,
         "page_end": row.page_end,
+        "topics": list(row.topics) if row.topics else [],
+        "functions_referenced": list(row.functions_referenced) if row.functions_referenced else [],
     }
 
     request = vectorsearch_v1beta.CreateDataObjectRequest(

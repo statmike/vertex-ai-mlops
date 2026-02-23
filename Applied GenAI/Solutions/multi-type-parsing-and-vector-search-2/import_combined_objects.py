@@ -20,31 +20,37 @@ sources = [
     {
         "table": f"{BQ_TABLE_PREFIX}_reddit_chunks",
         "source_type": "reddit",
-        "query": "SELECT chunk_id, text_content, source_uri, subreddit, timestamp_unix, karma, is_image_description",
+        "query": "SELECT chunk_id, text_content, source_uri, subreddit, timestamp_unix, karma, is_image_description, topics, methods_mentioned",
         "extra": lambda row: {
             "subreddit": row.subreddit,
             "timestamp_unix": row.timestamp_unix,
             "karma": row.karma,
             "is_image_description": row.is_image_description,
+            "topics": list(row.topics) if row.topics else [],
+            "methods_mentioned": list(row.methods_mentioned) if row.methods_mentioned else [],
         },
     },
     {
         "table": f"{BQ_TABLE_PREFIX}_zoom_chunks",
         "source_type": "zoom",
-        "query": "SELECT chunk_id, text_content, source_uri, speaker_list, timestamp_start, timestamp_end",
+        "query": "SELECT chunk_id, text_content, source_uri, speaker_list, timestamp_start, timestamp_end, topics, action_items",
         "extra": lambda row: {
             "speaker_list": list(row.speaker_list),
             "timestamp_start": row.timestamp_start,
             "timestamp_end": row.timestamp_end,
+            "topics": list(row.topics) if row.topics else [],
+            "action_items": list(row.action_items) if row.action_items else [],
         },
     },
     {
         "table": f"{BQ_TABLE_PREFIX}_pdf_chunks",
         "source_type": "pdf",
-        "query": "SELECT chunk_id, text_content, source_uri, page_start, page_end",
+        "query": "SELECT chunk_id, text_content, source_uri, page_start, page_end, topics, functions_referenced",
         "extra": lambda row: {
             "page_start": row.page_start,
             "page_end": row.page_end,
+            "topics": list(row.topics) if row.topics else [],
+            "functions_referenced": list(row.functions_referenced) if row.functions_referenced else [],
         },
     },
 ]

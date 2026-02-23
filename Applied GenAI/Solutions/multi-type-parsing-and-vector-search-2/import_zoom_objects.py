@@ -16,7 +16,7 @@ do_client = vectorsearch_v1beta.DataObjectServiceClient()
 # --- Read chunks from BigQuery ---
 
 table_ref = f"{BQ_PROJECT}.{BQ_DATASET}.{BQ_TABLE_PREFIX}_zoom_chunks"
-query = f"SELECT chunk_id, text_content, source_uri, speaker_list, timestamp_start, timestamp_end FROM `{table_ref}`"
+query = f"SELECT chunk_id, text_content, source_uri, speaker_list, timestamp_start, timestamp_end, topics, action_items FROM `{table_ref}`"
 rows = list(bq.query(query).result())
 print(f"Found {len(rows)} Zoom chunks in BigQuery")
 
@@ -34,6 +34,8 @@ for row in rows:
         "speaker_list": list(row.speaker_list),
         "timestamp_start": row.timestamp_start,
         "timestamp_end": row.timestamp_end,
+        "topics": list(row.topics) if row.topics else [],
+        "action_items": list(row.action_items) if row.action_items else [],
     }
 
     request = vectorsearch_v1beta.CreateDataObjectRequest(

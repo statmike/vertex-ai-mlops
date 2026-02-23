@@ -19,6 +19,9 @@ data_schema = {
         "source_uri": {"type": "string"},
         "page_start": {"type": "number"},
         "page_end": {"type": "number"},
+        # Enrichment fields (step 4)
+        "topics": {"type": "array", "items": {"type": "string"}},
+        "functions_referenced": {"type": "array", "items": {"type": "string"}},
     },
 }
 

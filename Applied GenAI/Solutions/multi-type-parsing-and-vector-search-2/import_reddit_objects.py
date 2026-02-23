@@ -16,7 +16,7 @@ do_client = vectorsearch_v1beta.DataObjectServiceClient()
 # --- Read chunks from BigQuery ---
 
 table_ref = f"{BQ_PROJECT}.{BQ_DATASET}.{BQ_TABLE_PREFIX}_reddit_chunks"
-query = f"SELECT chunk_id, text_content, source_uri, subreddit, timestamp_unix, karma, is_image_description FROM `{table_ref}`"
+query = f"SELECT chunk_id, text_content, source_uri, subreddit, timestamp_unix, karma, is_image_description, topics, methods_mentioned FROM `{table_ref}`"
 rows = list(bq.query(query).result())
 print(f"Found {len(rows)} Reddit chunks in BigQuery")
 
@@ -35,6 +35,8 @@ for row in rows:
         "timestamp_unix": row.timestamp_unix,
         "karma": row.karma,
         "is_image_description": row.is_image_description,
+        "topics": list(row.topics) if row.topics else [],
+        "methods_mentioned": list(row.methods_mentioned) if row.methods_mentioned else [],
     }
 
     request = vectorsearch_v1beta.CreateDataObjectRequest(

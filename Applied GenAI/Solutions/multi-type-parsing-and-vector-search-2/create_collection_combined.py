@@ -32,6 +32,14 @@ data_schema = {
         # PDF fields
         "page_start": {"type": "number"},
         "page_end": {"type": "number"},
+        # Enrichment fields (step 4 — all types)
+        "topics": {"type": "array", "items": {"type": "string"}},
+        # Reddit enrichment
+        "methods_mentioned": {"type": "array", "items": {"type": "string"}},
+        # Zoom enrichment
+        "action_items": {"type": "array", "items": {"type": "string"}},
+        # PDF enrichment
+        "functions_referenced": {"type": "array", "items": {"type": "string"}},
     },
 }
 

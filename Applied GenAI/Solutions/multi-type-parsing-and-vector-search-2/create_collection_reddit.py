@@ -21,6 +21,9 @@ data_schema = {
         "timestamp_unix": {"type": "number"},
         "karma": {"type": "number"},
         "is_image_description": {"type": "boolean"},
+        # Enrichment fields (step 4)
+        "topics": {"type": "array", "items": {"type": "string"}},
+        "methods_mentioned": {"type": "array", "items": {"type": "string"}},
     },
 }
 

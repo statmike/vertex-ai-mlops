@@ -20,6 +20,9 @@ data_schema = {
         "speaker_list": {"type": "array", "items": {"type": "string"}},
         "timestamp_start": {"type": "number"},
         "timestamp_end": {"type": "number"},
+        # Enrichment fields (step 4)
+        "topics": {"type": "array", "items": {"type": "string"}},
+        "action_items": {"type": "array", "items": {"type": "string"}},
     },
 }
 
