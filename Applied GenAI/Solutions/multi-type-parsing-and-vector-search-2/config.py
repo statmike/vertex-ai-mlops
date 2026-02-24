@@ -60,3 +60,9 @@ BM25_MODEL_VERSION = 1 # increment on retrain
 BM25_OOV_THRESHOLD = 0.10    # 10% new terms triggers rebuild
 BM25_STALE_THRESHOLD = 0.15  # 15% stale terms triggers rebuild
 BM25_CORPUS_DELTA = 0.20     # 20% corpus size change triggers rebuild
+
+# --- ANN Index (step 10) ---
+
+ANN_INDEX_THRESHOLD = 1000          # minimum DataObjects before triggering index build
+ANN_INDEX_ID = 'dense-embedding'    # index resource ID (RFC1035: lowercase, hyphens)
+ANN_DISTANCE_METRIC = 'DOT_PRODUCT' # DOT_PRODUCT (default) or COSINE_DISTANCE

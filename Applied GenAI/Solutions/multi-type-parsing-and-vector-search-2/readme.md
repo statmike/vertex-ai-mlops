@@ -118,8 +118,8 @@ Three scripts generate synthetic forecasting-themed data in different formats. E
 ## Solution Workflow
 
 ```
-Generate ─► Upload ─► Object Table ─► Parse ─► Enrich ─► Collections ─► Import ─► BM25 ──► Search ─► Refresh
- (0)         (1)         (2)         (3a-3c)   (4a-4c)    (5a-5d)      (6a-6d)   (7a/7b)    (8)       (9)
+Generate ─► Upload ─► Object Table ─► Parse ─► Enrich ─► Collections ─► Import ─► BM25 ──► Search ─► Refresh ─► ANN Index
+ (0)         (1)         (2)         (3a-3c)   (4a-4c)    (5a-5d)      (6a-6d)   (7a/7b)    (8)       (9)        (10)
 ```
 
 | Step | Input | Output | What Happens |
@@ -138,6 +138,7 @@ Generate ─► Upload ─► Object Table ─► Parse ─► Enrich ─► Col
 | **7b. Apply BM25** | BM25 model from BQ | Sparse embeddings in BQ + VS2 | Compute sparse embeddings, update chunk tables and DataObjects |
 | **8. Search** | Natural language queries | Ranked results with metadata | Query, semantic, text, sparse, hybrid/RRF, crowding (VertexRanker defined but not yet supported) |
 | **9. Refresh** | Current corpus vs stored vocabulary | Conditional retrain | Drift detection → retrain if needed; run apply_bm25.py after |
+| **10. ANN Index** | DataObject count in collection | ANN index on combined collection | Check size, create index if ≥ threshold; queries auto-use ANN |
 
 <details>
 <summary><b>Example data at each transformation stage</b> (click to expand)</summary>
@@ -553,6 +554,7 @@ The notebook reveals how different search methods surface different content: Sem
 - **Semantic vs Vector** — SemanticSearch = you provide text, VS2 auto-embeds it. VectorSearch = you provide raw vector(s) — required for sparse search and external embedding models.
 - **Dense + Sparse** — `VectorSearch` uses a `oneof` for `vector` (dense) and `sparse_vector` — you can supply one per search channel, not both. To combine dense + sparse vectors, use `batch_search_data_objects` with two VectorSearch channels fused via RRF.
 - **Manual embedding dimensions** — When supplying dense vectors manually via VectorSearch, set `output_dimensionality` to match the collection schema (`EMBEDDING_DIMENSIONS` in [config.py](config.py), currently 768). `gemini-embedding-001` natively produces 3072 dims; VS2 auto-embed handles truncation internally for SemanticSearch.
+- **SearchHint (ANN vs kNN)** — `VectorSearch` and `SemanticSearch` accept a `search_hint` parameter to control index usage. By default, VS2 auto-selects an ANN index if one exists, falling back to brute-force kNN. Use `SearchHint(use_knn=True)` to force exact kNN search (useful for recall evaluation). `TextSearch` does not support `search_hint`. See step 10 for ANN index management and recall benchmarking.
 - **RRF vs VertexRanker** — RRF is purely statistical rank fusion (fast, weight-tunable). VertexRanker is a model-based cross-encoder that scores each (query, document) pair (more accurate, slower). VertexRanker is defined in the `vectorsearch_v1beta` API but not yet implemented by the backend — use RRF for now.
 
 ---
@@ -581,12 +583,56 @@ Thresholds are configurable in [config.py](config.py) (`BM25_OOV_THRESHOLD`, `BM
 
 ---
 
+### 10. ANN Index Management
+
+All searches in steps 1–9 use brute-force kNN (exact nearest neighbor), which scans every DataObject in the collection. This works well at small scale (117 DataObjects) but won't scale to thousands+. [ANN indexes](https://cloud.google.com/vertex-ai/docs/vector-search-2/indexes/indexes) trade a small amount of recall for significantly lower query latency by building an approximate nearest neighbor index over the dense embeddings.
+
+**When to build:** Collection size ≥ `ANN_INDEX_THRESHOLD` (default 1000, configurable in [config.py](config.py)). Below this threshold, brute-force kNN is efficient and provides exact results.
+
+**Script:** [manage_ann_index.py](manage_ann_index.py) checks collection size, creates an ANN index when the threshold is reached, or deletes an existing index:
+
+```bash
+uv run python manage_ann_index.py            # check size, create if >= threshold
+uv run python manage_ann_index.py --delete    # delete the ANN index
+```
+
+**Index configuration:**
+
+| Parameter | Value | Purpose |
+|-----------|-------|---------|
+| `index_field` | `text_content_embedding` | Dense vector field from vector schema |
+| `distance_metric` | `DOT_PRODUCT` | Default distance metric (also supports `COSINE_DISTANCE`) |
+| `filter_fields` | `["source_type"]` | Fast ANN inline filtering (avoids post-filter recall loss) |
+| `store_fields` | `["chunk_id", "text_content", "source_type", "source_uri"]` | Inline data retrieval (avoids separate data fetch) |
+
+**`filter_fields` vs `store_fields`:**
+- **`filter_fields`**: Fields pushed into the index for fast ANN inline filtering. When you filter by `source_type` during a search, the index applies the filter during the ANN search rather than post-filtering results — this avoids recall loss where post-filtering could remove good matches. Add frequently filtered fields here.
+- **`store_fields`**: Fields pushed into the index for inline data retrieval. Search results include these fields without a separate data fetch. This reduces latency for common result fields. Full metadata is still available via `output_fields` at slightly higher latency.
+- **Trade-off**: More fields = larger index = more memory, but faster queries. Keep both lists small — add fields only when the performance benefit is measurable.
+
+**Once built**, the ANN index auto-updates as DataObjects are added or removed — no manual rebuild needed. Queries automatically use the ANN index unless overridden.
+
+**SearchHint — controlling ANN vs kNN at query time:**
+
+`VectorSearch` and `SemanticSearch` accept a `search_hint` parameter. `TextSearch` does not support `search_hint`.
+
+| Behavior | How to set |
+|----------|-----------|
+| **Auto (default)** | Omit `search_hint` — uses ANN index if available, falls back to kNN |
+| **Force kNN** | `search_hint=SearchHint(use_knn=True)` — brute-force exact results |
+| **Force specific index** | `search_hint=SearchHint(use_index=IndexHint(name=...))` — target a named index |
+
+`SearchResponseMetadata` in the response reports which engine was used (`used_index` or `used_knn`).
+
+**Recall comparison:** At small scale (117 DataObjects), ANN and kNN produce identical results (recall = 1.0). As the collection grows, ANN may trade a small amount of recall for significant latency improvement. The inspection notebook [inspect_ann_index.ipynb](inspect_ann_index.ipynb) benchmarks recall@k across test queries and compares kNN vs ANN latency.
+
+---
+
 ## Planned Enhancements
 
 Future work to augment this solution:
 
 - **Real-Time Pipeline Automation**: Replace the current batch-run scripts with an event-driven pipeline that reacts to GCS changes in real time. Use [Eventarc](https://cloud.google.com/eventarc/docs/overview) or [GCS notifications](https://cloud.google.com/storage/docs/pubsub-notifications) to trigger processing when files are added, updated, or deleted — routing each event through the full chain (parse → enrich → import). Handle document updates by detecting changed `updated` timestamps via the object table, re-parsing affected files, re-enriching their chunks, and updating the corresponding DataObjects in Vector Search. Handle deletions by removing orphaned chunks from BigQuery and their DataObjects from collections. Track metadata changes (e.g., updated karma scores, new speaker labels) independently of content changes so metadata-only updates skip re-parsing and re-embedding. Orchestrate with [Cloud Workflows](https://cloud.google.com/workflows/docs/overview) or [Cloud Run functions](https://cloud.google.com/functions/docs/concepts/overview) for lightweight per-event processing, or [Cloud Composer](https://cloud.google.com/composer/docs/concepts/overview) for complex DAG-based orchestration with retry and dependency management.
-- **ANN Indexes vs kNN**: Create [ANN indexes](https://cloud.google.com/vertex-ai/docs/vector-search-2/indexes/indexes) on collections and benchmark latency/recall against the current brute-force kNN search. Demonstrate the trade-off between index build time and query performance at scale.
 - **Grounded Generation with Gemini**: Connect retrieval results to Gemini for generating responses grounded in the retrieved chunks — turning the search pipeline into a full RAG (Retrieval-Augmented Generation) system.
 - **Evaluation**: Set up systematic evaluation of retrieval quality and generated responses using metrics like recall@k, MRR, and LLM-as-judge for answer faithfulness and relevance.
 - **ADK Agent Integration**: Connect the retrieval and generation pipeline to [Agent Development Kit (ADK)](https://google.github.io/adk-docs/) agents, enabling tool-use patterns where agents can search across collections, filter by metadata, and synthesize answers from multiple sources.
