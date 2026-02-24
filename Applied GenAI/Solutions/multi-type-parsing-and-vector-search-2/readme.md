@@ -118,8 +118,8 @@ Three scripts generate synthetic forecasting-themed data in different formats. E
 ## Solution Workflow
 
 ```
-Generate ─► Upload ─► Object Table ─► Parse ─► Enrich ─► Collections ─► Import ─► BM25 ──► Search ─► Refresh ─► ANN Index
- (0)         (1)         (2)         (3a-3c)   (4a-4c)    (5a-5d)      (6a-6d)   (7a/7b)    (8)       (9)        (10)
+Generate ─► Upload ─► Object Table ─► Parse ─► Enrich ─► Collections ─► Import ─► BM25 ──► Search ─► Refresh ─► ANN Index ─► Grounded Gen
+ (0)         (1)         (2)         (3a-3c)   (4a-4c)    (5a-5d)      (6a-6d)   (7a/7b)    (8)       (9)        (10)          (11)
 ```
 
 | Step | Input | Output | What Happens |
@@ -139,6 +139,7 @@ Generate ─► Upload ─► Object Table ─► Parse ─► Enrich ─► Col
 | **8. Search** | Natural language queries | Ranked results with metadata | Query, semantic, text, sparse, hybrid/RRF, crowding (VertexRanker defined but not yet supported) |
 | **9. Refresh** | Current corpus vs stored vocabulary | Conditional retrain | Drift detection → retrain if needed; run apply_bm25.py after |
 | **10. ANN Index** | DataObject count in collection | ANN index on combined collection | Check size, create index if ≥ threshold; queries auto-use ANN |
+| **11. Grounded Gen** | Search results from any method | Cited response grounded in retrieved chunks | Format context, generate with Gemini, extract citations |
 
 <details>
 <summary><b>Example data at each transformation stage</b> (click to expand)</summary>
@@ -628,15 +629,67 @@ uv run python manage_ann_index.py --delete    # delete the ANN index
 
 ---
 
+### 11. Grounded Generation with Gemini
+
+Steps 0–10 build a mature retrieval pipeline — 10+ search methods, hybrid RRF, crowding, sparse BM25 — but the system returns raw search results. Users must read and synthesize the retrieved chunks themselves. This step closes the RAG loop by connecting retrieval to generation: take search results from any method, format them as numbered source context, send to Gemini with a grounding instruction, and produce a cited response.
+
+**Notebook:** [grounded_generation.ipynb](grounded_generation.ipynb) demonstrates the full retrieve → format → generate → cite pipeline using three different retrieval methods on the same query.
+
+**Context formatting:** Search results are formatted as numbered sources with metadata headers:
+```
+[Source 1] (chunk_id: red_thread_deep_015, type: reddit)
+THREAD: ARIMA vs. Prophet vs. LightGBM for Dem...
+
+[Source 2] (chunk_id: pdf_90bbc35dad_c2, type: pdf)
+# The CREATE MODEL statement for ARIMA PLUS mo...
+```
+
+Each source includes its `chunk_id` and `source_type` so the model can reference specific sources, and so citations can be traced back to their origin. An optional `max_chars` parameter truncates individual chunks for context window management.
+
+**System instruction:** A default instruction constrains Gemini to answer only from the provided sources:
+- Break the answer into individual claims, each with its supporting source numbers
+- Every claim must cite at least one source
+- Synthesize across sources rather than summarizing each one separately
+- If sources disagree, present both perspectives as separate claims
+- If the sources don't contain enough information, say so — do not make up information
+
+The instruction is configurable — swap it to change response style (more conversational, more detailed, domain-specific terminology).
+
+**Structured output:** Generation uses Gemini's structured output with a Pydantic schema to return per-claim citations as structured data rather than inline `[Source N]` text parsed by regex:
+
+```python
+class Claim(BaseModel):
+    statement: str
+    source_numbers: list[int]
+
+class GroundedResponse(BaseModel):
+    claims: list[Claim]
+```
+
+Each `Claim` carries its statement text and the source numbers that support it. This eliminates fragile regex parsing and gives direct access to which sources support each claim — enabling programmatic quality checks and per-claim traceability for downstream evaluation.
+
+**Search method impact on generation:** The notebook demonstrates the same query with three retrieval methods:
+- **SemanticSearch** — context dominated by conversational content (Reddit), producing opinion-heavy responses
+- **Hybrid RRF** — brings in PDF documentation alongside Reddit discussion, producing responses with both practical experience and technical reference details
+- **Crowded search** — forces representation from all source types (reddit, zoom, pdf), producing the most balanced multi-perspective response
+
+A comparison table shows source types in context vs source types cited for each method.
+
+**Citation extraction:** `extract_citations()` collects all unique source numbers from the structured `GroundedResponse`. `citation_summary()` cross-references cited sources against the search results to show which chunks were used and which were available but not cited. `claims_df()` displays the structured claims as a DataFrame for inspection. Since citations are structured data (not regex-parsed text), quality checks are reliable — claims with empty `source_numbers` or out-of-range source numbers indicate grounding failures.
+
+**Context window management:** As `top_k` increases, the combined context can approach model limits. Three strategies: reduce `top_k`, truncate chunks with `max_chars`, or pre-summarize long chunks. The notebook demonstrates `top_k=10` with `max_chars=500` and shows the reduction in context size.
+
+---
+
 ## Planned Enhancements
 
-The current system covers the full retrieval pipeline: multi-format parsing, semantic enrichment, dense + sparse embeddings, hybrid search with RRF, and ANN index management. The enhancements below are organized in four phases that progress from completing the RAG loop through agentic intelligence and production deployment.
+The current system covers the full retrieval pipeline and grounded generation: multi-format parsing, semantic enrichment, dense + sparse embeddings, hybrid search with RRF, ANN index management, and cited response generation with Gemini (step 11). The enhancements below are organized in four phases that progress from completing the RAG loop through agentic intelligence and production deployment.
 
 ### Phase 1: Complete the RAG Loop
 
 The retrieval layer is mature but the system doesn't yet produce answers, measure quality, or analyze its own cost profile. These steps close those gaps and establish the baselines needed before adding agentic intelligence.
 
-- **Grounded Generation with Gemini**: Connect retrieval results to Gemini for generating responses grounded in the retrieved chunks — turning the search pipeline into a full RAG (Retrieval-Augmented Generation) system. Include citation attribution back to source chunks, configurable system instructions for response style, and context window management for large result sets.
+- **Grounded Generation with Gemini** ✅ *(implemented — step 11)*: Connect retrieval results to Gemini for generating responses grounded in the retrieved chunks — turning the search pipeline into a full RAG (Retrieval-Augmented Generation) system. Include citation attribution back to source chunks, configurable system instructions for response style, and context window management for large result sets.
 
 - **Evaluation**: Set up systematic evaluation of both retrieval quality and generated response quality. Retrieval metrics: recall@k, MRR (Mean Reciprocal Rank), and NDCG across a labeled query set. Generation metrics: LLM-as-judge for answer faithfulness (does the answer stay grounded in the retrieved chunks?), relevance (does it address the question?), and completeness (does it cover all relevant retrieved information?). Establish baselines before tuning retrieval or generation parameters. Evaluation should run before and after any pipeline change to catch regressions.
 
