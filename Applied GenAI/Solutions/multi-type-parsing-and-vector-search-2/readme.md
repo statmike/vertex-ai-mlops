@@ -744,3 +744,28 @@ This solution is a reference implementation designed to demonstrate VS2 capabili
 - **No real user feedback**: The evaluation framework (Phase 1) uses LLM-as-judge and synthetic queries. There is no mechanism for real user queries, click-through signals, or relevance feedback. Production RAG systems improve from user signals over time. The agent's self-evaluation (Phase 2) provides runtime quality control but is model-judging-model, not ground truth.
 
 - **Single model dependency**: The system uses Gemini for data generation (step 0), enrichment (step 4), embeddings (`gemini-embedding-001`), and planned generation, reranking, and evaluation. This is appropriate for a Google Cloud reference implementation but represents a single-vendor dependency for all AI capabilities.
+
+---
+
+## Straight Line Python Examples
+
+Minimal single-file scripts that demonstrate the end-to-end pipeline without notebooks, helper modules, or intermediate steps. Each script is self-contained — just `config.py` and standard dependencies.
+
+### RAG Query
+
+[example_rag_query.py](example_rag_query.py) — Connect to the combined collection, retrieve with hybrid search, and generate a cited response with Gemini. The complete RAG loop in one script.
+
+**What it does:**
+1. Reads the collection schema to discover all fields dynamically — no hardcoded field names
+2. Prints the DataObject count and all schema field names
+3. Takes a query from the command line (or uses a default)
+4. Runs hybrid semantic + text search with RRF (`weights=[1.0, 1.0]`, `top_k=5`) — TextSearch searches all string-type fields detected from the schema
+5. Formats results as numbered sources with all non-empty metadata fields included in the context sent to Gemini
+6. Generates a structured response with per-claim citations using `gemini-2.5-flash` (`FAST_GEMINI_MODEL`) and a Pydantic schema
+7. Displays the response as a continuous paragraph with `[1,2,3]` citation blocks and a source summary showing which chunks were cited
+
+**Usage:**
+```bash
+uv run python example_rag_query.py
+uv run python example_rag_query.py "What methods handle seasonal patterns?"
+```
