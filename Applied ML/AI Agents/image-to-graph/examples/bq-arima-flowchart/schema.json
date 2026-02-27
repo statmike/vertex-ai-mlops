@@ -1,0 +1,227 @@
+{
+  "$defs": {
+    "EdgeType": {
+      "description": "Types of connections in the diagram.",
+      "enum": [
+        "flow",
+        "feedback"
+      ],
+      "title": "EdgeType",
+      "type": "string"
+    },
+    "ElementType": {
+      "description": "Types of elements found in the BQ ARIMA pipeline diagram.",
+      "enum": [
+        "input",
+        "process",
+        "intermediate",
+        "component",
+        "output",
+        "operator"
+      ],
+      "title": "ElementType",
+      "type": "string"
+    },
+    "FlowchartEdge": {
+      "properties": {
+        "id": {
+          "description": "Unique edge identifier",
+          "title": "Id",
+          "type": "string"
+        },
+        "source": {
+          "description": "Source node id",
+          "title": "Source",
+          "type": "string"
+        },
+        "target": {
+          "description": "Target node id",
+          "title": "Target",
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Edge label (e.g., 'Point Forecast')",
+          "title": "Label"
+        },
+        "edge_type": {
+          "$ref": "#/$defs/EdgeType",
+          "default": "flow",
+          "description": "Arrow style: flow (solid) or feedback (dashed)"
+        }
+      },
+      "required": [
+        "id",
+        "source",
+        "target"
+      ],
+      "title": "FlowchartEdge",
+      "type": "object"
+    },
+    "FlowchartNode": {
+      "properties": {
+        "id": {
+          "description": "Unique node identifier",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "description": "Display text from the diagram",
+          "title": "Label",
+          "type": "string"
+        },
+        "element_type": {
+          "$ref": "#/$defs/ElementType",
+          "description": "Type of diagram element"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Phase"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Pipeline phase this node belongs to"
+        },
+        "shape": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Visual shape: rectangle, cylinder, circle",
+          "title": "Shape"
+        },
+        "color": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Fill color: blue, green, yellow, orange, gray",
+          "title": "Color"
+        },
+        "bq_function": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Associated BigQuery ML function (e.g., ML.FORECAST)",
+          "title": "Bq Function"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Additional context about this node",
+          "title": "Description"
+        },
+        "bounding_box": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Region coordinates [y_min, x_min, y_max, x_max] normalized 0-1000",
+          "title": "Bounding Box"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "element_type"
+      ],
+      "title": "FlowchartNode",
+      "type": "object"
+    },
+    "Phase": {
+      "description": "Pipeline phases shown as labeled sections in the diagram.",
+      "enum": [
+        "Preprocessing",
+        "Modeling",
+        "Decomposed Time Series",
+        "Output"
+      ],
+      "title": "Phase",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "diagram_type": {
+      "description": "Type of diagram",
+      "title": "Diagram Type",
+      "type": "string"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/FlowchartNode"
+      },
+      "title": "Nodes",
+      "type": "array"
+    },
+    "edges": {
+      "items": {
+        "$ref": "#/$defs/FlowchartEdge"
+      },
+      "title": "Edges",
+      "type": "array"
+    },
+    "metadata": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Metadata"
+    }
+  },
+  "required": [
+    "diagram_type",
+    "nodes",
+    "edges"
+  ],
+  "title": "FlowchartGraph",
+  "type": "object"
+}

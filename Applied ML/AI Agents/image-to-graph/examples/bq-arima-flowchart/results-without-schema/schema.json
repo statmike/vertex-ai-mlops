@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DiagramGraph",
+  "description": "Schema for a flowchart graph",
+  "type": "object",
+  "properties": {
+    "diagram_type": {
+      "type": "string",
+      "description": "The type of diagram"
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "properties": {
+          "label": {
+            "description": "Node label",
+            "title": "Label",
+            "type": "string"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Node confidence",
+            "title": "Confidence"
+          },
+          "id": {
+            "description": "Node id",
+            "title": "Id",
+            "type": "string"
+          },
+          "bounding_box": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Node bounding_box",
+            "title": "Bounding Box"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Node type",
+            "title": "Type"
+          }
+        },
+        "required": [
+          "label",
+          "id"
+        ],
+        "title": "GraphNode",
+        "type": "object"
+      },
+      "description": "List of graph nodes"
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "properties": {
+          "source": {
+            "description": "Edge source",
+            "title": "Source",
+            "type": "string"
+          },
+          "id": {
+            "description": "Edge id",
+            "title": "Id",
+            "type": "string"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Edge confidence",
+            "title": "Confidence"
+          },
+          "target": {
+            "description": "Edge target",
+            "title": "Target",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Edge label",
+            "title": "Label"
+          }
+        },
+        "required": [
+          "source",
+          "id",
+          "target"
+        ],
+        "title": "GraphEdge",
+        "type": "object"
+      },
+      "description": "List of graph edges"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata about the graph"
+    }
+  },
+  "required": [
+    "diagram_type",
+    "nodes",
+    "edges"
+  ]
+}
