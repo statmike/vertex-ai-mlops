@@ -113,8 +113,27 @@ def _build_html(
     diagram_type = graph.get('diagram_type', 'unknown')
 
     # Build SVG rects for nodes with bounding boxes
+    # Render group bounding boxes first (behind regular nodes)
     svg_rects = []
     for node in nodes:
+        if node.get('shape') != 'group_rectangle':
+            continue
+        bbox = node.get('bounding_box')
+        if not bbox or len(bbox) != 4:
+            continue
+        node_id = node.get('id', '')
+        label = node.get('label', '')
+        y_min, x_min, y_max, x_max = bbox
+        svg_rects.append(
+            f'<rect class="bbox-group" data-node-id="{_esc(node_id)}" '
+            f'x="{x_min}" y="{y_min}" '
+            f'width="{x_max - x_min}" height="{y_max - y_min}">'
+            f'<title>{_esc(label)}</title></rect>'
+        )
+    # Then render regular node bounding boxes
+    for node in nodes:
+        if node.get('shape') == 'group_rectangle':
+            continue
         bbox = node.get('bounding_box')
         if not bbox or len(bbox) != 4:
             continue
@@ -220,6 +239,9 @@ def _build_html(
 
     # Schema section (rendered for left panel, split into node/edge blocks)
     schema_html = _build_schema_html(schema) if schema else ''
+
+    # Graph JSON section (left panel, searchable)
+    graph_json_html = _build_graph_json_html(graph)
 
     # Recreated Graph section (Mermaid diagram)
     mermaid_def = _build_mermaid_definition(graph)
@@ -399,6 +421,58 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans
 }}
 .schema-details summary:hover {{ color: #1a73e8; }}
 
+/* Graph JSON section (left panel, searchable) */
+.graph-json-section {{
+    margin-top: 16px; background: white; border-radius: 8px; padding: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}}
+.graph-json-section > summary {{
+    cursor: pointer; list-style: revert; display: list-item;
+}}
+.graph-json-section > summary > h3 {{
+    display: inline; font-size: 14px; font-weight: 600; color: #5f6368;
+    text-transform: uppercase; letter-spacing: 0.5px; border-bottom: none;
+    margin: 0; padding: 0;
+}}
+.graph-json-section[open] > summary {{ margin-bottom: 12px; }}
+.graph-json-section[open] > summary > h3 {{
+    padding-bottom: 4px; border-bottom: 2px solid #e8eaed;
+}}
+.graph-json-search {{
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+}}
+.graph-json-search input {{
+    flex: 1; padding: 6px 10px; border: 1px solid #e8eaed; border-radius: 4px;
+    font-size: 13px; font-family: inherit;
+}}
+.graph-json-search input:focus {{ outline: none; border-color: #1a73e8; }}
+#graphJsonMatchCount {{ font-size: 12px; color: #5f6368; white-space: nowrap; }}
+.graph-json-pre {{
+    font-family: "Roboto Mono", monospace; font-size: 12px; background: #f8f9fa;
+    border: 1px solid #e8eaed; border-radius: 8px; padding: 12px; overflow-x: auto;
+    max-height: 500px; overflow-y: auto; line-height: 1.5;
+}}
+mark.search-hit {{ background: #fde68a; border-radius: 2px; }}
+mark.search-hit.current {{ background: #f59e0b; }}
+
+/* Group bounding boxes */
+.bbox-group {{
+    fill: rgba(128, 90, 213, 0.06);
+    stroke: #8b5cf6;
+    stroke-width: 2;
+    stroke-dasharray: 8 4;
+    cursor: pointer;
+    pointer-events: all;
+    transition: fill 0.15s, stroke 0.15s;
+}}
+.bbox-group:hover, .bbox-group.hover-hl {{
+    fill: rgba(139, 92, 246, 0.15); stroke: #7c3aed; stroke-width: 3;
+}}
+.bbox-group.pinned {{
+    fill: rgba(243, 156, 18, 0.15); stroke: #f39c12; stroke-width: 3;
+    animation: pulse-pin 0.8s ease-in-out;
+}}
+
 /* Recreated Graph section (left panel, below schema) */
 .recreation-section {{
     margin-top: 16px; background: white; border-radius: 8px; padding: 16px;
@@ -433,6 +507,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans
             </div>
         </div>
         {schema_html}
+        {graph_json_html}
         {recreation_html}
     </div>
 
@@ -468,7 +543,8 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans
     }}
 
     function applyNodeHL(nodeId, cls) {{
-        const bbox = document.querySelector('.bbox[data-node-id="' + nodeId + '"]');
+        const bbox = document.querySelector('.bbox[data-node-id="' + nodeId + '"]')
+                  || document.querySelector('.bbox-group[data-node-id="' + nodeId + '"]');
         const card = document.querySelector('.graph-node[data-node-id="' + nodeId + '"]');
         if (bbox) bbox.classList.add(cls);
         if (card) {{
@@ -521,8 +597,8 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans
         applyEdgeHL(edgeEl, 'pinned');
     }}
 
-    // --- Event listeners: bounding boxes on image ---
-    document.querySelectorAll('.bbox').forEach(function(rect) {{
+    // --- Event listeners: bounding boxes on image (regular + group) ---
+    document.querySelectorAll('.bbox, .bbox-group').forEach(function(rect) {{
         rect.addEventListener('mouseenter', function() {{ hoverNode(rect.dataset.nodeId); }});
         rect.addEventListener('mouseleave', clearHover);
         rect.addEventListener('click', function(e) {{
@@ -553,6 +629,69 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans
 
     // Click background to clear pinned
     document.addEventListener('click', function() {{ clearPinned(); clearHover(); }});
+
+    // --- Graph JSON search ---
+    var graphJsonPre = document.getElementById('graphJsonPre');
+    var graphJsonSearch = document.getElementById('graphJsonSearch');
+    var graphJsonMatchCount = document.getElementById('graphJsonMatchCount');
+    var graphJsonOriginal = graphJsonPre ? graphJsonPre.textContent : '';
+    var currentMatchIndex = -1;
+
+    function doGraphJsonSearch() {{
+        if (!graphJsonPre || !graphJsonSearch) return;
+        var term = graphJsonSearch.value.trim();
+        currentMatchIndex = -1;
+        if (!term) {{
+            graphJsonPre.innerHTML = graphJsonOriginal.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            if (graphJsonMatchCount) graphJsonMatchCount.textContent = '';
+            return;
+        }}
+        // Escape HTML in the original text
+        var escaped = graphJsonOriginal.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        // Escape regex special chars in search term, then search case-insensitively
+        var escapedTerm = term.replace(/[.*+?^${{}}()|[\\]\\\\]/g, '\\\\$&');
+        var regex = new RegExp('(' + escapedTerm + ')', 'gi');
+        var matchCount = 0;
+        var highlighted = escaped.replace(regex, function(m) {{
+            matchCount++;
+            return '<mark class="search-hit">' + m + '</mark>';
+        }});
+        graphJsonPre.innerHTML = highlighted;
+        if (graphJsonMatchCount) {{
+            graphJsonMatchCount.textContent = matchCount > 0 ? matchCount + ' match' + (matchCount !== 1 ? 'es' : '') : 'No matches';
+        }}
+        // Scroll first match into view
+        if (matchCount > 0) {{
+            currentMatchIndex = 0;
+            highlightCurrentMatch();
+        }}
+    }}
+
+    function highlightCurrentMatch() {{
+        var marks = graphJsonPre.querySelectorAll('mark.search-hit');
+        marks.forEach(function(m) {{ m.classList.remove('current'); }});
+        if (marks.length > 0 && currentMatchIndex >= 0) {{
+            marks[currentMatchIndex].classList.add('current');
+            marks[currentMatchIndex].scrollIntoView({{ behavior: 'smooth', block: 'nearest' }});
+        }}
+    }}
+
+    if (graphJsonSearch) {{
+        graphJsonSearch.addEventListener('input', doGraphJsonSearch);
+        graphJsonSearch.addEventListener('keydown', function(e) {{
+            if (e.key === 'Enter') {{
+                var marks = graphJsonPre.querySelectorAll('mark.search-hit');
+                if (marks.length === 0) return;
+                if (e.shiftKey) {{
+                    currentMatchIndex = (currentMatchIndex - 1 + marks.length) % marks.length;
+                }} else {{
+                    currentMatchIndex = (currentMatchIndex + 1) % marks.length;
+                }}
+                highlightCurrentMatch();
+                e.preventDefault();
+            }}
+        }});
+    }}
 
     // --- Resizable divider ---
     var divider = document.getElementById('divider');
@@ -669,6 +808,24 @@ def _resolve_ref(schema: dict, ref: str) -> dict | None:
         else:
             return None
     return current if isinstance(current, dict) else None
+
+
+def _build_graph_json_html(graph: dict) -> str:
+    """Build a collapsible, searchable graph JSON section for the left panel."""
+    # Create a clean copy without bounding boxes for readability
+    graph_json = json.dumps(graph, indent=2)
+    escaped_json = _esc(graph_json)
+
+    return (
+        '<details class="graph-json-section">'
+        '<summary><h3>Graph Data</h3></summary>'
+        '<div class="graph-json-search">'
+        '<input type="text" id="graphJsonSearch" placeholder="Search graph data..." />'
+        '<span id="graphJsonMatchCount"></span>'
+        '</div>'
+        f'<pre class="graph-json-pre" id="graphJsonPre">{escaped_json}</pre>'
+        '</details>'
+    )
 
 
 def _build_mermaid_definition(graph: dict) -> str:

@@ -49,7 +49,9 @@ async def trace_connections(tool_context: tools.ToolContext) -> str:
             bbox_str = f" at [{', '.join(str(v) for v in bbox)}]" if bbox else ""
             etype = node.get('element_type', '')
             etype_str = f" ({etype})" if etype else ""
-            node_context_lines.append(f"  - {node_id}: \"{label}\"{etype_str}{bbox_str}")
+            parent_id = node.get('parent_id', '')
+            parent_str = f" [parent: {parent_id}]" if parent_id else ""
+            node_context_lines.append(f"  - {node_id}: \"{label}\"{etype_str}{bbox_str}{parent_str}")
 
         node_context = '\n'.join(node_context_lines)
 
@@ -70,7 +72,7 @@ Return a JSON object with this exact structure:
             "id": "e1",
             "source": "source_node_id",
             "target": "target_node_id",
-            "label": "label on the connection, or null",
+            "label": "visible text printed ON the connection line/arrow, or null if no text is visible",
             "edge_type": "flow|feedback|dependency|association|...",
             "confidence": "high|medium|low"
         }}
@@ -83,6 +85,9 @@ IMPORTANT:
 - Pay attention to arrow direction — source is where the arrow starts, target is where it points.
 - For dashed or dotted lines, set edge_type to "feedback" or "dependency" as appropriate.
 - For solid arrows, use "flow".
+- "label" is ONLY for text that is visibly printed ON or next to the connection line/arrow
+  (e.g., "Point Forecast", "Yes", "No"). Do NOT use the edge_type as the label.
+  If there is no visible text on the connection, set label to null.
 - Set confidence to "high" if the connection is clearly visible, "medium" if partially obscured, "low" if uncertain.
 - Use the exact node IDs from the list above for source and target.
 - Generate unique edge IDs (e.g., "e1", "e2", ...).

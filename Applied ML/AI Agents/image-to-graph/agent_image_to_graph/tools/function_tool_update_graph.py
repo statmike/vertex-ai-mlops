@@ -1,5 +1,6 @@
 import json
 from google.adk import tools
+from .bbox_utils import normalize_bbox
 
 
 async def update_graph(
@@ -62,7 +63,14 @@ async def update_graph(
                     results.append(f"[{i}] Skipped: node '{node_id}' already exists.")
                     continue
 
-                graph.setdefault('nodes', []).append(dict(data))
+                # Normalize bounding_box from dict to list format
+                node_data = dict(data)
+                if 'bounding_box' in node_data:
+                    normalized = normalize_bbox(node_data['bounding_box'])
+                    if normalized:
+                        node_data['bounding_box'] = normalized
+
+                graph.setdefault('nodes', []).append(node_data)
                 results.append(f"[{i}] + node '{node_id}' (\"{label}\")")
 
                 # Schema hint (only once per call to stay concise)
@@ -81,6 +89,10 @@ async def update_graph(
                 for node in graph.get('nodes', []):
                     if node['id'] == node_id:
                         for key, value in data.items():
+                            if key == 'bounding_box':
+                                normalized = normalize_bbox(value)
+                                if normalized:
+                                    value = normalized
                             node[key] = value
                         found = True
                         break

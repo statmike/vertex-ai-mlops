@@ -24,6 +24,7 @@ class ElementType(str, Enum):
     component = "component"        # Decomposed time series components (rectangles)
     output = "output"              # Final outputs (cylinder shapes)
     operator = "operator"          # Mathematical operators (e.g., aggregation circle)
+    group = "group"                # Visual grouping boundary (dashed boxes, labeled sections)
 
 
 class Phase(str, Enum):
@@ -39,14 +40,15 @@ class FlowchartNode(BaseModel):
     label: str = Field(..., description="Display text from the diagram")
     element_type: ElementType = Field(..., description="Type of diagram element")
     phase: Optional[Phase] = Field(None, description="Pipeline phase this node belongs to")
-    shape: Optional[str] = Field(None, description="Visual shape: rectangle, cylinder, circle")
+    shape: Optional[str] = Field(None, description="Visual shape: rectangle, cylinder, circle, group_rectangle")
     color: Optional[str] = Field(None, description="Fill color: blue, green, yellow, orange, gray")
     bq_function: Optional[str] = Field(None, description="Associated BigQuery ML function (e.g., ML.FORECAST)")
     description: Optional[str] = Field(None, description="Additional context about this node")
     bounding_box: Optional[list[int]] = Field(
         None,
-        description="Region coordinates [y_min, x_min, y_max, x_max] normalized 0-1000"
+        description="Region coordinates [y_min, x_min, y_max, x_max] normalized 0-1000. Accepts {top, left, bottom, right} dict format."
     )
+    parent_id: Optional[str] = Field(None, description="ID of the parent group node (for nesting)")
 
 
 class EdgeType(str, Enum):

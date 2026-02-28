@@ -12,24 +12,6 @@
       "type": "array",
       "items": {
         "properties": {
-          "label": {
-            "description": "Node label",
-            "title": "Label",
-            "type": "string"
-          },
-          "confidence": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Node confidence",
-            "title": "Confidence"
-          },
           "id": {
             "description": "Node id",
             "title": "Id",
@@ -49,7 +31,12 @@
             "description": "Node bounding_box",
             "title": "Bounding Box"
           },
-          "type": {
+          "label": {
+            "description": "Node label",
+            "title": "Label",
+            "type": "string"
+          },
+          "confidence": {
             "anyOf": [
               {
                 "type": "string"
@@ -59,13 +46,65 @@
               }
             ],
             "default": null,
-            "description": "Node type",
-            "title": "Type"
+            "description": "Node confidence",
+            "title": "Confidence"
+          },
+          "shape": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Node shape",
+            "title": "Shape"
+          },
+          "element_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Node element_type",
+            "title": "Element Type"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Node parent_id",
+            "title": "Parent Id"
+          },
+          "bq_function": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Node bq_function",
+            "title": "Bq Function"
           }
         },
         "required": [
-          "label",
-          "id"
+          "id",
+          "label"
         ],
         "title": "GraphNode",
         "type": "object"
@@ -76,14 +115,14 @@
       "type": "array",
       "items": {
         "properties": {
+          "target": {
+            "description": "Edge target",
+            "title": "Target",
+            "type": "string"
+          },
           "source": {
             "description": "Edge source",
             "title": "Source",
-            "type": "string"
-          },
-          "id": {
-            "description": "Edge id",
-            "title": "Id",
             "type": "string"
           },
           "confidence": {
@@ -99,9 +138,9 @@
             "description": "Edge confidence",
             "title": "Confidence"
           },
-          "target": {
-            "description": "Edge target",
-            "title": "Target",
+          "id": {
+            "description": "Edge id",
+            "title": "Id",
             "type": "string"
           },
           "label": {
@@ -119,9 +158,9 @@
           }
         },
         "required": [
+          "target",
           "source",
-          "id",
-          "target"
+          "id"
         ],
         "title": "GraphEdge",
         "type": "object"

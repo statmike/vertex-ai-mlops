@@ -2,550 +2,546 @@
   "diagram_type": "flowchart",
   "nodes": [
     {
+      "element_type": "group",
+      "phase": "Preprocessing",
+      "bounding_box": [
+        176,
+        151,
+        699,
+        283
+      ],
+      "id": "preprocessing_group",
+      "label": "Preprocessing",
+      "shape": "group_rectangle"
+    },
+    {
+      "element_type": "group",
+      "id": "modeling_group",
+      "phase": "Modeling",
+      "bounding_box": [
+        68,
+        326,
+        947,
+        483
+      ],
+      "label": "Modeling",
+      "shape": "group_rectangle"
+    },
+    {
+      "phase": "Decomposition",
+      "bounding_box": [
+        58,
+        598,
+        927,
+        724
+      ],
+      "id": "decomposed_time_series_group",
+      "element_type": "group",
+      "shape": "group_rectangle",
+      "label": "Decomposed Time Series"
+    },
+    {
+      "label": "Input Custom Holiday",
       "shape": "cylinder",
+      "element_type": "input",
+      "id": "input_custom_holiday",
       "bounding_box": [
         30,
         18,
-        157,
+        160,
         112
       ],
-      "color": "orange",
-      "phase": "input",
-      "element_type": "input",
-      "id": "n1",
-      "label": "Input Custom Holiday"
+      "phase": "Input"
     },
     {
+      "phase": "Input",
       "bounding_box": [
-        289,
+        288,
         18,
-        416,
+        418,
         112
       ],
-      "color": "orange",
-      "shape": "cylinder",
-      "label": "Input Time Series",
-      "phase": "input",
+      "id": "input_time_series",
       "element_type": "input",
-      "id": "n2"
+      "shape": "cylinder",
+      "label": "Input Time Series"
     },
     {
+      "label": "Duplicated Timestamp Handling",
+      "parent_id": "preprocessing_group",
       "shape": "rectangle",
-      "color": "light blue",
-      "bounding_box": [
-        197,
-        171,
-        285,
-        262
-      ],
       "element_type": "process",
-      "phase": "preprocessing",
-      "id": "n3",
-      "label": "Duplicated Timestamp Handling"
+      "phase": "Preprocessing",
+      "bounding_box": [
+        196,
+        171,
+        288,
+        263
+      ],
+      "id": "duplicated_timestamp_handling"
     },
     {
-      "shape": "rectangle",
+      "phase": "Preprocessing",
       "bounding_box": [
-        331,
+        330,
         171,
         418,
-        262
+        263
       ],
-      "color": "light blue",
-      "phase": "preprocessing",
+      "id": "data_frequency_inference",
       "element_type": "process",
-      "id": "n4",
+      "parent_id": "preprocessing_group",
+      "shape": "rectangle",
       "label": "Data Frequency Inference"
     },
     {
-      "id": "n5",
-      "element_type": "process",
-      "phase": "preprocessing",
       "label": "Irregular Timestamp Handling",
+      "parent_id": "preprocessing_group",
       "shape": "rectangle",
-      "color": "light blue",
-      "bounding_box": [
-        464,
-        171,
-        552,
-        262
-      ]
-    },
-    {
-      "shape": "rectangle",
-      "bounding_box": [
-        597,
-        171,
-        680,
-        262
-      ],
-      "color": "light blue",
-      "phase": "preprocessing",
       "element_type": "process",
-      "id": "n6",
-      "label": "Missing Data Interpolation"
+      "phase": "Preprocessing",
+      "bounding_box": [
+        465,
+        171,
+        553,
+        263
+      ],
+      "id": "irregular_timestamp_handling"
     },
     {
       "shape": "rectangle",
-      "color": "light green",
+      "parent_id": "preprocessing_group",
+      "label": "Missing Data Interpolation",
+      "id": "missing_data_interpolation",
       "bounding_box": [
-        87,
+        591,
+        171,
+        679,
+        263
+      ],
+      "phase": "Preprocessing",
+      "element_type": "process"
+    },
+    {
+      "element_type": "process",
+      "id": "holiday_adjustment",
+      "bounding_box": [
+        88,
         346,
         169,
         459
       ],
-      "element_type": "process",
-      "phase": "modeling",
-      "id": "n7",
-      "label": "Holiday Adjustment"
+      "phase": "Modeling",
+      "label": "Holiday Adjustment",
+      "shape": "rectangle",
+      "parent_id": "modeling_group"
     },
     {
-      "id": "n8",
       "element_type": "process",
-      "phase": "modeling",
-      "label": "Spikes & Dips Outlier Cleaning",
-      "shape": "rectangle",
-      "color": "light yellow",
+      "id": "spikes_dips_outlier_cleaning",
       "bounding_box": [
         260,
         346,
-        342,
+        341,
         459
-      ]
+      ],
+      "phase": "Modeling",
+      "label": "Spikes & Dips Outlier Cleaning",
+      "shape": "rectangle",
+      "parent_id": "modeling_group"
     },
     {
-      "id": "n9",
-      "element_type": "process",
-      "phase": "modeling",
       "label": "Seasonal & Trend Decomposition (STL)",
       "shape": "rectangle",
-      "color": "light green",
+      "parent_id": "modeling_group",
+      "element_type": "process",
+      "id": "seasonal_trend_decomposition",
       "bounding_box": [
-        438,
+        437,
         346,
         550,
         459
-      ]
+      ],
+      "phase": "Modeling"
     },
     {
+      "parent_id": "modeling_group",
       "shape": "rectangle",
+      "label": "Step Change Adjustment",
+      "id": "step_change_adjustment",
       "bounding_box": [
         629,
         346,
         703,
         458
       ],
-      "color": "light yellow",
-      "phase": "modeling",
-      "element_type": "process",
-      "id": "n10",
-      "label": "Step Change Adjustment"
+      "phase": "Modeling",
+      "element_type": "process"
     },
     {
-      "label": "Trend Modeling (distributed auto.ARIMA)",
-      "id": "n11",
       "element_type": "process",
-      "phase": "modeling",
-      "color": "light green",
+      "id": "trend_modeling",
       "bounding_box": [
-        799,
-        340,
-        926,
+        825,
+        353,
+        927,
         463
       ],
-      "shape": "rectangle_stack"
+      "phase": "Modeling",
+      "label": "Trend Modeling",
+      "parent_id": "modeling_group",
+      "shape": "rectangle"
     },
     {
-      "shape": "cylinder",
-      "color": "grey",
+      "id": "holiday_component",
       "bounding_box": [
-        156,
-        488,
-        242,
-        570
-      ],
-      "id": "n12",
-      "element_type": "data_store",
-      "phase": "modeling_intermediate",
-      "label": "De-holiday'ed Time Series"
-    },
-    {
-      "id": "n13",
-      "phase": "modeling_intermediate",
-      "element_type": "data_store",
-      "label": "De-outlier'ed Time Series",
-      "shape": "cylinder",
-      "bounding_box": [
-        340,
-        488,
-        427,
-        570
-      ],
-      "color": "grey"
-    },
-    {
-      "id": "n14",
-      "phase": "modeling_intermediate",
-      "element_type": "data_store",
-      "label": "De-seasoned Time Series",
-      "shape": "cylinder",
-      "bounding_box": [
-        527,
-        488,
-        613,
-        570
-      ],
-      "color": "grey"
-    },
-    {
-      "id": "n15",
-      "phase": "modeling_intermediate",
-      "element_type": "data_store",
-      "label": "Step-change Adjusted Time Series",
-      "shape": "cylinder",
-      "bounding_box": [
-        708,
-        488,
-        794,
-        570
-      ],
-      "color": "grey"
-    },
-    {
-      "label": "Residual Time Series",
-      "phase": "modeling_intermediate",
-      "element_type": "data_store",
-      "id": "n16",
-      "bounding_box": [
-        897,
-        488,
-        987,
-        570
-      ],
-      "color": "grey",
-      "shape": "cylinder"
-    },
-    {
-      "phase": "decomposed_time_series",
-      "element_type": "data_store",
-      "id": "n17",
-      "label": "Holiday Component",
-      "shape": "cylinder",
-      "bounding_box": [
-        80,
+        78,
         619,
-        173,
+        172,
         701
       ],
-      "color": "light green"
+      "phase": "Decomposition",
+      "element_type": "data",
+      "shape": "cylinder",
+      "parent_id": "decomposed_time_series_group",
+      "label": "Holiday Component"
     },
     {
-      "bounding_box": [
-        253,
-        619,
-        339,
-        701
-      ],
-      "color": "light yellow",
+      "parent_id": "decomposed_time_series_group",
       "shape": "cylinder",
       "label": "Outlier Component",
-      "phase": "decomposed_time_series",
-      "element_type": "data_store",
-      "id": "n18"
+      "id": "outlier_component",
+      "bounding_box": [
+        249,
+        619,
+        342,
+        701
+      ],
+      "phase": "Decomposition",
+      "element_type": "data"
     },
     {
+      "label": "Multiple Seasonal Components",
+      "shape": "cylinder",
+      "parent_id": "decomposed_time_series_group",
+      "element_type": "data",
+      "phase": "Decomposition",
       "bounding_box": [
         412,
         618,
-        569,
+        568,
         701
       ],
-      "color": "light green",
-      "shape": "cylinder_stack",
-      "label": "Multiple Seasonal Components",
-      "id": "n19",
-      "phase": "decomposed_time_series",
-      "element_type": "data_store"
+      "id": "multiple_seasonal_components"
     },
     {
-      "shape": "cylinder",
+      "phase": "Decomposition",
       "bounding_box": [
-        625,
+        624,
         619,
         718,
         704
       ],
-      "color": "light yellow",
-      "id": "n20",
-      "phase": "decomposed_time_series",
-      "element_type": "data_store",
+      "id": "step_change_component",
+      "element_type": "data",
+      "shape": "cylinder",
+      "parent_id": "decomposed_time_series_group",
       "label": "Step Change Component"
     },
     {
-      "id": "n21",
-      "element_type": "data_store",
-      "phase": "decomposed_time_series",
-      "label": "Trend Component",
       "shape": "cylinder",
-      "color": "light green",
+      "parent_id": "decomposed_time_series_group",
+      "label": "Trend Component",
+      "phase": "Decomposition",
       "bounding_box": [
-        808,
+        809,
         618,
-        908,
+        907,
         701
-      ]
+      ],
+      "id": "trend_component",
+      "element_type": "data"
     },
     {
-      "color": "light red",
+      "shape": "cylinder",
+      "label": "De-holiday'ed Time Series",
+      "id": "de_holiday_ed_time_series",
+      "phase": "Modeling",
       "bounding_box": [
-        209,
+        147,
+        488,
+        242,
+        571
+      ],
+      "element_type": "data"
+    },
+    {
+      "label": "De-outlier'ed Time Series",
+      "shape": "cylinder",
+      "element_type": "data",
+      "id": "de_outlier_ed_time_series",
+      "bounding_box": [
+        331,
+        488,
+        427,
+        571
+      ],
+      "phase": "Modeling"
+    },
+    {
+      "element_type": "data",
+      "phase": "Modeling",
+      "bounding_box": [
+        519,
+        488,
+        614,
+        571
+      ],
+      "id": "de_seasoned_time_series",
+      "label": "De-seasoned Time Series",
+      "shape": "cylinder"
+    },
+    {
+      "shape": "cylinder",
+      "label": "Step-change Adjusted Time Series",
+      "phase": "Modeling",
+      "bounding_box": [
+        701,
+        488,
+        796,
+        571
+      ],
+      "id": "step_change_adjusted_time_series",
+      "element_type": "data"
+    },
+    {
+      "shape": "cylinder",
+      "label": "Residual Time Series",
+      "id": "residual_time_series",
+      "phase": "Modeling",
+      "bounding_box": [
+        894,
+        488,
+        988,
+        571
+      ],
+      "element_type": "data"
+    },
+    {
+      "element_type": "process",
+      "id": "aggregation",
+      "bounding_box": [
+        204,
         784,
-        268,
+        269,
         824
       ],
-      "shape": "circle_cross",
+      "phase": "Processing",
       "label": "Aggregation",
-      "id": "n22",
-      "element_type": "operator",
-      "phase": "output_processing"
+      "shape": "circle"
     },
     {
-      "id": "n23",
-      "phase": "output",
-      "element_type": "output",
-      "label": "Forecasted Time Series + Intervals",
       "shape": "cylinder",
-      "color": "orange",
+      "bq_function": "ML.ARIMA_EVALUATE, ML.ARIMA_COEFFICIENTS",
+      "label": "Evaluation Metrics + Model Coefficients",
+      "phase": "Output",
       "bounding_box": [
-        171,
-        868,
-        304,
+        774,
+        164,
+        907,
+        269
+      ],
+      "id": "evaluation_metrics_model_coefficients",
+      "element_type": "output"
+    },
+    {
+      "shape": "cylinder",
+      "bq_function": "ML.FORECAST",
+      "label": "Forecasted Time Series + Intervals",
+      "phase": "Output",
+      "bounding_box": [
+        173,
+        869,
+        305,
         963
       ],
-      "bq_function": "ML.FORECAST"
+      "id": "forecasted_time_series_intervals",
+      "element_type": "output"
     },
     {
-      "label": "Seasonal, Trend, Holiday, Outlier, Step Change Components",
-      "id": "n24",
-      "element_type": "output",
-      "phase": "output",
-      "bq_function": "ML.EXPLAIN_FORECAST",
+      "id": "components_stack",
       "bounding_box": [
         446,
         867,
-        720,
+        722,
         963
       ],
-      "color": "orange",
-      "shape": "cylinder_group"
+      "phase": "Output",
+      "element_type": "output",
+      "bq_function": "ML.EXPLAIN_FORECAST",
+      "shape": "cylinder",
+      "label": "Seasonal, Trend, Holiday, Outlier, Step Change Components"
     },
     {
-      "id": "n25",
-      "phase": "output",
-      "element_type": "output",
-      "label": "Fitted History Series + Forecasted Series + Intervals",
       "shape": "cylinder",
-      "color": "orange",
+      "bq_function": "ML.DETECT_ANOMALIES",
+      "label": "Fitted History Series + Forecasted Series + Intervals",
+      "phase": "Output",
       "bounding_box": [
         782,
         867,
         929,
         963
       ],
-      "bq_function": "ML.DETECT_ANOMALIES"
-    },
-    {
-      "label": "Evaluation Metrics + Model Coefficients",
-      "phase": "output",
-      "element_type": "output",
-      "id": "n26",
-      "color": "purple",
-      "bounding_box": [
-        774,
-        164,
-        909,
-        269
-      ],
-      "bq_function": "ML.ARIMA_EVALUATE / ML.ARIMA_COEFFICIENTS",
-      "shape": "cylinder"
+      "id": "fitted_history_forecasted_series_intervals",
+      "element_type": "output"
     }
   ],
   "edges": [
     {
-      "source": "n1",
-      "id": "e1",
-      "target": "n7"
+      "target": "holiday_adjustment",
+      "source": "input_custom_holiday",
+      "id": "e1"
     },
     {
-      "target": "n3",
-      "id": "e2",
-      "source": "n2"
+      "target": "duplicated_timestamp_handling",
+      "source": "input_time_series",
+      "id": "e2"
     },
     {
+      "target": "data_frequency_inference",
       "id": "e3",
-      "source": "n3",
-      "target": "n4"
+      "source": "duplicated_timestamp_handling"
     },
     {
-      "target": "n5",
-      "id": "e4",
-      "source": "n4"
+      "target": "irregular_timestamp_handling",
+      "source": "data_frequency_inference",
+      "id": "e4"
     },
     {
-      "target": "n6",
+      "target": "missing_data_interpolation",
       "id": "e5",
-      "source": "n5"
+      "source": "irregular_timestamp_handling"
     },
     {
-      "target": "n7",
       "id": "e6",
-      "source": "n6"
+      "source": "missing_data_interpolation",
+      "target": "holiday_adjustment"
     },
     {
-      "target": "n12",
-      "source": "n7",
+      "target": "holiday_component",
+      "source": "holiday_adjustment",
       "id": "e7"
     },
     {
-      "target": "n8",
-      "source": "n12",
-      "id": "e8"
+      "id": "e8",
+      "source": "holiday_adjustment",
+      "target": "de_holiday_ed_time_series"
     },
     {
-      "target": "n13",
-      "source": "n8",
-      "id": "e9"
+      "source": "de_holiday_ed_time_series",
+      "id": "e9",
+      "target": "spikes_dips_outlier_cleaning"
     },
     {
-      "target": "n9",
-      "id": "e10",
-      "source": "n13"
+      "target": "outlier_component",
+      "source": "spikes_dips_outlier_cleaning",
+      "id": "e10"
     },
     {
-      "target": "n14",
-      "source": "n9",
-      "id": "e11"
+      "source": "spikes_dips_outlier_cleaning",
+      "id": "e11",
+      "target": "de_outlier_ed_time_series"
     },
     {
-      "target": "n10",
-      "source": "n14",
-      "id": "e12"
+      "source": "de_outlier_ed_time_series",
+      "id": "e12",
+      "target": "seasonal_trend_decomposition"
     },
     {
-      "target": "n15",
-      "source": "n10",
-      "id": "e13"
+      "source": "seasonal_trend_decomposition",
+      "id": "e13",
+      "target": "multiple_seasonal_components"
     },
     {
-      "source": "n15",
-      "id": "e14",
-      "target": "n11"
+      "target": "de_seasoned_time_series",
+      "source": "seasonal_trend_decomposition",
+      "id": "e14"
     },
     {
-      "target": "n16",
-      "source": "n11",
+      "target": "step_change_adjustment",
+      "source": "de_seasoned_time_series",
       "id": "e15"
     },
     {
-      "target": "n17",
-      "target_label": "Holiday Component",
-      "id": "e16",
-      "source": "n7"
+      "target": "step_change_component",
+      "source": "step_change_adjustment",
+      "id": "e16"
     },
     {
-      "target": "n18",
-      "target_label": "Outlier Component",
+      "source": "step_change_adjustment",
       "id": "e17",
-      "source": "n8"
+      "target": "step_change_adjusted_time_series"
     },
     {
-      "source": "n9",
       "id": "e18",
-      "target_label": "Multiple Seasonal Components",
-      "target": "n19"
+      "source": "step_change_adjusted_time_series",
+      "target": "trend_modeling"
     },
     {
-      "target": "n20",
-      "target_label": "Step Change Component",
-      "id": "e19",
-      "source": "n10"
+      "target": "trend_component",
+      "source": "trend_modeling",
+      "id": "e19"
     },
     {
-      "target_label": "Trend Component",
-      "target": "n21",
-      "source": "n11",
-      "id": "e20"
+      "target": "residual_time_series",
+      "id": "e20",
+      "source": "trend_modeling"
     },
     {
-      "target": "n26",
-      "source": "n11",
-      "id": "e21"
-    },
-    {
-      "label": "Point Forecast",
-      "target": "n22",
-      "source": "n17",
-      "id": "e22"
+      "target": "evaluation_metrics_model_coefficients",
+      "id": "e21",
+      "source": "trend_modeling"
     },
     {
       "label": "Point Forecast",
-      "target": "n22",
-      "source": "n19",
+      "target": "aggregation",
+      "id": "e22",
+      "source": "holiday_component"
+    },
+    {
+      "target": "aggregation",
+      "label": "Point Forecast",
+      "source": "multiple_seasonal_components",
       "id": "e23"
     },
     {
       "label": "Point Forecast",
-      "target": "n22",
-      "source": "n21",
-      "id": "e24"
+      "target": "aggregation",
+      "id": "e24",
+      "source": "step_change_component"
     },
     {
-      "target": "n23",
-      "source": "n22",
-      "id": "e25"
+      "source": "trend_component",
+      "id": "e25",
+      "target": "aggregation",
+      "label": "Point Forecast"
     },
     {
-      "target": "n24",
-      "source": "n17",
-      "id": "e26"
-    },
-    {
-      "target": "n24",
-      "source": "n18",
-      "id": "e27"
-    },
-    {
-      "id": "e28",
-      "source": "n19",
-      "target": "n24"
-    },
-    {
-      "source": "n20",
-      "id": "e29",
-      "target": "n24"
-    },
-    {
-      "source": "n21",
-      "id": "e30",
-      "target": "n24"
-    },
-    {
-      "id": "e31",
-      "source": "n17",
-      "target": "n25",
-      "label": "Point Forecast + Intervals"
-    },
-    {
-      "id": "e32",
-      "source": "n19",
-      "target": "n25",
-      "label": "Point Forecast + Intervals"
-    },
-    {
-      "source": "n21",
-      "id": "e33",
       "label": "Point Forecast + Intervals",
-      "target": "n25"
+      "target": "forecasted_time_series_intervals",
+      "id": "e26",
+      "source": "aggregation"
+    },
+    {
+      "source": "step_change_component",
+      "id": "e27",
+      "target": "components_stack"
+    },
+    {
+      "source": "trend_component",
+      "id": "e28",
+      "target": "fitted_history_forecasted_series_intervals"
     }
   ],
   "metadata": {

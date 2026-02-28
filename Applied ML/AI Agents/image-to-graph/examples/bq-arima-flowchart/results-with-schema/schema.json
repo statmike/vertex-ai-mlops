@@ -17,7 +17,8 @@
         "intermediate",
         "component",
         "output",
-        "operator"
+        "operator",
+        "group"
       ],
       "title": "ElementType",
       "type": "string"
@@ -104,7 +105,7 @@
             }
           ],
           "default": null,
-          "description": "Visual shape: rectangle, cylinder, circle",
+          "description": "Visual shape: rectangle, cylinder, circle, group_rectangle",
           "title": "Shape"
         },
         "color": {
@@ -159,8 +160,21 @@
             }
           ],
           "default": null,
-          "description": "Region coordinates [y_min, x_min, y_max, x_max] normalized 0-1000",
+          "description": "Region coordinates [y_min, x_min, y_max, x_max] normalized 0-1000. Accepts {top, left, bottom, right} dict format.",
           "title": "Bounding Box"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "ID of the parent group node (for nesting)",
+          "title": "Parent Id"
         }
       },
       "required": [

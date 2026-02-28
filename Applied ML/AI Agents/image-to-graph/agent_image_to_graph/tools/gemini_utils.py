@@ -10,10 +10,10 @@ TOOL_MODEL = os.getenv('TOOL_MODEL', 'gemini-2.5-flash')
 TOOL_MODEL_LOCATION = os.getenv('TOOL_MODEL_LOCATION', '')
 
 # Retry configuration
-MAX_RETRIES = 5
+MAX_RETRIES = 10
 INITIAL_BACKOFF = 2.0  # seconds
 BACKOFF_MULTIPLIER = 2.0
-MAX_BACKOFF = 60.0  # seconds
+MAX_BACKOFF = 120.0  # seconds
 
 
 def _get_client() -> genai.Client:

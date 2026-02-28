@@ -5,6 +5,7 @@ from google.adk import tools
 from google.genai import types
 from PIL import Image
 from .gemini_utils import generate_content
+from .bbox_utils import normalize_bbox
 
 
 async def crop_and_examine(
@@ -42,10 +43,12 @@ async def crop_and_examine(
         if not img_width or not img_height:
             return "Error: Image dimensions not found in state."
 
-        if len(bounding_box) != 4:
-            return "Error: bounding_box must be [y_min, x_min, y_max, x_max] (4 values)."
+        # Normalize bounding_box from dict or list format
+        normalized = normalize_bbox(bounding_box)
+        if not normalized:
+            return "Error: bounding_box must be [y_min, x_min, y_max, x_max] or {top, left, bottom, right}."
 
-        y_min_norm, x_min_norm, y_max_norm, x_max_norm = bounding_box
+        y_min_norm, x_min_norm, y_max_norm, x_max_norm = normalized
 
         # Convert normalized (0-1000) to pixel coordinates
         x_min = int(x_min_norm / 1000 * img_width)
@@ -87,12 +90,13 @@ Return a JSON object with this exact structure:
     "elements": [
         {{
             "element_id": "unique_id_for_this_element",
-            "label": "The text label or name visible on this element",
+            "label": "The text label or name visible INSIDE this element",
             "element_type": "The type of element (e.g., process, decision, terminal, resistor, room, server, class, state)",
             "shape": "The visual shape (rectangle, diamond, circle, oval, hexagon, custom)",
             "attributes": {{
                 "key": "value pairs for any additional properties visible"
             }},
+            "external_labels": ["Text labels appearing OUTSIDE/near this element (e.g., function names, annotations, references below or beside the shape)"],
             "connection_points": ["top", "bottom", "left", "right"],
             "text_content": "Any text visible inside or near this element",
             "confidence": "high|medium|low"
@@ -111,14 +115,19 @@ Return a JSON object with this exact structure:
     "suggested_sub_regions": [
         {{
             "label": "description of dense area needing closer examination",
-            "bounding_box": [y_min, x_min, y_max, x_max]
+            "bounding_box": {{"top": y_min, "left": x_min, "bottom": y_max, "right": x_max}}
         }}
     ],
     "notes": "Any additional observations about this region"
 }}
 
 IMPORTANT:
+- If this region contains a visual boundary (dashed box, labeled section, swim lane),
+  identify it as a group element with element_type "group". Note which other elements
+  are visually contained within it.
 - Extract ALL text labels, even small ones.
+- Look for text OUTSIDE element shapes (e.g., function names, API references, annotations
+  printed below, above, or beside a shape). Capture these in "external_labels".
 - Note the shape and visual style of each element.
 - Identify connection points where lines/arrows enter or leave elements.
 - For domain-specific elements (electrical symbols, UML notation, etc.), identify them precisely.
@@ -126,7 +135,7 @@ IMPORTANT:
 - Set "confidence" to "high", "medium", or "low" for each element based on how clearly you can read it.
 - Set the top-level "complexity" to "high" if the region has many overlapping elements, small text, or is hard to parse; "medium" for moderate density; "low" for simple regions.
 - Set the top-level "confidence" to your overall confidence in the examination results.
-- Only populate "suggested_sub_regions" when complexity is "high". Use bounding_box coordinates normalized 0-1000 RELATIVE TO THIS CROP (not the full image). These are sub-areas that need closer examination.
+- Only populate "suggested_sub_regions" when complexity is "high". Use bounding_box coordinates normalized 0-1000 RELATIVE TO THIS CROP (not the full image) with the format {{"top": N, "left": N, "bottom": N, "right": N}} where top=distance from top edge, left=distance from left edge. These are sub-areas that need closer examination.
 
 Return ONLY the JSON object, no other text."""
 
@@ -165,7 +174,9 @@ Return ONLY the JSON object, no other text."""
             el_conf = el.get('confidence', 'high')
             attrs = el.get('attributes', {})
             attr_str = f" attrs={attrs}" if attrs else ""
-            element_lines.append(f"  - {eid}: \"{elabel}\" ({etype}, {eshape}) confidence={el_conf}{attr_str}")
+            ext_labels = el.get('external_labels', [])
+            ext_str = f" external_labels={ext_labels}" if ext_labels else ""
+            element_lines.append(f"  - {eid}: \"{elabel}\" ({etype}, {eshape}) confidence={el_conf}{attr_str}{ext_str}")
 
         conn_lines = []
         for conn in connections:
@@ -193,8 +204,8 @@ Return ONLY the JSON object, no other text."""
             converted_subs = []
             for sub in suggested_sub_regions:
                 sub_label = sub.get('label', 'sub-region')
-                sub_bbox = sub.get('bounding_box', [])
-                if len(sub_bbox) == 4:
+                sub_bbox = normalize_bbox(sub.get('bounding_box'))
+                if sub_bbox and len(sub_bbox) == 4:
                     # sub_bbox is normalized 0-1000 relative to the crop
                     sy_min, sx_min, sy_max, sx_max = sub_bbox
                     # Convert to pixel coords within the crop, then to full-image normalized 0-1000

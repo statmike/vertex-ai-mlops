@@ -124,3 +124,13 @@ This folder has examples based on core functionality of agents interacting with 
   - Session state management for tracking user-selected attractions
   - JSON RPC invocation support for programmatic agent access
 
+- **[Image to Graph](./image-to-graph/readme.md)**
+  - Converts diagram images (flowcharts, schematics, network diagrams) into structured graph representations
+  - Iterative visual analysis: full-image scan, region cropping, edge tracing with Gemini
+  - Outputs nodes, edges, and attributes with bounding boxes overlaid on the source image
+  - Interactive HTML visualization with hover/click highlighting, Mermaid diagram recreation, and searchable graph JSON
+  - Node grouping/nesting support for visual containment (dashed boundary boxes, labeled sections)
+  - Schema workflows: bring your own JSON Schema or let the agent infer one
+  - Q&A sub-agent for answering questions about the extracted graph
+  - BigQuery agent analytics plugin for observability, token usage, and cost analysis
+

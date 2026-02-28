@@ -1,7 +1,7 @@
 ![tracker](https://us-central1-vertex-ai-mlops-369716.cloudfunctions.net/pixel-tracking?path=statmike%2Fvertex-ai-mlops%2FApplied+ML%2FAI+Agents%2Fimage-to-graph&file=readme.md)
 <!--- header table --->
 <table>
-<tr>
+<tr>     
   <td style="text-align: center">
     <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20ML/AI%20Agents/image-to-graph/readme.md">
       <img width="32px" src="https://www.svgrepo.com/download/217753/github.svg" alt="GitHub logo">
@@ -11,20 +11,20 @@
 </tr>
 <tr>
   <td style="text-align: right">
-    <b>Share On: </b>
-    <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%2520ML/AI%2520Agents/image-to-graph/readme.md"><img src="https://upload.wikimedia.org/wikipedia/commons/8/81/LinkedIn_icon.svg" alt="Linkedin Logo" width="20px"></a>
-    <a href="https://reddit.com/submit?url=https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%2520ML/AI%2520Agents/image-to-graph/readme.md"><img src="https://redditinc.com/hubfs/Reddit%20Inc/Brand/Reddit_Logo.png" alt="Reddit Logo" width="20px"></a>
-    <a href="https://bsky.app/intent/compose?text=https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%2520ML/AI%2520Agents/image-to-graph/readme.md"><img src="https://upload.wikimedia.org/wikipedia/commons/7/7a/Bluesky_Logo.svg" alt="BlueSky Logo" width="20px"></a>
-    <a href="https://twitter.com/intent/tweet?url=https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%2520ML/AI%2520Agents/image-to-graph/readme.md"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5a/X_icon_2.svg" alt="X (Twitter) Logo" width="20px"></a>
+    <b>Share On: </b> 
+    <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%2520ML/AI%2520Agents/image-to-graph/readme.md"><img src="https://upload.wikimedia.org/wikipedia/commons/8/81/LinkedIn_icon.svg" alt="Linkedin Logo" width="20px"></a> 
+    <a href="https://reddit.com/submit?url=https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%2520ML/AI%2520Agents/image-to-graph/readme.md"><img src="https://redditinc.com/hubfs/Reddit%20Inc/Brand/Reddit_Logo.png" alt="Reddit Logo" width="20px"></a> 
+    <a href="https://bsky.app/intent/compose?text=https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%2520ML/AI%2520Agents/image-to-graph/readme.md"><img src="https://upload.wikimedia.org/wikipedia/commons/7/7a/Bluesky_Logo.svg" alt="BlueSky Logo" width="20px"></a> 
+    <a href="https://twitter.com/intent/tweet?url=https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%2520ML/AI%2520Agents/image-to-graph/readme.md"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5a/X_icon_2.svg" alt="X (Twitter) Logo" width="20px"></a> 
   </td>
 </tr>
 <tr>
   <td style="text-align: right">
-    <b>Connect With Author On: </b>
+    <b>Connect With Author On: </b> 
     <a href="https://www.linkedin.com/in/statmike"><img src="https://upload.wikimedia.org/wikipedia/commons/8/81/LinkedIn_icon.svg" alt="Linkedin Logo" width="20px"></a>
-    <a href="https://www.github.com/statmike"><img src="https://www.svgrepo.com/download/217753/github.svg" alt="GitHub Logo" width="20px"></a>
+    <a href="https://www.github.com/statmike"><img src="https://www.svgrepo.com/download/217753/github.svg" alt="GitHub Logo" width="20px"></a> 
     <a href="https://www.youtube.com/@statmike-channel"><img src="https://upload.wikimedia.org/wikipedia/commons/f/fd/YouTube_full-color_icon_%282024%29.svg" alt="YouTube Logo" width="20px"></a>
-    <a href="https://bsky.app/profile/statmike.bsky.social"><img src="https://upload.wikimedia.org/wikipedia/commons/7/7a/Bluesky_Logo.svg" alt="BlueSky Logo" width="20px"></a>
+    <a href="https://bsky.app/profile/statmike.bsky.social"><img src="https://upload.wikimedia.org/wikipedia/commons/7/7a/Bluesky_Logo.svg" alt="BlueSky Logo" width="20px"></a> 
     <a href="https://x.com/statmike"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5a/X_icon_2.svg" alt="X (Twitter) Logo" width="20px"></a>
   </td>
 </tr>
@@ -90,6 +90,7 @@ User provides image path (+ optional schema path)
     │   crop_and_examine            │  Crop + Gemini (TOOL_MODEL) → elements + confidence
     │   update_graph (batch nodes)  │  Add all nodes in one call (with confidence)
     │   (adaptive zoom if complex)  │  Re-examine dense sub-regions at finer granularity
+    │   (detect groups if present)  │  Create group nodes with parent_id on children
     └──────────┬────────────────────┘  (schema hints if input schema loaded)
                ▼
     ┌──────────────────────────┐
@@ -99,7 +100,7 @@ User provides image path (+ optional schema path)
                ▼
     ┌──────────────────┐
     │ generate_schema  │  Infer JSON Schema (skipped if input schema loaded)
-    │ validate_graph   │  Check completeness, conformance, consistency, low confidence
+    │ validate_graph   │  Check structure + schema conformance + auto-correct bboxes
     └────────┬─────────┘
              ▼
     ┌────────────────────────┐
@@ -277,12 +278,14 @@ BQ_ANALYTICS_GCS_BUCKET=your-bucket-name
 BQ_ANALYTICS_GCS_PATH=applied-ml/ai-agents/image-to-graph/bq_plugin
 ```
 
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `AGENT_MODEL` | Gemini model for the ADK agent (orchestration, tool selection) | `gemini-3-flash-preview` |
-| `AGENT_MODEL_LOCATION` | API endpoint location for `AGENT_MODEL`; overrides `GOOGLE_CLOUD_LOCATION` for the agent. Required for preview models. | `global` |
-| `TOOL_MODEL` | Gemini model for vision tools (`analyze_image`, `crop_and_examine`, `trace_connections`, `generate_description`) | `gemini-3.1-pro-preview` |
-| `TOOL_MODEL_LOCATION` | API endpoint location for `TOOL_MODEL`; overrides `GOOGLE_CLOUD_LOCATION` for tool calls. Required for preview models. | `global` |
+| Variable | Purpose | Code Default |
+|----------|---------|--------------|
+| `AGENT_MODEL` | Gemini model for the ADK agent (orchestration, tool selection) | `gemini-2.5-flash` |
+| `AGENT_MODEL_LOCATION` | API endpoint location for `AGENT_MODEL`; overrides `GOOGLE_CLOUD_LOCATION` for the agent. Set for preview models (e.g., `global`). | *(unset)* |
+| `TOOL_MODEL` | Gemini model for vision tools (`analyze_image`, `crop_and_examine`, `trace_connections`, `generate_description`) | `gemini-2.5-flash` |
+| `TOOL_MODEL_LOCATION` | API endpoint location for `TOOL_MODEL`; overrides `GOOGLE_CLOUD_LOCATION` for tool calls. Set for preview models (e.g., `global`). | *(unset)* |
+
+The `.env` file overrides these defaults. The example `.env` above shows preview models (`gemini-3-flash-preview`, `gemini-3.1-pro-preview`) with `global` endpoints — adjust to whichever models are available in your project.
 
 ---
 ## Running The Agent
@@ -336,13 +339,13 @@ Analyze this flowchart: examples/bq-arima-flowchart/diagram.png
 The agent will:
 1. Load and validate the image
 2. Analyze the full image to detect regions and bounding boxes
-3. Crop and examine each region in detail (with confidence scoring and adaptive zoom for dense areas)
-4. Build a graph with nodes and bounding boxes (including confidence levels)
+3. Crop and examine each region in detail (with confidence scoring, adaptive zoom for dense areas, and group detection for visual boundaries)
+4. Build a graph with nodes and bounding boxes (including confidence levels and parent/child grouping)
 5. Trace connections across the full image for edge detection with confidence
 6. Auto-generate a JSON Schema from the graph structure
-7. Validate the graph (including low-confidence warnings)
+7. Validate the graph — auto-correct bounding boxes, compute group bounding boxes from children, flag low-confidence elements
 8. Generate a comprehensive narrative description of the diagram
-9. Generate an interactive `visualization.html` with description, linked image/graph highlights, and confidence indicators
+9. Generate an interactive `visualization.html` with description, linked image/graph highlights, confidence indicators, and searchable graph JSON
 10. Export `graph.json` + `schema.json` + `description.md` as artifacts and write all files to `results-without-schema/` next to the source image
 11. Suggest example Q&A questions about the diagram — if you ask one, the agent transfers to `agent_graph_qa` which answers using the shared session state
 
@@ -360,20 +363,21 @@ Use this schema: examples/bq-arima-flowchart/schema.json
 The agent will:
 1. Load and validate the image
 2. Load the target schema and report its required fields (`id`, `label`, `element_type` for nodes)
-3. Analyze the image and build the graph, conforming to the schema (with bounding boxes and confidence)
+3. Analyze the image and build the graph, conforming to the schema (with bounding boxes, confidence, and parent/child grouping)
 4. `update_graph` will hint at any missing required/optional fields from the schema
 5. Trace connections across the full image for edge detection with confidence
-6. Validate the graph against the schema — report missing fields, type mismatches, low-confidence warnings
+6. Validate the graph against the schema — auto-correct bounding boxes, compute group bounding boxes, report missing fields, type mismatches, low-confidence warnings
 7. Generate a comprehensive narrative description of the diagram
-8. Generate an interactive `visualization.html` with description, linked image/graph highlights, and confidence indicators
+8. Generate an interactive `visualization.html` with description, linked image/graph highlights, confidence indicators, and searchable graph JSON
 9. Export `graph.json` + `schema.json` (the user-provided schema) + `description.md` as artifacts and write all files to `results-with-schema/` next to the source image
 10. Suggest example Q&A questions about the diagram — if you ask one, the agent transfers to `agent_graph_qa` which answers using the shared session state
 
 The included schema defines domain-specific enums and fields tailored to this diagram:
-- **`element_type`**: `input`, `process`, `intermediate`, `component`, `output`, `operator`
+- **`element_type`**: `input`, `process`, `intermediate`, `component`, `output`, `operator`, `group`
 - **`phase`**: `Preprocessing`, `Modeling`, `Decomposed Time Series`, `Output`
 - **`edge_type`**: `flow` (solid arrow), `feedback` (dashed arrow)
 - **`bq_function`**: associated BigQuery ML function (e.g., `ML.FORECAST`)
+- **`parent_id`**: links a node to its parent group node (for nesting)
 
 ### Creating Your Own Schema with Pydantic
 
@@ -392,22 +396,24 @@ class ElementType(str, Enum):
     component = "component"
     output = "output"
     operator = "operator"
+    group = "group"                # Visual grouping boundary (dashed boxes, labeled sections)
 
 class FlowchartNode(BaseModel):
     id: str = Field(..., description="Unique node identifier")
     label: str = Field(..., description="Display text from the diagram")
     element_type: ElementType = Field(..., description="Type of diagram element")
     phase: Optional[str] = Field(None, description="Pipeline phase this node belongs to")
-    shape: Optional[str] = Field(None, description="Visual shape: rectangle, cylinder, circle")
+    shape: Optional[str] = Field(None, description="Visual shape: rectangle, cylinder, circle, group_rectangle")
     color: Optional[str] = Field(None, description="Fill color")
     bq_function: Optional[str] = Field(None, description="Associated BigQuery ML function")
-    bounding_box: Optional[list[int]] = Field(None, description="[y_min, x_min, y_max, x_max] 0-1000")
+    bounding_box: Optional[list[int]] = Field(None, description="[y_min, x_min, y_max, x_max] normalized 0-1000")
+    parent_id: Optional[str] = Field(None, description="ID of the parent group node (for nesting)")
 
 class FlowchartEdge(BaseModel):
     id: str = Field(..., description="Unique edge identifier")
     source: str = Field(..., description="Source node id")
     target: str = Field(..., description="Target node id")
-    label: Optional[str] = Field(None, description="Edge label")
+    label: Optional[str] = Field(None, description="Edge label (visible text on the connection)")
     edge_type: Optional[str] = Field("flow", description="Arrow style: flow or feedback")
 
 class FlowchartGraph(BaseModel):
@@ -458,7 +464,7 @@ Files are replaced on each run (no accumulation). The same artifacts are also sa
 | Without schema | [**visualization.html**](https://htmlpreview.github.io/?https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20ML/AI%20Agents/image-to-graph/examples/bq-arima-flowchart/results-without-schema/visualization.html) | [graph.json](examples/bq-arima-flowchart/results-without-schema/graph.json) | [description.md](examples/bq-arima-flowchart/results-without-schema/description.md) |
 | With schema | [**visualization.html**](https://htmlpreview.github.io/?https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20ML/AI%20Agents/image-to-graph/examples/bq-arima-flowchart/results-with-schema/visualization.html) | [graph.json](examples/bq-arima-flowchart/results-with-schema/graph.json) | [description.md](examples/bq-arima-flowchart/results-with-schema/description.md) |
 
-> The visualization links use [htmlpreview.github.io](https://htmlpreview.github.io) to render the self-contained HTML files directly from GitHub — no setup required. Each visualization embeds the source image as base64, includes interactive hover/click highlighting, a recreated Mermaid diagram, and the schema.
+> The visualization links use [htmlpreview.github.io](https://htmlpreview.github.io) to render the self-contained HTML files directly from GitHub — no setup required. Each visualization embeds the source image as base64, includes interactive hover/click highlighting, group bounding boxes, a searchable graph JSON viewer, a recreated Mermaid diagram (with subgraphs for groups), and the schema.
 
 **What's different between the two runs?**
 
@@ -507,16 +513,34 @@ The exported `graph.json` follows this structure:
       "label": "Start",
       "element_type": "terminal",
       "shape": "oval",
-      "confidence": "high",
-      "attributes": {}
+      "bounding_box": [50, 400, 120, 600],
+      "confidence": "high"
     },
     {
       "id": "node_2",
       "label": "Process Data",
       "element_type": "process",
       "shape": "rectangle",
+      "bounding_box": [200, 350, 300, 650],
       "confidence": "medium",
-      "attributes": {"description": "Transforms input data"}
+      "description": "Transforms input data"
+    },
+    {
+      "id": "group_preprocessing",
+      "label": "Preprocessing",
+      "element_type": "group",
+      "shape": "group_rectangle",
+      "bounding_box": [30, 330, 320, 670],
+      "confidence": "high"
+    },
+    {
+      "id": "node_3",
+      "label": "Clean Data",
+      "element_type": "process",
+      "shape": "rectangle",
+      "bounding_box": [150, 380, 220, 620],
+      "confidence": "high",
+      "parent_id": "group_preprocessing"
     }
   ],
   "edges": [
@@ -525,6 +549,7 @@ The exported `graph.json` follows this structure:
       "source": "node_1",
       "target": "node_2",
       "label": null,
+      "edge_type": "flow",
       "confidence": "high"
     }
   ],
@@ -537,6 +562,12 @@ The exported `graph.json` follows this structure:
 }
 ```
 
+Key fields:
+- **`bounding_box`**: `[y_min, x_min, y_max, x_max]` on a normalized 0–1000 scale. Required for visualization overlays.
+- **`parent_id`**: Links a node to its parent group node for hierarchical nesting.
+- **`confidence`**: `high`, `medium`, or `low` — set during extraction by Gemini.
+- **`shape: "group_rectangle"`**: Marks a node as a visual grouping boundary (dashed box, labeled section).
+
 A `schema.json` is **always** exported alongside the graph — either the user-provided input schema or an auto-generated schema inferred from the graph structure. A `description.md` is also exported when a description has been generated. All files are saved both as ADK artifacts and written to disk in a `results-with-schema/` or `results-without-schema/` directory next to the source image.
 
 ---
@@ -547,12 +578,16 @@ The agent generates an interactive HTML visualization (`visualization.html` arti
 **Features:**
 - **Two-panel layout**: source image on the left, graph details on the right
 - **Generated description**: comprehensive narrative description of the diagram shown at the top of the graph panel
-- **Linked highlighting**: hover or click a node in either panel to highlight its bounding box on the image AND its card in the graph panel
+- **Linked highlighting**: hover or click a node in either panel to highlight its bounding box on the image AND its card in the graph panel. Hover also highlights the corresponding schema section.
 - **Edge tracing**: hover an edge to highlight both its source and target nodes on the image
+- **Group bounding boxes**: group nodes render as dashed purple outlines behind regular nodes, showing visual containment
+- **Schema viewer**: collapsible section with split Node Definition and Edge Definition blocks, linked to node/edge highlighting
+- **Graph JSON viewer**: collapsible, searchable section showing the full graph data. Type to search with match highlighting, Enter/Shift+Enter to cycle through matches.
+- **Mermaid diagram**: recreated flowchart with `subgraph` blocks for group nodes, rendered via Mermaid.js
 - **Resizable panels**: drag the divider between panels to adjust the layout
 - **Self-contained**: the HTML file embeds the image as base64 — no external dependencies, works offline
 
-For the visualization to work, nodes must include a `bounding_box` field with `[y_min, x_min, y_max, x_max]` coordinates (normalized 0-1000 scale). The agent is instructed to always include this when adding nodes.
+For the visualization to work, nodes must include a `bounding_box` field with `[y_min, x_min, y_max, x_max]` coordinates (normalized 0–1000 scale). The agent is instructed to always include this when adding nodes.
 
 ### Confidence Scoring
 
@@ -567,6 +602,28 @@ All Gemini-backed tools (`crop_and_examine`, `trace_connections`) return per-ele
 
 When `crop_and_examine` detects a high-complexity region (many overlapping elements, small text), it returns suggested sub-regions for closer examination. The agent can then re-examine those sub-regions at finer granularity (limited to 3 additional calls) to improve extraction quality in dense areas.
 
+### Node Grouping and Nesting
+
+Diagrams often contain visual groupings — dashed boundary boxes, labeled sections, swim lanes — that represent logical containment. The agent detects these and represents them as group nodes:
+
+- **Group nodes** have `shape: "group_rectangle"` and `element_type: "group"` with a label (the section title).
+- **Child nodes** set `parent_id` pointing to their group node's `id`.
+- **Group bounding boxes** are auto-computed from children during validation (with padding), so the agent doesn't need to get them exactly right.
+- **Visualization** renders groups as dashed purple outlines behind regular nodes.
+- **Mermaid diagrams** use `subgraph` blocks for groups, nesting children inside.
+
+Groups don't require edges unless there are explicit connections between group boundaries.
+
+### Bounding Box Auto-Correction
+
+Gemini sometimes returns bounding box coordinates with x and y swapped. The `validate_graph` tool detects and corrects this automatically:
+
+1. For each node, it computes the pixel-space aspect ratio under both coordinate interpretations (`[y,x,y,x]` vs `[x,y,x,y]`)
+2. The correct interpretation produces aspect ratios closer to 1.0 (since most diagram elements are roughly proportional)
+3. If the swapped interpretation is measurably better (>20% improvement in median deviation), all bounding boxes are corrected
+
+This runs before group bounding box auto-computation, so group boxes inherit corrected child coordinates.
+
 ### Description Artifact
 
 `export_result` saves a `description.md` artifact alongside `graph.json` and `schema.json`. This contains the narrative description generated by `generate_description`, providing a human-readable summary of the diagram's structure and content.
@@ -579,14 +636,14 @@ When `crop_and_examine` detects a high-complexity region (many overlapping eleme
 | `load_image` | Load image from file path, validate with Pillow, store bytes in state |
 | `load_schema` | Load a JSON Schema from file to use as the target structure for graph construction |
 | `analyze_image` | Full image analysis via Gemini (`TOOL_MODEL`) — diagram type, regions, bounding boxes |
-| `crop_and_examine` | Crop a region and examine it in one call via Gemini (`TOOL_MODEL`) — labels, symbols, attributes, complexity, confidence; suggests sub-regions for adaptive zoom |
-| `trace_connections` | Dedicated edge detection — sends full image + all node positions to Gemini (`TOOL_MODEL`) for a cross-region edge-finding pass with confidence |
+| `crop_and_examine` | Crop a region and examine it in one call via Gemini (`TOOL_MODEL`) — labels, symbols, attributes, external labels, complexity, confidence; detects group boundaries; suggests sub-regions for adaptive zoom |
+| `trace_connections` | Dedicated edge detection — sends full image + all node positions (with group context) to Gemini (`TOOL_MODEL`) for a cross-region edge-finding pass with confidence |
 | `update_graph` | Batch add/update nodes and edges in one call (with schema conformance hints) |
 | `get_graph` | Retrieve current graph state for progress review |
 | `generate_schema` | Infer JSON Schema from observed graph attributes (skipped if input schema loaded) |
-| `validate_graph` | Validate graph structure and schema conformance — missing fields, orphaned edges, type mismatches, low-confidence flags |
+| `validate_graph` | Validate graph structure and schema conformance — missing fields, orphaned edges, type mismatches, low-confidence flags. Auto-corrects bounding box coordinate swaps and computes group bounding boxes from children. |
 | `generate_description` | Generate a narrative description of the diagram via Gemini (`TOOL_MODEL`) using image + graph + schema as context |
-| `generate_visualization` | Create interactive HTML with description + image + graph, linked hover/click highlights, confidence indicators; writes to disk |
+| `generate_visualization` | Create interactive HTML with description + image + graph, linked hover/click highlights, confidence indicators, schema viewer, searchable graph JSON, Mermaid recreation; writes to disk |
 | `export_result` | Save final `graph.json` + `schema.json` + `description.md` as artifacts; writes all files to disk |
 
 ### Q&A Tools (`agent_graph_qa`)
@@ -629,6 +686,7 @@ Use `bq_analytics.ipynb` to query and analyze agent behavior:
 - Span hierarchy & duration
 - Multimodal content queries (GCS references)
 - Daily activity summaries
+- **Cost analysis** — per-session token costs with configurable model pricing, input vs output breakdown, and cost-by-agent charts
 
 ### Disabling Analytics
 

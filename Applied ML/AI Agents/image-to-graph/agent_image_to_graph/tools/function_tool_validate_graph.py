@@ -1,4 +1,5 @@
 import json
+import math
 from google.adk import tools
 from .schema_utils import resolve_items
 
@@ -53,7 +54,76 @@ async def validate_graph(tool_context: tools.ToolContext) -> str:
                 errors.append(f"Duplicate node id: '{node_id}'.")
             node_ids.add(node_id)
 
-        # 4. Validate edges — structural
+        # 4. Detect and fix bounding box coordinate swaps (x/y confusion)
+        image_dimensions = tool_context.state.get('image_dimensions', {})
+        swap_needed = _detect_bbox_swap(nodes, image_dimensions)
+        if swap_needed:
+            swap_count = 0
+            for node in nodes:
+                bbox = node.get('bounding_box')
+                if bbox and len(bbox) == 4:
+                    # Swap [x_min, y_min, x_max, y_max] → [y_min, x_min, y_max, x_max]
+                    node['bounding_box'] = [bbox[1], bbox[0], bbox[3], bbox[2]]
+                    swap_count += 1
+            warnings.append(
+                f"Bounding box coordinate swap detected and corrected on {swap_count} nodes "
+                f"(image {image_dimensions.get('width', '?')}x{image_dimensions.get('height', '?')}). "
+                f"Swapped x/y coordinates to match [y_min, x_min, y_max, x_max] convention."
+            )
+            # Update graph state with corrected bboxes
+            tool_context.state['graph'] = graph
+
+        # 5. Validate parent_id references (grouping) and auto-fix group bounding boxes
+        node_by_id = {n.get('id'): n for n in nodes if n.get('id')}
+        group_node_ids = {n.get('id') for n in nodes if n.get('shape') == 'group_rectangle'}
+        children_of: dict[str, list[str]] = {gid: [] for gid in group_node_ids}
+        for node in nodes:
+            parent_id = node.get('parent_id')
+            if parent_id:
+                node_id = node.get('id', '?')
+                if parent_id not in node_ids:
+                    errors.append(f"Node '{node_id}' has parent_id '{parent_id}' which does not exist.")
+                elif parent_id not in group_node_ids:
+                    warnings.append(
+                        f"Node '{node_id}' has parent_id '{parent_id}' but that node "
+                        f"is not a group (shape != 'group_rectangle')."
+                    )
+                else:
+                    children_of[parent_id].append(node_id)
+        for gid in group_node_ids:
+            if not children_of[gid]:
+                warnings.append(f"Group node '{gid}' has no children (no nodes with parent_id='{gid}').")
+            else:
+                # Auto-compute group bounding box from children (with padding)
+                child_bboxes = [
+                    node_by_id[cid].get('bounding_box')
+                    for cid in children_of[gid]
+                    if cid in node_by_id and node_by_id[cid].get('bounding_box')
+                       and len(node_by_id[cid].get('bounding_box', [])) == 4
+                ]
+                if child_bboxes:
+                    y_min = min(b[0] for b in child_bboxes)
+                    x_min = min(b[1] for b in child_bboxes)
+                    y_max = max(b[2] for b in child_bboxes)
+                    x_max = max(b[3] for b in child_bboxes)
+                    # Add padding (2% of 1000-scale = 20 units, clamped to 0-1000)
+                    pad = 20
+                    computed_bbox = [
+                        max(0, y_min - pad),
+                        max(0, x_min - pad),
+                        min(1000, y_max + pad),
+                        min(1000, x_max + pad),
+                    ]
+                    group_node = node_by_id[gid]
+                    old_bbox = group_node.get('bounding_box')
+                    group_node['bounding_box'] = computed_bbox
+                    if old_bbox and old_bbox != computed_bbox:
+                        warnings.append(
+                            f"Group '{gid}' bounding_box auto-corrected from children: "
+                            f"{old_bbox} -> {computed_bbox}"
+                        )
+
+        # 6. Validate edges — structural
         edge_ids = set()
         for i, edge in enumerate(edges):
             edge_id = edge.get('id')
@@ -80,7 +150,7 @@ async def validate_graph(tool_context: tools.ToolContext) -> str:
             if source and target and source == target:
                 warnings.append(f"Edge '{edge_id}' is a self-loop (source == target == '{source}').")
 
-        # 5. Check for disconnected nodes
+        # 7. Check for disconnected nodes
         connected_node_ids = set()
         for edge in edges:
             if edge.get('source'):
@@ -92,7 +162,7 @@ async def validate_graph(tool_context: tools.ToolContext) -> str:
         if disconnected and edges:
             warnings.append(f"Disconnected nodes (no edges): {sorted(disconnected)}")
 
-        # 6. Schema conformance validation
+        # 8. Schema conformance validation
         schema = tool_context.state.get('input_schema') or tool_context.state.get('schema')
         schema_source = "input" if tool_context.state.get('input_schema') else "generated"
         if schema:
@@ -102,7 +172,7 @@ async def validate_graph(tool_context: tools.ToolContext) -> str:
             errors.extend(schema_errors)
             warnings.extend(schema_warnings)
 
-        # 7. Confidence warnings
+        # 9. Confidence warnings
         for node in nodes:
             if node.get('confidence') == 'low':
                 warnings.append(f"Node '{node.get('id')}' has LOW confidence — review manually.")
@@ -240,3 +310,61 @@ def _format_report(
         lines.append("PASSED with warnings: Graph is structurally valid but has warnings.")
 
     return '\n'.join(lines)
+
+
+def _detect_bbox_swap(nodes: list[dict], image_dimensions: dict) -> bool:
+    """Detect if bounding box coordinates have x/y swapped.
+
+    Uses the image aspect ratio to check: for each node, compute its pixel-space
+    aspect ratio under both interpretations ([y,x,y,x] vs [x,y,x,y]). The correct
+    interpretation should produce aspect ratios closer to 1.0 on average, since
+    most diagram elements (boxes, circles, cylinders) are roughly proportional.
+
+    Only applies to non-square images where the swap produces a measurable difference.
+    """
+    img_w = image_dimensions.get('width', 0)
+    img_h = image_dimensions.get('height', 0)
+
+    if not img_w or not img_h:
+        return False
+
+    # Need at least 10% aspect ratio difference to detect swap reliably
+    if 0.9 < img_w / img_h < 1.1:
+        return False
+
+    normal_devs = []
+    swapped_devs = []
+
+    for node in nodes:
+        bbox = node.get('bounding_box')
+        if not bbox or len(bbox) != 4 or node.get('shape') == 'group_rectangle':
+            continue
+
+        a, b, c, d = bbox
+        if c <= a or d <= b:
+            continue
+
+        # Normal [y_min, x_min, y_max, x_max]
+        n_h = (c - a) / 1000 * img_h
+        n_w = (d - b) / 1000 * img_w
+        # Swapped [x_min, y_min, x_max, y_max]
+        s_h = (d - b) / 1000 * img_h
+        s_w = (c - a) / 1000 * img_w
+
+        if n_w > 0 and n_h > 0:
+            normal_devs.append(abs(math.log(n_h / n_w)))
+        if s_w > 0 and s_h > 0:
+            swapped_devs.append(abs(math.log(s_h / s_w)))
+
+    if len(normal_devs) < 3:
+        return False
+
+    # Use median deviation from log(1.0)=0 as the metric
+    normal_devs.sort()
+    swapped_devs.sort()
+    mid = len(normal_devs) // 2
+    normal_median = normal_devs[mid]
+    swapped_median = swapped_devs[mid]
+
+    # Swap if swapped interpretation is at least 20% better
+    return swapped_median < normal_median * 0.8

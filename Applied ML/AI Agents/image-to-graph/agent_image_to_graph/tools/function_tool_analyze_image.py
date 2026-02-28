@@ -3,6 +3,7 @@ import json
 from google.adk import tools
 from google.genai import types
 from .gemini_utils import generate_content
+from .bbox_utils import normalize_bbox
 
 
 async def analyze_image(tool_context: tools.ToolContext) -> str:
@@ -38,14 +39,18 @@ async def analyze_image(tool_context: tools.ToolContext) -> str:
             "region_id": "region_1",
             "label": "Human-readable label for this region",
             "description": "What this region contains",
-            "bounding_box": [y_min, x_min, y_max, x_max],
+            "bounding_box": {"top": y_min, "left": x_min, "bottom": y_max, "right": x_max},
             "element_type": "node|group|label|connector|annotation"
         }
     ]
 }
 
 IMPORTANT:
-- Bounding box coordinates use normalized 0-1000 scale (where 0,0 is top-left and 1000,1000 is bottom-right).
+- Bounding box coordinates use a normalized 0-1000 scale where the image top-left corner is {"top": 0, "left": 0} and the bottom-right corner is {"bottom": 1000, "right": 1000}.
+  "top" = distance from the top edge (0 = very top, 1000 = very bottom).
+  "left" = distance from the left edge (0 = far left, 1000 = far right).
+  Example: an element at the top-left corner → {"top": 0, "left": 0, "bottom": 200, "right": 150}
+  Example: an element at the bottom-right → {"top": 800, "left": 850, "bottom": 1000, "right": 1000}
 - Identify ALL distinct visual elements: shapes, boxes, circles, text labels, connectors, arrows, symbols.
 - Group related elements into regions (e.g., a box with its label is one region).
 - Use descriptive region_ids like "region_1", "region_2", etc.
@@ -81,6 +86,18 @@ Return ONLY the JSON object, no other text."""
 
         regions = analysis.get('regions', [])
         region_count = len(regions)
+
+        # Normalize bounding boxes from dict to list format
+        for r in regions:
+            bbox = r.get('bounding_box')
+            if bbox is not None:
+                normalized = normalize_bbox(bbox)
+                if normalized:
+                    r['bounding_box'] = normalized
+
+        # Update stored analysis with normalized boxes
+        analysis['regions'] = regions
+        tool_context.state['analysis_result'] = analysis
 
         # Build a concise region summary (avoid dumping full JSON into conversation)
         region_lines = []

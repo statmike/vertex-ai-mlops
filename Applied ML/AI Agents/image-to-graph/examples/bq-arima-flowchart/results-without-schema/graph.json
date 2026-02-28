@@ -2,521 +2,554 @@
   "diagram_type": "flowchart",
   "nodes": [
     {
+      "id": "group_preprocessing",
+      "bounding_box": [
+        176,
+        151,
+        699,
+        283
+      ],
+      "label": "Preprocessing",
+      "confidence": "high",
+      "shape": "group_rectangle",
+      "element_type": "group"
+    },
+    {
+      "label": "Modeling",
+      "element_type": "group",
+      "shape": "group_rectangle",
+      "confidence": "high",
+      "bounding_box": [
+        66,
+        320,
+        947,
+        484
+      ],
+      "id": "group_modeling"
+    },
+    {
+      "bounding_box": [
+        58,
+        598,
+        924,
+        724
+      ],
+      "id": "group_decomposed_ts",
+      "label": "Decomposed Time Series",
+      "element_type": "group",
+      "shape": "group_rectangle",
+      "confidence": "high"
+    },
+    {
       "label": "Input Custom Holiday",
       "confidence": "high",
-      "id": "node_1",
+      "shape": "cylinder",
+      "id": "input_custom_holiday",
       "bounding_box": [
-        30,
-        17,
-        159,
+        27,
+        18,
+        160,
         112
-      ],
-      "type": "data_store"
+      ]
     },
     {
+      "bounding_box": [
+        287,
+        18,
+        419,
+        112
+      ],
+      "id": "input_time_series",
       "label": "Input Time Series",
+      "shape": "cylinder",
+      "confidence": "high"
+    },
+    {
+      "label": "Duplicated Timestamp Handling",
+      "parent_id": "group_preprocessing",
+      "shape": "rectangle",
       "confidence": "high",
-      "id": "node_2",
-      "type": "data_store",
       "bounding_box": [
-        289,
-        17,
+        196,
+        171,
+        284,
+        263
+      ],
+      "id": "duplicated_timestamp_handling"
+    },
+    {
+      "id": "data_frequency_inference",
+      "bounding_box": [
+        330,
+        171,
         418,
-        112
-      ]
-    },
-    {
-      "type": "process",
-      "bounding_box": [
-        195,
-        170,
-        288,
-        262
+        263
       ],
-      "confidence": "high",
-      "id": "node_5",
-      "label": "Duplicated Timestamp Handling"
-    },
-    {
-      "confidence": "high",
-      "id": "node_6",
       "label": "Data Frequency Inference",
-      "type": "process",
+      "confidence": "high",
+      "shape": "rectangle",
+      "parent_id": "group_preprocessing"
+    },
+    {
+      "label": "Irregular Timestamp Handling",
+      "shape": "rectangle",
+      "parent_id": "group_preprocessing",
+      "confidence": "high",
       "bounding_box": [
-        328,
-        170,
-        421,
-        262
+        464,
+        171,
+        552,
+        263
+      ],
+      "id": "irregular_timestamp_handling"
+    },
+    {
+      "confidence": "high",
+      "shape": "rectangle",
+      "parent_id": "group_preprocessing",
+      "label": "Missing Data Interpolation",
+      "id": "missing_data_interpolation",
+      "bounding_box": [
+        595,
+        171,
+        679,
+        263
       ]
     },
     {
+      "id": "holiday_adjustment",
       "bounding_box": [
-        462,
-        170,
-        555,
-        262
-      ],
-      "type": "process",
-      "confidence": "high",
-      "id": "node_7",
-      "label": "Irregular Timestamp Handling"
-    },
-    {
-      "bounding_box": [
-        586,
-        170,
-        680,
-        262
-      ],
-      "type": "process",
-      "confidence": "high",
-      "id": "node_8",
-      "label": "Missing Data Interpolation"
-    },
-    {
-      "type": "process",
-      "bounding_box": [
-        88,
+        86,
         346,
-        168,
+        169,
         459
       ],
+      "label": "Holiday Adjustment",
       "confidence": "high",
-      "id": "node_11",
-      "label": "Holiday Adjustment"
+      "parent_id": "group_modeling",
+      "shape": "rectangle"
     },
     {
+      "confidence": "high",
+      "shape": "rectangle",
+      "parent_id": "group_modeling",
       "label": "Spikes & Dips Outlier Cleaning",
-      "confidence": "high",
-      "id": "node_12",
-      "type": "process",
+      "id": "spikes_dips_cleaning",
       "bounding_box": [
-        259,
+        258,
         346,
-        340,
+        342,
         459
       ]
     },
     {
-      "confidence": "high",
-      "id": "node_13",
-      "label": "Seasonal & Trend Decomposition (STL)",
+      "id": "stl_decomposition",
       "bounding_box": [
-        436,
+        438,
         346,
-        551,
+        552,
         459
       ],
-      "type": "process"
+      "confidence": "high",
+      "parent_id": "group_modeling",
+      "shape": "rectangle",
+      "label": "Seasonal & Trend Decomposition (STL)"
     },
     {
+      "id": "step_change_adjustment",
       "bounding_box": [
-        629,
+        628,
         346,
         704,
         458
       ],
-      "type": "process",
       "confidence": "high",
-      "id": "node_14",
+      "shape": "rectangle",
+      "parent_id": "group_modeling",
       "label": "Step Change Adjustment"
     },
     {
-      "confidence": "high",
-      "id": "node_15",
-      "label": "Trend Modeling (distributed auto.ARIMA)",
-      "type": "process",
+      "id": "trend_modeling_arima",
       "bounding_box": [
-        799,
+        798,
         340,
         927,
-        463
-      ]
+        464
+      ],
+      "confidence": "high",
+      "shape": "rectangle",
+      "parent_id": "group_modeling",
+      "label": "Trend Modeling (distributed auto.ARIMA)"
     },
     {
+      "shape": "cylinder",
+      "confidence": "high",
       "label": "De-holiday'ed Time Series",
-      "confidence": "high",
-      "id": "node_16",
       "bounding_box": [
-        152,
-        488,
-        244,
-        570
+        149,
+        489,
+        243,
+        571
       ],
-      "type": "data_store"
+      "id": "de_holiday_ed_ts"
     },
     {
-      "confidence": "high",
-      "id": "node_17",
-      "label": "De-outlier'ed Time Series",
       "bounding_box": [
-        336,
-        488,
-        428,
-        570
+        335,
+        489,
+        429,
+        571
       ],
-      "type": "data_store"
+      "id": "de_outlier_ed_ts",
+      "shape": "cylinder",
+      "confidence": "high",
+      "label": "De-outlier'ed Time Series"
     },
     {
-      "type": "data_store",
       "bounding_box": [
         521,
-        488,
-        614,
-        570
+        489,
+        615,
+        571
       ],
+      "id": "de_seasoned_ts",
       "label": "De-seasoned Time Series",
-      "confidence": "high",
-      "id": "node_18"
+      "shape": "cylinder",
+      "confidence": "high"
     },
     {
-      "label": "Step-change Adjusted Time Series",
-      "confidence": "high",
-      "id": "node_19",
+      "id": "step_change_adjusted_ts",
       "bounding_box": [
-        705,
-        488,
-        797,
-        570
+        704,
+        489,
+        798,
+        571
       ],
-      "type": "data_store"
-    },
-    {
-      "label": "Residual Time Series",
       "confidence": "high",
-      "id": "node_20",
-      "type": "data_store",
-      "bounding_box": [
-        895,
-        488,
-        987,
-        570
-      ]
+      "shape": "cylinder",
+      "label": "Step-change Adjusted Time Series"
     },
     {
       "bounding_box": [
-        79,
+        894,
+        489,
+        988,
+        571
+      ],
+      "id": "residual_ts",
+      "label": "Residual Time Series",
+      "shape": "cylinder",
+      "confidence": "high"
+    },
+    {
+      "id": "holiday_component_data",
+      "bounding_box": [
+        78,
         619,
         172,
         701
       ],
-      "type": "data_store",
       "label": "Holiday Component",
       "confidence": "high",
-      "id": "node_23"
+      "shape": "cylinder",
+      "parent_id": "group_decomposed_ts"
     },
     {
-      "confidence": "high",
-      "id": "node_24",
       "label": "Outlier Component",
+      "confidence": "high",
+      "shape": "cylinder",
+      "parent_id": "group_decomposed_ts",
+      "id": "outlier_component_data",
       "bounding_box": [
-        251,
+        250,
         619,
-        343,
+        344,
         701
-      ],
-      "type": "data_store"
+      ]
     },
     {
-      "type": "data_store",
       "bounding_box": [
         412,
         618,
-        568,
+        566,
         701
       ],
-      "confidence": "high",
-      "id": "node_25",
-      "label": "Multiple Seasonal Components"
+      "id": "multiple_seasonal_components_data",
+      "label": "Multiple Seasonal Components",
+      "parent_id": "group_decomposed_ts",
+      "shape": "cylinder",
+      "confidence": "high"
     },
     {
-      "type": "data_store",
+      "confidence": "high",
+      "shape": "cylinder",
+      "parent_id": "group_decomposed_ts",
+      "label": "Step Change Component",
+      "id": "step_change_component_data",
       "bounding_box": [
-        623,
+        624,
         619,
-        716,
+        718,
         704
-      ],
-      "confidence": "high",
-      "id": "node_26",
-      "label": "Step Change Component"
+      ]
     },
     {
+      "label": "Trend Component",
+      "shape": "cylinder",
+      "parent_id": "group_decomposed_ts",
+      "confidence": "high",
       "bounding_box": [
-        808,
-        617,
-        906,
+        810,
+        618,
+        904,
         701
       ],
-      "type": "data_store",
-      "confidence": "high",
-      "id": "node_27",
-      "label": "Trend Component"
+      "id": "trend_component_data"
     },
     {
+      "label": "Aggregation",
+      "confidence": "high",
+      "shape": "circle",
+      "id": "aggregation_node",
       "bounding_box": [
-        206,
+        204,
         784,
-        266,
+        267,
         824
-      ],
-      "type": "process",
-      "confidence": "high",
-      "id": "node_28",
-      "label": "Aggregation Node"
+      ]
     },
     {
+      "shape": "cylinder",
       "confidence": "high",
-      "id": "node_29",
       "label": "Forecasted Time Series + Intervals",
-      "type": "data_store",
+      "bq_function": "ML.FORECAST",
       "bounding_box": [
         171,
         869,
-        302,
-        963
-      ]
-    },
-    {
-      "label": "Seasonal, Trend, Holiday, Outlier, Step Change Components",
-      "confidence": "high",
-      "id": "node_30",
-      "type": "data_store",
-      "bounding_box": [
-        447,
-        867,
-        722,
-        963
-      ]
-    },
-    {
-      "confidence": "high",
-      "id": "node_31",
-      "label": "Fitted History Series + Forecasted Series + Intervals",
-      "bounding_box": [
-        781,
-        867,
-        930,
+        304,
         963
       ],
-      "type": "data_store"
+      "id": "forecasted_ts_output_data"
+    },
+    {
+      "shape": "cylinder",
+      "confidence": "high",
+      "label": "Seasonal, Trend, Holiday, Outlier, Step Change Components",
+      "bq_function": "ML.EXPLAIN_FORECAST",
+      "bounding_box": [
+        446,
+        867,
+        719,
+        963
+      ],
+      "id": "explain_forecast_output_data"
     },
     {
       "bounding_box": [
-        775,
-        163,
-        906,
+        780,
+        867,
+        932,
+        963
+      ],
+      "id": "detect_anomalies_output_data",
+      "bq_function": "ML.DETECT_ANOMALIES",
+      "label": "Fitted History Series + Forecasted Series + Intervals",
+      "shape": "cylinder",
+      "confidence": "high"
+    },
+    {
+      "id": "eval_metrics_output_data",
+      "bounding_box": [
+        773,
+        164,
+        907,
         269
       ],
-      "type": "data_store",
+      "bq_function": "ML.ARIMA_EVALUATE ML.ARIMA_COEFFICIENTS",
+      "label": "Evaluation Metrics + Model Coefficients",
       "confidence": "high",
-      "id": "node_32",
-      "label": "Evaluation Metrics + Model Coefficients"
+      "shape": "cylinder"
     }
   ],
   "edges": [
     {
-      "source": "node_1",
-      "id": "e1",
+      "target": "holiday_adjustment",
+      "source": "input_custom_holiday",
       "confidence": "high",
-      "target": "node_11"
+      "id": "e1"
     },
     {
-      "source": "node_2",
-      "target": "node_5",
+      "id": "e2",
       "confidence": "high",
-      "id": "e2"
+      "source": "input_time_series",
+      "target": "duplicated_timestamp_handling"
     },
     {
       "confidence": "high",
-      "target": "node_6",
       "id": "e3",
-      "source": "node_5"
+      "target": "data_frequency_inference",
+      "source": "duplicated_timestamp_handling"
     },
     {
+      "source": "data_frequency_inference",
+      "target": "irregular_timestamp_handling",
       "confidence": "high",
-      "target": "node_7",
-      "id": "e4",
-      "source": "node_6"
+      "id": "e4"
     },
     {
-      "confidence": "high",
-      "target": "node_8",
+      "source": "irregular_timestamp_handling",
+      "target": "missing_data_interpolation",
       "id": "e5",
-      "source": "node_7"
+      "confidence": "high"
     },
     {
-      "source": "node_8",
+      "id": "e6",
       "confidence": "high",
-      "target": "node_11",
-      "id": "e6"
+      "source": "missing_data_interpolation",
+      "target": "holiday_adjustment"
     },
     {
-      "confidence": "high",
-      "target": "node_16",
       "id": "e7",
-      "source": "node_11"
-    },
-    {
-      "source": "node_11",
       "confidence": "high",
-      "target": "node_23",
-      "id": "e8"
-    },
-    {
-      "source": "node_16",
-      "confidence": "high",
-      "target": "node_12",
-      "id": "e9"
-    },
-    {
-      "source": "node_12",
-      "confidence": "high",
-      "target": "node_17",
-      "id": "e10"
+      "source": "holiday_adjustment",
+      "target": "de_holiday_ed_ts"
     },
     {
       "confidence": "high",
-      "target": "node_24",
-      "id": "e11",
-      "source": "node_12"
+      "id": "e8",
+      "target": "holiday_component_data",
+      "source": "holiday_adjustment"
     },
     {
-      "source": "node_17",
-      "target": "node_13",
-      "confidence": "high",
-      "id": "e12"
+      "target": "spikes_dips_cleaning",
+      "source": "de_holiday_ed_ts",
+      "id": "e9",
+      "confidence": "high"
     },
     {
       "confidence": "high",
-      "target": "node_18",
+      "id": "e10",
+      "target": "de_outlier_ed_ts",
+      "source": "spikes_dips_cleaning"
+    },
+    {
+      "source": "spikes_dips_cleaning",
+      "target": "outlier_component_data",
+      "confidence": "high",
+      "id": "e11"
+    },
+    {
+      "confidence": "high",
+      "id": "e12",
+      "target": "stl_decomposition",
+      "source": "de_outlier_ed_ts"
+    },
+    {
+      "source": "stl_decomposition",
+      "target": "de_seasoned_ts",
       "id": "e13",
-      "source": "node_13"
+      "confidence": "high"
     },
     {
-      "confidence": "high",
-      "target": "node_25",
       "id": "e14",
-      "source": "node_13"
-    },
-    {
-      "source": "node_18",
       "confidence": "high",
-      "target": "node_14",
-      "id": "e15"
+      "target": "multiple_seasonal_components_data",
+      "source": "stl_decomposition"
     },
     {
       "confidence": "high",
-      "target": "node_19",
+      "id": "e15",
+      "target": "step_change_adjustment",
+      "source": "de_seasoned_ts"
+    },
+    {
+      "confidence": "high",
       "id": "e16",
-      "source": "node_14"
+      "source": "step_change_adjustment",
+      "target": "step_change_adjusted_ts"
     },
     {
-      "source": "node_14",
+      "target": "step_change_component_data",
+      "source": "step_change_adjustment",
       "confidence": "high",
-      "target": "node_26",
       "id": "e17"
     },
     {
-      "source": "node_19",
-      "target": "node_15",
-      "confidence": "high",
-      "id": "e18"
+      "source": "step_change_adjusted_ts",
+      "target": "trend_modeling_arima",
+      "id": "e18",
+      "confidence": "high"
     },
     {
-      "target": "node_32",
-      "confidence": "high",
+      "source": "trend_modeling_arima",
+      "target": "trend_component_data",
       "id": "e19",
-      "source": "node_15"
+      "confidence": "high"
     },
     {
-      "target": "node_20",
+      "source": "trend_modeling_arima",
+      "target": "residual_ts",
       "confidence": "high",
-      "id": "e20",
-      "source": "node_15"
+      "id": "e20"
     },
     {
-      "source": "node_15",
-      "target": "node_27",
       "confidence": "high",
-      "id": "e21"
+      "id": "e21",
+      "target": "eval_metrics_output_data",
+      "source": "trend_modeling_arima"
     },
     {
-      "source": "node_23",
+      "source": "holiday_component_data",
       "label": "Point Forecast",
-      "target": "node_28",
       "confidence": "high",
+      "target": "aggregation_node",
       "id": "e22"
     },
     {
-      "source": "node_24",
+      "confidence": "high",
       "label": "Point Forecast",
-      "id": "e23",
-      "target": "node_28",
+      "source": "outlier_component_data",
+      "id": "e23_1",
+      "target": "aggregation_node"
+    },
+    {
+      "target": "aggregation_node",
+      "id": "e23_2",
+      "label": "Point Forecast",
+      "source": "multiple_seasonal_components_data",
       "confidence": "high"
     },
     {
-      "target": "node_28",
+      "id": "e23_3",
+      "target": "aggregation_node",
       "confidence": "high",
+      "label": "Point Forecast",
+      "source": "step_change_component_data"
+    },
+    {
       "id": "e24",
-      "label": "Point Forecast",
-      "source": "node_25"
-    },
-    {
-      "source": "node_26",
-      "label": "Point Forecast",
-      "target": "node_28",
+      "target": "aggregation_node",
       "confidence": "high",
-      "id": "e25"
-    },
-    {
-      "confidence": "high",
-      "target": "node_28",
-      "id": "e26",
       "label": "Point Forecast + Intervals",
-      "source": "node_27"
+      "source": "trend_component_data"
     },
     {
-      "source": "node_28",
-      "confidence": "high",
-      "target": "node_29",
-      "id": "e27"
-    },
-    {
-      "source": "node_23",
-      "id": "e28",
-      "confidence": "high",
-      "target": "node_30"
-    },
-    {
-      "source": "node_24",
-      "id": "e29",
-      "confidence": "high",
-      "target": "node_30"
-    },
-    {
-      "id": "e30",
-      "confidence": "high",
-      "target": "node_30",
-      "source": "node_25"
-    },
-    {
-      "source": "node_26",
-      "id": "e31",
-      "target": "node_30",
+      "target": "detect_anomalies_output_data",
+      "source": "trend_component_data",
+      "id": "e25",
       "confidence": "high"
     },
     {
-      "source": "node_27",
-      "id": "e32",
-      "confidence": "high",
-      "target": "node_30"
+      "source": "group_decomposed_ts",
+      "target": "explain_forecast_output_data",
+      "id": "e26",
+      "confidence": "medium"
     },
     {
-      "source": "node_27",
-      "id": "e33",
+      "target": "forecasted_ts_output_data",
+      "source": "aggregation_node",
       "confidence": "high",
-      "target": "node_31"
+      "id": "e27"
     }
   ],
   "metadata": {

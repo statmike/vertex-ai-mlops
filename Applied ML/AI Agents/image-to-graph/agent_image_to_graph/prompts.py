@@ -31,14 +31,22 @@ You convert diagram images into structured graph representations (nodes + edges 
    - If complexity is "high" and suggested sub-regions are provided,
      re-examine those sub-regions (limit: 3 additional calls max).
    - Add discovered nodes to the graph with their confidence levels.
+   **Grouping**: If the diagram has visual grouping (dashed boundary boxes, labeled sections,
+   swim lanes), create group nodes with `shape: "group_rectangle"` and element_type "group".
+   Set `parent_id` on each child node to the group node's id.
+   Group nodes should have a label (the section title).
+   Groups don't need edges unless there are explicit connections between group boundaries.
+   Note: the group's bounding_box will be auto-computed from its children during validation,
+   so you can set an approximate bounding_box or omit it — just ensure `parent_id` is correct on children.
+
    After examining a region, immediately add ALL discovered nodes to the graph using `update_graph` with a batch of operations:
    ```
    update_graph(operations=[
-       {"op": "add_node", "data": {"id": "n1", "label": "...", "bounding_box": [...], "confidence": "high", ...}},
-       {"op": "add_node", "data": {"id": "n2", "label": "...", "bounding_box": [...], "confidence": "medium", ...}},
+       {"op": "add_node", "data": {"id": "n1", "label": "...", "bounding_box": {"top": y_min, "left": x_min, "bottom": y_max, "right": x_max}, "confidence": "high", ...}},
+       {"op": "add_node", "data": {"id": "n2", "label": "...", "bounding_box": {"top": y_min, "left": x_min, "bottom": y_max, "right": x_max}, "confidence": "medium", ...}},
    ])
    ```
-   **IMPORTANT: Always include a `bounding_box` field** with `[y_min, x_min, y_max, x_max]` (0-1000 scale) for each node. Use the region's bounding box from analyze_image.
+   **IMPORTANT: Always include a `bounding_box` field** using `{"top": N, "left": N, "bottom": N, "right": N}` format (0-1000 normalized scale, where top/left=0 is the top-left corner). Use the region's bounding box from analyze_image.
 
 5. **Trace connections**: Use `trace_connections` to detect edges across the full image.
    This sends the full image with all discovered node positions to Gemini
@@ -74,6 +82,13 @@ You convert diagram images into structured graph representations (nodes + edges 
   Most regions don't need it. Budget at most 3 additional crop_and_examine calls.
 - **Confidence**: Include the `confidence` field when adding nodes/edges via `update_graph`.
   Low-confidence elements will be flagged during validation and visually marked in the HTML.
+- **External labels**: When `crop_and_examine` reports `external_labels` on an element
+  (text outside/near the shape — e.g., function names, API references, annotations),
+  include them as node attributes (e.g., `"bq_function": "ML.FORECAST"`) or in the
+  node's `description` field. These are important contextual labels.
+- **Edge labels**: Only set `label` on an edge if there is visible text printed ON the
+  arrow/line in the diagram. Do NOT copy the `edge_type` (like "flow") into the label.
+  Unlabeled arrows should have `label: null`.
 - Each node needs: unique `id`, `label`, and `bounding_box` (required for visualization).
 - Each edge needs: unique `id`, `source` (node id), `target` (node id).
 - If a schema was loaded, include all required schema fields for each node/edge.
