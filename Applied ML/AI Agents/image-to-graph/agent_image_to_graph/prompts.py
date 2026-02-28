@@ -2,8 +2,8 @@ import datetime
 import os
 
 today_date = datetime.date.today().strftime("%A, %B %d, %Y")
-project_id = os.getenv('GOOGLE_CLOUD_PROJECT', '')
-location = os.getenv('GOOGLE_CLOUD_LOCATION', '')
+project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "")
+location = os.getenv("GOOGLE_CLOUD_LOCATION", "")
 
 global_instructions = f"""
 You are an expert visual analysis assistant specializing in converting complex diagram images into structured graph representations.
@@ -95,4 +95,3 @@ You convert diagram images into structured graph representations (nodes + edges 
 - Adapt analysis based on detected diagram type.
 - Always generate visualization before exporting.
 """
- 

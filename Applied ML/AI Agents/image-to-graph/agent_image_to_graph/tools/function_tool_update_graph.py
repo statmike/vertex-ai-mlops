@@ -1,6 +1,11 @@
-import json
+import logging
+
 from google.adk import tools
-from .bbox_utils import normalize_bbox
+
+from .util_bbox import normalize_bbox
+from .util_common import log_tool_error
+
+logger = logging.getLogger(__name__)
 
 
 async def update_graph(
@@ -29,7 +34,7 @@ async def update_graph(
         A summary of all operations performed, with any errors or warnings.
     """
     try:
-        graph = tool_context.state.get('graph')
+        graph = tool_context.state.get("graph")
         if graph is None:
             return "Error: No graph state found. Use load_image first to initialize."
 
@@ -37,20 +42,20 @@ async def update_graph(
         schema_hints_given = False
 
         for i, op_dict in enumerate(operations):
-            op = op_dict.get('op', '')
-            data = op_dict.get('data', {})
+            op = op_dict.get("op", "")
+            data = op_dict.get("data", {})
 
-            if op == 'set_diagram_type':
-                diagram_type = data.get('diagram_type')
+            if op == "set_diagram_type":
+                diagram_type = data.get("diagram_type")
                 if not diagram_type:
                     results.append(f"[{i}] Error: 'diagram_type' required.")
                     continue
-                graph['diagram_type'] = diagram_type
+                graph["diagram_type"] = diagram_type
                 results.append(f"[{i}] Diagram type: '{diagram_type}'")
 
-            elif op == 'add_node':
-                node_id = data.get('id')
-                label = data.get('label')
+            elif op == "add_node":
+                node_id = data.get("id")
+                label = data.get("label")
                 if not node_id:
                     results.append(f"[{i}] Error: 'id' required for add_node.")
                     continue
@@ -58,38 +63,38 @@ async def update_graph(
                     results.append(f"[{i}] Error: 'label' required for add_node.")
                     continue
 
-                existing_ids = {n['id'] for n in graph.get('nodes', [])}
+                existing_ids = {n["id"] for n in graph.get("nodes", [])}
                 if node_id in existing_ids:
                     results.append(f"[{i}] Skipped: node '{node_id}' already exists.")
                     continue
 
                 # Normalize bounding_box from dict to list format
                 node_data = dict(data)
-                if 'bounding_box' in node_data:
-                    normalized = normalize_bbox(node_data['bounding_box'])
+                if "bounding_box" in node_data:
+                    normalized = normalize_bbox(node_data["bounding_box"])
                     if normalized:
-                        node_data['bounding_box'] = normalized
+                        node_data["bounding_box"] = normalized
 
-                graph.setdefault('nodes', []).append(node_data)
+                graph.setdefault("nodes", []).append(node_data)
                 results.append(f"[{i}] + node '{node_id}' (\"{label}\")")
 
                 # Schema hint (only once per call to stay concise)
                 if not schema_hints_given:
-                    hint = _schema_field_hint(tool_context, 'nodes', data)
+                    hint = _schema_field_hint(tool_context, "nodes", data)
                     if hint:
                         results.append(f"    {hint}")
                         schema_hints_given = True
 
-            elif op == 'update_node':
-                node_id = data.get('id')
+            elif op == "update_node":
+                node_id = data.get("id")
                 if not node_id:
                     results.append(f"[{i}] Error: 'id' required for update_node.")
                     continue
                 found = False
-                for node in graph.get('nodes', []):
-                    if node['id'] == node_id:
+                for node in graph.get("nodes", []):
+                    if node["id"] == node_id:
                         for key, value in data.items():
-                            if key == 'bounding_box':
+                            if key == "bounding_box":
                                 normalized = normalize_bbox(value)
                                 if normalized:
                                     value = normalized
@@ -101,10 +106,10 @@ async def update_graph(
                 else:
                     results.append(f"[{i}] Error: node '{node_id}' not found.")
 
-            elif op == 'add_edge':
-                edge_id = data.get('id')
-                source = data.get('source')
-                target = data.get('target')
+            elif op == "add_edge":
+                edge_id = data.get("id")
+                source = data.get("source")
+                target = data.get("target")
                 if not edge_id:
                     results.append(f"[{i}] Error: 'id' required for add_edge.")
                     continue
@@ -112,35 +117,35 @@ async def update_graph(
                     results.append(f"[{i}] Error: 'source' and 'target' required for add_edge.")
                     continue
 
-                existing_ids = {e['id'] for e in graph.get('edges', [])}
+                existing_ids = {e["id"] for e in graph.get("edges", [])}
                 if edge_id in existing_ids:
                     results.append(f"[{i}] Skipped: edge '{edge_id}' already exists.")
                     continue
 
-                node_ids = {n['id'] for n in graph.get('nodes', [])}
+                node_ids = {n["id"] for n in graph.get("nodes", [])}
                 warn = ""
                 if source not in node_ids:
                     warn += f" (source '{source}' not found)"
                 if target not in node_ids:
                     warn += f" (target '{target}' not found)"
 
-                graph.setdefault('edges', []).append(dict(data))
+                graph.setdefault("edges", []).append(dict(data))
                 results.append(f"[{i}] + edge '{edge_id}' ({source} -> {target}){warn}")
 
                 if not schema_hints_given:
-                    hint = _schema_field_hint(tool_context, 'edges', data)
+                    hint = _schema_field_hint(tool_context, "edges", data)
                     if hint:
                         results.append(f"    {hint}")
                         schema_hints_given = True
 
-            elif op == 'update_edge':
-                edge_id = data.get('id')
+            elif op == "update_edge":
+                edge_id = data.get("id")
                 if not edge_id:
                     results.append(f"[{i}] Error: 'id' required for update_edge.")
                     continue
                 found = False
-                for edge in graph.get('edges', []):
-                    if edge['id'] == edge_id:
+                for edge in graph.get("edges", []):
+                    if edge["id"] == edge_id:
                         for key, value in data.items():
                             edge[key] = value
                         found = True
@@ -156,23 +161,25 @@ async def update_graph(
                     f"Valid: add_node, update_node, add_edge, update_edge, set_diagram_type."
                 )
 
-        tool_context.state['graph'] = graph
+        tool_context.state["graph"] = graph
 
-        node_count = len(graph.get('nodes', []))
-        edge_count = len(graph.get('edges', []))
-        summary = f"Batch update: {len(operations)} ops. Graph: {node_count} nodes, {edge_count} edges.\n"
-        summary += '\n'.join(results)
+        node_count = len(graph.get("nodes", []))
+        edge_count = len(graph.get("edges", []))
+        summary = (
+            f"Batch update: {len(operations)} ops. Graph: {node_count} nodes, {edge_count} edges.\n"
+        )
+        summary += "\n".join(results)
         return summary
 
     except Exception as e:
-        return f"Error updating graph: {str(e)}"
+        return log_tool_error("update_graph", e)
 
 
 def _schema_field_hint(tool_context: tools.ToolContext, element_type: str, data: dict) -> str:
     """Check input_schema for required/expected fields missing from data."""
-    from .schema_utils import resolve_items
+    from .util_schema import resolve_items
 
-    input_schema = tool_context.state.get('input_schema')
+    input_schema = tool_context.state.get("input_schema")
     if not input_schema:
         return ""
 
@@ -180,8 +187,8 @@ def _schema_field_hint(tool_context: tools.ToolContext, element_type: str, data:
     if not items_schema:
         return ""
 
-    schema_required = set(items_schema.get('required', []))
-    schema_props = set(items_schema.get('properties', {}).keys())
+    schema_required = set(items_schema.get("required", []))
+    schema_props = set(items_schema.get("properties", {}).keys())
     provided = set(data.keys())
 
     missing_required = schema_required - provided
@@ -193,4 +200,4 @@ def _schema_field_hint(tool_context: tools.ToolContext, element_type: str, data:
     if missing_optional:
         parts.append(f"Schema hint — available optional fields: {sorted(missing_optional)}")
 
-    return '\n'.join(parts)
+    return "\n".join(parts)

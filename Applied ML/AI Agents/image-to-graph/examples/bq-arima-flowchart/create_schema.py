@@ -12,23 +12,26 @@ Image:
 
 import json
 from enum import Enum
-from pydantic import BaseModel, Field
 from typing import Optional
+
+from pydantic import BaseModel, Field
 
 
 class ElementType(str, Enum):
     """Types of elements found in the BQ ARIMA pipeline diagram."""
-    input = "input"                # Data inputs (cylinder shapes)
-    process = "process"            # Processing steps (rectangles)
+
+    input = "input"  # Data inputs (cylinder shapes)
+    process = "process"  # Processing steps (rectangles)
     intermediate = "intermediate"  # Intermediate data outputs (cylinder shapes)
-    component = "component"        # Decomposed time series components (rectangles)
-    output = "output"              # Final outputs (cylinder shapes)
-    operator = "operator"          # Mathematical operators (e.g., aggregation circle)
-    group = "group"                # Visual grouping boundary (dashed boxes, labeled sections)
+    component = "component"  # Decomposed time series components (rectangles)
+    output = "output"  # Final outputs (cylinder shapes)
+    operator = "operator"  # Mathematical operators (e.g., aggregation circle)
+    group = "group"  # Visual grouping boundary (dashed boxes, labeled sections)
 
 
 class Phase(str, Enum):
     """Pipeline phases shown as labeled sections in the diagram."""
+
     preprocessing = "Preprocessing"
     modeling = "Modeling"
     decomposed = "Decomposed Time Series"
@@ -40,20 +43,25 @@ class FlowchartNode(BaseModel):
     label: str = Field(..., description="Display text from the diagram")
     element_type: ElementType = Field(..., description="Type of diagram element")
     phase: Optional[Phase] = Field(None, description="Pipeline phase this node belongs to")
-    shape: Optional[str] = Field(None, description="Visual shape: rectangle, cylinder, circle, group_rectangle")
+    shape: Optional[str] = Field(
+        None, description="Visual shape: rectangle, cylinder, circle, group_rectangle"
+    )
     color: Optional[str] = Field(None, description="Fill color: blue, green, yellow, orange, gray")
-    bq_function: Optional[str] = Field(None, description="Associated BigQuery ML function (e.g., ML.FORECAST)")
+    bq_function: Optional[str] = Field(
+        None, description="Associated BigQuery ML function (e.g., ML.FORECAST)"
+    )
     description: Optional[str] = Field(None, description="Additional context about this node")
     bounding_box: Optional[list[int]] = Field(
         None,
-        description="Region coordinates [y_min, x_min, y_max, x_max] normalized 0-1000. Accepts {top, left, bottom, right} dict format."
+        description="Region coordinates [y_min, x_min, y_max, x_max] normalized 0-1000. Accepts {top, left, bottom, right} dict format.",
     )
     parent_id: Optional[str] = Field(None, description="ID of the parent group node (for nesting)")
 
 
 class EdgeType(str, Enum):
     """Types of connections in the diagram."""
-    flow = "flow"          # Solid arrow — data flows forward
+
+    flow = "flow"  # Solid arrow — data flows forward
     feedback = "feedback"  # Dashed arrow — output fed back or referenced
 
 
@@ -62,7 +70,9 @@ class FlowchartEdge(BaseModel):
     source: str = Field(..., description="Source node id")
     target: str = Field(..., description="Target node id")
     label: Optional[str] = Field(None, description="Edge label (e.g., 'Point Forecast')")
-    edge_type: EdgeType = Field(EdgeType.flow, description="Arrow style: flow (solid) or feedback (dashed)")
+    edge_type: EdgeType = Field(
+        EdgeType.flow, description="Arrow style: flow (solid) or feedback (dashed)"
+    )
 
 
 class FlowchartGraph(BaseModel):

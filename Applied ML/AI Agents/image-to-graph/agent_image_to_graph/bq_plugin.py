@@ -18,28 +18,25 @@
 #
 # Reference: https://google.github.io/adk-docs/observability/bigquery-agent-analytics/
 
-import os
 import logging
-from google.cloud import bigquery
-from google.adk.plugins.bigquery_agent_analytics_plugin import (
-    BigQueryAgentAnalyticsPlugin,
-    BigQueryLoggerConfig,
-)
+import os
 
 logger = logging.getLogger(__name__)
 
 # Configuration from environment variables
-PROJECT_ID = os.getenv('GOOGLE_CLOUD_PROJECT')
-BQ_DATASET_LOCATION = os.getenv('BQ_DATASET_LOCATION', 'US')
-BQ_ANALYTICS_DATASET = os.getenv('BQ_ANALYTICS_DATASET', 'applied_ml_image_to_graph')
-BQ_ANALYTICS_TABLE = os.getenv('BQ_ANALYTICS_TABLE', 'agent_events')
-BQ_ANALYTICS_GCS_BUCKET = os.getenv('BQ_ANALYTICS_GCS_BUCKET')
-BQ_ANALYTICS_GCS_PATH = os.getenv('BQ_ANALYTICS_GCS_PATH', '')
+PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT")
+BQ_DATASET_LOCATION = os.getenv("BQ_DATASET_LOCATION", "US")
+BQ_ANALYTICS_DATASET = os.getenv("BQ_ANALYTICS_DATASET", "applied_ml_image_to_graph")
+BQ_ANALYTICS_TABLE = os.getenv("BQ_ANALYTICS_TABLE", "agent_events")
+BQ_ANALYTICS_GCS_BUCKET = os.getenv("BQ_ANALYTICS_GCS_BUCKET")
+BQ_ANALYTICS_GCS_PATH = os.getenv("BQ_ANALYTICS_GCS_PATH", "")
 
-FULL_TABLE_ID = f"{PROJECT_ID}.{BQ_ANALYTICS_DATASET}.{BQ_ANALYTICS_TABLE}"
+# Only compute FULL_TABLE_ID when PROJECT_ID is set
+FULL_TABLE_ID = f"{PROJECT_ID}.{BQ_ANALYTICS_DATASET}.{BQ_ANALYTICS_TABLE}" if PROJECT_ID else None
 
-# Table DDL (from ADK documentation)
-CREATE_TABLE_DDL = f"""
+# Table DDL (only used when PROJECT_ID is set)
+CREATE_TABLE_DDL = (
+    f"""
 CREATE TABLE IF NOT EXISTS `{FULL_TABLE_ID}`
 (
   timestamp TIMESTAMP NOT NULL OPTIONS(description="The UTC time at which the event was logged."),
@@ -75,6 +72,9 @@ CREATE TABLE IF NOT EXISTS `{FULL_TABLE_ID}`
 PARTITION BY DATE(timestamp)
 CLUSTER BY event_type, agent, user_id;
 """
+    if FULL_TABLE_ID
+    else ""
+)
 
 
 def _ensure_setup():
@@ -84,6 +84,8 @@ def _ensure_setup():
         return
 
     try:
+        from google.cloud import bigquery
+
         client = bigquery.Client(project=PROJECT_ID)
         dataset_ref = f"{PROJECT_ID}.{BQ_ANALYTICS_DATASET}"
 
@@ -116,7 +118,9 @@ def _ensure_setup():
                 raise
 
     except Exception as e:
-        logger.warning(f"BQ Analytics: Auto-setup failed ({e}). Plugin may still work if resources exist.")
+        logger.warning(
+            f"BQ Analytics: Auto-setup failed ({e}). Plugin may still work if resources exist."
+        )
 
 
 # Run auto-setup on import
@@ -125,21 +129,29 @@ _ensure_setup()
 # GCS bucket for multimodal content
 gcs_bucket_name = BQ_ANALYTICS_GCS_BUCKET if BQ_ANALYTICS_GCS_BUCKET else None
 
-# Plugin configuration
-bq_config = BigQueryLoggerConfig(
-    enabled=True,
-    gcs_bucket_name=gcs_bucket_name,
-    log_multi_modal_content=True,
-    max_content_length=500 * 1024,  # 500 KB limit for inline text
-    batch_size=20,  # Buffer events to reduce BQ write contention during parallel tool calls
-    shutdown_timeout=30.0,
-)
+# Create plugin conditionally — None when PROJECT_ID is unset
+bq_analytics_plugin = None
+if PROJECT_ID:
+    from google.adk.plugins.bigquery_agent_analytics_plugin import (
+        BigQueryAgentAnalyticsPlugin,
+        BigQueryLoggerConfig,
+    )
 
-# Create the plugin instance
-bq_analytics_plugin = BigQueryAgentAnalyticsPlugin(
-    project_id=PROJECT_ID,
-    dataset_id=BQ_ANALYTICS_DATASET,
-    table_id=BQ_ANALYTICS_TABLE,
-    config=bq_config,
-    location=BQ_DATASET_LOCATION,
-)
+    bq_config = BigQueryLoggerConfig(
+        enabled=True,
+        gcs_bucket_name=gcs_bucket_name,
+        log_multi_modal_content=True,
+        max_content_length=500 * 1024,  # 500 KB limit for inline text
+        batch_size=20,  # Buffer events to reduce BQ write contention during parallel tool calls
+        shutdown_timeout=30.0,
+    )
+
+    bq_analytics_plugin = BigQueryAgentAnalyticsPlugin(
+        project_id=PROJECT_ID,
+        dataset_id=BQ_ANALYTICS_DATASET,
+        table_id=BQ_ANALYTICS_TABLE,
+        config=bq_config,
+        location=BQ_DATASET_LOCATION,
+    )
+else:
+    logger.info("BQ Analytics: GOOGLE_CLOUD_PROJECT not set, plugin disabled.")

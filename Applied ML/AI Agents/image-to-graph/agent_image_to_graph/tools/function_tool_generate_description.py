@@ -1,8 +1,14 @@
 import base64
 import json
+import logging
+
 from google.adk import tools
 from google.genai import types
-from .gemini_utils import generate_content
+
+from .util_common import log_tool_error
+from .util_gemini import generate_content
+
+logger = logging.getLogger(__name__)
 
 
 async def generate_description(tool_context: tools.ToolContext) -> str:
@@ -21,18 +27,18 @@ async def generate_description(tool_context: tools.ToolContext) -> str:
         The generated description text, or an error message if generation fails.
     """
     try:
-        source_image_b64 = tool_context.state.get('source_image')
+        source_image_b64 = tool_context.state.get("source_image")
         if not source_image_b64:
             return "Error: No source image loaded. Use load_image first."
 
-        graph = tool_context.state.get('graph')
-        if graph is None or not graph.get('nodes'):
+        graph = tool_context.state.get("graph")
+        if graph is None or not graph.get("nodes"):
             return "Error: Graph has no nodes. Build the graph before generating a description."
 
-        mime_type = tool_context.state.get('source_image_mime_type', 'image/png')
+        mime_type = tool_context.state.get("source_image_mime_type", "image/png")
         image_bytes = base64.b64decode(source_image_b64)
 
-        schema = tool_context.state.get('input_schema') or tool_context.state.get('schema')
+        schema = tool_context.state.get("input_schema") or tool_context.state.get("schema")
 
         # Build context for the description prompt
         graph_summary = json.dumps(graph, indent=2)
@@ -67,10 +73,10 @@ Schema:
         description = response.text.strip()
 
         # Store in state for use by generate_visualization
-        tool_context.state['diagram_description'] = description
+        tool_context.state["diagram_description"] = description
 
         # Return a concise confirmation (full text is in state)
-        preview = description[:200] + '...' if len(description) > 200 else description
+        preview = description[:200] + "..." if len(description) > 200 else description
         return (
             f"Description generated ({len(description)} chars) and stored in state.\n"
             f"Preview: {preview}\n"
@@ -78,4 +84,4 @@ Schema:
         )
 
     except Exception as e:
-        return f"Error generating description: {str(e)}"
+        return log_tool_error("generate_description", e)

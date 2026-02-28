@@ -18,14 +18,14 @@ def resolve_items(schema: dict, element_key: str) -> dict:
         The resolved items schema dict with 'properties' and 'required',
         or an empty dict if not found.
     """
-    props = schema.get('properties', {})
-    items = props.get(element_key, {}).get('items', {})
+    props = schema.get("properties", {})
+    items = props.get(element_key, {}).get("items", {})
 
     if not items:
         return {}
 
     # If items is a $ref, resolve it
-    ref = items.get('$ref')
+    ref = items.get("$ref")
     if ref:
         items = _resolve_ref(schema, ref)
 
@@ -34,10 +34,10 @@ def resolve_items(schema: dict, element_key: str) -> dict:
 
 def _resolve_ref(schema: dict, ref: str) -> dict:
     """Resolve a JSON Schema $ref string like '#/$defs/FlowchartNode'."""
-    if not ref.startswith('#/'):
+    if not ref.startswith("#/"):
         return {}
 
-    path_parts = ref[2:].split('/')
+    path_parts = ref[2:].split("/")
     current = schema
     for part in path_parts:
         if isinstance(current, dict):

@@ -1,7 +1,7 @@
 ![tracker](https://us-central1-vertex-ai-mlops-369716.cloudfunctions.net/pixel-tracking?path=statmike%2Fvertex-ai-mlops%2FApplied+ML%2FAI+Agents%2Fimage-to-graph&file=readme.md)
 <!--- header table --->
 <table>
-<tr>     
+<tr>
   <td style="text-align: center">
     <a href="https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20ML/AI%20Agents/image-to-graph/readme.md">
       <img width="32px" src="https://www.svgrepo.com/download/217753/github.svg" alt="GitHub logo">
@@ -11,20 +11,20 @@
 </tr>
 <tr>
   <td style="text-align: right">
-    <b>Share On: </b> 
-    <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%2520ML/AI%2520Agents/image-to-graph/readme.md"><img src="https://upload.wikimedia.org/wikipedia/commons/8/81/LinkedIn_icon.svg" alt="Linkedin Logo" width="20px"></a> 
-    <a href="https://reddit.com/submit?url=https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%2520ML/AI%2520Agents/image-to-graph/readme.md"><img src="https://redditinc.com/hubfs/Reddit%20Inc/Brand/Reddit_Logo.png" alt="Reddit Logo" width="20px"></a> 
-    <a href="https://bsky.app/intent/compose?text=https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%2520ML/AI%2520Agents/image-to-graph/readme.md"><img src="https://upload.wikimedia.org/wikipedia/commons/7/7a/Bluesky_Logo.svg" alt="BlueSky Logo" width="20px"></a> 
-    <a href="https://twitter.com/intent/tweet?url=https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%2520ML/AI%2520Agents/image-to-graph/readme.md"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5a/X_icon_2.svg" alt="X (Twitter) Logo" width="20px"></a> 
+    <b>Share On: </b>
+    <a href="https://www.linkedin.com/sharing/share-offsite/?url=https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%2520ML/AI%2520Agents/image-to-graph/readme.md"><img src="https://upload.wikimedia.org/wikipedia/commons/8/81/LinkedIn_icon.svg" alt="Linkedin Logo" width="20px"></a>
+    <a href="https://reddit.com/submit?url=https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%2520ML/AI%2520Agents/image-to-graph/readme.md"><img src="https://redditinc.com/hubfs/Reddit%20Inc/Brand/Reddit_Logo.png" alt="Reddit Logo" width="20px"></a>
+    <a href="https://bsky.app/intent/compose?text=https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%2520ML/AI%2520Agents/image-to-graph/readme.md"><img src="https://upload.wikimedia.org/wikipedia/commons/7/7a/Bluesky_Logo.svg" alt="BlueSky Logo" width="20px"></a>
+    <a href="https://twitter.com/intent/tweet?url=https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%2520ML/AI%2520Agents/image-to-graph/readme.md"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5a/X_icon_2.svg" alt="X (Twitter) Logo" width="20px"></a>
   </td>
 </tr>
 <tr>
   <td style="text-align: right">
-    <b>Connect With Author On: </b> 
+    <b>Connect With Author On: </b>
     <a href="https://www.linkedin.com/in/statmike"><img src="https://upload.wikimedia.org/wikipedia/commons/8/81/LinkedIn_icon.svg" alt="Linkedin Logo" width="20px"></a>
-    <a href="https://www.github.com/statmike"><img src="https://www.svgrepo.com/download/217753/github.svg" alt="GitHub Logo" width="20px"></a> 
+    <a href="https://www.github.com/statmike"><img src="https://www.svgrepo.com/download/217753/github.svg" alt="GitHub Logo" width="20px"></a>
     <a href="https://www.youtube.com/@statmike-channel"><img src="https://upload.wikimedia.org/wikipedia/commons/f/fd/YouTube_full-color_icon_%282024%29.svg" alt="YouTube Logo" width="20px"></a>
-    <a href="https://bsky.app/profile/statmike.bsky.social"><img src="https://upload.wikimedia.org/wikipedia/commons/7/7a/Bluesky_Logo.svg" alt="BlueSky Logo" width="20px"></a> 
+    <a href="https://bsky.app/profile/statmike.bsky.social"><img src="https://upload.wikimedia.org/wikipedia/commons/7/7a/Bluesky_Logo.svg" alt="BlueSky Logo" width="20px"></a>
     <a href="https://x.com/statmike"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5a/X_icon_2.svg" alt="X (Twitter) Logo" width="20px"></a>
   </td>
 </tr>
@@ -143,7 +143,7 @@ User provides image path (+ optional schema path)
 ```
 
 ---
-## Prerequisites
+## Getting Started
 
 ### Google Cloud APIs
 
@@ -182,10 +182,9 @@ gcloud config set project YOUR_PROJECT_ID
 - Python 3.13.3 (via [pyenv](https://github.com/pyenv/pyenv) or [uv](https://docs.astral.sh/uv/))
 - A GCP project with billing enabled
 
----
-## Environment Setup
+### Installation
 
-### 1. Clone and Navigate
+Clone the repo and install dependencies:
 
 ```bash
 cd ~/repos  # Or your preferred location
@@ -193,40 +192,23 @@ git clone https://github.com/statmike/vertex-ai-mlops.git
 cd 'vertex-ai-mlops/Applied ML/AI Agents/image-to-graph'
 ```
 
-### 2. Set the Python Version
+Set the Python version:
 
 ```bash
-# Install Python 3.13.3 if not already installed
 pyenv install --skip-existing 3.13.3
 pyenv local 3.13.3
 ```
 
-### 3. Install Dependencies (Choose One Option)
-
-<details>
-<summary>Option 1: Using uv (Recommended)</summary>
-
-[uv](https://docs.astral.sh/uv/getting-started/installation/) is the fastest option and what this project is built with.
+Install with [uv](https://docs.astral.sh/uv/getting-started/installation/) (recommended):
 
 ```bash
-# Option A: Run the setup script
-chmod +x uv_setup.sh
-./uv_setup.sh
-
-# Option B: Manual
 uv sync
 ```
 
-</details>
-
 <details>
-<summary>Option 2: Using Poetry</summary>
+<summary>Alternative: Poetry</summary>
 
 ```bash
-# Install dependencies
-poetry install
-
-# Or if you need to create the environment first
 poetry env use 3.13.3
 poetry install
 ```
@@ -234,25 +216,17 @@ poetry install
 </details>
 
 <details>
-<summary>Option 3: Using pip with venv</summary>
+<summary>Alternative: pip with venv</summary>
 
 ```bash
-# 1. Create a virtual environment
 python -m venv .venv
-
-# 2. Activate the virtual environment
-# On macOS and Linux:
-source .venv/bin/activate
-# On Windows (Command Prompt):
-# .venv\Scripts\activate
-
-# 3. Install the required packages
+source .venv/bin/activate   # On Windows: .venv\Scripts\activate
 pip install google-adk google-genai pydantic pillow python-dotenv
 ```
 
 </details>
 
-### 4. Configure Environment
+### Configuration
 
 Edit the `.env` file with your GCP project details:
 
@@ -287,21 +261,26 @@ BQ_ANALYTICS_GCS_PATH=applied-ml/ai-agents/image-to-graph/bq_plugin
 
 The `.env` file overrides these defaults. The example `.env` above shows preview models (`gemini-3-flash-preview`, `gemini-3.1-pro-preview`) with `global` endpoints — adjust to whichever models are available in your project.
 
----
-## Running The Agent
+### Running the Agent
 
-Start the ADK web interface using your package manager:
+Start the ADK web interface:
 
 ```bash
-# uv:
 uv run adk web --reload
+```
 
-# poetry:
+<details>
+<summary>Alternative: Poetry / pip</summary>
+
+```bash
+# Poetry:
 poetry run adk web --reload
 
 # pip/venv (with .venv activated):
 adk web --reload
 ```
+
+</details>
 
 Then open `http://localhost:8000` in your browser. Two agents appear in the agent dropdown:
 
@@ -697,5 +676,122 @@ Comment out the plugin section at the end of `agent_image_to_graph/agent.py`:
 # from google.adk.apps import App
 # app = App(name="agent_image_to_graph", root_agent=root_agent, plugins=[bq_analytics_plugin])
 ```
+
+---
+## Development
+
+### Project Structure
+
+```
+image-to-graph/
+├── agent_image_to_graph/              # Main agent package
+│   ├── agent.py                       # Agent definition and ADK App
+│   ├── config.py                      # Centralized configuration constants
+│   ├── bq_plugin.py                   # BigQuery analytics plugin
+│   ├── prompts.py                     # Agent instructions
+│   ├── tools/
+│   │   ├── util_common.py             # Shared utilities (JSON fence stripping, error logging)
+│   │   ├── util_bbox.py               # Bounding box normalization
+│   │   ├── util_schema.py             # JSON Schema $ref resolution
+│   │   ├── util_gemini.py             # Gemini API client
+│   │   ├── util_output.py             # Output directory helpers
+│   │   └── function_tool_*.py         # Individual tool implementations
+│   └── tests/
+│       ├── conftest.py                # Shared fixtures
+│       ├── unit/                      # Pure function tests (no I/O)
+│       │   ├── test_util_bbox.py
+│       │   ├── test_util_common.py
+│       │   ├── test_util_schema.py
+│       │   ├── test_validate_helpers.py
+│       │   └── test_config.py
+│       └── tools/                     # Tool tests (mocked ToolContext)
+│           ├── test_load_image.py
+│           ├── test_load_schema.py
+│           ├── test_validate_graph.py
+│           ├── test_update_graph.py
+│           └── test_get_graph.py
+├── agent_graph_qa/                    # Q&A sub-agent package
+│   ├── agent.py
+│   ├── prompts.py
+│   ├── tools/
+│   └── tests/
+│       ├── conftest.py                # Q&A-specific fixtures
+│       └── tools/
+│           └── test_load_results.py
+├── examples/                          # Example diagrams and schemas
+├── pyproject.toml                     # Project config, dev deps, tool settings
+└── Makefile                           # Dev command shortcuts
+```
+
+### Dev Environment Setup
+
+```bash
+uv sync --extra dev
+```
+
+This installs `pytest`, `pytest-asyncio`, `pytest-cov`, and `ruff` alongside the main project dependencies. `make install` is a shortcut for the same command.
+
+### Running Tests
+
+```bash
+uv run pytest                                  # All tests with coverage
+uv run pytest agent_image_to_graph/tests/unit -v   # Unit tests only
+uv run pytest --cov-report=html                # HTML coverage report (htmlcov/index.html)
+```
+
+Makefile shortcuts: `make test`, `make test-unit`, `make test-cov`.
+
+### Linting & Formatting
+
+```bash
+uv run ruff check .       # Lint
+uv run ruff format .      # Auto-format
+uv run ruff check --fix --select I .   # Sort imports
+```
+
+Makefile shortcuts: `make lint`, `make format`.
+
+### Makefile Shortcut Reference
+
+| Target | Command | Purpose |
+|--------|---------|---------|
+| `make install` | `uv sync --extra dev` | Install project with dev dependencies |
+| `make test` | `uv run pytest` | Run all tests with coverage |
+| `make test-unit` | `uv run pytest agent_image_to_graph/tests/unit -v` | Run unit tests only |
+| `make test-cov` | `uv run pytest --cov-report=html` | Tests with HTML coverage report |
+| `make lint` | `uv run ruff check .` | Run linter |
+| `make format` | `uv run ruff format . && uv run ruff check --fix --select I .` | Auto-format and sort imports |
+| `make check` | `make lint && make test` | Lint then test (CI equivalent) |
+
+### Configuration & Security
+
+Input validation is centralized in `agent_image_to_graph/config.py`. All limits are configurable via environment variables:
+
+| Constant | Default | Env Var | Purpose |
+|----------|---------|---------|---------|
+| `MAX_IMAGE_SIZE_BYTES` | 50 MB | `MAX_IMAGE_SIZE_BYTES` | Maximum image file size for `load_image` |
+| `MAX_SCHEMA_SIZE_BYTES` | 10 MB | `MAX_SCHEMA_SIZE_BYTES` | Maximum schema file size for `load_schema` |
+| `PIL_MAX_IMAGE_PIXELS` | 200 MP | `PIL_MAX_IMAGE_PIXELS` | Pillow decompression bomb limit |
+| `ALLOWED_IMAGE_FORMATS` | JPEG, PNG, GIF, BMP, TIFF, WEBP | — | Accepted image formats (whitelist) |
+
+### Conventions
+
+- **One tool per file**, prefixed `function_tool_` (e.g., `function_tool_load_image.py`)
+- **Utils shared across tools** get their own file, prefixed `util_` (e.g., `util_bbox.py`)
+- **Utils used by only one tool** stay inline at the top of that tool file
+- **Tests co-located per agent** — each agent package has its own `tests/` directory with `conftest.py`, so a developer exploring one agent sees everything together
+
+### Extending the Agent
+
+**Add a new tool:**
+1. Create `agent_image_to_graph/tools/function_tool_your_tool.py` with an `async def your_tool(tool_context: tools.ToolContext) -> str:` function
+2. Import `log_tool_error` from `util_common` for consistent error handling
+3. Register it in `agent_image_to_graph/tools/__init__.py` (import + add to `TOOLS` list)
+4. Add tests in `agent_image_to_graph/tests/tools/test_your_tool.py`
+
+**Add a new util:**
+1. If used by 2+ tools, create `agent_image_to_graph/tools/util_your_util.py`
+2. If used by only one tool, define it inline in that tool file
+3. Add unit tests in `agent_image_to_graph/tests/unit/test_util_your_util.py`
 
 ---

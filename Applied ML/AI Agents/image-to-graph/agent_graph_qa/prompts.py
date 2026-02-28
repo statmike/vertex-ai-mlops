@@ -2,8 +2,8 @@ import datetime
 import os
 
 today_date = datetime.date.today().strftime("%A, %B %d, %Y")
-project_id = os.getenv('GOOGLE_CLOUD_PROJECT', '')
-location = os.getenv('GOOGLE_CLOUD_LOCATION', '')
+project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "")
+location = os.getenv("GOOGLE_CLOUD_LOCATION", "")
 
 global_instructions = f"""
 You are an expert Q&A assistant for structured graph data extracted from diagram images.

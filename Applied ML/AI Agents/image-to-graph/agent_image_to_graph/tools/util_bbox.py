@@ -20,10 +20,10 @@ def normalize_bbox(bbox) -> list[int] | None:
     if isinstance(bbox, dict):
         try:
             return [
-                int(bbox['top']),
-                int(bbox['left']),
-                int(bbox['bottom']),
-                int(bbox['right']),
+                int(bbox["top"]),
+                int(bbox["left"]),
+                int(bbox["bottom"]),
+                int(bbox["right"]),
             ]
         except (KeyError, TypeError, ValueError):
             return None

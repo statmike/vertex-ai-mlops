@@ -1,9 +1,14 @@
 import json
+import logging
 import os
-from google.adk import tools
-from google import genai
 
-from .output_utils import get_results_dir
+from google import genai
+from google.adk import tools
+
+from .util_common import log_tool_error
+from .util_output import get_results_dir
+
+logger = logging.getLogger(__name__)
 
 
 async def generate_visualization(tool_context: tools.ToolContext) -> str:
@@ -31,29 +36,29 @@ async def generate_visualization(tool_context: tools.ToolContext) -> str:
         A message confirming the visualization was saved, or an error message.
     """
     try:
-        source_image_b64 = tool_context.state.get('source_image')
+        source_image_b64 = tool_context.state.get("source_image")
         if not source_image_b64:
             return "Error: No source image loaded. Use load_image first."
 
-        graph = tool_context.state.get('graph')
+        graph = tool_context.state.get("graph")
         if graph is None:
             return "Error: No graph state found. Use load_image first."
 
-        nodes = graph.get('nodes', [])
-        edges = graph.get('edges', [])
+        nodes = graph.get("nodes", [])
+        edges = graph.get("edges", [])
         if not nodes:
             return "Error: Graph has no nodes. Build the graph before generating visualization."
 
-        mime_type = tool_context.state.get('source_image_mime_type', 'image/png')
-        dimensions = tool_context.state.get('image_dimensions', {})
-        img_width = dimensions.get('width', 1000)
-        img_height = dimensions.get('height', 1000)
+        mime_type = tool_context.state.get("source_image_mime_type", "image/png")
+        dimensions = tool_context.state.get("image_dimensions", {})
+        img_width = dimensions.get("width", 1000)
+        img_height = dimensions.get("height", 1000)
 
-        schema = tool_context.state.get('input_schema') or tool_context.state.get('schema')
-        description = tool_context.state.get('diagram_description', '')
+        schema = tool_context.state.get("input_schema") or tool_context.state.get("schema")
+        description = tool_context.state.get("diagram_description", "")
 
         # Count nodes that have bounding boxes
-        nodes_with_bbox = sum(1 for n in nodes if n.get('bounding_box'))
+        nodes_with_bbox = sum(1 for n in nodes if n.get("bounding_box"))
 
         html = _build_html(
             image_b64=source_image_b64,
@@ -66,20 +71,20 @@ async def generate_visualization(tool_context: tools.ToolContext) -> str:
         )
 
         html_blob = genai.types.Part.from_bytes(
-            data=html.encode('utf-8'),
-            mime_type='text/html',
+            data=html.encode("utf-8"),
+            mime_type="text/html",
         )
-        await tool_context.save_artifact(filename='visualization.html', artifact=html_blob)
+        await tool_context.save_artifact(filename="visualization.html", artifact=html_blob)
 
         # Write visualization to disk alongside the source image
         results_dir = get_results_dir(tool_context)
         if results_dir:
-            with open(os.path.join(results_dir, 'visualization.html'), 'w') as f:
+            with open(os.path.join(results_dir, "visualization.html"), "w") as f:
                 f.write(html)
 
         # Clear source image from state — it's now embedded in the HTML artifact.
         # This prevents context/state overflow on subsequent agent turns.
-        tool_context.state['source_image'] = None
+        tool_context.state["source_image"] = None
 
         disk_line = f"\n  Files also written to: {results_dir}" if results_dir else ""
 
@@ -94,7 +99,7 @@ async def generate_visualization(tool_context: tools.ToolContext) -> str:
         )
 
     except Exception as e:
-        return f"Error generating visualization: {str(e)}"
+        return log_tool_error("generate_visualization", e)
 
 
 def _build_html(
@@ -104,64 +109,67 @@ def _build_html(
     img_height: int,
     graph: dict,
     schema: dict | None,
-    description: str = '',
+    description: str = "",
 ) -> str:
     """Build the self-contained interactive HTML page."""
 
-    nodes = graph.get('nodes', [])
-    edges = graph.get('edges', [])
-    diagram_type = graph.get('diagram_type', 'unknown')
+    nodes = graph.get("nodes", [])
+    edges = graph.get("edges", [])
+    diagram_type = graph.get("diagram_type", "unknown")
 
     # Build SVG rects for nodes with bounding boxes
     # Render group bounding boxes first (behind regular nodes)
     svg_rects = []
     for node in nodes:
-        if node.get('shape') != 'group_rectangle':
+        if node.get("shape") != "group_rectangle":
             continue
-        bbox = node.get('bounding_box')
+        bbox = node.get("bounding_box")
         if not bbox or len(bbox) != 4:
             continue
-        node_id = node.get('id', '')
-        label = node.get('label', '')
+        node_id = node.get("id", "")
+        label = node.get("label", "")
         y_min, x_min, y_max, x_max = bbox
         svg_rects.append(
             f'<rect class="bbox-group" data-node-id="{_esc(node_id)}" '
             f'x="{x_min}" y="{y_min}" '
             f'width="{x_max - x_min}" height="{y_max - y_min}">'
-            f'<title>{_esc(label)}</title></rect>'
+            f"<title>{_esc(label)}</title></rect>"
         )
     # Then render regular node bounding boxes
     for node in nodes:
-        if node.get('shape') == 'group_rectangle':
+        if node.get("shape") == "group_rectangle":
             continue
-        bbox = node.get('bounding_box')
+        bbox = node.get("bounding_box")
         if not bbox or len(bbox) != 4:
             continue
-        node_id = node.get('id', '')
-        label = node.get('label', '')
+        node_id = node.get("id", "")
+        label = node.get("label", "")
         y_min, x_min, y_max, x_max = bbox
         svg_rects.append(
             f'<rect class="bbox" data-node-id="{_esc(node_id)}" '
             f'x="{x_min}" y="{y_min}" '
             f'width="{x_max - x_min}" height="{y_max - y_min}">'
-            f'<title>{_esc(label)}</title></rect>'
+            f"<title>{_esc(label)}</title></rect>"
         )
 
     # Build node list HTML
     node_items = []
     for node in nodes:
-        node_id = node.get('id', '')
-        label = node.get('label', '')
-        etype = node.get('element_type', '')
-        shape = node.get('shape', '')
-        has_bbox = bool(node.get('bounding_box'))
+        node_id = node.get("id", "")
+        label = node.get("label", "")
+        etype = node.get("element_type", "")
+        shape = node.get("shape", "")
+        has_bbox = bool(node.get("bounding_box"))
 
-        conf = node.get('confidence', 'high')
-        attrs = {k: v for k, v in node.items()
-                 if k not in ('id', 'label', 'element_type', 'shape', 'bounding_box', 'confidence')}
-        attr_html = ''
+        conf = node.get("confidence", "high")
+        attrs = {
+            k: v
+            for k, v in node.items()
+            if k not in ("id", "label", "element_type", "shape", "bounding_box", "confidence")
+        }
+        attr_html = ""
         if attrs:
-            pills = ''.join(
+            pills = "".join(
                 f'<span class="attr-pill">{_esc(str(k))}: {_esc(str(v))}</span>'
                 for k, v in attrs.items()
             )
@@ -169,48 +177,52 @@ def _build_html(
 
         bbox_indicator = (
             f'<span class="confidence-dot confidence-{_esc(conf)}" title="Confidence: {_esc(conf)}"></span>'
-            if has_bbox else ''
+            if has_bbox
+            else ""
         )
-        etype_html = f'<span class="meta-tag">{_esc(etype)}</span>' if etype else ''
-        shape_html = f'<span class="meta-tag">{_esc(shape)}</span>' if shape else ''
+        etype_html = f'<span class="meta-tag">{_esc(etype)}</span>' if etype else ""
+        shape_html = f'<span class="meta-tag">{_esc(shape)}</span>' if shape else ""
 
         node_items.append(
             f'<div class="graph-node" data-node-id="{_esc(node_id)}">'
             f'  <div class="node-header">'
-            f'    {bbox_indicator}'
+            f"    {bbox_indicator}"
             f'    <span class="node-id">{_esc(node_id)}</span>'
             f'    <span class="node-label">{_esc(label)}</span>'
-            f'  </div>'
+            f"  </div>"
             f'  <div class="node-meta">'
-            f'    {etype_html}'
-            f'    {shape_html}'
-            f'  </div>'
-            f'  {attr_html}'
-            f'</div>'
+            f"    {etype_html}"
+            f"    {shape_html}"
+            f"  </div>"
+            f"  {attr_html}"
+            f"</div>"
         )
 
     # Build edge list HTML
     edge_items = []
     for edge in edges:
-        edge_id = edge.get('id', '')
-        source = edge.get('source', '')
-        target = edge.get('target', '')
-        label = edge.get('label', '')
-        edge_conf = edge.get('confidence', 'high')
+        edge_id = edge.get("id", "")
+        source = edge.get("source", "")
+        target = edge.get("target", "")
+        label = edge.get("label", "")
+        edge_conf = edge.get("confidence", "high")
 
-        attrs = {k: v for k, v in edge.items()
-                 if k not in ('id', 'source', 'target', 'label', 'confidence')}
-        attr_html = ''
+        attrs = {
+            k: v
+            for k, v in edge.items()
+            if k not in ("id", "source", "target", "label", "confidence")
+        }
+        attr_html = ""
         if attrs:
-            pills = ''.join(
+            pills = "".join(
                 f'<span class="attr-pill">{_esc(str(k))}: {_esc(str(v))}</span>'
                 for k, v in attrs.items()
             )
             attr_html = f'<div class="attrs">{pills}</div>'
 
-        label_html = f' <span class="edge-label">"{_esc(label)}"</span>' if label else ''
+        label_html = f' <span class="edge-label">"{_esc(label)}"</span>' if label else ""
         conf_tag = f' <span class="confidence-dot confidence-{_esc(edge_conf)}" title="Confidence: {_esc(edge_conf)}"></span>'
-        low_conf_class = ' low-confidence' if edge_conf == 'low' else ''
+        low_conf_class = " low-confidence" if edge_conf == "low" else ""
 
         edge_items.append(
             f'<div class="graph-edge{low_conf_class}" data-edge-id="{_esc(edge_id)}" '
@@ -218,27 +230,27 @@ def _build_html(
             f'  <div class="edge-header">'
             f'    <span class="edge-id">{_esc(edge_id)}</span>'
             f'    <span class="edge-arrow">{_esc(source)} &rarr; {_esc(target)}</span>'
-            f'    {label_html}'
-            f'    {conf_tag}'
-            f'  </div>'
-            f'  {attr_html}'
-            f'</div>'
+            f"    {label_html}"
+            f"    {conf_tag}"
+            f"  </div>"
+            f"  {attr_html}"
+            f"</div>"
         )
 
     # Description section (first on the right panel)
-    description_html = ''
+    description_html = ""
     if description:
-        desc_paragraphs = description.split('\n\n')
-        desc_body = ''.join(f'<p>{_esc(p.strip())}</p>' for p in desc_paragraphs if p.strip())
+        desc_paragraphs = description.split("\n\n")
+        desc_body = "".join(f"<p>{_esc(p.strip())}</p>" for p in desc_paragraphs if p.strip())
         description_html = (
             f'<div class="description-section">'
-            f'  <h3>Generated Description</h3>'
+            f"  <h3>Generated Description</h3>"
             f'  <div class="description-content">{desc_body}</div>'
-            f'</div>'
+            f"</div>"
         )
 
     # Schema section (rendered for left panel, split into node/edge blocks)
-    schema_html = _build_schema_html(schema) if schema else ''
+    schema_html = _build_schema_html(schema) if schema else ""
 
     # Graph JSON section (left panel, searchable)
     graph_json_html = _build_graph_json_html(graph)
@@ -247,12 +259,12 @@ def _build_html(
     mermaid_def = _build_mermaid_definition(graph)
     recreation_html = (
         f'<div class="recreation-section">'
-        f'<h3>Recreated Graph</h3>'
+        f"<h3>Recreated Graph</h3>"
         f'<pre class="mermaid">\n{mermaid_def}\n</pre>'
-        f'</div>'
+        f"</div>"
     )
 
-    return f'''<!DOCTYPE html>
+    return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -502,7 +514,7 @@ mark.search-hit.current {{ background: #f59e0b; }}
             <div class="image-wrapper">
                 <img src="data:{mime_type};base64,{image_b64}" alt="Source diagram" />
                 <svg viewBox="0 0 1000 1000" preserveAspectRatio="none">
-                    {''.join(svg_rects)}
+                    {"".join(svg_rects)}
                 </svg>
             </div>
         </div>
@@ -517,11 +529,11 @@ mark.search-hit.current {{ background: #f59e0b; }}
         {description_html}
 
         <h3>Nodes ({len(nodes)})</h3>
-        {''.join(node_items)}
+        {"".join(node_items)}
 
         <h3>Edges ({len(edges)})</h3>
-        {f'<p class="no-bbox-note">Hover or click an edge to highlight its source and target nodes.</p>' if edges else ''}
-        {''.join(edge_items)}
+        {'<p class="no-bbox-note">Hover or click an edge to highlight its source and target nodes.</p>' if edges else ""}
+        {"".join(edge_items)}
     </div>
 </div>
 
@@ -729,7 +741,7 @@ mark.search-hit.current {{ background: #f59e0b; }}
   mermaid.initialize({{ startOnLoad: true, theme: 'default', flowchart: {{ curve: 'basis' }} }});
 </script>
 </body>
-</html>'''
+</html>"""
 
 
 def _build_schema_html(schema: dict) -> str:
@@ -741,35 +753,33 @@ def _build_schema_html(schema: dict) -> str:
     if node_def:
         parts.append(
             f'<div class="schema-block" data-schema-section="node">'
-            f'<h4>Node Definition</h4>'
+            f"<h4>Node Definition</h4>"
             f'<pre class="schema-pre">{_esc(json.dumps(node_def, indent=2))}</pre>'
-            f'</div>'
+            f"</div>"
         )
 
     if edge_def:
         parts.append(
             f'<div class="schema-block" data-schema-section="edge">'
-            f'<h4>Edge Definition</h4>'
+            f"<h4>Edge Definition</h4>"
             f'<pre class="schema-pre">{_esc(json.dumps(edge_def, indent=2))}</pre>'
-            f'</div>'
+            f"</div>"
         )
 
     if not node_def and not edge_def:
         # Couldn't extract sections — show full schema as a single block
-        parts.append(
-            f'<pre class="schema-pre">{_esc(json.dumps(schema, indent=2))}</pre>'
-        )
+        parts.append(f'<pre class="schema-pre">{_esc(json.dumps(schema, indent=2))}</pre>')
     else:
         # Full schema in a collapsible section
         parts.append(
             f'<details class="schema-details">'
-            f'<summary>Full Schema</summary>'
+            f"<summary>Full Schema</summary>"
             f'<pre class="schema-pre">{_esc(json.dumps(schema, indent=2))}</pre>'
-            f'</details>'
+            f"</details>"
         )
 
-    parts.append('</details>')
-    return '\n'.join(parts)
+    parts.append("</details>")
+    return "\n".join(parts)
 
 
 def _extract_schema_sections(schema: dict) -> tuple[dict | None, dict | None]:
@@ -777,19 +787,19 @@ def _extract_schema_sections(schema: dict) -> tuple[dict | None, dict | None]:
     node_def = None
     edge_def = None
 
-    props = schema.get('properties', {})
+    props = schema.get("properties", {})
 
     # Get node items — may be a $ref or inline
-    node_items = props.get('nodes', {}).get('items', {})
-    if '$ref' in node_items:
-        node_def = _resolve_ref(schema, node_items['$ref'])
+    node_items = props.get("nodes", {}).get("items", {})
+    if "$ref" in node_items:
+        node_def = _resolve_ref(schema, node_items["$ref"])
     elif node_items:
         node_def = node_items
 
     # Get edge items — may be a $ref or inline
-    edge_items = props.get('edges', {}).get('items', {})
-    if '$ref' in edge_items:
-        edge_def = _resolve_ref(schema, edge_items['$ref'])
+    edge_items = props.get("edges", {}).get("items", {})
+    if "$ref" in edge_items:
+        edge_def = _resolve_ref(schema, edge_items["$ref"])
     elif edge_items:
         edge_def = edge_items
 
@@ -798,9 +808,9 @@ def _extract_schema_sections(schema: dict) -> tuple[dict | None, dict | None]:
 
 def _resolve_ref(schema: dict, ref: str) -> dict | None:
     """Resolve a JSON Schema $ref (e.g., '#/$defs/FlowchartNode') within the same document."""
-    if not ref or not ref.startswith('#/'):
+    if not ref or not ref.startswith("#/"):
         return None
-    parts = ref[2:].split('/')
+    parts = ref[2:].split("/")
     current = schema
     for part in parts:
         if isinstance(current, dict):
@@ -818,22 +828,22 @@ def _build_graph_json_html(graph: dict) -> str:
 
     return (
         '<details class="graph-json-section">'
-        '<summary><h3>Graph Data</h3></summary>'
+        "<summary><h3>Graph Data</h3></summary>"
         '<div class="graph-json-search">'
         '<input type="text" id="graphJsonSearch" placeholder="Search graph data..." />'
         '<span id="graphJsonMatchCount"></span>'
-        '</div>'
+        "</div>"
         f'<pre class="graph-json-pre" id="graphJsonPre">{escaped_json}</pre>'
-        '</details>'
+        "</details>"
     )
 
 
 def _build_mermaid_definition(graph: dict) -> str:
     """Build a Mermaid flowchart definition string from the graph dict."""
-    nodes = graph.get('nodes', [])
-    edges = graph.get('edges', [])
+    nodes = graph.get("nodes", [])
+    edges = graph.get("edges", [])
 
-    lines = ['flowchart TD']
+    lines = ["flowchart TD"]
 
     def _sanitize_label(label: str) -> str:
         """Wrap label in double quotes, replacing internal double quotes."""
@@ -843,32 +853,32 @@ def _build_mermaid_definition(graph: dict) -> str:
     def _node_syntax(node_id: str, label: str, shape: str) -> str:
         sanitized = _sanitize_label(label)
         match shape:
-            case 'rectangle':
-                return f'{node_id}[{sanitized}]'
-            case 'cylinder':
-                return f'{node_id}[({sanitized})]'
-            case 'diamond':
-                return f'{node_id}{{{sanitized}}}'
-            case 'circle':
-                return f'{node_id}(({sanitized}))'
-            case 'oval' | 'stadium':
-                return f'{node_id}([{sanitized}])'
-            case 'hexagon':
-                return f'{node_id}{{{{{sanitized}}}}}'
-            case 'circle_with_x':
-                return f'{node_id}(({sanitized}))'
+            case "rectangle":
+                return f"{node_id}[{sanitized}]"
+            case "cylinder":
+                return f"{node_id}[({sanitized})]"
+            case "diamond":
+                return f"{node_id}{{{sanitized}}}"
+            case "circle":
+                return f"{node_id}(({sanitized}))"
+            case "oval" | "stadium":
+                return f"{node_id}([{sanitized}])"
+            case "hexagon":
+                return f"{node_id}{{{{{sanitized}}}}}"
+            case "circle_with_x":
+                return f"{node_id}(({sanitized}))"
             case _:
-                return f'{node_id}[{sanitized}]'
+                return f"{node_id}[{sanitized}]"
 
     # Separate group nodes from regular nodes
-    group_nodes = {n['id']: n for n in nodes if n.get('shape') == 'group_rectangle'}
-    regular_nodes = [n for n in nodes if n.get('shape') != 'group_rectangle']
+    group_nodes = {n["id"]: n for n in nodes if n.get("shape") == "group_rectangle"}
+    regular_nodes = [n for n in nodes if n.get("shape") != "group_rectangle"]
 
     # Build parent_id -> children mapping
     children_by_parent: dict[str, list[dict]] = {}
     top_level_nodes: list[dict] = []
     for node in regular_nodes:
-        parent = node.get('parent_id')
+        parent = node.get("parent_id")
         if parent and parent in group_nodes:
             children_by_parent.setdefault(parent, []).append(node)
         else:
@@ -876,51 +886,51 @@ def _build_mermaid_definition(graph: dict) -> str:
 
     # Emit subgraphs
     for group_id, group_node in group_nodes.items():
-        label = group_node.get('label', group_id)
-        lines.append(f'    subgraph {group_id} [{_sanitize_label(label)}]')
+        label = group_node.get("label", group_id)
+        lines.append(f"    subgraph {group_id} [{_sanitize_label(label)}]")
         for child in children_by_parent.get(group_id, []):
-            child_id = child.get('id', '')
-            child_label = child.get('label', child_id)
-            child_shape = child.get('shape', 'rectangle')
-            lines.append(f'        {_node_syntax(child_id, child_label, child_shape)}')
-        lines.append('    end')
+            child_id = child.get("id", "")
+            child_label = child.get("label", child_id)
+            child_shape = child.get("shape", "rectangle")
+            lines.append(f"        {_node_syntax(child_id, child_label, child_shape)}")
+        lines.append("    end")
 
     # Emit top-level nodes
     for node in top_level_nodes:
-        node_id = node.get('id', '')
-        label = node.get('label', node_id)
-        shape = node.get('shape', 'rectangle')
-        lines.append(f'    {_node_syntax(node_id, label, shape)}')
+        node_id = node.get("id", "")
+        label = node.get("label", node_id)
+        shape = node.get("shape", "rectangle")
+        lines.append(f"    {_node_syntax(node_id, label, shape)}")
 
     # Emit edges
     for edge in edges:
-        source = edge.get('source', '')
-        target = edge.get('target', '')
-        label = edge.get('label', '')
-        edge_type = edge.get('edge_type', 'flow')
+        source = edge.get("source", "")
+        target = edge.get("target", "")
+        label = edge.get("label", "")
+        edge_type = edge.get("edge_type", "flow")
 
         # Arrow style
-        if edge_type and ('feedback' in edge_type or 'dashed' in edge_type):
-            arrow = '-.->'
+        if edge_type and ("feedback" in edge_type or "dashed" in edge_type):
+            arrow = "-.->"
         else:
-            arrow = '-->'
+            arrow = "-->"
 
         # Label on edge
         if label:
             sanitized_label = _sanitize_label(label)
-            lines.append(f'    {source} {arrow}|{sanitized_label}| {target}')
+            lines.append(f"    {source} {arrow}|{sanitized_label}| {target}")
         else:
-            lines.append(f'    {source} {arrow} {target}')
+            lines.append(f"    {source} {arrow} {target}")
 
-    return '\n'.join(lines)
+    return "\n".join(lines)
 
 
 def _esc(text: str) -> str:
     """Escape HTML special characters."""
     return (
-        text.replace('&', '&amp;')
-        .replace('<', '&lt;')
-        .replace('>', '&gt;')
-        .replace('"', '&quot;')
-        .replace("'", '&#x27;')
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+        .replace("'", "&#x27;")
     )

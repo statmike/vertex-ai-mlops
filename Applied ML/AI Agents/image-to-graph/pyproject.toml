@@ -11,3 +11,32 @@ dependencies = [
     "pillow>=11.2.1",
     "python-dotenv>=1.0.0",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.8.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["examples", "*.ipynb"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501", "B008", "ARG001"]
+
+[tool.pytest.ini_options]
+testpaths = ["agent_image_to_graph/tests", "agent_graph_qa/tests"]
+asyncio_mode = "auto"
+addopts = "--cov=agent_image_to_graph --cov=agent_graph_qa --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["agent_image_to_graph", "agent_graph_qa"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true

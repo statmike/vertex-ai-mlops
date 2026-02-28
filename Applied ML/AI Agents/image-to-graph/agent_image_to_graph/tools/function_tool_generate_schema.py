@@ -1,7 +1,12 @@
-import json
+import logging
+from typing import Any
+
 from google.adk import tools
-from pydantic import BaseModel, Field, create_model
-from typing import Any, Optional
+from pydantic import Field, create_model
+
+from .util_common import log_tool_error
+
+logger = logging.getLogger(__name__)
 
 
 async def generate_schema(tool_context: tools.ToolContext) -> str:
@@ -21,7 +26,7 @@ async def generate_schema(tool_context: tools.ToolContext) -> str:
     """
     try:
         # If an input schema was provided, use it instead of generating
-        input_schema = tool_context.state.get('input_schema')
+        input_schema = tool_context.state.get("input_schema")
         if input_schema:
             return (
                 f"An input schema is already loaded (title: '{input_schema.get('title', 'N/A')}').\n"
@@ -31,12 +36,12 @@ async def generate_schema(tool_context: tools.ToolContext) -> str:
                 f"clear the input schema first by calling load_image again."
             )
 
-        graph = tool_context.state.get('graph')
+        graph = tool_context.state.get("graph")
         if graph is None:
             return "Error: No graph state found. Use load_image first."
 
-        nodes = graph.get('nodes', [])
-        edges = graph.get('edges', [])
+        nodes = graph.get("nodes", [])
+        edges = graph.get("edges", [])
 
         if not nodes and not edges:
             return "Error: Graph is empty. Add nodes and edges before generating a schema."
@@ -59,48 +64,60 @@ async def generate_schema(tool_context: tools.ToolContext) -> str:
 
         def _infer_python_type(type_names: set[str]) -> Any:
             """Map observed Python type names to annotation types."""
-            if type_names == {'str'}:
+            if type_names == {"str"}:
                 return str
-            elif type_names == {'int'}:
+            elif type_names == {"int"}:
                 return int
-            elif type_names == {'float'}:
+            elif type_names == {"float"}:
                 return float
-            elif type_names == {'bool'}:
+            elif type_names == {"bool"}:
                 return bool
-            elif type_names <= {'int', 'float'}:
+            elif type_names <= {"int", "float"}:
                 return float
-            elif type_names == {'dict'}:
+            elif type_names == {"dict"}:
                 return dict[str, Any]
-            elif type_names == {'list'}:
+            elif type_names == {"list"}:
                 return list[Any]
-            elif type_names == {'NoneType'}:
-                return Optional[str]
+            elif type_names == {"NoneType"}:
+                return str | None
             else:
                 return Any
 
         # Build node field definitions for Pydantic
-        required_node_fields = {'id', 'label'}
+        required_node_fields = {"id", "label"}
         node_model_fields = {}
         for field_name, type_names in node_fields.items():
             python_type = _infer_python_type(type_names)
             if field_name in required_node_fields:
-                node_model_fields[field_name] = (python_type, Field(..., description=f"Node {field_name}"))
+                node_model_fields[field_name] = (
+                    python_type,
+                    Field(..., description=f"Node {field_name}"),
+                )
             else:
-                node_model_fields[field_name] = (Optional[python_type], Field(None, description=f"Node {field_name}"))
+                node_model_fields[field_name] = (
+                    python_type | None,
+                    Field(None, description=f"Node {field_name}"),
+                )
 
         # Build edge field definitions for Pydantic
-        required_edge_fields = {'id', 'source', 'target'}
+        required_edge_fields = {"id", "source", "target"}
         edge_model_fields = {}
         for field_name, type_names in edge_fields.items():
             python_type = _infer_python_type(type_names)
             if field_name in required_edge_fields:
-                edge_model_fields[field_name] = (python_type, Field(..., description=f"Edge {field_name}"))
+                edge_model_fields[field_name] = (
+                    python_type,
+                    Field(..., description=f"Edge {field_name}"),
+                )
             else:
-                edge_model_fields[field_name] = (Optional[python_type], Field(None, description=f"Edge {field_name}"))
+                edge_model_fields[field_name] = (
+                    python_type | None,
+                    Field(None, description=f"Edge {field_name}"),
+                )
 
         # Create dynamic Pydantic models
-        NodeModel = create_model('GraphNode', **node_model_fields)
-        EdgeModel = create_model('GraphEdge', **edge_model_fields)
+        NodeModel = create_model("GraphNode", **node_model_fields)
+        EdgeModel = create_model("GraphEdge", **edge_model_fields)
 
         # Build the full graph schema
         graph_schema = {
@@ -129,7 +146,7 @@ async def generate_schema(tool_context: tools.ToolContext) -> str:
         }
 
         # Store in state
-        tool_context.state['schema'] = graph_schema
+        tool_context.state["schema"] = graph_schema
 
         return (
             f"Schema generated successfully.\n"
@@ -142,4 +159,4 @@ async def generate_schema(tool_context: tools.ToolContext) -> str:
         )
 
     except Exception as e:
-        return f"Error generating schema: {str(e)}"
+        return log_tool_error("generate_schema", e)

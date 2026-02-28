@@ -1,8 +1,14 @@
 import base64
 import json
+import logging
+
 from google.adk import tools
 from google.genai import types
-from .gemini_utils import generate_content
+
+from .util_common import log_tool_error, strip_json_markdown_fence
+from .util_gemini import generate_content
+
+logger = logging.getLogger(__name__)
 
 
 async def trace_connections(tool_context: tools.ToolContext) -> str:
@@ -23,37 +29,37 @@ async def trace_connections(tool_context: tools.ToolContext) -> str:
     Returns:
         A summary of discovered edges with confidence levels, or an error message.
     """
-    response_text = ''
+    response_text = ""
     try:
-        source_image_b64 = tool_context.state.get('source_image')
+        source_image_b64 = tool_context.state.get("source_image")
         if not source_image_b64:
             return "Error: No source image loaded. Use load_image first."
 
-        graph = tool_context.state.get('graph')
+        graph = tool_context.state.get("graph")
         if graph is None:
             return "Error: No graph state found. Use load_image first."
 
-        nodes = graph.get('nodes', [])
+        nodes = graph.get("nodes", [])
         if not nodes:
             return "Error: No nodes in graph. Examine regions and add nodes before tracing connections."
 
-        mime_type = tool_context.state.get('source_image_mime_type', 'image/png')
-        diagram_type = graph.get('diagram_type', 'unknown')
+        mime_type = tool_context.state.get("source_image_mime_type", "image/png")
+        diagram_type = graph.get("diagram_type", "unknown")
 
         # Build node context string
         node_context_lines = []
         for node in nodes:
-            node_id = node.get('id', '?')
-            label = node.get('label', '?')
-            bbox = node.get('bounding_box', [])
+            node_id = node.get("id", "?")
+            label = node.get("label", "?")
+            bbox = node.get("bounding_box", [])
             bbox_str = f" at [{', '.join(str(v) for v in bbox)}]" if bbox else ""
-            etype = node.get('element_type', '')
+            etype = node.get("element_type", "")
             etype_str = f" ({etype})" if etype else ""
-            parent_id = node.get('parent_id', '')
+            parent_id = node.get("parent_id", "")
             parent_str = f" [parent: {parent_id}]" if parent_id else ""
-            node_context_lines.append(f"  - {node_id}: \"{label}\"{etype_str}{bbox_str}{parent_str}")
+            node_context_lines.append(f'  - {node_id}: "{label}"{etype_str}{bbox_str}{parent_str}')
 
-        node_context = '\n'.join(node_context_lines)
+        node_context = "\n".join(node_context_lines)
 
         image_bytes = base64.b64decode(source_image_b64)
 
@@ -101,14 +107,10 @@ Return ONLY the JSON object, no other text."""
             ],
         )
 
-        response_text = response.text.strip()
-        if response_text.startswith('```'):
-            lines = response_text.split('\n')
-            lines = lines[1:-1] if lines[-1].strip() == '```' else lines[1:]
-            response_text = '\n'.join(lines)
+        response_text = strip_json_markdown_fence(response.text)
 
         result_data = json.loads(response_text)
-        edges = result_data.get('edges', [])
+        edges = result_data.get("edges", [])
 
         if not edges:
             return "No connections found between nodes."
@@ -116,27 +118,27 @@ Return ONLY the JSON object, no other text."""
         # Build summary
         edge_lines = []
         for edge in edges:
-            eid = edge.get('id', '?')
-            source = edge.get('source', '?')
-            target = edge.get('target', '?')
-            label = edge.get('label', '')
-            etype = edge.get('edge_type', 'flow')
-            conf = edge.get('confidence', 'high')
-            label_str = f' "{label}"' if label else ''
+            eid = edge.get("id", "?")
+            source = edge.get("source", "?")
+            target = edge.get("target", "?")
+            label = edge.get("label", "")
+            etype = edge.get("edge_type", "flow")
+            conf = edge.get("confidence", "high")
+            label_str = f' "{label}"' if label else ""
             edge_lines.append(
                 f"  - {eid}: {source} -> {target}{label_str} ({etype}) confidence={conf}"
             )
 
         result = (
             f"Traced {len(edges)} connections across full image.\n"
-            f"Edges:\n" + '\n'.join(edge_lines) + "\n"
-            f"\nAdd these edges to the graph via update_graph. Review and adjust as needed."
+            f"Edges:\n" + "\n".join(edge_lines) + "\n"
+            "\nAdd these edges to the graph via update_graph. Review and adjust as needed."
         )
 
         return result
 
     except json.JSONDecodeError as e:
-        raw = response_text[:500] if response_text else '(no response)'
+        raw = response_text[:500] if response_text else "(no response)"
         return f"Error parsing trace_connections response as JSON: {str(e)}\nRaw response: {raw}"
     except Exception as e:
-        return f"Error in trace_connections: {str(e)}"
+        return log_tool_error("trace_connections", e)

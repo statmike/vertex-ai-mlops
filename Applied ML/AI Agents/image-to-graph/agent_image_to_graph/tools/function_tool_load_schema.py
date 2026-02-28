@@ -1,7 +1,14 @@
 import json
+import logging
 import os
+
 from google.adk import tools
-from .schema_utils import resolve_items
+
+from ..config import MAX_SCHEMA_SIZE_BYTES
+from .util_common import log_tool_error
+from .util_schema import resolve_items
+
+logger = logging.getLogger(__name__)
 
 
 async def load_schema(file_path: str, tool_context: tools.ToolContext) -> str:
@@ -29,7 +36,17 @@ async def load_schema(file_path: str, tool_context: tools.ToolContext) -> str:
         if not os.path.exists(expanded_path):
             return f"Error: File not found at '{file_path}'."
 
-        with open(expanded_path, 'r') as f:
+        # Check file size before reading
+        file_size = os.path.getsize(expanded_path)
+        if file_size > MAX_SCHEMA_SIZE_BYTES:
+            size_mb = file_size / (1024 * 1024)
+            limit_mb = MAX_SCHEMA_SIZE_BYTES / (1024 * 1024)
+            return (
+                f"Error: Schema file is too large ({size_mb:.1f} MB). "
+                f"Maximum allowed size is {limit_mb:.0f} MB."
+            )
+
+        with open(expanded_path) as f:
             schema = json.load(f)
 
         # Basic validation — check it looks like a JSON Schema
@@ -37,9 +54,9 @@ async def load_schema(file_path: str, tool_context: tools.ToolContext) -> str:
             return "Error: Schema file must contain a JSON object."
 
         # Store as the input schema
-        tool_context.state['input_schema'] = schema
+        tool_context.state["input_schema"] = schema
         # Also set as the active schema (used by validate and export)
-        tool_context.state['schema'] = schema
+        tool_context.state["schema"] = schema
 
         # Extract useful info for the agent (resolving $ref if needed)
         summary_lines = [
@@ -49,18 +66,18 @@ async def load_schema(file_path: str, tool_context: tools.ToolContext) -> str:
         ]
 
         # Parse node schema (resolves $ref for Pydantic schemas)
-        node_items = resolve_items(schema, 'nodes')
+        node_items = resolve_items(schema, "nodes")
         if node_items:
-            node_props = node_items.get('properties', {})
-            node_required = node_items.get('required', [])
+            node_props = node_items.get("properties", {})
+            node_required = node_items.get("required", [])
             summary_lines.append(f"\n  Node fields: {list(node_props.keys())}")
             summary_lines.append(f"  Node required: {node_required}")
 
         # Parse edge schema (resolves $ref for Pydantic schemas)
-        edge_items = resolve_items(schema, 'edges')
+        edge_items = resolve_items(schema, "edges")
         if edge_items:
-            edge_props = edge_items.get('properties', {})
-            edge_required = edge_items.get('required', [])
+            edge_props = edge_items.get("properties", {})
+            edge_required = edge_items.get("required", [])
             summary_lines.append(f"\n  Edge fields: {list(edge_props.keys())}")
             summary_lines.append(f"  Edge required: {edge_required}")
 
@@ -69,9 +86,9 @@ async def load_schema(file_path: str, tool_context: tools.ToolContext) -> str:
             "Use validate_graph to check conformance at any time."
         )
 
-        return '\n'.join(summary_lines)
+        return "\n".join(summary_lines)
 
     except json.JSONDecodeError as e:
-        return f"Error: Invalid JSON in schema file: {str(e)}"
+        return f"Error: Invalid JSON in schema file: {e}"
     except Exception as e:
-        return f"Error loading schema: {str(e)}"
+        return log_tool_error("load_schema", e)

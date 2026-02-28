@@ -1,13 +1,12 @@
 import asyncio
 import logging
 import os
+
 from google import genai
-from google.genai import types
+
+from ..config import TOOL_MODEL, TOOL_MODEL_LOCATION
 
 logger = logging.getLogger(__name__)
-
-TOOL_MODEL = os.getenv('TOOL_MODEL', 'gemini-2.5-flash')
-TOOL_MODEL_LOCATION = os.getenv('TOOL_MODEL_LOCATION', '')
 
 # Retry configuration
 MAX_RETRIES = 10
@@ -19,9 +18,15 @@ MAX_BACKOFF = 120.0  # seconds
 def _get_client() -> genai.Client:
     """Create a genai Client, using TOOL_MODEL_LOCATION if set."""
     if TOOL_MODEL_LOCATION:
+        project = os.getenv("GOOGLE_CLOUD_PROJECT")
+        if not project:
+            raise RuntimeError(
+                "GOOGLE_CLOUD_PROJECT environment variable is not set. "
+                "It is required when TOOL_MODEL_LOCATION is configured."
+            )
         return genai.Client(
             vertexai=True,
-            project=os.getenv('GOOGLE_CLOUD_PROJECT'),
+            project=project,
             location=TOOL_MODEL_LOCATION,
         )
     return genai.Client()
@@ -61,7 +66,7 @@ async def generate_content(
 
         except Exception as e:
             error_str = str(e)
-            is_429 = '429' in error_str or 'RESOURCE_EXHAUSTED' in error_str
+            is_429 = "429" in error_str or "RESOURCE_EXHAUSTED" in error_str
 
             if is_429 and attempt < MAX_RETRIES:
                 logger.warning(

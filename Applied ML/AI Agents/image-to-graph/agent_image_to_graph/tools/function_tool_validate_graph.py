@@ -1,7 +1,12 @@
-import json
+import logging
 import math
+
 from google.adk import tools
-from .schema_utils import resolve_items
+
+from .util_common import log_tool_error
+from .util_schema import resolve_items
+
+logger = logging.getLogger(__name__)
 
 
 async def validate_graph(tool_context: tools.ToolContext) -> str:
@@ -22,18 +27,18 @@ async def validate_graph(tool_context: tools.ToolContext) -> str:
         the graph is valid.
     """
     try:
-        graph = tool_context.state.get('graph')
+        graph = tool_context.state.get("graph")
         if graph is None:
             return "Error: No graph state found. Use load_image first."
 
-        nodes = graph.get('nodes', [])
-        edges = graph.get('edges', [])
+        nodes = graph.get("nodes", [])
+        edges = graph.get("edges", [])
 
         errors = []
         warnings = []
 
         # 1. Check diagram type is set
-        if not graph.get('diagram_type'):
+        if not graph.get("diagram_type"):
             warnings.append("Diagram type is not set.")
 
         # 2. Check for empty graph
@@ -44,26 +49,26 @@ async def validate_graph(tool_context: tools.ToolContext) -> str:
         # 3. Validate nodes — structural
         node_ids = set()
         for i, node in enumerate(nodes):
-            node_id = node.get('id')
+            node_id = node.get("id")
             if not node_id:
                 errors.append(f"Node at index {i} is missing required field 'id'.")
                 continue
-            if not node.get('label'):
+            if not node.get("label"):
                 errors.append(f"Node '{node_id}' is missing required field 'label'.")
             if node_id in node_ids:
                 errors.append(f"Duplicate node id: '{node_id}'.")
             node_ids.add(node_id)
 
         # 4. Detect and fix bounding box coordinate swaps (x/y confusion)
-        image_dimensions = tool_context.state.get('image_dimensions', {})
+        image_dimensions = tool_context.state.get("image_dimensions", {})
         swap_needed = _detect_bbox_swap(nodes, image_dimensions)
         if swap_needed:
             swap_count = 0
             for node in nodes:
-                bbox = node.get('bounding_box')
+                bbox = node.get("bounding_box")
                 if bbox and len(bbox) == 4:
                     # Swap [x_min, y_min, x_max, y_max] → [y_min, x_min, y_max, x_max]
-                    node['bounding_box'] = [bbox[1], bbox[0], bbox[3], bbox[2]]
+                    node["bounding_box"] = [bbox[1], bbox[0], bbox[3], bbox[2]]
                     swap_count += 1
             warnings.append(
                 f"Bounding box coordinate swap detected and corrected on {swap_count} nodes "
@@ -71,18 +76,20 @@ async def validate_graph(tool_context: tools.ToolContext) -> str:
                 f"Swapped x/y coordinates to match [y_min, x_min, y_max, x_max] convention."
             )
             # Update graph state with corrected bboxes
-            tool_context.state['graph'] = graph
+            tool_context.state["graph"] = graph
 
         # 5. Validate parent_id references (grouping) and auto-fix group bounding boxes
-        node_by_id = {n.get('id'): n for n in nodes if n.get('id')}
-        group_node_ids = {n.get('id') for n in nodes if n.get('shape') == 'group_rectangle'}
+        node_by_id = {n.get("id"): n for n in nodes if n.get("id")}
+        group_node_ids = {n.get("id") for n in nodes if n.get("shape") == "group_rectangle"}
         children_of: dict[str, list[str]] = {gid: [] for gid in group_node_ids}
         for node in nodes:
-            parent_id = node.get('parent_id')
+            parent_id = node.get("parent_id")
             if parent_id:
-                node_id = node.get('id', '?')
+                node_id = node.get("id", "?")
                 if parent_id not in node_ids:
-                    errors.append(f"Node '{node_id}' has parent_id '{parent_id}' which does not exist.")
+                    errors.append(
+                        f"Node '{node_id}' has parent_id '{parent_id}' which does not exist."
+                    )
                 elif parent_id not in group_node_ids:
                     warnings.append(
                         f"Node '{node_id}' has parent_id '{parent_id}' but that node "
@@ -92,14 +99,17 @@ async def validate_graph(tool_context: tools.ToolContext) -> str:
                     children_of[parent_id].append(node_id)
         for gid in group_node_ids:
             if not children_of[gid]:
-                warnings.append(f"Group node '{gid}' has no children (no nodes with parent_id='{gid}').")
+                warnings.append(
+                    f"Group node '{gid}' has no children (no nodes with parent_id='{gid}')."
+                )
             else:
                 # Auto-compute group bounding box from children (with padding)
                 child_bboxes = [
-                    node_by_id[cid].get('bounding_box')
+                    node_by_id[cid].get("bounding_box")
                     for cid in children_of[gid]
-                    if cid in node_by_id and node_by_id[cid].get('bounding_box')
-                       and len(node_by_id[cid].get('bounding_box', [])) == 4
+                    if cid in node_by_id
+                    and node_by_id[cid].get("bounding_box")
+                    and len(node_by_id[cid].get("bounding_box", [])) == 4
                 ]
                 if child_bboxes:
                     y_min = min(b[0] for b in child_bboxes)
@@ -115,8 +125,8 @@ async def validate_graph(tool_context: tools.ToolContext) -> str:
                         min(1000, x_max + pad),
                     ]
                     group_node = node_by_id[gid]
-                    old_bbox = group_node.get('bounding_box')
-                    group_node['bounding_box'] = computed_bbox
+                    old_bbox = group_node.get("bounding_box")
+                    group_node["bounding_box"] = computed_bbox
                     if old_bbox and old_bbox != computed_bbox:
                         warnings.append(
                             f"Group '{gid}' bounding_box auto-corrected from children: "
@@ -126,21 +136,21 @@ async def validate_graph(tool_context: tools.ToolContext) -> str:
         # 6. Validate edges — structural
         edge_ids = set()
         for i, edge in enumerate(edges):
-            edge_id = edge.get('id')
+            edge_id = edge.get("id")
             if not edge_id:
                 errors.append(f"Edge at index {i} is missing required field 'id'.")
                 continue
-            if not edge.get('source'):
+            if not edge.get("source"):
                 errors.append(f"Edge '{edge_id}' is missing required field 'source'.")
-            if not edge.get('target'):
+            if not edge.get("target"):
                 errors.append(f"Edge '{edge_id}' is missing required field 'target'.")
             if edge_id in edge_ids:
                 errors.append(f"Duplicate edge id: '{edge_id}'.")
             edge_ids.add(edge_id)
 
             # Check for orphaned edges
-            source = edge.get('source')
-            target = edge.get('target')
+            source = edge.get("source")
+            target = edge.get("target")
             if source and source not in node_ids:
                 errors.append(f"Edge '{edge_id}' references non-existent source node '{source}'.")
             if target and target not in node_ids:
@@ -148,23 +158,25 @@ async def validate_graph(tool_context: tools.ToolContext) -> str:
 
             # Check for self-loops
             if source and target and source == target:
-                warnings.append(f"Edge '{edge_id}' is a self-loop (source == target == '{source}').")
+                warnings.append(
+                    f"Edge '{edge_id}' is a self-loop (source == target == '{source}')."
+                )
 
         # 7. Check for disconnected nodes
         connected_node_ids = set()
         for edge in edges:
-            if edge.get('source'):
-                connected_node_ids.add(edge['source'])
-            if edge.get('target'):
-                connected_node_ids.add(edge['target'])
+            if edge.get("source"):
+                connected_node_ids.add(edge["source"])
+            if edge.get("target"):
+                connected_node_ids.add(edge["target"])
 
         disconnected = node_ids - connected_node_ids
         if disconnected and edges:
             warnings.append(f"Disconnected nodes (no edges): {sorted(disconnected)}")
 
         # 8. Schema conformance validation
-        schema = tool_context.state.get('input_schema') or tool_context.state.get('schema')
-        schema_source = "input" if tool_context.state.get('input_schema') else "generated"
+        schema = tool_context.state.get("input_schema") or tool_context.state.get("schema")
+        schema_source = "input" if tool_context.state.get("input_schema") else "generated"
         if schema:
             schema_errors, schema_warnings = _validate_against_schema(
                 nodes, edges, schema, schema_source
@@ -174,16 +186,18 @@ async def validate_graph(tool_context: tools.ToolContext) -> str:
 
         # 9. Confidence warnings
         for node in nodes:
-            if node.get('confidence') == 'low':
+            if node.get("confidence") == "low":
                 warnings.append(f"Node '{node.get('id')}' has LOW confidence — review manually.")
         for edge in edges:
-            if edge.get('confidence') == 'low':
+            if edge.get("confidence") == "low":
                 warnings.append(f"Edge '{edge.get('id')}' has LOW confidence — review manually.")
 
-        return _format_report(errors, warnings, len(nodes), len(edges), schema_source if schema else None)
+        return _format_report(
+            errors, warnings, len(nodes), len(edges), schema_source if schema else None
+        )
 
     except Exception as e:
-        return f"Error validating graph: {str(e)}"
+        return log_tool_error("validate_graph", e)
 
 
 def _validate_against_schema(
@@ -197,13 +211,13 @@ def _validate_against_schema(
     warnings = []
 
     # Validate nodes against schema (resolves $ref for Pydantic schemas)
-    node_items = resolve_items(schema, 'nodes')
+    node_items = resolve_items(schema, "nodes")
     if node_items:
-        node_required = set(node_items.get('required', []))
-        node_props = node_items.get('properties', {})
+        node_required = set(node_items.get("required", []))
+        node_props = node_items.get("properties", {})
 
         for node in nodes:
-            node_id = node.get('id', '?')
+            node_id = node.get("id", "?")
             provided = set(node.keys())
 
             # Check required fields from schema
@@ -217,7 +231,7 @@ def _validate_against_schema(
             # Check for type mismatches on provided fields
             for field_name, field_value in node.items():
                 if field_name in node_props and field_value is not None:
-                    expected_type = node_props[field_name].get('type')
+                    expected_type = node_props[field_name].get("type")
                     if expected_type and not _type_matches(field_value, expected_type):
                         warnings.append(
                             f"Node '{node_id}' field '{field_name}': "
@@ -225,13 +239,13 @@ def _validate_against_schema(
                         )
 
     # Validate edges against schema (resolves $ref for Pydantic schemas)
-    edge_items = resolve_items(schema, 'edges')
+    edge_items = resolve_items(schema, "edges")
     if edge_items:
-        edge_required = set(edge_items.get('required', []))
-        edge_props = edge_items.get('properties', {})
+        edge_required = set(edge_items.get("required", []))
+        edge_props = edge_items.get("properties", {})
 
         for edge in edges:
-            edge_id = edge.get('id', '?')
+            edge_id = edge.get("id", "?")
             provided = set(edge.keys())
 
             # Check required fields from schema
@@ -245,7 +259,7 @@ def _validate_against_schema(
             # Check for type mismatches on provided fields
             for field_name, field_value in edge.items():
                 if field_name in edge_props and field_value is not None:
-                    expected_type = edge_props[field_name].get('type')
+                    expected_type = edge_props[field_name].get("type")
                     if expected_type and not _type_matches(field_value, expected_type):
                         warnings.append(
                             f"Edge '{edge_id}' field '{field_name}': "
@@ -258,12 +272,12 @@ def _validate_against_schema(
 def _type_matches(value, json_type: str) -> bool:
     """Check if a Python value matches a JSON Schema type."""
     type_map = {
-        'string': str,
-        'integer': int,
-        'number': (int, float),
-        'boolean': bool,
-        'array': list,
-        'object': dict,
+        "string": str,
+        "integer": int,
+        "number": (int, float),
+        "boolean": bool,
+        "array": list,
+        "object": dict,
     }
     expected = type_map.get(json_type)
     if expected is None:
@@ -290,7 +304,7 @@ def _format_report(
 
     if not errors and not warnings:
         lines.append("PASSED: Graph is valid. No errors or warnings.")
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     if errors:
         lines.append(f"ERRORS ({len(errors)}):")
@@ -309,7 +323,7 @@ def _format_report(
     else:
         lines.append("PASSED with warnings: Graph is structurally valid but has warnings.")
 
-    return '\n'.join(lines)
+    return "\n".join(lines)
 
 
 def _detect_bbox_swap(nodes: list[dict], image_dimensions: dict) -> bool:
@@ -322,8 +336,8 @@ def _detect_bbox_swap(nodes: list[dict], image_dimensions: dict) -> bool:
 
     Only applies to non-square images where the swap produces a measurable difference.
     """
-    img_w = image_dimensions.get('width', 0)
-    img_h = image_dimensions.get('height', 0)
+    img_w = image_dimensions.get("width", 0)
+    img_h = image_dimensions.get("height", 0)
 
     if not img_w or not img_h:
         return False
@@ -336,8 +350,8 @@ def _detect_bbox_swap(nodes: list[dict], image_dimensions: dict) -> bool:
     swapped_devs = []
 
     for node in nodes:
-        bbox = node.get('bounding_box')
-        if not bbox or len(bbox) != 4 or node.get('shape') == 'group_rectangle':
+        bbox = node.get("bounding_box")
+        if not bbox or len(bbox) != 4 or node.get("shape") == "group_rectangle":
             continue
 
         a, b, c, d = bbox

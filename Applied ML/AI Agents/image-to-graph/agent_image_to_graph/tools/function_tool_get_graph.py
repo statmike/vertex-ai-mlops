@@ -1,5 +1,11 @@
 import json
+import logging
+
 from google.adk import tools
+
+from .util_common import log_tool_error
+
+logger = logging.getLogger(__name__)
 
 
 async def get_graph(tool_context: tools.ToolContext) -> str:
@@ -18,13 +24,13 @@ async def get_graph(tool_context: tools.ToolContext) -> str:
         or an error message if no graph exists.
     """
     try:
-        graph = tool_context.state.get('graph')
+        graph = tool_context.state.get("graph")
         if graph is None:
             return "Error: No graph state found. Use load_image first to initialize."
 
-        node_count = len(graph.get('nodes', []))
-        edge_count = len(graph.get('edges', []))
-        diagram_type = graph.get('diagram_type', 'not set')
+        node_count = len(graph.get("nodes", []))
+        edge_count = len(graph.get("edges", []))
+        diagram_type = graph.get("diagram_type", "not set")
 
         summary = (
             f"Current graph state:\n"
@@ -37,4 +43,4 @@ async def get_graph(tool_context: tools.ToolContext) -> str:
         return summary
 
     except Exception as e:
-        return f"Error retrieving graph: {str(e)}"
+        return log_tool_error("get_graph", e)
