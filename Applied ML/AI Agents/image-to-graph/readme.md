@@ -678,6 +678,76 @@ Comment out the plugin section at the end of `agent_image_to_graph/agent.py`:
 ```
 
 ---
+## Where This Can Go
+
+The current agent works end-to-end for local images, but the architecture is designed to extend naturally into broader workflows. Here are directions this can grow.
+
+### Broader Image Input Support
+
+**Natively handled today:** Pillow already supports JPEG, PNG, GIF, BMP, TIFF, and WEBP — so `load_image` accepts raster images across the most common formats out of the box. No conversion step needed for these.
+
+**Additional formats to support:**
+- **SVG** — vector diagrams are everywhere (architecture docs, design tools, web exports). Render to raster via `cairosvg` or `librsvg` before passing to Gemini, preserving the original SVG as metadata.
+- **PDF pages** — technical documents often embed diagrams as full-page figures. Extract individual pages as images with `pdf2image` / `PyMuPDF`, then feed each page through the pipeline.
+- **HEIF/HEIC** — common on iOS. Pillow supports these via `pillow-heif`.
+- **DICOM / medical imaging** — specialized formats where flowcharts appear in clinical pathway diagrams.
+- **Multi-frame inputs** — animated GIFs or multi-page TIFFs where each frame is a separate diagram.
+
+### Remote and Inline File Sources
+
+Today `load_image` reads from a local file path. Extending input sources:
+
+- **Google Cloud Storage (`gs://`)** — download from GCS via `google-cloud-storage` before loading. Enables cloud-native pipelines where source images live in buckets alongside other assets.
+- **HTTP/HTTPS URLs** — fetch remote images directly. Useful when diagrams are hosted in wikis, documentation sites, or object stores with public URLs.
+- **Inline base64 / byte streams** — accept image data passed directly in the message (e.g., from another agent, an API call, or a pipeline step) rather than requiring a file on disk.
+- **Google Drive** — pull diagrams from shared drives using the Drive API, common in enterprise doc workflows.
+
+### Hosting on Vertex AI Agent Engine
+
+The agent is built with [ADK](https://google.github.io/adk-docs/), which deploys directly to [Vertex AI Agent Engine](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/overview). Hosting there unlocks:
+
+- **API endpoint** — the agent becomes a managed service callable from any system via REST, gRPC, or client libraries. No local runtime needed.
+- **Event-driven triggers** — wire Pub/Sub, Cloud Scheduler, Eventarc, or GCS object notifications to invoke the agent automatically. Example: a new diagram image lands in a GCS bucket → Pub/Sub triggers the agent → graph + schema + visualization are written back to the bucket.
+- **Pipeline integration** — call the hosted agent as a step in Vertex AI Pipelines, Cloud Workflows, or Dataform pipelines for batch processing of diagram collections.
+- **Scaling and auth** — Agent Engine handles autoscaling, IAM-based access control, and audit logging without additional infrastructure.
+
+### Surfacing in Gemini for Google Cloud
+
+Agents hosted on Vertex AI Agent Engine can be surfaced in [Gemini for Google Cloud](https://cloud.google.com/gemini/docs/overview) (available with Gemini Enterprise). This means:
+
+- **Chat-based interaction** — users interact with the agent through the Gemini side panel in the Google Cloud Console, asking it to analyze diagrams and explore results conversationally.
+- **Context-aware assistance** — Gemini can pull context from the user's GCP project (storage buckets, BigQuery datasets) and pass it to the agent, enabling prompts like "analyze the architecture diagram in my project's docs bucket."
+- **Enterprise access controls** — no separate deployment; the agent inherits the organization's IAM policies and data residency settings.
+
+### Document Parsing Integration
+
+Diagrams rarely exist in isolation — they're embedded in PDFs, slide decks, and technical documents. Integrating with document parsing pipelines:
+
+- **Diagram detection as a trigger** — tools like [Document AI](https://cloud.google.com/document-ai/docs/overview), [Layout Parser](https://github.com/Layout-Parser/layout-parser), or Gemini's own document understanding can classify page regions as diagrams. When a diagram is detected (flowchart, network diagram, electrical schematic, UML class/sequence/state/activity diagram, entity-relationship diagram, building/floor plan, P&ID, circuit/wiring diagram, BPMN process model, swim lane diagram, mind map, Gantt chart, data flow diagram, pipeline diagram, org chart, architecture diagram), it gets routed to this agent for structured extraction.
+- **Multi-diagram documents** — a single PDF may contain dozens of diagrams across pages. The parsing pipeline extracts each one, invokes the agent per diagram, and collects all graphs into a unified output.
+- **Metadata linkage** — the extracted graph can carry metadata from the source document (page number, section title, document ID), linking the structured graph back to its origin for provenance tracking.
+
+### BigQuery as a Graph and Metadata Store
+
+The agent already logs analytics to BigQuery. Extending BigQuery to store the extracted graphs themselves opens up powerful capabilities:
+
+- **Structured graph storage** — store `graph.json` contents as native JSON columns in BigQuery. Nodes and edges become queryable with SQL — `SELECT * FROM graphs, UNNEST(nodes) WHERE element_type = 'process'`.
+- **Schema registry** — maintain a BigQuery table of all schemas used across runs. Link each graph to its schema for cross-diagram conformance analysis.
+- **Metadata enrichment** — augment each graph record with source metadata: file origin, document context, extraction timestamp, confidence statistics, agent session ID. This builds a searchable catalog of every diagram ever processed.
+- **Cross-diagram analytics** — query patterns across thousands of extracted graphs. Which diagram types appear most? Which schemas have the highest conformance rates? Which node types are most common across all flowcharts in a document corpus?
+- **Search and discovery** — combine graph metadata with [BigQuery vector search](https://cloud.google.com/bigquery/docs/vector-search-intro) over diagram descriptions and node labels. Find all diagrams that contain a "database" node connected to an "API gateway," across an entire organization's document library.
+- **Object table integration** — use [BigQuery object tables](https://cloud.google.com/bigquery/docs/object-table-introduction) to reference source images in GCS directly from BigQuery, keeping the image, graph, schema, and description linked in a single queryable layer.
+
+### And More
+
+- **Batch processing** — process entire directories or buckets of diagrams in parallel, collecting all results into a unified dataset.
+- **Comparison and diffing** — compare graphs extracted from two versions of the same diagram to detect structural changes (added nodes, removed edges, modified labels).
+- **Graph database export** — export to Neo4j, Apache TinkerPop, or Property Graph formats for native graph traversal and pattern matching.
+- **CI/CD documentation validation** — run the agent on architecture diagrams in a repo and validate that the extracted graph matches expected structure (e.g., "every service node must have an edge to the monitoring node").
+- **Multi-agent orchestration** — chain with other specialized agents: a document parsing agent extracts diagrams, this agent converts them to graphs, a compliance agent validates them against policy schemas, and a reporting agent summarizes findings.
+- **Fine-tuned extraction models** — for domain-specific diagram types (electrical schematics, P&IDs), fine-tune Gemini on labeled examples to improve extraction accuracy beyond general-purpose vision.
+
+---
 ## Development
 
 ### Project Structure
