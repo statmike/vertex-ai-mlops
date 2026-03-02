@@ -112,8 +112,8 @@ class TestDetectBboxSwap:
         result = _detect_bbox_swap(nodes, {})
         assert result is False
 
-    def test_group_nodes_excluded(self):
-        """Group nodes should be excluded from swap detection."""
+    def test_group_nodes_excluded_from_element_signal(self):
+        """Group nodes excluded from element signal; 2 non-group nodes below threshold."""
         nodes = [
             {"id": "g1", "shape": "group_rectangle", "bounding_box": [0, 0, 1000, 1000]},
             {"id": "n1", "bounding_box": [100, 200, 200, 400]},
@@ -121,6 +121,86 @@ class TestDetectBboxSwap:
         ]
         result = _detect_bbox_swap(nodes, {"width": 1920, "height": 1080})
         assert result is False  # Only 2 non-group nodes, below threshold
+
+    def test_group_extreme_ratio_triggers_swap(self):
+        """Groups with extreme aspect ratios (>7:1) under normal should trigger swap.
+
+        Simulates the real failure case: landscape image (2634x1731), LLM returns
+        coordinates with x/y swapped. Groups become extremely flat under normal
+        interpretation (e.g., 228h x 1378w = 6:1) but reasonable under swapped
+        (905h x 348w = 2.6:1). The non-group element signal must also lean toward
+        swap (swapped_median < normal_median) for the combined signal to trigger.
+        """
+        nodes = [
+            # Groups: extreme under normal, reasonable under swapped
+            {"id": "g1", "shape": "group_rectangle", "bounding_box": [151, 176, 283, 699]},
+            {"id": "g2", "shape": "group_rectangle", "bounding_box": [320, 66, 484, 947]},
+            {"id": "g3", "shape": "group_rectangle", "bounding_box": [598, 59, 724, 926]},
+            # Non-group nodes: mix of nearly-square and elongated elements.
+            # Overall, the swapped median is slightly better than normal median
+            # (reproducing the real case where 14/26 nodes favored swap).
+            # Process boxes (nearly square, favor normal slightly):
+            {"id": "n1", "bounding_box": [171, 196, 263, 286]},
+            {"id": "n2", "bounding_box": [346, 86, 459, 169]},
+            {"id": "n3", "bounding_box": [346, 258, 459, 341]},
+            # Data stores / outputs (elongated, clearly favor swap):
+            {"id": "n4", "bounding_box": [619, 79, 701, 174]},   # holiday_component
+            {"id": "n5", "bounding_box": [619, 251, 702, 341]},  # outlier_component
+            {"id": "n6", "bounding_box": [869, 172, 964, 305]},  # forecasted
+            {"id": "n7", "bounding_box": [164, 774, 269, 907]},  # eval metrics
+            {"id": "n8", "bounding_box": [784, 208, 824, 266]},  # aggregation
+        ]
+        result = _detect_bbox_swap(nodes, {"width": 2634, "height": 1731})
+        assert result is True
+
+    def test_group_reasonable_ratios_no_swap(self):
+        """Groups with reasonable aspect ratios should NOT trigger swap."""
+        nodes = [
+            # Tall groups in a landscape image (reasonable, no swap needed)
+            {"id": "g1", "shape": "group_rectangle", "bounding_box": [100, 50, 800, 300]},
+            {"id": "g2", "shape": "group_rectangle", "bounding_box": [100, 350, 800, 600]},
+            # Non-group nodes
+            {"id": "n1", "bounding_box": [200, 100, 350, 250]},
+            {"id": "n2", "bounding_box": [400, 100, 550, 250]},
+            {"id": "n3", "bounding_box": [600, 100, 750, 250]},
+        ]
+        result = _detect_bbox_swap(nodes, {"width": 1920, "height": 1080})
+        assert result is False
+
+    def test_single_group_not_enough(self):
+        """Need at least 2 groups with extreme ratios to trigger swap."""
+        nodes = [
+            {"id": "g1", "shape": "group_rectangle", "bounding_box": [320, 66, 484, 947]},
+            {"id": "n1", "bounding_box": [100, 200, 200, 300]},
+            {"id": "n2", "bounding_box": [300, 200, 400, 300]},
+            {"id": "n3", "bounding_box": [500, 200, 600, 300]},
+        ]
+        result = _detect_bbox_swap(nodes, {"width": 2634, "height": 1731})
+        assert result is False
+
+    def test_horizontal_groups_correctly_oriented_no_false_positive(self):
+        """Wide horizontal groups in a correctly oriented landscape image.
+
+        This is the false-positive guard: a top-to-bottom flowchart in a landscape
+        image has wide horizontal group bands. Groups are extreme (>7:1) under normal,
+        but the elements are correctly oriented (normal is better for elements),
+        so group signal alone must NOT trigger a swap.
+        """
+        nodes = [
+            # Wide horizontal groups (correct orientation, NOT swapped)
+            {"id": "g1", "shape": "group_rectangle", "bounding_box": [50, 30, 250, 950]},
+            {"id": "g2", "shape": "group_rectangle", "bounding_box": [300, 30, 500, 950]},
+            {"id": "g3", "shape": "group_rectangle", "bounding_box": [550, 30, 750, 950]},
+            # Non-group nodes: correctly oriented (taller than wide in normalized space
+            # → pixel ratio closer to square under normal interpretation for landscape)
+            {"id": "n1", "bounding_box": [100, 100, 200, 180]},  # y_span=100, x_span=80
+            {"id": "n2", "bounding_box": [100, 300, 200, 380]},
+            {"id": "n3", "bounding_box": [100, 500, 200, 580]},
+            {"id": "n4", "bounding_box": [350, 100, 450, 180]},
+            {"id": "n5", "bounding_box": [350, 300, 450, 380]},
+        ]
+        result = _detect_bbox_swap(nodes, {"width": 1920, "height": 1080})
+        assert result is False
 
 
 class TestValidateAgainstSchema:

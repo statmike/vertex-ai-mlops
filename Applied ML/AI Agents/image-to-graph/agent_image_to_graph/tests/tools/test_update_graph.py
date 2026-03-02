@@ -51,6 +51,93 @@ class TestUpdateGraphAddNode:
         node = mock_tool_context.state["graph"]["nodes"][0]
         assert node["bounding_box"] == [10, 20, 100, 200]
 
+    @pytest.mark.asyncio
+    async def test_add_node_with_inverted_bbox_auto_corrected(self, mock_tool_context):
+        """Inverted bounding box should be auto-corrected at storage."""
+        mock_tool_context.state["graph"] = {"nodes": [], "edges": []}
+        ops = [
+            {
+                "op": "add_node",
+                "data": {
+                    "id": "n1",
+                    "label": "Inverted",
+                    "bounding_box": {"top": 500, "left": 400, "bottom": 100, "right": 200},
+                },
+            }
+        ]
+        result = await update_graph(ops, mock_tool_context)
+        assert "+ node 'n1'" in result
+        node = mock_tool_context.state["graph"]["nodes"][0]
+        assert node["bounding_box"] == [100, 200, 500, 400]
+
+
+class TestUpdateGraphBboxCorrections:
+    """Test bbox_corrections state tracking."""
+
+    @pytest.mark.asyncio
+    async def test_inverted_bbox_tracked_in_state(self, mock_tool_context):
+        """Adding a node with inverted bbox should populate bbox_corrections state."""
+        mock_tool_context.state["graph"] = {"nodes": [], "edges": []}
+        ops = [
+            {
+                "op": "add_node",
+                "data": {
+                    "id": "n1",
+                    "label": "Inverted",
+                    "bounding_box": {"top": 500, "left": 400, "bottom": 100, "right": 200},
+                },
+            }
+        ]
+        await update_graph(ops, mock_tool_context)
+        corrections = mock_tool_context.state.get("bbox_corrections", [])
+        assert len(corrections) == 1
+        entry = corrections[0]
+        assert entry["node_id"] == "n1"
+        assert entry["op"] == "add_node"
+        assert entry["raw"] == [500, 400, 100, 200]
+        assert entry["corrected"] == [100, 200, 500, 400]
+        assert entry["y_inverted"] is True
+        assert entry["x_inverted"] is True
+
+    @pytest.mark.asyncio
+    async def test_valid_bbox_no_correction_tracked(self, mock_tool_context):
+        """A valid bbox should NOT create any bbox_corrections entry."""
+        mock_tool_context.state["graph"] = {"nodes": [], "edges": []}
+        ops = [
+            {
+                "op": "add_node",
+                "data": {
+                    "id": "n1",
+                    "label": "Valid",
+                    "bounding_box": {"top": 10, "left": 20, "bottom": 100, "right": 200},
+                },
+            }
+        ]
+        await update_graph(ops, mock_tool_context)
+        assert "bbox_corrections" not in mock_tool_context.state
+
+    @pytest.mark.asyncio
+    async def test_update_node_bbox_tracked(self, mock_tool_context):
+        """Updating a node with inverted bbox should track correction."""
+        mock_tool_context.state["graph"] = {
+            "nodes": [{"id": "n1", "label": "Existing", "bounding_box": [10, 20, 100, 200]}],
+            "edges": [],
+        }
+        ops = [
+            {
+                "op": "update_node",
+                "data": {
+                    "id": "n1",
+                    "bounding_box": {"top": 300, "left": 20, "bottom": 50, "right": 200},
+                },
+            }
+        ]
+        await update_graph(ops, mock_tool_context)
+        corrections = mock_tool_context.state.get("bbox_corrections", [])
+        assert len(corrections) == 1
+        assert corrections[0]["op"] == "update_node"
+        assert corrections[0]["y_inverted"] is True
+
 
 class TestUpdateGraphAddEdge:
     """Test add_edge operations."""

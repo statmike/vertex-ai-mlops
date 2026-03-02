@@ -69,6 +69,8 @@ Return ONLY the JSON object, no other text."""
                 types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
                 types.Part.from_text(text=analysis_prompt),
             ],
+            tool_context=tool_context,
+            tool_name="analyze_image",
         )
 
         # Parse the response

@@ -150,6 +150,8 @@ Return ONLY the JSON object, no other text."""
                 types.Part.from_bytes(data=cropped_bytes, mime_type=mime_type),
                 types.Part.from_text(text=examine_prompt),
             ],
+            tool_context=tool_context,
+            tool_name="crop_and_examine",
         )
 
         # Parse the response

@@ -12,24 +12,18 @@
       "type": "array",
       "items": {
         "properties": {
-          "id": {
-            "description": "Node id",
-            "title": "Id",
-            "type": "string"
-          },
-          "bounding_box": {
+          "shape": {
             "anyOf": [
               {
-                "items": {},
-                "type": "array"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
             "default": null,
-            "description": "Node bounding_box",
-            "title": "Bounding Box"
+            "description": "Node shape",
+            "title": "Shape"
           },
           "label": {
             "description": "Node label",
@@ -49,18 +43,24 @@
             "description": "Node confidence",
             "title": "Confidence"
           },
-          "shape": {
+          "bounding_box": {
             "anyOf": [
               {
-                "type": "string"
+                "items": {},
+                "type": "array"
               },
               {
                 "type": "null"
               }
             ],
             "default": null,
-            "description": "Node shape",
-            "title": "Shape"
+            "description": "Node bounding_box",
+            "title": "Bounding Box"
+          },
+          "id": {
+            "description": "Node id",
+            "title": "Id",
+            "type": "string"
           },
           "element_type": {
             "anyOf": [
@@ -103,8 +103,8 @@
           }
         },
         "required": [
-          "id",
-          "label"
+          "label",
+          "id"
         ],
         "title": "GraphNode",
         "type": "object"
@@ -115,14 +115,14 @@
       "type": "array",
       "items": {
         "properties": {
-          "target": {
-            "description": "Edge target",
-            "title": "Target",
-            "type": "string"
-          },
           "source": {
             "description": "Edge source",
             "title": "Source",
+            "type": "string"
+          },
+          "target": {
+            "description": "Edge target",
+            "title": "Target",
             "type": "string"
           },
           "confidence": {
@@ -158,8 +158,8 @@
           }
         },
         "required": [
-          "target",
           "source",
+          "target",
           "id"
         ],
         "title": "GraphEdge",

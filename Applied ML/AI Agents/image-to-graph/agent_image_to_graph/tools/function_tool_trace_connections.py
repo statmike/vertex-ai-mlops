@@ -105,6 +105,8 @@ Return ONLY the JSON object, no other text."""
                 types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
                 types.Part.from_text(text=prompt),
             ],
+            tool_context=tool_context,
+            tool_name="trace_connections",
         )
 
         response_text = strip_json_markdown_fence(response.text)

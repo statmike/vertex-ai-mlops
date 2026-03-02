@@ -2,7 +2,7 @@ import logging
 
 from google.adk import tools
 
-from .util_bbox import normalize_bbox
+from .util_bbox import detect_bbox_corrections, normalize_bbox
 from .util_common import log_tool_error
 
 logger = logging.getLogger(__name__)
@@ -71,8 +71,31 @@ async def update_graph(
                 # Normalize bounding_box from dict to list format
                 node_data = dict(data)
                 if "bounding_box" in node_data:
-                    normalized = normalize_bbox(node_data["bounding_box"])
+                    raw_bbox = node_data["bounding_box"]
+                    normalized = normalize_bbox(raw_bbox)
                     if normalized:
+                        # Convert raw to int list for comparison
+                        try:
+                            if isinstance(raw_bbox, dict):
+                                raw_ints = [int(raw_bbox["top"]), int(raw_bbox["left"]),
+                                            int(raw_bbox["bottom"]), int(raw_bbox["right"])]
+                            else:
+                                raw_ints = [int(v) for v in raw_bbox]
+                            correction = detect_bbox_corrections(raw_ints, normalized)
+                            if correction:
+                                entry = {
+                                    "node_id": node_id,
+                                    "tool": "update_graph",
+                                    "op": "add_node",
+                                    "raw": raw_ints,
+                                    "corrected": normalized,
+                                    **correction,
+                                }
+                                prev = list(tool_context.state.get("bbox_corrections", []))
+                                prev.append(entry)
+                                tool_context.state["bbox_corrections"] = prev
+                        except (KeyError, TypeError, ValueError):
+                            pass  # Never fail the tool call for tracking
                         node_data["bounding_box"] = normalized
 
                 graph.setdefault("nodes", []).append(node_data)
@@ -95,8 +118,30 @@ async def update_graph(
                     if node["id"] == node_id:
                         for key, value in data.items():
                             if key == "bounding_box":
+                                raw_bbox = value
                                 normalized = normalize_bbox(value)
                                 if normalized:
+                                    try:
+                                        if isinstance(raw_bbox, dict):
+                                            raw_ints = [int(raw_bbox["top"]), int(raw_bbox["left"]),
+                                                        int(raw_bbox["bottom"]), int(raw_bbox["right"])]
+                                        else:
+                                            raw_ints = [int(v) for v in raw_bbox]
+                                        correction = detect_bbox_corrections(raw_ints, normalized)
+                                        if correction:
+                                            entry = {
+                                                "node_id": node_id,
+                                                "tool": "update_graph",
+                                                "op": "update_node",
+                                                "raw": raw_ints,
+                                                "corrected": normalized,
+                                                **correction,
+                                            }
+                                            prev = list(tool_context.state.get("bbox_corrections", []))
+                                            prev.append(entry)
+                                            tool_context.state["bbox_corrections"] = prev
+                                    except (KeyError, TypeError, ValueError):
+                                        pass  # Never fail the tool call for tracking
                                     value = normalized
                             node[key] = value
                         found = True

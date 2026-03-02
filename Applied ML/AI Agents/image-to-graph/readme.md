@@ -595,13 +595,16 @@ Groups don't require edges unless there are explicit connections between group b
 
 ### Bounding Box Auto-Correction
 
-Gemini sometimes returns bounding box coordinates with x and y swapped. The `validate_graph` tool detects and corrects this automatically:
+Two levels of bounding box correction run automatically:
 
-1. For each node, it computes the pixel-space aspect ratio under both coordinate interpretations (`[y,x,y,x]` vs `[x,y,x,y]`)
-2. The correct interpretation produces aspect ratios closer to 1.0 (since most diagram elements are roughly proportional)
-3. If the swapped interpretation is measurably better (>20% improvement in median deviation), all bounding boxes are corrected
+1. **Coordinate inversion** (`normalize_bbox` in `util_bbox.py`): Gemini sometimes returns coordinates with min > max on one or both axes (e.g., `{"top": 500, "bottom": 100}`). `normalize_bbox()` swaps each axis pair so that min ≤ max, and clamps all values to the valid 0-1000 range. This runs at every storage and usage boundary (add/update node, crop, analyze), so all downstream code always receives valid boxes. Corrections are tracked in `tool_context.state["bbox_corrections"]` and captured as `STATE_DELTA` events for BQ analytics observability (see `bq_analytics.ipynb`).
 
-This runs before group bounding box auto-computation, so group boxes inherit corrected child coordinates.
+2. **Axis swap detection** (`validate_graph`): Gemini sometimes returns bounding box coordinates with x and y axes swapped. The validator detects and corrects this using two complementary signals:
+   - **Element aspect ratios**: For each non-group node, computes the pixel-space aspect ratio under both interpretations (`[y,x,y,x]` vs `[x,y,x,y]`). If the swapped interpretation produces ratios measurably closer to 1.0 (>20% improvement in median), swap is triggered.
+   - **Group extreme ratios**: Group nodes span multiple children and have large x/y differences. When ≥2 groups have physically implausible pixel ratios (>7:1) under normal interpretation but reasonable ones after swap, this triggers correction even when individual elements are nearly square. This catches the common case where the LLM confuses `top/left` semantics on landscape images. A false-positive guard ensures the group signal only fires when the element signal at least leans toward swap — preventing incorrect swaps on diagrams with legitimately wide horizontal groups.
+   - Swap corrections are tracked in `bbox_corrections` state alongside individual inversions.
+
+Level 1 runs before level 2, ensuring axis swap detection always operates on valid (non-inverted) boxes. Both run before group bounding box auto-computation, so group boxes inherit fully corrected child coordinates.
 
 ### Description Artifact
 
@@ -653,11 +656,45 @@ BQ_ANALYTICS_GCS_BUCKET=your-bucket-name
 BQ_ANALYTICS_GCS_PATH=applied-ml/ai-agents/image-to-graph/bq_plugin
 ```
 
+### Dual-Model Token Tracking
+
+The agent uses two models with different tracking mechanisms:
+
+| Model Role | Config | Tracking |
+|---|---|---|
+| **Agent (orchestration)** | `AGENT_MODEL` | Captured automatically via `LLM_RESPONSE` events |
+| **Tool (vision/analysis)** | `TOOL_MODEL` | Tracked via `tool_context.state["tool_llm_usage"]` → `STATE_DELTA` events |
+
+Tool-level Gemini calls (the expensive Pro model calls for image analysis) are instrumented in `util_gemini.generate_content()`. Each call appends a usage entry to `tool_context.state["tool_llm_usage"]` with:
+- `tool` — which tool made the call (e.g. `analyze_image`, `crop_and_examine`)
+- `model` — the model version used
+- `prompt_tokens`, `completion_tokens`, `total_tokens`
+
+The BQ Analytics Plugin automatically captures these state changes as `STATE_DELTA` events after each tool completes — no callbacks or direct BQ writes needed.
+
+### Session Cost Profile
+
+Each session (one image → one graph) uses both models. The analytics notebook (`bq_analytics.ipynb`) provides per-session breakdowns with input/output splits for cost estimation. From the initial 2-session dataset:
+
+| | Input | Output | Total |
+|---|---|---|---|
+| **Agent LLM** (Flash) | ~143K | ~3K | ~147K |
+| **Tool LLM** (Pro) | ~16K | ~11K | ~33K |
+| **Session total** | ~158K | ~14K | ~180K |
+
+Key observations:
+- **Agent LLM dominates input tokens** — context grows over ~17 orchestration calls as the graph state accumulates
+- **Tool LLM has a higher output ratio** — vision analysis calls (Pro model) produce substantial structured output relative to their input
+- **Thinking tokens** — `total` may exceed `input + output`; the difference is reasoning tokens (visible in `usage_metadata.thoughts_token_count`), which can be significant for some tools (e.g. `trace_connections` used ~9.8K thinking tokens in one session)
+- **Most expensive tools** — `generate_description` and `trace_connections` consume the most tool LLM tokens per call
+
+With more sessions, the statistics (avg, min, max, median) become more reliable for predicting batch costs.
+
 ### Querying Analytics
 
 Use `bq_analytics.ipynb` to query and analyze agent behavior:
 - Event type distribution
-- Token usage analysis
+- Token usage analysis (agent + tool LLM)
 - Latency analysis (LLM & tools)
 - Tool usage statistics
 - Error analysis
@@ -665,7 +702,11 @@ Use `bq_analytics.ipynb` to query and analyze agent behavior:
 - Span hierarchy & duration
 - Multimodal content queries (GCS references)
 - Daily activity summaries
-- **Cost analysis** — per-session token costs with configurable model pricing, input vs output breakdown, and cost-by-agent charts
+- **Per-session usage** — combined agent LLM + tool LLM token consumption per session per model, with input/output split for cost estimation (one session = one image evaluated into one graph)
+- **Session statistics** — avg, min, max, median input/output/total tokens per session per model for predicting costs across batches
+- **Tool LLM by tool** — per-tool token breakdown showing which vision tools are most expensive
+- **Usage visualizations** — per-session stacked bars (input/output by model+source), input vs output grouped bars by model, and per-tool input/output breakdown
+- **Bounding box corrections** — per-session breakdown of auto-corrections: axis swaps (x/y confusion) and per-node inversions (min > max), tracked from `STATE_DELTA` events
 
 ### Disabling Analytics
 

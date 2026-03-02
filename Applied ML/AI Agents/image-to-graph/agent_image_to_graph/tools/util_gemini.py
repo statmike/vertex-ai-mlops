@@ -35,6 +35,8 @@ def _get_client() -> genai.Client:
 async def generate_content(
     contents: list,
     model: str | None = None,
+    tool_context=None,
+    tool_name: str | None = None,
 ) -> genai.types.GenerateContentResponse:
     """
     Call Gemini generate_content with automatic retry on 429 (rate limit) errors.
@@ -45,6 +47,10 @@ async def generate_content(
     Args:
         contents: List of content parts to send to Gemini.
         model: Model name. Defaults to TOOL_MODEL from env.
+        tool_context: Optional ADK ToolContext. When provided, per-call token
+            usage is appended to ``tool_context.state["tool_llm_usage"]`` so the
+            BQ Analytics Plugin captures it via STATE_DELTA events.
+        tool_name: Label for the calling tool (e.g. ``"analyze_image"``).
 
     Returns:
         The Gemini GenerateContentResponse.
@@ -62,6 +68,24 @@ async def generate_content(
                 model=model,
                 contents=contents,
             )
+
+            # Track usage in tool_context.state for BQ analytics
+            if tool_context is not None:
+                try:
+                    usage = response.usage_metadata
+                    entry = {
+                        "tool": tool_name or "unknown",
+                        "model": response.model_version or model or TOOL_MODEL,
+                        "prompt_tokens": usage.prompt_token_count if usage else 0,
+                        "completion_tokens": usage.candidates_token_count if usage else 0,
+                        "total_tokens": usage.total_token_count if usage else 0,
+                    }
+                    prev = list(tool_context.state.get("tool_llm_usage", []))
+                    prev.append(entry)
+                    tool_context.state["tool_llm_usage"] = prev
+                except Exception:
+                    pass  # Never fail the tool call for tracking
+
             return response
 
         except Exception as e:

@@ -46,7 +46,7 @@ You convert diagram images into structured graph representations (nodes + edges 
        {"op": "add_node", "data": {"id": "n2", "label": "...", "bounding_box": {"top": y_min, "left": x_min, "bottom": y_max, "right": x_max}, "confidence": "medium", ...}},
    ])
    ```
-   **IMPORTANT: Always include a `bounding_box` field** using `{"top": N, "left": N, "bottom": N, "right": N}` format (0-1000 normalized scale, where top/left=0 is the top-left corner). Use the region's bounding box from analyze_image.
+   **IMPORTANT: Always include a `bounding_box` field** using `{"top": N, "left": N, "bottom": N, "right": N}` format (0-1000 normalized scale, where top/left=0 is the top-left corner). The "top" value must be less than "bottom", and "left" must be less than "right" (since top=0 is the very top of the image and bottom=1000 is the very bottom). Use the region's bounding box from analyze_image.
 
 5. **Trace connections**: Use `trace_connections` to detect edges across the full image.
    This sends the full image with all discovered node positions to Gemini

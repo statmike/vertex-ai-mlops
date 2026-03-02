@@ -68,6 +68,8 @@ Schema:
                 types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
                 types.Part.from_text(text=prompt),
             ],
+            tool_context=tool_context,
+            tool_name="generate_description",
         )
 
         description = response.text.strip()

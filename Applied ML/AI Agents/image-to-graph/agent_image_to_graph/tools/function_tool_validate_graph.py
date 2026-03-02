@@ -75,6 +75,16 @@ async def validate_graph(tool_context: tools.ToolContext) -> str:
                 f"(image {image_dimensions.get('width', '?')}x{image_dimensions.get('height', '?')}). "
                 f"Swapped x/y coordinates to match [y_min, x_min, y_max, x_max] convention."
             )
+            # Track xy_swap in state for BQ analytics observability
+            prev = list(tool_context.state.get("bbox_corrections", []))
+            prev.append({
+                "tool": "validate_graph",
+                "op": "xy_swap",
+                "node_count": swap_count,
+                "image_width": image_dimensions.get("width"),
+                "image_height": image_dimensions.get("height"),
+            })
+            tool_context.state["bbox_corrections"] = prev
             # Update graph state with corrected bboxes
             tool_context.state["graph"] = graph
 
@@ -329,10 +339,22 @@ def _format_report(
 def _detect_bbox_swap(nodes: list[dict], image_dimensions: dict) -> bool:
     """Detect if bounding box coordinates have x/y swapped.
 
-    Uses the image aspect ratio to check: for each node, compute its pixel-space
-    aspect ratio under both interpretations ([y,x,y,x] vs [x,y,x,y]). The correct
-    interpretation should produce aspect ratios closer to 1.0 on average, since
-    most diagram elements (boxes, circles, cylinders) are roughly proportional.
+    Uses two complementary signals:
+
+    1. **Element aspect ratios** (non-group nodes): For each node, compute its
+       pixel-space aspect ratio under both interpretations ([y,x,y,x] vs [x,y,x,y]).
+       The correct interpretation should produce ratios closer to 1.0 (square-ish).
+
+    2. **Group extreme ratios**: Group nodes (which span many children) have very
+       different x/y spans. Under the wrong interpretation they produce physically
+       implausible aspect ratios (>7:1). This catches cases where individual nodes
+       are nearly square in normalized space and the element signal is ambiguous.
+
+    Swap is triggered if:
+    - The element signal strongly indicates swap (>20% better), OR
+    - The group signal indicates swap AND the element signal at least leans that way
+      (swapped median ≤ normal median). This guard prevents false positives on
+      diagrams with legitimately wide/tall groups.
 
     Only applies to non-square images where the swap produces a measurable difference.
     """
@@ -346,6 +368,7 @@ def _detect_bbox_swap(nodes: list[dict], image_dimensions: dict) -> bool:
     if 0.9 < img_w / img_h < 1.1:
         return False
 
+    # --- Signal 1: Non-group element aspect ratios ---
     normal_devs = []
     swapped_devs = []
 
@@ -370,15 +393,56 @@ def _detect_bbox_swap(nodes: list[dict], image_dimensions: dict) -> bool:
         if s_w > 0 and s_h > 0:
             swapped_devs.append(abs(math.log(s_h / s_w)))
 
-    if len(normal_devs) < 3:
-        return False
+    element_swap = False
+    element_leans_swap = False
+    if len(normal_devs) >= 3:
+        normal_devs.sort()
+        swapped_devs.sort()
+        mid = len(normal_devs) // 2
+        normal_median = normal_devs[mid]
+        swapped_median = swapped_devs[mid]
+        # Strong signal: swapped is at least 20% better
+        element_swap = swapped_median < normal_median * 0.8
+        # Weak signal: swapped is at least marginally better (guard for group signal)
+        element_leans_swap = swapped_median < normal_median
 
-    # Use median deviation from log(1.0)=0 as the metric
-    normal_devs.sort()
-    swapped_devs.sort()
-    mid = len(normal_devs) // 2
-    normal_median = normal_devs[mid]
-    swapped_median = swapped_devs[mid]
+    # --- Signal 2: Group extreme aspect ratios ---
+    # Groups span multiple children and have large x/y differences, making them
+    # sensitive to swap even when individual elements are nearly square.
+    # IMPORTANT: This signal alone can false-positive on diagrams with legitimately
+    # wide horizontal groups (e.g., top-to-bottom flow in landscape images), so it
+    # requires the element signal to at least lean toward swap.
+    extreme_threshold = math.log(7)  # |log(h/w)| > log(7) ≈ 1.95 means >7:1 ratio
+    normal_extreme = 0
+    swapped_extreme = 0
+    group_count = 0
 
-    # Swap if swapped interpretation is at least 20% better
-    return swapped_median < normal_median * 0.8
+    for node in nodes:
+        if node.get("shape") != "group_rectangle":
+            continue
+        bbox = node.get("bounding_box")
+        if not bbox or len(bbox) != 4:
+            continue
+        a, b, c, d = bbox
+        if c <= a or d <= b:
+            continue
+
+        group_count += 1
+        n_h = (c - a) / 1000 * img_h
+        n_w = (d - b) / 1000 * img_w
+        s_h = (d - b) / 1000 * img_h
+        s_w = (c - a) / 1000 * img_w
+
+        if n_w > 0 and n_h > 0 and abs(math.log(n_h / n_w)) > extreme_threshold:
+            normal_extreme += 1
+        if s_w > 0 and s_h > 0 and abs(math.log(s_h / s_w)) > extreme_threshold:
+            swapped_extreme += 1
+
+    group_swap = (
+        group_count >= 2
+        and normal_extreme > swapped_extreme
+        and normal_extreme >= 2
+    )
+
+    # Element signal alone is sufficient. Group signal requires element agreement.
+    return element_swap or (group_swap and element_leans_swap)
