@@ -292,7 +292,9 @@ Then open `http://localhost:8000` in your browser. Two agents appear in the agen
 ---
 ## Example Usage
 
-An example is included in `examples/bq-arima-flowchart/` using the BigQuery ML ARIMA pipeline diagram:
+Examples are included in `examples/`:
+
+**BigQuery ARIMA Flowchart** (`examples/bq-arima-flowchart/`) — the BigQuery ML ARIMA pipeline diagram:
 
 ```
 examples/bq-arima-flowchart/
@@ -302,6 +304,15 @@ examples/bq-arima-flowchart/
 ```
 
 > **Image source:** [BigQuery ML `CREATE TIME SERIES` documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-create-time-series) — diagram showing the ARIMA_PLUS pipeline stages from preprocessing through decomposition to forecasting.
+
+**XKCD Flowcharts** (`examples/xkcd-flowchart/`) — the humorous "Flowcharts" comic that parodies decision-making diagrams with self-referential loops, electrical schematics, and a hidden golden spiral:
+
+```
+examples/xkcd-flowchart/
+└── flowcharts.png      # The XKCD "Flowcharts" comic
+```
+
+> **Image source:** [XKCD #1488 "Flowcharts"](https://xkcd.com/1488/) by [Randall Munroe](https://xkcd.com), licensed under [CC BY-NC 2.5](https://creativecommons.org/licenses/by-nc/2.5/).
 
 > **Note:** Only attach **image files** through the ADK web UI. Schema files (`.json`) should be referenced by **file path** in your message text — the agent's `load_schema` tool reads them from disk. Gemini does not accept `application/json` as a file upload.
 
@@ -442,6 +453,12 @@ Files are replaced on each run (no accumulation). The same artifacts are also sa
 |-----|---------------|-------|-------------|
 | Without schema | [**visualization.html**](https://htmlpreview.github.io/?https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20ML/AI%20Agents/image-to-graph/examples/bq-arima-flowchart/results-without-schema/visualization.html) | [graph.json](examples/bq-arima-flowchart/results-without-schema/graph.json) | [description.md](examples/bq-arima-flowchart/results-without-schema/description.md) |
 | With schema | [**visualization.html**](https://htmlpreview.github.io/?https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20ML/AI%20Agents/image-to-graph/examples/bq-arima-flowchart/results-with-schema/visualization.html) | [graph.json](examples/bq-arima-flowchart/results-with-schema/graph.json) | [description.md](examples/bq-arima-flowchart/results-with-schema/description.md) |
+
+Running the agent on `examples/xkcd-flowchart/flowcharts.png` — without a schema — produces results in `results-without-schema/`:
+
+| Run | Visualization | Graph | Description |
+|-----|---------------|-------|-------------|
+| XKCD (without schema) | [**visualization.html**](https://htmlpreview.github.io/?https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20ML/AI%20Agents/image-to-graph/examples/xkcd-flowchart/results-without-schema/visualization.html) | [graph.json](examples/xkcd-flowchart/results-without-schema/graph.json) | [description.md](examples/xkcd-flowchart/results-without-schema/description.md) |
 
 > The visualization links use [htmlpreview.github.io](https://htmlpreview.github.io) to render the self-contained HTML files directly from GitHub — no setup required. Each visualization embeds the source image as base64, includes interactive hover/click highlighting, group bounding boxes, a searchable graph JSON viewer, a recreated Mermaid diagram (with subgraphs for groups), and the schema.
 

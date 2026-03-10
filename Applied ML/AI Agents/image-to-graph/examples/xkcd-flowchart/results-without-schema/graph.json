@@ -1,0 +1,471 @@
+{
+  "diagram_type": "flowchart",
+  "nodes": [
+    {
+      "bounding_box": [
+        51,
+        169,
+        86,
+        238
+      ],
+      "confidence": "high",
+      "label": "START",
+      "id": "n1"
+    },
+    {
+      "bounding_box": [
+        126,
+        115,
+        240,
+        286
+      ],
+      "confidence": "high",
+      "label": "DO YOU LIKE FLOWCHARTS?",
+      "id": "n2"
+    },
+    {
+      "bounding_box": [
+        36,
+        305,
+        139,
+        464
+      ],
+      "confidence": "high",
+      "label": "DO YOU LIKE LINE GRAPHS?",
+      "id": "n3"
+    },
+    {
+      "label": "SCATTER PLOTS?",
+      "id": "n4",
+      "confidence": "high",
+      "bounding_box": [
+        189,
+        328,
+        277,
+        444
+      ]
+    },
+    {
+      "label": "LINE OR AXIS?",
+      "id": "n5",
+      "confidence": "high",
+      "bounding_box": [
+        45,
+        551,
+        126,
+        673
+      ]
+    },
+    {
+      "bounding_box": [
+        272,
+        551,
+        362,
+        659
+      ],
+      "id": "n6",
+      "label": "DATA OR AXIS?",
+      "confidence": "high"
+    },
+    {
+      "label": "HELP CHARGE A BATTERY?",
+      "id": "n7",
+      "confidence": "high",
+      "bounding_box": [
+        371,
+        313,
+        472,
+        456
+      ]
+    },
+    {
+      "bounding_box": [
+        381,
+        189,
+        464,
+        307
+      ],
+      "id": "n8",
+      "label": "LIKE SPIRALS?",
+      "confidence": "high"
+    },
+    {
+      "confidence": "high",
+      "label": "TAKE THE PATH OF LEAST RESISTANCE?",
+      "id": "n9",
+      "bounding_box": [
+        505,
+        66,
+        619,
+        235
+      ]
+    },
+    {
+      "bounding_box": [
+        578,
+        274,
+        730,
+        491
+      ],
+      "confidence": "high",
+      "label": "DO YOU LIKE WHEN PEOPLE FIND THE GOLDEN SPIRAL IN RANDOM IMAGES?",
+      "id": "n10"
+    },
+    {
+      "bounding_box": [
+        771,
+        313,
+        857,
+        458
+      ],
+      "label": "TIRED OF FLOWCHARTS YET?",
+      "id": "n11",
+      "confidence": "high"
+    },
+    {
+      "bounding_box": [
+        372,
+        472,
+        468,
+        605
+      ],
+      "confidence": "high",
+      "id": "n12",
+      "label": "ARE YOU A/C OR D/C?"
+    },
+    {
+      "confidence": "high",
+      "label": "POSITIVE OR NEGATIVE PHASE?",
+      "id": "n13",
+      "bounding_box": [
+        497,
+        467,
+        599,
+        611
+      ]
+    },
+    {
+      "confidence": "high",
+      "label": "TIME OR YOUR HAPPINESS?",
+      "id": "n14",
+      "bounding_box": [
+        113,
+        687,
+        213,
+        834
+      ]
+    },
+    {
+      "label": "X OR Y?",
+      "id": "n15",
+      "confidence": "high",
+      "bounding_box": [
+        361,
+        624,
+        427,
+        717
+      ]
+    },
+    {
+      "bounding_box": [
+        468,
+        643,
+        822,
+        822
+      ],
+      "confidence": "high",
+      "id": "n16_group",
+      "label": "POSITIVE OR NEGATIVE DC TERMINAL? (Full-wave Bridge Rectifier)",
+      "shape": "rectangle"
+    },
+    {
+      "label": "Line Graph",
+      "id": "n17",
+      "confidence": "high",
+      "bounding_box": [
+        24,
+        757,
+        105,
+        937
+      ]
+    },
+    {
+      "confidence": "high",
+      "label": "Scatter Plot",
+      "id": "n18",
+      "bounding_box": [
+        223,
+        709,
+        365,
+        901
+      ]
+    },
+    {
+      "shape": "rectangle",
+      "confidence": "high",
+      "id": "n19_group",
+      "label": "Battery Schematic",
+      "bounding_box": [
+        427,
+        643,
+        970,
+        970
+      ]
+    },
+    {
+      "shape": "rectangle",
+      "bounding_box": [
+        558,
+        49,
+        659,
+        279
+      ],
+      "id": "n20_group",
+      "label": "Path of Least Resistance Circuit",
+      "confidence": "high"
+    },
+    {
+      "bounding_box": [
+        511,
+        483,
+        809,
+        997
+      ],
+      "label": "Exit",
+      "id": "n22",
+      "confidence": "high"
+    }
+  ],
+  "edges": [
+    {
+      "label": null,
+      "id": "e1",
+      "source": "n1",
+      "confidence": "high",
+      "target": "n2"
+    },
+    {
+      "id": "e2",
+      "label": "NO",
+      "source": "n2",
+      "target": "n3",
+      "confidence": "high"
+    },
+    {
+      "label": "YES",
+      "id": "e3",
+      "source": "n2",
+      "target": "n2",
+      "confidence": "high"
+    },
+    {
+      "confidence": "high",
+      "target": "n4",
+      "source": "n3",
+      "label": "NO",
+      "id": "e4"
+    },
+    {
+      "id": "e5",
+      "label": "YES",
+      "source": "n3",
+      "confidence": "high",
+      "target": "n5"
+    },
+    {
+      "id": "e6",
+      "label": "AXIS",
+      "source": "n5",
+      "confidence": "high",
+      "target": "n14"
+    },
+    {
+      "target": "n17",
+      "confidence": "high",
+      "source": "n5",
+      "label": "LINE",
+      "id": "e7"
+    },
+    {
+      "source": "n14",
+      "confidence": "high",
+      "target": "n17",
+      "label": "TIME",
+      "id": "e8"
+    },
+    {
+      "confidence": "high",
+      "target": "n17",
+      "source": "n14",
+      "label": "YOUR HAPPINESS",
+      "id": "e9"
+    },
+    {
+      "label": "YES",
+      "id": "e10",
+      "source": "n4",
+      "confidence": "high",
+      "target": "n6"
+    },
+    {
+      "id": "e11",
+      "label": "NO",
+      "target": "n7",
+      "confidence": "high",
+      "source": "n4"
+    },
+    {
+      "label": "AXIS",
+      "id": "e12",
+      "source": "n6",
+      "target": "n15",
+      "confidence": "high"
+    },
+    {
+      "source": "n6",
+      "confidence": "high",
+      "target": "n18",
+      "id": "e13",
+      "label": "DATA"
+    },
+    {
+      "confidence": "high",
+      "target": "n18",
+      "source": "n15",
+      "label": "X",
+      "id": "e14"
+    },
+    {
+      "confidence": "high",
+      "target": "n18",
+      "source": "n15",
+      "label": "Y",
+      "id": "e15"
+    },
+    {
+      "id": "e16",
+      "label": "NO",
+      "target": "n8",
+      "confidence": "high",
+      "source": "n7"
+    },
+    {
+      "label": "YES",
+      "id": "e17",
+      "target": "n12",
+      "confidence": "high",
+      "source": "n7"
+    },
+    {
+      "source": "n8",
+      "confidence": "high",
+      "target": "n9",
+      "label": "NO",
+      "id": "e18"
+    },
+    {
+      "target": "n10",
+      "confidence": "high",
+      "source": "n8",
+      "id": "e19",
+      "label": "YES"
+    },
+    {
+      "target": "n20_group",
+      "confidence": "high",
+      "source": "n9",
+      "label": "YES",
+      "id": "e20"
+    },
+    {
+      "source": "n9",
+      "confidence": "high",
+      "target": "n1",
+      "label": "NEVER!",
+      "id": "e21"
+    },
+    {
+      "label": null,
+      "id": "e22",
+      "source": "n20_group",
+      "confidence": "high",
+      "target": "n10"
+    },
+    {
+      "id": "e23",
+      "label": "NO, IT'S TOTAL BS.",
+      "source": "n10",
+      "confidence": "high",
+      "target": "n11"
+    },
+    {
+      "source": "n10",
+      "confidence": "high",
+      "target": "n19_group",
+      "id": "e24",
+      "label": "YES, EVEN THOUGH IT'S TOTAL BS."
+    },
+    {
+      "label": "NO",
+      "id": "e25",
+      "target": "n1",
+      "confidence": "high",
+      "source": "n11"
+    },
+    {
+      "source": "n11",
+      "target": "n22",
+      "confidence": "high",
+      "label": "YES, I WANT TO LOOK AT SOMETHING ELSE",
+      "id": "e26"
+    },
+    {
+      "id": "e27",
+      "label": "A/C",
+      "target": "n13",
+      "confidence": "high",
+      "source": "n12"
+    },
+    {
+      "target": "n16_group",
+      "confidence": "high",
+      "source": "n12",
+      "label": "D/C",
+      "id": "e28"
+    },
+    {
+      "source": "n13",
+      "target": "n16_group",
+      "confidence": "high",
+      "label": "+",
+      "id": "e29"
+    },
+    {
+      "target": "n16_group",
+      "confidence": "high",
+      "source": "n13",
+      "label": "-",
+      "id": "e30"
+    },
+    {
+      "label": null,
+      "id": "e31",
+      "target": "n19_group",
+      "confidence": "high",
+      "source": "n16_group"
+    },
+    {
+      "confidence": "high",
+      "target": "n16_group",
+      "source": "n19_group",
+      "label": null,
+      "id": "e32"
+    }
+  ],
+  "metadata": {
+    "source_file": "examples/xkcd-flowchart/flowcharts.png",
+    "image_width": 740,
+    "image_height": 775,
+    "status": "complete"
+  }
+}
