@@ -1,0 +1,8 @@
+.venv/
+data/
+*.json
+__pycache__/
+*.pyc
+.env
+.env.deploy
+uv.lock

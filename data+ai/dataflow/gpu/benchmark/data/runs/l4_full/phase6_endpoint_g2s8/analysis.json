@@ -1,0 +1,25 @@
+{
+  "endpoint_machine_type": "g2-standard-8",
+  "per_machine": {
+    "g2-standard-4": {
+      "threads_local_gpu": 2,
+      "threads_vertex_ai": 7,
+      "max_batch_local_gpu": 256,
+      "max_batch_vertex_ai": 192,
+      "min_batch_local_gpu": 8,
+      "min_batch_vertex_ai": 32,
+      "local_capacity": 100,
+      "vertex_capacity": 125
+    },
+    "g2-standard-8": {
+      "threads_local_gpu": 2,
+      "threads_vertex_ai": 12,
+      "max_batch_local_gpu": 224,
+      "max_batch_vertex_ai": 224,
+      "min_batch_local_gpu": 192,
+      "min_batch_vertex_ai": 4,
+      "local_capacity": 75,
+      "vertex_capacity": 125
+    }
+  }
+}

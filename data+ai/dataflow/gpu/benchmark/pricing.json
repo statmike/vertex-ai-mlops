@@ -1,0 +1,32 @@
+{
+  "compute_engine": {
+    "machines": {
+      "n1-standard-4": 0.189999,
+      "n1-standard-8": 0.379998,
+      "g2-standard-4": 0.706832276,
+      "g2-standard-8": 0.853624312
+    },
+    "gpu_accelerators": {
+      "nvidia-tesla-t4": 0.35
+    },
+    "notes": "n1 prices are CPU/memory only — add gpu_accelerators cost separately. g2 prices include the single L4 GPU.",
+    "source": "https://cloud.google.com/compute/all-pricing?e=48754805"
+  },
+  "vertex_ai_prediction": {
+    "machines": {
+      "n1-standard-4": 0.219,
+      "n1-standard-8": 0.438,
+      "g2-standard-4": 0.81293,
+      "g2-standard-8": 0.98181
+    },
+    "gpu_accelerators": {
+      "nvidia-tesla-t4": 0.402
+    },
+    "notes": "n1 prices are CPU/memory only — add gpu_accelerators cost separately. g2 prices include the single L4 GPU.",
+    "source": "https://cloud.google.com/vertex-ai/pricing?e=48754805#prediction-and-explanation"
+  },
+  "gpu_inclusive_families": ["g2", "a2", "a3"],
+  "source": "cloud.google.com pricing (March 2026)",
+  "region": "us-central1",
+  "currency": "USD per hour, on-demand"
+}

@@ -1,0 +1,35 @@
+FROM nvidia/cuda:12.1.1-runtime-ubuntu22.04
+
+# Install Python 3.11
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 python3.11-venv python3-pip \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/bin/python3.11 /usr/bin/python3 \
+    && ln -sf /usr/bin/python3.11 /usr/bin/python
+
+RUN python3 -m pip install --no-cache-dir --upgrade pip
+
+RUN pip install --no-cache-dir \
+    torch==2.1.2+cu121 \
+    --index-url https://download.pytorch.org/whl/cu121
+
+RUN pip install --no-cache-dir \
+    transformers==4.36.2 \
+    flask==3.0.0 \
+    gunicorn==21.2.0 \
+    google-cloud-storage==2.19.0
+
+COPY benchmark/model.py /app/benchmark/model.py
+COPY benchmark/__init__.py /app/benchmark/__init__.py
+COPY serve.py /app/serve.py
+
+WORKDIR /app
+
+# Vertex AI custom containers expect AIP_HTTP_PORT (default 8080)
+ENV AIP_HTTP_PORT=8080
+
+EXPOSE 8080
+
+# Use gunicorn for production serving; long timeout for model download + warmup
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--threads", "4", \
+     "--timeout", "600", "serve:app"]

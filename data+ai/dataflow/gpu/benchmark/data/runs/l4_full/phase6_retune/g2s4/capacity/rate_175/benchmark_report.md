@@ -1,0 +1,44 @@
+# Benchmark Report
+
+Generated: 2026-03-08 10:50:40
+
+## Configuration
+
+| Parameter | Value |
+|---|---|
+| Messages per phase | 100s per phase |
+| Rates (msg/s) | 175 |
+| Experiments | Local GPU, Vertex AI |
+
+## Throughput
+
+| Rate (msg/s) | Local GPU | Vertex AI |
+|---|---|---|
+| 175 | 167.1 | 168.0 |
+
+## End-to-End Latency (ms)
+
+| Rate | Percentile | Local GPU | Vertex AI |
+|---|---|---|---|
+| 175 | p50 | 4318.0 | 4063.0 |
+| 175 | p95 | 5005.0 | 4438.0 |
+| 175 | p99 | 5156.0 | 4503.0 |
+
+## GPU Inference Time (ms)
+
+| Rate | Percentile | Local GPU | Vertex AI |
+|---|---|---|---|
+| 175 | p50 | 5.4 | 11.0 |
+| 175 | p95 | 11.4 | 32.3 |
+| 175 | p99 | 12.4 | 40.4 |
+
+## Charts
+
+### Latency vs Publish Rate
+![Latency](charts/latency.png)
+
+### GPU Inference Time vs Publish Rate
+![GPU Time](charts/gpu_time.png)
+
+### Throughput vs Publish Rate
+![Throughput](charts/throughput.png)

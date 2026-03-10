@@ -1,0 +1,37 @@
+{
+  "best_settings": {
+    "threads_local_gpu": 2,
+    "threads_vertex_ai": 7,
+    "max_batch_local_gpu": 256,
+    "max_batch_vertex_ai": 96,
+    "min_batch_local_gpu": 8,
+    "min_batch_vertex_ai": 32,
+    "machine_type": "g2-standard-4",
+    "endpoint_machine_type": "g2-standard-4",
+    "local_capacity": 100,
+    "vertex_capacity": 75
+  },
+  "per_machine": {
+    "g2-standard-4": {
+      "threads_local_gpu": 2,
+      "threads_vertex_ai": 7,
+      "max_batch_local_gpu": 256,
+      "max_batch_vertex_ai": 96,
+      "min_batch_local_gpu": 8,
+      "min_batch_vertex_ai": 32,
+      "local_capacity": 100,
+      "vertex_capacity": 75
+    },
+    "g2-standard-8": {
+      "threads_local_gpu": 2,
+      "threads_vertex_ai": 9,
+      "max_batch_local_gpu": 224,
+      "max_batch_vertex_ai": 160,
+      "min_batch_local_gpu": 192,
+      "min_batch_vertex_ai": 1,
+      "local_capacity": 75,
+      "vertex_capacity": 100
+    }
+  },
+  "winner_machine": "g2-standard-4"
+}

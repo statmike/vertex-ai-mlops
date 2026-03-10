@@ -1,0 +1,54 @@
+{
+  "vertex_ai": {
+    "250": {
+      "count": 25000,
+      "elapsed_s": 107.4,
+      "throughput": 232.7,
+      "processing_throughput": 234.3,
+      "latency_p50": 5670.0,
+      "latency_p95": 7860.0,
+      "latency_p99": 8011.0,
+      "latency_mean": 5150.4,
+      "gpu_p50": 6.1,
+      "gpu_p95": 21.2,
+      "gpu_p99": 34.2,
+      "gpu_mean": 8.0,
+      "confidence_mean": 0.9528,
+      "published_count": 25000,
+      "collected_count": 25000,
+      "loss_rate": 0.0,
+      "queue_wait_p50": 5630.5,
+      "queue_wait_p95": 7821.0,
+      "queue_wait_p99": 7975.0,
+      "inference_overhead_p50": 35.0,
+      "inference_overhead_p95": 59.0,
+      "inference_overhead_p99": 74.0
+    }
+  },
+  "local_gpu": {
+    "250": {
+      "count": 25000,
+      "elapsed_s": 107.7,
+      "throughput": 232.2,
+      "processing_throughput": 233.9,
+      "latency_p50": 5692.0,
+      "latency_p95": 8260.0,
+      "latency_p99": 8371.0,
+      "latency_mean": 5227.4,
+      "gpu_p50": 6.4,
+      "gpu_p95": 18.1,
+      "gpu_p99": 21.5,
+      "gpu_mean": 7.7,
+      "confidence_mean": 0.9528,
+      "published_count": 25000,
+      "collected_count": 25000,
+      "loss_rate": 0.0,
+      "queue_wait_p50": 5670.0,
+      "queue_wait_p95": 8239.0,
+      "queue_wait_p99": 8350.0,
+      "inference_overhead_p50": 21.0,
+      "inference_overhead_p95": 27.0,
+      "inference_overhead_p99": 29.0
+    }
+  }
+}

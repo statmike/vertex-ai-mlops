@@ -1,0 +1,28 @@
+{
+  "vertex_ai": {
+    "750": {
+      "count": 75000,
+      "elapsed_s": 100.2,
+      "throughput": 748.8,
+      "processing_throughput": 750.6,
+      "latency_p50": 79.0,
+      "latency_p95": 200.0,
+      "latency_p99": 471.0,
+      "latency_mean": 113.4,
+      "gpu_p50": 7.5,
+      "gpu_p95": 27.1,
+      "gpu_p99": 35.9,
+      "gpu_mean": 10.1,
+      "confidence_mean": 0.9522,
+      "published_count": 75000,
+      "collected_count": 75000,
+      "loss_rate": 0.0,
+      "queue_wait_p50": 53.0,
+      "queue_wait_p95": 162.0,
+      "queue_wait_p99": 399.0,
+      "inference_overhead_p50": 19.0,
+      "inference_overhead_p95": 49.0,
+      "inference_overhead_p99": 86.0
+    }
+  }
+}

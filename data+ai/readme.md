@@ -108,6 +108,40 @@ The following table provides a comprehensive guide to training custom PyTorch mo
 - **[PyTorch Framework Guide](../Framework%20Workflows/PyTorch/readme.md)** - Complete PyTorch workflow documentation
 
 
+## GPU Inference Benchmark: Dataflow Local GPU vs Vertex AI Endpoint
+
+When serving GPU models in a Dataflow streaming pipeline, there are two approaches:
+
+- **Local GPU** — The model runs directly on each Dataflow worker's attached GPU. Inference is in-process with no network hop.
+- **Vertex AI Endpoint** — Dataflow workers send HTTP prediction requests to a managed Vertex AI endpoint. The model runs on separate GPU infrastructure.
+
+Both use identical pipeline code via Beam's `RunInference` — only the `ModelHandler` differs. This benchmark answers: **which approach is cheapest to sustain 1000 msg/s at p99 < 750ms?**
+
+### Methodology
+
+An 8-phase systematic capacity planning study isolating one variable at a time:
+
+1. **Baseline Capacity** — single worker rate sweep to find saturation
+2. **Thread Tuning** — sweep harness threads (1–12)
+3. **Batch Size** — sweep `max_batch_size` for GPU throughput
+4. **Min Batch Size** — tune accumulation wait tradeoff
+5. **Machine Sweep** — compare worker and endpoint machine types
+6. **Re-Tune** — optimize settings per machine type
+7. **Scaling** — verify linear scaling with multiple workers
+8. **Cost Analysis** — find cheapest config for the target
+
+### Key Results
+
+| Metric | T4 (n1-standard) | L4 (g2-standard) |
+|---|---|---|
+| Best Local GPU capacity | 100 msg/s per worker | 100 msg/s per worker |
+| Best Vertex AI capacity | 100 msg/s per worker+replica | 100 msg/s per worker+replica |
+| Cheapest at 1000 msg/s | **$7.30/hr** (`10×dataflow:n1s8+t4`) | **$7.07/hr** (`10×dataflow:g2s4+l4`) |
+
+Both GPU types achieve the target most cheaply with the Local GPU approach — no endpoint overhead, simpler architecture, and the GPU is fully utilized on each worker.
+
+**[View the full Benchmark Report →](dataflow/gpu/benchmark/reports/benchmark_report.md)** | **[Benchmark Setup & Code →](dataflow/gpu/benchmark/README.md)**
+
 ### TO BE ADDED
 
 - Training Options: Vertex, BQML

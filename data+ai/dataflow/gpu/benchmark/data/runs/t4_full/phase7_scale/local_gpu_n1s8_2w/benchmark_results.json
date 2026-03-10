@@ -1,0 +1,28 @@
+{
+  "local_gpu": {
+    "200": {
+      "count": 20000,
+      "elapsed_s": 100.1,
+      "throughput": 199.8,
+      "processing_throughput": 200.5,
+      "latency_p50": 68.0,
+      "latency_p95": 196.0,
+      "latency_p99": 330.0,
+      "latency_mean": 86.2,
+      "gpu_p50": 9.1,
+      "gpu_p95": 12.3,
+      "gpu_p99": 13.8,
+      "gpu_mean": 9.4,
+      "confidence_mean": 0.9528,
+      "published_count": 20000,
+      "collected_count": 20000,
+      "loss_rate": 0.0,
+      "queue_wait_p50": 57.0,
+      "queue_wait_p95": 185.0,
+      "queue_wait_p99": 319.0,
+      "inference_overhead_p50": 10.0,
+      "inference_overhead_p95": 14.0,
+      "inference_overhead_p99": 15.0
+    }
+  }
+}

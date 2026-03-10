@@ -1,0 +1,1534 @@
+
+======================================================================
+  PRE-PHASE 1: Scaling Vertex AI endpoint to 1 replica
+======================================================================
+
+
+──────────────────────────────────────────────────────────────────────
+  Scale Vertex AI endpoint: 1 replica(s)
+  $ uv run python scripts/scale_endpoint.py --env_file .env.l4 --replicas 1
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Scale Vertex AI endpoint: 1 replica(s) — 2.3 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 1: Baseline capacity (12 threads, default batch, rates [25, 50, 75, 100, 125, 150])
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 25 50 75 100 125 150 --num_workers 1 --output_dir data/runs/l4_full/phase1_capacity --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 1: Baseline capacity (12 threads, default batch, rates [25, 50, 75, 100, 125, 150]) — 18.2 min
+
+
+======================================================================
+  PHASE 2: Thread Count Sweep — 12 values ([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+======================================================================
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 2 [1t]: Thread sweep: 1 threads
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 25 50 75 100 125 150 --num_workers 1 --harness_threads 1 --output_dir data/runs/l4_full/phase2_threads/threads_1 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 2 [1t]: Thread sweep: 1 threads — 20.3 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 2 [2t]: Thread sweep: 2 threads
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 25 50 75 100 125 150 --num_workers 1 --harness_threads 2 --output_dir data/runs/l4_full/phase2_threads/threads_2 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 2 [2t]: Thread sweep: 2 threads — 19.7 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 2 [3t]: Thread sweep: 3 threads
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 25 50 75 100 125 150 --num_workers 1 --harness_threads 3 --output_dir data/runs/l4_full/phase2_threads/threads_3 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 2 [3t]: Thread sweep: 3 threads — 18.8 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 2 [4t]: Thread sweep: 4 threads
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 25 50 75 100 125 150 --num_workers 1 --harness_threads 4 --output_dir data/runs/l4_full/phase2_threads/threads_4 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 2 [4t]: Thread sweep: 4 threads — 18.6 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 2 [5t]: Thread sweep: 5 threads
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 25 50 75 100 125 150 --num_workers 1 --harness_threads 5 --output_dir data/runs/l4_full/phase2_threads/threads_5 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 2 [5t]: Thread sweep: 5 threads — 19.6 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 2 [6t]: Thread sweep: 6 threads
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 25 50 75 100 125 150 --num_workers 1 --harness_threads 6 --output_dir data/runs/l4_full/phase2_threads/threads_6 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 2 [6t]: Thread sweep: 6 threads — 18.4 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 2 [7t]: Thread sweep: 7 threads
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 25 50 75 100 125 150 --num_workers 1 --harness_threads 7 --output_dir data/runs/l4_full/phase2_threads/threads_7 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 2 [7t]: Thread sweep: 7 threads — 18.7 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 2 [8t]: Thread sweep: 8 threads
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 25 50 75 100 125 150 --num_workers 1 --harness_threads 8 --output_dir data/runs/l4_full/phase2_threads/threads_8 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 2 [8t]: Thread sweep: 8 threads — 19.6 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 2 [9t]: Thread sweep: 9 threads
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 25 50 75 100 125 150 --num_workers 1 --harness_threads 9 --output_dir data/runs/l4_full/phase2_threads/threads_9 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 2 [9t]: Thread sweep: 9 threads — 18.3 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 2 [10t]: Thread sweep: 10 threads
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 25 50 75 100 125 150 --num_workers 1 --harness_threads 10 --output_dir data/runs/l4_full/phase2_threads/threads_10 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 2 [10t]: Thread sweep: 10 threads — 18.3 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 2 [11t]: Thread sweep: 11 threads
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 25 50 75 100 125 150 --num_workers 1 --harness_threads 11 --output_dir data/runs/l4_full/phase2_threads/threads_11 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 2 [11t]: Thread sweep: 11 threads — 18.7 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 2 [12t]: Thread sweep: 12 threads
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 25 50 75 100 125 150 --num_workers 1 --harness_threads 12 --output_dir data/runs/l4_full/phase2_threads/threads_12 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 2 [12t]: Thread sweep: 12 threads — 18.9 min
+
+
+======================================================================
+  PHASE 2 ANALYSIS: Optimal Thread Count
+======================================================================
+
+  local_gpu:
+    Best threads:      2
+    Per-worker capacity:  100 msg/s
+    Latency p50:          55.0 ms
+    Latency p99:          335.0 ms
+    Processing throughput: 100.3 msg/s
+
+  vertex_ai:
+    Best threads:      10
+    Per-worker capacity:  100 msg/s
+    Latency p50:          78.0 ms
+    Latency p99:          411.0 ms
+    Processing throughput: 100.4 msg/s
+
+  Analysis saved: data/runs/l4_full/phase2_threads/analysis.json
+
+======================================================================
+  PHASE 3: max_batch_size Sweep — 7 sizes × 3 rates ([75, 100, 125])
+  Using Local GPU threads: 2 (from Phase 2)
+  Using Vertex AI threads: 10 (from Phase 2)
+======================================================================
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 3 [64]: Batch sweep: max_batch_size=64
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 64 --output_dir data/runs/l4_full/phase3_max_batch/batch_64 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 3 [64]: Batch sweep: max_batch_size=64 — 12.3 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 3 [96]: Batch sweep: max_batch_size=96
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 96 --output_dir data/runs/l4_full/phase3_max_batch/batch_96 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 3 [96]: Batch sweep: max_batch_size=96 — 12.1 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 3 [128]: Batch sweep: max_batch_size=128
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 128 --output_dir data/runs/l4_full/phase3_max_batch/batch_128 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 3 [128]: Batch sweep: max_batch_size=128 — 12.5 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 3 [160]: Batch sweep: max_batch_size=160
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 160 --output_dir data/runs/l4_full/phase3_max_batch/batch_160 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 3 [160]: Batch sweep: max_batch_size=160 — 12.7 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 3 [192]: Batch sweep: max_batch_size=192
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 192 --output_dir data/runs/l4_full/phase3_max_batch/batch_192 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 3 [192]: Batch sweep: max_batch_size=192 — 11.6 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 3 [224]: Batch sweep: max_batch_size=224
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 224 --output_dir data/runs/l4_full/phase3_max_batch/batch_224 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 3 [224]: Batch sweep: max_batch_size=224 — 13.5 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 3 [256]: Batch sweep: max_batch_size=256
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 256 --output_dir data/runs/l4_full/phase3_max_batch/batch_256 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 3 [256]: Batch sweep: max_batch_size=256 — 12.8 min
+
+
+======================================================================
+  PHASE 3 ANALYSIS: Optimal max_batch_size
+======================================================================
+
+  local_gpu:
+    Best max_batch_size:      224
+    Per-worker capacity:  100 msg/s
+    Latency p50:          182.0 ms
+    Latency p99:          403.0 ms
+    Processing throughput: 100.3 msg/s
+
+  vertex_ai:
+    Best max_batch_size:      64
+    Per-worker capacity:  100 msg/s
+    Latency p50:          70.0 ms
+    Latency p99:          232.0 ms
+    Processing throughput: 100.2 msg/s
+
+  Analysis saved: data/runs/l4_full/phase3_max_batch/analysis.json
+
+======================================================================
+  PHASE 4: min_batch_size Sweep — 10 values × 3 rates ([75, 100, 125])
+  Values: [1, 4, 8, 16, 32, 64, 96, 128, 160, 192] (1,4,8,16,32 then by 32)
+  Using threads: LG=2, VA=10
+  Using max_batch: LG=224, VA=64
+======================================================================
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 4 [min=1]: min_batch sweep: min_batch_size=1
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 1 --output_dir data/runs/l4_full/phase4_min_batch/min_1 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 4 [min=1]: min_batch sweep: min_batch_size=1 — 11.9 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 4 [min=4]: min_batch sweep: min_batch_size=4
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 4 --output_dir data/runs/l4_full/phase4_min_batch/min_4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 4 [min=4]: min_batch sweep: min_batch_size=4 — 13.2 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 4 [min=8]: min_batch sweep: min_batch_size=8
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 8 --output_dir data/runs/l4_full/phase4_min_batch/min_8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 4 [min=8]: min_batch sweep: min_batch_size=8 — 11.6 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 4 [min=16]: min_batch sweep: min_batch_size=16
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 16 --output_dir data/runs/l4_full/phase4_min_batch/min_16 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 4 [min=16]: min_batch sweep: min_batch_size=16 — 12.3 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 4 [min=32]: min_batch sweep: min_batch_size=32
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 32 --output_dir data/runs/l4_full/phase4_min_batch/min_32 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 4 [min=32]: min_batch sweep: min_batch_size=32 — 12.3 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 4 [min=64]: min_batch sweep: min_batch_size=64
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 64 --output_dir data/runs/l4_full/phase4_min_batch/min_64 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 4 [min=64]: min_batch sweep: min_batch_size=64 — 12.6 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 4 [min=96]: min_batch sweep: min_batch_size=96
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 96 --output_dir data/runs/l4_full/phase4_min_batch/min_96 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 4 [min=96]: min_batch sweep: min_batch_size=96 — 15.4 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 4 [min=128]: min_batch sweep: min_batch_size=128
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 128 --output_dir data/runs/l4_full/phase4_min_batch/min_128 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 4 [min=128]: min_batch sweep: min_batch_size=128 — 15.9 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 4 [min=160]: min_batch sweep: min_batch_size=160
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 160 --output_dir data/runs/l4_full/phase4_min_batch/min_160 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 4 [min=160]: min_batch sweep: min_batch_size=160 — 15.9 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 4 [min=192]: min_batch sweep: min_batch_size=192
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 192 --output_dir data/runs/l4_full/phase4_min_batch/min_192 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 4 [min=192]: min_batch sweep: min_batch_size=192 — 16.0 min
+
+
+======================================================================
+  PHASE 4 ANALYSIS: Optimal min_batch_size
+======================================================================
+
+  local_gpu:
+    Best min_batch_size:      160
+    Per-worker capacity:  100 msg/s
+    Latency p50:          57.0 ms
+    Latency p99:          376.0 ms
+    Processing throughput: 100.4 msg/s
+
+  vertex_ai:
+    Best min_batch_size:      32
+    Per-worker capacity:  100 msg/s
+    Latency p50:          75.0 ms
+    Latency p99:          435.0 ms
+    Processing throughput: 100.4 msg/s
+
+  Analysis saved: data/runs/l4_full/phase4_min_batch/analysis.json
+
+======================================================================
+  PHASE 5a: Dataflow Worker Machine Sweep — 2 types (['g2-standard-4', 'g2-standard-8'])
+  Using optimal threads + batch from Phases 2–4
+======================================================================
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 5a [g2-standard-4]: Worker machine: g2-standard-4
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 25 50 75 100 125 150 --num_workers 1 --machine_type g2-standard-4 --output_dir data/runs/l4_full/phase5_machine/g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 5a [g2-standard-4]: Worker machine: g2-standard-4 — 18.0 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 5a [g2-standard-8]: Worker machine: g2-standard-8
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 25 50 75 100 125 150 --num_workers 1 --machine_type g2-standard-8 --output_dir data/runs/l4_full/phase5_machine/g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 10 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 5a [g2-standard-8]: Worker machine: g2-standard-8 — 18.5 min
+
+
+======================================================================
+  PHASE 5a ANALYSIS: Optimal Worker Machine Type
+======================================================================
+
+  local_gpu:
+    Best machine_type:      g2-standard-4
+    Per-worker capacity:  100 msg/s
+    Latency p50:          58.0 ms
+    Latency p99:          617.0 ms
+    Processing throughput: 100.7 msg/s
+
+  vertex_ai:
+    Best machine_type:      g2-standard-8
+    Per-worker capacity:  50 msg/s
+    Latency p50:          56.0 ms
+    Latency p99:          115.0 ms
+    Processing throughput: 50.2 msg/s
+
+  Analysis saved: data/runs/l4_full/phase5_machine/analysis.json
+
+======================================================================
+  PHASE 5b: Vertex AI Endpoint Machine Sweep — 2 types (['g2-standard-4', 'g2-standard-8'])
+  Testing Vertex AI only (endpoint machine change)
+======================================================================
+
+
+  Scaling endpoint to machine=g2-standard-4, replicas=1...
+
+──────────────────────────────────────────────────────────────────────
+  Scale Vertex AI endpoint: 1 replica(s), machine=g2-standard-4
+  $ uv run python scripts/scale_endpoint.py --env_file .env.l4 --replicas 1 --machine-type g2-standard-4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Scale Vertex AI endpoint: 1 replica(s), machine=g2-standard-4 — 0.1 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 5b [g2-standard-4]: Endpoint machine: g2-standard-4
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --experiments vertex_ai --output_dir data/runs/l4_full/phase5_endpoint/g2-standard-4 --harness_threads_vertex_ai 10 --max_batch_size_vertex_ai 64 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 5b [g2-standard-4]: Endpoint machine: g2-standard-4 — 12.2 min
+
+
+  Scaling endpoint to machine=g2-standard-8, replicas=1...
+
+──────────────────────────────────────────────────────────────────────
+  Scale Vertex AI endpoint: 1 replica(s), machine=g2-standard-8
+  $ uv run python scripts/scale_endpoint.py --env_file .env.l4 --replicas 1 --machine-type g2-standard-8
+──────────────────────────────────────────────────────────────────────
+
+
+  [FAILED (exit 1)] Scale Vertex AI endpoint: 1 replica(s), machine=g2-standard-8 — 0.0 min
+
+  WARNING: Failed to scale endpoint (Scale Vertex AI endpoint: 1 replica(s), machine=g2-standard-8)
+  WARNING: Failed to set endpoint to g2-standard-8. Skipping.
+
+======================================================================
+  PHASE 5b ANALYSIS: Optimal Endpoint Machine Type
+======================================================================
+
+  vertex_ai:
+    Best machine_type:      g2-standard-4
+    Per-worker capacity:  100 msg/s
+    Latency p50:          73.0 ms
+    Latency p99:          428.0 ms
+    Processing throughput: 100.5 msg/s
+
+  Analysis saved: data/runs/l4_full/phase5_endpoint/analysis.json
+
+======================================================================
+  PRE-PHASE 6: Setting endpoint to best machine (g2-standard-4)
+======================================================================
+
+
+──────────────────────────────────────────────────────────────────────
+  Scale Vertex AI endpoint: 1 replica(s), machine=g2-standard-4
+  $ uv run python scripts/scale_endpoint.py --env_file .env.l4 --replicas 1 --machine-type g2-standard-4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Scale Vertex AI endpoint: 1 replica(s), machine=g2-standard-4 — 0.0 min
+
+
+======================================================================
+  PHASE 6: Re-tune on All Machine Types
+  Worker machines: ['g2-standard-4', 'g2-standard-8']
+  Endpoint machine: g2-standard-4
+======================================================================
+
+
+======================================================================
+  PHASE 6 — Machine: g2-standard-4 (g2s4)
+======================================================================
+
+
+======================================================================
+  PHASE 6a [g2s4]: Thread Re-sweep — 12 values (1..12 by 1)
+======================================================================
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s4:1t]: Re-tune threads: 1
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 1 --output_dir data/runs/l4_full/phase6_retune/g2s4/threads/threads_1 --machine_type g2-standard-4 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s4:1t]: Re-tune threads: 1 — 13.5 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s4:2t]: Re-tune threads: 2
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 2 --output_dir data/runs/l4_full/phase6_retune/g2s4/threads/threads_2 --machine_type g2-standard-4 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s4:2t]: Re-tune threads: 2 — 12.4 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s4:3t]: Re-tune threads: 3
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 3 --output_dir data/runs/l4_full/phase6_retune/g2s4/threads/threads_3 --machine_type g2-standard-4 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s4:3t]: Re-tune threads: 3 — 12.1 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s4:4t]: Re-tune threads: 4
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 4 --output_dir data/runs/l4_full/phase6_retune/g2s4/threads/threads_4 --machine_type g2-standard-4 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s4:4t]: Re-tune threads: 4 — 12.9 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s4:5t]: Re-tune threads: 5
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 5 --output_dir data/runs/l4_full/phase6_retune/g2s4/threads/threads_5 --machine_type g2-standard-4 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s4:5t]: Re-tune threads: 5 — 14.3 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s4:6t]: Re-tune threads: 6
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 6 --output_dir data/runs/l4_full/phase6_retune/g2s4/threads/threads_6 --machine_type g2-standard-4 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s4:6t]: Re-tune threads: 6 — 12.1 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s4:7t]: Re-tune threads: 7
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 7 --output_dir data/runs/l4_full/phase6_retune/g2s4/threads/threads_7 --machine_type g2-standard-4 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s4:7t]: Re-tune threads: 7 — 12.6 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s4:8t]: Re-tune threads: 8
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 8 --output_dir data/runs/l4_full/phase6_retune/g2s4/threads/threads_8 --machine_type g2-standard-4 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s4:8t]: Re-tune threads: 8 — 12.8 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s4:9t]: Re-tune threads: 9
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 9 --output_dir data/runs/l4_full/phase6_retune/g2s4/threads/threads_9 --machine_type g2-standard-4 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s4:9t]: Re-tune threads: 9 — 12.2 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s4:10t]: Re-tune threads: 10
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 10 --output_dir data/runs/l4_full/phase6_retune/g2s4/threads/threads_10 --machine_type g2-standard-4 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s4:10t]: Re-tune threads: 10 — 13.6 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s4:11t]: Re-tune threads: 11
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 11 --output_dir data/runs/l4_full/phase6_retune/g2s4/threads/threads_11 --machine_type g2-standard-4 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s4:11t]: Re-tune threads: 11 — 12.4 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s4:12t]: Re-tune threads: 12
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 12 --output_dir data/runs/l4_full/phase6_retune/g2s4/threads/threads_12 --machine_type g2-standard-4 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s4:12t]: Re-tune threads: 12 — 12.9 min
+
+  local_gpu:
+    Best threads:      2
+    Per-worker capacity:  100 msg/s
+    Latency p50:          57.0 ms
+    Latency p99:          422.0 ms
+    Processing throughput: 100.5 msg/s
+
+  vertex_ai:
+    Best threads:      7
+    Per-worker capacity:  100 msg/s
+    Latency p50:          70.0 ms
+    Latency p99:          287.0 ms
+    Processing throughput: 100.2 msg/s
+
+
+======================================================================
+  PHASE 6b [g2s4]: max_batch_size Re-sweep — 7 sizes (64..256 by 32)
+  Using 6a threads: LG=2, VA=7
+======================================================================
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6b [g2s4:64]: Re-tune max_batch: 64
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 64 --output_dir data/runs/l4_full/phase6_retune/g2s4/max_batch/batch_64 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6b [g2s4:64]: Re-tune max_batch: 64 — 16.1 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6b [g2s4:96]: Re-tune max_batch: 96
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 96 --output_dir data/runs/l4_full/phase6_retune/g2s4/max_batch/batch_96 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6b [g2s4:96]: Re-tune max_batch: 96 — 15.9 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6b [g2s4:128]: Re-tune max_batch: 128
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 128 --output_dir data/runs/l4_full/phase6_retune/g2s4/max_batch/batch_128 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6b [g2s4:128]: Re-tune max_batch: 128 — 16.0 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6b [g2s4:160]: Re-tune max_batch: 160
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 160 --output_dir data/runs/l4_full/phase6_retune/g2s4/max_batch/batch_160 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6b [g2s4:160]: Re-tune max_batch: 160 — 12.8 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6b [g2s4:192]: Re-tune max_batch: 192
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 192 --output_dir data/runs/l4_full/phase6_retune/g2s4/max_batch/batch_192 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6b [g2s4:192]: Re-tune max_batch: 192 — 13.3 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6b [g2s4:224]: Re-tune max_batch: 224
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 224 --output_dir data/runs/l4_full/phase6_retune/g2s4/max_batch/batch_224 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6b [g2s4:224]: Re-tune max_batch: 224 — 13.0 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6b [g2s4:256]: Re-tune max_batch: 256
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 256 --output_dir data/runs/l4_full/phase6_retune/g2s4/max_batch/batch_256 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6b [g2s4:256]: Re-tune max_batch: 256 — 12.4 min
+
+  local_gpu:
+    Best max_batch_size:      256
+    Per-worker capacity:  100 msg/s
+    Latency p50:          57.0 ms
+    Latency p99:          331.0 ms
+    Processing throughput: 100.4 msg/s
+
+  vertex_ai:
+    Best max_batch_size:      96
+    Per-worker capacity:  100 msg/s
+    Latency p50:          71.0 ms
+    Latency p99:          211.0 ms
+    Processing throughput: 100.3 msg/s
+
+
+======================================================================
+  PHASE 6c [g2s4]: min_batch_size Re-sweep — 11 values (1..224)
+  Using 6a threads + 6b batch
+======================================================================
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s4:min=1]: Re-tune min_batch: 1
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 1 --output_dir data/runs/l4_full/phase6_retune/g2s4/min_batch/min_1 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s4:min=1]: Re-tune min_batch: 1 — 12.8 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s4:min=4]: Re-tune min_batch: 4
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 4 --output_dir data/runs/l4_full/phase6_retune/g2s4/min_batch/min_4 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s4:min=4]: Re-tune min_batch: 4 — 12.0 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s4:min=8]: Re-tune min_batch: 8
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 8 --output_dir data/runs/l4_full/phase6_retune/g2s4/min_batch/min_8 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s4:min=8]: Re-tune min_batch: 8 — 12.5 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s4:min=16]: Re-tune min_batch: 16
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 16 --output_dir data/runs/l4_full/phase6_retune/g2s4/min_batch/min_16 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s4:min=16]: Re-tune min_batch: 16 — 13.3 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s4:min=32]: Re-tune min_batch: 32
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 32 --output_dir data/runs/l4_full/phase6_retune/g2s4/min_batch/min_32 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s4:min=32]: Re-tune min_batch: 32 — 12.0 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s4:min=64]: Re-tune min_batch: 64
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 64 --output_dir data/runs/l4_full/phase6_retune/g2s4/min_batch/min_64 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s4:min=64]: Re-tune min_batch: 64 — 12.8 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s4:min=96]: Re-tune min_batch: 96
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 96 --output_dir data/runs/l4_full/phase6_retune/g2s4/min_batch/min_96 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s4:min=96]: Re-tune min_batch: 96 — 12.3 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s4:min=128]: Re-tune min_batch: 128
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 128 --output_dir data/runs/l4_full/phase6_retune/g2s4/min_batch/min_128 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s4:min=128]: Re-tune min_batch: 128 — 15.8 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s4:min=160]: Re-tune min_batch: 160
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 160 --output_dir data/runs/l4_full/phase6_retune/g2s4/min_batch/min_160 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s4:min=160]: Re-tune min_batch: 160 — 15.8 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s4:min=192]: Re-tune min_batch: 192
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 192 --output_dir data/runs/l4_full/phase6_retune/g2s4/min_batch/min_192 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s4:min=192]: Re-tune min_batch: 192 — 15.8 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s4:min=224]: Re-tune min_batch: 224
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 224 --output_dir data/runs/l4_full/phase6_retune/g2s4/min_batch/min_224 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s4:min=224]: Re-tune min_batch: 224 — 15.8 min
+
+  local_gpu:
+    Best min_batch_size:      8
+    Per-worker capacity:  100 msg/s
+    Latency p50:          91.0 ms
+    Latency p99:          326.0 ms
+    Processing throughput: 100.2 msg/s
+
+  vertex_ai:
+    Best min_batch_size:      32
+    Per-worker capacity:  100 msg/s
+    Latency p50:          67.0 ms
+    Latency p99:          223.0 ms
+    Processing throughput: 100.2 msg/s
+
+
+======================================================================
+  PHASE 6d [g2s4]: Capacity Refinement — 12 rates
+  Rates: [50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325]
+  Using all best settings from 6a/6b/6c
+======================================================================
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s4:50]: Capacity refinement: 50 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 50 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s4/capacity/rate_50 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --min_batch_size_local_gpu 8 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s4:50]: Capacity refinement: 50 msg/s — 9.5 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s4:75]: Capacity refinement: 75 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s4/capacity/rate_75 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --min_batch_size_local_gpu 8 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s4:75]: Capacity refinement: 75 msg/s — 8.4 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s4:100]: Capacity refinement: 100 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 100 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s4/capacity/rate_100 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --min_batch_size_local_gpu 8 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s4:100]: Capacity refinement: 100 msg/s — 10.9 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s4:125]: Capacity refinement: 125 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 125 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s4/capacity/rate_125 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --min_batch_size_local_gpu 8 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s4:125]: Capacity refinement: 125 msg/s — 8.3 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s4:150]: Capacity refinement: 150 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 150 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s4/capacity/rate_150 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --min_batch_size_local_gpu 8 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s4:150]: Capacity refinement: 150 msg/s — 8.8 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s4:175]: Capacity refinement: 175 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 175 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s4/capacity/rate_175 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --min_batch_size_local_gpu 8 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s4:175]: Capacity refinement: 175 msg/s — 8.2 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s4:200]: Capacity refinement: 200 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 200 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s4/capacity/rate_200 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --min_batch_size_local_gpu 8 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s4:200]: Capacity refinement: 200 msg/s — 8.3 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s4:225]: Capacity refinement: 225 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 225 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s4/capacity/rate_225 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --min_batch_size_local_gpu 8 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s4:225]: Capacity refinement: 225 msg/s — 8.5 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s4:250]: Capacity refinement: 250 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 250 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s4/capacity/rate_250 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --min_batch_size_local_gpu 8 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s4:250]: Capacity refinement: 250 msg/s — 8.1 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s4:275]: Capacity refinement: 275 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 275 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s4/capacity/rate_275 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --min_batch_size_local_gpu 8 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s4:275]: Capacity refinement: 275 msg/s — 9.0 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s4:300]: Capacity refinement: 300 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 300 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s4/capacity/rate_300 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --min_batch_size_local_gpu 8 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s4:300]: Capacity refinement: 300 msg/s — 8.4 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s4:325]: Capacity refinement: 325 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 325 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s4/capacity/rate_325 --machine_type g2-standard-4 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 7 --max_batch_size_local_gpu 256 --max_batch_size_vertex_ai 96 --min_batch_size_local_gpu 8 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s4:325]: Capacity refinement: 325 msg/s — 9.0 min
+
+  local_gpu:
+    Best capacity:      100
+    Per-worker capacity:  100 msg/s
+    Latency p50:          56.0 ms
+    Latency p99:          564.0 ms
+    Processing throughput: 100.6 msg/s
+
+  vertex_ai:
+    Best capacity:      75
+    Per-worker capacity:  75 msg/s
+    Latency p50:          56.0 ms
+    Latency p99:          160.0 ms
+    Processing throughput: 75.2 msg/s
+
+  Analysis saved: data/runs/l4_full/phase6_retune/g2s4/analysis.json
+
+  g2-standard-4 (g2s4) complete:
+    Local GPU capacity:  100 msg/s
+    Vertex AI capacity:  75 msg/s
+
+
+======================================================================
+  PHASE 6 — Machine: g2-standard-8 (g2s8)
+======================================================================
+
+
+======================================================================
+  PHASE 6a [g2s8]: Thread Re-sweep — 12 values (1..12 by 1)
+======================================================================
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s8:1t]: Re-tune threads: 1
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 1 --output_dir data/runs/l4_full/phase6_retune/g2s8/threads/threads_1 --machine_type g2-standard-8 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s8:1t]: Re-tune threads: 1 — 12.6 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s8:2t]: Re-tune threads: 2
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 2 --output_dir data/runs/l4_full/phase6_retune/g2s8/threads/threads_2 --machine_type g2-standard-8 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s8:2t]: Re-tune threads: 2 — 14.0 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s8:3t]: Re-tune threads: 3
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 3 --output_dir data/runs/l4_full/phase6_retune/g2s8/threads/threads_3 --machine_type g2-standard-8 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s8:3t]: Re-tune threads: 3 — 12.1 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s8:4t]: Re-tune threads: 4
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 4 --output_dir data/runs/l4_full/phase6_retune/g2s8/threads/threads_4 --machine_type g2-standard-8 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s8:4t]: Re-tune threads: 4 — 13.1 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s8:5t]: Re-tune threads: 5
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 5 --output_dir data/runs/l4_full/phase6_retune/g2s8/threads/threads_5 --machine_type g2-standard-8 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s8:5t]: Re-tune threads: 5 — 12.8 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s8:6t]: Re-tune threads: 6
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 6 --output_dir data/runs/l4_full/phase6_retune/g2s8/threads/threads_6 --machine_type g2-standard-8 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s8:6t]: Re-tune threads: 6 — 11.4 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s8:7t]: Re-tune threads: 7
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 7 --output_dir data/runs/l4_full/phase6_retune/g2s8/threads/threads_7 --machine_type g2-standard-8 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s8:7t]: Re-tune threads: 7 — 12.0 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s8:8t]: Re-tune threads: 8
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 8 --output_dir data/runs/l4_full/phase6_retune/g2s8/threads/threads_8 --machine_type g2-standard-8 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s8:8t]: Re-tune threads: 8 — 12.2 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s8:9t]: Re-tune threads: 9
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 9 --output_dir data/runs/l4_full/phase6_retune/g2s8/threads/threads_9 --machine_type g2-standard-8 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s8:9t]: Re-tune threads: 9 — 12.0 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s8:10t]: Re-tune threads: 10
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 10 --output_dir data/runs/l4_full/phase6_retune/g2s8/threads/threads_10 --machine_type g2-standard-8 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s8:10t]: Re-tune threads: 10 — 12.8 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s8:11t]: Re-tune threads: 11
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 11 --output_dir data/runs/l4_full/phase6_retune/g2s8/threads/threads_11 --machine_type g2-standard-8 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s8:11t]: Re-tune threads: 11 — 12.4 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6a [g2s8:12t]: Re-tune threads: 12
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --harness_threads 12 --output_dir data/runs/l4_full/phase6_retune/g2s8/threads/threads_12 --machine_type g2-standard-8 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 64 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6a [g2s8:12t]: Re-tune threads: 12 — 12.3 min
+
+  local_gpu:
+    Best threads:      2
+    Per-worker capacity:  100 msg/s
+    Latency p50:          55.0 ms
+    Latency p99:          515.0 ms
+    Processing throughput: 100.6 msg/s
+
+  vertex_ai:
+    Best threads:      9
+    Per-worker capacity:  100 msg/s
+    Latency p50:          73.0 ms
+    Latency p99:          306.0 ms
+    Processing throughput: 100.3 msg/s
+
+
+======================================================================
+  PHASE 6b [g2s8]: max_batch_size Re-sweep — 7 sizes (64..256 by 32)
+  Using 6a threads: LG=2, VA=9
+======================================================================
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6b [g2s8:64]: Re-tune max_batch: 64
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 64 --output_dir data/runs/l4_full/phase6_retune/g2s8/max_batch/batch_64 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6b [g2s8:64]: Re-tune max_batch: 64 — 16.0 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6b [g2s8:96]: Re-tune max_batch: 96
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 96 --output_dir data/runs/l4_full/phase6_retune/g2s8/max_batch/batch_96 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6b [g2s8:96]: Re-tune max_batch: 96 — 16.1 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6b [g2s8:128]: Re-tune max_batch: 128
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 128 --output_dir data/runs/l4_full/phase6_retune/g2s8/max_batch/batch_128 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6b [g2s8:128]: Re-tune max_batch: 128 — 16.1 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6b [g2s8:160]: Re-tune max_batch: 160
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 160 --output_dir data/runs/l4_full/phase6_retune/g2s8/max_batch/batch_160 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6b [g2s8:160]: Re-tune max_batch: 160 — 12.1 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6b [g2s8:192]: Re-tune max_batch: 192
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 192 --output_dir data/runs/l4_full/phase6_retune/g2s8/max_batch/batch_192 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6b [g2s8:192]: Re-tune max_batch: 192 — 12.8 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6b [g2s8:224]: Re-tune max_batch: 224
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 224 --output_dir data/runs/l4_full/phase6_retune/g2s8/max_batch/batch_224 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6b [g2s8:224]: Re-tune max_batch: 224 — 11.8 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6b [g2s8:256]: Re-tune max_batch: 256
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --max_batch_size 256 --output_dir data/runs/l4_full/phase6_retune/g2s8/max_batch/batch_256 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --min_batch_size_local_gpu 160 --min_batch_size_vertex_ai 32 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6b [g2s8:256]: Re-tune max_batch: 256 — 13.4 min
+
+  local_gpu:
+    Best max_batch_size:      224
+    Per-worker capacity:  100 msg/s
+    Latency p50:          52.0 ms
+    Latency p99:          254.0 ms
+    Processing throughput: 100.3 msg/s
+
+  vertex_ai:
+    Best max_batch_size:      160
+    Per-worker capacity:  100 msg/s
+    Latency p50:          76.0 ms
+    Latency p99:          628.0 ms
+    Processing throughput: 100.6 msg/s
+
+
+======================================================================
+  PHASE 6c [g2s8]: min_batch_size Re-sweep — 10 values (1..192)
+  Using 6a threads + 6b batch
+======================================================================
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s8:min=1]: Re-tune min_batch: 1
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 1 --output_dir data/runs/l4_full/phase6_retune/g2s8/min_batch/min_1 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s8:min=1]: Re-tune min_batch: 1 — 12.4 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s8:min=4]: Re-tune min_batch: 4
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 4 --output_dir data/runs/l4_full/phase6_retune/g2s8/min_batch/min_4 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s8:min=4]: Re-tune min_batch: 4 — 11.6 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s8:min=8]: Re-tune min_batch: 8
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 8 --output_dir data/runs/l4_full/phase6_retune/g2s8/min_batch/min_8 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s8:min=8]: Re-tune min_batch: 8 — 12.6 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s8:min=16]: Re-tune min_batch: 16
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 16 --output_dir data/runs/l4_full/phase6_retune/g2s8/min_batch/min_16 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s8:min=16]: Re-tune min_batch: 16 — 11.8 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s8:min=32]: Re-tune min_batch: 32
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 32 --output_dir data/runs/l4_full/phase6_retune/g2s8/min_batch/min_32 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s8:min=32]: Re-tune min_batch: 32 — 12.1 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s8:min=64]: Re-tune min_batch: 64
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 64 --output_dir data/runs/l4_full/phase6_retune/g2s8/min_batch/min_64 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s8:min=64]: Re-tune min_batch: 64 — 12.2 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s8:min=96]: Re-tune min_batch: 96
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 96 --output_dir data/runs/l4_full/phase6_retune/g2s8/min_batch/min_96 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s8:min=96]: Re-tune min_batch: 96 — 12.6 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s8:min=128]: Re-tune min_batch: 128
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 128 --output_dir data/runs/l4_full/phase6_retune/g2s8/min_batch/min_128 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s8:min=128]: Re-tune min_batch: 128 — 12.8 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s8:min=160]: Re-tune min_batch: 160
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 160 --output_dir data/runs/l4_full/phase6_retune/g2s8/min_batch/min_160 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s8:min=160]: Re-tune min_batch: 160 — 12.2 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6c [g2s8:min=192]: Re-tune min_batch: 192
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 100 125 --num_workers 1 --min_batch_size 192 --output_dir data/runs/l4_full/phase6_retune/g2s8/min_batch/min_192 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6c [g2s8:min=192]: Re-tune min_batch: 192 — 15.8 min
+
+  local_gpu:
+    Best min_batch_size:      192
+    Per-worker capacity:  100 msg/s
+    Latency p50:          52.0 ms
+    Latency p99:          178.0 ms
+    Processing throughput: 100.2 msg/s
+
+  vertex_ai:
+    Best min_batch_size:      1
+    Per-worker capacity:  100 msg/s
+    Latency p50:          71.0 ms
+    Latency p99:          219.0 ms
+    Processing throughput: 100.2 msg/s
+
+
+======================================================================
+  PHASE 6d [g2s8]: Capacity Refinement — 12 rates
+  Rates: [50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325]
+  Using all best settings from 6a/6b/6c
+======================================================================
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s8:50]: Capacity refinement: 50 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 50 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s8/capacity/rate_50 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --min_batch_size_local_gpu 192 --min_batch_size_vertex_ai 1 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s8:50]: Capacity refinement: 50 msg/s — 8.0 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s8:75]: Capacity refinement: 75 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 75 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s8/capacity/rate_75 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --min_batch_size_local_gpu 192 --min_batch_size_vertex_ai 1 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s8:75]: Capacity refinement: 75 msg/s — 9.2 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s8:100]: Capacity refinement: 100 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 100 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s8/capacity/rate_100 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --min_batch_size_local_gpu 192 --min_batch_size_vertex_ai 1 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s8:100]: Capacity refinement: 100 msg/s — 8.1 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s8:125]: Capacity refinement: 125 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 125 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s8/capacity/rate_125 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --min_batch_size_local_gpu 192 --min_batch_size_vertex_ai 1 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s8:125]: Capacity refinement: 125 msg/s — 9.2 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s8:150]: Capacity refinement: 150 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 150 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s8/capacity/rate_150 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --min_batch_size_local_gpu 192 --min_batch_size_vertex_ai 1 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s8:150]: Capacity refinement: 150 msg/s — 8.1 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s8:175]: Capacity refinement: 175 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 175 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s8/capacity/rate_175 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --min_batch_size_local_gpu 192 --min_batch_size_vertex_ai 1 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s8:175]: Capacity refinement: 175 msg/s — 8.1 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s8:200]: Capacity refinement: 200 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 200 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s8/capacity/rate_200 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --min_batch_size_local_gpu 192 --min_batch_size_vertex_ai 1 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s8:200]: Capacity refinement: 200 msg/s — 8.9 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s8:225]: Capacity refinement: 225 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 225 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s8/capacity/rate_225 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --min_batch_size_local_gpu 192 --min_batch_size_vertex_ai 1 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s8:225]: Capacity refinement: 225 msg/s — 8.2 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s8:250]: Capacity refinement: 250 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 250 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s8/capacity/rate_250 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --min_batch_size_local_gpu 192 --min_batch_size_vertex_ai 1 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s8:250]: Capacity refinement: 250 msg/s — 8.5 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s8:275]: Capacity refinement: 275 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 275 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s8/capacity/rate_275 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --min_batch_size_local_gpu 192 --min_batch_size_vertex_ai 1 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s8:275]: Capacity refinement: 275 msg/s — 8.1 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s8:300]: Capacity refinement: 300 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 300 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s8/capacity/rate_300 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --min_batch_size_local_gpu 192 --min_batch_size_vertex_ai 1 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s8:300]: Capacity refinement: 300 msg/s — 8.9 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 6d [g2s8:325]: Capacity refinement: 325 msg/s
+  $ uv run python scripts/run_benchmark.py --duration 100 --rates 325 --num_workers 1 --output_dir data/runs/l4_full/phase6_retune/g2s8/capacity/rate_325 --machine_type g2-standard-8 --harness_threads_local_gpu 2 --harness_threads_vertex_ai 9 --max_batch_size_local_gpu 224 --max_batch_size_vertex_ai 160 --min_batch_size_local_gpu 192 --min_batch_size_vertex_ai 1 --env_file .env.l4 --topic_prefix bench-l4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 6d [g2s8:325]: Capacity refinement: 325 msg/s — 8.2 min
+
+  local_gpu:
+    Best capacity:      75
+    Per-worker capacity:  75 msg/s
+    Latency p50:          44.0 ms
+    Latency p99:          406.0 ms
+    Processing throughput: 75.5 msg/s
+
+  vertex_ai:
+    Best capacity:      100
+    Per-worker capacity:  100 msg/s
+    Latency p50:          75.0 ms
+    Latency p99:          293.0 ms
+    Processing throughput: 100.1 msg/s
+
+  Analysis saved: data/runs/l4_full/phase6_retune/g2s8/analysis.json
+
+  g2-standard-8 (g2s8) complete:
+    Local GPU capacity:  75 msg/s
+    Vertex AI capacity:  100 msg/s
+
+  Analysis saved: data/runs/l4_full/phase6_retune/analysis.json
+
+======================================================================
+  SCALE CALCULATION
+======================================================================
+  Goal: 1000 msg/s at p99 < 750ms
+  g2-standard-4 (g2s4):
+    Local GPU capacity:  100 msg/s → 10 workers for 1000 msg/s
+    Vertex AI capacity:  75 msg/s/replica
+  g2-standard-8 (g2s8):
+    Local GPU capacity:  75 msg/s → 14 workers for 1000 msg/s
+    Vertex AI capacity:  100 msg/s/replica
+  Overall best: {
+    "threads_local_gpu": 2,
+    "threads_vertex_ai": 7,
+    "max_batch_local_gpu": 256,
+    "max_batch_vertex_ai": 96,
+    "min_batch_local_gpu": 8,
+    "min_batch_vertex_ai": 32,
+    "machine_type": "g2-standard-4",
+    "endpoint_machine_type": "g2-standard-4",
+    "local_capacity": 100,
+    "vertex_capacity": 75
+}
+======================================================================
+
+
+======================================================================
+  PHASE 7: Scale Verification (via run_phase7_sweep.py)
+======================================================================
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 7a [g2s4]: Local GPU g2-standard-4 (g2s4), workers [1, 2, 4, 6, 8, 10]
+  $ uv run python scripts/run_phase7_sweep.py --output-base data/runs/l4_full/phase7_scale --duration 100 --local-gpu-workers 1 2 4 6 8 10 --local-gpu-rate-per-worker 100 --env-file .env.l4 --topic-prefix bench-l4 --experiments local_gpu --machine-type g2-standard-4 --harness-threads-local-gpu 2 --max-batch-local-gpu 256 --min-batch-local-gpu 8
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 7a [g2s4]: Local GPU g2-standard-4 (g2s4), workers [1, 2, 4, 6, 8, 10] — 62.0 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 7a [g2s8]: Local GPU g2-standard-8 (g2s8), workers [1, 2, 4, 6, 8, 10]
+  $ uv run python scripts/run_phase7_sweep.py --output-base data/runs/l4_full/phase7_scale --duration 100 --local-gpu-workers 1 2 4 6 8 10 --local-gpu-rate-per-worker 75 --env-file .env.l4 --topic-prefix bench-l4 --experiments local_gpu --machine-type g2-standard-8 --harness-threads-local-gpu 2 --max-batch-local-gpu 224 --min-batch-local-gpu 192
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 7a [g2s8]: Local GPU g2-standard-8 (g2s8), workers [1, 2, 4, 6, 8, 10] — 61.2 min
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 7b+c: Vertex AI, workers [1, 2, 4, 8, 11] × replicas [1, 2, 5, 10] × machines ['g2-standard-4', 'g2-standard-8']
+  $ uv run python scripts/run_phase7_sweep.py --output-base data/runs/l4_full/phase7_scale --duration 100 --vertex-ai-workers 1 2 4 8 11 --vertex-ai-replicas 1 2 5 10 --vertex-ai-rate 1000 --vertex-ai-rate-per-replica 75 --env-file .env.l4 --topic-prefix bench-l4 --experiments vertex_ai --harness-threads-vertex-ai 7 --max-batch-vertex-ai 96 --min-batch-vertex-ai 32 --machine-type g2-standard-4 --vertex-ai-endpoint-machines g2-standard-4 g2-standard-8
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 7b+c: Vertex AI, workers [1, 2, 4, 8, 11] × replicas [1, 2, 5, 10] × machines ['g2-standard-4', 'g2-standard-8'] — 377.9 min
+
+
+======================================================================
+  PHASE 8: Cost Analysis and Recommendations
+======================================================================
+
+
+──────────────────────────────────────────────────────────────────────
+  Phase 8: Cost analysis
+  $ uv run python scripts/cost_analysis.py --data-dir data/runs/l4_full --target-rate 1000 --target-p99-ms 750 --env-file .env.l4 --worker-machine g2-standard-4
+──────────────────────────────────────────────────────────────────────
+
+
+  [OK] Phase 8: Cost analysis — 0.0 min
+
+
+======================================================================
+  Generating report charts...
+======================================================================
+
+
+──────────────────────────────────────────────────────────────────────
+  Generate report charts
+  $ uv run python scripts/generate_report_charts.py --data-dir data/runs/l4_full
+──────────────────────────────────────────────────────────────────────
+
+
+  [FAILED (exit 1)] Generate report charts — 0.0 min
+
+
+======================================================================
+  FULL BENCHMARK COMPLETE
+======================================================================
+  Run name:   l4_full
+  Output dir: data/runs/l4_full
+  Total time: 2007 min (33.5 hrs)
+
+  Phase 1: [PASS] Baseline capacity (12 threads, default batch, rates [25, 50, 75, 100, 125, 150]) (18 min)
+  Phase 2: [PASS] Thread sweep ([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]) (228 min)
+  Phase 3: [PASS] max_batch sweep ([75, 100, 125] msg/s) (87 min)
+  Phase 4: [PASS] min_batch sweep (10 values) (137 min)
+  Phase 5a: [PASS] Worker machine sweep (['g2-standard-4', 'g2-standard-8']) (37 min)
+  Phase 5b: [FAIL] Endpoint machine sweep (['g2-standard-4', 'g2-standard-8']) (12 min)
+  Phase 6: [PASS] Re-tune on 2 machines (['g2s4', 'g2s8']) (985 min)
+  Phase 7a_g2s4: [PASS] Local GPU g2-standard-4 (g2s4), workers [1, 2, 4, 6, 8, 10] (62 min)
+  Phase 7a_g2s8: [PASS] Local GPU g2-standard-8 (g2s8), workers [1, 2, 4, 6, 8, 10] (61 min)
+  Phase 7b: [PASS] Vertex AI, workers [1, 2, 4, 8, 11] × replicas [1, 2, 5, 10] × machines ['g2-standard-4', 'g2-standard-8'] (378 min)
+  Phase 8: [PASS] Cost analysis (0 min)
+
+  Overall best settings:
+    threads_local_gpu: 2
+    threads_vertex_ai: 7
+    max_batch_local_gpu: 256
+    max_batch_vertex_ai: 96
+    min_batch_local_gpu: 8
+    min_batch_vertex_ai: 32
+    machine_type: g2-standard-4
+    endpoint_machine_type: g2-standard-4
+    local_capacity: 100
+    vertex_capacity: 75
+
+  Per-machine settings:
+    g2-standard-4 (g2s4): local_capacity=100, vertex_capacity=75
+    g2-standard-8 (g2s8): local_capacity=75, vertex_capacity=100
+
+======================================================================
+
