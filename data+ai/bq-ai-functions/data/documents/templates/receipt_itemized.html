@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    @page {
+        size: {{ style.page_width }} 297mm;
+        margin: 5mm;
+    }
+    body {
+        font-family: {{ style.font_family }};
+        font-size: {{ style.font_size }};
+        line-height: {{ style.line_height }};
+        width: {{ style.body_width }};
+        margin: 0 auto;
+        color: #000;
+    }
+    .store-box {
+        border: 2px solid #000;
+        padding: 6px 8px;
+        margin-bottom: 8px;
+        text-align: center;
+    }
+    .store-name {
+        font-size: {{ style.store_name_size }};
+        font-weight: bold;
+        {% if style.store_name_upper %}text-transform: uppercase;{% endif %}
+        letter-spacing: 1px;
+    }
+    .store-addr {
+        font-size: 9px;
+        margin-top: 2px;
+    }
+    .meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 9px;
+        margin-bottom: 6px;
+        padding-bottom: 4px;
+        border-bottom: 1px dashed #000;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 4px;
+    }
+    th {
+        text-align: left;
+        font-size: 9px;
+        font-weight: bold;
+        text-transform: uppercase;
+        border-bottom: 1px solid #000;
+        padding: 2px 0;
+    }
+    th.r { text-align: right; }
+    td {
+        padding: 2px 0;
+        font-size: {{ style.font_size }};
+        vertical-align: top;
+    }
+    td.r { text-align: right; }
+    td.c { text-align: center; }
+    .totals-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 4px;
+    }
+    .totals-table td {
+        padding: 1px 0;
+        font-size: {{ style.font_size }};
+    }
+    .totals-table .grand {
+        font-weight: bold;
+        font-size: 13px;
+        border-top: {{ style.grand_total_border }};
+        border-bottom: {{ style.grand_total_border }};
+        padding: 4px 0;
+    }
+    .payment-box {
+        margin-top: 6px;
+        padding: 4px 6px;
+        background: #f5f5f5;
+        font-size: 10px;
+    }
+    .footer {
+        text-align: center;
+        margin-top: 10px;
+        font-size: 9px;
+        color: #555;
+    }
+    .barcode {
+        text-align: center;
+        font-family: monospace;
+        font-size: 8px;
+        letter-spacing: 3px;
+        margin-top: 6px;
+    }
+</style>
+</head>
+<body>
+
+<div class="store-box">
+    <div class="store-name">{{ store_name }}</div>
+    <div class="store-addr">
+        {{ address }}<br>
+        {{ city_state_zip }} | {{ phone }}
+    </div>
+</div>
+
+<div class="meta">
+    <span>Date: {{ date }}</span>
+    <span>Time: {{ time }}</span>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Item</th>
+            <th class="r">Qty</th>
+            <th class="r">Price</th>
+            <th class="r">Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td>{{ item.name }}</td>
+            <td class="c">{{ item.qty }}</td>
+            <td class="r">${{ "%.2f"|format(item.price) }}</td>
+            <td class="r">${{ "%.2f"|format(item.total) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<table class="totals-table">
+    <tr>
+        <td>Subtotal</td>
+        <td class="r">${{ "%.2f"|format(subtotal) }}</td>
+    </tr>
+    <tr>
+        <td>Tax ({{ "%.1f"|format(tax_rate * 100) }}%)</td>
+        <td class="r">${{ "%.2f"|format(tax) }}</td>
+    </tr>
+    <tr class="grand">
+        <td>TOTAL</td>
+        <td class="r">${{ "%.2f"|format(total) }}</td>
+    </tr>
+</table>
+
+<div class="payment-box">
+    {{ payment_method }}: ${{ "%.2f"|format(total) }}
+    {% if cash_tendered is not none %}
+    <br>Tendered: ${{ "%.2f"|format(cash_tendered) }} &nbsp; Change: ${{ "%.2f"|format(change) }}
+    {% endif %}
+</div>
+
+<div class="footer">{{ style.footer_message }}</div>
+
+{% if style.show_barcode %}
+<div class="barcode">||||| |||| ||||| |||| |||||</div>
+{% endif %}
+
+</body>
+</html>

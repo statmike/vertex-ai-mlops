@@ -1,0 +1,952 @@
+{
+  "doc_001.pdf": {
+    "type": "receipt",
+    "source": "receipt_043.pdf",
+    "key_fields": {
+      "store_name": "Gadget Guru Hub",
+      "total": 55.42,
+      "date": "08/15/2023"
+    }
+  },
+  "doc_002.pdf": {
+    "type": "receipt",
+    "source": "receipt_042.pdf",
+    "key_fields": {
+      "store_name": "Tech Haven Electronics",
+      "total": 71.36,
+      "date": "10/26/2023"
+    }
+  },
+  "doc_003.pdf": {
+    "type": "invoice",
+    "source": "invoice_042.pdf",
+    "key_fields": {
+      "company": "Innovate Media Group",
+      "invoice_number": "INV-2024-0037",
+      "total_due": 8660.0,
+      "due_date": "2024-06-14"
+    }
+  },
+  "doc_004.pdf": {
+    "type": "receipt",
+    "source": "receipt_010.pdf",
+    "key_fields": {
+      "store_name": "Tech Haven Electronics",
+      "total": 86.03,
+      "date": "05/15/2024"
+    }
+  },
+  "doc_005.pdf": {
+    "type": "invoice",
+    "source": "invoice_016.pdf",
+    "key_fields": {
+      "company": "Quantum Innovations Inc.",
+      "invoice_number": "INV-2024-0004",
+      "total_due": 12178.13,
+      "due_date": "2024-04-14"
+    }
+  },
+  "doc_006.pdf": {
+    "type": "invoice",
+    "source": "invoice_001.pdf",
+    "key_fields": {
+      "company": "Nexus Innovations Group",
+      "invoice_number": "INV-2024-0013",
+      "total_due": 10067.25,
+      "due_date": "2024-08-14"
+    }
+  },
+  "doc_007.pdf": {
+    "type": "receipt",
+    "source": "receipt_002.pdf",
+    "key_fields": {
+      "store_name": "Gadget Galaxy",
+      "total": 68.68,
+      "date": "05/20/2024"
+    }
+  },
+  "doc_008.pdf": {
+    "type": "invoice",
+    "source": "invoice_021.pdf",
+    "key_fields": {
+      "company": "Horizon Digital Solutions",
+      "invoice_number": "INV-2023-0019",
+      "total_due": 17428.25,
+      "due_date": "2023-12-20"
+    }
+  },
+  "doc_009.pdf": {
+    "type": "receipt",
+    "source": "receipt_016.pdf",
+    "key_fields": {
+      "store_name": "Gadget Guru Hub",
+      "total": 82.66,
+      "date": "07/22/2023"
+    }
+  },
+  "doc_010.pdf": {
+    "type": "invoice",
+    "source": "invoice_029.pdf",
+    "key_fields": {
+      "company": "Starlight Solutions Group LLC",
+      "invoice_number": "INV-2023-0026",
+      "total_due": 19403.75,
+      "due_date": "2023-11-29"
+    }
+  },
+  "doc_011.pdf": {
+    "type": "invoice",
+    "source": "invoice_024.pdf",
+    "key_fields": {
+      "company": "Quantum Logic Solutions Inc.",
+      "invoice_number": "INV-2023-0044",
+      "total_due": 23761.5,
+      "due_date": "2023-11-25"
+    }
+  },
+  "doc_012.pdf": {
+    "type": "receipt",
+    "source": "receipt_011.pdf",
+    "key_fields": {
+      "store_name": "Gadget Haven",
+      "total": 56.24,
+      "date": "05/15/2023"
+    }
+  },
+  "doc_013.pdf": {
+    "type": "invoice",
+    "source": "invoice_006.pdf",
+    "key_fields": {
+      "company": "Innovate Digital Solutions",
+      "invoice_number": "INV-2024-0032",
+      "total_due": 16291.63,
+      "due_date": "2024-05-15"
+    }
+  },
+  "doc_014.pdf": {
+    "type": "invoice",
+    "source": "invoice_007.pdf",
+    "key_fields": {
+      "company": "PixelForge Innovations",
+      "invoice_number": "INV-2024-0039",
+      "total_due": 8600.0,
+      "due_date": "2024-05-15"
+    }
+  },
+  "doc_015.pdf": {
+    "type": "invoice",
+    "source": "invoice_023.pdf",
+    "key_fields": {
+      "company": "Quantum Innovations Inc.",
+      "invoice_number": "INV-2023-0041",
+      "total_due": 20263.75,
+      "due_date": "2023-11-25"
+    }
+  },
+  "doc_016.pdf": {
+    "type": "receipt",
+    "source": "receipt_046.pdf",
+    "key_fields": {
+      "store_name": "Tech Hub Electronics",
+      "total": 95.21,
+      "date": "08/15/2023"
+    }
+  },
+  "doc_017.pdf": {
+    "type": "receipt",
+    "source": "receipt_049.pdf",
+    "key_fields": {
+      "store_name": "Techie Hub",
+      "total": 75.75,
+      "date": "03/22/2024"
+    }
+  },
+  "doc_018.pdf": {
+    "type": "invoice",
+    "source": "invoice_043.pdf",
+    "key_fields": {
+      "company": "Vanguard Innovations LLC",
+      "invoice_number": "INV-2023-0043",
+      "total_due": 25465.81,
+      "due_date": "2023-11-25"
+    }
+  },
+  "doc_019.pdf": {
+    "type": "invoice",
+    "source": "invoice_027.pdf",
+    "key_fields": {
+      "company": "Quantum Solutions LLC",
+      "invoice_number": "INV-2024-0042",
+      "total_due": 21541.75,
+      "due_date": "2024-06-14"
+    }
+  },
+  "doc_020.pdf": {
+    "type": "receipt",
+    "source": "receipt_038.pdf",
+    "key_fields": {
+      "store_name": "Tech Haven Electronics",
+      "total": 79.26,
+      "date": "07/22/2023"
+    }
+  },
+  "doc_021.pdf": {
+    "type": "receipt",
+    "source": "receipt_031.pdf",
+    "key_fields": {
+      "store_name": "Tech Haven Electronics",
+      "total": 64.63,
+      "date": "03/15/2024"
+    }
+  },
+  "doc_022.pdf": {
+    "type": "receipt",
+    "source": "receipt_022.pdf",
+    "key_fields": {
+      "store_name": "Tech Haven Electronics",
+      "total": 59.21,
+      "date": "03/15/2024"
+    }
+  },
+  "doc_023.pdf": {
+    "type": "receipt",
+    "source": "receipt_033.pdf",
+    "key_fields": {
+      "store_name": "Home Pro Depot",
+      "total": 89.17,
+      "date": "07/15/2023"
+    }
+  },
+  "doc_024.pdf": {
+    "type": "invoice",
+    "source": "invoice_047.pdf",
+    "key_fields": {
+      "company": "Quantum Innovations Inc.",
+      "invoice_number": "INV-2023-0009",
+      "total_due": 22191.25,
+      "due_date": "2024-01-04"
+    }
+  },
+  "doc_025.pdf": {
+    "type": "invoice",
+    "source": "invoice_031.pdf",
+    "key_fields": {
+      "company": "Digital Dynamics Marketing",
+      "invoice_number": "INV-2024-0035",
+      "total_due": 11287.5,
+      "due_date": "2024-04-09"
+    }
+  },
+  "doc_026.pdf": {
+    "type": "receipt",
+    "source": "receipt_050.pdf",
+    "key_fields": {
+      "store_name": "Gadget Guru",
+      "total": 61.46,
+      "date": "04/15/2024"
+    }
+  },
+  "doc_027.pdf": {
+    "type": "invoice",
+    "source": "invoice_034.pdf",
+    "key_fields": {
+      "company": "Quantum Solutions Inc.",
+      "invoice_number": "INV-2023-0005",
+      "total_due": 25453.5,
+      "due_date": "2023-12-15"
+    }
+  },
+  "doc_028.pdf": {
+    "type": "receipt",
+    "source": "receipt_027.pdf",
+    "key_fields": {
+      "store_name": "Gadget Galaxy",
+      "total": 75.99,
+      "date": "08/15/2023"
+    }
+  },
+  "doc_029.pdf": {
+    "type": "invoice",
+    "source": "invoice_038.pdf",
+    "key_fields": {
+      "company": "Quantum Analytics Corp.",
+      "invoice_number": "INV-2024-0040",
+      "total_due": 18336.5,
+      "due_date": "2024-05-20"
+    }
+  },
+  "doc_030.pdf": {
+    "type": "receipt",
+    "source": "receipt_034.pdf",
+    "key_fields": {
+      "store_name": "Hammer & Nail Hardware",
+      "total": 60.2,
+      "date": "05/22/2024"
+    }
+  },
+  "doc_031.pdf": {
+    "type": "receipt",
+    "source": "receipt_009.pdf",
+    "key_fields": {
+      "store_name": "Tech Haven Electronics",
+      "total": 87.8,
+      "date": "03/22/2024"
+    }
+  },
+  "doc_032.pdf": {
+    "type": "receipt",
+    "source": "receipt_048.pdf",
+    "key_fields": {
+      "store_name": "Tech Haven Electronics",
+      "total": 173.65,
+      "date": "07/15/2023"
+    }
+  },
+  "doc_033.pdf": {
+    "type": "invoice",
+    "source": "invoice_010.pdf",
+    "key_fields": {
+      "company": "InnovateX Solutions LLC",
+      "invoice_number": "INV-2023-0018",
+      "total_due": 17861.25,
+      "due_date": "2023-12-15"
+    }
+  },
+  "doc_034.pdf": {
+    "type": "invoice",
+    "source": "invoice_014.pdf",
+    "key_fields": {
+      "company": "Innovate Marketing Solutions",
+      "invoice_number": "INV-2023-0038",
+      "total_due": 5050.68,
+      "due_date": "2023-10-15"
+    }
+  },
+  "doc_035.pdf": {
+    "type": "invoice",
+    "source": "invoice_025.pdf",
+    "key_fields": {
+      "company": "Quantum Innovations Inc.",
+      "invoice_number": "INV-2023-0003",
+      "total_due": 38645.25,
+      "due_date": "2023-12-15"
+    }
+  },
+  "doc_036.pdf": {
+    "type": "receipt",
+    "source": "receipt_045.pdf",
+    "key_fields": {
+      "store_name": "Gadget Guru",
+      "total": 81.12,
+      "date": "05/20/2024"
+    }
+  },
+  "doc_037.pdf": {
+    "type": "invoice",
+    "source": "invoice_049.pdf",
+    "key_fields": {
+      "company": "Quantum Dynamics Solutions LLC",
+      "invoice_number": "INV-2023-0027",
+      "total_due": 13531.25,
+      "due_date": "2023-11-14"
+    }
+  },
+  "doc_038.pdf": {
+    "type": "invoice",
+    "source": "invoice_003.pdf",
+    "key_fields": {
+      "company": "Nexus Innovations Group",
+      "invoice_number": "INV-2023-0110",
+      "total_due": 21217.0,
+      "due_date": "2023-11-25"
+    }
+  },
+  "doc_039.pdf": {
+    "type": "invoice",
+    "source": "invoice_036.pdf",
+    "key_fields": {
+      "company": "Quantum Innovations Inc.",
+      "invoice_number": "INV-2024-0030",
+      "total_due": 20586.25,
+      "due_date": "2024-08-14"
+    }
+  },
+  "doc_040.pdf": {
+    "type": "receipt",
+    "source": "receipt_013.pdf",
+    "key_fields": {
+      "store_name": "Gadget Guru Electronics",
+      "total": 77.52,
+      "date": "05/15/2024"
+    }
+  },
+  "doc_041.pdf": {
+    "type": "receipt",
+    "source": "receipt_037.pdf",
+    "key_fields": {
+      "store_name": "Gadget Emporium",
+      "total": 80.57,
+      "date": "02/18/2024"
+    }
+  },
+  "doc_042.pdf": {
+    "type": "receipt",
+    "source": "receipt_024.pdf",
+    "key_fields": {
+      "store_name": "Tech Haven Electronics",
+      "total": 88.87,
+      "date": "04/15/2024"
+    }
+  },
+  "doc_043.pdf": {
+    "type": "receipt",
+    "source": "receipt_040.pdf",
+    "key_fields": {
+      "store_name": "TechHaven Electronics",
+      "total": 56.45,
+      "date": "07/15/2023"
+    }
+  },
+  "doc_044.pdf": {
+    "type": "receipt",
+    "source": "receipt_041.pdf",
+    "key_fields": {
+      "store_name": "Green Valley Produce",
+      "total": 26.89,
+      "date": "08/15/2023"
+    }
+  },
+  "doc_045.pdf": {
+    "type": "receipt",
+    "source": "receipt_019.pdf",
+    "key_fields": {
+      "store_name": "MediCare Pharmacy",
+      "total": 47.28,
+      "date": "03/15/2024"
+    }
+  },
+  "doc_046.pdf": {
+    "type": "invoice",
+    "source": "invoice_017.pdf",
+    "key_fields": {
+      "company": "Pinnacle Solutions Group LLC",
+      "invoice_number": "INV-2023-0123",
+      "total_due": 26210.0,
+      "due_date": "2023-11-19"
+    }
+  },
+  "doc_047.pdf": {
+    "type": "invoice",
+    "source": "invoice_012.pdf",
+    "key_fields": {
+      "company": "Innovate Solutions Group",
+      "invoice_number": "INV-2023-0031",
+      "total_due": 25907.5,
+      "due_date": "2023-11-25"
+    }
+  },
+  "doc_048.pdf": {
+    "type": "invoice",
+    "source": "invoice_011.pdf",
+    "key_fields": {
+      "company": "Quantum Innovations Inc.",
+      "invoice_number": "INV-2024-0021",
+      "total_due": 45365.0,
+      "due_date": "2024-10-20"
+    }
+  },
+  "doc_049.pdf": {
+    "type": "receipt",
+    "source": "receipt_008.pdf",
+    "key_fields": {
+      "store_name": "Tech Haven Electronics",
+      "total": 74.44,
+      "date": "07/22/2023"
+    }
+  },
+  "doc_050.pdf": {
+    "type": "receipt",
+    "source": "receipt_035.pdf",
+    "key_fields": {
+      "store_name": "Tech Haven Electronics",
+      "total": 74.7,
+      "date": "08/15/2023"
+    }
+  },
+  "doc_051.pdf": {
+    "type": "invoice",
+    "source": "invoice_050.pdf",
+    "key_fields": {
+      "company": "Catalyst Creative Agency",
+      "invoice_number": "INV-2024-0048",
+      "total_due": 3887.25,
+      "due_date": "2024-06-19"
+    }
+  },
+  "doc_052.pdf": {
+    "type": "receipt",
+    "source": "receipt_047.pdf",
+    "key_fields": {
+      "store_name": "Byte & Brew Electronics Cafe",
+      "total": 76.25,
+      "date": "07/15/2023"
+    }
+  },
+  "doc_053.pdf": {
+    "type": "receipt",
+    "source": "receipt_003.pdf",
+    "key_fields": {
+      "store_name": "Tech Haven Electronics",
+      "total": 96.75,
+      "date": "03/15/2024"
+    }
+  },
+  "doc_054.pdf": {
+    "type": "invoice",
+    "source": "invoice_002.pdf",
+    "key_fields": {
+      "company": "Harmony Event Solutions LLC",
+      "invoice_number": "INV-2023-0045",
+      "total_due": 7605.63,
+      "due_date": "2023-11-25"
+    }
+  },
+  "doc_055.pdf": {
+    "type": "receipt",
+    "source": "receipt_017.pdf",
+    "key_fields": {
+      "store_name": "Gadget Galaxy",
+      "total": 82.51,
+      "date": "03/15/2024"
+    }
+  },
+  "doc_056.pdf": {
+    "type": "receipt",
+    "source": "receipt_039.pdf",
+    "key_fields": {
+      "store_name": "Gadget Galaxy",
+      "total": 82.57,
+      "date": "05/15/2024"
+    }
+  },
+  "doc_057.pdf": {
+    "type": "invoice",
+    "source": "invoice_009.pdf",
+    "key_fields": {
+      "company": "Quantum Solutions LLC",
+      "invoice_number": "INV-2023-0012",
+      "total_due": 23220.38,
+      "due_date": "2023-12-15"
+    }
+  },
+  "doc_058.pdf": {
+    "type": "invoice",
+    "source": "invoice_019.pdf",
+    "key_fields": {
+      "company": "Quantum Leap Consulting",
+      "invoice_number": "INV-2023-0016",
+      "total_due": 15016.5,
+      "due_date": "2023-11-25"
+    }
+  },
+  "doc_059.pdf": {
+    "type": "receipt",
+    "source": "receipt_023.pdf",
+    "key_fields": {
+      "store_name": "Gadget Galaxy",
+      "total": 72.63,
+      "date": "03/15/2024"
+    }
+  },
+  "doc_060.pdf": {
+    "type": "invoice",
+    "source": "invoice_013.pdf",
+    "key_fields": {
+      "company": "Innovate Solutions Group",
+      "invoice_number": "INV-2023-0034",
+      "total_due": 13525.5,
+      "due_date": "2023-11-19"
+    }
+  },
+  "doc_061.pdf": {
+    "type": "receipt",
+    "source": "receipt_025.pdf",
+    "key_fields": {
+      "store_name": "Paws & Claws Pet Emporium",
+      "total": 69.44,
+      "date": "08/15/2023"
+    }
+  },
+  "doc_062.pdf": {
+    "type": "receipt",
+    "source": "receipt_006.pdf",
+    "key_fields": {
+      "store_name": "TechHaven Electronics",
+      "total": 191.01,
+      "date": "07/15/2023"
+    }
+  },
+  "doc_063.pdf": {
+    "type": "receipt",
+    "source": "receipt_007.pdf",
+    "key_fields": {
+      "store_name": "Gadget Guru Hub",
+      "total": 59.76,
+      "date": "07/20/2023"
+    }
+  },
+  "doc_064.pdf": {
+    "type": "invoice",
+    "source": "invoice_018.pdf",
+    "key_fields": {
+      "company": "Quantum Innovations Group",
+      "invoice_number": "INV-2024-0011",
+      "total_due": 16662.5,
+      "due_date": "2024-04-19"
+    }
+  },
+  "doc_065.pdf": {
+    "type": "invoice",
+    "source": "invoice_033.pdf",
+    "key_fields": {
+      "company": "Aurora Tech Solutions",
+      "invoice_number": "INV-2023-0049",
+      "total_due": 17466.0,
+      "due_date": "2024-01-04"
+    }
+  },
+  "doc_066.pdf": {
+    "type": "receipt",
+    "source": "receipt_020.pdf",
+    "key_fields": {
+      "store_name": "Tech Haven Electronics",
+      "total": 69.2,
+      "date": "03/22/2024"
+    }
+  },
+  "doc_067.pdf": {
+    "type": "invoice",
+    "source": "invoice_030.pdf",
+    "key_fields": {
+      "company": "Quantum Innovations LLC",
+      "invoice_number": "INV-2024-0028",
+      "total_due": 24789.25,
+      "due_date": "2024-06-14"
+    }
+  },
+  "doc_068.pdf": {
+    "type": "receipt",
+    "source": "receipt_044.pdf",
+    "key_fields": {
+      "store_name": "Gadget Hub Electronics",
+      "total": 42.55,
+      "date": "05/15/2024"
+    }
+  },
+  "doc_069.pdf": {
+    "type": "invoice",
+    "source": "invoice_041.pdf",
+    "key_fields": {
+      "company": "Aurora Digital Solutions",
+      "invoice_number": "INV-2023-0023",
+      "total_due": 19242.5,
+      "due_date": "2023-11-25"
+    }
+  },
+  "doc_070.pdf": {
+    "type": "receipt",
+    "source": "receipt_021.pdf",
+    "key_fields": {
+      "store_name": "Tech Emporium",
+      "total": 120.08,
+      "date": "05/15/2024"
+    }
+  },
+  "doc_071.pdf": {
+    "type": "receipt",
+    "source": "receipt_001.pdf",
+    "key_fields": {
+      "store_name": "Electronics World",
+      "total": 92.51,
+      "date": "07/15/2023"
+    }
+  },
+  "doc_072.pdf": {
+    "type": "invoice",
+    "source": "invoice_046.pdf",
+    "key_fields": {
+      "company": "EcoClean Solutions LLC",
+      "invoice_number": "INV-2024-0007",
+      "total_due": 1802.0,
+      "due_date": "2024-06-14"
+    }
+  },
+  "doc_073.pdf": {
+    "type": "invoice",
+    "source": "invoice_008.pdf",
+    "key_fields": {
+      "company": "Quantum Innovations Corp.",
+      "invoice_number": "INV-2023-0006",
+      "total_due": 35690.0,
+      "due_date": "2023-12-15"
+    }
+  },
+  "doc_074.pdf": {
+    "type": "invoice",
+    "source": "invoice_044.pdf",
+    "key_fields": {
+      "company": "Quantum Innovations Lab",
+      "invoice_number": "INV-2024-0050",
+      "total_due": 31282.5,
+      "due_date": "2024-06-14"
+    }
+  },
+  "doc_075.pdf": {
+    "type": "invoice",
+    "source": "invoice_004.pdf",
+    "key_fields": {
+      "company": "Digital Ascent Marketing LLC",
+      "invoice_number": "INV-2024-0024",
+      "total_due": 10703.25,
+      "due_date": "2024-07-15"
+    }
+  },
+  "doc_076.pdf": {
+    "type": "invoice",
+    "source": "invoice_040.pdf",
+    "key_fields": {
+      "company": "InnovateTech Solutions",
+      "invoice_number": "INV-2023-0022",
+      "total_due": 22025.5,
+      "due_date": "2023-11-25"
+    }
+  },
+  "doc_077.pdf": {
+    "type": "receipt",
+    "source": "receipt_026.pdf",
+    "key_fields": {
+      "store_name": "Gadget Guru Electronics",
+      "total": 80.01,
+      "date": "08/15/2023"
+    }
+  },
+  "doc_078.pdf": {
+    "type": "invoice",
+    "source": "invoice_022.pdf",
+    "key_fields": {
+      "company": "Apex Solutions Group LLC",
+      "invoice_number": "INV-2023-0020",
+      "total_due": 5722.5,
+      "due_date": "2023-11-25"
+    }
+  },
+  "doc_079.pdf": {
+    "type": "invoice",
+    "source": "invoice_035.pdf",
+    "key_fields": {
+      "company": "Aurora Innovations LLC",
+      "invoice_number": "INV-2023-0029",
+      "total_due": 8714.13,
+      "due_date": "2023-10-15"
+    }
+  },
+  "doc_080.pdf": {
+    "type": "invoice",
+    "source": "invoice_028.pdf",
+    "key_fields": {
+      "company": "Quantum Innovations Lab",
+      "invoice_number": "INV-2023-0047",
+      "total_due": 25763.5,
+      "due_date": "2023-11-25"
+    }
+  },
+  "doc_081.pdf": {
+    "type": "invoice",
+    "source": "invoice_015.pdf",
+    "key_fields": {
+      "company": "Innovate Solutions Group",
+      "invoice_number": "INV-2023-0015",
+      "total_due": 10392.0,
+      "due_date": "2023-11-25"
+    }
+  },
+  "doc_082.pdf": {
+    "type": "receipt",
+    "source": "receipt_030.pdf",
+    "key_fields": {
+      "store_name": "Tech Haven",
+      "total": 101.67,
+      "date": "07/15/2023"
+    }
+  },
+  "doc_083.pdf": {
+    "type": "receipt",
+    "source": "receipt_028.pdf",
+    "key_fields": {
+      "store_name": "ElectroHub",
+      "total": 84.4,
+      "date": "08/15/2023"
+    }
+  },
+  "doc_084.pdf": {
+    "type": "invoice",
+    "source": "invoice_039.pdf",
+    "key_fields": {
+      "company": "Nexus Innovations Lab",
+      "invoice_number": "INV-2024-0014",
+      "total_due": 11419.63,
+      "due_date": "2024-05-15"
+    }
+  },
+  "doc_085.pdf": {
+    "type": "invoice",
+    "source": "invoice_048.pdf",
+    "key_fields": {
+      "company": "Apex Solutions Group",
+      "invoice_number": "INV-2023-0015",
+      "total_due": 25907.5,
+      "due_date": "2023-11-19"
+    }
+  },
+  "doc_086.pdf": {
+    "type": "receipt",
+    "source": "receipt_005.pdf",
+    "key_fields": {
+      "store_name": "Pawsome Pet Provisions",
+      "total": 56.1,
+      "date": "05/10/2024"
+    }
+  },
+  "doc_087.pdf": {
+    "type": "invoice",
+    "source": "invoice_005.pdf",
+    "key_fields": {
+      "company": "Apex Digital Solutions LLC",
+      "invoice_number": "INV-2024-0025",
+      "total_due": 17698.88,
+      "due_date": "2024-06-19"
+    }
+  },
+  "doc_088.pdf": {
+    "type": "invoice",
+    "source": "invoice_026.pdf",
+    "key_fields": {
+      "company": "Quantum Innovations Corp.",
+      "invoice_number": "INV-2024-0033",
+      "total_due": 42706.5,
+      "due_date": "2024-06-29"
+    }
+  },
+  "doc_089.pdf": {
+    "type": "receipt",
+    "source": "receipt_012.pdf",
+    "key_fields": {
+      "store_name": "Gadget Galaxy",
+      "total": 70.29,
+      "date": "07/15/2023"
+    }
+  },
+  "doc_090.pdf": {
+    "type": "invoice",
+    "source": "invoice_020.pdf",
+    "key_fields": {
+      "company": "Aether Dynamics Inc.",
+      "invoice_number": "INV-2023-0017",
+      "total_due": 29917.3,
+      "due_date": "2023-10-15"
+    }
+  },
+  "doc_091.pdf": {
+    "type": "invoice",
+    "source": "invoice_037.pdf",
+    "key_fields": {
+      "company": "Innovate Dynamics Group LLC",
+      "invoice_number": "INV-2024-0046",
+      "total_due": 13856.0,
+      "due_date": "2024-08-04"
+    }
+  },
+  "doc_092.pdf": {
+    "type": "receipt",
+    "source": "receipt_014.pdf",
+    "key_fields": {
+      "store_name": "Hammer & Nail Hardware",
+      "total": 59.02,
+      "date": "05/15/2023"
+    }
+  },
+  "doc_093.pdf": {
+    "type": "receipt",
+    "source": "receipt_018.pdf",
+    "key_fields": {
+      "store_name": "Hammer & Home Hardware",
+      "total": 64.45,
+      "date": "12/28/2024"
+    }
+  },
+  "doc_094.pdf": {
+    "type": "receipt",
+    "source": "receipt_029.pdf",
+    "key_fields": {
+      "store_name": "Tech Haven",
+      "total": 82.11,
+      "date": "08/15/2023"
+    }
+  },
+  "doc_095.pdf": {
+    "type": "receipt",
+    "source": "receipt_032.pdf",
+    "key_fields": {
+      "store_name": "Tech Haven Electronics",
+      "total": 166.1,
+      "date": "07/15/2023"
+    }
+  },
+  "doc_096.pdf": {
+    "type": "receipt",
+    "source": "receipt_036.pdf",
+    "key_fields": {
+      "store_name": "Pawsitively Purrfect Pets",
+      "total": 46.41,
+      "date": "08/15/2023"
+    }
+  },
+  "doc_097.pdf": {
+    "type": "invoice",
+    "source": "invoice_045.pdf",
+    "key_fields": {
+      "company": "Innovate Media Group",
+      "invoice_number": "INV-2023-1001",
+      "total_due": 4871.25,
+      "due_date": "2023-11-19"
+    }
+  },
+  "doc_098.pdf": {
+    "type": "receipt",
+    "source": "receipt_004.pdf",
+    "key_fields": {
+      "store_name": "Gadget Guru Electronics",
+      "total": 75.99,
+      "date": "07/15/2023"
+    }
+  },
+  "doc_099.pdf": {
+    "type": "receipt",
+    "source": "receipt_015.pdf",
+    "key_fields": {
+      "store_name": "The Corner Deli & Market",
+      "total": 27.46,
+      "date": "08/15/2023"
+    }
+  },
+  "doc_100.pdf": {
+    "type": "invoice",
+    "source": "invoice_032.pdf",
+    "key_fields": {
+      "company": "Quantum Innovations Group",
+      "invoice_number": "INV-2024-0036",
+      "total_due": 21049.0,
+      "due_date": "2024-04-14"
+    }
+  }
+}

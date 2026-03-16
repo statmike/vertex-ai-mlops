@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    @page {
+        size: {{ style.page_width }} 297mm;
+        margin: 5mm;
+    }
+    body {
+        font-family: {{ style.font_family }};
+        font-size: {{ style.font_size }};
+        line-height: {{ style.line_height }};
+        width: {{ style.body_width }};
+        margin: 0 auto;
+        color: #000;
+    }
+    .store-name {
+        font-size: {{ style.store_name_size }};
+        font-weight: bold;
+        text-align: center;
+        {% if style.store_name_upper %}text-transform: uppercase;{% endif %}
+        margin-bottom: 2px;
+    }
+    .store-info {
+        text-align: center;
+        font-size: 10px;
+        margin-bottom: 8px;
+    }
+    .divider {
+        text-align: center;
+        margin: 6px 0;
+        letter-spacing: 2px;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    .date-time {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+    }
+    .item-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 1px 0;
+    }
+    .item-name {
+        flex: 1;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    .item-price {
+        text-align: right;
+        min-width: 55px;
+        padding-left: 8px;
+    }
+    .item-qty {
+        font-size: 10px;
+        color: #444;
+        margin-left: 12px;
+        margin-bottom: 2px;
+    }
+    .totals { margin-top: 4px; }
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 1px 0;
+    }
+    .grand-total {
+        font-weight: bold;
+        font-size: 13px;
+        border-top: {{ style.grand_total_border }};
+        border-bottom: {{ style.grand_total_border }};
+        padding: 3px 0;
+        margin: 4px 0;
+    }
+    .payment-info { margin-top: 6px; font-size: 10px; }
+    .footer { text-align: center; margin-top: 12px; font-size: 10px; }
+    .barcode {
+        text-align: center;
+        font-family: monospace;
+        font-size: 8px;
+        letter-spacing: 3px;
+        margin-top: 8px;
+    }
+</style>
+</head>
+<body>
+
+<div class="store-name">{{ store_name }}</div>
+<div class="store-info">
+    {{ address }}<br>
+    {{ city_state_zip }}<br>
+    {{ phone }}
+</div>
+
+<div class="divider">{{ style.divider_heavy }}</div>
+
+<div class="date-time">
+    <span>{{ date }}</span>
+    <span>{{ time }}</span>
+</div>
+
+<div class="divider">{{ style.divider_light }}</div>
+
+{% for item in items %}
+<div class="item-row">
+    <span class="item-name">{{ item.name }}</span>
+    <span class="item-price">${{ "%.2f"|format(item.total) }}</span>
+</div>
+{% if item.qty > 1 %}
+<div class="item-qty">{{ item.qty }} @ ${{ "%.2f"|format(item.price) }} ea</div>
+{% endif %}
+{% endfor %}
+
+<div class="divider">{{ style.divider_light }}</div>
+
+<div class="totals">
+    <div class="total-row">
+        <span>SUBTOTAL</span>
+        <span>${{ "%.2f"|format(subtotal) }}</span>
+    </div>
+    <div class="total-row">
+        <span>TAX ({{ "%.1f"|format(tax_rate * 100) }}%)</span>
+        <span>${{ "%.2f"|format(tax) }}</span>
+    </div>
+    <div class="total-row grand-total">
+        <span>TOTAL</span>
+        <span>${{ "%.2f"|format(total) }}</span>
+    </div>
+</div>
+
+<div class="payment-info">
+    <div class="total-row">
+        <span>{{ payment_method }}</span>
+        <span>${{ "%.2f"|format(total) }}</span>
+    </div>
+    {% if cash_tendered is not none %}
+    <div class="total-row">
+        <span>CASH TENDERED</span>
+        <span>${{ "%.2f"|format(cash_tendered) }}</span>
+    </div>
+    <div class="total-row">
+        <span>CHANGE</span>
+        <span>${{ "%.2f"|format(change) }}</span>
+    </div>
+    {% endif %}
+</div>
+
+<div class="divider">{{ style.divider_heavy }}</div>
+
+<div class="footer">
+    {{ style.footer_message }}<br>
+    <br>
+    {{ store_name | upper }}
+</div>
+
+{% if style.show_barcode %}
+<div class="barcode">||||| |||| ||||| |||| |||||</div>
+{% endif %}
+
+</body>
+</html>

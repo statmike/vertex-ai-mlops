@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    @page { size: letter; margin: 20mm; }
+    body {
+        font-family: {{ style.font_family }};
+        font-size: {{ style.font_size }};
+        line-height: 1.5;
+        color: #333;
+        margin: 0;
+    }
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 30px;
+        padding-bottom: 15px;
+        border-bottom: {{ style.header_border }};
+    }
+    .company-name {
+        font-size: {{ style.company_name_size }};
+        font-weight: bold;
+        color: {{ style.accent_color }};
+        margin-bottom: 4px;
+    }
+    .company-details { font-size: 10px; color: #666; line-height: 1.6; }
+    .invoice-title {
+        font-size: {{ style.title_size }};
+        font-weight: bold;
+        color: {{ style.accent_color }};
+        text-align: right;
+        letter-spacing: 2px;
+    }
+    .invoice-meta {
+        text-align: right;
+        font-size: 10px;
+        color: #666;
+        margin-top: 8px;
+        line-height: 1.8;
+    }
+    .invoice-meta strong { color: #333; }
+    .bill-to { margin-bottom: 25px; }
+    .section-label {
+        font-size: 10px;
+        font-weight: bold;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 5px;
+    }
+    .client-name {
+        font-size: 14px;
+        font-weight: bold;
+        color: {{ style.accent_color }};
+    }
+    .client-details { font-size: 10px; color: #666; line-height: 1.6; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    thead th {
+        background-color: {{ style.accent_color }};
+        color: {{ style.accent_text }};
+        font-size: 10px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 10px 12px;
+        text-align: left;
+    }
+    thead th.r { text-align: right; }
+    tbody td {
+        padding: 10px 12px;
+        font-size: 11px;
+        {% if style.table_style == 'bordered' %}
+        border: 1px solid #ddd;
+        {% else %}
+        border-bottom: 1px solid #eee;
+        {% endif %}
+    }
+    {% if style.table_style == 'striped' %}
+    tbody tr:nth-child(even) { background-color: #f9f9f9; }
+    {% endif %}
+    .r { text-align: right; }
+    .totals { display: flex; justify-content: flex-end; margin-bottom: 30px; }
+    .totals-table { width: 250px; }
+    .totals-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 11px; }
+    .totals-row.sub { border-bottom: 1px solid #ddd; padding-bottom: 8px; margin-bottom: 5px; }
+    .totals-row.grand {
+        border-top: 2px solid {{ style.accent_color }};
+        padding-top: 8px;
+        margin-top: 5px;
+        font-size: 14px;
+        font-weight: bold;
+        color: {{ style.accent_color }};
+    }
+    .terms {
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #ddd;
+    }
+    .terms-label {
+        font-size: 10px;
+        font-weight: bold;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 4px;
+    }
+    .terms-text { font-size: 10px; color: #666; }
+    .notes { margin-top: 15px; font-size: 10px; color: #888; font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <div class="company-name">{{ company_name }}</div>
+        <div class="company-details">
+            {{ company_address }}<br>
+            {{ company_city_state_zip }}<br>
+            {{ company_phone }}<br>
+            {{ company_email }}
+        </div>
+    </div>
+    <div>
+        <div class="invoice-title">INVOICE</div>
+        <div class="invoice-meta">
+            <strong>Invoice #:</strong> {{ invoice_number }}<br>
+            <strong>Date:</strong> {{ issue_date }}<br>
+            <strong>Due Date:</strong> {{ due_date }}
+        </div>
+    </div>
+</div>
+
+<div class="bill-to">
+    <div class="section-label">Bill To</div>
+    <div class="client-name">{{ client_name }}</div>
+    <div class="client-details">
+        Attn: {{ client_contact }}<br>
+        {{ client_address }}<br>
+        {{ client_city_state_zip }}
+    </div>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Description</th>
+            <th class="r">Qty</th>
+            <th>Unit</th>
+            <th class="r">Unit Price</th>
+            <th class="r">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in line_items %}
+        <tr>
+            <td>{{ item.description }}</td>
+            <td class="r">{{ item.qty }}</td>
+            <td>{{ item.unit }}</td>
+            <td class="r">${{ "%.2f"|format(item.unit_price) }}</td>
+            <td class="r">${{ "%.2f"|format(item.amount) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="totals">
+    <div class="totals-table">
+        <div class="totals-row sub">
+            <span>Subtotal</span>
+            <span>${{ "%.2f"|format(subtotal) }}</span>
+        </div>
+        {% if tax > 0 %}
+        <div class="totals-row">
+            <span>Tax ({{ "%.1f"|format(tax_rate * 100) }}%)</span>
+            <span>${{ "%.2f"|format(tax) }}</span>
+        </div>
+        {% endif %}
+        <div class="totals-row grand">
+            <span>Total Due</span>
+            <span>${{ "%.2f"|format(total_due) }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="terms">
+    <div class="terms-label">Payment Terms</div>
+    <div class="terms-text">{{ terms }}</div>
+</div>
+
+{% if notes %}
+<div class="notes">{{ notes }}</div>
+{% endif %}
+
+</body>
+</html>

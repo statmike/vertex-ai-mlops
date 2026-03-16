@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    @page { size: letter; margin: 25mm 20mm; }
+    body {
+        font-family: {{ style.font_family }};
+        font-size: {{ style.font_size }};
+        line-height: 1.6;
+        color: #444;
+        margin: 0;
+    }
+    .company-name {
+        font-size: {{ style.company_name_size }};
+        font-weight: 300;
+        color: {{ style.accent_color }};
+        margin-bottom: 2px;
+        letter-spacing: 1px;
+    }
+    .company-details {
+        font-size: 9px;
+        color: #999;
+        margin-bottom: 30px;
+    }
+    .invoice-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 30px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .invoice-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        color: #bbb;
+    }
+    .invoice-number {
+        font-size: 16px;
+        font-weight: bold;
+        color: #333;
+    }
+    .two-col {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+    }
+    .col { flex: 1; }
+    .col-label {
+        font-size: 8px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: #bbb;
+        margin-bottom: 6px;
+    }
+    .col-content {
+        font-size: 10px;
+        color: #555;
+        line-height: 1.7;
+    }
+    .col-content strong { color: #333; }
+    .dates-box {
+        background: #fafafa;
+        padding: 10px 14px;
+        font-size: 10px;
+        color: #666;
+        margin-bottom: 25px;
+        display: flex;
+        gap: 30px;
+    }
+    .dates-box strong { color: #333; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    thead th {
+        font-size: 8px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #999;
+        padding: 8px 10px;
+        text-align: left;
+        border-bottom: 2px solid #e0e0e0;
+    }
+    thead th.r { text-align: right; }
+    tbody td {
+        padding: 10px 10px;
+        font-size: 11px;
+        border-bottom: 1px solid #f0f0f0;
+        color: #555;
+    }
+    .r { text-align: right; }
+    .totals { display: flex; justify-content: flex-end; margin-bottom: 30px; }
+    .totals-block { width: 220px; }
+    .totals-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        font-size: 11px;
+        color: #666;
+    }
+    .totals-row.grand {
+        font-size: 16px;
+        font-weight: bold;
+        color: {{ style.accent_color }};
+        padding-top: 10px;
+        margin-top: 6px;
+        border-top: 1px solid #e0e0e0;
+    }
+    .terms-line {
+        font-size: 9px;
+        color: #aaa;
+        padding-top: 20px;
+        border-top: 1px solid #f0f0f0;
+    }
+    .notes { margin-top: 10px; font-size: 9px; color: #bbb; font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="company-name">{{ company_name }}</div>
+<div class="company-details">
+    {{ company_address }} &middot; {{ company_city_state_zip }} &middot; {{ company_phone }} &middot; {{ company_email }}
+</div>
+
+<div class="invoice-header">
+    <div class="invoice-label">Invoice</div>
+    <div class="invoice-number">{{ invoice_number }}</div>
+</div>
+
+<div class="two-col">
+    <div class="col">
+        <div class="col-label">Bill To</div>
+        <div class="col-content">
+            <strong>{{ client_name }}</strong><br>
+            {{ client_contact }}<br>
+            {{ client_address }}<br>
+            {{ client_city_state_zip }}
+        </div>
+    </div>
+    <div class="col" style="text-align: right;">
+        <div class="col-label">From</div>
+        <div class="col-content">
+            <strong>{{ company_name }}</strong><br>
+            {{ company_address }}<br>
+            {{ company_city_state_zip }}
+        </div>
+    </div>
+</div>
+
+<div class="dates-box">
+    <span><strong>Issued:</strong> {{ issue_date }}</span>
+    <span><strong>Due:</strong> {{ due_date }}</span>
+    <span><strong>Terms:</strong> {{ terms }}</span>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Description</th>
+            <th class="r">Qty</th>
+            <th>Unit</th>
+            <th class="r">Rate</th>
+            <th class="r">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in line_items %}
+        <tr>
+            <td>{{ item.description }}</td>
+            <td class="r">{{ item.qty }}</td>
+            <td>{{ item.unit }}</td>
+            <td class="r">${{ "%.2f"|format(item.unit_price) }}</td>
+            <td class="r">${{ "%.2f"|format(item.amount) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="totals">
+    <div class="totals-block">
+        <div class="totals-row">
+            <span>Subtotal</span>
+            <span>${{ "%.2f"|format(subtotal) }}</span>
+        </div>
+        {% if tax > 0 %}
+        <div class="totals-row">
+            <span>Tax ({{ "%.1f"|format(tax_rate * 100) }}%)</span>
+            <span>${{ "%.2f"|format(tax) }}</span>
+        </div>
+        {% endif %}
+        <div class="totals-row grand">
+            <span>Total Due</span>
+            <span>${{ "%.2f"|format(total_due) }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="terms-line">Payment Terms: {{ terms }}</div>
+
+{% if notes %}
+<div class="notes">{{ notes }}</div>
+{% endif %}
+
+</body>
+</html>

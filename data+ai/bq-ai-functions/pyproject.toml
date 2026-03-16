@@ -1,0 +1,21 @@
+[project]
+name = "bq-ai-functions"
+version = "0.1.0"
+description = "BigQuery AI Functions — overview, examples, and workflows"
+requires-python = ">=3.10"
+dependencies = [
+    "google-cloud-bigquery",
+    "db-dtypes",
+    "bigquery-magics",
+    "tqdm",
+    "bigframes",
+    "pydantic",
+    "matplotlib",
+    "jinja2>=3.1.6",
+    "weasyprint>=68.1",
+    "google-cloud-storage",
+    "google-cloud-documentai",
+]
+
+[dependency-groups]
+dev = ["ipykernel"]

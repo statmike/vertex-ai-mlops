@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    @page {
+        size: {{ style.page_width }} 297mm;
+        margin: 5mm;
+    }
+    body {
+        font-family: {{ style.font_family }};
+        font-size: {{ style.font_size }};
+        line-height: {{ style.line_height }};
+        width: {{ style.body_width }};
+        margin: 0 auto;
+        color: #000;
+    }
+    .header {
+        margin-bottom: 8px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid #000;
+    }
+    .store-name {
+        font-size: {{ style.store_name_size }};
+        font-weight: bold;
+        {% if style.store_name_upper %}text-transform: uppercase;{% endif %}
+    }
+    .store-info {
+        font-size: 9px;
+        color: #333;
+    }
+    .meta-row {
+        font-size: 9px;
+        margin-bottom: 6px;
+    }
+    .item-line {
+        display: flex;
+        justify-content: space-between;
+        margin: 2px 0;
+        font-size: {{ style.font_size }};
+    }
+    .item-label {
+        flex: 1;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    .item-label::after {
+        content: " ........................................";
+        letter-spacing: 2px;
+        color: #999;
+    }
+    .item-amount {
+        flex-shrink: 0;
+        padding-left: 4px;
+        text-align: right;
+    }
+    .qty-detail {
+        font-size: 9px;
+        color: #666;
+        padding-left: 8px;
+    }
+    .sep { border-top: 1px solid #000; margin: 6px 0; }
+    .totals .item-line { font-size: {{ style.font_size }}; }
+    .grand-total .item-line {
+        font-weight: bold;
+        font-size: 14px;
+        margin-top: 4px;
+        padding-top: 4px;
+        border-top: {{ style.grand_total_border }};
+    }
+    .payment {
+        font-size: 9px;
+        margin-top: 6px;
+        padding-top: 4px;
+        border-top: 1px solid #000;
+    }
+    .footer {
+        margin-top: 10px;
+        font-size: 9px;
+        text-align: center;
+        color: #666;
+    }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="store-name">{{ store_name }}</div>
+    <div class="store-info">
+        {{ address }} | {{ city_state_zip }}<br>
+        {{ phone }}
+    </div>
+</div>
+
+<div class="meta-row">{{ date }}  {{ time }}</div>
+
+{% for item in items %}
+<div class="item-line">
+    <span class="item-label">{{ item.name }}</span>
+    <span class="item-amount">${{ "%.2f"|format(item.total) }}</span>
+</div>
+{% if item.qty > 1 %}
+<div class="qty-detail">{{ item.qty }}x @ ${{ "%.2f"|format(item.price) }}</div>
+{% endif %}
+{% endfor %}
+
+<div class="sep"></div>
+
+<div class="totals">
+    <div class="item-line">
+        <span>Subtotal</span>
+        <span class="item-amount">${{ "%.2f"|format(subtotal) }}</span>
+    </div>
+    <div class="item-line">
+        <span>Tax {{ "%.1f"|format(tax_rate * 100) }}%</span>
+        <span class="item-amount">${{ "%.2f"|format(tax) }}</span>
+    </div>
+</div>
+<div class="grand-total">
+    <div class="item-line">
+        <span>Total</span>
+        <span class="item-amount">${{ "%.2f"|format(total) }}</span>
+    </div>
+</div>
+
+<div class="payment">
+    Paid: {{ payment_method }} — ${{ "%.2f"|format(total) }}
+    {% if cash_tendered is not none %}
+    <br>Tendered: ${{ "%.2f"|format(cash_tendered) }} | Change: ${{ "%.2f"|format(change) }}
+    {% endif %}
+</div>
+
+<div class="footer">{{ style.footer_message }}</div>
+
+</body>
+</html>

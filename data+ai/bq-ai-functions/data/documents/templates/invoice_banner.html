@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+    @page { size: letter; margin: 0; }
+    body {
+        font-family: {{ style.font_family }};
+        font-size: {{ style.font_size }};
+        line-height: 1.5;
+        color: #333;
+        margin: 0;
+    }
+    .banner {
+        background-color: {{ style.accent_color }};
+        color: {{ style.accent_text }};
+        padding: 25px 30px;
+        margin-bottom: 25px;
+    }
+    .banner-name {
+        font-size: {{ style.company_name_size }};
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+    .banner-contact {
+        font-size: 10px;
+        opacity: 0.85;
+        margin-top: 4px;
+    }
+    .banner-invoice {
+        float: right;
+        text-align: right;
+        margin-top: -40px;
+    }
+    .banner-invoice-title {
+        font-size: {{ style.title_size }};
+        font-weight: bold;
+        letter-spacing: 3px;
+        opacity: 0.9;
+    }
+    .content { padding: 0 30px 30px 30px; }
+    .info-grid {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 25px;
+    }
+    .info-block { flex: 1; }
+    .info-block h4 {
+        font-size: 9px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: {{ style.accent_color }};
+        margin: 0 0 6px 0;
+    }
+    .info-block p {
+        font-size: 10px;
+        color: #555;
+        line-height: 1.6;
+        margin: 0;
+    }
+    .info-block .value {
+        font-size: 12px;
+        font-weight: bold;
+        color: #333;
+    }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    thead th {
+        background-color: {{ style.accent_color }};
+        color: {{ style.accent_text }};
+        font-size: 10px;
+        font-weight: bold;
+        text-transform: uppercase;
+        padding: 10px 12px;
+        text-align: left;
+    }
+    thead th.r { text-align: right; }
+    tbody td {
+        padding: 10px 12px;
+        font-size: 11px;
+        {% if style.table_style == 'bordered' %}
+        border: 1px solid #ddd;
+        {% else %}
+        border-bottom: 1px solid #eee;
+        {% endif %}
+    }
+    {% if style.table_style == 'striped' %}
+    tbody tr:nth-child(even) { background-color: #f5f5f5; }
+    {% endif %}
+    .r { text-align: right; }
+    .summary {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 25px;
+    }
+    .summary-box {
+        width: 260px;
+        background: #f8f8f8;
+        padding: 12px 16px;
+        border-left: 4px solid {{ style.accent_color }};
+    }
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        font-size: 11px;
+    }
+    .summary-row.grand {
+        font-size: 16px;
+        font-weight: bold;
+        color: {{ style.accent_color }};
+        border-top: 2px solid {{ style.accent_color }};
+        padding-top: 8px;
+        margin-top: 6px;
+    }
+    .footer-bar {
+        margin-top: 20px;
+        padding-top: 12px;
+        border-top: 2px solid {{ style.accent_color }};
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        color: #666;
+    }
+    .notes { margin-top: 12px; font-size: 10px; color: #888; font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="banner">
+    <div class="banner-name">{{ company_name }}</div>
+    <div class="banner-contact">
+        {{ company_address }} | {{ company_city_state_zip }} | {{ company_phone }} | {{ company_email }}
+    </div>
+    <div class="banner-invoice">
+        <div class="banner-invoice-title">INVOICE</div>
+    </div>
+</div>
+
+<div class="content">
+
+<div class="info-grid">
+    <div class="info-block">
+        <h4>Bill To</h4>
+        <p>
+            <strong>{{ client_name }}</strong><br>
+            Attn: {{ client_contact }}<br>
+            {{ client_address }}<br>
+            {{ client_city_state_zip }}
+        </p>
+    </div>
+    <div class="info-block" style="text-align: right;">
+        <h4>Invoice Details</h4>
+        <p>
+            <span class="value">{{ invoice_number }}</span><br>
+            Issued: {{ issue_date }}<br>
+            Due: {{ due_date }}<br>
+            Terms: {{ terms }}
+        </p>
+    </div>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Description</th>
+            <th class="r">Qty</th>
+            <th>Unit</th>
+            <th class="r">Unit Price</th>
+            <th class="r">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in line_items %}
+        <tr>
+            <td>{{ item.description }}</td>
+            <td class="r">{{ item.qty }}</td>
+            <td>{{ item.unit }}</td>
+            <td class="r">${{ "%.2f"|format(item.unit_price) }}</td>
+            <td class="r">${{ "%.2f"|format(item.amount) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="summary">
+    <div class="summary-box">
+        <div class="summary-row">
+            <span>Subtotal</span>
+            <span>${{ "%.2f"|format(subtotal) }}</span>
+        </div>
+        {% if tax > 0 %}
+        <div class="summary-row">
+            <span>Tax ({{ "%.1f"|format(tax_rate * 100) }}%)</span>
+            <span>${{ "%.2f"|format(tax) }}</span>
+        </div>
+        {% endif %}
+        <div class="summary-row grand">
+            <span>Total Due</span>
+            <span>${{ "%.2f"|format(total_due) }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="footer-bar">
+    <span>Payment Terms: {{ terms }}</span>
+    <span>{{ company_name }}</span>
+</div>
+
+{% if notes %}
+<div class="notes">{{ notes }}</div>
+{% endif %}
+
+</div>
+</body>
+</html>
