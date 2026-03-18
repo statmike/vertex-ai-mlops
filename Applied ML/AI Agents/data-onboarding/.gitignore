@@ -1,0 +1,13 @@
+# Coverage
+.coverage
+htmlcov/
+
+# Build
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+
+# Deployment
+deploy/deployment.json
