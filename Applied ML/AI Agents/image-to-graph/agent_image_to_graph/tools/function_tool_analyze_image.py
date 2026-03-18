@@ -7,6 +7,7 @@ from google.genai import types
 
 from .util_bbox import normalize_bbox
 from .util_common import log_tool_error, strip_json_markdown_fence
+from .util_diagram_type import generate_schematic_grid, is_schematic
 from .util_gemini import generate_content
 
 logger = logging.getLogger(__name__)
@@ -36,31 +37,52 @@ async def analyze_image(tool_context: tools.ToolContext) -> str:
         mime_type = tool_context.state.get("source_image_mime_type", "image/png")
         image_bytes = base64.b64decode(source_image_b64)
 
-        analysis_prompt = """Analyze this diagram image comprehensively. Return a JSON object with this exact structure:
-{
+        # Build optional CV context (semantic info only — no bounding boxes, to avoid
+        # anchoring the model and interfering with Gemini's own spatial reasoning)
+        cv_context = ""
+        cv_data = tool_context.state.get("cv_preprocessing")
+        if cv_data and cv_data.get("status") in ("complete", "partial"):
+            cv_elements = cv_data.get("elements", [])
+            if cv_elements:
+                cv_lines = []
+                for el in cv_elements:
+                    text = el.get("text") or "(no text)"
+                    sem = el.get("semantic_label", "")
+                    cv_lines.append(f"  - \"{text}\" ({sem}), shape={el.get('shape', '?')}")
+                cv_context = (
+                    "\n\nCV PREPROCESSING CONTEXT:\n"
+                    "The following elements were detected by OpenCV contour analysis. "
+                    "Use these to help identify elements but rely on your own visual analysis "
+                    "for positions and bounding boxes:\n"
+                    + "\n".join(cv_lines) + "\n"
+                )
+
+        analysis_prompt = f"""Analyze this diagram image comprehensively.{cv_context} Return a JSON object with this exact structure:
+{{
     "diagram_type": "flowchart|schematic|building_plan|network_diagram|uml|org_chart|state_diagram|other",
     "description": "Brief description of what this diagram represents",
     "regions": [
-        {
+        {{
             "region_id": "region_1",
             "label": "Human-readable label for this region",
             "description": "What this region contains",
-            "bounding_box": {"top": y_min, "left": x_min, "bottom": y_max, "right": x_max},
+            "bounding_box": {{"top": y_min, "left": x_min, "bottom": y_max, "right": x_max}},
             "element_type": "node|group|label|connector|annotation"
-        }
+        }}
     ]
-}
+}}
 
 IMPORTANT:
-- Bounding box coordinates use a normalized 0-1000 scale where the image top-left corner is {"top": 0, "left": 0} and the bottom-right corner is {"bottom": 1000, "right": 1000}.
+- Bounding box coordinates use a normalized 0-1000 scale where the image top-left corner is {{"top": 0, "left": 0}} and the bottom-right corner is {{"bottom": 1000, "right": 1000}}.
   "top" = distance from the top edge (0 = very top, 1000 = very bottom).
   "left" = distance from the left edge (0 = far left, 1000 = far right).
-  Example: an element at the top-left corner → {"top": 0, "left": 0, "bottom": 200, "right": 150}
-  Example: an element at the bottom-right → {"top": 800, "left": 850, "bottom": 1000, "right": 1000}
+  Example: an element at the top-left corner → {{"top": 0, "left": 0, "bottom": 200, "right": 150}}
+  Example: an element at the bottom-right → {{"top": 800, "left": 850, "bottom": 1000, "right": 1000}}
 - Identify ALL distinct visual elements: shapes, boxes, circles, text labels, connectors, arrows, symbols.
 - Group related elements into regions (e.g., a box with its label is one region).
 - Use descriptive region_ids like "region_1", "region_2", etc.
 - For element_type, use "node" for main diagram elements (boxes, circles, symbols), "connector" for lines/arrows, "group" for grouped elements, "label" for standalone text, and "annotation" for notes/comments.
+- If the image has a legend or title block, mark them as element_type "legend" or "page_info" (not "node").
 
 Return ONLY the JSON object, no other text."""
 
@@ -87,6 +109,23 @@ Return ONLY the JSON object, no other text."""
         tool_context.state["analysis_result"] = analysis
 
         regions = analysis.get("regions", [])
+
+        # Schematic grid: replace Gemini's regions with systematic grid cells
+        if is_schematic(analysis):
+            # Keep legend/page_info regions from Gemini
+            meta_regions = [
+                r for r in regions if r.get("element_type") in ("legend", "page_info")
+            ]
+            # Determine grid layout from image aspect ratio
+            img_w = tool_context.state.get("image_dimensions", {}).get("width", 1)
+            img_h = tool_context.state.get("image_dimensions", {}).get("height", 1)
+            if img_w >= img_h:
+                grid_regions = generate_schematic_grid(cols=4, rows=3)
+            else:
+                grid_regions = generate_schematic_grid(cols=3, rows=4)
+            regions = meta_regions + grid_regions
+            analysis["regions"] = regions
+            tool_context.state["analysis_result"] = analysis
         region_count = len(regions)
 
         # Normalize bounding boxes from dict to list format

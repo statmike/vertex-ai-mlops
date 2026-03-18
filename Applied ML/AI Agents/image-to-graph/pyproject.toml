@@ -6,10 +6,13 @@ readme = "readme.md"
 requires-python = ">=3.13.3"
 dependencies = [
     "google-adk>=1.14.0",
+    "google-cloud-storage>=2.18.0",
     "google-genai>=1.64.0",
     "pydantic>=2.12.5",
     "pillow>=11.2.1",
+    "pymupdf>=1.25.0",
     "python-dotenv>=1.0.0",
+    "opencv-python-headless>=4.10.0",
 ]
 
 [project.optional-dependencies]
@@ -33,12 +36,12 @@ select = ["E", "W", "F", "I", "B", "UP", "SIM"]
 ignore = ["E501", "B008", "ARG001"]
 
 [tool.pytest.ini_options]
-testpaths = ["agent_image_to_graph/tests", "agent_graph_qa/tests"]
+testpaths = ["agent_image_to_graph/tests", "agent_graph_qa/tests", "agent_cv_preprocess/tests"]
 asyncio_mode = "auto"
-addopts = "--cov=agent_image_to_graph --cov=agent_graph_qa --cov-report=term-missing"
+addopts = "--cov=agent_image_to_graph --cov=agent_graph_qa --cov=agent_cv_preprocess --cov-report=term-missing"
 
 [tool.coverage.run]
-source = ["agent_image_to_graph", "agent_graph_qa"]
+source = ["agent_image_to_graph", "agent_graph_qa", "agent_cv_preprocess"]
 
 [tool.coverage.report]
 show_missing = true

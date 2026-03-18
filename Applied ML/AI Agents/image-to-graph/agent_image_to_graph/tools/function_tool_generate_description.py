@@ -44,6 +44,38 @@ async def generate_description(tool_context: tools.ToolContext) -> str:
         graph_summary = json.dumps(graph, indent=2)
         schema_summary = json.dumps(schema, indent=2) if schema else "No schema provided."
 
+        # Build flow/metadata context
+        extra_context = ""
+        flows = graph.get("flows", [])
+        if flows and len(flows) >= 2:
+            flow_desc = ", ".join(
+                f"{f['label']} ({len(f.get('node_ids', []))} nodes)" for f in flows
+            )
+            extra_context += (
+                f"\n\nThis diagram contains {len(flows)} distinct flows: {flow_desc}. "
+                "Describe each flow separately and explain any cross-flow relationships or references."
+            )
+
+        metadata = graph.get("metadata", {})
+        if isinstance(metadata, dict):
+            page_info = metadata.get("page_info", {})
+            if page_info and isinstance(page_info, dict):
+                info_parts = [f"{k}: {v}" for k, v in page_info.items() if v]
+                if info_parts:
+                    extra_context += f"\n\nPage metadata: {', '.join(info_parts)}."
+
+            legend = metadata.get("legend", [])
+            if legend and isinstance(legend, list):
+                legend_lines = [
+                    f"  - {e.get('symbol', '?')}: {e.get('meaning', '?')}"
+                    for e in legend if isinstance(e, dict)
+                ]
+                if legend_lines:
+                    extra_context += (
+                        "\n\nThe diagram uses these symbols:\n" + "\n".join(legend_lines)
+                        + "\nReference these symbols in your description where relevant."
+                    )
+
         prompt = f"""You are given a diagram image along with its extracted graph representation and schema.
 
 Write a comprehensive, detailed description of this diagram. Your description should cover:
@@ -55,7 +87,7 @@ Write a comprehensive, detailed description of this diagram. Your description sh
 5. **Key Relationships**: Highlight important connections, dependencies, or feedback loops between components.
 6. **Outputs**: What are the final outputs or results of the process shown?
 
-Write in clear, professional prose. Use paragraph form, not bullet points. Reference specific node labels and connections from the graph. The description should be self-contained — someone reading it without seeing the diagram should understand the full structure and flow.
+Write in clear, professional prose. Use paragraph form, not bullet points. Reference specific node labels and connections from the graph. The description should be self-contained — someone reading it without seeing the diagram should understand the full structure and flow.{extra_context}
 
 Graph JSON:
 {graph_summary}

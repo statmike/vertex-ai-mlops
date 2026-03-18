@@ -11,7 +11,7 @@ if [ ! -f pyproject.toml ]; then
 fi
 
 # 2. Add your core stack
-uv add google-adk google-genai pydantic pillow python-dotenv
+uv add google-adk google-genai google-cloud-storage pydantic pillow pymupdf opencv-python-headless python-dotenv
 
 # 3. Sync the environment (creates .venv)
 uv sync

@@ -34,6 +34,89 @@ class TestUpdateGraphAddNode:
         assert "Skipped" in result
 
     @pytest.mark.asyncio
+    async def test_add_node_duplicate_label_bbox_skipped(self, mock_tool_context):
+        """Node with same label and overlapping bbox as existing node is skipped."""
+        mock_tool_context.state["graph"] = {
+            "nodes": [
+                {"id": "GND_1", "label": "GND", "bounding_box": [347, 335, 356, 345]}
+            ],
+            "edges": [],
+        }
+        ops = [
+            {
+                "op": "add_node",
+                "data": {
+                    "id": "GND_NET",
+                    "label": "GND",
+                    "bounding_box": [347, 335, 356, 345],
+                },
+            }
+        ]
+        result = await update_graph(ops, mock_tool_context)
+        assert "Skipped" in result
+        assert "duplicate of" in result
+        assert "GND_1" in result
+        assert len(mock_tool_context.state["graph"]["nodes"]) == 1
+
+    @pytest.mark.asyncio
+    async def test_add_node_same_label_different_position_allowed(self, mock_tool_context):
+        """Nodes with same label but different positions are not duplicates."""
+        mock_tool_context.state["graph"] = {
+            "nodes": [
+                {"id": "GND_1", "label": "GND", "bounding_box": [100, 100, 120, 120]}
+            ],
+            "edges": [],
+        }
+        ops = [
+            {
+                "op": "add_node",
+                "data": {
+                    "id": "GND_2",
+                    "label": "GND",
+                    "bounding_box": [800, 800, 820, 820],
+                },
+            }
+        ]
+        result = await update_graph(ops, mock_tool_context)
+        assert "+ node 'GND_2'" in result
+        assert len(mock_tool_context.state["graph"]["nodes"]) == 2
+
+    @pytest.mark.asyncio
+    async def test_add_node_different_label_same_bbox_allowed(self, mock_tool_context):
+        """Nodes with different labels at same position are not duplicates."""
+        mock_tool_context.state["graph"] = {
+            "nodes": [
+                {"id": "n1", "label": "+3V3", "bounding_box": [100, 200, 110, 210]}
+            ],
+            "edges": [],
+        }
+        ops = [
+            {
+                "op": "add_node",
+                "data": {
+                    "id": "n2",
+                    "label": "+5V0",
+                    "bounding_box": [100, 200, 110, 210],
+                },
+            }
+        ]
+        result = await update_graph(ops, mock_tool_context)
+        assert "+ node 'n2'" in result
+        assert len(mock_tool_context.state["graph"]["nodes"]) == 2
+
+    @pytest.mark.asyncio
+    async def test_add_node_no_bbox_skips_dedup_check(self, mock_tool_context):
+        """Nodes without bounding_box bypass the label+bbox dedup check."""
+        mock_tool_context.state["graph"] = {
+            "nodes": [{"id": "n1", "label": "GND"}],
+            "edges": [],
+        }
+        ops = [{"op": "add_node", "data": {"id": "n2", "label": "GND"}}]
+        result = await update_graph(ops, mock_tool_context)
+        assert "+ node 'n2'" in result
+        assert len(mock_tool_context.state["graph"]["nodes"]) == 2
+
+    @pytest.mark.asyncio
     async def test_add_node_with_bbox_normalization(self, mock_tool_context):
         mock_tool_context.state["graph"] = {"nodes": [], "edges": []}
         ops = [
@@ -159,6 +242,43 @@ class TestUpdateGraphAddEdge:
         result = await update_graph(ops, mock_tool_context)
         assert "'source' and 'target' required" in result
 
+    @pytest.mark.asyncio
+    async def test_add_edge_duplicate_pair_skipped(self, mock_tool_context):
+        """Edge with same (source, target) as existing edge is skipped."""
+        mock_tool_context.state["graph"] = {
+            "nodes": [{"id": "n1"}, {"id": "n2"}],
+            "edges": [{"id": "e1", "source": "n1", "target": "n2", "label": "first"}],
+        }
+        ops = [{"op": "add_edge", "data": {"id": "e2", "source": "n1", "target": "n2"}}]
+        result = await update_graph(ops, mock_tool_context)
+        assert "Skipped" in result
+        assert "duplicate connection" in result
+        assert len(mock_tool_context.state["graph"]["edges"]) == 1
+
+    @pytest.mark.asyncio
+    async def test_add_edge_reverse_direction_not_duplicate(self, mock_tool_context):
+        """Edge with reversed (target, source) is NOT a duplicate — direction matters."""
+        mock_tool_context.state["graph"] = {
+            "nodes": [{"id": "n1"}, {"id": "n2"}],
+            "edges": [{"id": "e1", "source": "n1", "target": "n2"}],
+        }
+        ops = [{"op": "add_edge", "data": {"id": "e2", "source": "n2", "target": "n1"}}]
+        result = await update_graph(ops, mock_tool_context)
+        assert "+ edge 'e2'" in result
+        assert len(mock_tool_context.state["graph"]["edges"]) == 2
+
+    @pytest.mark.asyncio
+    async def test_add_edge_same_nodes_different_target_allowed(self, mock_tool_context):
+        """Same source but different target is not a duplicate."""
+        mock_tool_context.state["graph"] = {
+            "nodes": [{"id": "n1"}, {"id": "n2"}, {"id": "n3"}],
+            "edges": [{"id": "e1", "source": "n1", "target": "n2"}],
+        }
+        ops = [{"op": "add_edge", "data": {"id": "e2", "source": "n1", "target": "n3"}}]
+        result = await update_graph(ops, mock_tool_context)
+        assert "+ edge 'e2'" in result
+        assert len(mock_tool_context.state["graph"]["edges"]) == 2
+
 
 class TestUpdateGraphBatch:
     """Test batch operations."""
@@ -188,3 +308,53 @@ class TestUpdateGraphBatch:
         ops = [{"op": "delete_node", "data": {"id": "n1"}}]
         result = await update_graph(ops, mock_tool_context)
         assert "unknown op" in result.lower()
+
+
+class TestUpdateGraphSetMetadata:
+    """Test set_metadata operations."""
+
+    @pytest.mark.asyncio
+    async def test_set_metadata_legend(self, mock_tool_context):
+        mock_tool_context.state["graph"] = {"nodes": [], "edges": []}
+        legend = [
+            {"symbol": "dashed line", "meaning": "optional dependency"},
+            {"symbol": "red fill", "meaning": "critical path"},
+        ]
+        ops = [{"op": "set_metadata", "data": {"key": "legend", "value": legend}}]
+        result = await update_graph(ops, mock_tool_context)
+        assert "metadata['legend'] set" in result
+        assert mock_tool_context.state["graph"]["metadata"]["legend"] == legend
+
+    @pytest.mark.asyncio
+    async def test_set_metadata_page_info(self, mock_tool_context):
+        mock_tool_context.state["graph"] = {"nodes": [], "edges": []}
+        page_info = {
+            "title": "Data Pipeline v2.1",
+            "author": "Jane Doe",
+            "date": "2025-03-15",
+            "version": "2.1",
+        }
+        ops = [{"op": "set_metadata", "data": {"key": "page_info", "value": page_info}}]
+        result = await update_graph(ops, mock_tool_context)
+        assert "metadata['page_info'] set" in result
+        assert mock_tool_context.state["graph"]["metadata"]["page_info"] == page_info
+
+    @pytest.mark.asyncio
+    async def test_set_metadata_missing_key(self, mock_tool_context):
+        mock_tool_context.state["graph"] = {"nodes": [], "edges": []}
+        ops = [{"op": "set_metadata", "data": {"value": "something"}}]
+        result = await update_graph(ops, mock_tool_context)
+        assert "'key' required" in result
+
+    @pytest.mark.asyncio
+    async def test_set_metadata_preserves_existing(self, mock_tool_context):
+        mock_tool_context.state["graph"] = {
+            "nodes": [],
+            "edges": [],
+            "metadata": {"existing_key": "existing_value"},
+        }
+        ops = [{"op": "set_metadata", "data": {"key": "new_key", "value": "new_value"}}]
+        await update_graph(ops, mock_tool_context)
+        metadata = mock_tool_context.state["graph"]["metadata"]
+        assert metadata["existing_key"] == "existing_value"
+        assert metadata["new_key"] == "new_value"

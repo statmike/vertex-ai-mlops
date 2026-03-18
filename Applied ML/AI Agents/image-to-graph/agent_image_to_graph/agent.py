@@ -10,6 +10,7 @@ if AGENT_MODEL_LOCATION:
 
 from google.adk import agents  # noqa: E402
 
+from agent_cv_preprocess.agent import root_agent as cv_agent  # noqa: E402
 from agent_graph_qa.agent import root_agent as qa_agent  # noqa: E402
 
 from . import prompts, tools  # noqa: E402
@@ -21,7 +22,7 @@ root_agent = agents.Agent(
     global_instruction=prompts.global_instructions,
     instruction=prompts.agent_instructions,
     tools=tools.TOOLS,
-    sub_agents=[qa_agent],
+    sub_agents=[qa_agent, cv_agent],
 )
 
 # ============================================================

@@ -137,9 +137,49 @@ async def generate_schema(tool_context: tools.ToolContext) -> str:
                     "items": EdgeModel.model_json_schema(),
                     "description": "List of graph edges",
                 },
+                "flows": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "id": {"type": "string", "description": "Flow identifier"},
+                            "label": {"type": "string", "description": "Human-readable flow name"},
+                            "node_ids": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "description": "Node IDs belonging to this flow",
+                            },
+                        },
+                        "required": ["id", "label", "node_ids"],
+                    },
+                    "description": "Distinct flows (connected components) detected in the diagram",
+                },
                 "metadata": {
                     "type": "object",
                     "description": "Additional metadata about the graph",
+                    "properties": {
+                        "page_info": {
+                            "type": "object",
+                            "description": "Page-level metadata (title, author, date, version)",
+                            "properties": {
+                                "title": {"type": "string"},
+                                "author": {"type": "string"},
+                                "date": {"type": "string"},
+                                "version": {"type": "string"},
+                            },
+                        },
+                        "legend": {
+                            "type": "array",
+                            "description": "Legend entries mapping symbols to meanings",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "symbol": {"type": "string"},
+                                    "meaning": {"type": "string"},
+                                },
+                            },
+                        },
+                    },
                 },
             },
             "required": ["diagram_type", "nodes", "edges"],

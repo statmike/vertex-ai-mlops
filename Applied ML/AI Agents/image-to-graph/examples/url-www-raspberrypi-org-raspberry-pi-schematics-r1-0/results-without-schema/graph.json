@@ -1,0 +1,944 @@
+{
+  "diagram_type": "schematic",
+  "nodes": [
+    {
+      "metadata": {
+        "project_code": "RP100021",
+        "date": "17Apr12"
+      },
+      "bounding_box": [
+        900,
+        863,
+        937,
+        900
+      ],
+      "id": "title_block",
+      "label": "Raspberry Pi Schematic R1.0",
+      "confidence": "high",
+      "flow_id": "flow_1"
+    },
+    {
+      "id": "J1",
+      "bounding_box": [
+        339,
+        56,
+        367,
+        99
+      ],
+      "metadata": {
+        "part_number": "PD-USB/112"
+      },
+      "confidence": "high",
+      "label": "MICRO USB TYPE B",
+      "flow_id": "flow_1"
+    },
+    {
+      "label": "Fuse miniSMD",
+      "confidence": "high",
+      "bounding_box": [
+        354,
+        146,
+        367,
+        157
+      ],
+      "metadata": {
+        "type": "miniSMD"
+      },
+      "id": "F1",
+      "flow_id": "flow_1"
+    },
+    {
+      "bounding_box": [
+        343,
+        208,
+        351,
+        223
+      ],
+      "label": "TP1",
+      "confidence": "high",
+      "id": "TP1",
+      "flow_id": "flow_1"
+    },
+    {
+      "metadata": {
+        "value": "100n"
+      },
+      "bounding_box": [
+        297,
+        345,
+        304,
+        359
+      ],
+      "id": "C54",
+      "label": "100n",
+      "confidence": "high",
+      "flow_id": "flow_2"
+    },
+    {
+      "label": "100n",
+      "confidence": "high",
+      "metadata": {
+        "value": "100n"
+      },
+      "bounding_box": [
+        297,
+        377,
+        304,
+        391
+      ],
+      "id": "C94",
+      "flow_id": "flow_2"
+    },
+    {
+      "metadata": {
+        "value": "100n"
+      },
+      "bounding_box": [
+        297,
+        410,
+        304,
+        424
+      ],
+      "id": "C60",
+      "label": "100n",
+      "confidence": "high",
+      "flow_id": "flow_2"
+    },
+    {
+      "bounding_box": [
+        362,
+        377,
+        367,
+        391
+      ],
+      "label": "C91",
+      "id": "C91",
+      "confidence": "high",
+      "flow_id": "flow_1"
+    },
+    {
+      "label": "C57",
+      "bounding_box": [
+        362,
+        410,
+        367,
+        424
+      ],
+      "id": "C57",
+      "confidence": "high",
+      "flow_id": "flow_1"
+    },
+    {
+      "id": "BCM2835_OSC",
+      "bounding_box": [
+        70,
+        730,
+        208,
+        795
+      ],
+      "metadata": {
+        "part_number": "BCM2835"
+      },
+      "confidence": "high",
+      "label": "BCM2835 OSC",
+      "parent_id": "BCM2835_SoC",
+      "flow_id": "flow_2"
+    },
+    {
+      "bounding_box": [
+        268,
+        473,
+        367,
+        603
+      ],
+      "metadata": {
+        "part_number": "BCM2835"
+      },
+      "id": "BCM2835_PWR1_SDRAM",
+      "label": "BCM2835 PWR1 SDRAM",
+      "confidence": "high",
+      "parent_id": "BCM2835_SoC",
+      "flow_id": "flow_2"
+    },
+    {
+      "label": "BCM2835 PWR2",
+      "confidence": "high",
+      "bounding_box": [
+        268,
+        841,
+        367,
+        906
+      ],
+      "metadata": {
+        "part_number": "BCM2835"
+      },
+      "id": "BCM2835_PWR2",
+      "parent_id": "BCM2835_SoC",
+      "flow_id": "flow_2"
+    },
+    {
+      "confidence": "high",
+      "label": "19M2 Crystal",
+      "id": "X2",
+      "bounding_box": [
+        108,
+        829,
+        124,
+        861
+      ],
+      "metadata": {
+        "value": "19.2MHz"
+      },
+      "flow_id": "flow_2"
+    },
+    {
+      "id": "C86",
+      "bounding_box": [
+        80,
+        871,
+        98,
+        889
+      ],
+      "metadata": {
+        "value": "27p"
+      },
+      "confidence": "high",
+      "label": "27p",
+      "flow_id": "flow_2"
+    },
+    {
+      "id": "C74",
+      "bounding_box": [
+        135,
+        871,
+        153,
+        889
+      ],
+      "metadata": {
+        "value": "27p"
+      },
+      "confidence": "high",
+      "label": "27p",
+      "flow_id": "flow_2"
+    },
+    {
+      "bounding_box": [
+        300,
+        929,
+        310,
+        943
+      ],
+      "metadata": {
+        "value": "100n"
+      },
+      "id": "C89",
+      "label": "100n",
+      "confidence": "high",
+      "flow_id": "flow_1"
+    },
+    {
+      "confidence": "high",
+      "metadata": {
+        "value": "1A1 6V"
+      },
+      "id": "F3",
+      "bounding_box": [
+        241,
+        133,
+        278,
+        170
+      ],
+      "label": "Fuse 1A1 6V",
+      "flow_id": "flow_1"
+    },
+    {
+      "confidence": "high",
+      "metadata": {
+        "value": "SMBJ 5V"
+      },
+      "id": "D17",
+      "bounding_box": [
+        281,
+        183,
+        319,
+        221
+      ],
+      "label": "SMBJ 5V TVS",
+      "flow_id": "flow_1"
+    },
+    {
+      "confidence": "high",
+      "metadata": {
+        "value": "220uF"
+      },
+      "id": "C6",
+      "bounding_box": [
+        299,
+        210,
+        346,
+        257
+      ],
+      "label": "220uF 6V3",
+      "flow_id": "flow_1"
+    },
+    {
+      "confidence": "high",
+      "id": "R51",
+      "metadata": {
+        "value": "0R0"
+      },
+      "bounding_box": [
+        269,
+        86,
+        336,
+        153
+      ],
+      "label": "0R0",
+      "flow_id": "flow_1"
+    },
+    {
+      "label": "NCP1117-3v3 Regulator",
+      "bounding_box": [
+        328,
+        98,
+        436,
+        206
+      ],
+      "confidence": "high",
+      "metadata": {
+        "part_number": "NCP1117-3v3"
+      },
+      "id": "RG2",
+      "flow_id": "flow_1"
+    },
+    {
+      "label": "100n",
+      "bounding_box": [
+        331,
+        61,
+        416,
+        146
+      ],
+      "confidence": "high",
+      "metadata": {
+        "value": "100n"
+      },
+      "id": "C12",
+      "flow_id": "flow_1"
+    },
+    {
+      "label": "47u",
+      "bounding_box": [
+        382,
+        162,
+        461,
+        241
+      ],
+      "confidence": "high",
+      "metadata": {
+        "value": "47u"
+      },
+      "id": "C11",
+      "flow_id": "flow_1"
+    },
+    {
+      "bounding_box": [
+        401,
+        197,
+        475,
+        271
+      ],
+      "label": "100n",
+      "confidence": "high",
+      "metadata": {
+        "value": "100n"
+      },
+      "id": "C8",
+      "flow_id": "flow_1"
+    },
+    {
+      "confidence": "high",
+      "metadata": {
+        "value": "100n"
+      },
+      "id": "C80",
+      "bounding_box": [
+        297,
+        399,
+        415,
+        415
+      ],
+      "label": "100n",
+      "flow_id": "flow_1"
+    },
+    {
+      "metadata": {
+        "value": "240R"
+      },
+      "id": "R16",
+      "confidence": "high",
+      "bounding_box": [
+        407,
+        428,
+        433,
+        433
+      ],
+      "label": "240R ZQ",
+      "flow_id": "flow_2"
+    },
+    {
+      "id": "C3",
+      "metadata": {
+        "value": "100n"
+      },
+      "confidence": "high",
+      "label": "100n",
+      "bounding_box": [
+        317,
+        246,
+        359,
+        288
+      ],
+      "flow_id": "flow_1"
+    },
+    {
+      "label": "1n0",
+      "bounding_box": [
+        307,
+        292,
+        403,
+        307
+      ],
+      "id": "C2",
+      "metadata": {
+        "value": "1n0"
+      },
+      "confidence": "high",
+      "flow_id": "flow_1"
+    },
+    {
+      "confidence": "high",
+      "metadata": {
+        "value": "10n"
+      },
+      "id": "C10",
+      "bounding_box": [
+        417,
+        230,
+        490,
+        303
+      ],
+      "label": "10n",
+      "flow_id": "flow_1"
+    },
+    {
+      "label": "10u",
+      "bounding_box": [
+        527,
+        408,
+        583,
+        464
+      ],
+      "confidence": "high",
+      "metadata": {
+        "value": "10u"
+      },
+      "id": "C17",
+      "flow_id": "flow_1"
+    },
+    {
+      "id": "L5",
+      "metadata": {
+        "value": "1U0"
+      },
+      "confidence": "high",
+      "label": "1U0 Inductor",
+      "bounding_box": [
+        638,
+        690,
+        707,
+        707
+      ],
+      "flow_id": "flow_1"
+    },
+    {
+      "confidence": "high",
+      "metadata": {
+        "value": "10u"
+      },
+      "id": "C16",
+      "label": "10u",
+      "bounding_box": [
+        666,
+        713,
+        727,
+        727
+      ],
+      "flow_id": "flow_1"
+    },
+    {
+      "label": "LP2980-2v5 Regulator",
+      "confidence": "high",
+      "bounding_box": [
+        377,
+        85,
+        511,
+        219
+      ],
+      "metadata": {
+        "part_number": "LP2980-2v5"
+      },
+      "id": "RG3",
+      "flow_id": "flow_1"
+    },
+    {
+      "confidence": "high",
+      "label": "NCP1117-1v8 Regulator",
+      "bounding_box": [
+        432,
+        85,
+        566,
+        219
+      ],
+      "metadata": {
+        "part_number": "NCP1117-1v8"
+      },
+      "id": "RG1",
+      "flow_id": "flow_1"
+    },
+    {
+      "label": "10u",
+      "confidence": "high",
+      "id": "C15",
+      "metadata": {
+        "value": "10u"
+      },
+      "bounding_box": [
+        441,
+        158,
+        528,
+        245
+      ],
+      "flow_id": "flow_1"
+    },
+    {
+      "confidence": "high",
+      "label": "10n",
+      "id": "C13",
+      "metadata": {
+        "value": "10n"
+      },
+      "bounding_box": [
+        458,
+        191,
+        543,
+        276
+      ],
+      "flow_id": "flow_1"
+    },
+    {
+      "confidence": "high",
+      "label": "100n",
+      "id": "C62",
+      "metadata": {
+        "value": "100n"
+      },
+      "bounding_box": [
+        571,
+        443,
+        629,
+        501
+      ],
+      "flow_id": "flow_1"
+    },
+    {
+      "confidence": "high",
+      "label": "100K RUN Pull-up",
+      "id": "R15",
+      "metadata": {
+        "value": "100K"
+      },
+      "bounding_box": [
+        584,
+        397,
+        617,
+        430
+      ],
+      "flow_id": "flow_1"
+    },
+    {
+      "bounding_box": [
+        685,
+        671,
+        797,
+        685
+      ],
+      "id": "C65",
+      "metadata": {
+        "value": "220n"
+      },
+      "label": "220n",
+      "confidence": "high",
+      "flow_id": "flow_1"
+    },
+    {
+      "label": "220n",
+      "confidence": "high",
+      "bounding_box": [
+        717,
+        703,
+        797,
+        717
+      ],
+      "metadata": {
+        "value": "220n"
+      },
+      "id": "C69",
+      "flow_id": "flow_1"
+    },
+    {
+      "id": "C88",
+      "metadata": {
+        "value": "220n"
+      },
+      "bounding_box": [
+        750,
+        736,
+        797,
+        750
+      ],
+      "confidence": "high",
+      "label": "220n",
+      "flow_id": "flow_1"
+    },
+    {
+      "bounding_box": [
+        775,
+        769,
+        797,
+        775
+      ],
+      "metadata": {
+        "value": "220n"
+      },
+      "id": "C93_core",
+      "label": "220n Core",
+      "confidence": "high",
+      "flow_id": "flow_1"
+    },
+    {
+      "label": "220n",
+      "confidence": "high",
+      "bounding_box": [
+        783,
+        769,
+        793,
+        783
+      ],
+      "id": "C58",
+      "metadata": {
+        "value": "220n"
+      },
+      "flow_id": "flow_1"
+    },
+    {
+      "confidence": "high",
+      "label": "220n",
+      "bounding_box": [
+        793,
+        801,
+        815,
+        815
+      ],
+      "metadata": {
+        "value": "220n"
+      },
+      "id": "C79",
+      "flow_id": "flow_1"
+    },
+    {
+      "metadata": {
+        "value": "220n"
+      },
+      "id": "C66",
+      "bounding_box": [
+        793,
+        834,
+        848,
+        848
+      ],
+      "confidence": "high",
+      "label": "220n",
+      "flow_id": "flow_1"
+    },
+    {
+      "confidence": "high",
+      "id": "BCM2835_SoC",
+      "metadata": {
+        "part_number": "BCM2835"
+      },
+      "bounding_box": [
+        490,
+        705,
+        527,
+        742
+      ],
+      "label": "Broadcom BCM2835 SoC",
+      "flow_id": "flow_2"
+    }
+  ],
+  "edges": [
+    {
+      "target": "F1",
+      "source": "J1",
+      "id": "edge_j1_f1",
+      "label": "VIN",
+      "confidence": "high"
+    },
+    {
+      "label": "VIN_Net",
+      "confidence": "high",
+      "target": "TP1",
+      "id": "edge_f1_tp1",
+      "source": "F1"
+    },
+    {
+      "confidence": "high",
+      "label": "XP",
+      "source": "BCM2835_OSC",
+      "id": "edge_osc_x2_1",
+      "target": "X2"
+    },
+    {
+      "source": "X2",
+      "confidence": "high",
+      "id": "edge_x2_c86",
+      "target": "C86"
+    },
+    {
+      "target": "C74",
+      "source": "X2",
+      "confidence": "high",
+      "id": "edge_x2_c74"
+    },
+    {
+      "label": "VIN/VBUS",
+      "source": "J1",
+      "confidence": "high",
+      "target": "F3",
+      "id": "edge_j1_f3"
+    },
+    {
+      "id": "edge_f3_d17",
+      "target": "D17",
+      "confidence": "high",
+      "source": "F3"
+    },
+    {
+      "confidence": "high",
+      "source": "F3",
+      "target": "C6",
+      "id": "edge_f3_c6"
+    },
+    {
+      "target": "RG2",
+      "source": "F3",
+      "confidence": "high",
+      "id": "edge_f3_rg2_in"
+    },
+    {
+      "target": "C11",
+      "confidence": "high",
+      "source": "RG2",
+      "id": "edge_rg2_out_c11_c8_c12"
+    },
+    {
+      "id": "edge_l5_c16",
+      "confidence": "high",
+      "source": "L5",
+      "target": "C16"
+    },
+    {
+      "confidence": "high",
+      "id": "edge_f3_rg3_in",
+      "target": "RG3",
+      "source": "F3"
+    },
+    {
+      "target": "C15",
+      "source": "RG3",
+      "confidence": "high",
+      "id": "edge_rg3_out_c15_c13"
+    },
+    {
+      "confidence": "high",
+      "id": "edge_f3_rg1_in",
+      "target": "RG1",
+      "source": "F3"
+    },
+    {
+      "source": "RG1",
+      "target": "C11",
+      "confidence": "high",
+      "id": "edge_rg1_out_c9_c7_c5"
+    },
+    {
+      "source": "F1",
+      "target": "F3",
+      "confidence": "high",
+      "id": "e2"
+    },
+    {
+      "id": "e4",
+      "target": "C6",
+      "confidence": "high",
+      "source": "D17"
+    },
+    {
+      "source": "D17",
+      "target": "C3",
+      "confidence": "high",
+      "id": "e5"
+    },
+    {
+      "id": "e6",
+      "source": "D17",
+      "confidence": "high",
+      "target": "C2"
+    },
+    {
+      "source": "F3",
+      "target": "TP1",
+      "confidence": "high",
+      "id": "e7"
+    },
+    {
+      "id": "e8",
+      "source": "J1",
+      "confidence": "high",
+      "target": "R51"
+    },
+    {
+      "id": "e9",
+      "source": "RG2",
+      "target": "C12",
+      "confidence": "high"
+    },
+    {
+      "source": "RG2",
+      "target": "C8",
+      "confidence": "high",
+      "id": "e11"
+    },
+    {
+      "source": "RG2",
+      "confidence": "high",
+      "target": "C10",
+      "id": "e12"
+    },
+    {
+      "source": "RG3",
+      "confidence": "high",
+      "target": "C13",
+      "id": "e14"
+    },
+    {
+      "id": "e15",
+      "source": "RG1",
+      "confidence": "high",
+      "target": "C62"
+    },
+    {
+      "id": "e16",
+      "confidence": "high",
+      "target": "C54",
+      "source": "BCM2835_PWR1_SDRAM"
+    },
+    {
+      "id": "e17",
+      "source": "BCM2835_PWR1_SDRAM",
+      "confidence": "high",
+      "target": "C94"
+    },
+    {
+      "id": "e18",
+      "source": "BCM2835_PWR1_SDRAM",
+      "confidence": "high",
+      "target": "C60"
+    },
+    {
+      "label": "ZQ",
+      "id": "e21",
+      "source": "BCM2835_PWR1_SDRAM",
+      "confidence": "high",
+      "target": "R16"
+    }
+  ],
+  "metadata": {
+    "source_file": "https://www.raspberrypi.org/app/uploads/2012/04/Raspberry-Pi-Schematics-R1.0.pdf",
+    "image_width": 4963,
+    "image_height": 3509,
+    "source_page": 1,
+    "status": "complete"
+  },
+  "flows": [
+    {
+      "id": "flow_1",
+      "label": "Flow 1",
+      "node_ids": [
+        "C10",
+        "C11",
+        "C12",
+        "C13",
+        "C15",
+        "C16",
+        "C17",
+        "C2",
+        "C3",
+        "C57",
+        "C58",
+        "C6",
+        "C62",
+        "C65",
+        "C66",
+        "C69",
+        "C79",
+        "C8",
+        "C80",
+        "C88",
+        "C89",
+        "C91",
+        "C93_core",
+        "D17",
+        "F1",
+        "F3",
+        "J1",
+        "L5",
+        "R15",
+        "R51",
+        "RG1",
+        "RG2",
+        "RG3",
+        "TP1",
+        "title_block"
+      ]
+    },
+    {
+      "id": "flow_2",
+      "label": "Flow 2",
+      "node_ids": [
+        "BCM2835_OSC",
+        "BCM2835_PWR1_SDRAM",
+        "BCM2835_PWR2",
+        "BCM2835_SoC",
+        "C54",
+        "C60",
+        "C74",
+        "C86",
+        "C94",
+        "R16",
+        "X2"
+      ]
+    }
+  ]
+}

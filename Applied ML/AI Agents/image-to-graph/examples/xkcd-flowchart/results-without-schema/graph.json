@@ -2,470 +2,456 @@
   "diagram_type": "flowchart",
   "nodes": [
     {
-      "bounding_box": [
-        51,
-        169,
-        86,
-        238
-      ],
       "confidence": "high",
+      "id": "start_terminal",
       "label": "START",
-      "id": "n1"
-    },
-    {
       "bounding_box": [
-        126,
-        115,
-        240,
-        286
-      ],
-      "confidence": "high",
-      "label": "DO YOU LIKE FLOWCHARTS?",
-      "id": "n2"
-    },
-    {
-      "bounding_box": [
-        36,
-        305,
-        139,
-        464
-      ],
-      "confidence": "high",
-      "label": "DO YOU LIKE LINE GRAPHS?",
-      "id": "n3"
-    },
-    {
-      "label": "SCATTER PLOTS?",
-      "id": "n4",
-      "confidence": "high",
-      "bounding_box": [
-        189,
-        328,
-        277,
-        444
-      ]
-    },
-    {
-      "label": "LINE OR AXIS?",
-      "id": "n5",
-      "confidence": "high",
-      "bounding_box": [
-        45,
-        551,
-        126,
-        673
-      ]
-    },
-    {
-      "bounding_box": [
-        272,
-        551,
-        362,
-        659
-      ],
-      "id": "n6",
-      "label": "DATA OR AXIS?",
-      "confidence": "high"
-    },
-    {
-      "label": "HELP CHARGE A BATTERY?",
-      "id": "n7",
-      "confidence": "high",
-      "bounding_box": [
-        371,
-        313,
-        472,
-        456
-      ]
-    },
-    {
-      "bounding_box": [
-        381,
-        189,
-        464,
-        307
-      ],
-      "id": "n8",
-      "label": "LIKE SPIRALS?",
-      "confidence": "high"
-    },
-    {
-      "confidence": "high",
-      "label": "TAKE THE PATH OF LEAST RESISTANCE?",
-      "id": "n9",
-      "bounding_box": [
-        505,
-        66,
-        619,
+        55,
+        170,
+        81,
         235
-      ]
-    },
-    {
-      "bounding_box": [
-        578,
-        274,
-        730,
-        491
       ],
-      "confidence": "high",
-      "label": "DO YOU LIKE WHEN PEOPLE FIND THE GOLDEN SPIRAL IN RANDOM IMAGES?",
-      "id": "n10"
-    },
-    {
-      "bounding_box": [
-        771,
-        313,
-        857,
-        458
-      ],
-      "label": "TIRED OF FLOWCHARTS YET?",
-      "id": "n11",
-      "confidence": "high"
-    },
-    {
-      "bounding_box": [
-        372,
-        472,
-        468,
-        605
-      ],
-      "confidence": "high",
-      "id": "n12",
-      "label": "ARE YOU A/C OR D/C?"
-    },
-    {
-      "confidence": "high",
-      "label": "POSITIVE OR NEGATIVE PHASE?",
-      "id": "n13",
-      "bounding_box": [
-        497,
-        467,
-        599,
-        611
-      ]
-    },
-    {
-      "confidence": "high",
-      "label": "TIME OR YOUR HAPPINESS?",
-      "id": "n14",
-      "bounding_box": [
-        113,
-        687,
-        213,
-        834
-      ]
-    },
-    {
-      "label": "X OR Y?",
-      "id": "n15",
-      "confidence": "high",
-      "bounding_box": [
-        361,
-        624,
-        427,
-        717
-      ]
-    },
-    {
-      "bounding_box": [
-        468,
-        643,
-        822,
-        822
-      ],
-      "confidence": "high",
-      "id": "n16_group",
-      "label": "POSITIVE OR NEGATIVE DC TERMINAL? (Full-wave Bridge Rectifier)",
       "shape": "rectangle"
     },
     {
-      "label": "Line Graph",
-      "id": "n17",
+      "id": "decision_flowcharts",
+      "label": "DO YOU LIKE FLOWCHARTS?",
+      "shape": "diamond",
+      "bounding_box": [
+        146,
+        131,
+        233,
+        280
+      ],
+      "confidence": "high"
+    },
+    {
+      "confidence": "high",
+      "id": "decision_line_graphs",
+      "label": "DO YOU LIKE LINE GRAPHS?",
+      "bounding_box": [
+        44,
+        317,
+        138,
+        464
+      ],
+      "shape": "diamond"
+    },
+    {
+      "id": "decision_line_or_axis",
+      "bounding_box": [
+        55,
+        570,
+        121,
+        672
+      ],
+      "shape": "diamond",
+      "label": "LINE OR AXIS?",
+      "confidence": "high"
+    },
+    {
       "confidence": "high",
       "bounding_box": [
-        24,
-        757,
+        25,
+        844,
         105,
         937
-      ]
-    },
-    {
-      "confidence": "high",
-      "label": "Scatter Plot",
-      "id": "n18",
-      "bounding_box": [
-        223,
-        709,
-        365,
-        901
-      ]
-    },
-    {
-      "shape": "rectangle",
-      "confidence": "high",
-      "id": "n19_group",
-      "label": "Battery Schematic",
-      "bounding_box": [
-        427,
-        643,
-        970,
-        970
-      ]
-    },
-    {
-      "shape": "rectangle",
-      "bounding_box": [
-        558,
-        49,
-        659,
-        279
       ],
-      "id": "n20_group",
-      "label": "Path of Least Resistance Circuit",
+      "shape": "custom",
+      "label": "LINE PLOT",
+      "id": "plot_line"
+    },
+    {
+      "confidence": "high",
+      "id": "decision_time_or_happiness",
+      "shape": "diamond",
+      "bounding_box": [
+        120,
+        693,
+        215,
+        834
+      ],
+      "label": "TIME OR YOUR HAPPINESS?"
+    },
+    {
+      "confidence": "high",
+      "label": "SCATTER PLOTS?",
+      "bounding_box": [
+        199,
+        332,
+        269,
+        445
+      ],
+      "shape": "diamond",
+      "id": "decision_scatter_plots"
+    },
+    {
+      "confidence": "high",
+      "shape": "diamond",
+      "bounding_box": [
+        275,
+        556,
+        356,
+        661
+      ],
+      "label": "DATA OR AXIS?",
+      "id": "decision_data_or_axis"
+    },
+    {
+      "confidence": "high",
+      "id": "plot_data_nested",
+      "shape": "custom",
+      "bounding_box": [
+        225,
+        729,
+        366,
+        897
+      ],
+      "label": "DATA PLOT (NESTED)"
+    },
+    {
+      "label": "X OR Y?",
+      "shape": "diamond",
+      "bounding_box": [
+        360,
+        681,
+        400,
+        729
+      ],
+      "id": "decision_x_or_y",
+      "confidence": "high"
+    },
+    {
+      "confidence": "high",
+      "id": "decision_spirals",
+      "bounding_box": [
+        390,
+        196,
+        461,
+        306
+      ],
+      "shape": "diamond",
+      "label": "LIKE SPIRALS?"
+    },
+    {
+      "bounding_box": [
+        374,
+        322,
+        476,
+        458
+      ],
+      "shape": "diamond",
+      "label": "HELP CHARGE A BATTERY?",
+      "id": "decision_charge_battery",
+      "confidence": "high"
+    },
+    {
+      "id": "decision_ac_dc",
+      "label": "ARE YOU A/C OR D/C?",
+      "shape": "diamond",
+      "bounding_box": [
+        381,
+        482,
+        468,
+        600
+      ],
       "confidence": "high"
     },
     {
       "bounding_box": [
-        511,
-        483,
-        809,
-        997
+        506,
+        475,
+        598,
+        607
       ],
-      "label": "Exit",
-      "id": "n22",
+      "shape": "diamond",
+      "label": "POSITIVE OR NEGATIVE PHASE?",
+      "id": "decision_phase",
       "confidence": "high"
+    },
+    {
+      "id": "decision_dc_terminal",
+      "label": "POSITIVE OR NEGATIVE DC TERMINAL?",
+      "shape": "diamond",
+      "bounding_box": [
+        522,
+        698,
+        607,
+        810
+      ],
+      "confidence": "high"
+    },
+    {
+      "confidence": "high",
+      "bounding_box": [
+        482,
+        905,
+        555,
+        954
+      ],
+      "shape": "rectangle",
+      "label": "BATTERY",
+      "id": "battery_symbol_node"
+    },
+    {
+      "confidence": "high",
+      "id": "decision_least_resistance",
+      "label": "TAKE THE PATH OF LEAST RESISTANCE?",
+      "shape": "diamond",
+      "bounding_box": [
+        505,
+        72,
+        625,
+        240
+      ]
+    },
+    {
+      "confidence": "high",
+      "label": "DO YOU LIKE WHEN PEOPLE FIND THE GOLDEN SPIRAL IN RANDOM IMAGES?",
+      "shape": "diamond",
+      "bounding_box": [
+        570,
+        280,
+        727,
+        498
+      ],
+      "id": "decision_golden_spiral"
+    },
+    {
+      "id": "decision_tired_flowcharts",
+      "label": "TIRED OF FLOWCHARTS YET?",
+      "bounding_box": [
+        768,
+        317,
+        857,
+        458
+      ],
+      "shape": "diamond",
+      "confidence": "high"
+    },
+    {
+      "id": "resistor_circuit_node",
+      "bounding_box": [
+        576,
+        53,
+        664,
+        284
+      ],
+      "shape": "custom",
+      "confidence": "high",
+      "label": "RESISTOR CIRCUIT"
     }
   ],
   "edges": [
     {
+      "confidence": "high",
       "label": null,
       "id": "e1",
-      "source": "n1",
-      "confidence": "high",
-      "target": "n2"
+      "source": "start_terminal",
+      "target": "decision_flowcharts"
     },
     {
+      "source": "decision_flowcharts",
       "id": "e2",
-      "label": "NO",
-      "source": "n2",
-      "target": "n3",
-      "confidence": "high"
+      "target": "decision_line_graphs",
+      "confidence": "high",
+      "label": "NO"
     },
     {
       "label": "YES",
-      "id": "e3",
-      "source": "n2",
-      "target": "n2",
-      "confidence": "high"
+      "confidence": "high",
+      "target": "decision_flowcharts",
+      "source": "decision_flowcharts",
+      "id": "e3"
     },
     {
       "confidence": "high",
-      "target": "n4",
-      "source": "n3",
-      "label": "NO",
-      "id": "e4"
+      "label": "YES",
+      "source": "decision_line_graphs",
+      "id": "e4",
+      "target": "decision_line_or_axis"
     },
     {
+      "target": "decision_scatter_plots",
+      "source": "decision_line_graphs",
       "id": "e5",
-      "label": "YES",
-      "source": "n3",
-      "confidence": "high",
-      "target": "n5"
-    },
-    {
-      "id": "e6",
-      "label": "AXIS",
-      "source": "n5",
-      "confidence": "high",
-      "target": "n14"
-    },
-    {
-      "target": "n17",
-      "confidence": "high",
-      "source": "n5",
-      "label": "LINE",
-      "id": "e7"
-    },
-    {
-      "source": "n14",
-      "confidence": "high",
-      "target": "n17",
-      "label": "TIME",
-      "id": "e8"
-    },
-    {
-      "confidence": "high",
-      "target": "n17",
-      "source": "n14",
-      "label": "YOUR HAPPINESS",
-      "id": "e9"
-    },
-    {
-      "label": "YES",
-      "id": "e10",
-      "source": "n4",
-      "confidence": "high",
-      "target": "n6"
-    },
-    {
-      "id": "e11",
       "label": "NO",
-      "target": "n7",
-      "confidence": "high",
-      "source": "n4"
-    },
-    {
-      "label": "AXIS",
-      "id": "e12",
-      "source": "n6",
-      "target": "n15",
       "confidence": "high"
     },
     {
-      "source": "n6",
+      "source": "decision_line_or_axis",
+      "id": "e6",
+      "target": "plot_line",
       "confidence": "high",
-      "target": "n18",
-      "id": "e13",
-      "label": "DATA"
+      "label": "LINE"
     },
     {
       "confidence": "high",
-      "target": "n18",
-      "source": "n15",
-      "label": "X",
-      "id": "e14"
-    },
-    {
-      "confidence": "high",
-      "target": "n18",
-      "source": "n15",
-      "label": "Y",
-      "id": "e15"
-    },
-    {
-      "id": "e16",
-      "label": "NO",
-      "target": "n8",
-      "confidence": "high",
-      "source": "n7"
+      "label": "AXIS",
+      "source": "decision_line_or_axis",
+      "id": "e7",
+      "target": "decision_time_or_happiness"
     },
     {
       "label": "YES",
-      "id": "e17",
-      "target": "n12",
       "confidence": "high",
-      "source": "n7"
+      "target": "decision_data_or_axis",
+      "id": "e8",
+      "source": "decision_scatter_plots"
     },
     {
-      "source": "n8",
+      "id": "e9",
+      "source": "decision_scatter_plots",
+      "target": "decision_charge_battery",
       "confidence": "high",
-      "target": "n9",
+      "label": "NO"
+    },
+    {
+      "label": "DATA",
+      "confidence": "high",
+      "target": "plot_data_nested",
+      "id": "e10",
+      "source": "decision_data_or_axis"
+    },
+    {
+      "target": "decision_x_or_y",
+      "source": "decision_data_or_axis",
+      "id": "e11",
+      "label": "AXIS",
+      "confidence": "high"
+    },
+    {
+      "target": "decision_least_resistance",
+      "id": "e12",
+      "source": "decision_spirals",
       "label": "NO",
-      "id": "e18"
+      "confidence": "high"
     },
     {
-      "target": "n10",
       "confidence": "high",
-      "source": "n8",
-      "id": "e19",
+      "label": "NO",
+      "source": "decision_charge_battery",
+      "id": "e13",
+      "target": "decision_spirals"
+    },
+    {
+      "source": "decision_charge_battery",
+      "id": "e14",
+      "target": "decision_ac_dc",
+      "confidence": "high",
       "label": "YES"
     },
     {
-      "target": "n20_group",
       "confidence": "high",
-      "source": "n9",
-      "label": "YES",
-      "id": "e20"
-    },
-    {
-      "source": "n9",
-      "confidence": "high",
-      "target": "n1",
-      "label": "NEVER!",
-      "id": "e21"
-    },
-    {
-      "label": null,
-      "id": "e22",
-      "source": "n20_group",
-      "confidence": "high",
-      "target": "n10"
-    },
-    {
-      "id": "e23",
-      "label": "NO, IT'S TOTAL BS.",
-      "source": "n10",
-      "confidence": "high",
-      "target": "n11"
-    },
-    {
-      "source": "n10",
-      "confidence": "high",
-      "target": "n19_group",
-      "id": "e24",
-      "label": "YES, EVEN THOUGH IT'S TOTAL BS."
-    },
-    {
-      "label": "NO",
-      "id": "e25",
-      "target": "n1",
-      "confidence": "high",
-      "source": "n11"
-    },
-    {
-      "source": "n11",
-      "target": "n22",
-      "confidence": "high",
-      "label": "YES, I WANT TO LOOK AT SOMETHING ELSE",
-      "id": "e26"
-    },
-    {
-      "id": "e27",
       "label": "A/C",
-      "target": "n13",
-      "confidence": "high",
-      "source": "n12"
+      "id": "e15",
+      "source": "decision_ac_dc",
+      "target": "decision_phase"
     },
     {
-      "target": "n16_group",
-      "confidence": "high",
-      "source": "n12",
       "label": "D/C",
-      "id": "e28"
+      "confidence": "high",
+      "target": "decision_dc_terminal",
+      "source": "decision_ac_dc",
+      "id": "e16"
     },
     {
-      "source": "n13",
-      "target": "n16_group",
+      "label": "NEVER!",
       "confidence": "high",
-      "label": "+",
-      "id": "e29"
-    },
-    {
-      "target": "n16_group",
-      "confidence": "high",
-      "source": "n13",
-      "label": "-",
-      "id": "e30"
+      "target": "resistor_circuit_node",
+      "source": "decision_least_resistance",
+      "id": "e17a"
     },
     {
       "label": null,
-      "id": "e31",
-      "target": "n19_group",
       "confidence": "high",
-      "source": "n16_group"
+      "target": "start_terminal",
+      "id": "e17b",
+      "source": "resistor_circuit_node"
+    },
+    {
+      "id": "e18",
+      "source": "decision_least_resistance",
+      "target": "decision_golden_spiral",
+      "confidence": "high",
+      "label": "YES"
+    },
+    {
+      "label": "NO, IT'S TOTAL BS.",
+      "confidence": "high",
+      "target": "decision_tired_flowcharts",
+      "id": "e19",
+      "source": "decision_golden_spiral"
+    },
+    {
+      "source": "decision_tired_flowcharts",
+      "id": "e20",
+      "target": "start_terminal",
+      "confidence": "high",
+      "label": "NO"
+    },
+    {
+      "label": "+ / -",
+      "confidence": "high",
+      "target": "decision_dc_terminal",
+      "id": "e21_22a",
+      "source": "decision_phase"
+    },
+    {
+      "label": "+ / -",
+      "confidence": "high",
+      "target": "battery_symbol_node",
+      "source": "decision_dc_terminal",
+      "id": "e23_24a"
+    },
+    {
+      "target": "plot_line",
+      "id": "e25",
+      "source": "decision_time_or_happiness",
+      "label": "TIME",
+      "confidence": "high"
+    },
+    {
+      "source": "decision_time_or_happiness",
+      "id": "e26",
+      "target": "plot_line",
+      "confidence": "high",
+      "label": "YOUR HAPPINESS"
+    },
+    {
+      "source": "decision_x_or_y",
+      "id": "e27",
+      "target": "plot_data_nested",
+      "confidence": "high",
+      "label": "X"
+    },
+    {
+      "source": "decision_x_or_y",
+      "id": "e28",
+      "target": "plot_data_nested",
+      "confidence": "high",
+      "label": "Y"
     },
     {
       "confidence": "high",
-      "target": "n16_group",
-      "source": "n19_group",
-      "label": null,
-      "id": "e32"
+      "label": "YES",
+      "id": "e29",
+      "source": "decision_spirals",
+      "target": "decision_golden_spiral"
+    },
+    {
+      "target": "battery_symbol_node",
+      "id": "e30",
+      "source": "decision_golden_spiral",
+      "label": "YES, EVEN THOUGH IT'S TOTAL BS",
+      "confidence": "high"
     }
   ],
   "metadata": {
     "source_file": "examples/xkcd-flowchart/flowcharts.png",
     "image_width": 740,
     "image_height": 775,
+    "author": "xkcd / Randall Munroe",
     "status": "complete"
   }
 }

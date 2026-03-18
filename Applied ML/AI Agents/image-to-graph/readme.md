@@ -39,9 +39,13 @@ An [ADK](https://google.github.io/adk-docs/) agent that converts complex diagram
 
 The agent uses:
 - **Gemini Vision API** — for image analysis and region examination via `google.genai`
+- **OpenCV** — for deterministic CV preprocessing (shape detection, contour analysis) via `agent_cv_preprocess` subagent
 - **Pillow** — for bounding box-based image cropping
+- **PyMuPDF** — for PDF page rendering at high resolution
 - **Pydantic** — for dynamic JSON Schema generation and validation
 - **ADK Tool Context State** — for incremental graph accumulation across tool calls
+
+Input sources: local file paths, `https://` URLs, `gs://` GCS paths, and PDF files (renders a selected page). See [Example Usage](#example-usage) for all three.
 
 <table>
 <tr>
@@ -73,50 +77,68 @@ The agent uses:
 ## Architecture
 
 ```
-User provides image path (+ optional schema path)
+User provides image (local path, URL, or gs://...) + optional schema path
          │
          ▼
     ┌─────────────┐     ┌──────────────┐
     │  load_image  │     │ load_schema  │  (optional) Load target schema
     └──────┬──────┘     └──────┬───────┘
-           │                   │
-           ▼                   ▼
+           │ Accepts: local files, https:// URLs,
+           │ gs:// GCS paths, and PDF files (renders selected page)
+           ▼                   │
+    ┌───────────────────┐      │
+    │ agent_cv_preprocess│  (optional) OpenCV contour detection + Gemini OCR
+    └────────┬──────────┘  Assesses image → detects shapes → finds connections
+             │             → labels elements → reports back. Results stored in
+             ▼             state as context for semantic analysis tools.
     ┌──────────────┐
     │ analyze_image │  Full image → Gemini (TOOL_MODEL) → regions + bounding boxes
-    └──────┬───────┘
+    └──────┬───────┘  Also detects: legend blocks, title/metadata panels,
+           │          and multi-flow clusters
+           │
+           ├─── Flowcharts: Gemini's semantic regions used as-is
+           │
+           ├─── Schematics/circuits: Gemini's regions replaced with
+           │    systematic grid cells (4×3 landscape / 3×4 portrait,
+           │    5% overlap) for complete spatial coverage
+           │
            ▼
     ┌───────────────────────────────┐
-    │  For each region:             │
-    │   crop_and_examine            │  Crop + Gemini (TOOL_MODEL) → elements + confidence
-    │   update_graph (batch nodes)  │  Add all nodes in one call (with confidence)
-    │   (adaptive zoom if complex)  │  Re-examine dense sub-regions at finer granularity
-    │   (detect groups if present)  │  Create group nodes with parent_id on children
-    └──────────┬────────────────────┘  (schema hints if input schema loaded)
+    │  For each region:             │  If legend/page_info regions found:
+    │   crop_and_examine            │    → set_metadata(key="legend", ...)
+    │   update_graph (batch nodes)  │    → set_metadata(key="page_info", ...)
+    │   (adaptive zoom if complex)  │
+    │   (detect groups if present)  │  Crop + Gemini → elements + confidence
+    │   (schematic: exhaustive      │  (schema hints if input schema loaded)
+    │    component enumeration)     │
+    └──────────┬────────────────────┘
                ▼
     ┌──────────────────────────┐
     │  trace_connections       │  Full image + node positions → Gemini → edges + confidence
-    │  update_graph            │  Batch add edges (with confidence)
-    └──────────┬───────────────┘
+    │  update_graph            │  Also detects semantic cross-references:
+    └──────────┬───────────────┘  same labels across flow clusters → reference edges
                ▼
     ┌──────────────────┐
     │ generate_schema  │  Infer JSON Schema (skipped if input schema loaded)
     │ validate_graph   │  Check structure + schema conformance + auto-correct bboxes
-    └────────┬─────────┘
+    └────────┬─────────┘  + detect flows (connected components via union-find)
+             │            + auto-detect label-based cross-references
              ▼
     ┌────────────────────────┐
-    │ generate_description   │  Gemini (TOOL_MODEL) → narrative description from image + graph + schema
-    └────────┬───────────────┘
+    │ generate_description   │  Gemini (TOOL_MODEL) → narrative description
+    └────────┬───────────────┘  Flow-aware, metadata-aware, legend-aware
              ▼
     ┌────────────────────────┐
-    │ generate_visualization │  Interactive HTML: description + image + graph with confidence indicators
-    └────────┬───────────────┘
-             ▼
+    │ generate_visualization │  Interactive HTML: description + image + graph
+    └────────┬───────────────┘  + flow subgraphs + legend panel + page metadata
+             ▼                  + cross-reference edge styling
     ┌────────────────┐
     │ export_result  │  Saves graph.json + schema.json + description.md as artifacts
-    └────────┬───────┘       + writes all files to disk next to the source image
+    └────────┬───────┘       + writes all files to disk under examples/
              ▼
-    results-with-schema/     ← when input schema was loaded
-    results-without-schema/  ← when no schema was provided
+    examples/<source-folder>/
+    ├── results-with-schema/     ← when input schema was loaded
+    └── results-without-schema/  ← when no schema was provided
              │
              ▼
     ┌─────────────────────────────────────────────────────────────┐
@@ -221,7 +243,7 @@ poetry install
 ```bash
 python -m venv .venv
 source .venv/bin/activate   # On Windows: .venv\Scripts\activate
-pip install google-adk google-genai pydantic pillow python-dotenv
+pip install google-adk google-genai google-cloud-storage pydantic pillow pymupdf opencv-python-headless python-dotenv
 ```
 
 </details>
@@ -282,17 +304,18 @@ adk web --reload
 
 </details>
 
-Then open `http://localhost:8000` in your browser. Two agents appear in the agent dropdown:
+Then open `http://localhost:8000` in your browser. Three agents appear in the agent dropdown:
 
 | Agent | Purpose |
 |-------|---------|
-| `agent_image_to_graph` | Convert a diagram image into a structured graph. After export, suggests Q&A and can transfer to the Q&A sub-agent. |
+| `agent_image_to_graph` | Convert a diagram image into a structured graph. Accepts local files, URLs, GCS paths, and PDFs. Optionally delegates to `agent_cv_preprocess` for OpenCV-based shape detection. After export, suggests Q&A and can transfer to `agent_graph_qa`. |
+| `agent_cv_preprocess` | CV preprocessing subagent — uses OpenCV to detect shapes, connections, and labels in structured diagrams. Called automatically by the main agent when appropriate; results enrich the semantic analysis. |
 | `agent_graph_qa` | Ask questions about previously extracted graph results. Can load results from a directory on disk, or receive them via shared session state when transferred from `agent_image_to_graph`. |
 
 ---
 ## Example Usage
 
-Examples are included in `examples/`:
+Examples are included in `examples/`. Results are always written to the `examples/` directory — for local files already under `examples/`, results go next to the source file; for URLs, GCS paths, or local files outside `examples/`, a new folder is created under `examples/` with a name derived from the source (e.g., `url-www-raspberrypi-org-raspberry-pi-schematics-r1-0` for a URL, `gcs-my-bucket-diagram` for GCS).
 
 **BigQuery ARIMA Flowchart** (`examples/bq-arima-flowchart/`) — the BigQuery ML ARIMA pipeline diagram:
 
@@ -314,6 +337,10 @@ examples/xkcd-flowchart/
 
 > **Image source:** [XKCD #1488 "Flowcharts"](https://xkcd.com/1488/) by [Randall Munroe](https://xkcd.com), licensed under [CC BY-NC 2.5](https://creativecommons.org/licenses/by-nc/2.5/).
 
+**Raspberry Pi Schematic** (URL-based PDF) — the original Raspberry Pi Model B Rev 1.0 hardware schematic, loaded directly from a URL as a PDF:
+
+> **Image source:** [Raspberry Pi Schematics R1.0](https://www.raspberrypi.org/app/uploads/2012/04/Raspberry-Pi-Schematics-R1.0.pdf) — the official schematic for the original Raspberry Pi board.
+
 > **Note:** Only attach **image files** through the ADK web UI. Schema files (`.json`) should be referenced by **file path** in your message text — the agent's `load_schema` tool reads them from disk. Gemini does not accept `application/json` as a file upload.
 
 ### Without a Schema (auto-generated)
@@ -326,18 +353,32 @@ Copy/paste this prompt into the ADK web chat:
 Analyze this flowchart: examples/bq-arima-flowchart/diagram.png
 ```
 
+or
+
+```
+Analyze this chart: examples/xkcd-flowchart/flowcharts.png
+```
+
+Or try a **URL-based PDF** — the agent downloads the file, renders the specified page, and processes it like any other image:
+
+```
+Analyze this schematic: https://www.raspberrypi.org/app/uploads/2012/04/Raspberry-Pi-Schematics-R1.0.pdf
+```
+
 The agent will:
-1. Load and validate the image
-2. Analyze the full image to detect regions and bounding boxes
-3. Crop and examine each region in detail (with confidence scoring, adaptive zoom for dense areas, and group detection for visual boundaries)
-4. Build a graph with nodes and bounding boxes (including confidence levels and parent/child grouping)
-5. Trace connections across the full image for edge detection with confidence
-6. Auto-generate a JSON Schema from the graph structure
-7. Validate the graph — auto-correct bounding boxes, compute group bounding boxes from children, flag low-confidence elements
-8. Generate a comprehensive narrative description of the diagram
-9. Generate an interactive `visualization.html` with description, linked image/graph highlights, confidence indicators, and searchable graph JSON
-10. Export `graph.json` + `schema.json` + `description.md` as artifacts and write all files to `results-without-schema/` next to the source image
-11. Suggest example Q&A questions about the diagram — if you ask one, the agent transfers to `agent_graph_qa` which answers using the shared session state
+1. Load and validate the image (from local path, URL, or GCS — renders PDF pages at high resolution)
+2. Optionally delegate to `agent_cv_preprocess` for OpenCV-based shape/contour detection on clean, structured diagrams
+3. Analyze the full image to detect regions, bounding boxes, legend blocks, title/metadata panels, and multi-flow clusters. For schematics/circuits, Gemini's regions are replaced with systematic grid cells for complete spatial coverage.
+4. Crop and examine each region in detail (with confidence scoring, adaptive zoom for dense areas, and group detection for visual boundaries). For schematics, all grid cells are examined with exhaustive component enumeration guidance.
+5. Extract page-level metadata (legend, title, author, date, version) via `set_metadata` — these are stored in `graph.metadata`, not as nodes
+6. Build a graph with nodes and bounding boxes (including confidence levels and parent/child grouping). Duplicate nodes (same label + overlapping bbox) and duplicate edges (same source/target pair) are automatically skipped.
+7. Trace connections across the full image for edge detection with confidence, including semantic cross-references between flow clusters
+8. Auto-generate a JSON Schema from the graph structure
+9. Validate the graph — auto-correct bounding boxes (inversion, axis swap, oversized, schematic-specific normalization), detect multi-flow diagrams (connected components), suggest label-based cross-references, flag low-confidence elements
+10. Generate a comprehensive narrative description (flow-aware, metadata-aware, legend-aware)
+11. Generate an interactive `visualization.html` with description, flow subgraphs, legend panel, page metadata, cross-reference edge styling, and searchable graph JSON
+12. Export `graph.json` + `schema.json` + `description.md` as artifacts and write all files to `examples/<source-folder>/results-without-schema/`
+13. Suggest example Q&A questions about the diagram — if you ask one, the agent transfers to `agent_graph_qa` which answers using the shared session state
 
 ### With a Schema (user-provided)
 
@@ -351,16 +392,18 @@ Use this schema: examples/bq-arima-flowchart/schema.json
 ```
 
 The agent will:
-1. Load and validate the image
+1. Load and validate the image (from local path, URL, or GCS — renders PDF pages at high resolution)
 2. Load the target schema and report its required fields (`id`, `label`, `element_type` for nodes)
-3. Analyze the image and build the graph, conforming to the schema (with bounding boxes, confidence, and parent/child grouping)
-4. `update_graph` will hint at any missing required/optional fields from the schema
-5. Trace connections across the full image for edge detection with confidence
-6. Validate the graph against the schema — auto-correct bounding boxes, compute group bounding boxes, report missing fields, type mismatches, low-confidence warnings
-7. Generate a comprehensive narrative description of the diagram
-8. Generate an interactive `visualization.html` with description, linked image/graph highlights, confidence indicators, and searchable graph JSON
-9. Export `graph.json` + `schema.json` (the user-provided schema) + `description.md` as artifacts and write all files to `results-with-schema/` next to the source image
-10. Suggest example Q&A questions about the diagram — if you ask one, the agent transfers to `agent_graph_qa` which answers using the shared session state
+3. Optionally delegate to `agent_cv_preprocess` for OpenCV-based shape/contour detection
+4. Analyze the image, detecting regions, legend blocks, metadata panels, and multi-flow clusters. For schematics/circuits, systematic grid cells replace Gemini's regions.
+5. Build the graph conforming to the schema (with bounding boxes, confidence, parent/child grouping, and page metadata via `set_metadata`). Duplicate nodes and edges are automatically skipped.
+6. `update_graph` will hint at any missing required/optional fields from the schema
+7. Trace connections across the full image for edge detection with confidence, including semantic cross-references
+8. Validate the graph against the schema — auto-correct bounding boxes (inversion, axis swap, oversized, schematic-specific normalization), detect multi-flow diagrams, compute group bounding boxes, report missing fields, type mismatches, low-confidence warnings
+9. Generate a comprehensive narrative description (flow-aware, metadata-aware, legend-aware)
+10. Generate an interactive `visualization.html` with description, flow subgraphs, legend panel, page metadata, cross-reference styling, confidence indicators, and searchable graph JSON
+11. Export `graph.json` + `schema.json` (the user-provided schema) + `description.md` as artifacts and write all files to `examples/<source-folder>/results-with-schema/`
+12. Suggest example Q&A questions about the diagram — if you ask one, the agent transfers to `agent_graph_qa` which answers using the shared session state
 
 The included schema defines domain-specific enums and fields tailored to this diagram:
 - **`element_type`**: `input`, `process`, `intermediate`, `component`, `output`, `operator`, `group`
@@ -376,38 +419,50 @@ The example schema was generated by `examples/bq-arima-flowchart/create_schema.p
 ```python
 import json
 from enum import Enum
-from pydantic import BaseModel, Field
 from typing import Optional
 
+from pydantic import BaseModel, Field
+
 class ElementType(str, Enum):
-    input = "input"
-    process = "process"
-    intermediate = "intermediate"
-    component = "component"
-    output = "output"
-    operator = "operator"
+    input = "input"                # Data inputs (cylinder shapes)
+    process = "process"            # Processing steps (rectangles)
+    intermediate = "intermediate"  # Intermediate data outputs
+    component = "component"        # Decomposed components
+    output = "output"              # Final outputs
+    operator = "operator"          # Mathematical operators (e.g., aggregation circle)
     group = "group"                # Visual grouping boundary (dashed boxes, labeled sections)
+
+class Phase(str, Enum):
+    preprocessing = "Preprocessing"
+    modeling = "Modeling"
+    decomposed = "Decomposed Time Series"
+    output = "Output"
 
 class FlowchartNode(BaseModel):
     id: str = Field(..., description="Unique node identifier")
     label: str = Field(..., description="Display text from the diagram")
     element_type: ElementType = Field(..., description="Type of diagram element")
-    phase: Optional[str] = Field(None, description="Pipeline phase this node belongs to")
+    phase: Optional[Phase] = Field(None, description="Pipeline phase this node belongs to")
     shape: Optional[str] = Field(None, description="Visual shape: rectangle, cylinder, circle, group_rectangle")
-    color: Optional[str] = Field(None, description="Fill color")
-    bq_function: Optional[str] = Field(None, description="Associated BigQuery ML function")
+    color: Optional[str] = Field(None, description="Fill color: blue, green, yellow, orange, gray")
+    bq_function: Optional[str] = Field(None, description="Associated BigQuery ML function (e.g., ML.FORECAST)")
+    description: Optional[str] = Field(None, description="Additional context about this node")
     bounding_box: Optional[list[int]] = Field(None, description="[y_min, x_min, y_max, x_max] normalized 0-1000")
     parent_id: Optional[str] = Field(None, description="ID of the parent group node (for nesting)")
+
+class EdgeType(str, Enum):
+    flow = "flow"          # Solid arrow — data flows forward
+    feedback = "feedback"  # Dashed arrow — output fed back or referenced
 
 class FlowchartEdge(BaseModel):
     id: str = Field(..., description="Unique edge identifier")
     source: str = Field(..., description="Source node id")
     target: str = Field(..., description="Target node id")
-    label: Optional[str] = Field(None, description="Edge label (visible text on the connection)")
-    edge_type: Optional[str] = Field("flow", description="Arrow style: flow or feedback")
+    label: Optional[str] = Field(None, description="Edge label (e.g., 'Point Forecast')")
+    edge_type: EdgeType = Field(EdgeType.flow, description="Arrow style: flow (solid) or feedback (dashed)")
 
 class FlowchartGraph(BaseModel):
-    diagram_type: str
+    diagram_type: str = Field(..., description="Type of diagram")
     nodes: list[FlowchartNode]
     edges: list[FlowchartEdge]
     metadata: Optional[dict] = None
@@ -445,22 +500,35 @@ examples/bq-arima-flowchart/
     └── visualization.html
 ```
 
+Running the agent on the Raspberry Pi schematic URL creates a new folder under `examples/`:
+
+```
+examples/url-www-raspberrypi-org-raspberry-pi-schematics-r1-0/
+└── results-without-schema/
+    ├── graph.json
+    ├── schema.json
+    ├── description.md
+    └── visualization.html
+```
+
 Files are replaced on each run (no accumulation). The same artifacts are also saved via the ADK artifact system.
+
+**Output directory resolution:**
+- **Local files under `examples/`** — results go next to the source file (e.g., `examples/bq-arima-flowchart/results-without-schema/`)
+- **URLs** — `examples/url-{hostname}-{filename}/` (e.g., `url-www-raspberrypi-org-raspberry-pi-schematics-r1-0`)
+- **GCS paths** — `examples/gcs-{bucket}-{filename}/` (e.g., `gcs-my-bucket-diagram`)
+- **Local files outside `examples/`** — `examples/local-{filename}/`
 
 **View the interactive visualizations directly in your browser:**
 
 | Run | Visualization | Graph | Description |
 |-----|---------------|-------|-------------|
-| Without schema | [**visualization.html**](https://htmlpreview.github.io/?https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20ML/AI%20Agents/image-to-graph/examples/bq-arima-flowchart/results-without-schema/visualization.html) | [graph.json](examples/bq-arima-flowchart/results-without-schema/graph.json) | [description.md](examples/bq-arima-flowchart/results-without-schema/description.md) |
-| With schema | [**visualization.html**](https://htmlpreview.github.io/?https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20ML/AI%20Agents/image-to-graph/examples/bq-arima-flowchart/results-with-schema/visualization.html) | [graph.json](examples/bq-arima-flowchart/results-with-schema/graph.json) | [description.md](examples/bq-arima-flowchart/results-with-schema/description.md) |
-
-Running the agent on `examples/xkcd-flowchart/flowcharts.png` — without a schema — produces results in `results-without-schema/`:
-
-| Run | Visualization | Graph | Description |
-|-----|---------------|-------|-------------|
+| BQ ARIMA (without schema) | [**visualization.html**](https://htmlpreview.github.io/?https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20ML/AI%20Agents/image-to-graph/examples/bq-arima-flowchart/results-without-schema/visualization.html) | [graph.json](examples/bq-arima-flowchart/results-without-schema/graph.json) | [description.md](examples/bq-arima-flowchart/results-without-schema/description.md) |
+| BQ ARIMA (with schema) | [**visualization.html**](https://htmlpreview.github.io/?https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20ML/AI%20Agents/image-to-graph/examples/bq-arima-flowchart/results-with-schema/visualization.html) | [graph.json](examples/bq-arima-flowchart/results-with-schema/graph.json) | [description.md](examples/bq-arima-flowchart/results-with-schema/description.md) |
 | XKCD (without schema) | [**visualization.html**](https://htmlpreview.github.io/?https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20ML/AI%20Agents/image-to-graph/examples/xkcd-flowchart/results-without-schema/visualization.html) | [graph.json](examples/xkcd-flowchart/results-without-schema/graph.json) | [description.md](examples/xkcd-flowchart/results-without-schema/description.md) |
+| Raspberry Pi schematic (URL, PDF) | [**visualization.html**](https://htmlpreview.github.io/?https://github.com/statmike/vertex-ai-mlops/blob/main/Applied%20ML/AI%20Agents/image-to-graph/examples/url-www-raspberrypi-org-raspberry-pi-schematics-r1-0/results-without-schema/visualization.html) | [graph.json](examples/url-www-raspberrypi-org-raspberry-pi-schematics-r1-0/results-without-schema/graph.json) | [description.md](examples/url-www-raspberrypi-org-raspberry-pi-schematics-r1-0/results-without-schema/description.md) |
 
-> The visualization links use [htmlpreview.github.io](https://htmlpreview.github.io) to render the self-contained HTML files directly from GitHub — no setup required. Each visualization embeds the source image as base64, includes interactive hover/click highlighting, group bounding boxes, a searchable graph JSON viewer, a recreated Mermaid diagram (with subgraphs for groups), and the schema.
+> The visualization links use [htmlpreview.github.io](https://htmlpreview.github.io) to render the self-contained HTML files directly from GitHub — no setup required. Each visualization embeds the source image as base64, includes interactive hover/click highlighting, group bounding boxes, flow subgraphs, a searchable graph JSON viewer, a recreated Mermaid diagram (with subgraphs for groups and flows), legend and page metadata panels, and the schema.
 
 **What's different between the two runs?**
 
@@ -510,7 +578,8 @@ The exported `graph.json` follows this structure:
       "element_type": "terminal",
       "shape": "oval",
       "bounding_box": [50, 400, 120, 600],
-      "confidence": "high"
+      "confidence": "high",
+      "flow_id": "flow_1"
     },
     {
       "id": "node_2",
@@ -519,7 +588,8 @@ The exported `graph.json` follows this structure:
       "shape": "rectangle",
       "bounding_box": [200, 350, 300, 650],
       "confidence": "medium",
-      "description": "Transforms input data"
+      "description": "Transforms input data",
+      "flow_id": "flow_1"
     },
     {
       "id": "group_preprocessing",
@@ -527,7 +597,8 @@ The exported `graph.json` follows this structure:
       "element_type": "group",
       "shape": "group_rectangle",
       "bounding_box": [30, 330, 320, 670],
-      "confidence": "high"
+      "confidence": "high",
+      "flow_id": "flow_1"
     },
     {
       "id": "node_3",
@@ -536,7 +607,17 @@ The exported `graph.json` follows this structure:
       "shape": "rectangle",
       "bounding_box": [150, 380, 220, 620],
       "confidence": "high",
-      "parent_id": "group_preprocessing"
+      "parent_id": "group_preprocessing",
+      "flow_id": "flow_1"
+    },
+    {
+      "id": "node_4",
+      "label": "Subsystem Detail",
+      "element_type": "process",
+      "shape": "rectangle",
+      "bounding_box": [600, 100, 700, 300],
+      "confidence": "high",
+      "flow_id": "flow_2"
     }
   ],
   "edges": [
@@ -547,13 +628,43 @@ The exported `graph.json` follows this structure:
       "label": null,
       "edge_type": "flow",
       "confidence": "high"
+    },
+    {
+      "id": "edge_ref_1",
+      "source": "node_2",
+      "target": "node_4",
+      "label": "cross-reference",
+      "edge_type": "reference",
+      "confidence": "medium"
+    }
+  ],
+  "flows": [
+    {
+      "id": "flow_1",
+      "label": "Flow 1",
+      "node_ids": ["group_preprocessing", "node_1", "node_2", "node_3"]
+    },
+    {
+      "id": "flow_2",
+      "label": "Flow 2",
+      "node_ids": ["node_4"]
     }
   ],
   "metadata": {
     "source_file": "/path/to/image.png",
     "image_width": 1920,
     "image_height": 1080,
-    "status": "complete"
+    "status": "complete",
+    "page_info": {
+      "title": "Data Processing Pipeline v2.1",
+      "author": "Jane Doe",
+      "date": "2025-03-15",
+      "version": "2.1"
+    },
+    "legend": [
+      {"symbol": "dashed line", "meaning": "optional dependency"},
+      {"symbol": "red fill", "meaning": "critical path"}
+    ]
   }
 }
 ```
@@ -563,8 +674,13 @@ Key fields:
 - **`parent_id`**: Links a node to its parent group node for hierarchical nesting.
 - **`confidence`**: `high`, `medium`, or `low` — set during extraction by Gemini.
 - **`shape: "group_rectangle"`**: Marks a node as a visual grouping boundary (dashed box, labeled section).
+- **`flow_id`**: Assigned automatically by `validate_graph` when multiple disconnected flows are detected. Each node belongs to exactly one flow.
+- **`flows`**: Array of connected components, each with an `id`, `label`, and list of `node_ids`. Only present when 2+ flows are detected.
+- **`edge_type: "reference"`**: Cross-reference edges linking the same logical entity across different flows. Rendered with dashed purple styling in the visualization.
+- **`metadata.page_info`**: Page-level metadata (title, author, date, version) extracted from title blocks or metadata panels in the diagram. Displayed in the visualization header.
+- **`metadata.legend`**: Legend entries mapping symbols to meanings, extracted from legend blocks in the diagram. Displayed as a legend panel in the visualization.
 
-A `schema.json` is **always** exported alongside the graph — either the user-provided input schema or an auto-generated schema inferred from the graph structure. A `description.md` is also exported when a description has been generated. All files are saved both as ADK artifacts and written to disk in a `results-with-schema/` or `results-without-schema/` directory next to the source image.
+A `schema.json` is **always** exported alongside the graph — either the user-provided input schema or an auto-generated schema inferred from the graph structure. A `description.md` is also exported when a description has been generated. All files are saved both as ADK artifacts and written to disk under the `examples/` directory (see [Output directory resolution](#example-results)).
 
 ---
 ## Interactive Visualization
@@ -573,13 +689,17 @@ The agent generates an interactive HTML visualization (`visualization.html` arti
 
 **Features:**
 - **Two-panel layout**: source image on the left, graph details on the right
-- **Generated description**: comprehensive narrative description of the diagram shown at the top of the graph panel
+- **Page metadata header**: if page-level metadata was extracted (title, author, date, version), it's displayed in the header bar alongside the diagram type badge
+- **Generated description**: comprehensive narrative description of the diagram shown at the top of the graph panel — flow-aware, metadata-aware, and legend-aware
+- **Legend panel**: if legend entries were extracted from the diagram, they're rendered as a styled section between the description and the node list
 - **Linked highlighting**: hover or click a node in either panel to highlight its bounding box on the image AND its card in the graph panel. Hover also highlights the corresponding schema section.
 - **Edge tracing**: hover an edge to highlight both its source and target nodes on the image
+- **Cross-reference edges**: edges with `edge_type: "reference"` are rendered with dashed purple styling in both the edge card list and the Mermaid diagram, visually distinguishing them from regular flow edges
 - **Group bounding boxes**: group nodes render as dashed purple outlines behind regular nodes, showing visual containment
+- **Flow subgraphs**: when multiple independent flows are detected, the Mermaid diagram wraps each flow's nodes in a `subgraph` block. Groups within flows are nested subgraphs.
 - **Schema viewer**: collapsible section with split Node Definition and Edge Definition blocks, linked to node/edge highlighting
 - **Graph JSON viewer**: collapsible, searchable section showing the full graph data. Type to search with match highlighting, Enter/Shift+Enter to cycle through matches.
-- **Mermaid diagram**: recreated flowchart with `subgraph` blocks for group nodes, rendered via Mermaid.js
+- **Mermaid diagram**: recreated flowchart with `subgraph` blocks for group nodes and flow clusters, rendered via Mermaid.js
 - **Resizable panels**: drag the divider between panels to adjust the layout
 - **Self-contained**: the HTML file embeds the image as base64 — no external dependencies, works offline
 
@@ -596,7 +716,33 @@ All Gemini-backed tools (`crop_and_examine`, `trace_connections`) return per-ele
 
 ### Adaptive Zoom
 
-When `crop_and_examine` detects a high-complexity region (many overlapping elements, small text), it returns suggested sub-regions for closer examination. The agent can then re-examine those sub-regions at finer granularity (limited to 3 additional calls) to improve extraction quality in dense areas.
+When `crop_and_examine` detects a high-complexity region (many overlapping elements, small text), it returns suggested sub-regions for closer examination. The agent can then re-examine those sub-regions at finer granularity (limited to 3 additional calls for flowcharts) to improve extraction quality in dense areas.
+
+### Schematic-Specific Workflow
+
+When `analyze_image` detects a schematic or circuit diagram, the agent switches to a grid-based extraction workflow designed for dense, spatially uniform diagrams:
+
+1. **Grid generation**: Gemini's semantic regions are replaced with systematic grid cells — 4 columns x 3 rows for landscape images, 3 x 4 for portrait — in the normalized 0-1000 coordinate space. Each cell has 5% overlap with its neighbors to catch components at cell boundaries.
+
+2. **Exhaustive examination**: The agent examines **all** grid cells (the 3-call sub-region budget does not apply to grid cells). Each `crop_and_examine` call receives `SCHEMATIC_CROP_GUIDANCE` (from `prompts.py`) instructing Gemini to enumerate every component symbol, use reference designators as element IDs, provide tight bounding boxes around component symbols (not wire traces), and extract component values.
+
+3. **Automatic deduplication**: Components appearing in overlapping grid cells produce duplicate node IDs. `update_graph` handles this automatically:
+   - **ID dedup**: Nodes with an existing ID are silently skipped.
+   - **Label + bbox dedup**: Nodes with the same label and overlapping bounding box (IoU > 0.5) are skipped even if the ID differs.
+   - **Grid suffix stripping**: For schematics, `normalize_node_id()` (from `util_diagram_type.py`) strips `_r\d+_c\d+` suffixes that the agent may append (e.g., `C92_r1_c2` → `C92`), ensuring the base reference designator is used for dedup.
+   - **Edge dedup**: Edges with the same `(source, target)` pair as an existing edge are skipped.
+
+4. **Schematic-specific validation**: `validate_graph` uses a tighter oversized bbox threshold for schematics (5% vs 10% for other types, configured via `DIAGRAM_TYPE_CONFIG` in `config.py`) and normalizes extreme aspect-ratio bboxes (wire-trace bboxes where Gemini followed a connection path instead of the component footprint).
+
+This approach typically extracts 50-70+ nodes from a single schematic page, compared to ~9 conceptual nodes from the non-grid workflow.
+
+### Duplicate Detection
+
+`update_graph` automatically prevents duplicate entries:
+
+- **Node ID dedup**: If a node with the same `id` already exists, the new node is skipped.
+- **Node label + bbox dedup**: If a node with the same label (case-insensitive) and overlapping bounding box (IoU > 0.5) exists under a different ID, the new node is skipped. This catches cases where the same component is identified with different IDs from adjacent grid cells or repeated examinations.
+- **Edge source/target dedup**: If an edge with the same `(source, target)` pair already exists, the new edge is skipped (regardless of edge ID). Reverse direction (`target → source`) is treated as a different connection.
 
 ### Node Grouping and Nesting
 
@@ -612,38 +758,92 @@ Groups don't require edges unless there are explicit connections between group b
 
 ### Bounding Box Auto-Correction
 
-Two levels of bounding box correction run automatically:
+Four levels of bounding box correction run automatically during `validate_graph`:
 
-1. **Coordinate inversion** (`normalize_bbox` in `util_bbox.py`): Gemini sometimes returns coordinates with min > max on one or both axes (e.g., `{"top": 500, "bottom": 100}`). `normalize_bbox()` swaps each axis pair so that min ≤ max, and clamps all values to the valid 0-1000 range. This runs at every storage and usage boundary (add/update node, crop, analyze), so all downstream code always receives valid boxes. Corrections are tracked in `tool_context.state["bbox_corrections"]` and captured as `STATE_DELTA` events for BQ analytics observability (see `bq_analytics.ipynb`).
+1. **Coordinate inversion** (`normalize_bbox` in `util_bbox.py`): Gemini sometimes returns coordinates with min > max on one or both axes (e.g., `{"top": 500, "bottom": 100}`). `normalize_bbox()` swaps each axis pair so that min ≤ max, and clamps all values to the valid 0-1000 range. This runs at every storage and usage boundary (add/update node, crop, analyze), so all downstream code always receives valid boxes. Corrections are detected by `detect_bbox_corrections()` (also in `util_bbox.py`) which compares raw vs normalized values and records which axes were inverted and whether clamping was needed. Corrections are tracked in `tool_context.state["bbox_corrections"]` and captured as `STATE_DELTA` events for BQ analytics observability (see `bq_analytics.ipynb`).
 
-2. **Axis swap detection** (`validate_graph`): Gemini sometimes returns bounding box coordinates with x and y axes swapped. The validator detects and corrects this using two complementary signals:
+2. **Axis swap detection** (`validate_graph`): Gemini sometimes returns bounding box coordinates with x and y axes swapped. The validator detects and corrects this using three complementary signals:
    - **Element aspect ratios**: For each non-group node, computes the pixel-space aspect ratio under both interpretations (`[y,x,y,x]` vs `[x,y,x,y]`). If the swapped interpretation produces ratios measurably closer to 1.0 (>20% improvement in median), swap is triggered.
    - **Group extreme ratios**: Group nodes span multiple children and have large x/y differences. When ≥2 groups have physically implausible pixel ratios (>7:1) under normal interpretation but reasonable ones after swap, this triggers correction even when individual elements are nearly square. This catches the common case where the LLM confuses `top/left` semantics on landscape images. A false-positive guard ensures the group signal only fires when the element signal at least leans toward swap — preventing incorrect swaps on diagrams with legitimately wide horizontal groups.
+   - **Content-based verification**: When the heuristic signals are inconclusive (e.g., schematics with small near-square components on non-square images), the validator samples actual pixel content from the source image as ground truth. For up to 12 bbox centers, it compares darkness at the normal vs swapped pixel positions — if ≥70% of samples find more diagram content (non-white pixels) at the swapped position, swap is triggered. This signal is blocked when elements strongly oppose swap, preventing false positives on correctly oriented diagrams.
    - Swap corrections are tracked in `bbox_corrections` state alongside individual inversions.
 
-Level 1 runs before level 2, ensuring axis swap detection always operates on valid (non-inverted) boxes. Both run before group bounding box auto-computation, so group boxes inherit fully corrected child coordinates.
+3. **Schematic aspect-ratio normalization** (`validate_graph` → `fix_schematic_bboxes` in `util_bbox.py`): For schematics, Gemini sometimes follows wire traces instead of component footprints, producing extremely elongated bboxes (aspect ratio > 8:1). These are shrunk to component-sized square regions centered on the bbox centroid, using the geometric mean of the original dimensions.
+
+4. **Oversized bbox guard** (`validate_graph` → `fix_oversized_bboxes` in `util_bbox.py`): Non-group nodes with problematic bboxes are shrunk to the median size of normal components. Three independent conditions trigger the fix:
+   - **Excessive area**: covering more than a threshold fraction of the image area (5% for schematics, 10% for other types, configured via `DIAGRAM_TYPE_CONFIG` in `config.py`).
+   - **Extreme aspect ratio**: ratio > 8:1 — catches extremely elongated bboxes (e.g., a wire trace) that may have small area but are clearly wrong for a node.
+   - **Outlier single dimension**: `max(height, width) > min(350, 4 × median_side)` — catches nodes spanning >35% of the image on a single axis even when area and ratio pass.
+
+Level 1 runs before levels 2-4, ensuring all subsequent corrections operate on valid (non-inverted) boxes. Levels 2-4 run in order during validation, before group bounding box auto-computation, so group boxes inherit fully corrected child coordinates.
+
+### Validation Checks
+
+Beyond auto-correction, `validate_graph` runs several quality checks that produce warnings:
+
+- **Degenerate bboxes**: Nodes with zero height (`y_min == y_max`) or zero width (`x_min == x_max`) are flagged. Near-zero area bboxes (width or height < 3 units in 0-1000 scale) are also warned about.
+- **Overlapping bboxes**: For each pair of non-group nodes, if one bbox contains >70% of the other (by area), a warning is emitted. This catches cases where the LLM places two components at the same position.
+- **Child containment**: Child nodes with `parent_id` set to a group are checked to ensure their bbox falls inside the parent group's bbox. Children entirely outside their parent are warned about.
+- **Self-loop edges**: Edges where `source == target` are flagged as warnings.
+- **Disconnected nodes**: Nodes with no incoming or outgoing edges are warned about.
 
 ### Description Artifact
 
 `export_result` saves a `description.md` artifact alongside `graph.json` and `schema.json`. This contains the narrative description generated by `generate_description`, providing a human-readable summary of the diagram's structure and content.
+
+### CV Preprocessing (`agent_cv_preprocess`)
+
+For clean, structured diagrams (flowcharts, schematics with distinct shapes and straight-line connections), the main agent can optionally delegate to `agent_cv_preprocess` before semantic analysis. This subagent uses deterministic OpenCV techniques — contour detection, line finding, shape classification — to detect visual elements, then labels them with Gemini OCR. The results are stored in state as context that enriches the subsequent `analyze_image`, `crop_and_examine`, and `trace_connections` calls. During validation, CV elements can also be matched to graph nodes (via label similarity + IoU + centroid proximity scoring in `util_bbox.py`) to nudge bounding boxes to pixel-precise positions.
+
+The CV subagent workflow:
+1. **`assess_image`** — Computes contrast ratio, edge density, noise level, and color distribution. Returns suitability level (`high`, `medium`, `low`) and recommended detection parameters.
+2. **`detect_elements`** — Applies adaptive thresholding, morphological closing, and contour detection. Classifies shapes (triangle, rectangle, pentagon, hexagon, circle) and returns normalized bounding boxes.
+3. **`detect_connections`** — Finds lines and arrows between detected elements.
+4. **`label_elements`** — Sends image + bounding boxes to Gemini for OCR text extraction and semantic labeling.
+5. **`report_results`** — Reports back to the main agent with status (`complete`, `partial`, or `skipped`).
+
+If suitability is `low` (hand-drawn, photographic, or artistic diagrams), the subagent skips detection and reports back immediately — the main agent falls back to pure Gemini-based analysis.
+
+### Multi-Flow Awareness
+
+Diagrams often contain **multiple independent flows** on a single page (e.g., a main pipeline and a subsystem detail), **page-level metadata** (title, author, date, version), and **legends** (symbol-to-meaning mappings). The agent recognizes and represents all of these:
+
+**Flow detection**: `validate_graph` computes connected components using a union-find algorithm. Nodes connected by edges or by `parent_id` grouping are unified into the same flow. When 2+ flows are detected:
+- Each flow is stored in `graph.flows` with an `id`, `label`, and list of `node_ids`
+- Each node gets a `flow_id` attribute
+- The "Disconnected nodes" warning is replaced with an informational "Diagram contains N distinct flows" note
+
+**Cross-reference detection**: The validator scans for nodes in different flows that share identical labels, suggesting they represent the same logical entity. A warning prompts the agent to add `reference` edges. The `trace_connections` prompt also instructs Gemini to look for semantic cross-references (shared labels, off-page connectors, "see subsystem X" annotations) and emit edges with `edge_type: "reference"`.
+
+**Page metadata and legends**: The `analyze_image` prompt instructs Gemini to detect legend blocks (`element_type: "legend"`) and title/metadata panels (`element_type: "page_info"`). The agent stores these via `update_graph`'s `set_metadata` operation rather than adding them as diagram nodes. This metadata flows through to the description, visualization, and exported graph JSON.
 
 ---
 ## Tools Reference
 
 | Tool | Purpose |
 |------|---------|
-| `load_image` | Load image from file path, validate with Pillow, store bytes in state |
+| `load_image` | Load image from local path, URL (`https://`), or GCS (`gs://`). Validates with Pillow. Renders PDF pages at high resolution via PyMuPDF. |
 | `load_schema` | Load a JSON Schema from file to use as the target structure for graph construction |
-| `analyze_image` | Full image analysis via Gemini (`TOOL_MODEL`) — diagram type, regions, bounding boxes |
-| `crop_and_examine` | Crop a region and examine it in one call via Gemini (`TOOL_MODEL`) — labels, symbols, attributes, external labels, complexity, confidence; detects group boundaries; suggests sub-regions for adaptive zoom |
-| `trace_connections` | Dedicated edge detection — sends full image + all node positions (with group context) to Gemini (`TOOL_MODEL`) for a cross-region edge-finding pass with confidence |
-| `update_graph` | Batch add/update nodes and edges in one call (with schema conformance hints) |
+| `analyze_image` | Full image analysis via Gemini (`TOOL_MODEL`) — diagram type, regions, bounding boxes. Detects legend blocks, title/metadata panels, and multi-flow clusters. For schematics/circuits, replaces Gemini's regions with systematic grid cells (4x3 landscape, 3x4 portrait, 5% overlap) for complete spatial coverage. |
+| `crop_and_examine` | Crop a region and examine it in one call via Gemini (`TOOL_MODEL`) — labels, symbols, attributes, external labels, complexity, confidence; detects group boundaries; suggests sub-regions for adaptive zoom. For schematics, injects exhaustive component enumeration guidance (`SCHEMATIC_CROP_GUIDANCE` from `prompts.py`). |
+| `trace_connections` | Dedicated edge detection — sends full image + all node positions to Gemini (`TOOL_MODEL`) for a cross-region edge-finding pass with confidence. Also detects semantic cross-references (shared labels, off-page connectors) as `reference` edges. |
+| `update_graph` | Batch add/update nodes and edges in one call (with schema conformance hints). Automatically skips duplicate nodes (same ID, or same label + overlapping bbox via IoU > 0.5) and duplicate edges (same source/target pair). For schematics, strips grid-cell suffixes from node IDs (e.g., `C92_r1_c2` → `C92`) via `normalize_node_id()`. Also supports `set_metadata` for storing page info and legend entries. |
 | `get_graph` | Retrieve current graph state for progress review |
-| `generate_schema` | Infer JSON Schema from observed graph attributes (skipped if input schema loaded) |
-| `validate_graph` | Validate graph structure and schema conformance — missing fields, orphaned edges, type mismatches, low-confidence flags. Auto-corrects bounding box coordinate swaps and computes group bounding boxes from children. |
-| `generate_description` | Generate a narrative description of the diagram via Gemini (`TOOL_MODEL`) using image + graph + schema as context |
-| `generate_visualization` | Create interactive HTML with description + image + graph, linked hover/click highlights, confidence indicators, schema viewer, searchable graph JSON, Mermaid recreation; writes to disk |
-| `export_result` | Save final `graph.json` + `schema.json` + `description.md` as artifacts; writes all files to disk |
+| `generate_schema` | Infer JSON Schema from observed graph attributes — includes `flows`, structured `metadata` (page_info, legend) properties (skipped if input schema loaded) |
+| `validate_graph` | Validate graph structure and schema conformance. Auto-corrects bounding boxes (inversion, axis swap, schematic aspect-ratio normalization, oversized guard with diagram-type-specific thresholds from `DIAGRAM_TYPE_CONFIG`). Computes group bounding boxes, detects multi-flow diagrams (connected components via union-find), assigns `flow_id` to nodes, suggests label-based cross-references. Optionally refines bboxes from CV preprocessing data. |
+| `generate_description` | Generate a narrative description via Gemini (`TOOL_MODEL`) — flow-aware, metadata-aware, legend-aware |
+| `generate_visualization` | Create interactive HTML with description + image + graph, flow subgraphs, legend panel, page metadata header, cross-reference edge styling, confidence indicators, schema viewer, searchable graph JSON, Mermaid recreation; writes to disk |
+| `export_result` | Save final `graph.json` + `schema.json` + `description.md` as artifacts; writes all files to disk under `examples/` |
+
+### CV Preprocessing Tools (`agent_cv_preprocess`)
+
+| Tool | Purpose |
+|------|---------|
+| `assess_image` | Assess image suitability for CV preprocessing — contrast ratio, edge density, noise level, color distribution → suitability level and recommended parameters |
+| `detect_elements` | OpenCV contour detection — adaptive thresholding, morphological closing, shape classification (triangle, rectangle, pentagon, hexagon, circle), normalized bounding boxes |
+| `detect_connections` | Find lines and arrows between detected elements using line detection |
+| `label_elements` | Send image + bounding boxes to Gemini for OCR text extraction and semantic labeling |
+| `report_results` | Report detection results back to the main agent with status (`complete`, `partial`, `skipped`) |
 
 ### Q&A Tools (`agent_graph_qa`)
 
@@ -738,25 +938,23 @@ Comment out the plugin section at the end of `agent_image_to_graph/agent.py`:
 ---
 ## Where This Can Go
 
-The current agent works end-to-end for local images, but the architecture is designed to extend naturally into broader workflows. Here are directions this can grow.
+The agent works end-to-end for local images, URLs, GCS paths, and PDFs, with optional CV preprocessing and multi-flow awareness. The architecture is designed to extend naturally into broader workflows. Here are directions this can grow.
 
 ### Broader Image Input Support
 
-**Natively handled today:** Pillow already supports JPEG, PNG, GIF, BMP, TIFF, and WEBP — so `load_image` accepts raster images across the most common formats out of the box. No conversion step needed for these.
+**Natively handled today:** Pillow supports JPEG, PNG, GIF, BMP, TIFF, and WEBP. `load_image` also accepts `https://` URLs, `gs://` GCS paths, and PDF files (renders a selected page at configurable DPI via PyMuPDF).
 
 **Additional formats to support:**
 - **SVG** — vector diagrams are everywhere (architecture docs, design tools, web exports). Render to raster via `cairosvg` or `librsvg` before passing to Gemini, preserving the original SVG as metadata.
-- **PDF pages** — technical documents often embed diagrams as full-page figures. Extract individual pages as images with `pdf2image` / `PyMuPDF`, then feed each page through the pipeline.
 - **HEIF/HEIC** — common on iOS. Pillow supports these via `pillow-heif`.
 - **DICOM / medical imaging** — specialized formats where flowcharts appear in clinical pathway diagrams.
 - **Multi-frame inputs** — animated GIFs or multi-page TIFFs where each frame is a separate diagram.
 
 ### Remote and Inline File Sources
 
-Today `load_image` reads from a local file path. Extending input sources:
+**Implemented today:** `load_image` supports local file paths, `https://` URLs (with 30-second timeout and size validation), and `gs://` GCS paths (via `google-cloud-storage` with pre-download size checks). Results from remote sources are written to `examples/` under a folder derived from the source (e.g., `url-example-com-diagram/`, `gcs-my-bucket-arch/`).
 
-- **Google Cloud Storage (`gs://`)** — download from GCS via `google-cloud-storage` before loading. Enables cloud-native pipelines where source images live in buckets alongside other assets.
-- **HTTP/HTTPS URLs** — fetch remote images directly. Useful when diagrams are hosted in wikis, documentation sites, or object stores with public URLs.
+**Additional sources to support:**
 - **Inline base64 / byte streams** — accept image data passed directly in the message (e.g., from another agent, an API call, or a pipeline step) rather than requiring a file on disk.
 - **Google Drive** — pull diagrams from shared drives using the Drive API, common in enterprise doc workflows.
 
@@ -814,16 +1012,17 @@ The agent already logs analytics to BigQuery. Extending BigQuery to store the ex
 image-to-graph/
 ├── agent_image_to_graph/              # Main agent package
 │   ├── agent.py                       # Agent definition and ADK App
-│   ├── config.py                      # Centralized configuration constants
+│   ├── config.py                      # Centralized configuration constants + DIAGRAM_TYPE_CONFIG
 │   ├── bq_plugin.py                   # BigQuery analytics plugin
-│   ├── prompts.py                     # Agent instructions
+│   ├── prompts.py                     # Agent instructions + SCHEMATIC_CROP_GUIDANCE constant
 │   ├── tools/
 │   │   ├── util_common.py             # Shared utilities (JSON fence stripping, error logging)
-│   │   ├── util_bbox.py               # Bounding box normalization
+│   │   ├── util_bbox.py               # Bounding box utilities (normalization, IoU, CV matching, schematic detection, correction tracking)
+│   │   ├── util_diagram_type.py       # Diagram type detection (is_schematic), node ID normalization, schematic grid generation
 │   │   ├── util_schema.py             # JSON Schema $ref resolution
 │   │   ├── util_gemini.py             # Gemini API client
-│   │   ├── util_output.py             # Output directory helpers
-│   │   └── function_tool_*.py         # Individual tool implementations
+│   │   ├── util_output.py             # Output directory resolution (examples/ routing)
+│   │   └── function_tool_*.py         # Individual tool implementations (12 tools)
 │   └── tests/
 │       ├── conftest.py                # Shared fixtures
 │       ├── unit/                      # Pure function tests (no I/O)
@@ -831,22 +1030,43 @@ image-to-graph/
 │       │   ├── test_util_common.py
 │       │   ├── test_util_schema.py
 │       │   ├── test_validate_helpers.py
-│       │   └── test_config.py
+│       │   ├── test_config.py
+│       │   └── test_schematic_grid.py # Grid generation tests (coverage, overlap, aspect ratio)
 │       └── tools/                     # Tool tests (mocked ToolContext)
 │           ├── test_load_image.py
 │           ├── test_load_schema.py
 │           ├── test_validate_graph.py
-│           ├── test_update_graph.py
+│           ├── test_validate_flows.py # Multi-flow detection tests
+│           ├── test_update_graph.py   # Includes set_metadata, node/edge dedup tests
+│           ├── test_util_bbox.py      # IoU, CV matching, schematic detection tests
 │           └── test_get_graph.py
+├── agent_cv_preprocess/               # CV preprocessing sub-agent package
+│   ├── agent.py                       # Subagent definition
+│   ├── prompts.py                     # CV workflow instructions
+│   ├── tools/
+│   │   ├── util_common.py             # Shared CV utilities
+│   │   ├── util_gemini.py             # Gemini client for OCR labeling
+│   │   ├── function_tool_assess_image.py
+│   │   ├── function_tool_detect_elements.py
+│   │   ├── function_tool_detect_connections.py
+│   │   ├── function_tool_label_elements.py
+│   │   └── function_tool_report_results.py
+│   └── tests/
 ├── agent_graph_qa/                    # Q&A sub-agent package
 │   ├── agent.py
 │   ├── prompts.py
 │   ├── tools/
+│   │   ├── function_tool_get_context.py   # Get graph context from parent agent state
+│   │   └── function_tool_load_results.py  # Load results from disk for standalone mode
 │   └── tests/
 │       ├── conftest.py                # Q&A-specific fixtures
 │       └── tools/
 │           └── test_load_results.py
-├── examples/                          # Example diagrams and schemas
+├── examples/                          # Example diagrams, schemas, and results
+│   ├── bq-arima-flowchart/            # BQ ARIMA pipeline diagram + schema + screenshots
+│   ├── xkcd-flowchart/                # XKCD "Flowcharts" comic
+│   └── url-www-raspberrypi-org.../    # Raspberry Pi schematic (URL source)
+├── bq_analytics.ipynb                 # BigQuery analytics notebook (token usage, latency, costs)
 ├── pyproject.toml                     # Project config, dev deps, tool settings
 └── Makefile                           # Dev command shortcuts
 ```
@@ -901,6 +1121,17 @@ Input validation is centralized in `agent_image_to_graph/config.py`. All limits 
 | `MAX_SCHEMA_SIZE_BYTES` | 10 MB | `MAX_SCHEMA_SIZE_BYTES` | Maximum schema file size for `load_schema` |
 | `PIL_MAX_IMAGE_PIXELS` | 200 MP | `PIL_MAX_IMAGE_PIXELS` | Pillow decompression bomb limit |
 | `ALLOWED_IMAGE_FORMATS` | JPEG, PNG, GIF, BMP, TIFF, WEBP | — | Accepted image formats (whitelist) |
+| `PDF_RENDER_DPI` | 300 | `PDF_RENDER_DPI` | DPI for PDF page rendering via PyMuPDF |
+| `DIAGRAM_TYPE_CONFIG` | see below | — | Diagram-type-specific thresholds (not env-configurable) |
+
+`DIAGRAM_TYPE_CONFIG` provides per-diagram-type settings. Currently used by `validate_graph` for the oversized bbox threshold:
+
+```python
+DIAGRAM_TYPE_CONFIG = {
+    "schematic": {"oversized_bbox_threshold": 0.05},  # 5% of image area
+    "default":   {"oversized_bbox_threshold": 0.10},  # 10% of image area
+}
+```
 
 ### Conventions
 

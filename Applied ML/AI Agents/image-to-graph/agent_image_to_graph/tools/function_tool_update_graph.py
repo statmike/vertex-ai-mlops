@@ -2,8 +2,9 @@ import logging
 
 from google.adk import tools
 
-from .util_bbox import detect_bbox_corrections, normalize_bbox
+from .util_bbox import compute_iou, detect_bbox_corrections, normalize_bbox
 from .util_common import log_tool_error
+from .util_diagram_type import normalize_node_id
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ async def update_graph(
     Update the graph state with one or more operations in a single call.
 
     Each operation is a dict with an "op" field and a "data" field.
-    Supported ops: add_node, update_node, add_edge, update_edge, set_diagram_type.
+    Supported ops: add_node, update_node, add_edge, update_edge, set_diagram_type, set_metadata.
 
     Use this to batch multiple additions in one call. For example, after examining
     a region, add all discovered nodes at once instead of one at a time.
@@ -28,6 +29,7 @@ async def update_graph(
                     {"op": "add_edge", "data": {"id": str, "source": str, "target": str, ...}}
                     {"op": "update_edge", "data": {"id": str, ...fields to update}}
                     {"op": "set_diagram_type", "data": {"diagram_type": str}}
+                    {"op": "set_metadata", "data": {"key": str, "value": any}}
         tool_context: The ADK tool context containing the graph in state.
 
     Returns:
@@ -63,10 +65,30 @@ async def update_graph(
                     results.append(f"[{i}] Error: 'label' required for add_node.")
                     continue
 
+                # Strip grid-cell suffixes from schematic node IDs (e.g., C92_r1_c2 → C92)
+                cleaned_id = normalize_node_id(node_id, graph)
+                if cleaned_id != node_id:
+                    data = dict(data)
+                    data["id"] = cleaned_id
+                    node_id = cleaned_id
+
                 existing_ids = {n["id"] for n in graph.get("nodes", [])}
                 if node_id in existing_ids:
                     results.append(f"[{i}] Skipped: node '{node_id}' already exists.")
                     continue
+
+                # Skip duplicate nodes: same label + overlapping bbox (different ID)
+                new_bbox = normalize_bbox(data.get("bounding_box"))
+                if new_bbox and label:
+                    dup_of = _find_duplicate_node(
+                        graph.get("nodes", []), label, new_bbox
+                    )
+                    if dup_of:
+                        results.append(
+                            f"[{i}] Skipped: node '{node_id}' — duplicate of "
+                            f"'{dup_of}' (same label \"{label}\", overlapping bbox)."
+                        )
+                        continue
 
                 # Normalize bounding_box from dict to list format
                 node_data = dict(data)
@@ -162,9 +184,28 @@ async def update_graph(
                     results.append(f"[{i}] Error: 'source' and 'target' required for add_edge.")
                     continue
 
+                # Strip grid-cell suffixes from edge source/target refs for schematics
+                cleaned_src = normalize_node_id(source, graph)
+                cleaned_tgt = normalize_node_id(target, graph)
+                if cleaned_src != source or cleaned_tgt != target:
+                    data = dict(data)
+                    data["source"] = cleaned_src
+                    data["target"] = cleaned_tgt
+                    source = cleaned_src
+                    target = cleaned_tgt
+
                 existing_ids = {e["id"] for e in graph.get("edges", [])}
                 if edge_id in existing_ids:
                     results.append(f"[{i}] Skipped: edge '{edge_id}' already exists.")
+                    continue
+
+                # Skip duplicate (source, target) pairs — keep the first edge
+                existing_pairs = {(e["source"], e["target"]) for e in graph.get("edges", [])}
+                if (source, target) in existing_pairs:
+                    results.append(
+                        f"[{i}] Skipped: edge '{edge_id}' — duplicate connection "
+                        f"({source} -> {target}) already exists."
+                    )
                     continue
 
                 node_ids = {n["id"] for n in graph.get("nodes", [])}
@@ -200,10 +241,20 @@ async def update_graph(
                 else:
                     results.append(f"[{i}] Error: edge '{edge_id}' not found.")
 
+            elif op == "set_metadata":
+                key = data.get("key")
+                value = data.get("value")
+                if not key:
+                    results.append(f"[{i}] Error: 'key' required for set_metadata.")
+                    continue
+                metadata = graph.setdefault("metadata", {})
+                metadata[key] = value
+                results.append(f"[{i}] metadata['{key}'] set")
+
             else:
                 results.append(
                     f"[{i}] Error: unknown op '{op}'. "
-                    f"Valid: add_node, update_node, add_edge, update_edge, set_diagram_type."
+                    f"Valid: add_node, update_node, add_edge, update_edge, set_diagram_type, set_metadata."
                 )
 
         tool_context.state["graph"] = graph
@@ -218,6 +269,23 @@ async def update_graph(
 
     except Exception as e:
         return log_tool_error("update_graph", e)
+
+
+def _find_duplicate_node(
+    nodes: list[dict], label: str, bbox: list[int], iou_threshold: float = 0.5
+) -> str | None:
+    """Return the ID of an existing node with the same label and overlapping bbox, or None."""
+    label_lower = label.lower()
+    for node in nodes:
+        ex_bbox = node.get("bounding_box")
+        if (
+            ex_bbox
+            and len(ex_bbox) == 4
+            and (node.get("label") or "").lower() == label_lower
+            and compute_iou(bbox, ex_bbox) > iou_threshold
+        ):
+            return node["id"]
+    return None
 
 
 def _schema_field_hint(tool_context: tools.ToolContext, element_type: str, data: dict) -> str:

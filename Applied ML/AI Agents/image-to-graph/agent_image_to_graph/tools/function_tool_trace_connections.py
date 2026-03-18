@@ -63,12 +63,30 @@ async def trace_connections(tool_context: tools.ToolContext) -> str:
 
         image_bytes = base64.b64decode(source_image_b64)
 
+        # Build optional CV connection hints
+        cv_conn_context = ""
+        cv_data = tool_context.state.get("cv_preprocessing")
+        if cv_data and cv_data.get("status") in ("complete", "partial"):
+            cv_connections = cv_data.get("connections", [])
+            if cv_connections:
+                cv_conn_lines = []
+                for conn in cv_connections:
+                    cv_conn_lines.append(
+                        f"  - {conn.get('source_element_id', '?')} -> {conn.get('target_element_id', '?')} "
+                        f"({conn.get('line_type', '?')}) confidence={conn.get('confidence', '?')}"
+                    )
+                cv_conn_context = (
+                    "\n\nCV PREPROCESSING HINTS:\n"
+                    "OpenCV detected these candidate connections. Verify and add any missing ones:\n"
+                    + "\n".join(cv_conn_lines) + "\n"
+                )
+
         prompt = f"""You are analyzing a {diagram_type} diagram. The following nodes have been identified:
 
 {node_context}
 
-Bounding box coordinates are [y_min, x_min, y_max, x_max] on a 0-1000 normalized scale.
-
+Bounding box coordinates are [top, left, bottom, right] on a 0-1000 normalized scale where (0,0) is the top-left corner of the full image and (1000,1000) is the bottom-right. "top" = distance from top edge, "left" = distance from left edge.
+{cv_conn_context}
 Examine the FULL image carefully and identify ALL visible connections (arrows, lines, wires, flows) between these nodes.
 
 Return a JSON object with this exact structure:
@@ -97,6 +115,8 @@ IMPORTANT:
 - Set confidence to "high" if the connection is clearly visible, "medium" if partially obscured, "low" if uncertain.
 - Use the exact node IDs from the list above for source and target.
 - Generate unique edge IDs (e.g., "e1", "e2", ...).
+
+- If you notice nodes in different areas with identical labels (cross-references or off-page connectors), add a "reference" edge between them.
 
 Return ONLY the JSON object, no other text."""
 

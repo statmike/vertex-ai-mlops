@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "DiagramGraph",
-  "description": "Schema for a flowchart graph",
+  "description": "Schema for a schematic graph",
   "type": "object",
   "properties": {
     "diagram_type": {
@@ -12,23 +12,19 @@
       "type": "array",
       "items": {
         "properties": {
-          "label": {
-            "description": "Node label",
-            "title": "Label",
-            "type": "string"
-          },
-          "shape": {
+          "metadata": {
             "anyOf": [
               {
-                "type": "string"
+                "additionalProperties": true,
+                "type": "object"
               },
               {
                 "type": "null"
               }
             ],
             "default": null,
-            "description": "Node shape",
-            "title": "Shape"
+            "description": "Node metadata",
+            "title": "Metadata"
           },
           "bounding_box": {
             "anyOf": [
@@ -44,6 +40,16 @@
             "description": "Node bounding_box",
             "title": "Bounding Box"
           },
+          "id": {
+            "description": "Node id",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "description": "Node label",
+            "title": "Label",
+            "type": "string"
+          },
           "confidence": {
             "anyOf": [
               {
@@ -57,24 +63,6 @@
             "description": "Node confidence",
             "title": "Confidence"
           },
-          "id": {
-            "description": "Node id",
-            "title": "Id",
-            "type": "string"
-          },
-          "type": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Node type",
-            "title": "Type"
-          },
           "parent_id": {
             "anyOf": [
               {
@@ -87,25 +75,11 @@
             "default": null,
             "description": "Node parent_id",
             "title": "Parent Id"
-          },
-          "attrs": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Node attrs",
-            "title": "Attrs"
           }
         },
         "required": [
-          "label",
-          "id"
+          "id",
+          "label"
         ],
         "title": "GraphNode",
         "type": "object"
@@ -116,45 +90,19 @@
       "type": "array",
       "items": {
         "properties": {
-          "id": {
-            "description": "Edge id",
-            "title": "Id",
-            "type": "string"
-          },
-          "type": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Edge type",
-            "title": "Type"
-          },
           "target": {
             "description": "Edge target",
             "title": "Target",
             "type": "string"
           },
-          "confidence": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Edge confidence",
-            "title": "Confidence"
-          },
           "source": {
             "description": "Edge source",
             "title": "Source",
+            "type": "string"
+          },
+          "id": {
+            "description": "Edge id",
+            "title": "Id",
             "type": "string"
           },
           "label": {
@@ -169,12 +117,25 @@
             "default": null,
             "description": "Edge label",
             "title": "Label"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Edge confidence",
+            "title": "Confidence"
           }
         },
         "required": [
-          "id",
           "target",
-          "source"
+          "source",
+          "id"
         ],
         "title": "GraphEdge",
         "type": "object"

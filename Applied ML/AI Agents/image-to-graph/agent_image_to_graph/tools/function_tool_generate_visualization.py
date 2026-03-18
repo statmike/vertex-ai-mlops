@@ -223,9 +223,11 @@ def _build_html(
         label_html = f' <span class="edge-label">"{_esc(label)}"</span>' if label else ""
         conf_tag = f' <span class="confidence-dot confidence-{_esc(edge_conf)}" title="Confidence: {_esc(edge_conf)}"></span>'
         low_conf_class = " low-confidence" if edge_conf == "low" else ""
+        edge_type = edge.get("edge_type", "")
+        ref_class = " edge-reference" if edge_type == "reference" else ""
 
         edge_items.append(
-            f'<div class="graph-edge{low_conf_class}" data-edge-id="{_esc(edge_id)}" '
+            f'<div class="graph-edge{low_conf_class}{ref_class}" data-edge-id="{_esc(edge_id)}" '
             f'data-source="{_esc(source)}" data-target="{_esc(target)}">'
             f'  <div class="edge-header">'
             f'    <span class="edge-id">{_esc(edge_id)}</span>'
@@ -236,6 +238,45 @@ def _build_html(
             f"  {attr_html}"
             f"</div>"
         )
+
+    # Page metadata and legend from graph.metadata
+    metadata = graph.get("metadata", {})
+    page_info = metadata.get("page_info", {}) if isinstance(metadata, dict) else {}
+    legend_entries = metadata.get("legend", []) if isinstance(metadata, dict) else []
+
+    # Page info header supplement
+    page_info_html = ""
+    if page_info and isinstance(page_info, dict):
+        info_parts = []
+        if page_info.get("title"):
+            info_parts.append(f'<span class="page-title">{_esc(str(page_info["title"]))}</span>')
+        for key in ("author", "date", "version"):
+            if page_info.get(key):
+                info_parts.append(f'<span class="page-meta-item">{_esc(key)}: {_esc(str(page_info[key]))}</span>')
+        if info_parts:
+            page_info_html = '<div class="page-info">' + " ".join(info_parts) + "</div>"
+
+    # Legend panel (right panel, between description and nodes)
+    legend_html = ""
+    if legend_entries and isinstance(legend_entries, list):
+        legend_items = []
+        for entry in legend_entries:
+            if isinstance(entry, dict):
+                symbol = _esc(str(entry.get("symbol", "")))
+                meaning = _esc(str(entry.get("meaning", "")))
+                legend_items.append(
+                    f'<div class="legend-entry">'
+                    f'<span class="legend-symbol">{symbol}</span>'
+                    f'<span class="legend-meaning">{meaning}</span>'
+                    f"</div>"
+                )
+        if legend_items:
+            legend_html = (
+                '<div class="legend-section">'
+                "<h3>Legend</h3>"
+                + "".join(legend_items)
+                + "</div>"
+            )
 
     # Description section (first on the right panel)
     description_html = ""
@@ -498,6 +539,28 @@ mark.search-hit.current {{ background: #f59e0b; }}
 
 /* No bbox note */
 .no-bbox-note {{ font-size: 12px; color: #9aa0a6; font-style: italic; margin: 4px 0 12px 0; }}
+
+/* Page info (header) */
+.page-info {{ display: flex; align-items: center; gap: 12px; font-size: 13px; }}
+.page-title {{ font-weight: 600; font-size: 14px; }}
+.page-meta-item {{ opacity: 0.85; }}
+
+/* Legend panel (right panel) */
+.legend-section {{ margin-bottom: 16px; }}
+.legend-entry {{
+    display: flex; gap: 12px; align-items: baseline; padding: 4px 0;
+    border-bottom: 1px solid #f1f3f4; font-size: 13px;
+}}
+.legend-entry:last-child {{ border-bottom: none; }}
+.legend-symbol {{ font-weight: 600; color: #1a73e8; min-width: 120px; }}
+.legend-meaning {{ color: #3c4043; }}
+
+/* Cross-reference edge styling */
+.graph-edge.edge-reference {{
+    border-left-color: #7c3aed; border-left-style: dashed;
+}}
+.graph-edge.edge-reference.hover-hl {{ border-left-color: #6d28d9; background: #f5f3ff; }}
+.graph-edge.edge-reference.pinned {{ border-left-color: #f39c12; background: #fef9e7; }}
 </style>
 </head>
 <body>
@@ -505,6 +568,7 @@ mark.search-hit.current {{ background: #f59e0b; }}
 <div class="header">
     <h1>Image to Graph</h1>
     <span class="badge">{_esc(diagram_type)}</span>
+    {page_info_html}
     <span class="stats">{len(nodes)} nodes &middot; {len(edges)} edges</span>
 </div>
 
@@ -527,6 +591,7 @@ mark.search-hit.current {{ background: #f59e0b; }}
 
     <div class="right-panel" id="rightPanel">
         {description_html}
+        {legend_html}
 
         <h3>Nodes ({len(nodes)})</h3>
         {"".join(node_items)}
@@ -891,23 +956,61 @@ def _build_mermaid_definition(graph: dict) -> str:
         else:
             top_level_nodes.append(node)
 
-    # Emit subgraphs
-    for group_id, group_node in group_nodes.items():
-        label = group_node.get("label", group_id)
-        lines.append(f"    subgraph {group_id} [{_sanitize_label(label)}]")
-        for child in children_by_parent.get(group_id, []):
-            child_id = child.get("id", "")
-            child_label = child.get("label", child_id)
-            child_shape = child.get("shape", "rectangle")
-            lines.append(f"        {_node_syntax(child_id, child_label, child_shape)}")
-        lines.append("    end")
+    # Check for flow-based subgraphs
+    flows = graph.get("flows", [])
+    if flows and len(flows) >= 2:
+        # Build node_id -> flow mapping
+        flow_node_sets: dict[str, set[str]] = {}
+        for flow in flows:
+            flow_node_sets[flow["id"]] = set(flow.get("node_ids", []))
 
-    # Emit top-level nodes
-    for node in top_level_nodes:
-        node_id = node.get("id", "")
-        label = node.get("label", node_id)
-        shape = node.get("shape", "rectangle")
-        lines.append(f"    {_node_syntax(node_id, label, shape)}")
+        # Emit flow subgraphs
+        for flow in flows:
+            flow_id = flow.get("id", "")
+            flow_label = flow.get("label", flow_id)
+            lines.append(f"    subgraph {flow_id} [{_sanitize_label(flow_label)}]")
+            flow_nids = set(flow.get("node_ids", []))
+
+            # Emit group subgraphs within this flow
+            for group_id, group_node in group_nodes.items():
+                if group_id not in flow_nids:
+                    continue
+                glabel = group_node.get("label", group_id)
+                lines.append(f"        subgraph {group_id} [{_sanitize_label(glabel)}]")
+                for child in children_by_parent.get(group_id, []):
+                    child_id = child.get("id", "")
+                    child_label = child.get("label", child_id)
+                    child_shape = child.get("shape", "rectangle")
+                    lines.append(f"            {_node_syntax(child_id, child_label, child_shape)}")
+                lines.append("        end")
+
+            # Emit top-level nodes in this flow
+            for node in top_level_nodes:
+                nid = node.get("id", "")
+                if nid not in flow_nids:
+                    continue
+                nlabel = node.get("label", nid)
+                shape = node.get("shape", "rectangle")
+                lines.append(f"        {_node_syntax(nid, nlabel, shape)}")
+            lines.append("    end")
+    else:
+        # Single-flow: emit group subgraphs as before
+        for group_id, group_node in group_nodes.items():
+            label = group_node.get("label", group_id)
+            lines.append(f"    subgraph {group_id} [{_sanitize_label(label)}]")
+            for child in children_by_parent.get(group_id, []):
+                child_id = child.get("id", "")
+                child_label = child.get("label", child_id)
+                child_shape = child.get("shape", "rectangle")
+                lines.append(f"        {_node_syntax(child_id, child_label, child_shape)}")
+            lines.append("    end")
+
+        # Emit top-level nodes
+        for node in top_level_nodes:
+            node_id = node.get("id", "")
+            label = node.get("label", node_id)
+            shape = node.get("shape", "rectangle")
+            lines.append(f"    {_node_syntax(node_id, label, shape)}")
 
     # Emit edges
     for edge in edges:
@@ -917,7 +1020,9 @@ def _build_mermaid_definition(graph: dict) -> str:
         edge_type = edge.get("edge_type", "flow")
 
         # Arrow style
-        if edge_type and ("feedback" in edge_type or "dashed" in edge_type):
+        if edge_type == "reference" or (
+            edge_type and ("feedback" in edge_type or "dashed" in edge_type)
+        ):
             arrow = "-.->"
         else:
             arrow = "-->"
@@ -934,6 +1039,7 @@ def _build_mermaid_definition(graph: dict) -> str:
 
 def _esc(text: str) -> str:
     """Escape HTML special characters."""
+    text = str(text)
     return (
         text.replace("&", "&amp;")
         .replace("<", "&lt;")

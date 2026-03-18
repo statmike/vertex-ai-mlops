@@ -7,8 +7,10 @@ from google.adk import tools
 from google.genai import types
 from PIL import Image
 
+from ..prompts import SCHEMATIC_CROP_GUIDANCE
 from .util_bbox import normalize_bbox
 from .util_common import log_tool_error, strip_json_markdown_fence
+from .util_diagram_type import is_schematic
 from .util_gemini import generate_content
 
 logger = logging.getLogger(__name__)
@@ -89,16 +91,52 @@ async def crop_and_examine(
         graph = tool_context.state.get("graph", {})
         diagram_type = graph.get("diagram_type", "unknown")
 
+        # Build optional CV context for this crop region (semantic info only — no bounding
+        # boxes, to avoid anchoring the model and interfering with its spatial reasoning)
+        cv_crop_context = ""
+        cv_data = tool_context.state.get("cv_preprocessing")
+        if cv_data and cv_data.get("status") in ("complete", "partial"):
+            cv_elements = cv_data.get("elements", [])
+            if cv_elements:
+                overlapping = []
+                for el in cv_elements:
+                    eb = el.get("bounding_box", [])
+                    if len(eb) != 4:
+                        continue
+                    ey_min, ex_min, ey_max, ex_max = eb
+                    # Check overlap with crop region (in normalized 0-1000 coords)
+                    if ey_max < y_min_norm or ey_min > y_max_norm or ex_max < x_min_norm or ex_min > x_max_norm:
+                        continue  # No overlap
+                    text = el.get("text") or "(no text)"
+                    sem = el.get("semantic_label", "")
+                    overlapping.append(f'  - "{text}" ({sem}), shape={el.get("shape", "?")}')
+
+                if overlapping:
+                    cv_crop_context = (
+                        "\n\nCV PRE-DETECTED ELEMENTS IN THIS REGION "
+                        "(use to help identify elements, rely on your own vision for positions):\n"
+                        + "\n".join(overlapping) + "\n"
+                    )
+
+        # Schematic-specific guidance for exhaustive component enumeration
+        schematic_guidance = ""
+        if is_schematic(diagram_type or ""):
+            schematic_guidance = SCHEMATIC_CROP_GUIDANCE
+
         # Send cropped image to Gemini for examination (with 429 retry)
+        crop_width = x_max - x_min
+        crop_height = y_max - y_min
         examine_prompt = f"""Examine this cropped region from a {diagram_type} diagram in detail.
+This crop is {crop_width}x{crop_height} pixels (width x height).{cv_crop_context}
 Return a JSON object with this exact structure:
 {{
     "elements": [
         {{
             "element_id": "unique_id_for_this_element",
             "label": "The text label or name visible INSIDE this element",
-            "element_type": "The type of element (e.g., process, decision, terminal, resistor, room, server, class, state)",
-            "shape": "The visual shape (rectangle, diamond, circle, oval, hexagon, custom)",
+            "element_type": "The type of element (e.g., process, decision, terminal, group, resistor, room, server, class, state)",
+            "shape": "The visual shape (rectangle, diamond, circle, oval, hexagon, cylinder, group_rectangle, custom)",
+            "bounding_box": {{"top": 0, "left": 0, "bottom": 0, "right": 0}},
             "attributes": {{
                 "key": "value pairs for any additional properties visible"
             }},
@@ -128,9 +166,13 @@ Return a JSON object with this exact structure:
 }}
 
 IMPORTANT:
+- **bounding_box** for each element: Provide the precise position of each element within
+  THIS CROP using normalized 0-1000 scale (top=0 is the top of this crop, bottom=1000 is
+  the bottom, left=0 is the left edge, right=1000 is the right edge). Look carefully at
+  exactly where each element sits within this cropped view.
 - If this region contains a visual boundary (dashed box, labeled section, swim lane),
-  identify it as a group element with element_type "group". Note which other elements
-  are visually contained within it.
+  identify it as a group element with element_type "group" and shape "group_rectangle".
+  Note which other elements are visually contained within it.
 - Extract ALL text labels, even small ones.
 - Look for text OUTSIDE element shapes (e.g., function names, API references, annotations
   printed below, above, or beside a shape). Capture these in "external_labels".
@@ -142,7 +184,7 @@ IMPORTANT:
 - Set the top-level "complexity" to "high" if the region has many overlapping elements, small text, or is hard to parse; "medium" for moderate density; "low" for simple regions.
 - Set the top-level "confidence" to your overall confidence in the examination results.
 - Only populate "suggested_sub_regions" when complexity is "high". Use bounding_box coordinates normalized 0-1000 RELATIVE TO THIS CROP (not the full image) with the format {{"top": N, "left": N, "bottom": N, "right": N}} where top=distance from top edge, left=distance from left edge. These are sub-areas that need closer examination.
-
+{schematic_guidance}
 Return ONLY the JSON object, no other text."""
 
         response = await generate_content(
@@ -166,9 +208,6 @@ Return ONLY the JSON object, no other text."""
         suggested_sub_regions = examination.get("suggested_sub_regions", [])
 
         # Build concise summary
-        crop_width = x_max - x_min
-        crop_height = y_max - y_min
-
         element_lines = []
         for el in elements:
             eid = el.get("element_id", "?")
@@ -180,8 +219,20 @@ Return ONLY the JSON object, no other text."""
             attr_str = f" attrs={attrs}" if attrs else ""
             ext_labels = el.get("external_labels", [])
             ext_str = f" external_labels={ext_labels}" if ext_labels else ""
+
+            # Convert element bounding_box from crop-relative to full-image 0-1000 coords
+            el_bbox = normalize_bbox(el.get("bounding_box"))
+            bbox_str = ""
+            if el_bbox and len(el_bbox) == 4:
+                e_top, e_left, e_bottom, e_right = el_bbox
+                full_top = int((y_min + e_top / 1000 * crop_height) / img_height * 1000)
+                full_left = int((x_min + e_left / 1000 * crop_width) / img_width * 1000)
+                full_bottom = int((y_min + e_bottom / 1000 * crop_height) / img_height * 1000)
+                full_right = int((x_min + e_right / 1000 * crop_width) / img_width * 1000)
+                bbox_str = f" bbox=[{full_top}, {full_left}, {full_bottom}, {full_right}]"
+
             element_lines.append(
-                f'  - {eid}: "{elabel}" ({etype}, {eshape}) confidence={el_conf}{attr_str}{ext_str}'
+                f'  - {eid}: "{elabel}" ({etype}, {eshape}) confidence={el_conf}{bbox_str}{attr_str}{ext_str}'
             )
 
         conn_lines = []
@@ -199,7 +250,7 @@ Return ONLY the JSON object, no other text."""
             f"  Complexity: {complexity}, Confidence: {overall_confidence}\n"
         )
         if element_lines:
-            result += "Elements:\n" + "\n".join(element_lines) + "\n"
+            result += "Elements (bbox=[top, left, bottom, right] in full-image 0-1000 coords):\n" + "\n".join(element_lines) + "\n"
         if conn_lines:
             result += "Connections:\n" + "\n".join(conn_lines) + "\n"
         if notes:
