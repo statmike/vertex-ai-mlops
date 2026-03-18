@@ -12,3 +12,4 @@ terraform.tfstate.backup
 __pycache__/
 .adk/
 .claude/
+.coverage
