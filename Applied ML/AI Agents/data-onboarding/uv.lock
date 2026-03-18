@@ -353,6 +353,7 @@ dependencies = [
     { name = "google-adk" },
     { name = "google-cloud-aiplatform", extra = ["adk", "agent-engines"] },
     { name = "google-cloud-bigquery" },
+    { name = "google-cloud-datacatalog-lineage" },
     { name = "google-cloud-storage" },
     { name = "google-genai" },
     { name = "httpx" },
@@ -379,6 +380,7 @@ requires-dist = [
     { name = "google-adk", specifier = ">=1.14.0" },
     { name = "google-cloud-aiplatform", extras = ["agent-engines", "adk"], specifier = ">=1.88.0" },
     { name = "google-cloud-bigquery", specifier = ">=3.31.0" },
+    { name = "google-cloud-datacatalog-lineage", specifier = ">=0.3.0" },
     { name = "google-cloud-storage", specifier = ">=2.19.0" },
     { name = "google-genai", specifier = ">=1.64.0" },
     { name = "httpx", specifier = ">=0.28.0" },
@@ -713,6 +715,22 @@ dependencies = [
 sdist = { url = "https://us-python.pkg.dev/artifact-foundry-prod/ah-3p-staging-python/google-cloud-core/google_cloud_core-2.5.0.tar.gz", hash = "sha256:7c1b7ef5c92311717bd05301aa1a91ffbc565673d3b0b4163a52d8413a186963" }
 wheels = [
     { url = "https://us-python.pkg.dev/artifact-foundry-prod/ah-3p-staging-python/google-cloud-core/google_cloud_core-2.5.0-py3-none-any.whl", hash = "sha256:67d977b41ae6c7211ee830c7912e41003ea8194bff15ae7d72fd6f51e57acabc" },
+]
+
+[[package]]
+name = "google-cloud-datacatalog-lineage"
+version = "0.5.0"
+source = { registry = "https://us-python.pkg.dev/artifact-foundry-prod/ah-3p-staging-python/simple/" }
+dependencies = [
+    { name = "google-api-core", extra = ["grpc"] },
+    { name = "google-auth" },
+    { name = "grpcio" },
+    { name = "proto-plus" },
+    { name = "protobuf" },
+]
+sdist = { url = "https://us-python.pkg.dev/artifact-foundry-prod/ah-3p-staging-python/google-cloud-datacatalog-lineage/google_cloud_datacatalog_lineage-0.5.0.tar.gz", hash = "sha256:ef19ff6e4e0343b42882c83f2e100689e3575d5799f98412cfd5778fbba626f7" }
+wheels = [
+    { url = "https://us-python.pkg.dev/artifact-foundry-prod/ah-3p-staging-python/google-cloud-datacatalog-lineage/google_cloud_datacatalog_lineage-0.5.0-py3-none-any.whl", hash = "sha256:aab111e6a4a87fc34f8550918399a7d9898ce1290e0525e5f4a40ad9198bd5ca" },
 ]
 
 [[package]]

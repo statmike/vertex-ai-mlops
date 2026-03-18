@@ -79,7 +79,8 @@ Return your analysis as JSON with this structure:
           "description": "what this column represents",
           "suggested_bq_name": "snake_case_name",
           "suggested_bq_type": "STRING|INT64|FLOAT64|TIMESTAMP|DATE|BOOL|JSON",
-          "notes": "any concerns or observations"
+          "notes": "any concerns or observations",
+          "attributed_to": ["context file(s) that informed this description"]
         }}
       }}
     }}

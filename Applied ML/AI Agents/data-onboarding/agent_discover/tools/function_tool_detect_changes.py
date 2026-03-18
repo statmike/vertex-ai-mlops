@@ -3,6 +3,7 @@ import logging
 from google.adk import tools
 
 from agent_acquire.tools.util_common import log_tool_error
+from agent_orchestrator.util_metadata import write_processing_log
 
 from .util_manifest import compute_changes, get_prior_manifest
 
@@ -38,6 +39,17 @@ async def detect_changes(
         changes = compute_changes(files_acquired, prior)
 
         tool_context.state["change_summary"] = changes
+
+        # Write processing log
+        write_processing_log(
+            source_id, "discover", "detect_changes", "completed",
+            details={
+                "new": len(changes["new"]),
+                "modified": len(changes["modified"]),
+                "unchanged": len(changes["unchanged"]),
+                "removed": len(changes["removed"]),
+            },
+        )
 
         is_first_run = not prior
 

@@ -4,6 +4,7 @@ from google.adk import tools
 
 from agent_acquire.tools.util_common import log_tool_error
 from agent_orchestrator.config import CONTEXT_FILE_EXTENSIONS, DATA_FILE_EXTENSIONS
+from agent_orchestrator.util_metadata import write_source_manifest
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,23 @@ async def classify_files(
             })
 
         tool_context.state["files_classified"] = classified
+
+        # Write classification update to source_manifest
+        source_id = tool_context.state.get("source_id", "")
+        if source_id and classified:
+            manifest_rows = [
+                {
+                    "source_id": source_id,
+                    "file_path": f.get("gcs_path", f.get("path", "")),
+                    "file_hash": f.get("hash", ""),
+                    "file_size_bytes": f.get("size_bytes", 0),
+                    "file_type": f.get("extension", ""),
+                    "classification": f["classification"],
+                    "original_url": f.get("url", ""),
+                }
+                for f in classified
+            ]
+            write_source_manifest(manifest_rows)
 
         data_count = sum(1 for f in classified if f["classification"] == "data")
         context_count = sum(1 for f in classified if f["classification"] == "context")

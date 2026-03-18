@@ -1,6 +1,6 @@
 """Cleanup script for data-onboarding cloud and local resources.
 
-Removes BQ datasets, GCS staging blobs, local Dataform output,
+Removes BQ datasets, GCS staging blobs, local output directory,
 and Agent Engine deployments. Uses agent_orchestrator.config for
 naming consistency.
 
@@ -30,7 +30,7 @@ from agent_orchestrator.config import (  # noqa: E402
     BQ_BRONZE_DATASET,
     BQ_BRONZE_META_DATASET,
     BQ_DATASET_LOCATION,
-    DATAFORM_OUTPUT_DIR,
+    OUTPUT_DIR,
     GCS_STAGING_ROOT,
     GOOGLE_CLOUD_PROJECT,
     GOOGLE_CLOUD_STORAGE_BUCKET,
@@ -74,7 +74,7 @@ def _print_plan(args: argparse.Namespace) -> list[str]:
             actions.append("GCS blobs:  (skipped — no bucket configured)")
 
     if not args.skip_local:
-        output_path = (PROJECT_ROOT / DATAFORM_OUTPUT_DIR).resolve()
+        output_path = (PROJECT_ROOT / OUTPUT_DIR).resolve()
         actions.append(f"Local dir:  {output_path}")
 
     if not args.skip_agent_engine:
@@ -144,7 +144,7 @@ def _delete_gcs_staging(dry_run: bool) -> None:
 
 
 def _delete_local_output(dry_run: bool) -> None:
-    output_path = (PROJECT_ROOT / DATAFORM_OUTPUT_DIR).resolve()
+    output_path = (PROJECT_ROOT / OUTPUT_DIR).resolve()
     if not output_path.exists():
         print(f"  Local output dir does not exist: {output_path}")
         return

@@ -39,7 +39,7 @@ CRAWL_MAX_DEPTH = int(os.getenv("CRAWL_MAX_DEPTH", "1"))
 CRAWL_MAX_FILES = int(os.getenv("CRAWL_MAX_FILES", "100"))
 ACQUIRE_FILE_EXTENSIONS = os.getenv(
     "ACQUIRE_FILE_EXTENSIONS",
-    "csv,tsv,json,jsonl,xlsx,xls,parquet,avro,orc,xml,pdf,txt,md,html",
+    "csv,tsv,json,jsonl,xlsx,xls,parquet,avro,orc,xml,pdf,txt,md,html,zip",
 ).split(",")
 
 # --- File Classification ---
@@ -52,8 +52,8 @@ CONTEXT_FILE_EXTENSIONS = os.getenv(
     "pdf,txt,md,html",
 ).split(",")
 
-# --- Dataform ---
-DATAFORM_OUTPUT_DIR = os.getenv("DATAFORM_OUTPUT_DIR", "./output/dataform")
+# --- Output ---
+OUTPUT_DIR = os.getenv("OUTPUT_DIR", "./output")
 
 # --- Derived ---
 def gcs_bucket_name() -> str:

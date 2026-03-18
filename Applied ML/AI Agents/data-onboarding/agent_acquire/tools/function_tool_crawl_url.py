@@ -1,12 +1,15 @@
+import json
 import logging
 
 import httpx
 from google.adk import tools
 
 from agent_orchestrator.config import CRAWL_MAX_DEPTH, CRAWL_MAX_FILES
+from agent_orchestrator.util_metadata import write_processing_log, write_web_provenance
 
 from .util_common import log_tool_error
 from .util_crawl import extract_links, is_downloadable_file, normalize_url
+from .util_gcs import upload_string
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +106,45 @@ async def crawl_url(
         tool_context.state["crawl_graph"] = crawl_graph
         tool_context.state["discovered_file_urls"] = file_urls
         tool_context.state["discovered_page_urls"] = page_urls
+
+        # Write web provenance to BQ
+        source_id = tool_context.state.get("source_id", "")
+        if source_id and crawl_graph:
+            provenance_rows = [
+                {
+                    "source_id": source_id,
+                    "url": edge["url"],
+                    "parent_url": edge.get("parent_url"),
+                    "page_title": edge.get("title"),
+                    "content_type": None,
+                    "status_code": edge.get("status_code"),
+                    "links_found": None,
+                    "files_downloaded": None,
+                }
+                for edge in crawl_graph
+            ]
+            write_web_provenance(provenance_rows)
+
+            # Persist provenance.json to GCS
+            staging_path = tool_context.state.get("gcs_staging_path", "")
+            if staging_path:
+                provenance_doc = {
+                    "source_id": source_id,
+                    "starting_url": url,
+                    "crawl_graph": crawl_graph,
+                    "file_urls": file_urls,
+                    "page_urls": page_urls,
+                }
+                upload_string(
+                    json.dumps(provenance_doc, indent=2),
+                    f"{staging_path}/provenance.json",
+                    content_type="application/json",
+                )
+
+            write_processing_log(
+                source_id, "acquire", "crawl_url", "completed",
+                details={"pages": len(page_urls), "files": len(file_urls)},
+            )
 
         return (
             f"Crawl complete.\n"

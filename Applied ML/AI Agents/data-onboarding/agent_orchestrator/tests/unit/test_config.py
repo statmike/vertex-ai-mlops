@@ -13,8 +13,8 @@ from agent_orchestrator.config import (
     CRAWL_MAX_DEPTH,
     CRAWL_MAX_FILES,
     DATA_FILE_EXTENSIONS,
-    DATAFORM_OUTPUT_DIR,
     GCS_STAGING_ROOT,
+    OUTPUT_DIR,
     RESOURCE_PREFIX,
     TOOL_MODEL,
 )
@@ -50,8 +50,8 @@ class TestConfigDefaults:
         assert "md" in CONTEXT_FILE_EXTENSIONS
         assert "csv" in ACQUIRE_FILE_EXTENSIONS
 
-    def test_dataform_output_dir(self):
-        assert DATAFORM_OUTPUT_DIR == "./output/dataform"
+    def test_output_dir(self):
+        assert OUTPUT_DIR == "./output"
 
     def test_gcs_bucket_name_strips_prefix(self, monkeypatch):
         monkeypatch.setenv("GOOGLE_CLOUD_STORAGE_BUCKET", "gs://my-bucket")

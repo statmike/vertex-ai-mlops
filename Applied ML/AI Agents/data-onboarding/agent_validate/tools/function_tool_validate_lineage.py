@@ -3,6 +3,7 @@ import logging
 from google.adk import tools
 
 from agent_acquire.tools.util_common import log_tool_error
+from agent_orchestrator.util_metadata import write_processing_log
 
 from .util_quality import check_lineage_exists
 
@@ -57,6 +58,15 @@ async def validate_lineage(
         validation = dict(tool_context.state.get("validation_results", {}))
         validation["lineage"] = results
         tool_context.state["validation_results"] = validation
+
+        # Write processing log
+        write_processing_log(
+            source_id, "validate", "validate_lineage", "completed",
+            details={
+                "tables_checked": len(results),
+                "all_passed": all_passed,
+            },
+        )
 
         summary = "Lineage validation:\n"
         for table, result in results.items():

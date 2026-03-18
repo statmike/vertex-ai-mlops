@@ -79,7 +79,7 @@ async def apply_bq_metadata(
 
             except Exception as e:
                 if "Not found" in str(e):
-                    errors.append(f"{table_name}: Table does not exist yet (will be created by Dataform)")
+                    errors.append(f"{table_name}: Table does not exist yet (run execute_sql first)")
                 else:
                     errors.append(f"{table_name}: {e}")
 

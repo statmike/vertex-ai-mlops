@@ -9,6 +9,7 @@ from agent_orchestrator.config import (
     BQ_BRONZE_META_DATASET,
     GOOGLE_CLOUD_PROJECT,
 )
+from agent_orchestrator.util_metadata import write_processing_log
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +61,11 @@ async def record_decisions(
             if errors:
                 logger.warning(f"BQ insert errors: {errors}")
                 return f"Warning: Some records failed to insert: {errors}"
+
+        write_processing_log(
+            source_id, "design", "record_decisions", "completed",
+            details={"tables": list(proposals.keys())},
+        )
 
         return (
             f"Recorded {len(rows_to_insert)} design decision(s) to BQ.\n"

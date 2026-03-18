@@ -4,9 +4,9 @@ import os
 from google.adk import tools
 
 from agent_acquire.tools.util_common import log_tool_error
-from agent_orchestrator.config import DATAFORM_OUTPUT_DIR
+from agent_orchestrator.config import OUTPUT_DIR
 
-from .util_dataform import format_changelog_entry
+from .util_sql import format_changelog_entry
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ async def update_changelog(
         )
 
         # Append to changelog file
-        changelog_path = os.path.join(os.path.abspath(DATAFORM_OUTPUT_DIR), "CHANGELOG.md")
+        changelog_path = os.path.join(os.path.abspath(OUTPUT_DIR), "CHANGELOG.md")
         os.makedirs(os.path.dirname(changelog_path), exist_ok=True)
 
         if os.path.exists(changelog_path):

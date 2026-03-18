@@ -10,7 +10,9 @@ Manages 5 tables in the {BQ_BRONZE_META_DATASET} dataset:
 Auto-creates dataset and tables on first import.
 """
 
+import json
 import logging
+import uuid
 
 from .config import BQ_BRONZE_META_DATASET, BQ_DATASET_LOCATION, GOOGLE_CLOUD_PROJECT
 
@@ -63,6 +65,7 @@ CREATE TABLE IF NOT EXISTS `{FULL_DATASET_ID}.table_lineage`
   lineage_id STRING NOT NULL OPTIONS(description="Unique lineage entry ID."),
   source_id STRING NOT NULL OPTIONS(description="Source identifier."),
   bq_table STRING NOT NULL OPTIONS(description="Fully qualified BQ table name."),
+  external_table STRING OPTIONS(description="Fully qualified BQ external table name (ext_*)."),
   source_file STRING NOT NULL OPTIONS(description="GCS path of the source file."),
   column_mappings JSON OPTIONS(description="Source column to BQ column mapping."),
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP() OPTIONS(description="When the lineage was recorded.")
@@ -147,9 +150,203 @@ def _ensure_metadata_setup():
                 else:
                     raise
 
+        # Schema migration: add external_table column to table_lineage if missing
+        try:
+            migrate_ddl = (
+                f"ALTER TABLE `{FULL_DATASET_ID}.table_lineage` "
+                "ADD COLUMN IF NOT EXISTS external_table STRING "
+                'OPTIONS(description="Fully qualified BQ external table name (ext_*).")'
+            )
+            client.query(migrate_ddl).result()
+        except Exception as e:
+            logger.debug(f"Metadata: table_lineage migration skipped ({e})")
+
     except Exception as e:
         logger.warning(f"Metadata: Auto-setup failed ({e}).")
 
 
 # Run auto-setup on import
 _ensure_metadata_setup()
+
+
+def write_source_manifest(rows: list[dict]) -> int:
+    """Insert file records into the source_manifest table.
+
+    Each row should contain: source_id, file_path, file_hash, file_size_bytes,
+    file_type, classification, original_url.
+
+    Returns the number of rows inserted, or 0 on failure.
+    """
+    if not GOOGLE_CLOUD_PROJECT:
+        logger.warning("write_source_manifest: GOOGLE_CLOUD_PROJECT not set, skipping.")
+        return 0
+
+    try:
+        from google.cloud import bigquery
+
+        client = bigquery.Client(project=GOOGLE_CLOUD_PROJECT)
+        table_id = f"{FULL_DATASET_ID}.source_manifest"
+
+        rows_to_insert = []
+        for row in rows:
+            rows_to_insert.append({
+                "source_id": row.get("source_id", ""),
+                "file_path": row.get("file_path", ""),
+                "file_hash": row.get("file_hash", ""),
+                "file_size_bytes": row.get("file_size_bytes", 0),
+                "file_type": row.get("file_type", ""),
+                "classification": row.get("classification", ""),
+                "original_url": row.get("original_url", ""),
+            })
+
+        if not rows_to_insert:
+            return 0
+
+        errors = client.insert_rows_json(table_id, rows_to_insert)
+        if errors:
+            logger.warning(f"write_source_manifest insert errors: {errors}")
+            return 0
+        return len(rows_to_insert)
+
+    except Exception as e:
+        logger.warning(f"write_source_manifest failed: {e}")
+        return 0
+
+
+def write_processing_log(
+    source_id: str,
+    phase: str,
+    action: str,
+    status: str,
+    details: dict | None = None,
+) -> str:
+    """Insert a single processing log entry.
+
+    Returns the generated log_id, or "" on failure.
+    """
+    if not GOOGLE_CLOUD_PROJECT:
+        logger.warning("write_processing_log: GOOGLE_CLOUD_PROJECT not set, skipping.")
+        return ""
+
+    try:
+        from google.cloud import bigquery
+
+        client = bigquery.Client(project=GOOGLE_CLOUD_PROJECT)
+        table_id = f"{FULL_DATASET_ID}.processing_log"
+
+        log_id = str(uuid.uuid4())
+        row = {
+            "log_id": log_id,
+            "source_id": source_id,
+            "phase": phase,
+            "action": action,
+            "status": status,
+        }
+        if details is not None:
+            row["details"] = json.dumps(details)
+
+        errors = client.insert_rows_json(table_id, [row])
+        if errors:
+            logger.warning(f"write_processing_log insert errors: {errors}")
+            return ""
+        return log_id
+
+    except Exception as e:
+        logger.warning(f"write_processing_log failed: {e}")
+        return ""
+
+
+def write_table_lineage(rows: list[dict]) -> int:
+    """Insert BQ table → source file lineage mappings.
+
+    Each row should contain: source_id, bq_table, source_file, column_mappings (dict),
+    and optionally external_table.
+
+    Returns the number of rows inserted, or 0 on failure.
+    """
+    if not GOOGLE_CLOUD_PROJECT:
+        logger.warning("write_table_lineage: GOOGLE_CLOUD_PROJECT not set, skipping.")
+        return 0
+
+    try:
+        from google.cloud import bigquery
+
+        client = bigquery.Client(project=GOOGLE_CLOUD_PROJECT)
+        table_id = f"{FULL_DATASET_ID}.table_lineage"
+
+        rows_to_insert = []
+        for row in rows:
+            lineage_id = str(uuid.uuid4())
+            entry = {
+                "lineage_id": lineage_id,
+                "source_id": row.get("source_id", ""),
+                "bq_table": row.get("bq_table", ""),
+                "source_file": row.get("source_file", ""),
+            }
+            ext_table = row.get("external_table")
+            if ext_table:
+                entry["external_table"] = ext_table
+            col_mappings = row.get("column_mappings")
+            if col_mappings is not None:
+                entry["column_mappings"] = json.dumps(col_mappings)
+            rows_to_insert.append(entry)
+
+        if not rows_to_insert:
+            return 0
+
+        errors = client.insert_rows_json(table_id, rows_to_insert)
+        if errors:
+            logger.warning(f"write_table_lineage insert errors: {errors}")
+            return 0
+        return len(rows_to_insert)
+
+    except Exception as e:
+        logger.warning(f"write_table_lineage failed: {e}")
+        return 0
+
+
+def write_web_provenance(rows: list[dict]) -> int:
+    """Insert crawl graph edges into the web_provenance table.
+
+    Each row should contain: source_id, url, parent_url, page_title,
+    content_type, status_code, links_found, files_downloaded.
+
+    Returns the number of rows inserted, or 0 on failure.
+    """
+    if not GOOGLE_CLOUD_PROJECT:
+        logger.warning("write_web_provenance: GOOGLE_CLOUD_PROJECT not set, skipping.")
+        return 0
+
+    try:
+        from google.cloud import bigquery
+
+        client = bigquery.Client(project=GOOGLE_CLOUD_PROJECT)
+        table_id = f"{FULL_DATASET_ID}.web_provenance"
+
+        rows_to_insert = []
+        for row in rows:
+            provenance_id = str(uuid.uuid4())
+            rows_to_insert.append({
+                "provenance_id": provenance_id,
+                "source_id": row.get("source_id", ""),
+                "url": row.get("url", ""),
+                "parent_url": row.get("parent_url"),
+                "page_title": row.get("page_title"),
+                "content_type": row.get("content_type"),
+                "status_code": row.get("status_code"),
+                "links_found": row.get("links_found"),
+                "files_downloaded": row.get("files_downloaded"),
+            })
+
+        if not rows_to_insert:
+            return 0
+
+        errors = client.insert_rows_json(table_id, rows_to_insert)
+        if errors:
+            logger.warning(f"write_web_provenance insert errors: {errors}")
+            return 0
+        return len(rows_to_insert)
+
+    except Exception as e:
+        logger.warning(f"write_web_provenance failed: {e}")
+        return 0

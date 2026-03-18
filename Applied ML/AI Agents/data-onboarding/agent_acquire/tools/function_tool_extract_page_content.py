@@ -83,6 +83,13 @@ async def extract_page_content(
         if not staging_path:
             return "Error: gcs_staging_path not set in state."
 
+        # Build URL → parent_url lookup from crawl_graph
+        crawl_graph = tool_context.state.get("crawl_graph", [])
+        url_to_parent = {
+            edge["url"]: edge.get("parent_url", "")
+            for edge in crawl_graph
+        }
+
         extracted = []
 
         async with httpx.AsyncClient(
@@ -106,6 +113,7 @@ async def extract_page_content(
 
                     extracted.append({
                         "url": url,
+                        "parent_url": url_to_parent.get(url, ""),
                         "gcs_uri": gcs_uri,
                         "gcs_path": gcs_path,
                         "filename": filename,
@@ -127,6 +135,7 @@ async def extract_page_content(
                 "size_bytes": ctx_file["size_chars"],
                 "hash": "",
                 "url": ctx_file["url"],
+                "parent_url": ctx_file.get("parent_url", ""),
             })
         tool_context.state["files_acquired"] = existing
 

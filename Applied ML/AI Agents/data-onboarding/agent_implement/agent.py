@@ -7,7 +7,7 @@ from . import prompts, tools
 root_agent = agents.Agent(
     name="agent_implement",
     model=AGENT_MODEL,
-    description="Generates Dataform SQLX files, applies BigQuery metadata (descriptions, labels), and maintains the onboarding changelog.",
+    description="Creates BigQuery tables from GCS source files, applies metadata (descriptions, labels), and maintains the onboarding changelog.",
     global_instruction=prompts.global_instructions,
     instruction=prompts.agent_instructions,
     tools=tools.TOOLS,

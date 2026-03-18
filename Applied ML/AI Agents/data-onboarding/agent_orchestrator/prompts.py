@@ -38,10 +38,10 @@ You orchestrate data onboarding into BigQuery by coordinating specialized sub-ag
 6. **HUMAN CHECKPOINT — Design Approval**: Present the proposed table designs to the user.
    Wait for explicit approval before proceeding. The user may request changes.
 
-7. **Implement** (agent_implement): Transfer to generate Dataform SQLX files,
-   apply BQ metadata (descriptions, labels), and update the changelog.
+7. **Implement** (agent_implement): Transfer to create external tables pointing to GCS files,
+   execute SQL to materialize BigQuery tables, apply metadata, and update the changelog.
 
-8. **HUMAN CHECKPOINT — Implementation Review**: Present the generated Dataform project
+8. **HUMAN CHECKPOINT — Implementation Review**: Present the created BigQuery tables
    to the user. Wait for approval before validation.
 
 9. **Validate** (agent_validate): Transfer to run quality checks on row counts,

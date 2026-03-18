@@ -33,45 +33,142 @@
 ---
 # Data Onboarding
 
-A multi-agent ADK system that automates data onboarding into BigQuery. Takes a URL or GCS path, crawls/downloads files, analyzes schemas and context documents, designs BQ tables, generates Dataform SQLX, loads data, and validates — with full lineage tracking and human-in-the-loop checkpoints.
-
-## Status
-
-Under active development. See `ai_context.md` for the development log.
+A multi-agent ADK system that automates data onboarding into BigQuery. Give it a URL or GCS path and it crawls/downloads files, analyzes schemas and context documents, designs BQ tables, creates them with full metadata, publishes end-to-end lineage to Dataplex, and validates — with human-in-the-loop checkpoints.
 
 ## Architecture
 
-7 agents, each a Python package:
+7 agents coordinated by a central orchestrator, each implemented as a Python package:
 
-| Agent | Role |
-|-------|------|
-| `agent_orchestrator` | Root agent, routes between phases, owns shared config |
-| `agent_acquire` | URL/GCS → staging (crawl, download, extract page content) |
-| `agent_discover` | GCS inventory, file classification, change detection |
-| `agent_understand` | Read files, analyze schemas, cross-reference with context |
-| `agent_design` | Propose BQ table structures with rich descriptions |
-| `agent_implement` | Generate Dataform SQLX, apply BQ metadata, changelog |
-| `agent_validate` | Quality checks, lineage verification |
+| Agent | Role | Tools |
+|-------|------|-------|
+| `agent_orchestrator` | Root agent — routes between phases, owns shared config and metadata | — |
+| `agent_acquire` | Crawl URLs (BFS, configurable depth), download files, extract page content | `crawl_url`, `download_files`, `extract_page_content` |
+| `agent_discover` | Inventory staged files, classify as data/context, detect changes via hash comparison | `inventory_files`, `classify_files`, `detect_changes` |
+| `agent_understand` | Read multi-format files, analyze column statistics, cross-reference with context docs | `read_data_file`, `read_context_file`, `analyze_columns`, `cross_reference` |
+| `agent_design` | Propose BQ table structures with types, partitioning, clustering, and descriptions | `propose_tables`, `propose_columns`, `record_decisions` |
+| `agent_implement` | Create external + materialized BQ tables, publish Dataplex lineage, apply metadata | `create_external_tables`, `execute_sql`, `publish_lineage`, `apply_bq_metadata`, `update_changelog` |
+| `agent_validate` | Validate row counts, column types, and end-to-end lineage completeness | `validate_counts`, `validate_types`, `validate_lineage` |
 
-Pipeline flow: `acquire → discover → understand → design → [HUMAN APPROVAL] → implement → [HUMAN APPROVAL] → validate`
+### Pipeline
+
+```
+acquire → discover → understand → design → [HUMAN APPROVAL] → implement → [HUMAN APPROVAL] → validate
+```
+
+### Data Flow
+
+```
+URL ──crawl──→ File URLs ──download──→ GCS staging ──ext table──→ BQ external table ──SQL──→ BQ materialized table
+                                                                                                       │
+                                                              Dataplex Data Lineage ◄──publish_lineage──┘
+```
+
+### Metadata Tracking
+
+5 BigQuery tables in the `*_bronze_meta` dataset provide full observability:
+
+| Table | Tracks |
+|-------|--------|
+| `source_manifest` | Every file — GCS path, SHA-256 hash, size, type, classification, original URL |
+| `processing_log` | Every pipeline action — phase, status, timestamps |
+| `table_lineage` | BQ table → external table → source file mappings with column-level lineage |
+| `schema_decisions` | Design proposals with reasoning and approval status |
+| `web_provenance` | URL crawl graph — parent/child URLs, page titles, status codes |
+
+### Dataplex Lineage
+
+After tables are created, `publish_lineage` writes three custom lineage events per file to the [Data Lineage API](https://cloud.google.com/dataplex/docs/about-data-lineage):
+
+1. `custom:<starting_url>` → `custom:<file_url>` — web crawl provenance
+2. `custom:<file_url>` → `gcs:<gs://bucket/path>` — download to staging
+3. `gcs:<gs://bucket/path>` → `bigquery:<project.dataset.ext_table>` — GCS to external table
+
+BigQuery automatically captures the fourth hop (external table → materialized table) when the Data Lineage API is enabled. The result is full end-to-end lineage visible in the Google Cloud Console.
+
+### Supported File Formats
+
+| Category | Formats |
+|----------|---------|
+| Data files | CSV, TSV, JSON, JSONL, Excel (xlsx/xls), Parquet, Avro, ORC, XML |
+| Context files | PDF, TXT, Markdown, HTML |
+| Archives | ZIP (auto-extracted, flattened, deduplicated) |
 
 ## Setup
 
+The project uses `pyproject.toml` (PEP 621) so it works with any Python package manager.
+
+### Install
+
+**uv** (recommended):
 ```bash
-make install
+uv sync --extra dev
 ```
+
+**pip**:
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+### Configure
+
+Create a `.env` file with your GCP settings:
+
+```env
+GOOGLE_CLOUD_PROJECT=your-project-id
+GOOGLE_CLOUD_STORAGE_BUCKET=your-bucket-name
+
+# Optional — all have sensible defaults
+# AGENT_MODEL=gemini-2.5-flash
+# BQ_DATASET_LOCATION=US
+# CRAWL_MAX_DEPTH=1
+# CRAWL_MAX_FILES=100
+# CRAWL_SAME_ORIGIN_ONLY=true
+# RESOURCE_PREFIX=data_onboarding
+```
+
+### Required APIs
+
+Enable these Google Cloud APIs:
+- BigQuery API
+- Cloud Storage API
+- Data Lineage API (for Dataplex lineage)
+- Vertex AI API (for deployment)
 
 ## Usage
 
 ```bash
-adk web agent_orchestrator
+uv run adk web agent_orchestrator
+```
+
+Then provide a URL (e.g. a page with downloadable CSV/JSON files) or a GCS path in the chat.
+
+### Deploy to Vertex AI Agent Engine
+
+```bash
+python deploy/deploy.py             # Deploy (runs local test first)
+python deploy/deploy.py --update    # Update existing deployment
+python deploy/deploy.py --delete    # Delete deployment
+python deploy/deploy.py --info      # Show deployment info
 ```
 
 ## Development
 
 ```bash
-make lint      # Run linter
-make test      # Run all tests
-make format    # Auto-format code
+make lint      # Run ruff linter
+make test      # Run all tests (148 tests)
+make format    # Auto-format + sort imports
 make check     # Lint + tests
 ```
+
+## Cleanup
+
+Remove cloud resources (BQ datasets, GCS blobs) and local output:
+
+```bash
+python scripts/cleanup.py --dry-run    # Preview
+python scripts/cleanup.py              # Interactive confirmation
+python scripts/cleanup.py --yes        # Skip confirmation
+```
+
+Selectively skip with `--skip-bq`, `--skip-gcs`, `--skip-local`, `--skip-agent-engine`.
