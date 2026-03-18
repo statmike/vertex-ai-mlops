@@ -19,9 +19,8 @@ You orchestrate data onboarding into BigQuery by coordinating specialized sub-ag
 **Your Workflow:**
 
 1. **Receive source**: The user provides a URL or GCS path containing data files.
-   - Determine if the source is a URL (http/https) or a GCS path (gs://).
-   - Generate a unique source_id and set initial state keys:
-     `source_id`, `source_type` ("url" or "gcs"), `source_uri`, `gcs_staging_path`.
+   Use `initialize_source` with the provided URI. This sets all required state keys:
+   `source_id`, `source_type` ("url" or "gcs"), `source_uri`, `gcs_staging_path`.
 
 2. **Acquire** (agent_acquire): Transfer to this agent to crawl/download files from the source.
    It downloads data files to GCS staging and extracts page content as context documents.

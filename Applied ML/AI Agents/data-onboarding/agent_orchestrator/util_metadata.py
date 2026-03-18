@@ -10,6 +10,7 @@ Manages 5 tables in the {BQ_BRONZE_META_DATASET} dataset:
 Auto-creates dataset and tables on first import.
 """
 
+import datetime
 import json
 import logging
 import uuid
@@ -38,8 +39,8 @@ CREATE TABLE IF NOT EXISTS `{FULL_DATASET_ID}.source_manifest`
   file_type STRING OPTIONS(description="File extension (e.g., csv, json, pdf)."),
   classification STRING OPTIONS(description="'data' or 'context'."),
   original_url STRING OPTIONS(description="Original URL if acquired from the web."),
-  discovered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP() OPTIONS(description="When the file was first discovered."),
-  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP() OPTIONS(description="Last update timestamp.")
+  discovered_at TIMESTAMP NOT NULL OPTIONS(description="When the file was first discovered."),
+  updated_at TIMESTAMP NOT NULL OPTIONS(description="Last update timestamp.")
 )
 PARTITION BY DATE(discovered_at)
 CLUSTER BY source_id, classification;
@@ -53,7 +54,7 @@ CREATE TABLE IF NOT EXISTS `{FULL_DATASET_ID}.processing_log`
   action STRING NOT NULL OPTIONS(description="Specific action taken."),
   status STRING NOT NULL OPTIONS(description="'started', 'completed', 'failed'."),
   details JSON OPTIONS(description="Action-specific details."),
-  started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP() OPTIONS(description="When the action started."),
+  started_at TIMESTAMP NOT NULL OPTIONS(description="When the action started."),
   completed_at TIMESTAMP OPTIONS(description="When the action completed.")
 )
 PARTITION BY DATE(started_at)
@@ -68,7 +69,7 @@ CREATE TABLE IF NOT EXISTS `{FULL_DATASET_ID}.table_lineage`
   external_table STRING OPTIONS(description="Fully qualified BQ external table name (ext_*)."),
   source_file STRING NOT NULL OPTIONS(description="GCS path of the source file."),
   column_mappings JSON OPTIONS(description="Source column to BQ column mapping."),
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP() OPTIONS(description="When the lineage was recorded.")
+  created_at TIMESTAMP NOT NULL OPTIONS(description="When the lineage was recorded.")
 )
 PARTITION BY DATE(created_at)
 CLUSTER BY source_id, bq_table;
@@ -83,7 +84,7 @@ CREATE TABLE IF NOT EXISTS `{FULL_DATASET_ID}.schema_decisions`
   reasoning STRING OPTIONS(description="Why this design was chosen."),
   status STRING NOT NULL OPTIONS(description="'proposed', 'approved', 'rejected', 'modified'."),
   approved_by STRING OPTIONS(description="Who approved (user or auto)."),
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP() OPTIONS(description="When proposed."),
+  created_at TIMESTAMP NOT NULL OPTIONS(description="When proposed."),
   decided_at TIMESTAMP OPTIONS(description="When approved/rejected.")
 )
 PARTITION BY DATE(created_at)
@@ -101,7 +102,7 @@ CREATE TABLE IF NOT EXISTS `{FULL_DATASET_ID}.web_provenance`
   status_code INT64 OPTIONS(description="HTTP response status code."),
   links_found INT64 OPTIONS(description="Number of links extracted from this page."),
   files_downloaded INT64 OPTIONS(description="Number of files downloaded from this page."),
-  crawled_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP() OPTIONS(description="When the URL was crawled.")
+  crawled_at TIMESTAMP NOT NULL OPTIONS(description="When the URL was crawled.")
 )
 PARTITION BY DATE(crawled_at)
 CLUSTER BY source_id;
@@ -187,6 +188,7 @@ def write_source_manifest(rows: list[dict]) -> int:
         client = bigquery.Client(project=GOOGLE_CLOUD_PROJECT)
         table_id = f"{FULL_DATASET_ID}.source_manifest"
 
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         rows_to_insert = []
         for row in rows:
             rows_to_insert.append({
@@ -197,6 +199,8 @@ def write_source_manifest(rows: list[dict]) -> int:
                 "file_type": row.get("file_type", ""),
                 "classification": row.get("classification", ""),
                 "original_url": row.get("original_url", ""),
+                "discovered_at": now,
+                "updated_at": now,
             })
 
         if not rows_to_insert:
@@ -234,6 +238,7 @@ def write_processing_log(
         client = bigquery.Client(project=GOOGLE_CLOUD_PROJECT)
         table_id = f"{FULL_DATASET_ID}.processing_log"
 
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         log_id = str(uuid.uuid4())
         row = {
             "log_id": log_id,
@@ -241,6 +246,7 @@ def write_processing_log(
             "phase": phase,
             "action": action,
             "status": status,
+            "started_at": now,
         }
         if details is not None:
             row["details"] = json.dumps(details)
@@ -274,6 +280,7 @@ def write_table_lineage(rows: list[dict]) -> int:
         client = bigquery.Client(project=GOOGLE_CLOUD_PROJECT)
         table_id = f"{FULL_DATASET_ID}.table_lineage"
 
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         rows_to_insert = []
         for row in rows:
             lineage_id = str(uuid.uuid4())
@@ -282,6 +289,7 @@ def write_table_lineage(rows: list[dict]) -> int:
                 "source_id": row.get("source_id", ""),
                 "bq_table": row.get("bq_table", ""),
                 "source_file": row.get("source_file", ""),
+                "created_at": now,
             }
             ext_table = row.get("external_table")
             if ext_table:
@@ -323,6 +331,7 @@ def write_web_provenance(rows: list[dict]) -> int:
         client = bigquery.Client(project=GOOGLE_CLOUD_PROJECT)
         table_id = f"{FULL_DATASET_ID}.web_provenance"
 
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         rows_to_insert = []
         for row in rows:
             provenance_id = str(uuid.uuid4())
@@ -336,6 +345,7 @@ def write_web_provenance(rows: list[dict]) -> int:
                 "status_code": row.get("status_code"),
                 "links_found": row.get("links_found"),
                 "files_downloaded": row.get("files_downloaded"),
+                "crawled_at": now,
             })
 
         if not rows_to_insert:
