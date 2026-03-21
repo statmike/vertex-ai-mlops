@@ -1,6 +1,6 @@
 from google.adk import agents
 
-from agent_orchestrator.config import AGENT_MODEL
+from agent_orchestrator.config import AGENT_MODEL_INSTANCE as AGENT_MODEL
 
 from . import prompts, tools
 

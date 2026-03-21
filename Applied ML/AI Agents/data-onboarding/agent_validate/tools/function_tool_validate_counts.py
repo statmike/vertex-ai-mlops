@@ -3,6 +3,7 @@ import logging
 from google.adk import tools
 
 from agent_acquire.tools.util_common import log_tool_error
+from agent_understand.tools.util_file_readers import MAX_SAMPLE_ROWS
 
 from .util_quality import get_table_row_count
 
@@ -29,12 +30,13 @@ async def validate_counts(
         if not proposals:
             return "No proposed tables to validate."
 
+        bronze_dataset = tool_context.state.get("bq_bronze_dataset", "")
         results = {}
         all_passed = True
 
         for table_name, proposal in proposals.items():
             expected_rows = proposal.get("row_count", 0)
-            actual_rows = get_table_row_count(table_name)
+            actual_rows = get_table_row_count(table_name, bronze_dataset)
 
             if actual_rows is None:
                 status = "SKIP"
@@ -50,6 +52,14 @@ async def validate_counts(
                 # Allow off-by-one for header row differences
                 status = "PASS"
                 message = f"{actual_rows} rows (within 1 of expected {expected_rows})"
+            elif expected_rows == MAX_SAMPLE_ROWS and actual_rows > expected_rows:
+                # Expected count was capped at the sample limit during schema
+                # inference — the full file has more rows, which is expected.
+                status = "PASS"
+                message = (
+                    f"{actual_rows} rows (expected was sample-capped at "
+                    f"{MAX_SAMPLE_ROWS}; full file is larger)"
+                )
             else:
                 status = "FAIL"
                 message = f"Expected {expected_rows}, got {actual_rows}"

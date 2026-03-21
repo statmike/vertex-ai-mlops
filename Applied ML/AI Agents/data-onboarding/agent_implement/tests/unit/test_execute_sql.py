@@ -35,7 +35,7 @@ class TestBuildCreateTableDdl:
             partition_by={"column": "dt"},
             cluster_by=["region"],
         )
-        assert "PARTITION BY DATE(dt)" in ddl
+        assert "PARTITION BY DATE_TRUNC(DATE(dt), MONTH)" in ddl
         assert "CLUSTER BY region" in ddl
         # Partition should come before cluster
         assert ddl.index("PARTITION") < ddl.index("CLUSTER")

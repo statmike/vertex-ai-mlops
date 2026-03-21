@@ -1,5 +1,6 @@
 import json
 import logging
+from urllib.parse import urlparse
 
 import httpx
 from google.adk import tools
@@ -8,7 +9,14 @@ from agent_orchestrator.config import CRAWL_MAX_DEPTH, CRAWL_MAX_FILES
 from agent_orchestrator.util_metadata import write_processing_log, write_web_provenance
 
 from .util_common import log_tool_error
-from .util_crawl import extract_links, is_downloadable_file, normalize_url
+from .util_crawl import (
+    _looks_like_download,
+    discover_json_api_urls,
+    extract_download_urls_from_json,
+    extract_links,
+    is_downloadable_file,
+    normalize_url,
+)
 from .util_gcs import upload_string
 
 logger = logging.getLogger(__name__)
@@ -95,12 +103,52 @@ async def crawl_url(
                     "status_code": response.status_code,
                 })
 
-                # Extract links and queue them if within depth
+                # Extract links and queue them
                 if depth < CRAWL_MAX_DEPTH:
+                    # Within depth limit — follow all links (pages + files)
                     links = extract_links(response.text, current_url)
                     for link in links:
                         if link["url"] not in visited:
                             queue.append((link["url"], depth + 1, current_url))
+                else:
+                    # At max depth — only follow links that look like downloads
+                    # so we catch file links on the deepest pages without
+                    # exploding the crawl with more page-to-page hops.
+                    links = extract_links(response.text, current_url)
+                    for link in links:
+                        if link["url"] not in visited and link["is_file"]:
+                            queue.append((link["url"], depth + 1, current_url))
+
+                # Discover JSON API endpoints in <script> tags.
+                # JS-heavy pages often load product/download data via AJAX;
+                # fetch those endpoints to find file URLs invisible in the
+                # static HTML.
+                api_paths = discover_json_api_urls(response.text)
+                for api_path in api_paths:
+                    api_url = normalize_url(
+                        api_path if api_path.startswith("http")
+                        else f"{urlparse(current_url).scheme}://{urlparse(current_url).netloc}{api_path}"
+                    )
+                    if api_url in visited:
+                        continue
+                    visited.add(api_url)
+                    try:
+                        api_resp = await client.get(api_url)
+                        api_resp.raise_for_status()
+                        api_data = api_resp.json()
+                        api_links = extract_download_urls_from_json(
+                            api_data, current_url,
+                        )
+                        for link in api_links:
+                            if link["url"] not in visited:
+                                queue.append((link["url"], depth + 1, current_url))
+                        if api_links:
+                            logger.info(
+                                "JSON API %s: found %d download URLs",
+                                api_path, len(api_links),
+                            )
+                    except Exception as api_err:
+                        logger.debug("Failed to fetch JSON API %s: %s", api_url, api_err)
 
         # Store in state
         tool_context.state["crawl_graph"] = crawl_graph

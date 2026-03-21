@@ -5,11 +5,12 @@ from google.adk import tools
 from agent_acquire.tools.util_common import log_tool_error
 from agent_orchestrator.config import (
     BQ_BRONZE_DATASET,
+    BQ_DATASET_LOCATION,
     GOOGLE_CLOUD_PROJECT,
 )
 from agent_orchestrator.util_metadata import write_processing_log, write_table_lineage
 
-from .util_sql import _build_create_table_ddl, build_select_sql
+from .util_sql import _build_create_table_ddl, build_select_sql, refine_partition_cluster
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,15 @@ async def execute_sql(
 
         client = bigquery.Client(project=GOOGLE_CLOUD_PROJECT)
 
+        # Read domain-scoped bronze dataset from state (set by initialize_source)
+        bronze_dataset = tool_context.state.get("bq_bronze_dataset", BQ_BRONZE_DATASET)
+
+        # Ensure bronze dataset exists
+        dataset_ref = f"{GOOGLE_CLOUD_PROJECT}.{bronze_dataset}"
+        ds = bigquery.Dataset(dataset_ref)
+        ds.location = BQ_DATASET_LOCATION
+        client.create_dataset(ds, exists_ok=True)
+
         tables_created = {}
         executed = []
         errors = []
@@ -51,7 +61,7 @@ async def execute_sql(
 
         # Build file URL lookup from files_acquired
         files_acquired = tool_context.state.get("files_acquired", [])
-        path_to_url = {}
+        path_to_url: dict[str, str] = {}
         for f in files_acquired:
             gcs_path = f.get("gcs_path", "")
             if gcs_path:
@@ -66,52 +76,75 @@ async def execute_sql(
                 continue
 
             columns = proposal.get("enriched_columns", proposal.get("columns", []))
-            source_path = proposal.get("source_path", "")
+            # Support grouped tables with source_paths (list) or legacy source_path (string)
+            source_paths = proposal.get("source_paths", [])
+            if not source_paths:
+                sp = proposal.get("source_path", "")
+                source_paths = [sp] if sp else []
+            source_path = source_paths[0] if source_paths else ""
             original_url = path_to_url.get(source_path, "")
 
-            # Build SELECT from column definitions
-            select_sql = build_select_sql(
-                columns=columns,
-                from_ref=ext_table_id,
-                source_uri=source_path,
-                original_url=original_url,
-                source_id=source_id,
-            )
+            try:
+                # Refine partition/cluster based on actual data cardinality
+                proposed_partition = proposal.get("partition_by")
+                proposed_cluster = proposal.get("cluster_by", [])
+                refined_partition, refined_cluster = refine_partition_cluster(
+                    client=client,
+                    ext_table_id=ext_table_id,
+                    partition_by=proposed_partition,
+                    cluster_by=proposed_cluster,
+                    columns=columns,
+                )
 
-            # Build and execute DDL
-            target_table_id = f"{GOOGLE_CLOUD_PROJECT}.{BQ_BRONZE_DATASET}.{table_name}"
-            ddl = _build_create_table_ddl(
-                table_id=target_table_id,
-                select_sql=select_sql,
-                partition_by=proposal.get("partition_by"),
-                cluster_by=proposal.get("cluster_by"),
-            )
+                # Build SELECT from column definitions
+                select_sql = build_select_sql(
+                    columns=columns,
+                    from_ref=ext_table_id,
+                    source_uri=source_path,
+                    original_url=original_url,
+                    source_id=source_id,
+                )
 
-            query_job = client.query(ddl)
-            query_job.result()
+                # Build and execute DDL
+                target_table_id = f"{GOOGLE_CLOUD_PROJECT}.{bronze_dataset}.{table_name}"
+                ddl = _build_create_table_ddl(
+                    table_id=target_table_id,
+                    select_sql=select_sql,
+                    partition_by=refined_partition,
+                    cluster_by=refined_cluster,
+                    columns=columns,
+                )
 
-            # Get row count
-            table_obj = client.get_table(target_table_id)
-            row_count = table_obj.num_rows
+                query_job = client.query(ddl)
+                query_job.result()
 
-            tables_created[table_name] = {
-                "rows": row_count,
-                "table_id": target_table_id,
-            }
-            executed.append(f"{table_name}: {row_count} rows")
+                # Get row count
+                table_obj = client.get_table(target_table_id)
+                row_count = table_obj.num_rows
 
-            # Build column mappings for lineage
-            column_mappings = {
-                col.get("source_name", col["name"]): col["name"]
-                for col in columns
-            }
-            lineage_rows.append({
-                "source_id": source_id,
-                "bq_table": target_table_id,
-                "external_table": ext_table_id,
-                "source_file": source_path,
-                "column_mappings": column_mappings,
-            })
+                tables_created[table_name] = {
+                    "rows": row_count,
+                    "table_id": target_table_id,
+                }
+                executed.append(f"{table_name}: {row_count} rows")
+
+                # Build column mappings for lineage
+                column_mappings = {
+                    col.get("source_name", col["name"]): col["name"]
+                    for col in columns
+                }
+                # Create a lineage row for each source file in the group
+                for sp in source_paths:
+                    lineage_rows.append({
+                        "source_id": source_id,
+                        "bq_table": target_table_id,
+                        "external_table": ext_table_id,
+                        "source_file": sp,
+                        "column_mappings": column_mappings,
+                    })
+            except Exception as e:
+                logger.warning(f"Failed to create table {table_name}: {e}")
+                errors.append(f"{table_name}: {e}")
 
         tool_context.state["tables_created"] = tables_created
 

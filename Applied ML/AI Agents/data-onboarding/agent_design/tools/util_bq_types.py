@@ -30,6 +30,7 @@ CATEGORY_TO_BQ = {
     "numeric": None,  # Use dtype mapping
     "boolean": "BOOL",
     "datetime_candidate": "TIMESTAMP",
+    "time_candidate": "TIME",
     "categorical": "STRING",
     "text": "STRING",
 }
@@ -77,7 +78,7 @@ def suggest_partitioning(columns: list[dict]) -> dict | None:
 
     if candidates:
         candidates.sort()
-        return {"column": candidates[0][1], "type": "DAY"}
+        return {"column": candidates[0][1], "type": "MONTH"}
 
     return None
 
@@ -94,11 +95,22 @@ def suggest_clustering(columns: list[dict], max_columns: int = 4) -> list[str]:
     Returns:
         List of column names to cluster by.
     """
+    # BQ does not allow floating-point types in CLUSTER BY
+    float_dtypes = {"float64", "float32", "Float64", "Float32"}
+    float_categories = {"numeric"}  # numeric category often maps to FLOAT64
+
     candidates = []
     for col in columns:
         name = col.get("name", "").lower()
         category = col.get("category", "")
+        dtype = col.get("dtype", "")
         unique_pct = col.get("unique_pct", 100)
+
+        # Skip float columns — they cannot be used for clustering
+        if dtype in float_dtypes:
+            continue
+        if category in float_categories and dtype not in ("int64", "int32", "Int64", "Int32"):
+            continue
 
         score = 0
         if category == "categorical":

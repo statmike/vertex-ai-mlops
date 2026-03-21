@@ -121,7 +121,7 @@ GOOGLE_CLOUD_STORAGE_BUCKET=your-bucket-name
 # Optional — all have sensible defaults
 # AGENT_MODEL=gemini-2.5-flash
 # BQ_DATASET_LOCATION=US
-# CRAWL_MAX_DEPTH=1
+1# CRAWL_MAX_DEPTH=1
 # CRAWL_MAX_FILES=100
 # CRAWL_SAME_ORIGIN_ONLY=true
 # RESOURCE_PREFIX=data_onboarding

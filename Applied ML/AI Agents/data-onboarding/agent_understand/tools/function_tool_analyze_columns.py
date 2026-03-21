@@ -62,12 +62,21 @@ async def analyze_columns(
         analysis = {}
         for col in df.columns:
             series = df[col]
+
+            # nunique / value_counts fail on columns with unhashable types
+            # (e.g. lists from json_normalize). Fall back gracefully.
+            try:
+                nunique = int(series.nunique())
+            except TypeError:
+                nunique = -1
+            unique_pct = round(float(nunique) / max(len(series), 1) * 100, 1) if nunique >= 0 else 0.0
+
             col_analysis = {
                 "dtype": str(series.dtype),
                 "null_count": int(series.isna().sum()),
                 "null_pct": round(float(series.isna().mean()) * 100, 1),
-                "unique_count": int(series.nunique()),
-                "unique_pct": round(float(series.nunique()) / max(len(series), 1) * 100, 1),
+                "unique_count": max(nunique, 0),
+                "unique_pct": unique_pct,
             }
 
             # Detect column category
@@ -81,19 +90,24 @@ async def analyze_columns(
             elif series.dtype == "bool":
                 col_analysis["category"] = "boolean"
             elif series.dtype == "object":
-                # Check if it's a date
-                sample = series.dropna().head(20)
-                try:
-                    pd.to_datetime(sample)
-                    col_analysis["category"] = "datetime_candidate"
-                except (ValueError, TypeError):
-                    if col_analysis["unique_pct"] < 5:
-                        col_analysis["category"] = "categorical"
-                        col_analysis["top_values"] = (
-                            series.value_counts().head(10).to_dict()
-                        )
-                    else:
-                        col_analysis["category"] = "text"
+                if nunique < 0:
+                    col_analysis["category"] = "complex"
+                else:
+                    sample = series.dropna().head(20)
+                    try:
+                        pd.to_datetime(sample)
+                        col_analysis["category"] = "datetime_candidate"
+                    except (ValueError, TypeError):
+                        if unique_pct < 5:
+                            col_analysis["category"] = "categorical"
+                            try:
+                                col_analysis["top_values"] = (
+                                    series.value_counts().head(10).to_dict()
+                                )
+                            except TypeError:
+                                pass
+                        else:
+                            col_analysis["category"] = "text"
             else:
                 col_analysis["category"] = str(series.dtype)
 

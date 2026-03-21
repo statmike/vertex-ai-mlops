@@ -121,28 +121,33 @@ def _ensure_setup():
 # Run auto-setup on import
 _ensure_setup()
 
-# Create plugin conditionally — None when PROJECT_ID is unset
+# Create plugin conditionally — None when PROJECT_ID is unset or on error.
+# Wrapped in try/except so a plugin failure never crashes the agent.
 bq_analytics_plugin = None
 if PROJECT_ID:
-    from google.adk.plugins.bigquery_agent_analytics_plugin import (
-        BigQueryAgentAnalyticsPlugin,
-        BigQueryLoggerConfig,
-    )
+    try:
+        from google.adk.plugins.bigquery_agent_analytics_plugin import (
+            BigQueryAgentAnalyticsPlugin,
+            BigQueryLoggerConfig,
+        )
 
-    bq_config = BigQueryLoggerConfig(
-        enabled=True,
-        log_multi_modal_content=True,
-        max_content_length=500 * 1024,  # 500 KB limit for inline text
-        batch_size=20,
-        shutdown_timeout=30.0,
-    )
+        bq_config = BigQueryLoggerConfig(
+            enabled=True,
+            log_multi_modal_content=True,
+            max_content_length=32 * 1024,  # 32 KB — keep batches well under BQ Write API 10 MB limit
+            batch_size=5,  # smaller batches to avoid "Message size exceed" errors
+            shutdown_timeout=30.0,
+            log_session_metadata=False,  # session state contains large crawl data with non-serializable keys
+        )
 
-    bq_analytics_plugin = BigQueryAgentAnalyticsPlugin(
-        project_id=PROJECT_ID,
-        dataset_id=BQ_ANALYTICS_DATASET,
-        table_id=BQ_ANALYTICS_TABLE,
-        config=bq_config,
-        location=BQ_DATASET_LOCATION,
-    )
+        bq_analytics_plugin = BigQueryAgentAnalyticsPlugin(
+            project_id=PROJECT_ID,
+            dataset_id=BQ_ANALYTICS_DATASET,
+            table_id=BQ_ANALYTICS_TABLE,
+            config=bq_config,
+            location=BQ_DATASET_LOCATION,
+        )
+    except Exception as e:
+        logger.warning(f"BQ Analytics: Plugin creation failed ({e}). Agent will run without analytics.")
 else:
     logger.info("BQ Analytics: GOOGLE_CLOUD_PROJECT not set, plugin disabled.")

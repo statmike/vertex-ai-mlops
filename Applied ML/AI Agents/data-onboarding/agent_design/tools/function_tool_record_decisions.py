@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import uuid
@@ -6,7 +7,7 @@ from google.adk import tools
 
 from agent_acquire.tools.util_common import log_tool_error
 from agent_orchestrator.config import (
-    BQ_BRONZE_META_DATASET,
+    BQ_META_DATASET,
     GOOGLE_CLOUD_PROJECT,
 )
 from agent_orchestrator.util_metadata import write_processing_log
@@ -42,8 +43,9 @@ async def record_decisions(
         from google.cloud import bigquery
 
         client = bigquery.Client(project=GOOGLE_CLOUD_PROJECT)
-        table_id = f"{GOOGLE_CLOUD_PROJECT}.{BQ_BRONZE_META_DATASET}.schema_decisions"
+        table_id = f"{GOOGLE_CLOUD_PROJECT}.{BQ_META_DATASET}.schema_decisions"
 
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         rows_to_insert = []
         for table_name, proposal in proposals.items():
             decision_id = str(uuid.uuid4())
@@ -54,6 +56,7 @@ async def record_decisions(
                 "proposal": json.dumps(proposal),
                 "reasoning": proposal.get("description", ""),
                 "status": "proposed",
+                "created_at": now,
             })
 
         if rows_to_insert:

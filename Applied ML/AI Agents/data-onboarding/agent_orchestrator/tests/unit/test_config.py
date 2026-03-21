@@ -8,7 +8,7 @@ from agent_orchestrator.config import (
     BQ_ANALYTICS_DATASET,
     BQ_ANALYTICS_TABLE,
     BQ_BRONZE_DATASET,
-    BQ_BRONZE_META_DATASET,
+    BQ_META_DATASET,
     CONTEXT_FILE_EXTENSIONS,
     CRAWL_MAX_DEPTH,
     CRAWL_MAX_FILES,
@@ -17,6 +17,9 @@ from agent_orchestrator.config import (
     OUTPUT_DIR,
     RESOURCE_PREFIX,
     TOOL_MODEL,
+    extract_domain_slug,
+    get_bronze_dataset,
+    get_staging_dataset,
 )
 
 
@@ -29,10 +32,10 @@ class TestConfigDefaults:
 
     def test_bq_datasets(self):
         assert BQ_BRONZE_DATASET == "data_onboarding_bronze"
-        assert BQ_BRONZE_META_DATASET == "data_onboarding_bronze_meta"
+        assert BQ_META_DATASET == "data_onboarding_meta"
 
     def test_bq_analytics(self):
-        assert BQ_ANALYTICS_DATASET == "applied_ml_data_onboarding"
+        assert BQ_ANALYTICS_DATASET == "data_onboarding_adk"
         assert BQ_ANALYTICS_TABLE == "agent_events"
 
     def test_gcs_staging_root(self):
@@ -68,26 +71,26 @@ class TestResourcePrefix:
     def test_custom_prefix_derives_all_names(self, monkeypatch):
         monkeypatch.setenv("RESOURCE_PREFIX", "my_project")
         monkeypatch.delenv("BQ_BRONZE_DATASET", raising=False)
-        monkeypatch.delenv("BQ_BRONZE_META_DATASET", raising=False)
+        monkeypatch.delenv("BQ_META_DATASET", raising=False)
         monkeypatch.delenv("BQ_ANALYTICS_DATASET", raising=False)
         monkeypatch.delenv("GCS_STAGING_ROOT", raising=False)
         importlib.reload(cfg)
         assert cfg.RESOURCE_PREFIX == "my_project"
         assert cfg.BQ_BRONZE_DATASET == "my_project_bronze"
-        assert cfg.BQ_BRONZE_META_DATASET == "my_project_bronze_meta"
-        assert cfg.BQ_ANALYTICS_DATASET == "applied_ml_my_project"
+        assert cfg.BQ_META_DATASET == "my_project_meta"
+        assert cfg.BQ_ANALYTICS_DATASET == "my_project_adk"
         assert cfg.GCS_STAGING_ROOT == "applied-ml/ai-agents/my-project"
 
     def test_individual_override_wins(self, monkeypatch):
         monkeypatch.setenv("RESOURCE_PREFIX", "my_project")
         monkeypatch.setenv("BQ_BRONZE_DATASET", "custom_bronze")
-        monkeypatch.delenv("BQ_BRONZE_META_DATASET", raising=False)
+        monkeypatch.delenv("BQ_META_DATASET", raising=False)
         monkeypatch.delenv("BQ_ANALYTICS_DATASET", raising=False)
         monkeypatch.delenv("GCS_STAGING_ROOT", raising=False)
         importlib.reload(cfg)
         assert cfg.BQ_BRONZE_DATASET == "custom_bronze"
         # Others still derive from prefix
-        assert cfg.BQ_BRONZE_META_DATASET == "my_project_bronze_meta"
+        assert cfg.BQ_META_DATASET == "my_project_meta"
 
     def test_gcs_override_wins(self, monkeypatch):
         monkeypatch.setenv("RESOURCE_PREFIX", "my_project")
@@ -100,3 +103,46 @@ class TestResourcePrefix:
         monkeypatch.setenv("BQ_ANALYTICS_DATASET", "custom_analytics")
         importlib.reload(cfg)
         assert cfg.BQ_ANALYTICS_DATASET == "custom_analytics"
+
+
+class TestDomainSlug:
+    """Verify domain slug extraction and domain-scoped dataset naming."""
+
+    def test_strips_data_subdomain(self):
+        assert extract_domain_slug("https://data.cms.gov/provider-data") == "cms_gov"
+
+    def test_strips_www_subdomain(self):
+        assert extract_domain_slug("https://www.census.gov/data") == "census_gov"
+
+    def test_strips_api_subdomain(self):
+        assert extract_domain_slug("https://api.example.com/v1") == "example_com"
+
+    def test_plain_domain(self):
+        assert extract_domain_slug("https://example.com/data") == "example_com"
+
+    def test_empty_url(self):
+        assert extract_domain_slug("") == ""
+
+    def test_non_url(self):
+        assert extract_domain_slug("gs://bucket/path") == ""
+
+    def test_get_bronze_dataset_with_slug(self):
+        # Use cfg.* to avoid stale imports after reload in earlier tests
+        result = cfg.get_bronze_dataset("cms_gov")
+        assert result == f"{cfg.RESOURCE_PREFIX}_cms_gov_bronze"
+
+    def test_get_bronze_dataset_without_slug(self):
+        result = cfg.get_bronze_dataset("")
+        assert result == cfg.BQ_BRONZE_DATASET
+
+    def test_get_bronze_dataset_no_arg(self):
+        result = cfg.get_bronze_dataset()
+        assert result == cfg.BQ_BRONZE_DATASET
+
+    def test_get_staging_dataset_with_slug(self):
+        result = cfg.get_staging_dataset("cms_gov")
+        assert result == f"{cfg.RESOURCE_PREFIX}_cms_gov_staging"
+
+    def test_get_staging_dataset_no_slug(self):
+        result = cfg.get_staging_dataset()
+        assert result == f"{cfg.RESOURCE_PREFIX}_staging"

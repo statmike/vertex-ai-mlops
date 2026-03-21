@@ -8,6 +8,9 @@ from agent_orchestrator.util_metadata import write_source_manifest
 
 logger = logging.getLogger(__name__)
 
+# Files written by the pipeline itself — never treat as user data.
+_INTERNAL_FILES = {"provenance.json"}
+
 
 async def classify_files(
     tool_context: tools.ToolContext,
@@ -34,8 +37,11 @@ async def classify_files(
         for f in inventory:
             ext = f.get("extension", "")
             subdir = f.get("subdir", "")
+            filename = f.get("filename", "")
 
-            if subdir == "context":
+            if filename in _INTERNAL_FILES:
+                classification = "internal"
+            elif subdir == "context":
                 classification = "context"
             elif ext in DATA_FILE_EXTENSIONS:
                 classification = "data"
@@ -70,12 +76,14 @@ async def classify_files(
 
         data_count = sum(1 for f in classified if f["classification"] == "data")
         context_count = sum(1 for f in classified if f["classification"] == "context")
+        internal_count = sum(1 for f in classified if f["classification"] == "internal")
         unknown_count = sum(1 for f in classified if f["classification"] == "unknown")
 
         summary = (
             f"Classification complete.\n"
             f"  Data files: {data_count}\n"
             f"  Context files: {context_count}\n"
+            f"  Internal (pipeline metadata): {internal_count}\n"
             f"  Unknown: {unknown_count}\n"
         )
 

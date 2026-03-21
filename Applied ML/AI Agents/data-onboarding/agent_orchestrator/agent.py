@@ -3,12 +3,13 @@ import os
 # Model and location configuration (read early, before ADK imports).
 # ADK uses GOOGLE_CLOUD_LOCATION to determine the Vertex AI API endpoint,
 # so AGENT_MODEL_LOCATION overrides it if set.
-AGENT_MODEL = os.getenv("AGENT_MODEL", "gemini-2.5-flash")
 AGENT_MODEL_LOCATION = os.getenv("AGENT_MODEL_LOCATION", "")
 if AGENT_MODEL_LOCATION:
     os.environ["GOOGLE_CLOUD_LOCATION"] = AGENT_MODEL_LOCATION
 
 from google.adk import agents  # noqa: E402
+
+from .config import AGENT_MODEL_INSTANCE as AGENT_MODEL  # noqa: E402
 
 from agent_acquire.agent import root_agent as acquire_agent  # noqa: E402
 from agent_design.agent import root_agent as design_agent  # noqa: E402

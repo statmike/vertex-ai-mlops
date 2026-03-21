@@ -15,24 +15,26 @@ Project: {project_id}, Location: {location}.
 agent_instructions = """
 You analyze file contents and build semantic understanding of the data.
 
-**Your Workflow:**
+**Your Workflow (3 tool calls):**
 
-1. **Check state**: Read `files_classified` from state.
+1. **Read ALL data files**: Call `read_all_data_files` once. This reads every classified data file,
+   parses it, performs column analysis (types, categories, distributions, statistics), and
+   populates `schemas_analyzed` in state. Column analysis is included automatically — no
+   separate analysis step is needed.
 
-2. **Read data files**: Use `read_data_file` on each data file to inspect headers, sample rows, and infer column types.
+2. **Read ALL context files**: Call `read_all_context_files` once. This reads every classified
+   context file (PDFs, documentation, data dictionaries) and populates `context_documents`
+   in state.
 
-3. **Read context files**: Use `read_context_file` on each context file to extract relevant documentation.
+3. **Cross-reference**: Call `cross_reference` once to match context document content with data
+   columns and generate rich column descriptions. This populates `context_insights` in state.
 
-4. **Analyze columns**: Use `analyze_columns` to perform detailed column analysis — data types, null rates, unique counts, value distributions.
+4. **Transfer back** to agent_orchestrator when understanding is complete.
 
-5. **Cross-reference**: Use `cross_reference` to match context document content with data columns to generate rich column descriptions.
-
-6. **Update state**: Set `schemas_analyzed` (per-file schema info) and `context_insights` (matched context).
-
-7. **Transfer back** to agent_orchestrator when understanding is complete.
+**CRITICAL: Always call `read_all_data_files` first. The design phase downstream can only propose
+tables for files that appear in schemas_analyzed. Any file not analyzed will NOT get a table.**
 
 **Guidelines:**
-- Read enough rows to confidently infer types (at least 100 or all if fewer).
 - Pay attention to date/time formats, numeric precision, and categorical values.
 - Context documents may contain data dictionaries, README files, or web page content.
 - Cross-reference column names with context to generate meaningful descriptions.

@@ -60,21 +60,30 @@ async def publish_lineage(
 
         for table_name in tables_created:
             proposal = proposed_tables.get(table_name, {})
-            source_path = proposal.get("source_path", "")
-            file_info = path_to_file.get(source_path, {})
             ext_table_id = external_tables.get(table_name, "")
+            bronze_table_id = tables_created[table_name].get("table_id", "")
 
-            # Build GCS URI
-            if source_path.startswith("gs://"):
-                gcs_uri = source_path
-            else:
-                gcs_uri = f"gs://{bucket}/{source_path}"
+            # Support grouped tables with source_paths (list) or legacy source_path (string)
+            source_paths = proposal.get("source_paths", [])
+            if not source_paths:
+                sp = proposal.get("source_path", "")
+                source_paths = [sp] if sp else []
 
-            file_lineage.append({
-                "file_url": file_info.get("url", ""),
-                "gcs_uri": gcs_uri,
-                "external_table": ext_table_id,
-            })
+            for source_path in source_paths:
+                file_info = path_to_file.get(source_path, {})
+
+                # Build GCS URI
+                if source_path.startswith("gs://"):
+                    gcs_uri = source_path
+                else:
+                    gcs_uri = f"gs://{bucket}/{source_path}"
+
+                file_lineage.append({
+                    "file_url": file_info.get("url", ""),
+                    "gcs_uri": gcs_uri,
+                    "external_table": ext_table_id,
+                    "bronze_table": bronze_table_id,
+                })
 
         result = _publish(
             source_id=source_id,
@@ -102,7 +111,7 @@ async def publish_lineage(
             f"  1. Starting URL → File download URL\n"
             f"  2. File URL → GCS staging object\n"
             f"  3. GCS object → External BQ table\n"
-            f"  4. External table → Materialized table (auto-captured by BQ)\n"
+            f"  4. External table → Bronze (materialized) table\n"
         )
 
     except Exception as e:

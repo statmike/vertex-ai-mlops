@@ -1,0 +1,127 @@
+# Data Onboarding Changelog
+
+## 2026-03-21 — Tables created
+
+### Tables
+- `bats_listed_short_interest_finra`
+- `borrow_intensity_indicators_2023_02_01_0937`
+- `cboe_equity_svr_byx`
+- `cboe_equity_svr_bzx`
+- `cboe_equity_svr_edga`
+- `cboe_equity_svr_edgx`
+- `cboe_equity_short_sales_edgx`
+- `cboe_australia_equity_eod_2022_05_06`
+- `cboe_cfe_trades_rth`
+- `ftref_early_exercise_strike_by_option_class`
+- `ftref_event_free_realized_volatility`
+- `ftref_fit_parameters`
+- `ftref_implied_earnings_move`
+- `ftref_traded_vega_ratio`
+- `high_level_option_sentiment_complete`
+- `optsum`
+- `ta13_f_comp`
+- `underlying_eodsummaries`
+- `underlying_eod`
+- `underlying_intervals_900sec`
+- `underlying_options_eodcalcs_2023_08_25_cgi_or_historical`
+- `underlying_options_eodcalcs_2023_08_25_no_cgi_subscription`
+- `underlying_trades`
+- `vix_daily_inputs`
+- `volatility_surfaces_constant_maturity_delta_relative`
+- `volatility_surfaces_constant_maturity_price_relative`
+- `volatility_surfaces_expiration_specific_delta_relative`
+- `volatility_surfaces_expiration_specific_price_relative`
+- `bbo_2020_01_02_cadjpy`
+- `bbo_ldn_2023_08_22_cadjpy`
+- `bbo_ny_2020_01_02_cadjpy`
+- `cccy_eod`
+- `cccy_tick`
+- `cgi_eod`
+- `cgi_tick`
+- `eod_theos_cboe_prop_20251215_1600`
+- `ftse_eod`
+- `ftse_tick`
+- `inav_eod`
+- `inav_tick`
+- `livevol_exchange_ids`
+- `livevol_trade_condition_ids`
+- `main_eod`
+- `main_tick`
+- `msci_eod`
+- `msci_tick`
+- `mstar_eod`
+- `mstar_tick`
+- `rts13_public_trade_data_apa`
+- `snp_2020_01_02_cadjpy`
+- `snp_ldn_2023_08_22_cadjpy`
+- `snp_ny_2020_01_02_cadjpy`
+- `tks_2020_01_02_cadjpy`
+- `tks_ldn_2023_08_22_cadjpy`
+- `tks_ny_2020_01_02_cadjpy`
+- `trd_2020_01_02_cadjpy`
+- `trd_ldn_2023_08_22_cadjpy`
+- `trd_ny_2020_01_02_cadjpy`
+
+### Schema Decisions
+- bats_listed_short_interest_finra: 11 columns — A daily report from FINRA detailing the net short interest positions for securities listed on the BATS exchange. It compares the current reporting cycle's short interest to the previous cycle and provides context like trading volume and days-to-cover.
+- borrow_intensity_indicators_2023_02_01_0937: 31 columns — Provides proprietary borrow intensity indicators for a set of stock tickers. These indicators measure the difficulty or cost of borrowing a stock, likely for short selling, over various time horizons (45, 60, 90, 180, 270, 360 days). Both raw and smoothed versions of the index are provided, along with confidence scores.
+- cboe_equity_svr_byx: 5 columns — Daily summary of short sale volume for equity securities traded on the Cboe BYX exchange. This file is part of a set that includes data for BZX, EDGA, and EDGX exchanges.
+- cboe_equity_svr_bzx: 5 columns — Daily summary of short sale volume for equity securities traded on the Cboe BZX exchange. This file is part of a set that includes data for BYX, EDGA, and EDGX exchanges.
+- cboe_equity_svr_edga: 5 columns — Daily summary of short sale volume for equity securities traded on the Cboe EDGA exchange. This file is part of a set that includes data for BYX, BZX, and EDGX exchanges.
+- cboe_equity_svr_edgx: 5 columns — Daily summary of short sale volume for equity securities traded on the Cboe EDGX exchange. This file is part of a set that includes data for BYX, BZX, and EDGA exchanges.
+- cboe_equity_short_sales_edgx: 6 columns — Tick-by-tick data for individual short sale transactions on the Cboe EDGX exchange for a specific day.
+- cboe_australia_equity_eod_2022_05_06: 15 columns — End-of-day (EOD) summary for equities traded on Cboe Australia (CXA). It provides OHLC prices, volume, and turnover information for each symbol.
+- cboe_cfe_trades_rth: 25 columns — A detailed report of all futures trades occurring during Regular Trading Hours (RTH) on the Cboe Futures Exchange (CFE). It includes transaction details, prevailing market conditions at the time of trade, and information about the matched orders.
+- ftref_early_exercise_strike_by_option_class: 6 columns — Reference data defining the maximum strike for early exercise of call options and minimum strike for early exercise of put options, per option class and expiration.
+- ftref_event_free_realized_volatility: 11 columns — Reference data providing historical realized volatility calculations for various lookback periods (1 week to 2 years). These calculations are 'event-free', meaning they are adjusted to remove the impact of major corporate events like earnings announcements.
+- ftref_fit_parameters: 23 columns — Provides parameters from a fitted volatility surface model for each option expiration. This includes standard volatility smile parameters (ATM vol, skew, kurtosis), reference prices, and specific implied volatility and strike values for key delta points.
+- ftref_implied_earnings_move: 3 columns — Reference data providing the market-implied percentage move for a security's upcoming earnings announcement, derived from option prices.
+- ftref_traded_vega_ratio: 7 columns — Reference data comparing the actual traded vega to the average daily vega for an option class. This ratio indicates whether the trading activity in volatility-sensitive instruments is above or below average.
+- high_level_option_sentiment_complete: 80 columns — A comprehensive daily summary of options trading activity and sentiment indicators for various underlying securities. It aggregates volume, trades, premium, and open interest, and provides numerous derived analytics like implied volatility, delta, and participant-level volume.
+- optsum: 17 columns — End-of-day options summary data for a specific quote date. This file details open interest, volume, and pricing (OHLC, bid/ask) for each option series of an underlying.
+- ta13_f_comp: 25 columns — Aggregated data from Form 13F filings, showing quarterly holdings of institutional investment managers for a specific symbol (IBM in this sample). It includes positions in shares, calls, and puts, along with changes from the prior quarter and filer contact information.
+- underlying_eodsummaries: 7 columns — Contains end-of-day (EOD) summary trade information for an underlying security, specifically distinguishing between opening ('O') and closing ('C') auction trades across different exchanges.
+- underlying_eod: 12 columns — Standard end-of-day (EOD) summary for an underlying security. Provides daily open, high, low, close (OHLC), volume, and VWAP, along with bid/ask snapshots at 15:45 and EOD.
+- underlying_intervals_900sec: 10 columns — Intraday summary data for an underlying security, aggregated into 900-second (15-minute) intervals. Provides OHLC, volume, VWAP, and the closing bid/ask for each interval.
+- underlying_options_eodcalcs_2023_08_25_cgi_or_historical: 34 columns — Comprehensive end-of-day summary for every option series of an underlying security. Includes OHLC, volume, open interest, and two market snapshots: one at 15:45 ET and one at EOD. This version includes calculated values (Greeks, IV) and is populated with underlying index prices, as would be seen by a user with a Cboe Global Indices (CGI) license or for a historical data pull.
+- underlying_options_eodcalcs_2023_08_25_no_cgi_subscription: 34 columns — Comprehensive end-of-day summary for every option series of an underlying security. Includes OHLC, volume, open interest, and two market snapshots: one at 15:45 ET and one at EOD. This version includes calculated values (Greeks, IV) but does NOT contain underlying index prices, as would be seen by a daily subscriber without a Cboe Global Indices (CGI) license.
+- underlying_trades: 9 columns — Tick-by-tick trade data for an underlying security. Each record represents a single trade, including its price, size, exchange, and prevailing bid/ask at the time of the trade.
+- vix_daily_inputs: 19 columns — Contains the detailed inputs used for the VIX index calculation on a specific day. It includes the final VIX value, overall calculation parameters, and the individual option series (puts and calls) that were included in the calculation, along with their prices, weights, and contributions.
+- volatility_surfaces_constant_maturity_delta_relative: 49 columns — Intraday snapshots of the volatility surface for an underlying, organized by constant maturity and constant delta. For each timestamp and maturity (e.g., 1M, 3M), it provides the implied volatility (iv) and strike price for fixed delta points (e.g., 5-delta, 10-delta, etc.).
+- volatility_surfaces_constant_maturity_price_relative: 55 columns — Intraday snapshots of the volatility surface for an underlying, organized by constant maturity and price relative to the underlying. For each timestamp and maturity (e.g., 1M, 3M), it provides the implied volatility (iv) for fixed strike levels relative to the current underlying price (e.g., 80% of spot, 110% of spot).
+- volatility_surfaces_expiration_specific_delta_relative: 49 columns — Intraday snapshots of the volatility surface for an underlying, organized by specific expiration date and constant delta. For each timestamp and expiration, it provides the implied volatility (iv) and strike price for fixed delta points (e.g., 5-delta, 10-delta, etc.).
+- volatility_surfaces_expiration_specific_price_relative: 55 columns — Intraday snapshots of the volatility surface for an underlying, organized by specific expiration date and price relative to the underlying. For each timestamp and expiration, it provides the implied volatility (iv) for fixed strike levels relative to the current underlying price.
+- bbo_2020_01_02_cadjpy: 5 columns — Headerless file containing Best Bid and Offer (BBO) quote data for the CAD/JPY currency pair. The filename indicates the date, but timestamps in the file are time-only, representing the New York session (legacy format).
+- bbo_ldn_2023_08_22_cadjpy: 5 columns — Headerless file containing Best Bid and Offer (BBO) quote data for the CAD/JPY currency pair during the London session.
+- bbo_ny_2020_01_02_cadjpy: 5 columns — Headerless file containing Best Bid and Offer (BBO) quote data for the CAD/JPY currency pair during the New York session.
+- cccy_eod: 6 columns — End-of-day (EOD) summary data for various cryptocurrency symbols. Provides daily open, high, low, and close (OHLC) prices.
+- cccy_tick: 3 columns — Tick-level price data for various cryptocurrency symbols. Each row represents a single price update at a specific point in time.
+- cgi_eod: 6 columns — End-of-day (EOD) summary data for various Cboe Global Indices (CGI). Provides daily open, high, low, and close (OHLC) values for each index.
+- cgi_tick: 3 columns — Tick-level price data for various Cboe Global Indices (CGI). Each row represents a single index value update at a specific point in time.
+- eod_theos_cboe_prop_20251215_1600: 15 columns — End-of-day file containing proprietary theoretical prices ('theos') for Cboe options as of a specific calculation time. It provides the calculated fair value for each option series.
+- ftse_eod: 6 columns — End-of-day (EOD) summary data for various FTSE Russell indices. Provides daily open, high, low, and close (OHLC) values for each index.
+- ftse_tick: 3 columns — Tick-level price data for various FTSE Russell indices. Each row represents a single index value update at a specific point in time.
+- inav_eod: 6 columns — End-of-day (EOD) summary data for various Indicative Net Asset Values (iNAV), typically for ETFs. Provides daily open, high, low, and close (OHLC) values for each iNAV symbol.
+- inav_tick: 3 columns — Tick-level price data for various Indicative Net Asset Values (iNAV). Each row represents a single iNAV update at a specific point in time.
+- livevol_exchange_ids: 4 columns — A reference or lookup table that maps numerical exchange IDs to their display names, full names, and the types of securities they trade. This file is used to enrich other datasets that only contain the numerical ID.
+- livevol_trade_condition_ids: 3 columns — A reference or lookup table mapping numerical trade condition IDs to their names and applicable security types. This sheet provides the primary mapping for the 'trade_condition_id' field found in other datasets.
+- main_eod: 7 columns — End-of-day (EOD) summary data for Cboe's main proprietary indices (e.g., VIX, SKEW). Provides daily open, high, low, and close (OHLC) values, and for some, total option volume.
+- main_tick: 4 columns — Tick-level data for Cboe's main proprietary indices (e.g., VIX). Each row represents a single index value update at a specific point in time, and may include total option volume.
+- msci_eod: 6 columns — End-of-day (EOD) summary data for various MSCI indices. Provides daily open, high, low, and close (OHLC) values for each index.
+- msci_tick: 3 columns — Tick-level price data for various MSCI indices. Each row represents a single index value update at a specific point in time.
+- mstar_eod: 6 columns — End-of-day (EOD) summary data for various Morningstar indices. Provides daily open, high, low, and close (OHLC) values for each index.
+- mstar_tick: 3 columns — Tick-level price data for various Morningstar indices. Each row represents a single index value update at a specific point in time.
+- rts13_public_trade_data_apa: 38 columns — Public trade data from an Approved Publication Arrangement (APA), likely under European MiFID II regulations. It contains post-trade transparency reports for various financial instruments, identified by ISIN.
+- snp_2020_01_02_cadjpy: 4 columns — Headerless file containing snapshot trade data for the CAD/JPY currency pair. The filename indicates the date, but timestamps are time-only (legacy format).
+- snp_ldn_2023_08_22_cadjpy: 4 columns — Headerless file containing snapshot trade data for the CAD/JPY currency pair during the London session.
+- snp_ny_2020_01_02_cadjpy: 4 columns — Headerless file containing snapshot trade data for the CAD/JPY currency pair during the New York session.
+- tks_2020_01_02_cadjpy: 6 columns — Headerless file containing tick trade data for the CAD/JPY currency pair. The filename indicates the date, but timestamps are time-only (legacy format). This format appears to have more detail than 'trd' or 'snp' files.
+- tks_ldn_2023_08_22_cadjpy: 6 columns — Headerless file containing tick trade data for the CAD/JPY currency pair for the London session.
+- tks_ny_2020_01_02_cadjpy: 6 columns — Headerless file containing tick trade data for the CAD/JPY currency pair for the New York session.
+- trd_2020_01_02_cadjpy: 4 columns — Headerless file containing trade data for the CAD/JPY currency pair. The filename indicates the date, but timestamps are time-only (legacy format).
+- trd_ldn_2023_08_22_cadjpy: 4 columns — Headerless file containing trade data for the CAD/JPY currency pair for the London session.
+- trd_ny_2020_01_02_cadjpy: 4 columns — Headerless file containing trade data for the CAD/JPY currency pair for the New York session.
+
+### Notes
+- Source: https://datashop.cboe.com/data-products
+- Source ID: 6e73a197-1de5-5550-9cc4-8c59bcec074b

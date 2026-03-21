@@ -1,6 +1,6 @@
 """BQ metadata table management for data onboarding lineage tracking.
 
-Manages 5 tables in the {BQ_BRONZE_META_DATASET} dataset:
+Manages 5 tables in the {BQ_META_DATASET} dataset:
   - source_manifest: Every file tracked (path, hash, type, classification)
   - processing_log: Every pipeline action (phase, status, timestamps)
   - table_lineage: BQ table → source file mappings
@@ -15,12 +15,12 @@ import json
 import logging
 import uuid
 
-from .config import BQ_BRONZE_META_DATASET, BQ_DATASET_LOCATION, GOOGLE_CLOUD_PROJECT
+from .config import BQ_META_DATASET, BQ_DATASET_LOCATION, GOOGLE_CLOUD_PROJECT
 
 logger = logging.getLogger(__name__)
 
 FULL_DATASET_ID = (
-    f"{GOOGLE_CLOUD_PROJECT}.{BQ_BRONZE_META_DATASET}" if GOOGLE_CLOUD_PROJECT else None
+    f"{GOOGLE_CLOUD_PROJECT}.{BQ_META_DATASET}" if GOOGLE_CLOUD_PROJECT else None
 )
 
 # --- Table DDLs ---

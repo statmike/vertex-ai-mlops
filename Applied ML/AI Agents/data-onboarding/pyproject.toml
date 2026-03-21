@@ -18,6 +18,9 @@ dependencies = [
     "openpyxl>=3.1.0",
     "pdfplumber>=0.11.0",
     "google-cloud-datacatalog-lineage>=0.3.0",
+    "google-cloud-geminidataanalytics>=0.3.0",
+    "vl-convert-python>=1.8.0",
+    "altair>=5.5.0",
 ]
 
 [project.optional-dependencies]
@@ -47,9 +50,11 @@ testpaths = [
     "agent_design/tests",
     "agent_implement/tests",
     "agent_validate/tests",
+    "agent_context/tests",
+    "agent_convo/tests",
 ]
 asyncio_mode = "auto"
-addopts = "--cov=agent_orchestrator --cov=agent_acquire --cov=agent_discover --cov=agent_understand --cov=agent_design --cov=agent_implement --cov=agent_validate --cov-report=term-missing"
+addopts = "--cov=agent_orchestrator --cov=agent_acquire --cov=agent_discover --cov=agent_understand --cov=agent_design --cov=agent_implement --cov=agent_validate --cov=agent_context --cov=agent_convo --cov-report=term-missing"
 
 [tool.coverage.run]
 source = [
@@ -60,6 +65,8 @@ source = [
     "agent_design",
     "agent_implement",
     "agent_validate",
+    "agent_context",
+    "agent_convo",
 ]
 
 [tool.coverage.report]

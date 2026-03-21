@@ -4,7 +4,7 @@ import logging
 
 from agent_orchestrator.config import (
     BQ_BRONZE_DATASET,
-    BQ_BRONZE_META_DATASET,
+    BQ_META_DATASET,
     GOOGLE_CLOUD_PROJECT,
 )
 
@@ -18,14 +18,15 @@ def get_bq_client():
     return bigquery.Client(project=GOOGLE_CLOUD_PROJECT)
 
 
-def get_table_row_count(table_name: str) -> int | None:
+def get_table_row_count(table_name: str, bronze_dataset: str = "") -> int | None:
     """Get row count from a BQ table. Returns None if table doesn't exist."""
     if not GOOGLE_CLOUD_PROJECT:
         return None
 
     try:
         client = get_bq_client()
-        table_id = f"{GOOGLE_CLOUD_PROJECT}.{BQ_BRONZE_DATASET}.{table_name}"
+        ds = bronze_dataset or BQ_BRONZE_DATASET
+        table_id = f"{GOOGLE_CLOUD_PROJECT}.{ds}.{table_name}"
         table = client.get_table(table_id)
         return table.num_rows
     except Exception as e:
@@ -33,7 +34,7 @@ def get_table_row_count(table_name: str) -> int | None:
         return None
 
 
-def get_column_null_rates(table_name: str) -> dict[str, float]:
+def get_column_null_rates(table_name: str, bronze_dataset: str = "") -> dict[str, float]:
     """Get null rates for each column in a BQ table.
 
     Returns dict of column_name → null_percentage.
@@ -43,7 +44,8 @@ def get_column_null_rates(table_name: str) -> dict[str, float]:
 
     try:
         client = get_bq_client()
-        table_id = f"{GOOGLE_CLOUD_PROJECT}.{BQ_BRONZE_DATASET}.{table_name}"
+        ds = bronze_dataset or BQ_BRONZE_DATASET
+        table_id = f"{GOOGLE_CLOUD_PROJECT}.{ds}.{table_name}"
         table = client.get_table(table_id)
 
         if table.num_rows == 0:
@@ -66,7 +68,7 @@ def get_column_null_rates(table_name: str) -> dict[str, float]:
         return {}
 
 
-def get_column_types(table_name: str) -> dict[str, str]:
+def get_column_types(table_name: str, bronze_dataset: str = "") -> dict[str, str]:
     """Get actual column types from a BQ table.
 
     Returns dict of column_name → BQ type string.
@@ -76,7 +78,8 @@ def get_column_types(table_name: str) -> dict[str, str]:
 
     try:
         client = get_bq_client()
-        table_id = f"{GOOGLE_CLOUD_PROJECT}.{BQ_BRONZE_DATASET}.{table_name}"
+        ds = bronze_dataset or BQ_BRONZE_DATASET
+        table_id = f"{GOOGLE_CLOUD_PROJECT}.{ds}.{table_name}"
         table = client.get_table(table_id)
         return {field.name: field.field_type for field in table.schema}
 
@@ -94,7 +97,7 @@ def check_lineage_exists(source_id: str, table_name: str) -> bool:
         from google.cloud import bigquery
 
         client = get_bq_client()
-        table_id = f"{GOOGLE_CLOUD_PROJECT}.{BQ_BRONZE_META_DATASET}.table_lineage"
+        table_id = f"{GOOGLE_CLOUD_PROJECT}.{BQ_META_DATASET}.table_lineage"
 
         query = f"""
         SELECT COUNT(*) as cnt

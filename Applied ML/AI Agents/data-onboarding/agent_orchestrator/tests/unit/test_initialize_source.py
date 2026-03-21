@@ -70,3 +70,43 @@ class TestInitializeSource:
         result = await initialize_source("http://example.com/data", mock_tool_context)
 
         assert mock_tool_context.state["source_type"] == "url"
+
+    @pytest.mark.asyncio
+    async def test_url_sets_domain_slug(self, mock_tool_context):
+        await initialize_source("https://data.cms.gov/provider-data", mock_tool_context)
+
+        assert mock_tool_context.state["domain_slug"] == "cms_gov"
+        assert "cms_gov" in mock_tool_context.state["bq_bronze_dataset"]
+        assert mock_tool_context.state["bq_bronze_dataset"].endswith("_bronze")
+
+    @pytest.mark.asyncio
+    async def test_gcs_no_domain_slug(self, mock_tool_context):
+        await initialize_source("gs://bucket/path", mock_tool_context)
+
+        assert mock_tool_context.state["domain_slug"] == ""
+        # Falls back to default BQ_BRONZE_DATASET
+        assert mock_tool_context.state["bq_bronze_dataset"].endswith("_bronze")
+
+    @pytest.mark.asyncio
+    async def test_same_domain_same_dataset(self, mock_tool_context):
+        await initialize_source("https://data.cms.gov/page1", mock_tool_context)
+        ds1 = mock_tool_context.state["bq_bronze_dataset"]
+
+        mock_tool_context.state = {}
+        await initialize_source("https://data.cms.gov/page2", mock_tool_context)
+        ds2 = mock_tool_context.state["bq_bronze_dataset"]
+
+        assert ds1 == ds2
+
+    @pytest.mark.asyncio
+    async def test_url_sets_staging_dataset(self, mock_tool_context):
+        await initialize_source("https://data.cms.gov/provider-data", mock_tool_context)
+
+        assert "cms_gov" in mock_tool_context.state["bq_staging_dataset"]
+        assert mock_tool_context.state["bq_staging_dataset"].endswith("_staging")
+
+    @pytest.mark.asyncio
+    async def test_gcs_sets_staging_dataset(self, mock_tool_context):
+        await initialize_source("gs://bucket/path", mock_tool_context)
+
+        assert mock_tool_context.state["bq_staging_dataset"].endswith("_staging")

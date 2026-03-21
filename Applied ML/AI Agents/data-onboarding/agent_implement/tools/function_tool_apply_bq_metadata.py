@@ -41,14 +41,23 @@ async def apply_bq_metadata(
         applied = []
         errors = []
 
+        # Read domain-scoped bronze dataset from state (set by initialize_source)
+        bronze_dataset = tool_context.state.get("bq_bronze_dataset", BQ_BRONZE_DATASET)
+
         for table_name, proposal in proposals.items():
-            table_id = f"{GOOGLE_CLOUD_PROJECT}.{BQ_BRONZE_DATASET}.{table_name}"
+            table_id = f"{GOOGLE_CLOUD_PROJECT}.{bronze_dataset}.{table_name}"
 
             try:
                 table = client.get_table(table_id)
 
-                # Update table description
-                table.description = proposal.get("description", "")
+                # Update table description with documentation pointer
+                desc = proposal.get("description", "")
+                doc_pointer = (
+                    f"\n\nFor detailed documentation, query "
+                    f"`{bronze_dataset}.table_documentation` "
+                    f"WHERE table_name = '{table_name}'"
+                )
+                table.description = desc + doc_pointer
 
                 # Update table labels
                 source_id = tool_context.state.get("source_id", "")

@@ -1,6 +1,5 @@
-from .function_tool_analyze_columns import analyze_columns
 from .function_tool_cross_reference import cross_reference
-from .function_tool_read_context_file import read_context_file
-from .function_tool_read_data_file import read_data_file
+from .function_tool_read_all_context_files import read_all_context_files
+from .function_tool_read_all_data_files import read_all_data_files
 
-TOOLS = [read_data_file, read_context_file, analyze_columns, cross_reference]
+TOOLS = [read_all_data_files, read_all_context_files, cross_reference]

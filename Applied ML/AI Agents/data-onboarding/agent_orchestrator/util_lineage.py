@@ -7,12 +7,13 @@ three FQN prefixes:
   - ``gcs:`` for Cloud Storage objects
   - ``bigquery:`` for BigQuery tables
 
-BigQuery automatically captures the ext_table → materialized table hop
-when the Data Lineage API is enabled, so we only need to publish three
-custom events per file:
+We publish four custom events per file:
   1. starting URL  →  file download URL
   2. file URL      →  GCS staging object
-  3. GCS object    →  BigQuery external table
+  3. GCS object    →  external BQ table
+  4. external BQ table → bronze (materialized) BQ table
+
+This gives one continuous chain: URL → file URL → GCS → ext_table → table.
 """
 
 import logging
@@ -102,14 +103,12 @@ def publish_lineage(
     """Publish end-to-end lineage to the Dataplex Data Lineage API.
 
     Creates one **Process** (``data-onboarding``), one **Run** per
-    invocation, and up to three **LineageEvents** per file:
+    invocation, and up to four **LineageEvents** per file:
 
     1. ``custom:<starting_url>`` → ``custom:<file_url>``
     2. ``custom:<file_url>``     → ``gcs:<gcs_uri>``
-    3. ``gcs:<gcs_uri>``         → ``bigquery:<external_table>``
-
-    The fourth hop (external table → materialized table) is captured
-    automatically by BigQuery when the Data Lineage API is enabled.
+    3. ``gcs:<gcs_uri>``         → ``bigquery:<ext_table>``
+    4. ``bigquery:<ext_table>``  → ``bigquery:<bronze_table>``
 
     Args:
         source_id: Unique identifier for this onboarding run.
@@ -117,8 +116,10 @@ def publish_lineage(
         file_lineage: List of dicts, each with keys:
             - file_url: Direct download URL of the file.
             - gcs_uri: GCS URI (``gs://bucket/path``).
-            - external_table: Full BQ external table ID
-              (``project.dataset.ext_table``).
+            - external_table: Fully-qualified external table id
+              (``project.dataset.table``).
+            - bronze_table: Fully-qualified bronze table id
+              (``project.dataset.table``).
 
     Returns:
         Dict with ``process``, ``run``, and ``events_created`` count,
@@ -136,7 +137,7 @@ def publish_lineage(
             Process,
             Run,
         )
-        from google.cloud.datacatalog_lineage_v1.types import AttributeValue
+        from google.protobuf.struct_pb2 import Value
         from google.protobuf.timestamp_pb2 import Timestamp
 
         client = LineageClient()
@@ -147,7 +148,7 @@ def publish_lineage(
         process = Process(
             display_name="Data Onboarding Pipeline",
             attributes={
-                "system": AttributeValue(string_value="data-onboarding-agent"),
+                "system": Value(string_value="data-onboarding-agent"),
             },
         )
         created_process = client.create_process(
@@ -165,8 +166,8 @@ def publish_lineage(
             end_time=now,
             state=Run.State.COMPLETED,
             attributes={
-                "source_id": AttributeValue(string_value=source_id),
-                "starting_url": AttributeValue(string_value=starting_url),
+                "source_id": Value(string_value=source_id),
+                "starting_url": Value(string_value=starting_url),
             },
         )
         created_run = client.create_run(
@@ -180,7 +181,6 @@ def publish_lineage(
         for entry in file_lineage:
             file_url = entry.get("file_url", "")
             gcs_uri = entry.get("gcs_uri", "")
-            ext_table = entry.get("external_table", "")
 
             # Event 1: starting URL → file download URL
             if file_url and starting_url and starting_url != file_url:
@@ -202,13 +202,25 @@ def publish_lineage(
                 )
                 events_created += 1
 
-            # Event 3: GCS object → external BQ table
+            # Event 3: GCS staging object → external BQ table
+            ext_table = entry.get("external_table", "")
             if gcs_uri and ext_table:
                 _create_event(
                     client,
                     created_run.name,
                     [build_fqn_gcs(gcs_uri)],
                     build_fqn_bigquery_full(ext_table),
+                )
+                events_created += 1
+
+            # Event 4: external BQ table → bronze (materialized) BQ table
+            bronze_table = entry.get("bronze_table", "")
+            if ext_table and bronze_table:
+                _create_event(
+                    client,
+                    created_run.name,
+                    [build_fqn_bigquery_full(ext_table)],
+                    build_fqn_bigquery_full(bronze_table),
                 )
                 events_created += 1
 

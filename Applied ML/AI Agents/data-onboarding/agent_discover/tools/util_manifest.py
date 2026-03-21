@@ -3,7 +3,7 @@
 import logging
 
 from agent_orchestrator.config import (
-    BQ_BRONZE_META_DATASET,
+    BQ_META_DATASET,
     GOOGLE_CLOUD_PROJECT,
 )
 
@@ -23,7 +23,7 @@ def get_prior_manifest(source_id: str) -> list[dict]:
         from google.cloud import bigquery
 
         client = bigquery.Client(project=GOOGLE_CLOUD_PROJECT)
-        table = f"{GOOGLE_CLOUD_PROJECT}.{BQ_BRONZE_META_DATASET}.source_manifest"
+        table = f"{GOOGLE_CLOUD_PROJECT}.{BQ_META_DATASET}.source_manifest"
 
         query = f"""
         SELECT file_path, file_hash, file_type, classification, file_size_bytes

@@ -1,6 +1,7 @@
 import io
 import logging
 import posixpath
+import re
 import zipfile
 from urllib.parse import urlparse
 
@@ -11,15 +12,91 @@ from agent_orchestrator.config import (
     CONTEXT_FILE_EXTENSIONS,
     CRAWL_MAX_FILES,
     DATA_FILE_EXTENSIONS,
+    gcs_bucket_name,
 )
 from agent_orchestrator.util_metadata import write_processing_log, write_source_manifest
 
 from .util_common import compute_hash, log_tool_error
-from .util_gcs import upload_bytes
+from .util_gcs import list_blobs, upload_bytes
 
 logger = logging.getLogger(__name__)
 
 _SUPPORTED_EXTENSIONS = DATA_FILE_EXTENSIONS + CONTEXT_FILE_EXTENSIONS
+
+# Content-Type values that indicate a zip archive.
+_ZIP_CONTENT_TYPES = {
+    "application/zip",
+    "application/x-zip-compressed",
+    "application/x-zip",
+    "application/octet-stream",  # generic binary — checked alongside magic bytes
+}
+
+# Zip-based container formats that should NOT be extracted as archives.
+_ZIP_CONTAINER_EXTENSIONS = {
+    "xlsx", "xlsm", "xlsb", "xls", "docx", "docm", "pptx", "pptm",
+}
+
+# Office Open XML internal paths/files — safety net for true zip archives
+# that happen to contain Office XML internals.
+_OOXML_INTERNAL_PREFIXES = ("xl/", "docProps/", "word/", "ppt/", "_rels/")
+_OOXML_INTERNAL_FILES = {"[Content_Types].xml"}
+
+
+def _resolve_filename(url: str, response: httpx.Response) -> tuple[str, str]:
+    """Determine the real filename and extension for a downloaded file.
+
+    Tries the ``Content-Disposition`` header first, then the URL path.
+    If neither provides a useful extension, falls back to Content-Type
+    heuristics.
+
+    Returns (filename, extension) where extension is lowercase without dot.
+    """
+    filename = ""
+
+    # 1. Try Content-Disposition header (e.g. 'attachment; filename="data.zip"')
+    cd = response.headers.get("content-disposition", "")
+    if cd:
+        # RFC 6266 filename*= (UTF-8) or filename=
+        match = re.search(r"filename\*?=['\"]?([^;'\"]+)", cd, re.IGNORECASE)
+        if match:
+            filename = posixpath.basename(match.group(1).strip())
+
+    # 2. Fall back to URL path
+    if not filename:
+        parsed = urlparse(url)
+        filename = posixpath.basename(parsed.path) or "unknown_file"
+
+    ext = posixpath.splitext(filename)[1].lstrip(".").lower()
+
+    # 3. If still no extension, infer from Content-Type
+    if not ext:
+        ct = response.headers.get("content-type", "").split(";")[0].strip().lower()
+        if ct in ("application/zip", "application/x-zip-compressed", "application/x-zip"):
+            ext = "zip"
+            filename = f"{filename}.zip"
+        elif ct == "text/csv":
+            ext = "csv"
+            filename = f"{filename}.csv"
+        elif ct == "application/json":
+            ext = "json"
+            filename = f"{filename}.json"
+
+    return filename, ext
+
+
+def _is_zip_response(ext: str, response: httpx.Response) -> bool:
+    """Check if a response is a zip archive by extension, Content-Type, or magic bytes."""
+    if ext in _ZIP_CONTAINER_EXTENSIONS:
+        return False  # zip-based format, treat as single file
+    if ext == "zip":
+        return True
+    ct = response.headers.get("content-type", "").split(";")[0].strip().lower()
+    if ct in ("application/zip", "application/x-zip-compressed", "application/x-zip"):
+        return True
+    # Check zip magic bytes (PK\x03\x04)
+    if response.content[:4] == b"PK\x03\x04":
+        return True
+    return False
 
 
 def _extract_zip(
@@ -50,6 +127,18 @@ def _extract_zip(
                 skipped.append(member.filename)
                 continue
 
+            # Skip macOS resource fork files (._* prefix)
+            base_check = posixpath.basename(member.filename)
+            if base_check.startswith("._"):
+                skipped.append(member.filename)
+                continue
+
+            # Skip Office Open XML internal files (e.g. xl/worksheets/sheet1.xml)
+            if (any(member.filename.startswith(p) for p in _OOXML_INTERNAL_PREFIXES)
+                    or base_check in _OOXML_INTERNAL_FILES):
+                skipped.append(member.filename)
+                continue
+
             ext = posixpath.splitext(member.filename)[1].lstrip(".").lower()
             if ext not in _SUPPORTED_EXTENSIONS:
                 skipped.append(member.filename)
@@ -73,12 +162,19 @@ def _extract_zip(
                 continue
 
             gcs_path = f"{staging_path}/files/{base}"
-            gcs_uri = upload_bytes(data, gcs_path)
             file_hash = compute_hash(data)
+            parent_url = url_to_parent.get(archive_url, "")
+            gcs_uri = upload_bytes(data, gcs_path, metadata={
+                "sha256": file_hash,
+                "url": archive_url,
+                "parent_url": parent_url,
+                "archive_url": archive_url,
+                "archive_member_path": member.filename,
+            })
 
             extracted.append({
                 "url": archive_url,
-                "parent_url": url_to_parent.get(archive_url, ""),
+                "parent_url": parent_url,
                 "gcs_uri": gcs_uri,
                 "gcs_path": gcs_path,
                 "filename": base,
@@ -125,8 +221,23 @@ async def download_files(
         }
 
         downloaded = []
+        cached = []
         errors = []
         zip_extractions = 0
+        bucket = gcs_bucket_name()
+
+        # Pre-index existing GCS blobs for fast idempotency checks
+        existing_files = {
+            b["name"]: b for b in list_blobs(f"{staging_path}/files/")
+        }
+        existing_archives = {
+            b["name"]: b for b in list_blobs(f"{staging_path}/archives/")
+        }
+        if existing_files or existing_archives:
+            logger.info(
+                "Idempotency check: %d existing files, %d existing archives in GCS",
+                len(existing_files), len(existing_archives),
+            )
 
         async with httpx.AsyncClient(
             follow_redirects=True,
@@ -135,16 +246,106 @@ async def download_files(
         ) as client:
             for url in file_urls[:CRAWL_MAX_FILES]:
                 try:
+                    # Pre-resolve filename from URL for idempotency check.
+                    # The real filename may change after download (via headers).
+                    parsed = urlparse(url)
+                    url_filename = posixpath.basename(parsed.path) or "unknown_file"
+                    url_ext = posixpath.splitext(url_filename)[1].lstrip(".").lower()
+
+                    # Quick idempotency check using URL-based filename
+                    if url_ext == "zip":
+                        pre_archive_path = f"{staging_path}/archives/{url_filename}"
+                        if pre_archive_path in existing_archives:
+                            recovered = []
+                            for blob_name, blob_info in existing_files.items():
+                                meta = blob_info.get("metadata", {})
+                                if meta.get("archive_url") == url:
+                                    recovered.append({
+                                        "url": url,
+                                        "parent_url": meta.get("parent_url", ""),
+                                        "gcs_uri": f"gs://{bucket}/{blob_name}",
+                                        "gcs_path": blob_name,
+                                        "filename": posixpath.basename(blob_name),
+                                        "size_bytes": blob_info["size"],
+                                        "hash": meta.get("sha256", ""),
+                                        "archive_url": url,
+                                        "archive_member_path": meta.get(
+                                            "archive_member_path", ""
+                                        ),
+                                    })
+                            cached.extend(recovered)
+                            logger.info(
+                                "Skipped zip %s (cached, %d extracted files)",
+                                url_filename, len(recovered),
+                            )
+                            continue
+                    else:
+                        pre_file_path = f"{staging_path}/files/{url_filename}"
+                        if pre_file_path in existing_files:
+                            blob_info = existing_files[pre_file_path]
+                            meta = blob_info.get("metadata", {})
+                            cached.append({
+                                "url": url,
+                                "parent_url": meta.get(
+                                    "parent_url", url_to_parent.get(url, "")
+                                ),
+                                "gcs_uri": f"gs://{bucket}/{pre_file_path}",
+                                "gcs_path": pre_file_path,
+                                "filename": url_filename,
+                                "size_bytes": blob_info["size"],
+                                "hash": meta.get("sha256", ""),
+                                "archive_url": None,
+                                "archive_member_path": None,
+                            })
+                            logger.info("Skipped %s (cached in GCS)", url_filename)
+                            continue
+
+                    # Download the file
                     response = await client.get(url)
                     response.raise_for_status()
                     data = response.content
 
-                    # Determine filename and extension from URL
-                    parsed = urlparse(url)
-                    filename = posixpath.basename(parsed.path) or "unknown_file"
-                    file_ext = posixpath.splitext(filename)[1].lstrip(".").lower()
+                    # Resolve the real filename from response headers
+                    filename, file_ext = _resolve_filename(url, response)
+                    parent_url = url_to_parent.get(url, "")
 
-                    if file_ext == "zip":
+                    # Check if this is a zip archive (by ext, content-type, or magic bytes)
+                    if _is_zip_response(file_ext, response):
+                        archive_path = f"{staging_path}/archives/{filename}"
+
+                        # Check again with resolved name (may differ from URL name)
+                        if archive_path in existing_archives:
+                            recovered = []
+                            for blob_name, blob_info in existing_files.items():
+                                meta = blob_info.get("metadata", {})
+                                if meta.get("archive_url") == url:
+                                    recovered.append({
+                                        "url": url,
+                                        "parent_url": meta.get("parent_url", ""),
+                                        "gcs_uri": f"gs://{bucket}/{blob_name}",
+                                        "gcs_path": blob_name,
+                                        "filename": posixpath.basename(blob_name),
+                                        "size_bytes": blob_info["size"],
+                                        "hash": meta.get("sha256", ""),
+                                        "archive_url": url,
+                                        "archive_member_path": meta.get(
+                                            "archive_member_path", ""
+                                        ),
+                                    })
+                            if recovered:
+                                cached.extend(recovered)
+                                logger.info(
+                                    "Skipped zip %s (cached, %d extracted files)",
+                                    filename, len(recovered),
+                                )
+                                continue
+
+                        archive_hash = compute_hash(data)
+                        upload_bytes(data, archive_path, metadata={
+                            "sha256": archive_hash,
+                            "url": url,
+                        })
+
                         extracted, skipped = _extract_zip(
                             data, url, staging_path, url_to_parent,
                         )
@@ -160,12 +361,17 @@ async def download_files(
                     else:
                         # Regular file
                         gcs_path = f"{staging_path}/files/{filename}"
-                        gcs_uri = upload_bytes(data, gcs_path)
                         file_hash = compute_hash(data)
+
+                        gcs_uri = upload_bytes(data, gcs_path, metadata={
+                            "sha256": file_hash,
+                            "url": url,
+                            "parent_url": parent_url,
+                        })
 
                         downloaded.append({
                             "url": url,
-                            "parent_url": url_to_parent.get(url, ""),
+                            "parent_url": parent_url,
                             "gcs_uri": gcs_uri,
                             "gcs_path": gcs_path,
                             "filename": filename,
@@ -179,12 +385,13 @@ async def download_files(
                     logger.warning(f"Failed to download {url}: {e}")
                     errors.append({"url": url, "error": str(e)})
 
-        # Store in state
-        tool_context.state["files_acquired"] = downloaded
+        # Combine newly downloaded and cached files
+        all_files = downloaded + cached
+        tool_context.state["files_acquired"] = all_files
 
         # Write source manifest to BQ (classification filled later by classify_files)
         source_id = tool_context.state.get("source_id", "")
-        if source_id and downloaded:
+        if source_id and all_files:
             manifest_rows = [
                 {
                     "source_id": source_id,
@@ -195,26 +402,37 @@ async def download_files(
                     "classification": "",
                     "original_url": f.get("archive_url") or f["url"],
                 }
-                for f in downloaded
+                for f in all_files
             ]
             write_source_manifest(manifest_rows)
             write_processing_log(
                 source_id, "acquire", "download_files", "completed",
-                details={"downloaded": len(downloaded), "errors": len(errors)},
+                details={
+                    "downloaded": len(downloaded),
+                    "cached": len(cached),
+                    "errors": len(errors),
+                },
             )
 
         summary = (
             f"Download complete.\n"
-            f"  Files downloaded: {len(downloaded)}\n"
+            f"  Files newly downloaded: {len(downloaded)}\n"
+            f"  Files cached (skipped): {len(cached)}\n"
             f"  Zip archives extracted: {zip_extractions}\n"
             f"  Errors: {len(errors)}\n"
-            f"  Total size: {sum(f['size_bytes'] for f in downloaded) / 1024:.1f} KB\n"
+            f"  Total files: {len(all_files)}\n"
+            f"  Total size: {sum(f['size_bytes'] for f in all_files) / 1024:.1f} KB\n"
         )
 
+        if cached:
+            summary += f"\nSkipped {len(cached)} files already in GCS.\n"
+
         if downloaded:
-            summary += "\nDownloaded files:\n"
+            summary += "\nNewly downloaded:\n"
             for f in downloaded[:20]:
                 summary += f"  - {f['filename']} ({f['size_bytes']} bytes) → {f['gcs_uri']}\n"
+            if len(downloaded) > 20:
+                summary += f"  ... and {len(downloaded) - 20} more\n"
 
         if errors:
             summary += "\nErrors:\n"

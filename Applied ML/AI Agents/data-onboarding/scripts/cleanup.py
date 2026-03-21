@@ -28,12 +28,13 @@ dotenv.load_dotenv(dotenv_path=PROJECT_ROOT / ".env")
 from agent_orchestrator.config import (  # noqa: E402
     BQ_ANALYTICS_DATASET,
     BQ_BRONZE_DATASET,
-    BQ_BRONZE_META_DATASET,
+    BQ_META_DATASET,
     BQ_DATASET_LOCATION,
     OUTPUT_DIR,
     GCS_STAGING_ROOT,
     GOOGLE_CLOUD_PROJECT,
     GOOGLE_CLOUD_STORAGE_BUCKET,
+    RESOURCE_PREFIX,
     gcs_bucket_name,
 )
 
@@ -57,14 +58,47 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _discover_managed_datasets() -> list[str]:
+    """Discover all domain-scoped datasets matching the RESOURCE_PREFIX pattern.
+
+    Returns dataset names like data_onboarding_bronze, data_onboarding_cms_gov_bronze,
+    data_onboarding_cms_gov_staging, etc.
+    """
+    if not GOOGLE_CLOUD_PROJECT:
+        return [BQ_BRONZE_DATASET]
+
+    try:
+        from google.cloud import bigquery
+
+        client = bigquery.Client(project=GOOGLE_CLOUD_PROJECT)
+        prefix = f"{RESOURCE_PREFIX}_"
+        datasets = []
+        for ds in client.list_datasets():
+            name = ds.dataset_id
+            # Match: {RESOURCE_PREFIX}_*_bronze or {RESOURCE_PREFIX}_*_staging
+            if name.startswith(prefix) and (
+                name.endswith("_bronze") or name.endswith("_staging")
+            ):
+                datasets.append(name)
+        return datasets if datasets else [BQ_BRONZE_DATASET]
+    except Exception:
+        return [BQ_BRONZE_DATASET]
+
+
 def _print_plan(args: argparse.Namespace) -> list[str]:
     """Print and return a summary of what will be deleted."""
     actions: list[str] = []
 
     if not args.skip_bq:
-        for ds in [BQ_BRONZE_DATASET, BQ_BRONZE_META_DATASET, BQ_ANALYTICS_DATASET]:
-            ref = f"{GOOGLE_CLOUD_PROJECT}.{ds}" if GOOGLE_CLOUD_PROJECT else ds
-            actions.append(f"BQ dataset: {ref} (location={BQ_DATASET_LOCATION})")
+        managed_datasets = _discover_managed_datasets()
+        all_datasets = managed_datasets + [BQ_META_DATASET, BQ_ANALYTICS_DATASET]
+        # Deduplicate while preserving order
+        seen = set()
+        for ds in all_datasets:
+            if ds not in seen:
+                seen.add(ds)
+                ref = f"{GOOGLE_CLOUD_PROJECT}.{ds}" if GOOGLE_CLOUD_PROJECT else ds
+                actions.append(f"BQ dataset: {ref} (location={BQ_DATASET_LOCATION})")
 
     if not args.skip_gcs:
         bucket = gcs_bucket_name()
@@ -106,7 +140,13 @@ def _delete_bq_datasets(dry_run: bool) -> None:
     from google.cloud import bigquery
 
     client = bigquery.Client(project=GOOGLE_CLOUD_PROJECT)
-    for ds_name in [BQ_BRONZE_DATASET, BQ_BRONZE_META_DATASET, BQ_ANALYTICS_DATASET]:
+    managed_datasets = _discover_managed_datasets()
+    all_datasets = managed_datasets + [BQ_META_DATASET, BQ_ANALYTICS_DATASET]
+    seen = set()
+    for ds_name in all_datasets:
+        if ds_name in seen:
+            continue
+        seen.add(ds_name)
         ds_ref = f"{GOOGLE_CLOUD_PROJECT}.{ds_name}"
         if dry_run:
             print(f"  [dry-run] Would delete BQ dataset: {ds_ref}")

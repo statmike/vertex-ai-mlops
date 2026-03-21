@@ -23,7 +23,7 @@ URL_TO_PARENT = {ARCHIVE_URL: "https://example.com/"}
 
 @patch(
     "agent_acquire.tools.function_tool_download_files.upload_bytes",
-    side_effect=lambda data, path: f"gs://bucket/{path}",
+    side_effect=lambda data, path, **kwargs: f"gs://bucket/{path}",
 )
 @patch(
     "agent_acquire.tools.function_tool_download_files.compute_hash",

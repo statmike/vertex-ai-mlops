@@ -37,6 +37,13 @@ async def cross_reference(
         schema_summary = ""
         for path, schema in schemas.items():
             schema_summary += f"\n### File: {schema.get('filename', path)}\n"
+            if schema.get("headerless"):
+                schema_summary += (
+                    "*** HEADERLESS CSV — columns are generic (col_0, col_1, ...) ***\n"
+                    f"First data row: {schema.get('original_first_row', [])}\n"
+                    "Use context documents to identify the real column names "
+                    "for these columns by matching column positions.\n"
+                )
             if "columns" in schema:
                 for col in schema["columns"]:
                     schema_summary += (

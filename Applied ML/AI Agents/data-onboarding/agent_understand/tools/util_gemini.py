@@ -39,7 +39,7 @@ async def generate_content(
     tool_context=None,
     tool_name: str | None = None,
 ) -> genai.types.GenerateContentResponse:
-    """Call Gemini with automatic retry on 429 errors.
+    """Call Gemini with automatic retry on transient errors (429, 499).
 
     Args:
         contents: Content parts to send.
@@ -81,11 +81,16 @@ async def generate_content(
 
         except Exception as e:
             error_str = str(e)
-            is_429 = "429" in error_str or "RESOURCE_EXHAUSTED" in error_str
+            is_retryable = (
+                "429" in error_str
+                or "RESOURCE_EXHAUSTED" in error_str
+                or "499" in error_str
+                or "CANCELLED" in error_str
+            )
 
-            if is_429 and attempt < MAX_RETRIES:
+            if is_retryable and attempt < MAX_RETRIES:
                 logger.warning(
-                    f"Gemini 429 (attempt {attempt}/{MAX_RETRIES}), "
+                    f"Gemini transient error (attempt {attempt}/{MAX_RETRIES}), "
                     f"retrying in {backoff:.1f}s..."
                 )
                 await asyncio.sleep(backoff)

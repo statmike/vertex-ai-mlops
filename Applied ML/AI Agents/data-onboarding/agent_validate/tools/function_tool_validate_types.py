@@ -8,6 +8,32 @@ from .util_quality import get_column_null_rates, get_column_types
 
 logger = logging.getLogger(__name__)
 
+# BigQuery type alias normalization — Standard SQL names (INT64, FLOAT64, BOOL)
+# and legacy names (INTEGER, FLOAT, BOOLEAN) are equivalent.
+_BQ_TYPE_CANONICAL: dict[str, str] = {
+    "BOOL": "BOOLEAN",
+    "INT64": "INTEGER",
+    "FLOAT64": "FLOAT",
+    "BOOLEAN": "BOOLEAN",
+    "INTEGER": "INTEGER",
+    "FLOAT": "FLOAT",
+    "STRING": "STRING",
+    "BYTES": "BYTES",
+    "DATE": "DATE",
+    "DATETIME": "DATETIME",
+    "TIME": "TIME",
+    "TIMESTAMP": "TIMESTAMP",
+    "NUMERIC": "NUMERIC",
+    "BIGNUMERIC": "BIGNUMERIC",
+    "JSON": "JSON",
+    "GEOGRAPHY": "GEOGRAPHY",
+}
+
+
+def _normalize_bq_type(t: str) -> str:
+    """Normalize a BQ type string to its canonical form."""
+    return _BQ_TYPE_CANONICAL.get(t.upper(), t.upper())
+
 
 async def validate_types(
     tool_context: tools.ToolContext,
@@ -29,13 +55,14 @@ async def validate_types(
         if not proposals:
             return "No proposed tables to validate."
 
+        bronze_dataset = tool_context.state.get("bq_bronze_dataset", "")
         results = {}
         all_passed = True
 
         for table_name, proposal in proposals.items():
             columns = proposal.get("enriched_columns", proposal.get("columns", []))
-            actual_types = get_column_types(table_name)
-            null_rates = get_column_null_rates(table_name)
+            actual_types = get_column_types(table_name, bronze_dataset)
+            null_rates = get_column_null_rates(table_name, bronze_dataset)
 
             if not actual_types:
                 results[table_name] = {
@@ -59,7 +86,7 @@ async def validate_types(
                     status = "FAIL"
                     message = "Column not found in table"
                     table_passed = False
-                elif actual_type == expected_type:
+                elif _normalize_bq_type(actual_type) == _normalize_bq_type(expected_type):
                     status = "PASS"
                     message = f"{actual_type} (null: {null_rate}%)"
                 else:
