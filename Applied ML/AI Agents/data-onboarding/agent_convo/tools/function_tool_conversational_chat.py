@@ -11,7 +11,11 @@ from google.cloud import geminidataanalytics_v1alpha as geminidataanalytics
 from google.genai.types import Part
 from google.protobuf.json_format import MessageToDict, ParseDict
 
-from .utils.conversational_analytics_api_helpers import show_message
+from .utils.conversational_analytics_api_helpers import (
+    handle_data_response,
+    handle_text_response,
+    show_message,
+)
 
 
 async def conversational_chat(
@@ -92,16 +96,45 @@ async def conversational_chat(
         if not responses:
             return "No responses received from the API."
 
-        # Update session history
-        history.extend(responses)
-        history = [
-            MessageToDict(m._pb, preserving_proto_field_name=True) for m in history
-        ]
-        sessions[datasource_key] = history
-        tool_context.state["conversational_api_sessions"] = sessions
+        # Update session history (non-critical — don't crash on serialization errors)
+        try:
+            history.extend(responses)
+            history = [
+                MessageToDict(m._pb, preserving_proto_field_name=True)
+                for m in history
+                if hasattr(m, "_pb") and m._pb is not None
+            ]
+            sessions[datasource_key] = history
+            tool_context.state["conversational_api_sessions"] = sessions
+        except Exception:
+            pass  # session history won't persist but the answer still works
 
-        # Process response
-        content = show_message(responses[-1])
+        # Selectively process responses for a clean chat experience.
+        # The stream contains: schema resolution, data query planning,
+        # generated SQL, data results, text (reasoning + answer + insights
+        # + follow-ups), and chart messages.  We keep only the useful parts.
+        content_parts = []
+        for resp in responses:
+            try:
+                m = resp.system_message
+                if "text" in m:
+                    # Text: answer summaries, insights, follow-up suggestions
+                    piece = handle_text_response(getattr(m, "text"))
+                    if piece and piece.strip():
+                        content_parts.append(piece.strip())
+                elif "data" in m:
+                    data_resp = getattr(m, "data")
+                    if "result" in data_resp:
+                        # Data result: the actual query results table
+                        piece = handle_data_response(data_resp)
+                        if piece and piece.strip():
+                            content_parts.append(piece.strip())
+                    # Skip data/query (planning) and data/generated_sql (verbose)
+                # Skip schema responses (intermediate resolution)
+                # Skip chart responses (handled separately below)
+            except Exception:
+                continue
+        content = "\n\n".join(content_parts) if content_parts else "No content in API response."
 
         if not chart:
             return content
