@@ -33,9 +33,11 @@
 ---
 # Data + AI
 
-Resources for machine learning and AI across Google Cloud data services — model serving, BigQuery AI functions, and database integrations.
+Resources for machine learning and AI across Google Cloud data services — data access, model serving, BigQuery AI functions, and database integrations.
 
 ## Contents
+
+- **[Tabular Data](tabular-data/)** — Reading tabular data efficiently for ML workflows. Compares BigQuery read approaches (query, Storage Read API, BigFrames, pandas-gbq) by cost and speed, with multi-threaded benchmarks.
 
 - **[Model Serving / Inference](model-serving.md)** — Training and deploying custom ML models across Google Cloud: PyTorch serving on Vertex AI endpoints, BigQuery ML, AlloyDB, Spanner, Dataflow RunInference, TorchServe, and GPU inference benchmarks.
 

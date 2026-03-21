@@ -1,0 +1,18 @@
+[project]
+name = "bq-reads"
+version = "0.1.0"
+description = "Reading BigQuery tables into pandas efficiently for ML workflows"
+requires-python = ">=3.10"
+dependencies = [
+    "google-cloud-bigquery",
+    "google-cloud-bigquery-storage",
+    "bigframes",
+    "pandas-gbq",
+    "db-dtypes",
+    "pyarrow",
+    "tqdm",
+    "matplotlib",
+]
+
+[dependency-groups]
+dev = ["ipykernel"]
