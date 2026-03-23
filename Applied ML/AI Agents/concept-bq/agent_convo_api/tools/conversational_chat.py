@@ -5,7 +5,11 @@ from google.adk import tools
 from google.cloud import geminidataanalytics_v1alpha as geminidataanalytics
 from google.protobuf.json_format import MessageToDict, ParseDict
 from google.genai.types import Part
-from .utils.conversational_analytics_api_helpers import show_message
+from .utils.conversational_analytics_api_helpers import (
+    handle_data_response,
+    handle_text_response,
+    show_message,
+)
 
 async def conversational_chat(question: str, chart: bool, bigquery_tables: List[Dict[str, str]], tool_context: tools.ToolContext) -> str:
     """Answers a question using the Conversational Analytics API.
@@ -74,16 +78,40 @@ async def conversational_chat(question: str, chart: bool, bigquery_tables: List[
         if not responses:
             return 'No responses received from the API.'
         
-        # Update the history for the current session
-        history.extend(responses)
-        history = [MessageToDict(m._pb, preserving_proto_field_name=True) for m in history]
+        # Update session history (non-critical — don't crash on serialization errors)
+        try:
+            history.extend(responses)
+            history = [
+                MessageToDict(m._pb, preserving_proto_field_name=True)
+                for m in history
+                if hasattr(m, "_pb") and m._pb is not None
+            ]
+            sessions[datasource_key] = history
+            tool_context.state['conversational_api_sessions'] = sessions
+        except Exception:
+            pass  # session history won't persist but the answer still works
 
-        # Store the updated history back in the sessions dictionary
-        sessions[datasource_key] = history
-        tool_context.state['conversational_api_sessions'] = sessions
-
-        # prepare response to question
-        content = show_message(responses[-1])
+        # Selectively process responses for a clean experience.
+        # The stream contains: schema resolution, data query planning,
+        # generated SQL, data results, text (answer + insights + follow-ups),
+        # and chart messages. We keep only the useful parts.
+        content_parts = []
+        for resp in responses:
+            try:
+                m = resp.system_message
+                if 'text' in m:
+                    piece = handle_text_response(getattr(m, 'text'))
+                    if piece and piece.strip():
+                        content_parts.append(piece.strip())
+                elif 'data' in m:
+                    data_resp = getattr(m, 'data')
+                    if 'result' in data_resp:
+                        piece = handle_data_response(data_resp)
+                        if piece and piece.strip():
+                            content_parts.append(piece.strip())
+            except Exception:
+                continue
+        content = '\n\n'.join(content_parts) if content_parts else 'No content in API response.'
 
         if not chart:
             return content

@@ -3,8 +3,6 @@
 
 import pandas as pd
 import json as json_lib
-import altair as alt
-import vl_convert as vlc
 
 import proto
 from google.protobuf.json_format import MessageToDict
@@ -21,7 +19,7 @@ def display_schema(data):
     "Description": map(lambda field: getattr(field, 'description', '-'), fields),
     "Mode": map(lambda field: getattr(field, 'mode'), fields)
   })
-  return df.to_markdown()
+  return df.to_string(index=False)
 
 def display_section_title(text):
   return f'<h2>{text}</h2>'
@@ -67,41 +65,65 @@ def handle_data_response(resp):
           d[field].append(el[field])
         else:
           d[field] = [el[field]]
-    response += '\n' + pd.DataFrame(d).to_markdown()
+    response += '\n' + pd.DataFrame(d).to_string(index=False)
     return response
 
-def handle_chart_response(resp):
-  def _value_to_dict(v):
-    if isinstance(v, proto.marshal.collections.maps.MapComposite):
-      return _map_to_dict(v)
-    elif isinstance(v, proto.marshal.collections.RepeatedComposite):
-      return [_value_to_dict(el) for el in v]
-    elif isinstance(v, (int, float, str, bool)):
-      return v
-    else:
+def _value_to_dict(v):
+  """Recursively convert proto-plus values to plain Python dicts."""
+  if v is None:
+    return None
+  if isinstance(v, proto.marshal.collections.maps.MapComposite):
+    return _map_to_dict(v)
+  elif isinstance(v, proto.marshal.collections.RepeatedComposite):
+    return [_value_to_dict(el) for el in v]
+  elif isinstance(v, (int, float, str, bool)):
+    return v
+  else:
+    try:
       return MessageToDict(v)
+    except Exception:
+      return str(v)
 
-  def _map_to_dict(d):
-    out = {}
-    for k in d:
-      if isinstance(d[k], proto.marshal.collections.maps.MapComposite):
-        out[k] = _map_to_dict(d[k])
-      else:
-        out[k] = _value_to_dict(d[k])
-    return out
 
+def _map_to_dict(d):
+  """Recursively convert proto-plus MapComposite to plain dict."""
+  out = {}
+  for k in d:
+    if isinstance(d[k], proto.marshal.collections.maps.MapComposite):
+      out[k] = _map_to_dict(d[k])
+    else:
+      out[k] = _value_to_dict(d[k])
+  return out
+
+
+def extract_vega_spec(resp):
+  """Extract a Vega-Lite spec dict from a chart response, or None."""
+  if 'result' not in resp:
+    return None
+  try:
+    vega_config = resp.result.vega_config
+    spec = _map_to_dict(vega_config)
+    spec['width'] = 1200
+    spec.pop('height', None)
+    return spec
+  except Exception:
+    return None
+
+
+def handle_chart_response(resp):
   if 'query' in resp:
     return resp.query.instructions
   elif 'result' in resp:
-    # updated to create PNG - source in documenation create images with Altair but those are just JSON specs in Vega-Lite grammar.
-    vegaConfig = resp.result.vega_config
-    # 1. Convert proto to dict (this is correct)
-    vegaConfig_dict = _map_to_dict(vegaConfig)
-    # 2. Modify the dictionary directly: removing height lets it be set automaticaly
-    vegaConfig_dict['width'] = 1200
-    vegaConfig_dict.pop('height', None)
-    # 3. Pass the *modified* dict directly to vl_convert
-    return vlc.vegalite_to_png(vl_spec=vegaConfig_dict)    
+    spec = extract_vega_spec(resp)
+    if spec:
+      try:
+        import vl_convert as vlc
+        return vlc.vegalite_to_png(vl_spec=spec)
+      except ImportError:
+        return "[Chart generated — vl_convert not installed for PNG rendering]"
+      except Exception as e:
+        return f"[Chart generated but rendering failed: {e}]"
+    return "[Chart response received but could not extract spec]"
 
 def show_message(msg):
   m = msg.system_message
