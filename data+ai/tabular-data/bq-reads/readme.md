@@ -41,20 +41,20 @@ How to efficiently read BigQuery tables into pandas DataFrames for ML workflows.
 
 ## Approaches Covered
 
-| Approach | Runs a Query? | Cost | Parallel Reads? | Thread Control? |
+| Approach | Data Access | Cost | Download Method | Thread Control |
 |---|---|---|---|---|
-| `client.query()` | Yes | Bytes scanned | Auto (Storage API download) | No |
-| `client.list_rows()` | No | Storage reads* | No (sequential) | No |
-| `pandas_gbq.read_gbq()` | Yes | Bytes scanned | Auto with `use_bqstorage_api` | No |
-| BigFrames `read_gbq_table()` | No | Storage reads* | Yes (managed) | No |
-| Storage Read API | No | Storage reads* | Yes (multi-stream) | Yes |
+| `client.query()` | Query engine | Bytes scanned ($6.25/TB) | Storage API (auto) | No |
+| `client.list_rows()` | Storage layer | Storage reads* | REST (sequential) | No |
+| `pandas_gbq.read_gbq()` | Query engine | Bytes scanned ($6.25/TB) | REST or Storage API | No |
+| BigFrames `read_gbq_table()` | Storage layer | Storage reads* | Storage API (managed) | No (auto) |
+| Storage Read API | Storage layer | Storage reads* | Storage API (multi-stream) | Yes |
 
-*\*Storage reads: free up to 300 TiB/month per billing account, then $1.10/TiB.*
+*\*Storage reads: 300 TiB/month free per billing account, then $1.10/TiB.*
 
 ## Key Takeaways
 
 1. **Avoid unnecessary query costs** — if you're reading a whole table, use storage reads instead of `SELECT *`.
-2. **BigFrames is the easy path** — storage reads with column pruning and filtering, managed for you. Competitive speed, zero query cost.
+2. **BigFrames is the easy path** — storage-layer reads with column pruning and filtering, managed for you. Competitive speed, no query cost.
 3. **Storage Read API is the fast path** — parallel streams with `ThreadPoolExecutor` for maximum throughput. I/O-bound, so more threads than CPUs can help.
 4. **`asyncio` is an alternative, not faster** — `asyncio.to_thread()` matches `ThreadPoolExecutor` performance. Choose based on application architecture.
 5. **All ML frameworks benefit** — pandas is the universal bridge between BigQuery and ML (PyTorch, JAX, Keras, scikit-learn).
