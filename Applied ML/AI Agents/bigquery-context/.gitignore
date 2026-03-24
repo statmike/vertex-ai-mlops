@@ -1,0 +1,16 @@
+# Coverage
+.coverage
+htmlcov/
+
+# Build
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+
+# Environment
+.venv/
+
+# ADK session state
+.adk/

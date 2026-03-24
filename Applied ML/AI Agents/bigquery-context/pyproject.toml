@@ -1,0 +1,40 @@
+[project]
+name = "bigquery-context"
+version = "0.1.0"
+description = "Three approaches to BigQuery table discovery for AI agents: BQ metadata tools, Dataplex catalog search, and Knowledge Context API."
+readme = "readme.md"
+requires-python = ">=3.13.3"
+dependencies = [
+    "google-adk>=1.14.0",
+    "google-genai>=1.64.0",
+    "google-cloud-bigquery>=3.31.0",
+    "google-cloud-dataplex>=2.16.0",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.12.0",
+    "requests>=2.32.0",
+    "ipykernel>=6.30.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.8.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["scripts"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501", "B008"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
