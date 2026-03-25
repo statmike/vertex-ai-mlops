@@ -52,7 +52,7 @@ def call_reranker(
         candidate_metadata: String containing table metadata (schemas,
             descriptions, profiles, etc.) from the discovery approach.
         discovery_method: Which approach produced the candidates
-            ("bq_tools", "catalog_search", "knowledge_context").
+            ("bq_tools", "dataplex_search", "dataplex_context").
         top_k: Maximum number of tables to return.
 
     Returns:
@@ -91,3 +91,53 @@ Return at most {top_k} tables.
 
     result = RerankerResponse.model_validate(json.loads(response.text))
     return result
+
+
+def format_reranker_markdown(result: RerankerResponse, label: str) -> str:
+    """Format a RerankerResponse as readable markdown for agent output.
+
+    Args:
+        result: The reranker result to format.
+        label: Approach label, e.g. "Approach 2: Dataplex Search".
+    """
+    lines = [f"**[{label}]**", ""]
+
+    if not result.ranked_tables:
+        lines.append(result.notes or "No relevant tables found.")
+        return "\n".join(lines)
+
+    lines.append(
+        f"Found **{len(result.ranked_tables)}** relevant table(s):"
+    )
+    lines.append("")
+
+    for t in result.ranked_tables:
+        lines.append(f"**#{t.rank}. `{t.table_id}`** — confidence: {t.confidence:.2f}")
+        lines.append(f"> {t.reasoning}")
+        if t.key_columns:
+            col_strs = []
+            for c in t.key_columns:
+                tags = []
+                if c.useful_for_filtering:
+                    tags.append("filter")
+                if c.useful_for_aggregation:
+                    tags.append("aggregate")
+                if c.is_key:
+                    tags.append("key")
+                tag_str = f" ({', '.join(tags)})" if tags else ""
+                col_strs.append(f"`{c.name}` {c.data_type}{tag_str}")
+            lines.append(f"- **Key columns:** {', '.join(col_strs)}")
+        if t.sql_hints:
+            lines.append(f"- **SQL hints:** {t.sql_hints}")
+        if t.join_suggestions:
+            for j in t.join_suggestions:
+                lines.append(
+                    f"- **Join:** → `{j.target_table}` "
+                    f"ON {', '.join(j.join_keys)} ({j.relationship})"
+                )
+        lines.append("")
+
+    if result.notes:
+        lines.append(f"**Notes:** {result.notes}")
+
+    return "\n".join(lines)

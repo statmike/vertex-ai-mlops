@@ -42,7 +42,7 @@ class RankedTable(BaseModel):
     )
     reasoning: str = Field(description="Why this table is relevant to the user's question")
     discovery_method: str = Field(
-        description="Which approach found this table: bq_tools, catalog_search, knowledge_context"
+        description="Which approach found this table: bq_tools, dataplex_search, dataplex_context"
     )
     table_description: str = Field(
         default="", description="Business description of the table"

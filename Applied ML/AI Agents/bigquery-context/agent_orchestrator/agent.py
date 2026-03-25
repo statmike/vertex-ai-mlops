@@ -9,8 +9,8 @@ from google.adk import agents
 
 from config import AGENT_MODEL
 from agent_bq_tools.agent import root_agent as bq_tools_agent
-from agent_catalog_search.agent import root_agent as catalog_search_agent
-from agent_knowledge_context.agent import root_agent as knowledge_context_agent
+from agent_dataplex_search.agent import root_agent as dataplex_search_agent
+from agent_dataplex_context.agent import root_agent as dataplex_context_agent
 from . import prompts
 
 
@@ -20,8 +20,8 @@ parallel_discovery = agents.ParallelAgent(
     description="Runs all three table discovery approaches concurrently.",
     sub_agents=[
         bq_tools_agent,
-        catalog_search_agent,
-        knowledge_context_agent,
+        dataplex_search_agent,
+        dataplex_context_agent,
     ],
 )
 
@@ -39,7 +39,7 @@ root_agent = agents.SequentialAgent(
     name="agent_orchestrator",
     description=(
         "Orchestrates three parallel BigQuery table discovery approaches "
-        "(BQ tools, Dataplex catalog search, Knowledge Context API) and "
+        "(BQ tools, Dataplex search, Dataplex context) and "
         "compares their results."
     ),
     sub_agents=[

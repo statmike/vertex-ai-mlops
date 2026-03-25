@@ -1,4 +1,4 @@
-"""Prompts for the Dataplex Catalog Search discovery agent."""
+"""Prompts for the Dataplex Search discovery agent."""
 
 import datetime
 
@@ -31,10 +31,10 @@ Search within these datasets: {dataset_list}
    `rerank_tables` tool with:
    - question: the user's original question
    - candidate_metadata: all the entry metadata you gathered
-   - discovery_method: "catalog_search"
+   - discovery_method: "dataplex_search"
 
 ## Output format
-Begin your response with: **[Approach 2: Dataplex Catalog Search]**
+Begin your response with: **[Approach 2: Dataplex Search]**
 Briefly summarize which tables you found and their relevance, then include
 the reranker results.
 

@@ -1,32 +1,25 @@
-"""Approach 2: Dataplex Catalog Search — semantic discovery via natural language.
+"""Callback: search Dataplex Catalog + lookup entries + rerank.
 
-The before_agent_callback handles the entire workflow deterministically:
-semantic search → lookup entries → call shared reranker → return results.
-No LLM agent calls are needed — the only model invocation is the reranker's
-Gemini structured output (same ``call_reranker`` used by all approaches).
+Runs the entire Approach 2 workflow deterministically in
+``before_agent_callback`` so no LLM agent calls are needed.
 """
 
 import asyncio
 import json
 
-from google.adk import agents
 from google.adk.agents.callback_context import CallbackContext
 from google.cloud import dataplex_v1
 from google.genai import types
 from google.protobuf import json_format
 
 from config import (
-    AGENT_MODEL,
     BQ_LOCATION,
     GOOGLE_CLOUD_PROJECT,
     TOP_K,
     is_table_in_scope,
 )
-from reranker.util_rerank import call_reranker
+from reranker.util_rerank import call_reranker, format_reranker_markdown
 from schemas import RerankerResponse
-from . import prompts
-from .tools import TOOLS as CATALOG_TOOLS
-from reranker import TOOLS as RERANKER_TOOLS
 
 
 def _search_and_lookup(question: str) -> str:
@@ -111,7 +104,7 @@ def _search_and_lookup(question: str) -> str:
     return "\n\n".join(metadata_parts)
 
 
-async def _discover_and_rerank(callback_context: CallbackContext):
+async def discover_and_rerank(callback_context: CallbackContext):
     """Search + lookup + rerank in a single callback — no LLM needed.
 
     1. Extract the user's question from callback context.
@@ -137,13 +130,13 @@ async def _discover_and_rerank(callback_context: CallbackContext):
             ranked_tables=[],
             notes="No in-scope tables found via Dataplex catalog search.",
         )
-        callback_context.state["reranker_result_catalog_search"] = (
+        callback_context.state["reranker_result_dataplex_search"] = (
             empty.model_dump_json()
         )
         return types.Content(
             role="model",
             parts=[types.Part(text=(
-                "**[Approach 2: Dataplex Catalog Search]**\n\n"
+                "**[Approach 2: Dataplex Search]**\n\n"
                 "No in-scope tables found via catalog search."
             ))],
         )
@@ -154,31 +147,16 @@ async def _discover_and_rerank(callback_context: CallbackContext):
         call_reranker,
         question=question,
         candidate_metadata=metadata,
-        discovery_method="catalog_search",
+        discovery_method="dataplex_search",
         top_k=top_k,
     )
 
-    callback_context.state["reranker_result_catalog_search"] = (
+    callback_context.state["reranker_result_dataplex_search"] = (
         result.model_dump_json()
     )
     return types.Content(
         role="model",
-        parts=[types.Part(text=(
-            "**[Approach 2: Dataplex Catalog Search]**\n\n"
-            f"{result.model_dump_json(indent=2)}"
+        parts=[types.Part(text=format_reranker_markdown(
+            result, "Approach 2: Dataplex Search"
         ))],
     )
-
-
-root_agent = agents.Agent(
-    name="agent_catalog_search",
-    model=AGENT_MODEL,
-    description=(
-        "Discovers relevant BigQuery tables using Dataplex Catalog semantic "
-        "search, retrieves detailed entry metadata, then reranks results."
-    ),
-    global_instruction=prompts.global_instructions,
-    instruction=prompts.agent_instructions,
-    tools=CATALOG_TOOLS + RERANKER_TOOLS,
-    before_agent_callback=_discover_and_rerank,
-)

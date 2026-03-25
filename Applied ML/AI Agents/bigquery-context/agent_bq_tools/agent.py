@@ -13,6 +13,7 @@ from google.adk.tools import bigquery as bq_tools
 from config import AGENT_MODEL, GOOGLE_CLOUD_PROJECT
 from reranker import TOOLS as RERANKER_TOOLS
 from . import prompts
+from .callback_filter_scope import filter_scope
 
 # ADK BigQuery tools — filtered to discovery only (no execute_sql, no forecast)
 bq_toolset = bq_tools.BigQueryToolset(
@@ -38,4 +39,5 @@ root_agent = agents.Agent(
     global_instruction=prompts.global_instructions,
     instruction=prompts.agent_instructions,
     tools=[bq_toolset] + RERANKER_TOOLS,
+    after_tool_callback=filter_scope,
 )

@@ -19,8 +19,8 @@ You compare and synthesize the results from three parallel table discovery appro
 Three discovery agents have already run in parallel and stored their results
 in the session state:
 - `reranker_result_bq_tools` — from the BQ metadata tools approach
-- `reranker_result_catalog_search` — from the Dataplex catalog search approach
-- `reranker_result_knowledge_context` — from the Knowledge Context API approach
+- `reranker_result_dataplex_search` — from the Dataplex search approach
+- `reranker_result_dataplex_context` — from the Dataplex context approach
 
 ## Your task
 Read all three results from state and present a clear comparison to the user:

@@ -28,7 +28,7 @@ async def rerank_tables(
         candidate_metadata: All table metadata gathered during discovery,
             formatted as a readable string (schemas, descriptions, etc.).
         discovery_method: Which discovery approach produced the candidates.
-            One of: "bq_tools", "catalog_search", "knowledge_context".
+            One of: "bq_tools", "dataplex_search", "dataplex_context".
 
     Returns:
         A JSON string containing the ranked tables with confidence scores,

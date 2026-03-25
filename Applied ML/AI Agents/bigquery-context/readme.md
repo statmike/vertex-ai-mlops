@@ -39,9 +39,9 @@ An [ADK](https://google.github.io/adk-docs/) multi-agent system that demonstrate
 
 | # | Agent | Strategy | Per-Query Cost | Input Source |
 |---|---|---|---|---|
-| 1 | `agent_bq_tools` | **BQ Metadata Tools** — enumerate datasets/tables, inspect schemas | Multiple BQ API calls | ADK `BigQueryToolset` |
-| 2 | `agent_catalog_search` | **Dataplex Catalog Search** — semantic natural language search | `search_entries` + `lookup_entry` | Dataplex Catalog API |
-| 3 | `agent_knowledge_context` | **Knowledge Context API** — pre-loaded LLM-ready capsules | Zero (cached at init) | Dataplex `lookupContext` REST API |
+| 1 | `agent_bq_tools` | **BQ Metadata Tools** — enumerate datasets/tables, inspect schemas | Multiple BQ API calls | ADK [BigQueryToolset](https://google.github.io/adk-docs/tools/built-in-tools.html#bigquery-tools) |
+| 2 | `agent_dataplex_search` | **Dataplex Search** — semantic natural language search | `search_entries` + `lookup_entry` | Dataplex [Catalog Search](https://cloud.google.com/dataplex/docs/search-for-resources) API |
+| 3 | `agent_dataplex_context` | **Dataplex Context** — pre-loaded LLM-ready capsules | Zero (cached at init) | Dataplex [lookupContext](https://cloud.google.com/dataplex/docs/reference/rest/v1/projects.locations/lookupContext) REST API |
 
 ### How It Works
 
@@ -53,17 +53,18 @@ SequentialAgent (orchestrator)
     │
     ├──▶ ParallelAgent ──────────────────────────────────────────────────┐
     │       │                                                            │
-    │       ├── agent_bq_tools (LLM-driven)                              │
+    │       ├── agent_bq_tools (LLM-driven, scope-filtered)               │
     │       │     LLM reasoning loop:                                    │
     │       │       list_dataset_ids → list_table_ids → get_table_info   │
     │       │       → rerank_tables tool (calls call_reranker)           │
+    │       │     after_tool_callback: prunes list results to SCOPE      │
     │       │                                                            │
-    │       ├── agent_catalog_search (callback-driven, deterministic)    │
+    │       ├── agent_dataplex_search (callback-driven, deterministic)    │
     │       │     before_agent_callback:                                  │
     │       │       search_entries (semantic) → lookup_entry per table    │
     │       │       → call_reranker → return Content (LLM skipped)       │
     │       │                                                            │
-    │       └── agent_knowledge_context (callback-driven, deterministic) │
+    │       └── agent_dataplex_context (callback-driven, deterministic)  │
     │             before_agent_callback:                                  │
     │               read module-level cache (pre-fetched at startup)      │
     │               → call_reranker → return Content (LLM skipped)       │
@@ -73,7 +74,7 @@ SequentialAgent (orchestrator)
     └──▶ compare_results (LLM synthesizes all three from state)
 ```
 
-All three approaches use the same `call_reranker` function (Gemini structured output) to produce a `RerankerResponse` with ranked tables, confidence scores, column hints, and SQL suggestions. Approaches 2 and 3 run entirely in `before_agent_callback` — no LLM agent calls needed — while approach 1 uses LLM reasoning to iterate through BigQuery metadata tools.
+All three approaches use the same `call_reranker` function (Gemini structured output) to produce a `RerankerResponse` with ranked tables, confidence scores, column hints, and SQL suggestions. Approaches 2 and 3 run entirely in `before_agent_callback` — no LLM agent calls needed — while approach 1 uses LLM reasoning to iterate through BigQuery metadata tools. All three enforce `config.SCOPE` programmatically: approaches 2 and 3 filter during discovery, while approach 1 uses an `after_tool_callback` to prune `list_dataset_ids` and `list_table_ids` results so the LLM never sees out-of-scope resources.
 
 ## Prerequisites
 
@@ -150,19 +151,27 @@ Or run individual approaches:
 ```bash
 uv run adk web agent_bq_tools              # Interactive
 uv run adk run agent_bq_tools              # CLI
-uv run adk web agent_catalog_search
-uv run adk run agent_catalog_search
-uv run adk web agent_knowledge_context
-uv run adk run agent_knowledge_context
+uv run adk web agent_dataplex_search
+uv run adk run agent_dataplex_search
+uv run adk web agent_dataplex_context
+uv run adk run agent_dataplex_context
 ```
 
 **Example questions to try:**
 
+Single-table:
 - "What are the busiest bike share stations in Austin by month?"
 - "How do tip amounts vary by time of day for NYC taxi rides?"
-- "Which Austin neighborhoods have the highest crime rates on weekends?"
 - "What were the strongest hurricanes to make landfall in the last 20 years?"
-- "How does population density by ZIP code relate to bike share station placement in Austin?"
+
+Multi-table (same dataset):
+- "Which bike share stations have the highest average trip duration, and where are they located?" *(trips + stations)*
+- "Are there weather stations near the paths of major hurricanes?" *(hurricanes + weather_stations)*
+
+Multi-table (cross-dataset):
+- "Is there a correlation between crime rates and bike share usage near specific stations in Austin?" *(austin_crime + trips + stations)*
+- "How does population density by ZIP code relate to bike share station placement in Austin?" *(population_by_zip_2010 + stations)*
+- "Which US counties have the most weather stations per capita?" *(us_counties + weather_stations + population_by_zip_2010)*
 
 ## Cleanup
 
@@ -222,11 +231,26 @@ SCOPE = [
 
 - **DataScan requires regional location**: Dataplex DataScan requires a regional location (e.g., `us-central1`), not a multi-region like `US`. The BQ datasets are in `US`, but the scans are created in `us-central1`. This works fine.
 
-### Coming soon
+### Why direct API calls instead of MCP Toolbox?
 
-- **MCP Toolbox for Databases**: A fourth approach using the [MCP Toolbox](https://github.com/googleapis/genai-toolbox) for direct BigQuery metadata access via MCP protocol.
+This project calls BigQuery and Dataplex APIs directly to keep the focus on **what each API provides** — the three approaches are a teaching tool for understanding the metadata landscape, not a production architecture.
 
-- **ADK native MCP tools**: ADK is expected to wrap MCP Toolbox tools natively, providing another path to BQ metadata discovery.
+The [MCP Toolbox for Databases](https://googleapis.github.io/genai-toolbox/) is the production-grade alternative. It wraps BigQuery and Dataplex APIs behind a single MCP server and offers several advantages over our approach:
+
+| Capability | This project | MCP Toolbox |
+|---|---|---|
+| **Dataset scoping** | `after_tool_callback` prunes results client-side | [`allowedDatasets`](https://googleapis.github.io/genai-toolbox/resources/sources/bigquery/) in YAML — enforced server-side |
+| **Dataplex search** | Custom `FunctionTool` calling `search_entries` | Prebuilt [`dataplex-search-entries`](https://googleapis.github.io/genai-toolbox/resources/tools/dataplex/dataplex-search-entries/) tool with scope filtering |
+| **Dataplex lookup** | Custom `FunctionTool` calling `lookup_entry` | Prebuilt [`dataplex-lookup-entry`](https://googleapis.github.io/genai-toolbox/resources/tools/dataplex/dataplex-lookup-entry/) tool |
+| **Write protection** | `WriteMode.BLOCKED` on BigQueryToolset | `writeMode: "blocked"` with SQL dry-run validation |
+| **Framework coupling** | Tightly coupled to ADK callbacks | Framework-independent — works with ADK, LangGraph, Claude, any MCP client |
+| **Configuration** | Scoping logic spread across Python callbacks | Centralized in one `tools.yaml` file |
+
+ADK connects to MCP Toolbox via [`ToolboxToolset`](https://google.github.io/adk-docs/integrations/mcp-toolbox-for-databases/) (native HTTP) or [`MCPToolset`](https://google.github.io/adk-docs/tools-custom/mcp-tools/) (stdio/SSE), and the server can run locally or on [Cloud Run](https://googleapis.github.io/genai-toolbox/how-to/deploy_toolbox/).
+
+**Gap:** MCP Toolbox does not yet (03/2026) have a prebuilt tool for the Dataplex [`lookupContext`](https://cloud.google.com/dataplex/docs/reference/rest/v1/projects.locations/lookupContext) API (our Approach 3), which returns LLM-ready metadata capsules with data profiling statistics. This would still require a custom implementation.
+
+### Future directions
 
 - **Richer Knowledge Context**: As more organizations run Dataplex profiling and enrichment, `lookupContext` capsules will include sample queries, join patterns, and usage statistics — the "tribal knowledge" that makes AI-generated SQL significantly more accurate.
 
@@ -254,23 +278,26 @@ bigquery-context/
 ├── agent_bq_tools/                   # Approach 1: BQ metadata enumeration
 │   ├── __init__.py
 │   ├── agent.py
+│   ├── callback_filter_scope.py      # after_tool_callback: scope filtering
 │   └── prompts.py
 │
-├── agent_catalog_search/             # Approach 2: Dataplex semantic search
+├── agent_dataplex_search/            # Approach 2: Dataplex semantic search
 │   ├── __init__.py
 │   ├── agent.py
 │   ├── prompts.py
 │   └── tools/
 │       ├── __init__.py
+│       ├── callback_discover_and_rerank.py
 │       ├── function_tool_search_catalog.py
 │       └── function_tool_lookup_entry.py
 │
-├── agent_knowledge_context/          # Approach 3: Knowledge Context capsules
+├── agent_dataplex_context/           # Approach 3: Dataplex Context capsules
 │   ├── __init__.py
 │   ├── agent.py
 │   ├── prompts.py
 │   └── tools/
 │       ├── __init__.py
+│       ├── callback_discover_and_rerank.py
 │       ├── function_tool_initialize_context.py
 │       └── util_lookup_context.py    # REST client (SDK pending)
 │

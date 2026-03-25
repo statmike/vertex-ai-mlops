@@ -1,4 +1,4 @@
-"""Prompts for the Knowledge Context discovery agent."""
+"""Prompts for the Dataplex Context discovery agent."""
 
 import datetime
 
@@ -24,10 +24,10 @@ from the Dataplex lookupContext API.
    - question: the user's original question
    - candidate_metadata: the full knowledge context string (returned by
      initialize_context)
-   - discovery_method: "knowledge_context"
+   - discovery_method: "dataplex_context"
 
 ## Output format
-Begin your response with: **[Approach 3: Knowledge Context API]**
+Begin your response with: **[Approach 3: Dataplex Context]**
 Briefly summarize which tables you found and their relevance, then include
 the reranker results.
 
