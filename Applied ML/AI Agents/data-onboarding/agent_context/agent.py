@@ -3,19 +3,23 @@ import logging
 from google.adk import agents
 from google.cloud import bigquery
 
-from agent_orchestrator.config import AGENT_MODEL_INSTANCE as AGENT_MODEL, GOOGLE_CLOUD_PROJECT
 from agent_chat.config import META_DATASET
+from agent_orchestrator.config import AGENT_MODEL_INSTANCE as AGENT_MODEL
+from agent_orchestrator.config import BQ_DATASET_LOCATION, GOOGLE_CLOUD_PROJECT
 
 from . import prompts, tools
+from .tools.util_lookup_context import build_entry_name, lookup_context_batched
 
 logger = logging.getLogger(__name__)
 
 
 def _load_catalog() -> str:
-    """Pre-load the dataset catalog and table documentation at agent start.
+    """Pre-load the dataset catalog, table documentation, and Dataplex context.
 
-    Returns a text block with all datasets, tables, columns, and relationships
-    so the LLM has full context without needing to call discovery tools.
+    Merges ``table_documentation`` from each bronze dataset with Dataplex
+    ``lookupContext`` profile statistics. Returns a text block with all
+    datasets, tables, columns, relationships, and profile data so the LLM
+    has full context without needing to call discovery tools.
     """
     if not GOOGLE_CLOUD_PROJECT:
         return ""
@@ -43,6 +47,7 @@ def _load_catalog() -> str:
 
             # Load table documentation for each dataset
             doc_table = f"{GOOGLE_CLOUD_PROJECT}.{row.dataset_name}.table_documentation"
+            doc_table_names = []
             try:
                 doc_rows = list(client.query(f"""
                     SELECT table_name, column_details, related_tables, source_file
@@ -53,6 +58,7 @@ def _load_catalog() -> str:
                 for doc in doc_rows:
                     columns = doc.column_details or []
                     col_names = [c.get("name", "") for c in columns]
+                    doc_table_names.append(doc.table_name)
                     parts.append(f"\n  **{doc.table_name}** ({len(columns)} columns)")
                     parts.append(f"    Columns: {', '.join(col_names[:15])}")
                     if len(col_names) > 15:
@@ -72,6 +78,25 @@ def _load_catalog() -> str:
                     )
             except Exception as e:
                 logger.debug("Could not load table docs for %s: %s", row.dataset_name, e)
+
+            # Merge Dataplex lookupContext for this dataset's tables
+            if doc_table_names:
+                try:
+                    entry_names = [
+                        build_entry_name(
+                            GOOGLE_CLOUD_PROJECT, BQ_DATASET_LOCATION,
+                            row.dataset_name, tname,
+                        )
+                        for tname in doc_table_names
+                    ]
+                    dataplex_ctx = lookup_context_batched(entry_names)
+                    if dataplex_ctx:
+                        parts.append("\n  **Dataplex Profile Statistics:**")
+                        # Indent each line for readability under the dataset
+                        for line in dataplex_ctx.split("\n"):
+                            parts.append(f"    {line}")
+                except Exception as e:
+                    logger.debug("lookupContext failed for %s: %s", row.dataset_name, e)
 
             parts.append("")
 

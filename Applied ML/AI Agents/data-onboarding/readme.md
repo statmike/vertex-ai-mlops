@@ -65,10 +65,21 @@ Then provide a URL (e.g., a data portal page with downloadable files) in the cha
 ### Motion 2: Chat With Your Data
 
 ```
-User question ──→ agent_chat ──→ agent_context (find tables) ──→ agent_convo (query & answer)
-                                       │                               │
-                            reads data_catalog &              calls Conversational
-                            table_documentation               Analytics API
+User question ──→ agent_chat ──→ agent_context ──→ agent_convo (query & answer)
+                                       │                    │
+                            ┌──────────┼────────────┐       │
+                            │          │            │       │
+                     data_catalog  lookupContext  reranker  │
+                            │     (Dataplex API)    │       │
+                            │          │            │       │
+                            └──────────┴────────────┘       │
+                              merged context ───────→ enriched Context
+                                                       (schema overrides,
+                                                        glossary, joins,
+                                                        SQL hints)
+                                                            │
+                                                   Conversational
+                                                   Analytics API
 ```
 
 Run the chat agent:
@@ -159,9 +170,9 @@ Takes the enriched schemas and proposes BigQuery table structures.
 - Containment (e.g., `foo_full` contains `foo_bar` if columns are a superset)
 - Shared join keys (columns with matching name and type across tables)
 
-#### `agent_implement` — Create Tables & Documentation
+#### `agent_implement` — Create Tables, Documentation & Profiling
 
-Creates the actual BigQuery tables in a two-step process:
+Creates the actual BigQuery tables and triggers data profiling:
 
 **Step 1: External tables** in a staging dataset (`*_staging`)
 - **BQ autodetect path** — For CSV, TSV, JSON, Parquet, Avro, ORC: creates a BigQuery external table that reads directly from GCS with schema autodetection.
@@ -183,6 +194,8 @@ Coerced and dropped columns are logged to `processing_log` in the meta dataset a
 **Documentation generation** — Writes two tables (no LLM call — purely programmatic from enriched metadata):
 - `table_documentation` in each bronze dataset — per-table markdown with a column dictionary, source attribution, related tables, schema provenance, and data quality notes
 - `data_catalog` in the meta dataset — dataset-level overview with all tables, context documents, and relationships
+
+**Data profiling** — After tables are created, the agent triggers [Dataplex data profile scans](https://cloud.google.com/dataplex/docs/data-profiling-overview) on each bronze table. Scans run asynchronously with 10% sampling and publish results to the Dataplex catalog. This makes profile statistics (min/max values, null rates, value distributions) available via the [lookupContext API](https://cloud.google.com/dataplex/docs/reference/rest/v1/projects.locations/lookupContext) for downstream context discovery.
 
 **Lineage publishing** — Writes custom lineage events to the [Dataplex Data Lineage API](https://cloud.google.com/dataplex/docs/about-data-lineage):
 
@@ -213,20 +226,30 @@ An orchestrator with two sub-agents that lets you query the onboarded data conve
 
 ### `agent_context` — Find the Right Tables
 
-This agent knows about every table the onboarding agent created. At startup, it pre-loads the full data catalog from BigQuery — every dataset, table name, column list, column descriptions, and relationships. This pre-loaded catalog is embedded directly in the agent's instructions so it can instantly identify which tables match a user's question without any tool calls.
+This agent knows about every table the onboarding agent created. At startup, it pre-loads the full data catalog from BigQuery — every dataset, table name, column list, column descriptions, and relationships — merged with [Dataplex lookupContext](https://cloud.google.com/dataplex/docs/reference/rest/v1/projects.locations/lookupContext) profile statistics (value distributions, null rates, min/max). This dual-source context is embedded directly in the agent's instructions so it can instantly identify which tables match a user's question.
 
-It still calls `find_tables` to load detailed table documentation into the conversation history (so the next agent can see it), and can optionally call `sample_data` to run short read-only queries that verify table contents.
+**Enriched context discovery:**
+1. Calls `get_table_context` to load merged metadata (`table_documentation` + Dataplex profile stats)
+2. Calls `rerank_tables` — a Gemini-powered reranker that uses structured output to rank tables by relevance, identify key columns, suggest SQL patterns, and recommend join paths
+3. Transfers to `agent_convo` with the reranker result stored in session state
 
 **Where the context comes from:**
 - `data_catalog` in the meta dataset — written by the onboarding agent's `generate_documentation` tool
 - `table_documentation` in each bronze dataset — per-table markdown with column details, descriptions, attribution, and relationships
+- [Dataplex lookupContext API](https://cloud.google.com/dataplex/docs/reference/rest/v1/projects.locations/lookupContext) — profile statistics from Dataplex data profile scans triggered during onboarding
 - The onboarding agent's cross-reference enrichment — column descriptions, suggested names, and BQ types all flow through into the documentation
 
 This means any bronze dataset created by the onboarding agent is immediately available for chat. No additional configuration needed.
 
 ### `agent_convo` — Answer Questions
 
-Calls the [Conversational Analytics API](https://cloud.google.com/gemini/docs/conversational-analytics-api/overview) with the table references from `agent_context` and the user's question. The API:
+Calls the [Conversational Analytics API](https://cloud.google.com/gemini/docs/conversational-analytics-api/overview) with [enriched authored context](https://cloud.google.com/gemini/docs/conversational-analytics-api/overview) from the reranker. When reranker results are available, the API receives:
+- **Schema overrides** — per-table column names, types, and descriptions from the reranker's key columns
+- **Schema relationships** — join paths between tables from the reranker's join suggestions
+- **Glossary terms** — domain-specific terms extracted from column descriptions
+- **SQL guidance** — per-table hints (filters, aggregations, join conditions) appended to the system instruction
+
+When no reranker result is available, falls back to bare table references (backward compatible). The API:
 - Resolves schemas for the referenced tables
 - Generates and runs SQL queries
 - Returns text answers, data tables, and charts
@@ -237,8 +260,8 @@ The tool processes the API's response stream and returns only the useful parts: 
 ### Flow
 
 1. **New question** → `agent_chat` transfers to `agent_context`
-2. **`agent_context`** consults its pre-loaded catalog, calls `find_tables`, transfers to `agent_convo`
-3. **`agent_convo`** calls `conversational_chat` with the right table references, returns the answer
+2. **`agent_context`** consults its pre-loaded catalog, calls `get_table_context` (merged metadata), then `rerank_tables` (Gemini structured output), transfers to `agent_convo`
+3. **`agent_convo`** builds enriched Context from the reranker result (schema overrides, glossary, relationships, SQL hints), calls `conversational_chat`, returns the answer
 4. **Follow-up questions** on the same topic go directly to `agent_convo` (session history preserved)
 5. **Topic changes** go back to `agent_context` to find new tables
 
@@ -265,7 +288,7 @@ Shared metadata across all onboarded sources. Contains 6 tables:
 
 One dataset per source domain. For example, onboarding from `datashop.cboe.com` creates `data_onboarding_datashop_cboe_com_bronze`. Contains:
 
-- **One table per data file** (or file group) — the materialized data with enriched column names, types, descriptions, partitioning, and clustering.
+- **One table per data file** (or file group) — the materialized data with enriched column names, types, descriptions, partitioning, and clustering. Each table also has a [Dataplex data profile scan](https://cloud.google.com/dataplex/docs/data-profiling-overview) that publishes statistics (value distributions, null rates, min/max) to the Dataplex catalog.
 - **`table_documentation`** — A metadata table with one row per data table. Each row has:
   - `documentation_md` — Markdown documentation with overview, column dictionary, related tables, schema provenance, and data quality notes
   - `column_details` — JSON array with each column's name, source name, BQ type, description, and attribution
@@ -315,6 +338,9 @@ GOOGLE_CLOUD_STORAGE_BUCKET=your-bucket-name
 # PARTITION_MIN_ROWS=10000              # Minimum rows before suggesting partitioning
 # RESOURCE_PREFIX=data_onboarding       # Prefix for all dataset names
 
+# Dataplex
+# DATAPLEX_LOCATION=us-central1        # Location for Dataplex data profile scans
+
 # File types
 # ACQUIRE_FILE_EXTENSIONS=csv,tsv,json,jsonl,xlsx,xls,parquet,avro,orc,xml,pdf,txt,md,html,zip
 # DATA_FILE_EXTENSIONS=csv,tsv,json,jsonl,xlsx,xls,parquet,avro,orc,xml
@@ -327,6 +353,7 @@ GOOGLE_CLOUD_STORAGE_BUCKET=your-bucket-name
 - Cloud Storage API
 - Vertex AI API
 - Data Lineage API (for Dataplex lineage)
+- Dataplex API (for data profile scans and lookupContext)
 - Conversational Analytics API (for `agent_chat`)
 
 ---

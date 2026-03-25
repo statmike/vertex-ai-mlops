@@ -21,6 +21,9 @@ TOOL_MODEL_LOCATION = os.getenv("TOOL_MODEL_LOCATION", "")
 # --- Naming ---
 RESOURCE_PREFIX = os.getenv("RESOURCE_PREFIX", "data_onboarding")
 
+# --- Dataplex ---
+DATAPLEX_LOCATION = os.getenv("DATAPLEX_LOCATION", GOOGLE_CLOUD_LOCATION)
+
 # --- BigQuery ---
 BQ_DATASET_LOCATION = os.getenv("BQ_DATASET_LOCATION", "US")
 BQ_BRONZE_DATASET = os.getenv("BQ_BRONZE_DATASET") or f"{RESOURCE_PREFIX}_bronze"

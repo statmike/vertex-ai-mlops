@@ -371,6 +371,7 @@ dependencies = [
     { name = "google-cloud-aiplatform", extra = ["adk", "agent-engines"] },
     { name = "google-cloud-bigquery" },
     { name = "google-cloud-datacatalog-lineage" },
+    { name = "google-cloud-dataplex" },
     { name = "google-cloud-geminidataanalytics" },
     { name = "google-cloud-storage" },
     { name = "google-genai" },
@@ -401,6 +402,7 @@ requires-dist = [
     { name = "google-cloud-aiplatform", extras = ["agent-engines", "adk"], specifier = ">=1.88.0" },
     { name = "google-cloud-bigquery", specifier = ">=3.31.0" },
     { name = "google-cloud-datacatalog-lineage", specifier = ">=0.3.0" },
+    { name = "google-cloud-dataplex", specifier = ">=2.16.0" },
     { name = "google-cloud-geminidataanalytics", specifier = ">=0.3.0" },
     { name = "google-cloud-storage", specifier = ">=2.19.0" },
     { name = "google-genai", specifier = ">=1.64.0" },
@@ -753,6 +755,23 @@ dependencies = [
 sdist = { url = "https://us-python.pkg.dev/artifact-foundry-prod/ah-3p-staging-python/google-cloud-datacatalog-lineage/google_cloud_datacatalog_lineage-0.5.0.tar.gz", hash = "sha256:ef19ff6e4e0343b42882c83f2e100689e3575d5799f98412cfd5778fbba626f7" }
 wheels = [
     { url = "https://us-python.pkg.dev/artifact-foundry-prod/ah-3p-staging-python/google-cloud-datacatalog-lineage/google_cloud_datacatalog_lineage-0.5.0-py3-none-any.whl", hash = "sha256:aab111e6a4a87fc34f8550918399a7d9898ce1290e0525e5f4a40ad9198bd5ca" },
+]
+
+[[package]]
+name = "google-cloud-dataplex"
+version = "2.17.0"
+source = { registry = "https://us-python.pkg.dev/artifact-foundry-prod/ah-3p-staging-python/simple/" }
+dependencies = [
+    { name = "google-api-core", extra = ["grpc"] },
+    { name = "google-auth" },
+    { name = "grpc-google-iam-v1" },
+    { name = "grpcio" },
+    { name = "proto-plus" },
+    { name = "protobuf" },
+]
+sdist = { url = "https://us-python.pkg.dev/artifact-foundry-prod/ah-3p-staging-python/google-cloud-dataplex/google_cloud_dataplex-2.17.0.tar.gz", hash = "sha256:321ad2abb9faecda60136d197bd2348c1dd73885fb67707db0d8f828d774fb65" }
+wheels = [
+    { url = "https://us-python.pkg.dev/artifact-foundry-prod/ah-3p-staging-python/google-cloud-dataplex/google_cloud_dataplex-2.17.0-py3-none-any.whl", hash = "sha256:6f04a772f68564979cdf5fadb517960b961792921e117043ed1b1ef44694853c" },
 ]
 
 [[package]]

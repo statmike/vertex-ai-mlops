@@ -18,6 +18,7 @@ dependencies = [
     "openpyxl>=3.1.0",
     "pdfplumber>=0.11.0",
     "google-cloud-datacatalog-lineage>=0.3.0",
+    "google-cloud-dataplex>=2.16.0",
     "google-cloud-geminidataanalytics>=0.3.0",
     "vl-convert-python>=1.8.0",
     "altair>=5.5.0",

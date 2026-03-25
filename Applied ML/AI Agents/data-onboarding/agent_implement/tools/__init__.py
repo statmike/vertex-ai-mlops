@@ -3,6 +3,7 @@ from .function_tool_create_external_tables import create_external_tables
 from .function_tool_execute_sql import execute_sql
 from .function_tool_generate_documentation import generate_documentation
 from .function_tool_publish_lineage import publish_lineage
+from .function_tool_trigger_profiling import trigger_profiling
 from .function_tool_update_changelog import update_changelog
 
 TOOLS = [
@@ -11,5 +12,6 @@ TOOLS = [
     publish_lineage,
     apply_bq_metadata,
     generate_documentation,
+    trigger_profiling,
     update_changelog,
 ]

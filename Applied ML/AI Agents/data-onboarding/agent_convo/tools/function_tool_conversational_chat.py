@@ -4,6 +4,7 @@ Adapted from concept-bq/agent_convo_api/tools/conversational_chat.py.
 """
 
 import json
+import logging
 import os
 
 from google.adk import tools
@@ -11,11 +12,14 @@ from google.cloud import geminidataanalytics_v1alpha as geminidataanalytics
 from google.genai.types import Part
 from google.protobuf.json_format import MessageToDict, ParseDict
 
+from .util_build_context import build_enriched_context
 from .utils.conversational_analytics_api_helpers import (
     handle_data_response,
     handle_text_response,
     show_message,
 )
+
+logger = logging.getLogger(__name__)
 
 
 async def conversational_chat(
@@ -66,18 +70,40 @@ async def conversational_chat(
             ParseDict(h, message._pb)
             history.append(message)
 
-        datasource = geminidataanalytics.DatasourceReferences(
-            bq=dict(table_references=bigquery_tables)
-        )
-
-        context = geminidataanalytics.Context(
-            system_instruction=(
-                "Help users explore, analyze, and give detailed reports "
-                "for the provided data sources."
-            ),
-            datasource_references=datasource,
-            options=dict(analysis=dict(python=dict(enabled=True))),
-        )
+        # Build context — use enriched context from reranker if available
+        reranker_result = tool_context.state.get("reranker_result")
+        if reranker_result:
+            try:
+                context_dict = build_enriched_context(reranker_result)
+                context = geminidataanalytics.Context()
+                ParseDict(context_dict, context._pb)
+                logger.info("Using enriched context from reranker (%d tables)",
+                            len(reranker_result.get("ranked_tables", [])))
+            except Exception as e:
+                logger.warning("Failed to build enriched context, falling back: %s", e)
+                datasource = geminidataanalytics.DatasourceReferences(
+                    bq=dict(table_references=bigquery_tables)
+                )
+                context = geminidataanalytics.Context(
+                    system_instruction=(
+                        "Help users explore, analyze, and give detailed reports "
+                        "for the provided data sources."
+                    ),
+                    datasource_references=datasource,
+                    options=dict(analysis=dict(python=dict(enabled=True))),
+                )
+        else:
+            datasource = geminidataanalytics.DatasourceReferences(
+                bq=dict(table_references=bigquery_tables)
+            )
+            context = geminidataanalytics.Context(
+                system_instruction=(
+                    "Help users explore, analyze, and give detailed reports "
+                    "for the provided data sources."
+                ),
+                datasource_references=datasource,
+                options=dict(analysis=dict(python=dict(enabled=True))),
+            )
 
         user_message = geminidataanalytics.Message(
             user_message=dict(text=question)
