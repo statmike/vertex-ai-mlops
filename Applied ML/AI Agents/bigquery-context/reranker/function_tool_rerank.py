@@ -4,6 +4,8 @@ Takes candidate table metadata (as a string) from any discovery approach
 and produces a ranked RerankerResponse via Gemini structured output.
 """
 
+import asyncio
+
 from google.adk import tools
 
 from config import TOP_K
@@ -34,7 +36,9 @@ async def rerank_tables(
     """
     top_k = tool_context.state.get("top_k", TOP_K)
 
-    result = call_reranker(
+    # Run in thread pool so parallel agents don't block the event loop
+    result = await asyncio.to_thread(
+        call_reranker,
         question=question,
         candidate_metadata=candidate_metadata,
         discovery_method=discovery_method,

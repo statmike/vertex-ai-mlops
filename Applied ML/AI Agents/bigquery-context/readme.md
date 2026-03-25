@@ -51,16 +51,29 @@ User question
     ▼
 SequentialAgent (orchestrator)
     │
-    ├──▶ ParallelAgent ─────────────────────────────────────┐
-    │       ├── agent_bq_tools          (enumerate + rerank) │
-    │       ├── agent_catalog_search    (search + rerank)    │
-    │       └── agent_knowledge_context (cache + rerank)     │
-    │    ◀──────────────────────────────────────────────────┘
+    ├──▶ ParallelAgent ──────────────────────────────────────────────────┐
+    │       │                                                            │
+    │       ├── agent_bq_tools (LLM-driven)                              │
+    │       │     LLM reasoning loop:                                    │
+    │       │       list_dataset_ids → list_table_ids → get_table_info   │
+    │       │       → rerank_tables tool (calls call_reranker)           │
+    │       │                                                            │
+    │       ├── agent_catalog_search (callback-driven, deterministic)    │
+    │       │     before_agent_callback:                                  │
+    │       │       search_entries (semantic) → lookup_entry per table    │
+    │       │       → call_reranker → return Content (LLM skipped)       │
+    │       │                                                            │
+    │       └── agent_knowledge_context (callback-driven, deterministic) │
+    │             before_agent_callback:                                  │
+    │               read module-level cache (pre-fetched at startup)      │
+    │               → call_reranker → return Content (LLM skipped)       │
+    │                                                                    │
+    │    ◀──────────────────────────────────────────────────────────────┘
     │
-    └──▶ compare_results (synthesize and compare all three)
+    └──▶ compare_results (LLM synthesizes all three from state)
 ```
 
-Each discovery agent calls the shared `rerank_tables` tool as its final step, producing a `RerankerResponse` with ranked tables, confidence scores, column hints, and SQL suggestions.
+All three approaches use the same `call_reranker` function (Gemini structured output) to produce a `RerankerResponse` with ranked tables, confidence scores, column hints, and SQL suggestions. Approaches 2 and 3 run entirely in `before_agent_callback` — no LLM agent calls needed — while approach 1 uses LLM reasoning to iterate through BigQuery metadata tools.
 
 ## Prerequisites
 
@@ -118,6 +131,16 @@ Before running the agents, the [`bigquery_context.ipynb`](bigquery_context.ipynb
 
 ### 5. Run the agents
 
+**Interactive web UI (recommended):**
+
+```bash
+uv run adk web agent_orchestrator
+```
+
+This opens a browser-based chat interface where you can interact with the agents, see tool calls in real time, and inspect state.
+
+**CLI (headless):**
+
 ```bash
 uv run adk run agent_orchestrator
 ```
@@ -125,8 +148,11 @@ uv run adk run agent_orchestrator
 Or run individual approaches:
 
 ```bash
-uv run adk run agent_bq_tools
+uv run adk web agent_bq_tools              # Interactive
+uv run adk run agent_bq_tools              # CLI
+uv run adk web agent_catalog_search
 uv run adk run agent_catalog_search
+uv run adk web agent_knowledge_context
 uv run adk run agent_knowledge_context
 ```
 
@@ -156,7 +182,9 @@ uv run python scripts/cleanup.py
 | `GOOGLE_CLOUD_PROJECT` | — | Your GCP project ID (required) |
 | `GOOGLE_CLOUD_LOCATION` | `us-central1` | Default GCP region |
 | `AGENT_MODEL` | `gemini-2.5-flash` | LLM for agent reasoning |
+| `AGENT_MODEL_LOCATION` | — | Vertex AI endpoint region for agent model (e.g., `global`) |
 | `TOOL_MODEL` | `gemini-2.5-flash` | LLM for reranker structured output |
+| `TOOL_MODEL_LOCATION` | — | Vertex AI endpoint region for tool model (e.g., `global`) |
 | `BQ_LOCATION` | `US` | BigQuery dataset location (multi-region) |
 | `DATAPLEX_LOCATION` | `us-central1` | Dataplex DataScan location (used by setup/cleanup scripts) |
 | `TOP_K` | `5` | Default max tables in reranker output |

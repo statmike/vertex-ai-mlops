@@ -13,7 +13,14 @@ GOOGLE_CLOUD_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 
 # --- Models ---
 AGENT_MODEL = os.getenv("AGENT_MODEL", "gemini-2.5-flash")
+AGENT_MODEL_LOCATION = os.getenv("AGENT_MODEL_LOCATION", "")
 TOOL_MODEL = os.getenv("TOOL_MODEL", "gemini-2.5-flash")
+TOOL_MODEL_LOCATION = os.getenv("TOOL_MODEL_LOCATION", "")
+
+# ADK uses GOOGLE_CLOUD_LOCATION for model endpoints. Override it when a
+# separate AGENT_MODEL_LOCATION is configured (e.g., "global").
+if AGENT_MODEL_LOCATION:
+    os.environ["GOOGLE_CLOUD_LOCATION"] = AGENT_MODEL_LOCATION
 
 # --- BigQuery ---
 BQ_LOCATION = os.getenv("BQ_LOCATION", "US")

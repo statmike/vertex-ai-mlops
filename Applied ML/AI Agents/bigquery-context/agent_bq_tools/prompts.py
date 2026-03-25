@@ -42,6 +42,11 @@ Only search within these resources:
    - candidate_metadata: all the table metadata you gathered, formatted clearly
    - discovery_method: "bq_tools"
 
+## Output format
+Begin your response with: **[Approach 1: BQ Metadata Tools]**
+Briefly summarize which tables you found and their relevance, then include
+the reranker results.
+
 ## Important
 - Do NOT use `execute_sql` — this agent is for discovery only, not querying.
 - Be thorough: check all datasets in scope, not just the first one.

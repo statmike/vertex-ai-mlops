@@ -5,8 +5,6 @@ Workflow:
 2. Compare agent reads all three results from state and synthesizes
 """
 
-import os
-
 from google.adk import agents
 
 from config import AGENT_MODEL
@@ -14,11 +12,6 @@ from agent_bq_tools.agent import root_agent as bq_tools_agent
 from agent_catalog_search.agent import root_agent as catalog_search_agent
 from agent_knowledge_context.agent import root_agent as knowledge_context_agent
 from . import prompts
-
-# Override location if needed
-AGENT_MODEL_LOCATION = os.getenv("AGENT_MODEL_LOCATION", "")
-if AGENT_MODEL_LOCATION:
-    os.environ["GOOGLE_CLOUD_LOCATION"] = AGENT_MODEL_LOCATION
 
 
 # Step 1: Run all three discovery approaches in parallel

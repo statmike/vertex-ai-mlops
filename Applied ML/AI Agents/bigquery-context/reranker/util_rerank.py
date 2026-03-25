@@ -5,7 +5,7 @@ import json
 from google import genai
 from google.genai import types
 
-from config import GOOGLE_CLOUD_PROJECT, TOOL_MODEL
+from config import GOOGLE_CLOUD_PROJECT, TOOL_MODEL, TOOL_MODEL_LOCATION
 from schemas import RerankerResponse
 
 
@@ -61,7 +61,7 @@ def call_reranker(
     client = genai.Client(
         vertexai=True,
         project=GOOGLE_CLOUD_PROJECT,
-        location="global",
+        location=TOOL_MODEL_LOCATION or "us-central1",
     )
 
     user_prompt = f"""\
