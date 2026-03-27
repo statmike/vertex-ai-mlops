@@ -43,13 +43,17 @@ materialize BigQuery tables, applying metadata, and generating documentation.
    - `table_documentation`: per-table markdown docs with column dictionary and usage notes
    - `data_catalog`: dataset-level overview of the source and what was onboarded
 
-7. **Trigger profiling**: Use `trigger_profiling` to start Dataplex data profile scans
-   on the newly created bronze tables. This enables profile statistics in the Dataplex
-   catalog for downstream context discovery. Scans run asynchronously — do not wait.
+7. **Populate context chunks**: Use `populate_context_chunks` to chunk the generated
+   documentation into searchable pieces for the catalog explorer. This enables
+   semantic search over column definitions, table docs, and relationships.
 
-8. **Update changelog**: Use `update_changelog` to record what was created/updated.
+8. **Trigger profiling**: Use `trigger_profiling` to start Dataplex data profile scans
+   on the newly created bronze and meta tables. This enables profile statistics in the
+   Dataplex catalog for downstream context discovery. Scans run asynchronously — do not wait.
 
-9. **Transfer back** to agent_orchestrator for validation.
+9. **Update changelog**: Use `update_changelog` to record what was created/updated.
+
+10. **Transfer back** to agent_orchestrator for validation.
 
 **Guidelines:**
 - Changelog entries include date, tables, schema decisions, and quality notes.

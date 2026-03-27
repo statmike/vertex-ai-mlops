@@ -118,8 +118,25 @@ async def execute_sql(
                 query_job = client.query(ddl)
                 query_job.result()
 
-                # Get row count
+                # Apply column descriptions to the table schema
                 table_obj = client.get_table(target_table_id)
+                desc_map = {col["name"]: col.get("description", "") for col in columns}
+                new_schema = []
+                for field in table_obj.schema:
+                    desc = desc_map.get(field.name, "")
+                    if desc:
+                        new_schema.append(bigquery.SchemaField(
+                            name=field.name,
+                            field_type=field.field_type,
+                            mode=field.mode,
+                            description=desc,
+                            fields=field.fields,
+                        ))
+                    else:
+                        new_schema.append(field)
+                table_obj.schema = new_schema
+                client.update_table(table_obj, ["schema"])
+
                 row_count = table_obj.num_rows
 
                 tables_created[table_name] = {

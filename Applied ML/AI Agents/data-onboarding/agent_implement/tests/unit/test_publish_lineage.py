@@ -133,6 +133,87 @@ class TestPublishLineageAssembly:
     @patch("agent_implement.tools.function_tool_publish_lineage.gcs_bucket_name", return_value="bucket")
     @patch("agent_implement.tools.function_tool_publish_lineage.write_processing_log")
     @patch("agent_implement.tools.function_tool_publish_lineage._publish")
+    async def test_zip_extracted_passes_archive_gcs_uri(
+        self, mock_publish, mock_log, mock_bucket, mock_tool_context
+    ):
+        """files_acquired entry with archive_gcs_uri passes it through to file_lineage."""
+        mock_tool_context.state.update({
+            "source_id": "src-zip",
+            "source_uri": "https://data.gov/portal",
+            "tables_created": {
+                "report": {"rows": 50, "table_id": "proj.bronze.report"},
+            },
+            "external_tables": {
+                "report": "proj.bronze.ext_report",
+            },
+            "files_acquired": [
+                {
+                    "url": "https://data.gov/data.zip",
+                    "gcs_path": "staging/src-zip/report.csv",
+                    "gcs_uri": "gs://bucket/staging/src-zip/report.csv",
+                    "archive_gcs_uri": "gs://bucket/staging/src-zip/archives/data.zip",
+                },
+            ],
+            "proposed_tables": {
+                "report": {
+                    "source_path": "staging/src-zip/report.csv",
+                },
+            },
+        })
+        mock_publish.return_value = {"process": "p", "run": "r", "events_created": 5}
+
+        await publish_lineage(mock_tool_context)
+
+        file_lineage = mock_publish.call_args.kwargs["file_lineage"]
+        assert len(file_lineage) == 1
+        assert file_lineage[0]["archive_gcs_uri"] == "gs://bucket/staging/src-zip/archives/data.zip"
+        assert file_lineage[0]["gcs_uri"] == "gs://bucket/staging/src-zip/report.csv"
+
+    @pytest.mark.asyncio
+    @patch("agent_implement.tools.function_tool_publish_lineage.GOOGLE_CLOUD_PROJECT", "proj")
+    @patch("agent_implement.tools.function_tool_publish_lineage.gcs_bucket_name", return_value="bucket")
+    @patch("agent_implement.tools.function_tool_publish_lineage.write_processing_log")
+    @patch("agent_implement.tools.function_tool_publish_lineage._publish")
+    async def test_xlsx_sheet_in_gcs_uri(
+        self, mock_publish, mock_log, mock_bucket, mock_tool_context
+    ):
+        """source_path with #Sheet1 produces gcs_uri with sheet suffix."""
+        mock_tool_context.state.update({
+            "source_id": "src-xlsx",
+            "source_uri": "https://data.gov/portal",
+            "tables_created": {
+                "sales": {"rows": 10, "table_id": "proj.bronze.sales"},
+            },
+            "external_tables": {
+                "sales": "proj.bronze.ext_sales",
+            },
+            "files_acquired": [
+                {
+                    "url": "https://data.gov/report.xlsx",
+                    "gcs_path": "staging/src-xlsx/report.xlsx",
+                    "gcs_uri": "gs://bucket/staging/src-xlsx/report.xlsx",
+                },
+            ],
+            "proposed_tables": {
+                "sales": {
+                    "source_path": "staging/src-xlsx/report.xlsx#Sheet1",
+                },
+            },
+        })
+        mock_publish.return_value = {"process": "p", "run": "r", "events_created": 4}
+
+        await publish_lineage(mock_tool_context)
+
+        file_lineage = mock_publish.call_args.kwargs["file_lineage"]
+        assert len(file_lineage) == 1
+        assert file_lineage[0]["gcs_uri"] == "gs://bucket/staging/src-xlsx/report.xlsx#Sheet1"
+        assert file_lineage[0]["file_url"] == "https://data.gov/report.xlsx"
+
+    @pytest.mark.asyncio
+    @patch("agent_implement.tools.function_tool_publish_lineage.GOOGLE_CLOUD_PROJECT", "proj")
+    @patch("agent_implement.tools.function_tool_publish_lineage.gcs_bucket_name", return_value="bucket")
+    @patch("agent_implement.tools.function_tool_publish_lineage.write_processing_log")
+    @patch("agent_implement.tools.function_tool_publish_lineage._publish")
     async def test_multiple_tables(
         self, mock_publish, mock_log, mock_bucket, mock_tool_context
     ):

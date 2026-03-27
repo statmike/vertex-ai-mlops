@@ -5,10 +5,13 @@ Profile results are published to the Dataplex catalog, making them
 available via the lookupContext API for downstream discovery agents.
 """
 
+import hashlib
 import logging
 import time
 
 logger = logging.getLogger(__name__)
+
+_SCAN_ID_MAX_LEN = 63
 
 
 def create_and_run_profile_scans(
@@ -53,6 +56,10 @@ def create_and_run_profile_scans(
 
     for i, table_name in enumerate(table_names):
         scan_id = f"{prefix}-profile-{table_name.replace('_', '-')}"
+        # Dataplex scan IDs must be <= 63 chars; truncate with a hash suffix
+        if len(scan_id) > _SCAN_ID_MAX_LEN:
+            digest = hashlib.md5(scan_id.encode()).hexdigest()[:8]
+            scan_id = scan_id[: _SCAN_ID_MAX_LEN - 9] + "-" + digest
         scan_name = f"{parent}/dataScans/{scan_id}"
         resource = (
             f"//bigquery.googleapis.com/projects/{project}"

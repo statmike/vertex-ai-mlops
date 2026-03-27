@@ -177,6 +177,7 @@ async def create_external_tables(
                         )
                         load_job.result()
                     except Exception as load_err:
+                        load_err_msg = str(load_err)
                         logger.info(
                             f"Initial load failed for {table_name}, "
                             f"attempting column-level recovery: {load_err}"
@@ -233,7 +234,7 @@ async def create_external_tables(
                                     "table": table_name,
                                     "coerced_to_string": coerced_columns,
                                     "omitted": omitted_columns,
-                                    "reason": str(load_err),
+                                    "reason": load_err_msg,
                                 },
                             )
 

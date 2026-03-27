@@ -9,12 +9,14 @@ dependencies = [
     "google-genai>=1.64.0",
     "google-cloud-aiplatform[agent_engines,adk]>=1.88.0",
     "google-cloud-bigquery>=3.31.0",
+    "google-cloud-bigquery-connection>=1.0.0",
     "google-cloud-storage>=2.19.0",
     "python-dotenv>=1.0.0",
     "pydantic>=2.12.5",
     "beautifulsoup4>=4.13.0",
     "httpx>=0.28.0",
     "pandas>=2.3.3",
+    "pandas-gbq>=0.26.0",
     "openpyxl>=3.1.0",
     "pdfplumber>=0.11.0",
     "google-cloud-datacatalog-lineage>=0.3.0",
@@ -53,9 +55,11 @@ testpaths = [
     "agent_validate/tests",
     "agent_context/tests",
     "agent_convo/tests",
+    "agent_engineer/tests",
+    "agent_catalog/tests",
 ]
 asyncio_mode = "auto"
-addopts = "--cov=agent_orchestrator --cov=agent_acquire --cov=agent_discover --cov=agent_understand --cov=agent_design --cov=agent_implement --cov=agent_validate --cov=agent_context --cov=agent_convo --cov-report=term-missing"
+addopts = "--cov=agent_orchestrator --cov=agent_acquire --cov=agent_discover --cov=agent_understand --cov=agent_design --cov=agent_implement --cov=agent_validate --cov=agent_context --cov=agent_convo --cov=agent_engineer --cov=agent_catalog --cov-report=term-missing"
 
 [tool.coverage.run]
 source = [
@@ -68,6 +72,8 @@ source = [
     "agent_validate",
     "agent_context",
     "agent_convo",
+    "agent_engineer",
+    "agent_catalog",
 ]
 
 [tool.coverage.report]

@@ -7,10 +7,11 @@ if AGENT_MODEL_LOCATION:
 
 from google.adk import agents  # noqa: E402
 
-from agent_orchestrator.config import AGENT_MODEL_INSTANCE as AGENT_MODEL  # noqa: E402
-
+from agent_catalog.agent import root_agent as catalog_agent  # noqa: E402
 from agent_context.agent import root_agent as context_agent  # noqa: E402
 from agent_convo.agent import root_agent as convo_agent  # noqa: E402
+from agent_engineer.agent import root_agent as engineer_agent  # noqa: E402
+from agent_orchestrator.config import AGENT_MODEL_INSTANCE as AGENT_MODEL  # noqa: E402
 
 from . import prompts  # noqa: E402
 
@@ -20,7 +21,7 @@ root_agent = agents.Agent(
     description="Chat orchestrator for conversational analytics over onboarded BigQuery data.",
     global_instruction=prompts.global_instructions,
     instruction=prompts.agent_instructions,
-    sub_agents=[context_agent, convo_agent],
+    sub_agents=[context_agent, convo_agent, engineer_agent, catalog_agent],
 )
 
 # ============================================================

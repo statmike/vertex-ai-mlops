@@ -22,12 +22,16 @@ TOOL_MODEL_LOCATION = os.getenv("TOOL_MODEL_LOCATION", "")
 RESOURCE_PREFIX = os.getenv("RESOURCE_PREFIX", "data_onboarding")
 
 # --- Dataplex ---
-DATAPLEX_LOCATION = os.getenv("DATAPLEX_LOCATION", GOOGLE_CLOUD_LOCATION)
+# Default to us-central1 (not GOOGLE_CLOUD_LOCATION which ADK may override to "global").
+# Dataplex data scans require a regional location, not a multi-region.
+DATAPLEX_LOCATION = os.getenv("DATAPLEX_LOCATION", "us-central1")
 
 # --- BigQuery ---
 BQ_DATASET_LOCATION = os.getenv("BQ_DATASET_LOCATION", "US")
 BQ_BRONZE_DATASET = os.getenv("BQ_BRONZE_DATASET") or f"{RESOURCE_PREFIX}_bronze"
 BQ_META_DATASET = os.getenv("BQ_META_DATASET") or f"{RESOURCE_PREFIX}_meta"
+BQ_CONTEXT_DATASET = os.getenv("BQ_CONTEXT_DATASET") or f"{RESOURCE_PREFIX}_context"
+BQ_CONNECTION_ID = os.getenv("BQ_CONNECTION_ID") or f"{RESOURCE_PREFIX}_embed"
 BQ_ANALYTICS_DATASET = os.getenv("BQ_ANALYTICS_DATASET") or f"{RESOURCE_PREFIX}_adk"
 BQ_ANALYTICS_TABLE = os.getenv("BQ_ANALYTICS_TABLE", "agent_events")
 

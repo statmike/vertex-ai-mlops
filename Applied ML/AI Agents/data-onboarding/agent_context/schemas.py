@@ -2,9 +2,32 @@
 
 The reranker uses Gemini with structured output to rank candidate tables
 by relevance to a user's question. These schemas define the response format.
+
+The two-pass reranker uses ShortlistResponse for the fast first pass
+(compact summaries, all tables) and RerankerResponse for the focused
+second pass (full metadata, top-K tables only).
 """
 
 from pydantic import BaseModel, Field
+
+
+class ShortlistEntry(BaseModel):
+    """A candidate table from the shortlist pass."""
+
+    table_id: str = Field(description="Fully qualified table ID (project.dataset.table)")
+    confidence: float = Field(
+        ge=0.0, le=1.0, description="Confidence score from 0.0 to 1.0"
+    )
+    reason: str = Field(description="Brief 1-sentence reason for relevance")
+
+
+class ShortlistResponse(BaseModel):
+    """Result of the shortlist pass — compact screening of all tables."""
+
+    question: str = Field(description="The original user question")
+    shortlisted: list[ShortlistEntry] = Field(
+        description="Tables shortlisted as potentially relevant, sorted by confidence"
+    )
 
 
 class ColumnHint(BaseModel):

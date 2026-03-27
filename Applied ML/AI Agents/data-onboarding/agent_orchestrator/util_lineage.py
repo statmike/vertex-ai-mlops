@@ -7,13 +7,22 @@ three FQN prefixes:
   - ``gcs:`` for Cloud Storage objects
   - ``bigquery:`` for BigQuery tables
 
-We publish four custom events per file:
-  1. starting URL  →  file download URL
-  2. file URL      →  GCS staging object
-  3. GCS object    →  external BQ table
-  4. external BQ table → bronze (materialized) BQ table
+We publish up to five custom events per file:
 
-This gives one continuous chain: URL → file URL → GCS → ext_table → table.
+  **Regular file** (4 events):
+    1. starting URL  →  file download URL  (skipped when same)
+    2. file URL      →  GCS file
+    3. GCS file      →  external BQ table
+    4. external BQ table → bronze BQ table
+
+  **ZIP-extracted file** (5 events):
+    1. starting URL  →  ZIP download URL   (skipped when same)
+    2. ZIP URL       →  GCS archive.zip
+    3. GCS archive   →  GCS extracted file
+    4. GCS file      →  external BQ table
+    5. external BQ table → bronze BQ table
+
+  **XLSX with sheet**: GCS FQN includes ``#SheetName`` suffix.
 """
 
 import logging
@@ -40,11 +49,15 @@ def build_fqn_bigquery_full(table_id: str) -> str:
 def build_fqn_gcs(gcs_uri: str) -> str:
     """Fully qualified name for a GCS object.
 
+    Uses the ``gcs:{bucket}.`{path}``` format that matches BigQuery's
+    automatic lineage FQNs, so custom and auto-captured lineage nodes
+    merge in the Cloud Console.
+
     Accepts either ``gs://bucket/path`` or bare ``bucket/path`` forms.
     """
-    if gcs_uri.startswith("gs://"):
-        return f"gcs:{gcs_uri}"
-    return f"gcs:gs://{gcs_uri}"
+    raw = gcs_uri.removeprefix("gs://")
+    bucket, _, path = raw.partition("/")
+    return f"gcs:{bucket}.`{path}`"
 
 
 def build_fqn_url(url: str) -> str:
@@ -103,23 +116,30 @@ def publish_lineage(
     """Publish end-to-end lineage to the Dataplex Data Lineage API.
 
     Creates one **Process** (``data-onboarding``), one **Run** per
-    invocation, and up to four **LineageEvents** per file:
+    invocation, and up to five **LineageEvents** per file:
 
     1. ``custom:<starting_url>`` → ``custom:<file_url>``
-    2. ``custom:<file_url>``     → ``gcs:<gcs_uri>``
-    3. ``gcs:<gcs_uri>``         → ``bigquery:<ext_table>``
-    4. ``bigquery:<ext_table>``  → ``bigquery:<bronze_table>``
+    2a. ``custom:<file_url>``    → ``gcs:<archive.zip>``  (ZIP only)
+    2b. ``custom:<file_url>``    → ``gcs:<gcs_uri>``      (direct download)
+    3. ``gcs:<archive.zip>``     → ``gcs:<extracted_file>`` (ZIP only)
+    4. ``gcs:<gcs_uri>``         → ``bigquery:<ext_table>``
+    5. ``bigquery:<ext_table>``  → ``bigquery:<bronze_table>``
 
     Args:
         source_id: Unique identifier for this onboarding run.
         starting_url: The original URL provided by the user.
         file_lineage: List of dicts, each with keys:
             - file_url: Direct download URL of the file.
-            - gcs_uri: GCS URI (``gs://bucket/path``).
+            - gcs_uri: GCS URI (``gs://bucket/path``).  May include
+              ``#SheetName`` suffix for XLSX files.
             - external_table: Fully-qualified external table id
               (``project.dataset.table``).
             - bronze_table: Fully-qualified bronze table id
               (``project.dataset.table``).
+            - archive_gcs_uri: (optional) GCS URI of the ZIP archive
+              (``gs://bucket/path/archive.zip``). Present when the file
+              was extracted from a ZIP. Absent or empty for direct
+              downloads.
 
     Returns:
         Dict with ``process``, ``run``, and ``events_created`` count,
@@ -181,6 +201,7 @@ def publish_lineage(
         for entry in file_lineage:
             file_url = entry.get("file_url", "")
             gcs_uri = entry.get("gcs_uri", "")
+            archive_gcs_uri = entry.get("archive_gcs_uri", "")
 
             # Event 1: starting URL → file download URL
             if file_url and starting_url and starting_url != file_url:
@@ -192,17 +213,37 @@ def publish_lineage(
                 )
                 events_created += 1
 
-            # Event 2: file download URL → GCS staging object
-            if file_url and gcs_uri:
-                _create_event(
-                    client,
-                    created_run.name,
-                    [build_fqn_url(file_url)],
-                    build_fqn_gcs(gcs_uri),
-                )
-                events_created += 1
+            # Events 2–3: file URL → GCS (with optional archive hop)
+            if archive_gcs_uri:
+                # ZIP path: file_url → GCS archive → GCS extracted file
+                if file_url:
+                    _create_event(
+                        client,
+                        created_run.name,
+                        [build_fqn_url(file_url)],
+                        build_fqn_gcs(archive_gcs_uri),
+                    )
+                    events_created += 1
+                if gcs_uri:
+                    _create_event(
+                        client,
+                        created_run.name,
+                        [build_fqn_gcs(archive_gcs_uri)],
+                        build_fqn_gcs(gcs_uri),
+                    )
+                    events_created += 1
+            else:
+                # Direct download: file_url → GCS file
+                if file_url and gcs_uri:
+                    _create_event(
+                        client,
+                        created_run.name,
+                        [build_fqn_url(file_url)],
+                        build_fqn_gcs(gcs_uri),
+                    )
+                    events_created += 1
 
-            # Event 3: GCS staging object → external BQ table
+            # Event 4: GCS file → external BQ table
             ext_table = entry.get("external_table", "")
             if gcs_uri and ext_table:
                 _create_event(
@@ -213,7 +254,7 @@ def publish_lineage(
                 )
                 events_created += 1
 
-            # Event 4: external BQ table → bronze (materialized) BQ table
+            # Event 5: external BQ table → bronze (materialized) BQ table
             bronze_table = entry.get("bronze_table", "")
             if ext_table and bronze_table:
                 _create_event(

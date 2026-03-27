@@ -1,0 +1,152 @@
+[
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q1",
+    "question": "What exchanges are available in the exchange reference table?"
+  },
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q2",
+    "question": "What is the highest VIX close value in the main EOD data?"
+  },
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q3",
+    "question": "Compare the total short sale volume across the four Cboe equity exchanges."
+  },
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q4",
+    "question": "Show me the implied volatility smile for the nearest expiration from the delta-relative volatility surface data."
+  },
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q5",
+    "question": "What CAD/JPY trades happened during the New York session?"
+  },
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q6",
+    "question": "What are the names of the trade conditions used in the options data?"
+  },
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q7",
+    "question": "Which institutional managers held the largest IBM positions?"
+  },
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q8",
+    "question": "What is the average daily volume for SPY options by expiration?"
+  },
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q9",
+    "question": "Show me the top 10 symbols by short interest from the FINRA report."
+  },
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q10",
+    "question": "What was the intraday high-low range for the VIX on each trading day?"
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q1",
+    "question": "Show me the processing log for this source."
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q2",
+    "question": "What files were downloaded from Cboe DataShop?"
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q3",
+    "question": "Which files came from ZIP archives versus direct downloads?"
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q4",
+    "question": "What schema decisions were made for the volatility surface tables?"
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q5",
+    "question": "How many tables were created and what are their row counts?"
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q6",
+    "question": "Were any columns coerced or dropped during loading?"
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q7",
+    "question": "What context documents were found and how were they used?"
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q8",
+    "question": "Show the web provenance — what pages were crawled?"
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q9",
+    "question": "What table relationships were detected across datasets?"
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q10",
+    "question": "Which tables are partitioned and on what columns?"
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q1",
+    "question": "What does PRVDR_NUM mean?"
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q2",
+    "question": "Describe the columns in the underlying_eod table."
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q3",
+    "question": "How are the four volatility surface tables related to each other?"
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q4",
+    "question": "What columns are shared between underlying_eod and underlying_trades?"
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q5",
+    "question": "What does the borrow_intensity_indicators data measure?"
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q6",
+    "question": "Explain the difference between the CGI and no-CGI options EOD tables."
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q7",
+    "question": "What reference tables exist and what do they look up?"
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q8",
+    "question": "What does the trade_condition_id field represent?"
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q9",
+    "question": "Which tables contain VIX-related data?"
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q10",
+    "question": "What FX data is available and how are the session tables organized?"
+  }
+]

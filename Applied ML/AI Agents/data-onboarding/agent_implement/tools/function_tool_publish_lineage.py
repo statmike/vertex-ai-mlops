@@ -70,19 +70,27 @@ async def publish_lineage(
                 source_paths = [sp] if sp else []
 
             for source_path in source_paths:
-                file_info = path_to_file.get(source_path, {})
-
-                # Build GCS URI
-                if source_path.startswith("gs://"):
-                    gcs_uri = source_path
+                # Handle XLSX #SheetName in source_path
+                if "#" in source_path:
+                    actual_path, sheet_name = source_path.rsplit("#", 1)
+                    file_info = path_to_file.get(actual_path, path_to_file.get(source_path, {}))
+                    if actual_path.startswith("gs://"):
+                        gcs_uri = f"{actual_path}#{sheet_name}"
+                    else:
+                        gcs_uri = f"gs://{bucket}/{actual_path}#{sheet_name}"
                 else:
-                    gcs_uri = f"gs://{bucket}/{source_path}"
+                    file_info = path_to_file.get(source_path, {})
+                    if source_path.startswith("gs://"):
+                        gcs_uri = source_path
+                    else:
+                        gcs_uri = f"gs://{bucket}/{source_path}"
 
                 file_lineage.append({
                     "file_url": file_info.get("url", ""),
                     "gcs_uri": gcs_uri,
                     "external_table": ext_table_id,
                     "bronze_table": bronze_table_id,
+                    "archive_gcs_uri": file_info.get("archive_gcs_uri") or "",
                 })
 
         result = _publish(
@@ -108,10 +116,11 @@ async def publish_lineage(
             f"  Run: {result.get('run', '')}\n"
             f"  Events created: {result.get('events_created', 0)}\n"
             f"\nLineage chain per file:\n"
-            f"  1. Starting URL → File download URL\n"
-            f"  2. File URL → GCS staging object\n"
-            f"  3. GCS object → External BQ table\n"
-            f"  4. External table → Bronze (materialized) table\n"
+            f"  1. Starting URL → File download URL (if different)\n"
+            f"  2. File URL → GCS archive (ZIP) or GCS file (direct)\n"
+            f"  3. GCS archive → GCS extracted file (ZIP only)\n"
+            f"  4. GCS file → Staging BQ table\n"
+            f"  5. Staging table → Bronze table\n"
         )
 
     except Exception as e:

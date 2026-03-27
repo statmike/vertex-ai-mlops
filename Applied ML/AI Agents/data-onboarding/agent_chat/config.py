@@ -6,9 +6,9 @@ dataset list needed.
 """
 
 from agent_orchestrator.config import (
-    BQ_DATASET_LOCATION,
+    BQ_CONTEXT_DATASET,
     BQ_META_DATASET,
-    GOOGLE_CLOUD_PROJECT,
 )
 
 META_DATASET = BQ_META_DATASET
+CONTEXT_DATASET = BQ_CONTEXT_DATASET

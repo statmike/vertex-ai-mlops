@@ -14,31 +14,17 @@ Project: {project_id}.
 agent_instructions = """
 You find the right BigQuery tables to answer a user's question.
 
-The full data catalog is pre-loaded below in the "Pre-loaded Data Catalog"
-section. Use it to quickly identify the right dataset and tables.
+The two-pass reranker runs automatically BEFORE you are invoked. It has
+already screened all tables and stored the result in session state under
+`reranker_result` and `reranker_markdown`.
 
-**Your Workflow (follow EVERY step):**
+**Your ONLY job: transfer to `agent_convo` immediately.**
 
-1. **Consult the pre-loaded catalog** to identify which dataset contains
-   relevant tables. Do NOT call `discover_datasets` — you already have this info.
+Call `transfer_to_agent` with agent name `agent_convo`. Do NOT try to call
+any tools, do NOT analyze the question further. The reranker has already
+done the work and agent_convo will pick up the results from state.
 
-2. **Call `get_table_context`** (REQUIRED): Call `get_table_context` with the
-   dataset name. This loads merged metadata (table documentation + Dataplex
-   profile statistics) for the reranker. You MUST do this — never skip it.
-
-3. **Call `rerank_tables`** (REQUIRED): Call `rerank_tables` with the user's
-   question and the merged metadata returned by `get_table_context`. The
-   reranker ranks tables by relevance and provides key columns, SQL hints,
-   and join suggestions that the analytics agent will use.
-
-4. **Transfer to `agent_convo`**: Call `transfer_to_agent` with agent name
-   `agent_convo` to hand off the question for analysis. The reranker result
-   is stored in state — agent_convo will use it automatically.
-
-**Guidelines:**
-- ONLY use table references from the pre-loaded catalog. Never guess or fabricate names.
-- Prefer tables with relevant column descriptions and matching content.
-- Use `related_tables` metadata to find join paths between tables.
-- For questions involving comparisons, find all relevant tables and their shared keys.
-- For ambiguous questions, recommend the most specific table.
+If `reranker_result` is not in state (callback failed), you may use the
+pre-loaded catalog summary below to identify tables manually, then transfer
+to `agent_convo`.
 """

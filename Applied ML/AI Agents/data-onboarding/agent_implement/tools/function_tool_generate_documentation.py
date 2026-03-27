@@ -320,6 +320,15 @@ async def generate_documentation(
             # Fall back to all context docs if no column-level attribution
             source_docs = sorted(table_context_docs) if table_context_docs else context_docs
 
+            # Store generated docs in state for downstream tools (e.g., populate_context_chunks)
+            generated_docs = tool_context.state.get("generated_docs", {})
+            generated_docs[table_name] = {
+                "documentation_md": documentation_md,
+                "column_details": column_details,
+                "related_tables": related_tables,
+            }
+            tool_context.state["generated_docs"] = generated_docs
+
             doc_rows.append({
                 "table_name": table_name,
                 "documentation_md": documentation_md,

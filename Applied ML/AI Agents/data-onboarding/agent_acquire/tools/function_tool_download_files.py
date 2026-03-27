@@ -260,7 +260,7 @@ async def download_files(
                             for blob_name, blob_info in existing_files.items():
                                 meta = blob_info.get("metadata", {})
                                 if meta.get("archive_url") == url:
-                                    recovered.append({
+                                    entry = {
                                         "url": url,
                                         "parent_url": meta.get("parent_url", ""),
                                         "gcs_uri": f"gs://{bucket}/{blob_name}",
@@ -272,7 +272,9 @@ async def download_files(
                                         "archive_member_path": meta.get(
                                             "archive_member_path", ""
                                         ),
-                                    })
+                                        "archive_gcs_uri": f"gs://{bucket}/{pre_archive_path}",
+                                    }
+                                    recovered.append(entry)
                             cached.extend(recovered)
                             logger.info(
                                 "Skipped zip %s (cached, %d extracted files)",
@@ -296,6 +298,7 @@ async def download_files(
                                 "hash": meta.get("sha256", ""),
                                 "archive_url": None,
                                 "archive_member_path": None,
+                                "archive_gcs_uri": None,
                             })
                             logger.info("Skipped %s (cached in GCS)", url_filename)
                             continue
@@ -331,6 +334,7 @@ async def download_files(
                                         "archive_member_path": meta.get(
                                             "archive_member_path", ""
                                         ),
+                                        "archive_gcs_uri": f"gs://{bucket}/{archive_path}",
                                     })
                             if recovered:
                                 cached.extend(recovered)
@@ -349,6 +353,9 @@ async def download_files(
                         extracted, skipped = _extract_zip(
                             data, url, staging_path, url_to_parent,
                         )
+                        archive_gcs_uri = f"gs://{bucket}/{archive_path}"
+                        for f in extracted:
+                            f["archive_gcs_uri"] = archive_gcs_uri
                         downloaded.extend(extracted)
                         if extracted:
                             zip_extractions += 1
@@ -379,6 +386,7 @@ async def download_files(
                             "hash": file_hash,
                             "archive_url": None,
                             "archive_member_path": None,
+                            "archive_gcs_uri": None,
                         })
 
                 except Exception as e:

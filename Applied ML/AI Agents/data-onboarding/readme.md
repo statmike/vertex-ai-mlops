@@ -54,41 +54,37 @@ URL ──crawl──→ File URLs ──download──→ GCS staging ──ana
  └─ web_provenance     └─ cross-reference  └─ source_manifest
 ```
 
-Run the onboarding agent:
-
-```bash
-uv run adk web agent_orchestrator
-```
-
-Then provide a URL (e.g., a data portal page with downloadable files) in the chat. The agent crawls it, downloads everything, and walks through the full pipeline with checkpoints for your approval.
+Run `uv run adk web` and select **`agent_orchestrator`** from the dropdown. Then provide a URL (e.g., a data portal page with downloadable files) in the chat. The agent crawls it, downloads everything, and walks through the full pipeline with checkpoints for your approval.
 
 ### Motion 2: Chat With Your Data
 
 ```
-User question ──→ agent_chat ──→ agent_context ──→ agent_convo (query & answer)
-                                       │                    │
-                            ┌──────────┼────────────┐       │
-                            │          │            │       │
-                     data_catalog  lookupContext  reranker  │
-                            │     (Dataplex API)    │       │
-                            │          │            │       │
-                            └──────────┴────────────┘       │
-                              merged context ───────→ enriched Context
-                                                       (schema overrides,
-                                                        glossary, joins,
-                                                        SQL hints)
-                                                            │
-                                                   Conversational
-                                                   Analytics API
+                             ┌─── Data Analyst ───→ agent_context ──→ agent_convo
+                             │                           │                 │
+User question ──→ agent_chat ├─── Data Engineer ──→ agent_engineer         │
+     (router)                │                           │          Conversational
+                             └─── Catalog Explorer → agent_catalog  Analytics API
+                                                         │
+                                                    AI.SEARCH
+                                                  (semantic search)
 ```
 
-Run the chat agent:
+The chat agent is a **three-persona router** that classifies each question and delegates to the right sub-agent:
 
-```bash
-uv run adk web agent_chat
-```
+| Persona | Route | For questions about |
+|---------|-------|-------------------|
+| **Data Analyst** | `agent_context` → `agent_convo` | Querying, analyzing, visualizing the actual data |
+| **Data Engineer** | `agent_engineer` | Processing logs, lineage, schema decisions, source tracking |
+| **Catalog Explorer** | `agent_catalog` | Column definitions, table documentation, relationships |
 
-Ask questions like "What is the highest VIX close value?" or "Compare short sale volume across exchanges" — the agent finds the right tables, queries them, and returns answers with data tables, charts, and insights.
+Run `uv run adk web` and select **`agent_chat`** from the dropdown.
+
+Example questions:
+- **Data Analyst**: "Compare the total short sale volume across the four Cboe equity exchanges."
+- **Data Engineer**: "Show me the processing log for this source."
+- **Catalog Explorer**: "What does PRVDR_NUM mean?"
+
+See [examples/cboe/cboe.md](examples/cboe/cboe.md) for a full set of example questions for each persona using Cboe DataShop as the onboarded source, including automated results with timing breakdowns.
 
 ---
 
@@ -195,7 +191,7 @@ Coerced and dropped columns are logged to `processing_log` in the meta dataset a
 - `table_documentation` in each bronze dataset — per-table markdown with a column dictionary, source attribution, related tables, schema provenance, and data quality notes
 - `data_catalog` in the meta dataset — dataset-level overview with all tables, context documents, and relationships
 
-**Data profiling** — After tables are created, the agent triggers [Dataplex data profile scans](https://cloud.google.com/dataplex/docs/data-profiling-overview) on each bronze table. Scans run asynchronously with 10% sampling and publish results to the Dataplex catalog. This makes profile statistics (min/max values, null rates, value distributions) available via the [lookupContext API](https://cloud.google.com/dataplex/docs/reference/rest/v1/projects.locations/lookupContext) for downstream context discovery.
+**Data profiling** — After tables are created, the agent triggers [Dataplex data profile scans](https://cloud.google.com/dataplex/docs/data-profiling-overview) on each bronze table and on the shared meta tables (`source_manifest`, `processing_log`, `table_lineage`, `schema_decisions`, `web_provenance`). Scans run asynchronously with 10% sampling and publish results to the Dataplex catalog. This makes profile statistics (min/max values, null rates, value distributions) available via the [lookupContext API](https://cloud.google.com/dataplex/docs/reference/rest/v1/projects.locations/lookupContext) for downstream context discovery.
 
 **Lineage publishing** — Writes custom lineage events to the [Dataplex Data Lineage API](https://cloud.google.com/dataplex/docs/about-data-lineage):
 
@@ -222,28 +218,33 @@ Results are reported as PASS, WARN, FAIL, or SKIP per table.
 
 ## Chat Agent (`agent_chat`)
 
-An orchestrator with two sub-agents that lets you query the onboarded data conversationally.
+A three-persona router with four sub-agents that lets you query onboarded data, explore pipeline metadata, and look up data definitions conversationally.
 
-### `agent_context` — Find the Right Tables
+### Persona 1: Data Analyst (`agent_context` → `agent_convo`)
 
-This agent knows about every table the onboarding agent created. At startup, it pre-loads the full data catalog from BigQuery — every dataset, table name, column list, column descriptions, and relationships — merged with [Dataplex lookupContext](https://cloud.google.com/dataplex/docs/reference/rest/v1/projects.locations/lookupContext) profile statistics (value distributions, null rates, min/max). This dual-source context is embedded directly in the agent's instructions so it can instantly identify which tables match a user's question.
+For questions about the actual data — querying, analyzing, summarizing, visualizing.
 
-**Enriched context discovery:**
-1. Calls `get_table_context` to load merged metadata (`table_documentation` + Dataplex profile stats)
-2. Calls `rerank_tables` — a Gemini-powered reranker that uses structured output to rank tables by relevance, identify key columns, suggest SQL patterns, and recommend join paths
+#### `agent_context` — Find the Right Tables
+
+This agent knows about every table the onboarding agent created. At startup, it pre-loads the full data catalog from BigQuery — every dataset, table name, column list, column descriptions, and relationships — into a structured dict and a compact summary. The compact summary (just table names, column counts, column name lists, and 1-line descriptions) is embedded in the agent's instructions so it can instantly identify which tables match a user's question. The full metadata (all column details, types, descriptions, relationships) is held in memory for the detail ranking pass.
+
+**Two-pass reranker:**
+1. **Shortlist pass** (fast) — sends the compact catalog summary (~100 tokens per table) for all tables to Gemini, which returns the top 10 candidates with confidence scores
+2. **Detail pass** (focused) — sends full metadata (column names, types, descriptions, relationships) for only the shortlisted tables to Gemini, which returns final rankings with key columns, SQL hints, and join suggestions
 3. Transfers to `agent_convo` with the reranker result stored in session state
+
+This two-pass approach avoids sending full metadata for all tables in a single call (which caused timeouts at scale) while maintaining good recall — the fast first pass screens broadly, and the focused second pass ranks precisely.
 
 **Where the context comes from:**
 - `data_catalog` in the meta dataset — written by the onboarding agent's `generate_documentation` tool
 - `table_documentation` in each bronze dataset — per-table markdown with column details, descriptions, attribution, and relationships
-- [Dataplex lookupContext API](https://cloud.google.com/dataplex/docs/reference/rest/v1/projects.locations/lookupContext) — profile statistics from Dataplex data profile scans triggered during onboarding
 - The onboarding agent's cross-reference enrichment — column descriptions, suggested names, and BQ types all flow through into the documentation
 
 This means any bronze dataset created by the onboarding agent is immediately available for chat. No additional configuration needed.
 
-### `agent_convo` — Answer Questions
+#### `agent_convo` — Answer Questions
 
-Calls the [Conversational Analytics API](https://cloud.google.com/gemini/docs/conversational-analytics-api/overview) with [enriched authored context](https://cloud.google.com/gemini/docs/conversational-analytics-api/overview) from the reranker. When reranker results are available, the API receives:
+Calls the [Conversational Analytics API](https://cloud.google.com/gemini/docs/conversational-analytics-api/overview) with [enriched authored context](https://cloud.google.com/gemini/docs/conversational-analytics-api/overview) from the reranker. Tables are **auto-selected** from the `reranker_result` in session state — the agent does not need to manually specify or extract table references. When reranker results are available, the API receives:
 - **Schema overrides** — per-table column names, types, and descriptions from the reranker's key columns
 - **Schema relationships** — join paths between tables from the reranker's join suggestions
 - **Glossary terms** — domain-specific terms extracted from column descriptions
@@ -257,19 +258,36 @@ When no reranker result is available, falls back to bare table references (backw
 
 The tool processes the API's response stream and returns only the useful parts: text summaries, data result tables, and insights. Intermediate steps (schema resolution, query planning, raw SQL) are filtered out for a clean chat experience. Charts are saved as image artifacts.
 
+The core API calling logic (session management, response processing, chart handling) is shared between `agent_convo` and `agent_engineer` via a common utility to avoid code duplication.
+
+### Persona 2: Data Engineer (`agent_engineer`)
+
+For questions about the onboarding pipeline — processing history, schema decisions, data lineage, source tracking.
+
+Uses the Conversational Analytics API against the **meta dataset** tables (`source_manifest`, `processing_log`, `table_lineage`, `schema_decisions`, `web_provenance`, `data_catalog`). All meta tables are included automatically — no table discovery needed. Session history is maintained separately under `meta_api_sessions`.
+
+### Persona 3: Catalog Explorer (`agent_catalog`)
+
+For questions about data meaning — column definitions, table documentation, relationships, data provenance.
+
+Uses BigQuery `AI.SEARCH` for semantic retrieval over the `context_chunks` table in the `data_onboarding_context` dataset. During onboarding, table documentation is chunked into searchable pieces (one chunk per column definition, one per table doc, one per relationship set). Each chunk has an autonomous embedding via `AI.EMBED` with `text-embedding-005`. The agent searches these chunks, then synthesizes an answer citing specific `dataset.table.column` references.
+
+The BQ Cloud Resource connection and IAM grants are created automatically during the first onboarding run.
+
 ### Flow
 
-1. **New question** → `agent_chat` transfers to `agent_context`
-2. **`agent_context`** consults its pre-loaded catalog, calls `get_table_context` (merged metadata), then `rerank_tables` (Gemini structured output), transfers to `agent_convo`
-3. **`agent_convo`** builds enriched Context from the reranker result (schema overrides, glossary, relationships, SQL hints), calls `conversational_chat`, returns the answer
-4. **Follow-up questions** on the same topic go directly to `agent_convo` (session history preserved)
-5. **Topic changes** go back to `agent_context` to find new tables
+1. **New question** → `agent_chat` classifies and routes:
+   - **Data Analyst** → `agent_context` → `agent_convo` (Conversational Analytics API against bronze tables)
+   - **Data Engineer** → `agent_engineer` (Conversational Analytics API against meta tables)
+   - **Catalog Explorer** → `agent_catalog` (AI.SEARCH over context chunks)
+2. **Follow-up questions** go directly to the last active agent (session history preserved)
+3. **Persona changes** restart routing — the question is reclassified and sent to the right agent
 
 ---
 
 ## What Gets Created in BigQuery
 
-The onboarding agent creates three categories of BigQuery datasets, and the ADK framework adds a fourth for analytics.
+The onboarding agent creates four categories of BigQuery datasets, and the ADK framework adds a fifth for analytics.
 
 ### Meta Dataset (`data_onboarding_meta`)
 
@@ -296,6 +314,18 @@ One dataset per source domain. For example, onboarding from `datashop.cboe.com` 
   - `source_documents` — JSON list of context documents that informed the table's schema
 
 This `table_documentation` table is what `agent_context` reads when answering chat questions. It's the bridge between the onboarding pipeline and the chat agent.
+
+### Context Dataset (`data_onboarding_context`)
+
+Semantic search index for the Catalog Explorer agent. Contains:
+
+- **`context_chunks`** — Chunked table documentation with autonomous embeddings. Each row is a searchable piece of documentation:
+  - `chunk_type` — `table_documentation`, `column_description`, `relationship`, or `profile_stat`
+  - `chunk_text` — The searchable text content
+  - `ml_embed_content` — Vector embedding generated automatically by `AI.EMBED` with `text-embedding-005`
+  - Clustered by `source_dataset` and `chunk_type`
+
+Chunks are created during onboarding by the `populate_context_chunks` tool and searched during chat by `agent_catalog` using `AI.SEARCH`. The dataset uses a Cloud Resource connection (`data_onboarding_embed`) for the `AI.EMBED` generated column.
 
 ### Staging Datasets (`data_onboarding_{domain}_staging`)
 
@@ -353,8 +383,9 @@ GOOGLE_CLOUD_STORAGE_BUCKET=your-bucket-name
 - Cloud Storage API
 - Vertex AI API
 - Data Lineage API (for Dataplex lineage)
-- Dataplex API (for data profile scans and lookupContext)
+- Dataplex API (for data profile scans)
 - Conversational Analytics API (for `agent_chat`)
+- BigQuery Connection API (for `AI.EMBED` autonomous embeddings)
 
 ---
 
@@ -375,15 +406,13 @@ pip install -e ".[dev]"
 
 ### Run
 
-**Onboard data from a URL:**
 ```bash
-uv run adk web agent_orchestrator
+uv run adk web
 ```
 
-**Chat with onboarded data:**
-```bash
-uv run adk web agent_chat
-```
+Then select the agent from the dropdown:
+- **`agent_orchestrator`** — Onboard data from a URL
+- **`agent_chat`** — Chat with onboarded data
 
 ### Deploy to Vertex AI Agent Engine
 
@@ -399,10 +428,11 @@ python deploy/deploy.py --info      # Show deployment info
 ## Development
 
 ```bash
-make test      # Run all tests (231 tests)
-make lint      # Run ruff linter
-make format    # Auto-format + sort imports
-make check     # Lint + tests
+make test             # Run all tests
+make lint             # Run ruff linter
+make format           # Auto-format + sort imports
+make check            # Lint + tests
+make run             # Launch adk web
 ```
 
 ## Cleanup
@@ -415,4 +445,4 @@ python scripts/cleanup.py              # Interactive confirmation
 python scripts/cleanup.py --yes        # Skip confirmation
 ```
 
-Selectively skip with `--skip-bq`, `--skip-gcs`, `--skip-local`, `--skip-agent-engine`.
+Selectively skip with `--skip-bq`, `--skip-gcs`, `--skip-local`, `--skip-lineage`, `--skip-profiling`, `--skip-agent-engine`.

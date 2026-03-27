@@ -119,9 +119,9 @@ def _build_create_table_ddl(
                 # Fallback: wrap in DATE() then truncate
                 parts.append(f"PARTITION BY DATE_TRUNC(DATE({col}), {granularity})")
     if cluster_by:
-        # BQ does not allow FLOAT64/FLOAT/NUMERIC types in CLUSTER BY
+        # BQ does not allow FLOAT64/FLOAT/NUMERIC/TIME types in CLUSTER BY
         if columns:
-            float_types = {"FLOAT64", "FLOAT", "NUMERIC", "BIGNUMERIC"}
+            float_types = {"FLOAT64", "FLOAT", "NUMERIC", "BIGNUMERIC", "TIME"}
             col_types = {c["name"]: c.get("bq_type", "STRING").upper() for c in columns}
             cluster_by = [c for c in cluster_by if col_types.get(c, "STRING") not in float_types]
         if cluster_by:

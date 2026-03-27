@@ -29,10 +29,10 @@ class TestBuildFqnBigquery:
 
 class TestBuildFqnGcs:
     def test_with_gs_prefix(self):
-        assert build_fqn_gcs("gs://bucket/path/file.csv") == "gcs:gs://bucket/path/file.csv"
+        assert build_fqn_gcs("gs://bucket/path/file.csv") == "gcs:bucket.`path/file.csv`"
 
     def test_without_gs_prefix(self):
-        assert build_fqn_gcs("bucket/path/file.csv") == "gcs:gs://bucket/path/file.csv"
+        assert build_fqn_gcs("bucket/path/file.csv") == "gcs:bucket.`path/file.csv`"
 
 
 class TestBuildFqnUrl:
@@ -127,6 +127,57 @@ class TestPublishLineage:
         )
         # Event 3 (GCS→ext_table) + Event 4 (ext→bronze)
         assert result["events_created"] == 2
+
+    @patch("agent_orchestrator.util_lineage.GOOGLE_CLOUD_PROJECT", "test-project")
+    @patch("agent_orchestrator.util_lineage._lineage_location", return_value="us")
+    def test_zip_archive_creates_5_events(self, _mock_loc):
+        """ZIP-extracted file produces 5 events (page→URL→archive→file→ext→bronze)."""
+        result = self._run_with_mocks(
+            file_lineage=[
+                {
+                    "file_url": "https://example.com/data.zip",
+                    "gcs_uri": "gs://bucket/staging/extracted.csv",
+                    "external_table": "proj.staging_ds.ext_data",
+                    "bronze_table": "proj.bronze_ds.data",
+                    "archive_gcs_uri": "gs://bucket/staging/archives/data.zip",
+                },
+            ],
+        )
+        assert result["events_created"] == 5
+
+    @patch("agent_orchestrator.util_lineage.GOOGLE_CLOUD_PROJECT", "test-project")
+    @patch("agent_orchestrator.util_lineage._lineage_location", return_value="us")
+    def test_xlsx_sheet_in_gcs_fqn(self, _mock_loc):
+        """GCS URI with #SheetName passes through correctly to FQN."""
+        result = self._run_with_mocks(
+            file_lineage=[
+                {
+                    "file_url": "https://example.com/report.xlsx",
+                    "gcs_uri": "gs://bucket/staging/report.xlsx#Sheet1",
+                    "external_table": "proj.staging_ds.ext_report",
+                    "bronze_table": "proj.bronze_ds.report",
+                },
+            ],
+        )
+        # 4 events: page→URL, URL→GCS(#sheet), GCS→ext, ext→bronze
+        assert result["events_created"] == 4
+
+    @patch("agent_orchestrator.util_lineage.GOOGLE_CLOUD_PROJECT", "test-project")
+    @patch("agent_orchestrator.util_lineage._lineage_location", return_value="us")
+    def test_zip_xlsx_sheet_creates_5_events(self, _mock_loc):
+        """ZIP-extracted XLSX with sheet: 5 events, GCS FQN has #SheetName."""
+        result = self._run_with_mocks(
+            file_lineage=[
+                {
+                    "file_url": "https://example.com/data.zip",
+                    "gcs_uri": "gs://bucket/staging/report.xlsx#Sheet1",
+                    "external_table": "proj.staging_ds.ext_report",
+                    "bronze_table": "proj.bronze_ds.report",
+                    "archive_gcs_uri": "gs://bucket/staging/archives/data.zip",
+                },
+            ],
+        )
+        assert result["events_created"] == 5
 
     def test_handles_api_error(self):
         """API errors are caught and returned in the result dict."""

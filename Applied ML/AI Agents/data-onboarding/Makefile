@@ -1,4 +1,4 @@
-.PHONY: help install test test-unit test-cov lint format check clean cleanup cleanup-dry-run deploy undeploy deploy-info
+.PHONY: help install test test-unit test-cov lint format check clean cleanup cleanup-dry-run deploy undeploy deploy-info run
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -34,6 +34,9 @@ cleanup: ## Delete all cloud resources and local output (BQ, GCS, Agent Engine)
 
 cleanup-dry-run: ## Preview cleanup without deleting anything
 	uv run python scripts/cleanup.py --dry-run
+
+run: ## Launch adk web
+	uv run adk web
 
 deploy: ## Deploy agent to Vertex AI Agent Engine
 	uv run python deploy/deploy.py
