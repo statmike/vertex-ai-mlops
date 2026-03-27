@@ -10,18 +10,15 @@ from google.adk.agents.callback_context import CallbackContext
 from google.genai import types
 
 from config import TOP_K
+from context_cache import get_all_detailed
 from reranker.util_rerank import call_reranker, format_reranker_markdown
 from schemas import RerankerResponse
-from .function_tool_initialize_context import (
-    _PREFETCHED_CONTEXT,
-    fetch_knowledge_context,
-)
 
 
 async def discover_and_rerank(callback_context: CallbackContext):
     """Pre-fetch context + rerank in a single callback — no LLM needed.
 
-    1. Read the module-level cached context (or fetch on demand).
+    1. Read context from the shared cache.
     2. Call the shared ``call_reranker`` (Gemini structured output).
     3. Store the result in state for the compare agent.
     4. Return types.Content so the agent skips the LLM entirely.
@@ -34,10 +31,7 @@ async def discover_and_rerank(callback_context: CallbackContext):
     if not question:
         return None
 
-    # Get pre-fetched context (module-level cache) or fetch on demand
-    context = _PREFETCHED_CONTEXT
-    if context is None:
-        context = await asyncio.to_thread(fetch_knowledge_context)
+    context = get_all_detailed()
 
     if not context:
         empty = RerankerResponse(

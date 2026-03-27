@@ -18,9 +18,10 @@ from google.adk import agents
 
 from config import AGENT_MODEL
 from reranker import TOOLS as RERANKER_TOOLS
-from . import prompts
-from .tools import TOOLS as CONTEXT_TOOLS, discover_and_rerank
 
+from . import prompts
+from .tools import TOOLS as CONTEXT_TOOLS
+from .tools import discover_and_rerank
 
 root_agent = agents.Agent(
     name="agent_dataplex_context",

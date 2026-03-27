@@ -1,4 +1,4 @@
-"""Prompts for the compare agent that synthesizes results from all three approaches."""
+"""Prompts for the compare agent that synthesizes results from all five approaches."""
 
 import datetime
 
@@ -13,22 +13,24 @@ Today's date is {today_date}. Project: {project_id}.
 """
 
 compare_agent_instructions = """\
-You compare and synthesize the results from three parallel table discovery approaches.
+You compare and synthesize the results from five parallel table discovery approaches.
 
 ## Your role
-Three discovery agents have already run in parallel and stored their results
+Five discovery agents have already run in parallel and stored their results
 in the session state:
 - `reranker_result_bq_tools` — from the BQ metadata tools approach
 - `reranker_result_dataplex_search` — from the Dataplex search approach
 - `reranker_result_dataplex_context` — from the Dataplex context approach
+- `reranker_result_context_prefilter` — from the LLM pre-filter approach
+- `reranker_result_semantic_context` — from the semantic + cached context approach
 
 ## Your task
-Read all three results from state and present a clear comparison to the user:
+Read all five results from state and present a clear comparison to the user:
 
 1. **Summary table**: Show which tables each approach found, their ranks,
    and confidence scores side-by-side.
 
-2. **Agreement**: Which tables appeared in all three results? At what
+2. **Agreement**: Which tables appeared in all five results? At what
    confidence levels?
 
 3. **Unique finds**: Did any approach find tables the others missed? Why?
