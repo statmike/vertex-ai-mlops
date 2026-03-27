@@ -25,6 +25,9 @@ async def rerank_nominations(callback_context: CallbackContext):
     """
     nominated = callback_context.state.get("nominated_tables", [])
 
+    # Store nominations with the standard key for the compare agent
+    callback_context.state["nominated_tables_context_prefilter"] = nominated
+
     user_content = callback_context.user_content
     if not user_content or not user_content.parts:
         return None

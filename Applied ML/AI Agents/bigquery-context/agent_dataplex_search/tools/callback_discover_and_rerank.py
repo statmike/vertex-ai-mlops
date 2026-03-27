@@ -22,11 +22,14 @@ from reranker.util_rerank import call_reranker, format_reranker_markdown
 from schemas import RerankerResponse
 
 
-def _search_and_lookup(question: str) -> str:
-    """Run Dataplex semantic search + entry lookup, return metadata string.
+def _search_and_lookup(question: str) -> tuple[str, list[str]]:
+    """Run Dataplex semantic search + entry lookup, return metadata and IDs.
 
     Combines the logic of search_catalog and lookup_entry into a single
     synchronous function suitable for ``asyncio.to_thread``.
+
+    Returns:
+        Tuple of (metadata_string, nominated_table_ids).
     """
     client = dataplex_v1.CatalogServiceClient()
 
@@ -58,9 +61,10 @@ def _search_and_lookup(question: str) -> str:
         })
 
     if not search_results:
-        return ""
+        return "", []
 
     # Step 2: Lookup each entry for full metadata
+    nominated_ids = []
     metadata_parts = []
     for sr in search_results:
         fqn = sr["fqn"]
@@ -95,13 +99,14 @@ def _search_and_lookup(question: str) -> str:
                 if "storage" in key:
                     summary["storage"] = aspect.get("data", {})
 
+            nominated_ids.append(table_header)
             metadata_parts.append(
                 f"## {table_header}\n{json.dumps(summary, indent=2)}"
             )
         except Exception:
             continue
 
-    return "\n\n".join(metadata_parts)
+    return "\n\n".join(metadata_parts), nominated_ids
 
 
 async def discover_and_rerank(callback_context: CallbackContext):
@@ -121,7 +126,12 @@ async def discover_and_rerank(callback_context: CallbackContext):
     if not question:
         return None
 
-    metadata = await asyncio.to_thread(_search_and_lookup, question)
+    metadata, nominated_ids = await asyncio.to_thread(
+        _search_and_lookup, question
+    )
+
+    # Store nominations in state
+    callback_context.state["nominated_tables_dataplex_search"] = nominated_ids
 
     if not metadata:
         empty = RerankerResponse(

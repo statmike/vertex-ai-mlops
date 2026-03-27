@@ -80,6 +80,9 @@ async def discover_and_rerank(callback_context: CallbackContext):
         _search_and_get_cached, question
     )
 
+    # Store nominations in state
+    callback_context.state["nominated_tables_semantic_context"] = matched_ids
+
     if not detailed:
         empty = RerankerResponse(
             question=question,

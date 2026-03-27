@@ -2,7 +2,7 @@
 
 import datetime
 
-from config import SCOPE, GOOGLE_CLOUD_PROJECT, get_datasets, get_scoped_tables
+from config import GOOGLE_CLOUD_PROJECT, get_datasets, get_scoped_tables
 
 today_date = datetime.date.today().strftime("%A, %B %d, %Y")
 project_id = GOOGLE_CLOUD_PROJECT
@@ -41,6 +41,8 @@ Only search within these resources:
    - question: the user's original question
    - candidate_metadata: all the table metadata you gathered, formatted clearly
    - discovery_method: "bq_tools"
+   - table_ids: a list of fully qualified table IDs (project.dataset.table)
+     for every table included in candidate_metadata
 
 ## Output format
 Begin your response with: **[Approach 1: BQ Metadata Tools]**

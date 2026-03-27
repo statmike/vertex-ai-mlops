@@ -39,8 +39,8 @@ An [ADK](https://google.github.io/adk-docs/) multi-agent system that demonstrate
 
 | # | Agent | Strategy | Per-Query Cost | Input Source |
 |---|---|---|---|---|
-| 1 | `agent_bq_tools` | **BQ Metadata Tools** — enumerate datasets/tables, inspect schemas | Multiple BQ API calls | ADK [BigQueryToolset](https://google.github.io/adk-docs/tools/built-in-tools.html#bigquery-tools) |
-| 2 | `agent_dataplex_search` | **Dataplex Search** — semantic natural language search | `search_entries` + `lookup_entry` | Dataplex [Catalog Search](https://cloud.google.com/dataplex/docs/search-for-resources) API |
+| 1 | `agent_bq_tools` | **BQ Metadata Tools** — enumerate datasets/tables, inspect schemas | Multiple BQ API calls | ADK [BigQueryToolset](https://google.github.io/adk-docs/integrations/bigquery/) |
+| 2 | `agent_dataplex_search` | **Dataplex Search** — semantic natural language search | `search_entries` + `lookup_entry` | Dataplex [Catalog Search](https://docs.cloud.google.com/dataplex/docs/search-assets) API |
 | 3 | `agent_dataplex_context` | **Dataplex Context** — pre-loaded LLM-ready capsules | Zero (cached at init) | Dataplex [lookupContext](https://cloud.google.com/dataplex/docs/reference/rest/v1/projects.locations/lookupContext) REST API |
 | 4 | `agent_context_prefilter` | **Context Pre-Filter** — LLM reviews brief summaries, nominates candidates | Zero discovery (cached briefs) | Shared context cache (brief view) |
 | 5 | `agent_semantic_context` | **Semantic Context** — semantic search + cached context lookup | 1 `search_entries` + 0 lookups | Dataplex search + shared context cache (detailed view) |
@@ -99,7 +99,7 @@ The agent LLM drives the discovery loop, deciding which datasets to explore and 
 1. **LLM calls `list_dataset_ids`** → BQ API returns all project datasets → `after_tool_callback` (`filter_scope`) prunes to `config.SCOPE` datasets → LLM sees only in-scope datasets
 2. **LLM calls `list_table_ids`** per dataset → BQ API returns all tables → `filter_scope` prunes to scoped tables (via `get_scoped_tables`) → LLM sees filtered list
 3. **LLM calls `get_table_info`** per relevant table → returns full schema (columns, types, modes), description, row count, byte sizes, timestamps — schema only, no column descriptions or profile data
-4. **LLM calls `rerank_tables` tool** → passes question + all gathered metadata as a formatted string → tool calls `call_reranker()` via thread pool → Gemini structured output → `RerankerResponse` stored in `state["reranker_result_bq_tools"]`
+4. **LLM calls `rerank_tables` tool** → passes question + all gathered metadata + list of nominated table IDs → tool stores nominations in `state["nominated_tables_bq_tools"]` → calls `call_reranker()` via thread pool → Gemini structured output → `RerankerResponse` stored in `state["reranker_result_bq_tools"]`
 5. **LLM formats final response** using reranker results
 
 Key characteristics:
@@ -117,8 +117,9 @@ The entire flow runs in `before_agent_callback` — the agent LLM is never invok
 2. **`search_entries`** — semantic search via `dataplex_v1.CatalogServiceClient` with `query="({question}) AND system=BIGQUERY"`, `page_size=20`, `semantic_search=True`, location `global` → returns up to 20 semantically matched entries with entry name, fully qualified name, display name, and description
 3. **Scope filter** — parse `fully_qualified_name`, call `is_table_in_scope(dataset, table)`, skip non-matching entries
 4. **`lookup_entry`** per matching table — `EntryView.FULL` → returns schema (columns, types), display name, description, and catalog aspects (richer than BQ `get_table_info` because Dataplex includes catalog metadata)
-5. **`call_reranker()`** — direct function call via `asyncio.to_thread` (not a tool call) → Gemini structured output → `RerankerResponse` stored in `state["reranker_result_dataplex_search"]`
-6. **Return `types.Content`** with formatted markdown → agent LLM skipped entirely
+5. **Store nominations** — matched table IDs stored in `state["nominated_tables_dataplex_search"]`
+6. **`call_reranker()`** — direct function call via `asyncio.to_thread` (not a tool call) → Gemini structured output → `RerankerResponse` stored in `state["reranker_result_dataplex_search"]`
+7. **Return `types.Content`** with formatted markdown → agent LLM skipped entirely
 
 Key characteristics:
 - **Deterministic**: entire flow runs in callback, zero LLM reasoning
@@ -142,7 +143,7 @@ The shared cache is used by approaches 3, 4, and 5 — populated once at startup
 
 **Per-query (`before_agent_callback`):**
 1. **Extract question** from callback context
-2. **Read `get_all_detailed()`** from the shared cache — instant, zero API calls
+2. **Read `get_all_detailed()`** from the shared cache — instant, zero API calls. Store all cached table IDs as nominations in `state["nominated_tables_dataplex_context"]`
 3. **`call_reranker()`** — direct function call via `asyncio.to_thread` → passes full cached context as `candidate_metadata` → Gemini structured output → `RerankerResponse` stored in `state["reranker_result_dataplex_context"]`
 4. **Return `types.Content`** → agent LLM skipped
 
@@ -160,7 +161,7 @@ LLM-driven candidate selection with deterministic reranking.
 2. **LLM reviews briefs** and calls `nominate_tables(table_ids=[...])` tool — selects tables it believes are relevant based on column names, descriptions, and the user's question
 3. **`nominate_tables` tool** stores `table_ids` list in `tool_context.state["nominated_tables"]`
 4. **`after_agent_callback`** (`rerank_nominations`):
-   - Reads `state["nominated_tables"]`
+   - Reads `state["nominated_tables"]` and copies to `state["nominated_tables_context_prefilter"]`
    - Calls `context_cache.get_detailed_for_tables(table_ids)` to get full YAML for nominated tables only
    - Calls `call_reranker()` via `asyncio.to_thread` → `RerankerResponse` stored in `state["reranker_result_context_prefilter"]`
    - Does not return Content — the LLM's response explaining its reasoning serves as the agent output
@@ -178,7 +179,7 @@ Fully deterministic, runs in `before_agent_callback`:
 1. **Extract question** from callback context
 2. **`search_entries`** — semantic search via `dataplex_v1.CatalogServiceClient` with `query="({question}) AND system=BIGQUERY"`, `page_size=20`, `semantic_search=True` (same as Approach 2)
 3. **Scope filter** — parse `fully_qualified_name`, call `is_table_in_scope(dataset, table)`, skip non-matching entries
-4. **Cache lookup** — `context_cache.get_detailed_for_tables(matched_ids)` — replaces Approach 2's N `lookup_entry` API calls with a single cache lookup (zero additional API calls)
+4. **Cache lookup** — `context_cache.get_detailed_for_tables(matched_ids)` — replaces Approach 2's N `lookup_entry` API calls with a single cache lookup (zero additional API calls). Store matched IDs as nominations in `state["nominated_tables_semantic_context"]`
 5. **`call_reranker()`** — direct function call via `asyncio.to_thread` → `RerankerResponse` stored in `state["reranker_result_semantic_context"]`
 6. **Return `types.Content`** → agent LLM skipped
 
@@ -199,7 +200,7 @@ All five approaches converge on the same reranker, which bridges discovery and d
   - `key_columns` — each with `data_type`, `is_key`, `useful_for_filtering`, `useful_for_aggregation`
   - `sql_hints` — concrete SQL patterns (GROUP BY, WHERE, JOINs, etc.)
   - `join_suggestions` — each with `target_table`, `join_keys`, and `relationship` type
-- **State storage**: `state[f"reranker_result_{discovery_method}"]` — read by the compare agent
+- **State storage**: each approach stores two keys — `state[f"nominated_tables_{discovery_method}"]` (list of table IDs sent to the reranker) and `state[f"reranker_result_{discovery_method}"]` (ranked output) — both read by the compare agent
 - **Downstream handoff**: the reranker output is designed to be passed directly to a SQL generation agent or the Conversational Analytics API — it provides the table context needed to write accurate queries
 
 #### Comparison Table

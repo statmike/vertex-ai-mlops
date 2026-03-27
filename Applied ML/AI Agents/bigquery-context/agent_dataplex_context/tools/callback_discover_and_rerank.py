@@ -10,7 +10,7 @@ from google.adk.agents.callback_context import CallbackContext
 from google.genai import types
 
 from config import TOP_K
-from context_cache import get_all_detailed
+from context_cache import get_all_detailed, get_table_ids
 from reranker.util_rerank import call_reranker, format_reranker_markdown
 from schemas import RerankerResponse
 
@@ -32,6 +32,10 @@ async def discover_and_rerank(callback_context: CallbackContext):
         return None
 
     context = get_all_detailed()
+    nominated_ids = get_table_ids()
+
+    # Store nominations in state (all cached tables for this approach)
+    callback_context.state["nominated_tables_dataplex_context"] = nominated_ids
 
     if not context:
         empty = RerankerResponse(
