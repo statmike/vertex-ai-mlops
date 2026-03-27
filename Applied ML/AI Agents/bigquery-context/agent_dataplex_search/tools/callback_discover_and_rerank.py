@@ -16,6 +16,7 @@ from config import (
     BQ_LOCATION,
     GOOGLE_CLOUD_PROJECT,
     TOP_K,
+    get_datasets,
     is_table_in_scope,
 )
 from reranker.util_rerank import call_reranker, format_reranker_markdown
@@ -33,8 +34,9 @@ def _search_and_lookup(question: str) -> tuple[str, list[str]]:
     """
     client = dataplex_v1.CatalogServiceClient()
 
-    # Step 1: Semantic search
-    query = f"({question}) AND system=BIGQUERY"
+    # Step 1: Semantic search — scope to our datasets via parent: filter
+    dataset_filter = "|".join(f"datasets/{ds}" for ds in get_datasets())
+    query = f"({question}) AND system=BIGQUERY AND parent:({dataset_filter})"
     request = dataplex_v1.SearchEntriesRequest(
         name=f"projects/{GOOGLE_CLOUD_PROJECT}/locations/global",
         query=query,
