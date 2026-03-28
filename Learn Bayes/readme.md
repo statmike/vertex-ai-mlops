@@ -28,6 +28,11 @@
     <a href="https://x.com/statmike"><img src="https://upload.wikimedia.org/wikipedia/commons/5/5a/X_icon_2.svg" alt="X (Twitter) Logo" width="20px"></a>
   </td>
 </tr>
+<tr>
+  <td style="text-align: right">
+    <a href="https://raw.githubusercontent.com/statmike/vertex-ai-mlops/main/Learn%20Bayes/readme.md"><img src="https://www.svgrepo.com/download/5445/download-button.svg" alt="Download icon" width="20px"></a> <a href="https://raw.githubusercontent.com/statmike/vertex-ai-mlops/main/Learn%20Bayes/readme.md">Download File</a> <i>(right-click and "Save As")</i>
+  </td>
+</tr>
 </table><br/><br/>
 
 ---
