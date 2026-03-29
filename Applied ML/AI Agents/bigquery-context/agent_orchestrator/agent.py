@@ -15,6 +15,7 @@ from agent_semantic_context.agent import root_agent as semantic_context_agent
 from config import AGENT_MODEL
 
 from . import prompts
+from .callback_build_comparison import build_comparison
 
 # Step 1: Run all five discovery approaches in parallel
 parallel_discovery = agents.ParallelAgent(
@@ -36,6 +37,7 @@ compare_agent = agents.Agent(
     description="Compares and synthesizes results from all five discovery approaches.",
     global_instruction=prompts.global_instructions,
     instruction=prompts.compare_agent_instructions,
+    before_agent_callback=build_comparison,
 )
 
 # Root: sequential pipeline

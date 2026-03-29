@@ -20,4 +20,9 @@ async def nominate_tables(
         Confirmation of how many tables were nominated.
     """
     tool_context.state["nominated_tables"] = table_ids
-    return f"Nominated {len(table_ids)} table(s) for detailed reranking."
+    return (
+        f"Nominated {len(table_ids)} table(s) for detailed reranking: "
+        f"{', '.join(table_ids)}. "
+        "Nomination complete — do NOT call this tool again. "
+        "Provide your final summary now."
+    )

@@ -35,6 +35,8 @@ Begin your response with: **[Approach 4: Context Pre-Filter]**
 Explain your reasoning for which tables you nominated and why.
 
 ## Important
+- Call `nominate_tables` exactly ONCE with all your nominated tables, then
+  provide your final summary. Do NOT call the tool more than once.
 - Nominate generously — it's better to include a borderline table than to miss
   a relevant one. The downstream reranker will sort by relevance.
 - Use the column names and types to judge relevance, not just descriptions.

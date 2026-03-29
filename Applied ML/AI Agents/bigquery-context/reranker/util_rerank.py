@@ -1,12 +1,28 @@
 """Utility for calling Gemini with structured output to produce a ranked table list."""
 
 import json
+import re
 
 from google import genai
 from google.genai import types
 
 from config import GOOGLE_CLOUD_PROJECT, TOOL_MODEL, TOOL_MODEL_LOCATION
 from schemas import RerankerResponse
+
+
+def _normalize_table_id(raw_id: str) -> str:
+    """Normalize a table ID to project.dataset.table format.
+
+    Handles variants the reranker sometimes produces from Dataplex paths:
+      - "project.dataset.table" → keep as-is
+      - "projects.project.datasets.dataset.tables.table" → strip path components
+      - "projects.project.datasets.dataset.table" → strip partial path
+    """
+    return re.sub(
+        r"^projects[./]([^./]+)[./](?:datasets[./])?([^./]+)[./](?:tables[./])?([^./]+)$",
+        r"\1.\2.\3",
+        raw_id,
+    )
 
 
 RERANKER_SYSTEM_PROMPT = """\
@@ -19,10 +35,12 @@ For each table, evaluate:
 3. Whether joins to other candidate tables would help
 4. What SQL patterns (WHERE filters, GROUP BY, aggregations) would be needed
 
-Return tables ranked by relevance (most relevant first). Only include tables
-that are genuinely relevant — do not pad the list. Set confidence scores
-honestly: 0.9+ for highly relevant, 0.5-0.8 for partially relevant,
-below 0.5 for tangentially relevant.
+Return ALL tables with confidence >= 0.5, ranked by relevance (most relevant
+first). Do not omit borderline tables — include anything that could
+plausibly help answer the question, even indirectly (e.g., a population
+table needed for a per-capita calculation). Set confidence scores honestly:
+0.9+ for highly relevant, 0.5-0.8 for partially relevant. Only exclude
+tables below 0.5 confidence.
 
 For table_id, always use the standard BigQuery fully-qualified format:
 `project.dataset.table` (e.g., `my-project.my_dataset.my_table`).
@@ -71,8 +89,10 @@ def call_reranker(
 ## Discovery Method
 {discovery_method}
 
-## Top K
-Return at most {top_k} tables.
+## Ranking Instructions
+Return ALL tables with confidence >= 0.5 (up to {top_k} maximum).
+Do not drop borderline tables — if a table could contribute to answering
+the question (even as a supporting join), include it.
 
 ## Candidate Table Metadata
 {candidate_metadata}
@@ -85,11 +105,17 @@ Return at most {top_k} tables.
             system_instruction=RERANKER_SYSTEM_PROMPT,
             response_mime_type="application/json",
             response_schema=RerankerResponse.model_json_schema(),
-            temperature=0.1,
+            temperature=0.0,
         ),
     )
 
     result = RerankerResponse.model_validate(json.loads(response.text))
+
+    # Normalize table IDs — the reranker sometimes picks up Dataplex path
+    # format from the metadata (e.g., "projects.proj.datasets.ds.tables.tbl")
+    for t in result.ranked_tables:
+        t.table_id = _normalize_table_id(t.table_id)
+
     return result
 
 

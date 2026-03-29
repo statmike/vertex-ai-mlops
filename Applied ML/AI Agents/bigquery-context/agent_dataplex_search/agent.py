@@ -11,7 +11,7 @@ from google.adk import agents
 from config import AGENT_MODEL
 from reranker import TOOLS as RERANKER_TOOLS
 from . import prompts
-from .tools import TOOLS as CATALOG_TOOLS, discover_and_rerank
+from .tools import discover_and_rerank
 
 
 root_agent = agents.Agent(
@@ -23,6 +23,6 @@ root_agent = agents.Agent(
     ),
     global_instruction=prompts.global_instructions,
     instruction=prompts.agent_instructions,
-    tools=CATALOG_TOOLS + RERANKER_TOOLS,
+    tools=RERANKER_TOOLS,
     before_agent_callback=discover_and_rerank,
 )

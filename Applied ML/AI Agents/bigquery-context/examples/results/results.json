@@ -1,0 +1,1760 @@
+[
+  {
+    "id": "multi-cross-q1",
+    "category": "multi-table-cross-dataset",
+    "question": "Is there a correlation between crime rates and bike share usage near specific stations in Austin?",
+    "expected_tables": [
+      "austin_crime",
+      "austin_bikeshare_trips",
+      "austin_bikeshare_stations"
+    ],
+    "session_id": "1006c4df-6f5c-4e74-81f2-27ab650aff81",
+    "total_time_s": 40.5,
+    "approaches": {
+      "bq_tools": {
+        "label": "1: BQ Tools",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime"
+        ],
+        "nominated_count": 3,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+            "rank": 1,
+            "confidence": 0.95,
+            "reasoning": "This table provides the bike share usage data, which is essential for calculating trip volume per station."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+            "rank": 2,
+            "confidence": 0.9,
+            "reasoning": "This table provides the crime incident data needed to calculate crime rates in areas near bike stations."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+            "rank": 3,
+            "confidence": 0.85,
+            "reasoning": "This table provides the geographic coordinates for bike stations, which is necessary to link crime incidents to specific stations spatially."
+          }
+        ],
+        "ranked_count": 3,
+        "found_ranked": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips",
+          "austin_crime"
+        ],
+        "found_nominated": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips",
+          "austin_crime"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 5.2,
+        "last_event_s": 29.3,
+        "duration_s": 24.1,
+        "completed_s": 29.3,
+        "event_count": 7
+      },
+      "dataplex_search": {
+        "label": "2: Dataplex Search",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes"
+        ],
+        "nominated_count": 5,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+            "rank": 1,
+            "confidence": 0.95,
+            "reasoning": "This table provides the bike share usage data, which is one of the two primary variables needed for the correlation analysis."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+            "rank": 2,
+            "confidence": 0.95,
+            "reasoning": "This table provides the crime incident data, which is the second primary variable needed for the correlation analysis."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+            "rank": 3,
+            "confidence": 0.9,
+            "reasoning": "This table provides the spatial coordinates for bike stations, which is essential for calculating the proximity of crime incidents to specific stations."
+          }
+        ],
+        "ranked_count": 3,
+        "found_ranked": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips",
+          "austin_crime"
+        ],
+        "found_nominated": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips",
+          "austin_crime"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 9.7,
+        "last_event_s": 9.7,
+        "duration_s": 0.0,
+        "completed_s": 9.7,
+        "event_count": 1
+      },
+      "dataplex_context": {
+        "label": "3: Dataplex Context",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022",
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+          "statmike-mlops-349915.bigquery_context_demographics.usa_names_1910_current",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+          "statmike-mlops-349915.bigquery_context_geography.us_counties"
+        ],
+        "nominated_count": 9,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+            "rank": 1,
+            "confidence": 0.95,
+            "reasoning": "This table provides the bike share usage data, including start and end stations, which is essential for calculating usage metrics per station."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+            "rank": 2,
+            "confidence": 0.95,
+            "reasoning": "This table contains the crime incident data for Austin, which is the second variable needed for the correlation analysis."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+            "rank": 3,
+            "confidence": 0.9,
+            "reasoning": "Provides the spatial coordinates for bike stations, which is necessary to map crime incidents to the vicinity of specific stations."
+          }
+        ],
+        "ranked_count": 3,
+        "found_ranked": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips",
+          "austin_crime"
+        ],
+        "found_nominated": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips",
+          "austin_crime"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 9.7,
+        "last_event_s": 9.7,
+        "duration_s": 0.0,
+        "completed_s": 9.7,
+        "event_count": 1
+      },
+      "context_prefilter": {
+        "label": "4: Context Pre-Filter",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime"
+        ],
+        "nominated_count": 3,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+            "rank": 1,
+            "confidence": 0.95,
+            "reasoning": "Provides the usage data for bike share stations, which is essential for calculating usage rates per station."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+            "rank": 2,
+            "confidence": 0.95,
+            "reasoning": "Provides the crime incident data needed to calculate crime rates near specific locations."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+            "rank": 3,
+            "confidence": 0.9,
+            "reasoning": "Provides the geographic coordinates for bike stations, which is necessary to spatially join or calculate proximity to crime incidents."
+          }
+        ],
+        "ranked_count": 3,
+        "found_ranked": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips",
+          "austin_crime"
+        ],
+        "found_nominated": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips",
+          "austin_crime"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 9.8,
+        "last_event_s": 19.0,
+        "duration_s": 9.2,
+        "completed_s": 19.0,
+        "event_count": 4
+      },
+      "semantic_context": {
+        "label": "5: Semantic Context",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes"
+        ],
+        "nominated_count": 5,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+            "rank": 1,
+            "confidence": 0.95,
+            "reasoning": "This table provides the primary data for bike share usage, including start/end station IDs and timestamps, which are essential for calculating usage metrics per station."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+            "rank": 2,
+            "confidence": 0.95,
+            "reasoning": "This table provides the crime incident data needed to calculate crime rates near bike share stations."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+            "rank": 3,
+            "confidence": 0.9,
+            "reasoning": "This table provides the geographic coordinates (latitude/longitude) for each bike share station, which is required to perform spatial joins with the crime data."
+          }
+        ],
+        "ranked_count": 3,
+        "found_ranked": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips",
+          "austin_crime"
+        ],
+        "found_nominated": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips",
+          "austin_crime"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 9.7,
+        "last_event_s": 9.7,
+        "duration_s": 0.0,
+        "completed_s": 9.7,
+        "event_count": 1
+      }
+    },
+    "compare_output": "To analyze the correlation between crime rates and bike share usage in Austin, all five discovery approaches identified a consistent core set of tables.\n\n## 1. Cross-Approach Comparison\n\n| Table | 1: BQ Tools | 2: Search | 3: Context | 4: Pre-Filter | 5: Semantic |\n|---|---|---|---|---|---|\n| `bigquery_context_transportation.austin_bikeshare_trips` | #1 (0.95) | #1 (0.95) | #1 (0.95) | #1 (0.95) | #1 (0.95) |\n| `bigquery_context_geography.austin_crime` | #2 (0.90) | #2 (0.95) | #2 (0.95) | #2 (0",
+    "event_count": 16
+  },
+  {
+    "id": "multi-cross-q2",
+    "category": "multi-table-cross-dataset",
+    "question": "How does population density by ZIP code relate to bike share station placement in Austin?",
+    "expected_tables": [
+      "population_by_zip_2010",
+      "austin_bikeshare_stations"
+    ],
+    "session_id": "88fbf7c2-53fd-4873-961a-0f86ae17e1bd",
+    "total_time_s": 86.5,
+    "approaches": {
+      "bq_tools": {
+        "label": "1: BQ Tools",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+          "statmike-mlops-349915.bigquery_context_geography.us_counties"
+        ],
+        "nominated_count": 4,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+            "rank": 1,
+            "confidence": 0.95,
+            "reasoning": "This table contains the primary data on bike share station locations, which is essential for counting stations per ZIP code."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+            "rank": 2,
+            "confidence": 0.9,
+            "reasoning": "Provides the population counts necessary to calculate density per ZIP code."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+            "rank": 3,
+            "confidence": 0.6,
+            "reasoning": "This table acts as a bridge to map geographic coordinates to ZIP codes, which may be necessary if the station table lacks explicit ZIP code fields."
+          }
+        ],
+        "ranked_count": 3,
+        "found_ranked": [
+          "austin_bikeshare_stations",
+          "population_by_zip_2010"
+        ],
+        "found_nominated": [
+          "austin_bikeshare_stations",
+          "population_by_zip_2010"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 0.67,
+        "first_event_s": 4.7,
+        "last_event_s": 75.6,
+        "duration_s": 70.9,
+        "completed_s": 75.6,
+        "event_count": 19
+      },
+      "dataplex_search": {
+        "label": "2: Dataplex Search",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_geography.us_counties"
+        ],
+        "nominated_count": 6,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+            "rank": 1,
+            "confidence": 0.9,
+            "reasoning": "This table contains the primary data for bike share station locations, which is essential for calculating station density or placement patterns."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+            "rank": 2,
+            "confidence": 0.9,
+            "reasoning": "This table provides the population counts by ZIP code, which is the denominator needed to calculate population density."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+            "rank": 3,
+            "confidence": 0.5,
+            "reasoning": "This table contains a 'zipcode' column and location data, which could serve as a bridge to map station locations to ZIP codes if a direct mapping is not available in the stations table."
+          }
+        ],
+        "ranked_count": 3,
+        "found_ranked": [
+          "austin_bikeshare_stations",
+          "population_by_zip_2010"
+        ],
+        "found_nominated": [
+          "austin_bikeshare_stations",
+          "population_by_zip_2010"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 0.67,
+        "first_event_s": 8.1,
+        "last_event_s": 8.1,
+        "duration_s": 0.0,
+        "completed_s": 8.1,
+        "event_count": 1
+      },
+      "dataplex_context": {
+        "label": "3: Dataplex Context",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022",
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+          "statmike-mlops-349915.bigquery_context_demographics.usa_names_1910_current",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+          "statmike-mlops-349915.bigquery_context_geography.us_counties"
+        ],
+        "nominated_count": 9,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+            "rank": 1,
+            "confidence": 0.95,
+            "reasoning": "This table contains the exact locations of bike share stations in Austin, which is the primary subject of the question."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+            "rank": 2,
+            "confidence": 0.9,
+            "reasoning": "This table provides the population data by ZIP code required to calculate population density."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+            "rank": 3,
+            "confidence": 0.6,
+            "reasoning": "While not directly about station placement, trip data can be used to validate if stations in high-density areas are actually being used, providing context to the 'relation' part of the question."
+          }
+        ],
+        "ranked_count": 3,
+        "found_ranked": [
+          "austin_bikeshare_stations",
+          "population_by_zip_2010"
+        ],
+        "found_nominated": [
+          "austin_bikeshare_stations",
+          "population_by_zip_2010"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 0.67,
+        "first_event_s": 8.1,
+        "last_event_s": 8.1,
+        "duration_s": 0.0,
+        "completed_s": 8.1,
+        "event_count": 1
+      },
+      "context_prefilter": {
+        "label": "4: Context Pre-Filter",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime"
+        ],
+        "nominated_count": 3,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+            "rank": 1,
+            "confidence": 0.95,
+            "reasoning": "This table provides the location and count of bike share stations, which is the primary subject of the analysis."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+            "rank": 2,
+            "confidence": 0.9,
+            "reasoning": "This table provides the population data by ZIP code required to calculate population density."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+            "rank": 3,
+            "confidence": 0.5,
+            "reasoning": "While not directly about population density, this table contains a 'zipcode' column and location data, which could serve as a bridge or reference for mapping station locations to ZIP codes if a direct mapping is missing."
+          }
+        ],
+        "ranked_count": 3,
+        "found_ranked": [
+          "austin_bikeshare_stations",
+          "population_by_zip_2010"
+        ],
+        "found_nominated": [
+          "austin_bikeshare_stations",
+          "population_by_zip_2010"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 0.67,
+        "first_event_s": 10.7,
+        "last_event_s": 19.9,
+        "duration_s": 9.2,
+        "completed_s": 19.9,
+        "event_count": 4
+      },
+      "semantic_context": {
+        "label": "5: Semantic Context",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_geography.us_counties"
+        ],
+        "nominated_count": 6,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+            "rank": 1,
+            "confidence": 0.95,
+            "reasoning": "This table contains the exact locations of bike share stations in Austin, which is the primary subject of the question."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+            "rank": 2,
+            "confidence": 0.9,
+            "reasoning": "This table provides the population data by ZIP code required to calculate density and compare it against station placement."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+            "rank": 3,
+            "confidence": 0.6,
+            "reasoning": "Contains ZIP code information for Austin, which can be used as a proxy to map station locations to ZIP codes if a dedicated boundary table is missing."
+          }
+        ],
+        "ranked_count": 3,
+        "found_ranked": [
+          "austin_bikeshare_stations",
+          "population_by_zip_2010"
+        ],
+        "found_nominated": [
+          "austin_bikeshare_stations",
+          "population_by_zip_2010"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 0.67,
+        "first_event_s": 8.1,
+        "last_event_s": 8.1,
+        "duration_s": 0.0,
+        "completed_s": 8.1,
+        "event_count": 1
+      }
+    },
+    "compare_output": "To analyze the relationship between population density and bike share station placement in Austin, I have synthesized the findings from all five discovery approaches.\n\n## Cross-Approach Comparison\n\n| Table | 1: BQ Tools | 2: Search | 3: Context | 4: Pre-Filter | 5: Semantic |\n|---|---|---|---|---|---|\n| `bigquery_context_transportation.austin_bikeshare_stations` | #1 (0.95) | #1 (0.90) | #1 (0.95) | #1 (0.95) | #1 (0.95) |\n| `bigquery_context_demographics.population_by_zip_2010` | #2 (0.90) | #2",
+    "event_count": 28
+  },
+  {
+    "id": "multi-cross-q3",
+    "category": "multi-table-cross-dataset",
+    "question": "Which US counties have the most weather stations per capita?",
+    "expected_tables": [
+      "us_counties",
+      "weather_stations",
+      "population_by_zip_2010"
+    ],
+    "session_id": "33bbc5ec-fad1-4a07-96fe-189b97892b96",
+    "total_time_s": 97.6,
+    "approaches": {
+      "bq_tools": {
+        "label": "1: BQ Tools",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_geography.us_counties",
+          "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010"
+        ],
+        "nominated_count": 3,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+            "rank": 1,
+            "confidence": 0.9,
+            "reasoning": "Contains the list of weather stations with geographic coordinates needed to map stations to counties."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_geography.us_counties",
+            "rank": 2,
+            "confidence": 0.9,
+            "reasoning": "Provides the county boundaries and names required to group weather stations by county."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+            "rank": 3,
+            "confidence": 0.7,
+            "reasoning": "Provides population data needed for the 'per capita' calculation. Note: Requires mapping ZIP codes to counties, which may introduce inaccuracies."
+          }
+        ],
+        "ranked_count": 3,
+        "found_ranked": [
+          "population_by_zip_2010",
+          "us_counties",
+          "weather_stations"
+        ],
+        "found_nominated": [
+          "population_by_zip_2010",
+          "us_counties",
+          "weather_stations"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 4.8,
+        "last_event_s": 88.0,
+        "duration_s": 83.2,
+        "completed_s": 88.0,
+        "event_count": 21
+      },
+      "dataplex_search": {
+        "label": "2: Dataplex Search",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_geography.us_counties",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_demographics.usa_names_1910_current",
+          "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+          "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime"
+        ],
+        "nominated_count": 9,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+            "rank": 1,
+            "confidence": 0.9,
+            "reasoning": "This table contains the list of weather stations with their geographic coordinates (latitude, longitude), which is essential for mapping stations to US counties."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_geography.us_counties",
+            "rank": 2,
+            "confidence": 0.9,
+            "reasoning": "This table provides the US county boundaries (geography) needed to aggregate the number of weather stations per county."
+          }
+        ],
+        "ranked_count": 2,
+        "found_ranked": [
+          "us_counties",
+          "weather_stations"
+        ],
+        "found_nominated": [
+          "population_by_zip_2010",
+          "us_counties",
+          "weather_stations"
+        ],
+        "missed": [
+          "population_by_zip_2010"
+        ],
+        "recall": 0.67,
+        "precision": 1.0,
+        "first_event_s": 8.7,
+        "last_event_s": 8.7,
+        "duration_s": 0.0,
+        "completed_s": 8.7,
+        "event_count": 1
+      },
+      "dataplex_context": {
+        "label": "3: Dataplex Context",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022",
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+          "statmike-mlops-349915.bigquery_context_demographics.usa_names_1910_current",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+          "statmike-mlops-349915.bigquery_context_geography.us_counties"
+        ],
+        "nominated_count": 9,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+            "rank": 1,
+            "confidence": 0.95,
+            "reasoning": "This table contains the list of weather stations with their geographic coordinates (latitude, longitude) and state, which is essential for counting stations per county."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_geography.us_counties",
+            "rank": 2,
+            "confidence": 0.9,
+            "reasoning": "Provides the geographic boundaries (county_geom) needed to map weather stations to specific US counties."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+            "rank": 3,
+            "confidence": 0.6,
+            "reasoning": "Provides population data needed for the 'per capita' calculation. Note: This is by ZIP code, so it would require a mapping or aggregation to the county level."
+          }
+        ],
+        "ranked_count": 3,
+        "found_ranked": [
+          "population_by_zip_2010",
+          "us_counties",
+          "weather_stations"
+        ],
+        "found_nominated": [
+          "population_by_zip_2010",
+          "us_counties",
+          "weather_stations"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 8.2,
+        "last_event_s": 8.2,
+        "duration_s": 0.0,
+        "completed_s": 8.2,
+        "event_count": 1
+      },
+      "context_prefilter": {
+        "label": "4: Context Pre-Filter",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_geography.us_counties",
+          "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010"
+        ],
+        "nominated_count": 3,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_geography.us_counties",
+            "rank": 1,
+            "confidence": 0.9,
+            "reasoning": "Provides the spatial boundaries and identifiers for US counties, which is essential for grouping weather stations by county."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+            "rank": 2,
+            "confidence": 0.9,
+            "reasoning": "Contains the list of weather stations with their geographic coordinates, which is required to map them to specific counties."
+          }
+        ],
+        "ranked_count": 2,
+        "found_ranked": [
+          "us_counties",
+          "weather_stations"
+        ],
+        "found_nominated": [
+          "population_by_zip_2010",
+          "us_counties",
+          "weather_stations"
+        ],
+        "missed": [
+          "population_by_zip_2010"
+        ],
+        "recall": 0.67,
+        "precision": 1.0,
+        "first_event_s": 9.8,
+        "last_event_s": 20.5,
+        "duration_s": 10.7,
+        "completed_s": 20.5,
+        "event_count": 4
+      },
+      "semantic_context": {
+        "label": "5: Semantic Context",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_geography.us_counties",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_demographics.usa_names_1910_current",
+          "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+          "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime"
+        ],
+        "nominated_count": 9,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_geography.us_counties",
+            "rank": 1,
+            "confidence": 0.9,
+            "reasoning": "This table provides the necessary US county boundaries and names, which are essential for grouping weather stations by county and calculating per-capita metrics."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+            "rank": 2,
+            "confidence": 0.9,
+            "reasoning": "This table contains the list of weather stations and their geographic coordinates, which is the numerator for the 'stations per capita' calculation."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+            "rank": 3,
+            "confidence": 0.6,
+            "reasoning": "This table provides population data. While it is by ZIP code rather than county, it is the only available population source and could be aggregated to the county level if a ZIP-to-county mapping is available."
+          }
+        ],
+        "ranked_count": 3,
+        "found_ranked": [
+          "population_by_zip_2010",
+          "us_counties",
+          "weather_stations"
+        ],
+        "found_nominated": [
+          "population_by_zip_2010",
+          "us_counties",
+          "weather_stations"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 8.2,
+        "last_event_s": 8.2,
+        "duration_s": 0.0,
+        "completed_s": 8.2,
+        "event_count": 1
+      }
+    },
+    "compare_output": "The following analysis compares the results of five parallel discovery approaches to identify the tables needed to calculate weather stations per capita by US county.\n\n## Cross-Approach Comparison\n\n| Table | 1: BQ Tools | 2: Search | 3: Context | 4: Pre-Filter | 5: Semantic |\n|---|---|---|---|---|---|\n| `bigquery_context_weather.weather_stations` | #1 (0.90) | #1 (0.90) | #1 (0.95) | #2 (0.90) | #2 (0.90) |\n| `bigquery_context_geography.us_counties` | #2 (0.90) | #2 (0.90) | #2 (0.90) | #1 (0.90",
+    "event_count": 30
+  },
+  {
+    "id": "multi-same-q1",
+    "category": "multi-table-same-dataset",
+    "question": "Which bike share stations have the highest average trip duration, and where are they located?",
+    "expected_tables": [
+      "austin_bikeshare_trips",
+      "austin_bikeshare_stations"
+    ],
+    "session_id": "b5c596ce-ad1d-487c-a879-09e2d03ac883",
+    "total_time_s": 43.4,
+    "approaches": {
+      "bq_tools": {
+        "label": "1: BQ Tools",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022"
+        ],
+        "nominated_count": 3,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+            "rank": 1,
+            "confidence": 1.0,
+            "reasoning": "This table contains the trip duration data and the start station identifiers needed to calculate the average duration per station."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+            "rank": 2,
+            "confidence": 0.95,
+            "reasoning": "This table provides the location details (address, coordinates) for the bike share stations identified in the trips table."
+          }
+        ],
+        "ranked_count": 2,
+        "found_ranked": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips"
+        ],
+        "found_nominated": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 5.6,
+        "last_event_s": 32.9,
+        "duration_s": 27.3,
+        "completed_s": 32.9,
+        "event_count": 7
+      },
+      "dataplex_search": {
+        "label": "2: Dataplex Search",
+        "nominated": [],
+        "nominated_count": 0,
+        "ranked_tables": [],
+        "ranked_count": 0,
+        "found_ranked": [],
+        "found_nominated": [],
+        "missed": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips"
+        ],
+        "recall": 0.0,
+        "precision": 0.0,
+        "first_event_s": 2.0,
+        "last_event_s": 2.0,
+        "duration_s": 0.0,
+        "completed_s": 2.0,
+        "event_count": 1
+      },
+      "dataplex_context": {
+        "label": "3: Dataplex Context",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022",
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+          "statmike-mlops-349915.bigquery_context_demographics.usa_names_1910_current",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+          "statmike-mlops-349915.bigquery_context_geography.us_counties"
+        ],
+        "nominated_count": 9,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+            "rank": 1,
+            "confidence": 1.0,
+            "reasoning": "This table contains the trip duration data and links to start stations, which is essential for calculating the average trip duration per station."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+            "rank": 2,
+            "confidence": 1.0,
+            "reasoning": "This table provides the location (latitude/longitude) and address for the bike share stations, which is required to answer the 'where are they located' part of the question."
+          }
+        ],
+        "ranked_count": 2,
+        "found_ranked": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips"
+        ],
+        "found_nominated": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 4.5,
+        "last_event_s": 4.5,
+        "duration_s": 0.0,
+        "completed_s": 4.5,
+        "event_count": 1
+      },
+      "context_prefilter": {
+        "label": "4: Context Pre-Filter",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips"
+        ],
+        "nominated_count": 2,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+            "rank": 1,
+            "confidence": 1.0,
+            "reasoning": "This table contains the trip duration data and start station IDs necessary to calculate the average trip duration per station."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+            "rank": 2,
+            "confidence": 0.9,
+            "reasoning": "This table provides the location (latitude/longitude) and address for the stations identified in the trips table."
+          }
+        ],
+        "ranked_count": 2,
+        "found_ranked": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips"
+        ],
+        "found_nominated": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 4.7,
+        "last_event_s": 18.4,
+        "duration_s": 13.7,
+        "completed_s": 18.4,
+        "event_count": 4
+      },
+      "semantic_context": {
+        "label": "5: Semantic Context",
+        "nominated": [],
+        "nominated_count": 0,
+        "ranked_tables": [],
+        "ranked_count": 0,
+        "found_ranked": [],
+        "found_nominated": [],
+        "missed": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips"
+        ],
+        "recall": 0.0,
+        "precision": 0.0,
+        "first_event_s": 19.0,
+        "last_event_s": 19.0,
+        "duration_s": 0.0,
+        "completed_s": 19.0,
+        "event_count": 1
+      }
+    },
+    "compare_output": "Based on the results from the five parallel discovery approaches, here is the synthesis and recommendation for answering the question about Austin bike share trip durations and locations.\n\n### 1. Cross-Approach Comparison\n\n| Table | 1: BQ Tools | 2: Search | 3: Context | 4: Pre-Filter | 5: Semantic |\n|---|---|---|---|---|---|\n| `bigquery_context_transportation.austin_bikeshare_trips` | #1 (1.00) | \u2014 | #1 (1.00) | #1 (1.00) | \u2014 |\n| `bigquery_context_transportation.austin_bikeshare_stations` | #2 ",
+    "event_count": 16
+  },
+  {
+    "id": "multi-same-q2",
+    "category": "multi-table-same-dataset",
+    "question": "Are there weather stations near the paths of major hurricanes?",
+    "expected_tables": [
+      "hurricanes",
+      "weather_stations"
+    ],
+    "session_id": "570773d4-90da-42d9-ab0a-afd001a6f132",
+    "total_time_s": 54.1,
+    "approaches": {
+      "bq_tools": {
+        "label": "1: BQ Tools",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_geography.us_counties"
+        ],
+        "nominated_count": 3,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+            "rank": 1,
+            "confidence": 0.95,
+            "reasoning": "Contains the historical paths of hurricanes, including intensity (usa_sshs) and location (latitude, longitude), which are essential for identifying major hurricane tracks."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+            "rank": 2,
+            "confidence": 0.95,
+            "reasoning": "Provides the locations of weather stations needed to determine if they are near the hurricane paths."
+          }
+        ],
+        "ranked_count": 2,
+        "found_ranked": [
+          "hurricanes",
+          "weather_stations"
+        ],
+        "found_nominated": [
+          "hurricanes",
+          "weather_stations"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 5.3,
+        "last_event_s": 43.6,
+        "duration_s": 38.3,
+        "completed_s": 43.6,
+        "event_count": 9
+      },
+      "dataplex_search": {
+        "label": "2: Dataplex Search",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips"
+        ],
+        "nominated_count": 4,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+            "rank": 1,
+            "confidence": 1.0,
+            "reasoning": "This table contains the historical tracks of hurricanes, including latitude and longitude coordinates for storm centers, which is essential for determining proximity to weather stations."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+            "rank": 2,
+            "confidence": 1.0,
+            "reasoning": "This table provides the locations of weather stations, which are the target entities to be checked for proximity to hurricane paths."
+          }
+        ],
+        "ranked_count": 2,
+        "found_ranked": [
+          "hurricanes",
+          "weather_stations"
+        ],
+        "found_nominated": [
+          "hurricanes",
+          "weather_stations"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 8.7,
+        "last_event_s": 8.7,
+        "duration_s": 0.0,
+        "completed_s": 8.7,
+        "event_count": 1
+      },
+      "dataplex_context": {
+        "label": "3: Dataplex Context",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022",
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+          "statmike-mlops-349915.bigquery_context_demographics.usa_names_1910_current",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+          "statmike-mlops-349915.bigquery_context_geography.us_counties"
+        ],
+        "nominated_count": 9,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+            "rank": 1,
+            "confidence": 0.95,
+            "reasoning": "This table contains the historical tracks of hurricanes, including latitude, longitude, and storm intensity (wind speed/pressure), which are essential for defining the paths of major hurricanes."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+            "rank": 2,
+            "confidence": 0.95,
+            "reasoning": "This table provides the locations of weather stations globally, which is necessary to determine if any are located near the hurricane paths identified in the hurricanes table."
+          }
+        ],
+        "ranked_count": 2,
+        "found_ranked": [
+          "hurricanes",
+          "weather_stations"
+        ],
+        "found_nominated": [
+          "hurricanes",
+          "weather_stations"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 8.7,
+        "last_event_s": 8.7,
+        "duration_s": 0.0,
+        "completed_s": 8.7,
+        "event_count": 1
+      },
+      "context_prefilter": {
+        "label": "4: Context Pre-Filter",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations"
+        ],
+        "nominated_count": 2,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+            "rank": 1,
+            "confidence": 0.95,
+            "reasoning": "This table contains the historical tracks of hurricanes, including latitude, longitude, and intensity metrics (wind speed/pressure) necessary to identify 'major' hurricanes and their paths."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+            "rank": 2,
+            "confidence": 0.9,
+            "reasoning": "This table provides the locations of weather stations, which is required to determine if they are 'near' the hurricane paths identified in the hurricanes table."
+          }
+        ],
+        "ranked_count": 2,
+        "found_ranked": [
+          "hurricanes",
+          "weather_stations"
+        ],
+        "found_nominated": [
+          "hurricanes",
+          "weather_stations"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 8.8,
+        "last_event_s": 19.3,
+        "duration_s": 10.5,
+        "completed_s": 19.3,
+        "event_count": 4
+      },
+      "semantic_context": {
+        "label": "5: Semantic Context",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips"
+        ],
+        "nominated_count": 4,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+            "rank": 1,
+            "confidence": 0.95,
+            "reasoning": "This table contains the historical tracks of hurricanes, including latitude, longitude, and intensity metrics (wind speed/pressure) necessary to identify 'major' hurricanes and their paths."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+            "rank": 2,
+            "confidence": 0.9,
+            "reasoning": "This table provides the locations of weather stations, which is the second half of the proximity calculation required to answer the question."
+          }
+        ],
+        "ranked_count": 2,
+        "found_ranked": [
+          "hurricanes",
+          "weather_stations"
+        ],
+        "found_nominated": [
+          "hurricanes",
+          "weather_stations"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 8.7,
+        "last_event_s": 8.7,
+        "duration_s": 0.0,
+        "completed_s": 8.7,
+        "event_count": 1
+      }
+    },
+    "compare_output": "The discovery results show a strong consensus on the necessary tables for identifying weather stations near major hurricane paths.\n\n## 1. Cross-Approach Comparison\n\n| Table | 1: BQ Tools | 2: Search | 3: Context | 4: Pre-Filter | 5: Semantic |\n|---|---|---|---|---|---|\n| `bigquery_context_weather.hurricanes` | #1 (0.95) | #1 (1.00) | #1 (0.95) | #1 (0.95) | #1 (0.95) |\n| `bigquery_context_weather.weather_stations` | #2 (0.95) | #2 (1.00) | #2 (0.95) | #2 (0.90) | #2 (0.90) |\n| `bigquery_context_",
+    "event_count": 18
+  },
+  {
+    "id": "single-q1",
+    "category": "single-table",
+    "question": "What are the busiest bike share stations in Austin by month?",
+    "expected_tables": [
+      "austin_bikeshare_trips",
+      "austin_bikeshare_stations"
+    ],
+    "session_id": "dacece8d-af27-4ab6-ac11-6383df08ed14",
+    "total_time_s": 39.5,
+    "approaches": {
+      "bq_tools": {
+        "label": "1: BQ Tools",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations"
+        ],
+        "nominated_count": 2,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+            "rank": 1,
+            "confidence": 0.95,
+            "reasoning": "This table contains the individual trip records necessary to count the number of trips per station per month."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+            "rank": 2,
+            "confidence": 0.7,
+            "reasoning": "Provides metadata for stations, which is useful for validating station names or filtering by station status if needed."
+          }
+        ],
+        "ranked_count": 2,
+        "found_ranked": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips"
+        ],
+        "found_nominated": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 5.5,
+        "last_event_s": 28.2,
+        "duration_s": 22.7,
+        "completed_s": 28.2,
+        "event_count": 5
+      },
+      "dataplex_search": {
+        "label": "2: Dataplex Search",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations"
+        ],
+        "nominated_count": 4,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+            "rank": 1,
+            "confidence": 1.0,
+            "reasoning": "This table contains the individual trip records, including start_time and start_station_id/name, which are essential for calculating the busiest stations per month."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+            "rank": 2,
+            "confidence": 0.8,
+            "reasoning": "This table provides metadata for the stations, which is useful if you need to join to get more details about the busiest stations (e.g., location, number of docks) identified in the trips table."
+          }
+        ],
+        "ranked_count": 2,
+        "found_ranked": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips"
+        ],
+        "found_nominated": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 11.5,
+        "last_event_s": 11.5,
+        "duration_s": 0.0,
+        "completed_s": 11.5,
+        "event_count": 1
+      },
+      "dataplex_context": {
+        "label": "3: Dataplex Context",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022",
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+          "statmike-mlops-349915.bigquery_context_demographics.usa_names_1910_current",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+          "statmike-mlops-349915.bigquery_context_geography.us_counties"
+        ],
+        "nominated_count": 9,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+            "rank": 1,
+            "confidence": 1.0,
+            "reasoning": "This table contains the individual trip records required to calculate station activity (busiest stations) and includes the necessary timestamps for monthly grouping."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+            "rank": 2,
+            "confidence": 0.9,
+            "reasoning": "This table provides the descriptive names for the station IDs found in the trips table, which is necessary for a readable output."
+          }
+        ],
+        "ranked_count": 2,
+        "found_ranked": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips"
+        ],
+        "found_nominated": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 4.7,
+        "last_event_s": 4.7,
+        "duration_s": 0.0,
+        "completed_s": 4.7,
+        "event_count": 1
+      },
+      "context_prefilter": {
+        "label": "4: Context Pre-Filter",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips"
+        ],
+        "nominated_count": 2,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+            "rank": 1,
+            "confidence": 1.0,
+            "reasoning": "This table contains the individual trip records, including start_time and start_station_name, which are essential for calculating the busiest stations per month."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+            "rank": 2,
+            "confidence": 0.7,
+            "reasoning": "This table provides metadata about the stations (like location or status). It is useful if the user wants to filter by active stations or display station details alongside the trip counts."
+          }
+        ],
+        "ranked_count": 2,
+        "found_ranked": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips"
+        ],
+        "found_nominated": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 11.6,
+        "last_event_s": 19.0,
+        "duration_s": 7.4,
+        "completed_s": 19.0,
+        "event_count": 4
+      },
+      "semantic_context": {
+        "label": "5: Semantic Context",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations"
+        ],
+        "nominated_count": 4,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+            "rank": 1,
+            "confidence": 1.0,
+            "reasoning": "This table contains the individual trip records, including start_station_id, start_station_name, and start_time, which are essential for calculating station activity by month."
+          },
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+            "rank": 2,
+            "confidence": 0.8,
+            "reasoning": "This table provides metadata for the stations (like full names and locations) and can be joined with the trips table to provide more descriptive station information."
+          }
+        ],
+        "ranked_count": 2,
+        "found_ranked": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips"
+        ],
+        "found_nominated": [
+          "austin_bikeshare_stations",
+          "austin_bikeshare_trips"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 11.5,
+        "last_event_s": 11.5,
+        "duration_s": 0.0,
+        "completed_s": 11.5,
+        "event_count": 1
+      }
+    },
+    "compare_output": "## Cross-Approach Comparison\n\n| Table | 1: BQ Tools | 2: Search | 3: Context | 4: Pre-Filter | 5: Semantic |\n|---|---|---|---|---|---|\n| `bigquery_context_transportation.austin_bikeshare_trips` | #1 (0.95) | #1 (1.00) | #1 (1.00) | #1 (1.00) | #1 (1.00) |\n| `bigquery_context_transportation.austin_bikeshare_stations` | #2 (0.70) | #2 (0.80) | #2 (0.90) | #2 (0.70) | #2 (0.80) |\n| `bigquery_context_demographics.population_by_zip_2010` | \u2014 | \u2014 | nominated | \u2014 | \u2014 |\n| `bigquery_context_demographics.",
+    "event_count": 14
+  },
+  {
+    "id": "single-q2",
+    "category": "single-table",
+    "question": "How do tip amounts vary by time of day for NYC taxi rides?",
+    "expected_tables": [
+      "nyc_taxi_trips_2022"
+    ],
+    "session_id": "3e863975-4a8b-4583-9264-77fc19eadf9c",
+    "total_time_s": 42.1,
+    "approaches": {
+      "bq_tools": {
+        "label": "1: BQ Tools",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips"
+        ],
+        "nominated_count": 2,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022",
+            "rank": 1,
+            "confidence": 1.0,
+            "reasoning": "This table contains the exact fields required: tip_amount for the target variable and pickup_datetime to derive the time of day."
+          }
+        ],
+        "ranked_count": 1,
+        "found_ranked": [
+          "nyc_taxi_trips_2022"
+        ],
+        "found_nominated": [
+          "nyc_taxi_trips_2022"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 5.8,
+        "last_event_s": 31.3,
+        "duration_s": 25.5,
+        "completed_s": 31.3,
+        "event_count": 7
+      },
+      "dataplex_search": {
+        "label": "2: Dataplex Search",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022"
+        ],
+        "nominated_count": 1,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022",
+            "rank": 1,
+            "confidence": 1.0,
+            "reasoning": "This table contains the exact fields required to answer the question: tip_amount for the tip data and pickup_datetime to extract the time of day."
+          }
+        ],
+        "ranked_count": 1,
+        "found_ranked": [
+          "nyc_taxi_trips_2022"
+        ],
+        "found_nominated": [
+          "nyc_taxi_trips_2022"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 5.6,
+        "last_event_s": 5.6,
+        "duration_s": 0.0,
+        "completed_s": 5.6,
+        "event_count": 1
+      },
+      "dataplex_context": {
+        "label": "3: Dataplex Context",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022",
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+          "statmike-mlops-349915.bigquery_context_demographics.usa_names_1910_current",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+          "statmike-mlops-349915.bigquery_context_geography.us_counties"
+        ],
+        "nominated_count": 9,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022",
+            "rank": 1,
+            "confidence": 1.0,
+            "reasoning": "This table contains the exact data needed: tip_amount and pickup_datetime for NYC taxi rides in 2022."
+          }
+        ],
+        "ranked_count": 1,
+        "found_ranked": [
+          "nyc_taxi_trips_2022"
+        ],
+        "found_nominated": [
+          "nyc_taxi_trips_2022"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 4.0,
+        "last_event_s": 4.0,
+        "duration_s": 0.0,
+        "completed_s": 4.0,
+        "event_count": 1
+      },
+      "context_prefilter": {
+        "label": "4: Context Pre-Filter",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022"
+        ],
+        "nominated_count": 1,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022",
+            "rank": 1,
+            "confidence": 1.0,
+            "reasoning": "This table contains the exact trip-level data required, including tip_amount and pickup_datetime, which are necessary to analyze tip variations by time of day."
+          }
+        ],
+        "ranked_count": 1,
+        "found_ranked": [
+          "nyc_taxi_trips_2022"
+        ],
+        "found_nominated": [
+          "nyc_taxi_trips_2022"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 5.6,
+        "last_event_s": 14.8,
+        "duration_s": 9.2,
+        "completed_s": 14.8,
+        "event_count": 4
+      },
+      "semantic_context": {
+        "label": "5: Semantic Context",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022"
+        ],
+        "nominated_count": 1,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022",
+            "rank": 1,
+            "confidence": 1.0,
+            "reasoning": "This table contains the necessary trip-level data, including tip_amount and pickup_datetime, which are required to analyze tip variations by time of day."
+          }
+        ],
+        "ranked_count": 1,
+        "found_ranked": [
+          "nyc_taxi_trips_2022"
+        ],
+        "found_nominated": [
+          "nyc_taxi_trips_2022"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 4.9,
+        "last_event_s": 4.9,
+        "duration_s": 0.0,
+        "completed_s": 4.9,
+        "event_count": 1
+      }
+    },
+    "compare_output": "Based on the results from the five parallel discovery approaches, here is the synthesis and analysis of the tables found to answer the question: *\"How do tip amounts vary by time of day for NYC taxi rides?\"*\n\n## Cross-Approach Comparison\n\n| Table | 1: BQ Tools | 2: Search | 3: Context | 4: Pre-Filter | 5: Semantic |\n|---|---|---|---|---|---|\n| `bigquery_context_transportation.nyc_taxi_trips_2022` | #1 (1.00) | #1 (1.00) | #1 (1.00) | #1 (1.00) | #1 (1.00) |\n| `bigquery_context_demographics.popul",
+    "event_count": 16
+  },
+  {
+    "id": "single-q3",
+    "category": "single-table",
+    "question": "What were the strongest hurricanes to make landfall in the last 20 years?",
+    "expected_tables": [
+      "hurricanes"
+    ],
+    "session_id": "00efb5bc-7052-4662-a762-5d87171ab283",
+    "total_time_s": 43.8,
+    "approaches": {
+      "bq_tools": {
+        "label": "1: BQ Tools",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_geography.us_counties"
+        ],
+        "nominated_count": 3,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+            "rank": 1,
+            "confidence": 0.95,
+            "reasoning": "This table contains the primary data needed to identify hurricanes, their wind speeds, landfall status, and classification."
+          }
+        ],
+        "ranked_count": 1,
+        "found_ranked": [
+          "hurricanes"
+        ],
+        "found_nominated": [
+          "hurricanes"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 5.0,
+        "last_event_s": 33.8,
+        "duration_s": 28.8,
+        "completed_s": 33.8,
+        "event_count": 9
+      },
+      "dataplex_search": {
+        "label": "2: Dataplex Search",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes"
+        ],
+        "nominated_count": 1,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+            "rank": 1,
+            "confidence": 1.0,
+            "reasoning": "This table contains comprehensive historical hurricane data including landfall flags, wind speeds, and timestamps, which are essential for identifying the strongest storms at landfall."
+          }
+        ],
+        "ranked_count": 1,
+        "found_ranked": [
+          "hurricanes"
+        ],
+        "found_nominated": [
+          "hurricanes"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 8.5,
+        "last_event_s": 8.5,
+        "duration_s": 0.0,
+        "completed_s": 8.5,
+        "event_count": 1
+      },
+      "dataplex_context": {
+        "label": "3: Dataplex Context",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_stations",
+          "statmike-mlops-349915.bigquery_context_transportation.austin_bikeshare_trips",
+          "statmike-mlops-349915.bigquery_context_transportation.nyc_taxi_trips_2022",
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+          "statmike-mlops-349915.bigquery_context_weather.weather_stations",
+          "statmike-mlops-349915.bigquery_context_demographics.population_by_zip_2010",
+          "statmike-mlops-349915.bigquery_context_demographics.usa_names_1910_current",
+          "statmike-mlops-349915.bigquery_context_geography.austin_crime",
+          "statmike-mlops-349915.bigquery_context_geography.us_counties"
+        ],
+        "nominated_count": 9,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+            "rank": 1,
+            "confidence": 1.0,
+            "reasoning": "This table contains comprehensive historical hurricane data, including wind speeds, pressure, landfall indicators, and timestamps, which are essential for identifying the strongest hurricanes."
+          }
+        ],
+        "ranked_count": 1,
+        "found_ranked": [
+          "hurricanes"
+        ],
+        "found_nominated": [
+          "hurricanes"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 4.9,
+        "last_event_s": 4.9,
+        "duration_s": 0.0,
+        "completed_s": 4.9,
+        "event_count": 1
+      },
+      "context_prefilter": {
+        "label": "4: Context Pre-Filter",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes"
+        ],
+        "nominated_count": 1,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+            "rank": 1,
+            "confidence": 1.0,
+            "reasoning": "This table contains the IBTrACS dataset, which includes historical hurricane tracks, wind speeds, pressure, and specific flags for landfall (landfall column) and storm intensity (usa_sshs, usa_wind, usa_pressure). It is the primary source for identifying hurricanes and their landfall events."
+          }
+        ],
+        "ranked_count": 1,
+        "found_ranked": [
+          "hurricanes"
+        ],
+        "found_nominated": [
+          "hurricanes"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 8.5,
+        "last_event_s": 16.6,
+        "duration_s": 8.1,
+        "completed_s": 16.6,
+        "event_count": 4
+      },
+      "semantic_context": {
+        "label": "5: Semantic Context",
+        "nominated": [
+          "statmike-mlops-349915.bigquery_context_weather.hurricanes"
+        ],
+        "nominated_count": 1,
+        "ranked_tables": [
+          {
+            "table_id": "statmike-mlops-349915.bigquery_context_weather.hurricanes",
+            "rank": 1,
+            "confidence": 0.95,
+            "reasoning": "This table contains the IBTrACS dataset, which provides comprehensive historical hurricane data including wind speed, pressure, landfall indicators, and timestamps, making it the primary source for identifying strong hurricanes that made landfall."
+          }
+        ],
+        "ranked_count": 1,
+        "found_ranked": [
+          "hurricanes"
+        ],
+        "found_nominated": [
+          "hurricanes"
+        ],
+        "missed": [],
+        "recall": 1.0,
+        "precision": 1.0,
+        "first_event_s": 8.5,
+        "last_event_s": 8.5,
+        "duration_s": 0.0,
+        "completed_s": 8.5,
+        "event_count": 1
+      }
+    },
+    "compare_output": "The discovery process shows unanimous agreement on the primary table needed to answer this request.\n\n## Cross-Approach Comparison\n\n| Table | 1: BQ Tools | 2: Search | 3: Context | 4: Pre-Filter | 5: Semantic |\n|---|---|---|---|---|---|\n| `bigquery_context_weather.hurricanes` | #1 (0.95) | #1 (1.00) | #1 (1.00) | #1 (1.00) | #1 (0.95) |\n| `bigquery_context_demographics.population_by_zip_2010` | \u2014 | \u2014 | nominated | \u2014 | \u2014 |\n| `bigquery_context_demographics.usa_names_1910_current` | \u2014 | \u2014 | nominate",
+    "event_count": 18
+  }
+]

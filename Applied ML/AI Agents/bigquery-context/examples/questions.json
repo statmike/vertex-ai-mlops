@@ -1,0 +1,50 @@
+[
+  {
+    "id": "single-q1",
+    "category": "single-table",
+    "question": "What are the busiest bike share stations in Austin by month?",
+    "expected_tables": ["austin_bikeshare_trips", "austin_bikeshare_stations"]
+  },
+  {
+    "id": "single-q2",
+    "category": "single-table",
+    "question": "How do tip amounts vary by time of day for NYC taxi rides?",
+    "expected_tables": ["nyc_taxi_trips_2022"]
+  },
+  {
+    "id": "single-q3",
+    "category": "single-table",
+    "question": "What were the strongest hurricanes to make landfall in the last 20 years?",
+    "expected_tables": ["hurricanes"]
+  },
+  {
+    "id": "multi-same-q1",
+    "category": "multi-table-same-dataset",
+    "question": "Which bike share stations have the highest average trip duration, and where are they located?",
+    "expected_tables": ["austin_bikeshare_trips", "austin_bikeshare_stations"]
+  },
+  {
+    "id": "multi-same-q2",
+    "category": "multi-table-same-dataset",
+    "question": "Are there weather stations near the paths of major hurricanes?",
+    "expected_tables": ["hurricanes", "weather_stations"]
+  },
+  {
+    "id": "multi-cross-q1",
+    "category": "multi-table-cross-dataset",
+    "question": "Is there a correlation between crime rates and bike share usage near specific stations in Austin?",
+    "expected_tables": ["austin_crime", "austin_bikeshare_trips", "austin_bikeshare_stations"]
+  },
+  {
+    "id": "multi-cross-q2",
+    "category": "multi-table-cross-dataset",
+    "question": "How does population density by ZIP code relate to bike share station placement in Austin?",
+    "expected_tables": ["population_by_zip_2010", "austin_bikeshare_stations"]
+  },
+  {
+    "id": "multi-cross-q3",
+    "category": "multi-table-cross-dataset",
+    "question": "Which US counties have the most weather stations per capita?",
+    "expected_tables": ["us_counties", "weather_stations", "population_by_zip_2010"]
+  }
+]

@@ -7,6 +7,8 @@ this can be replaced with a native client call.
 See: https://cloud.google.com/dataplex/docs/reference/rest/v1/projects.locations/lookupContext
 """
 
+import json
+
 import google.auth
 import google.auth.transport.requests
 import requests
@@ -16,7 +18,7 @@ from config import BQ_LOCATION, GOOGLE_CLOUD_PROJECT
 
 def lookup_context(
     entry_names: list[str],
-    format: str = "YAML",
+    format: str = "JSON",
 ) -> str:
     """Call the Dataplex lookupContext API for a batch of entries.
 
@@ -24,7 +26,7 @@ def lookup_context(
         entry_names: Dataplex entry names (max 10 per call). Format:
             projects/{project}/locations/{location}/entryGroups/@bigquery/
             entries/bigquery.googleapis.com/projects/{project}/datasets/{dataset}/tables/{table}
-        format: Response format — "YAML" or "XML".
+        format: Response format — "JSON", "YAML", or "XML".
 
     Returns:
         The context string from the API (LLM-ready formatted metadata).
@@ -59,17 +61,18 @@ def lookup_context(
 def lookup_context_batched(
     entry_names: list[str],
     batch_size: int = 10,
-    format: str = "YAML",
+    format: str = "JSON",
 ) -> str:
     """Call lookupContext in batches (API limit is 10 entries per call).
 
     Args:
         entry_names: All Dataplex entry names to look up.
         batch_size: Max entries per API call (default 10, the API max).
-        format: Response format — "YAML" or "XML".
+        format: Response format — "JSON", "YAML", or "XML".
 
     Returns:
-        Concatenated context string from all batches.
+        For JSON format: a single JSON array string with all entries merged.
+        For other formats: concatenated context strings from all batches.
     """
     all_context = []
 
@@ -78,5 +81,14 @@ def lookup_context_batched(
         context = lookup_context(batch, format=format)
         if context:
             all_context.append(context)
+
+    if not all_context:
+        return "[]" if format == "JSON" else ""
+
+    if format == "JSON":
+        merged = []
+        for ctx in all_context:
+            merged.extend(json.loads(ctx))
+        return json.dumps(merged, indent=2)
 
     return "\n".join(all_context)
