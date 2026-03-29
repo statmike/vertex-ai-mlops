@@ -21,7 +21,7 @@ If using RunInference, you have 5 key features to translate
 1. **[RunInference](#1-RunInference)** - ML Engine
 2. **[ModelHandler (PyTorch/TF)](#2-modelhandler-pytorch)** - Local ML Configuration
 3. **[KeyedModelHandler](#3-keyedmodelhandler)** - Context Preservation
-4. **[Event-Mode Hot-Swap](#4-evemt-mode-hot-swap)** - Zero-Downtime Updates
+4. **[Event-Mode Hot-Swap](#4-event-mode-hot-swap)** - Zero-Downtime Updates
 5. **[PredictionResult](#5-predictionresult)** - Output Contract
 
 ### Implementation Checklist

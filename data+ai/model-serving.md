@@ -145,7 +145,7 @@ An 8-phase systematic capacity planning study isolating one variable at a time:
 
 Both GPU types achieve the target most cheaply with the Local GPU approach — no endpoint overhead, simpler architecture, and the GPU is fully utilized on each worker.
 
-**[View the full Benchmark Report →](dataflow/gpu/benchmark/reports/benchmark_report.md)** | **[Benchmark Setup & Code →](dataflow/gpu/benchmark/README.md)**
+**[View the full Benchmark Report →](dataflow/gpu/benchmark/reports/benchmark_report.md)** | **[Benchmark Setup & Code →](dataflow/gpu/benchmark/README.md)** | **[Python-to-Java Translation Guide →](dataflow/python-to-java.md)**
 
 ### TO BE ADDED
 

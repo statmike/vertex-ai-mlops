@@ -19,7 +19,10 @@ data+ai/
 ├── resources/                      # (existing) — shared images/assets
 ├── bq-ai-functions/                # (existing) — BigQuery AI functions
 │   └── readme.md                   # (existing)
-├── dataflow/                       # (existing) — Dataflow GPU benchmark
+├── dataflow/                       # (existing) — Dataflow streaming ML pipelines
+│   ├── readme.md                   # (existing) — section navigation
+│   ├── python-to-java.md           # (existing) — multi-language RunInference translation guide
+│   └── gpu/benchmark/              # (existing) — Local GPU vs Vertex AI benchmark
 ├── bq-ml/                          # planned — ML models inside BigQuery
 │   └── readme.md
 ├── tabular-data/                   # (existing) — reading tabular data for ML
