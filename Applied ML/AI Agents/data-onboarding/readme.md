@@ -391,6 +391,7 @@ GOOGLE_CLOUD_STORAGE_BUCKET=your-bucket-name
 - Dataplex API (for data profile scans)
 - Conversational Analytics API (for `agent_chat`)
 - BigQuery Connection API (for `AI.EMBED` autonomous embeddings)
+- Cloud Telemetry API (for Agent Engine tracing — `telemetry.googleapis.com`)
 
 ---
 
@@ -409,6 +410,12 @@ python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
+**Jupyter kernel** (optional — needed for notebooks like [deploy/interact.ipynb](deploy/interact.ipynb)):
+```bash
+uv pip install ipykernel
+uv run python -m ipykernel install --user --name data-onboarding --display-name "Data Onboarding"
+```
+
 ### Run
 
 ```bash
@@ -421,12 +428,24 @@ Then select the agent from the dropdown:
 
 ### Deploy to Vertex AI Agent Engine
 
+Both root agents can be deployed to [Vertex AI Agent Engine](https://docs.cloud.google.com/agent-builder/agent-engine/overview) as managed, production-ready services with persistent sessions, Cloud Trace, and Cloud Monitoring — no infrastructure to manage.
+
+Each root agent is a separate deployment:
+
+| Deployment | Root Agent | Purpose |
+|-----------|-----------|---------|
+| `orchestrator` | `agent_orchestrator` | Data onboarding pipeline |
+| `chat` | `agent_chat` | Conversational analytics |
+
 ```bash
-python deploy/deploy.py             # Deploy (runs local test first)
-python deploy/deploy.py --update    # Update existing deployment
-python deploy/deploy.py --delete    # Delete deployment
-python deploy/deploy.py --info      # Show deployment info
+uv run python deploy/deploy.py chat                  # Deploy chat agent
+uv run python deploy/deploy.py orchestrator           # Deploy orchestrator
+uv run python deploy/deploy.py chat --test            # Test deployed agent
+uv run python deploy/deploy.py chat --update          # Update existing
+uv run python deploy/deploy.py chat --delete          # Delete deployment
 ```
+
+See [deploy/readme.md](deploy/readme.md) for full deployment details: packaging, entrypoints, environment variables, and how to query deployed agents.
 
 ---
 

@@ -1,0 +1,6 @@
+{
+  "resource_name": "projects/1026793852137/locations/us-central1/reasoningEngines/4403271940115005440",
+  "deployed_at": "2026-03-30T15:30:18.387708",
+  "display_name": "data-onboarding-chat",
+  "description": "Conversational analytics over onboarded BigQuery data with catalog exploration."
+}

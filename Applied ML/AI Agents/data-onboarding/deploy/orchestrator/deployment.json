@@ -1,0 +1,6 @@
+{
+  "resource_name": "projects/1026793852137/locations/us-central1/reasoningEngines/5727330230561931264",
+  "deployed_at": "2026-03-30T17:35:46.104262",
+  "display_name": "data-onboarding-orchestrator",
+  "description": "Orchestrates data onboarding into BigQuery through a pipeline of specialized agents."
+}

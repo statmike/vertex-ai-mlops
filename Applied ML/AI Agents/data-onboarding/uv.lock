@@ -504,7 +504,7 @@ requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.13.0" },
     { name = "db-dtypes", marker = "extra == 'dev'", specifier = ">=1.5.0" },
     { name = "google-adk", specifier = ">=1.14.0" },
-    { name = "google-cloud-aiplatform", extras = ["agent-engines", "adk"], specifier = ">=1.88.0" },
+    { name = "google-cloud-aiplatform", extras = ["agent-engines", "adk"], specifier = ">=1.112.0" },
     { name = "google-cloud-bigquery", specifier = ">=3.31.0" },
     { name = "google-cloud-bigquery-connection", specifier = ">=1.0.0" },
     { name = "google-cloud-datacatalog-lineage", specifier = ">=0.3.0" },

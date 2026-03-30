@@ -7,7 +7,7 @@ requires-python = ">=3.13.3"
 dependencies = [
     "google-adk>=1.14.0",
     "google-genai>=1.64.0",
-    "google-cloud-aiplatform[agent_engines,adk]>=1.88.0",
+    "google-cloud-aiplatform[agent_engines,adk]>=1.112.0",
     "google-cloud-bigquery>=3.31.0",
     "google-cloud-bigquery-connection>=1.0.0",
     "google-cloud-storage>=2.19.0",
