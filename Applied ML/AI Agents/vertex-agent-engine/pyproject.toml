@@ -1,0 +1,21 @@
+[project]
+name = "vertex-agent-engine"
+version = "0.1.0"
+description = "Tutorial: deploy a multi-agent ADK system to Vertex AI Agent Engine."
+readme = "readme.md"
+requires-python = ">=3.13"
+dependencies = [
+    "google-adk>=1.14.0",
+    "google-genai>=1.64.0",
+    "google-cloud-aiplatform[agent_engines,adk]>=1.112.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.8.0",
+]
+
+[tool.ruff]
+line-length = 100

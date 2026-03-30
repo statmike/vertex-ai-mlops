@@ -44,6 +44,16 @@ Two multi-agent systems built with [Google ADK](https://google.github.io/adk-doc
 
 **Chat** (`agent_chat`) — Ask questions about the onboarded data in plain English. The chat agent finds the right tables from the metadata the onboarding agent created, then answers using the [Conversational Analytics API](https://cloud.google.com/gemini/docs/conversational-analytics-api/overview) which generates SQL, runs queries, produces data tables, charts, and insights.
 
+## Contents
+
+- [Two Motions](#two-motions) — High-level overview of both workflows
+- [Onboarding Agent](#onboarding-agent-agent_orchestrator) — Pipeline stages and 7 sub-agents
+- [Chat Agent](#chat-agent-agent_chat) — Three-persona router and 4 sub-agents
+- [What Gets Created in BigQuery](#what-gets-created-in-bigquery) — Datasets and tables produced
+- [Configuration](#configuration) — Environment variables and required APIs
+- [Setup & Usage](#setup--usage) — Install, run locally, deploy to Agent Engine
+- [Development](#development) — Tests, linting, cleanup
+
 ---
 
 ## Two Motions
@@ -107,7 +117,10 @@ acquire → discover → understand → design → implement → validate
 
 #### `agent_acquire` — Crawl & Download
 
-Crawls a URL using breadth-first search and downloads every data file it finds to GCS staging.
+**Crawls a URL using breadth-first search and downloads every data file it finds to GCS staging.** Supports CSV, TSV, JSON, JSONL, Excel, Parquet, Avro, ORC, XML, ZIP archives, and context files (PDF, TXT, Markdown, HTML). Idempotent — skips files already in GCS.
+
+<details>
+<summary>Crawl settings, file formats, and ZIP handling</summary>
 
 **Crawl settings** (all configurable via `.env`):
 
@@ -128,17 +141,18 @@ Crawls a URL using breadth-first search and downloads every data file it finds t
 
 **ZIP handling** — True ZIP archives are extracted and each member file is staged individually. But Office documents (xlsx, docx, pptx) are ZIP-based containers internally — the agent detects these by extension and treats them as single files, not archives. If a true ZIP happens to contain leaked OOXML internals (`xl/`, `docProps/`, `[Content_Types].xml`), those are filtered out.
 
-**Idempotency** — Before downloading, the agent checks if a file already exists in GCS with the same path. Duplicate downloads are skipped.
+</details>
 
 #### `agent_discover` — Inventory & Classify
 
-Inventories all staged files in GCS and classifies each as **data** (for table creation) or **context** (for understanding schemas). Files in a `context/` subdirectory are always classified as context.
-
-**Change detection** — On reruns, the agent queries `source_manifest` for previously seen files and compares SHA-256 hashes. Files are categorized as new, modified, unchanged, or removed. Only new and modified files are reprocessed.
+**Inventories all staged files in GCS and classifies each as data or context.** Files in a `context/` subdirectory are always classified as context. On reruns, compares SHA-256 hashes against `source_manifest` and only reprocesses new or modified files.
 
 #### `agent_understand` — Read & Cross-Reference
 
-Reads every file and builds a schema summary. This is where the agent starts acting like a data engineer — it doesn't just look at data files, it reads the documentation alongside them and uses that context to understand what the data means.
+**Reads every file, builds schema summaries, then cross-references data columns with context documents (PDFs, READMEs, data dictionaries) to produce meaningful column names, types, and descriptions.** This is the key intelligence step — the agent doesn't just look at data, it reads the documentation alongside it.
+
+<details>
+<summary>Format handling: headerless CSVs, multi-sheet Excel, XML</summary>
 
 **Headerless CSV detection** — If more than half of a CSV's column names look like data values (numbers, dates, or very long strings), the agent flags it as headerless, re-reads with generic names (`col_0`, `col_1`, ...), and stores the original first row as data. The cross-reference step later uses context documents to assign real column names by matching positions.
 
@@ -146,7 +160,12 @@ Reads every file and builds a schema summary. This is where the agent starts act
 
 **XML xpath fallback** — XML files don't always follow the same structure. The agent tries multiple xpath patterns (`None`, `.//row`, `.//record`, `.//item`, `./*`) and picks the one that produces the DataFrame with the lowest null rate.
 
-**Cross-reference with context** — This is the key step. The agent sends each file's schema alongside all context documents (PDFs, READMEs, data dictionaries) to an LLM and gets back per-column insights:
+</details>
+
+<details>
+<summary>Cross-reference with context</summary>
+
+The agent sends each file's schema alongside all context documents to an LLM and gets back per-column insights:
 - `suggested_bq_name` — a meaningful column name derived from documentation
 - `suggested_bq_type` — an appropriate BigQuery type
 - `description` — what the column represents
@@ -154,9 +173,14 @@ Reads every file and builds a schema summary. This is where the agent starts act
 
 For headerless CSVs, the LLM matches generic column positions to documented field lists, giving every column a real name.
 
+</details>
+
 #### `agent_design` — Propose Tables
 
-Takes the enriched schemas and proposes BigQuery table structures.
+**Takes the enriched schemas and proposes BigQuery table structures.** Groups related files into single tables, applies enriched column names, suggests partitioning and clustering, and detects relationships between tables.
+
+<details>
+<summary>Grouping, partitioning, column enrichment, and relationship detection</summary>
 
 **File grouping** — Files with date suffixes (`_2025-01-01`, `_20250101`) are grouped into a single table. For example, `trades_2025-01-01.csv` and `trades_2025-01-02.csv` become one `trades` table.
 
@@ -171,9 +195,14 @@ Takes the enriched schemas and proposes BigQuery table structures.
 - Containment (e.g., `foo_full` contains `foo_bar` if columns are a superset)
 - Shared join keys (columns with matching name and type across tables)
 
+</details>
+
 #### `agent_implement` — Create Tables, Documentation & Profiling
 
-Creates the actual BigQuery tables and triggers data profiling:
+**Creates BigQuery tables (external → materialized), generates documentation, triggers Dataplex data profile scans, and publishes end-to-end lineage.** Handles format-specific loading paths, resilient type casting, and column recovery automatically.
+
+<details>
+<summary>Table creation: external tables and materialized bronze tables</summary>
 
 **Step 1: External tables** in a staging dataset (`*_staging`)
 - **BQ autodetect path** — For CSV, TSV, JSON, Parquet, Avro, ORC: creates a BigQuery external table that reads directly from GCS with schema autodetection.
@@ -183,14 +212,24 @@ Creates the actual BigQuery tables and triggers data profiling:
 - Runs `CREATE OR REPLACE TABLE ... AS SELECT ...` with type casting.
 - All casts go through STRING first: `SAFE_CAST(CAST(col AS STRING) AS target_type)`. This avoids hard BigQuery errors on incompatible type pairs (like TIME → TIMESTAMP) — the STRING intermediate lets SAFE_CAST return NULL instead of failing.
 
-**Resilient column recovery** — If a pandas DataFrame fails to load (e.g., mixed-type columns that pyarrow can't serialize), the agent tests each column individually:
+</details>
+
+<details>
+<summary>Resilient column recovery and deduplication</summary>
+
+If a pandas DataFrame fails to load (e.g., mixed-type columns that pyarrow can't serialize), the agent tests each column individually:
 1. Try converting to pyarrow — if it works, keep it
 2. If not, coerce the column to STRING — if that works, keep it as STRING
 3. If even STRING fails, drop the column entirely
 
 Coerced and dropped columns are logged to `processing_log` in the meta dataset and surfaced in the table documentation as "Data Quality Notes."
 
-**DataFrame deduplication** — If an Excel file has duplicate column names (e.g., two columns both called "ID"), they're deduplicated with numeric suffixes before loading to avoid BigQuery schema errors.
+If an Excel file has duplicate column names (e.g., two columns both called "ID"), they're deduplicated with numeric suffixes before loading to avoid BigQuery schema errors.
+
+</details>
+
+<details>
+<summary>Documentation, data profiling, and lineage</summary>
 
 **Documentation generation** — Writes two tables (no LLM call — purely programmatic from enriched metadata):
 - `table_documentation` in each bronze dataset — per-table markdown with a column dictionary, source attribution, related tables, schema provenance, and data quality notes
@@ -209,15 +248,11 @@ Coerced and dropped columns are logged to `processing_log` in the meta dataset a
 
 Hop 4 is captured automatically by BigQuery when the Data Lineage API is enabled. The result is full end-to-end lineage from the original URL to the final bronze table, visible in the Google Cloud Console.
 
+</details>
+
 #### `agent_validate` — Verify Results
 
-Runs two validation checks on every created table:
-
-**Row count validation** — Compares expected rows (from the proposal) against actual BigQuery table rows. Allows ±1 tolerance for header differences. If the source data was sampled (capped at 500 rows), any actual count above the expected count passes.
-
-**Type validation** — Compares each column's expected BQ type against the actual schema. Reports null rates per column. Type aliases are normalized (e.g., `INT64` = `INTEGER`, `FLOAT64` = `FLOAT`).
-
-Results are reported as PASS, WARN, FAIL, or SKIP per table.
+**Runs row count and type validation on every created table.** Compares expected vs. actual rows (±1 tolerance) and expected vs. actual column types (with alias normalization). Results are reported as PASS, WARN, FAIL, or SKIP per table.
 
 ---
 
@@ -231,7 +266,10 @@ For questions about the actual data — querying, analyzing, summarizing, visual
 
 #### `agent_context` — Find the Right Tables
 
-This agent knows about every table the onboarding agent created. At startup, it pre-loads the full data catalog from BigQuery — every dataset, table name, column list, column descriptions, and relationships — into a structured dict and a compact summary. The compact summary (just table names, column counts, column name lists, and 1-line descriptions) is embedded in the agent's instructions so it can instantly identify which tables match a user's question. The full metadata (all column details, types, descriptions, relationships) is held in memory for the detail ranking pass.
+**Pre-loads the full data catalog at startup and uses a two-pass reranker to match each question to the right tables.** Any bronze dataset created by the onboarding agent is immediately available for chat — no additional configuration needed.
+
+<details>
+<summary>Two-pass reranker and context sources</summary>
 
 **Two-pass reranker:**
 1. **Shortlist pass** (fast) — sends the compact catalog summary (~100 tokens per table) for all tables to Gemini, which returns the top 10 candidates with confidence scores
@@ -245,25 +283,28 @@ This two-pass approach avoids sending full metadata for all tables in a single c
 - `table_documentation` in each bronze dataset — per-table markdown with column details, descriptions, attribution, and relationships
 - The onboarding agent's cross-reference enrichment — column descriptions, suggested names, and BQ types all flow through into the documentation
 
-This means any bronze dataset created by the onboarding agent is immediately available for chat. No additional configuration needed.
+</details>
 
 #### `agent_convo` — Answer Questions
 
-Calls the [Conversational Analytics API](https://cloud.google.com/gemini/docs/conversational-analytics-api/overview) with [enriched authored context](https://cloud.google.com/gemini/docs/conversational-analytics-api/overview) from the reranker. Tables are **auto-selected** from the `reranker_result` in session state — the agent does not need to manually specify or extract table references. When reranker results are available, the API receives:
+**Calls the [Conversational Analytics API](https://cloud.google.com/gemini/docs/conversational-analytics-api/overview) with enriched context from the reranker.** Auto-selects tables from session state, generates and runs SQL, returns text answers, data tables, and charts. Maintains session history for follow-up questions.
+
+<details>
+<summary>Enriched context and API details</summary>
+
+Tables are auto-selected from the `reranker_result` in session state. When reranker results are available, the API receives:
 - **Schema overrides** — per-table column names, types, and descriptions from the reranker's key columns
 - **Schema relationships** — join paths between tables from the reranker's join suggestions
 - **Glossary terms** — domain-specific terms extracted from column descriptions
 - **SQL guidance** — per-table hints (filters, aggregations, join conditions) appended to the system instruction
 
-When no reranker result is available, falls back to bare table references (backward compatible). The API:
-- Resolves schemas for the referenced tables
-- Generates and runs SQL queries
-- Returns text answers, data tables, and charts
-- Maintains session history for follow-up questions
+When no reranker result is available, falls back to bare table references (backward compatible).
 
 The tool processes the API's response stream and returns only the useful parts: text summaries, data result tables, and insights. Intermediate steps (schema resolution, query planning, raw SQL) are filtered out for a clean chat experience. Charts are saved as image artifacts.
 
 The core API calling logic (session management, response processing, chart handling) is shared between `agent_convo` and `agent_engineer` via a common utility to avoid code duplication.
+
+</details>
 
 ### Persona 2: Data Engineer (`agent_engineer`)
 
@@ -350,37 +391,58 @@ This table is useful for debugging agent behavior, reviewing conversation traces
 
 ### Environment Variables
 
-Create a `.env` file. Only `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_STORAGE_BUCKET` are required — everything else has sensible defaults.
+Create a `.env` file. Only two variables are required — everything else has sensible defaults.
 
-```env
-# Required
-GOOGLE_CLOUD_PROJECT=your-project-id
-GOOGLE_CLOUD_STORAGE_BUCKET=your-bucket-name
+**Required:**
 
-# Models — which Gemini models the agents use
-# AGENT_MODEL=gemini-2.5-flash          # Model for agent reasoning
-# TOOL_MODEL=gemini-2.5-pro             # Model for tool LLM calls (cross-reference, etc.)
-# AGENT_MODEL_LOCATION=global           # API endpoint location for agent model
-# TOOL_MODEL_LOCATION=global            # API endpoint location for tool model
+| Variable | Description |
+|----------|-------------|
+| `GOOGLE_CLOUD_PROJECT` | Your GCP project ID |
+| `GOOGLE_CLOUD_STORAGE_BUCKET` | GCS bucket for staging files |
 
-# Web crawling
-# CRAWL_MAX_DEPTH=1                     # Link depth from starting URL
-# CRAWL_MAX_FILES=100                   # Maximum files to discover
-# CRAWL_SAME_ORIGIN_ONLY=true           # Only follow same-domain links
+<details>
+<summary>Optional variables (models, crawling, BigQuery, file types)</summary>
 
-# BigQuery
-# BQ_DATASET_LOCATION=US                # Where to create datasets
-# PARTITION_MIN_ROWS=10000              # Minimum rows before suggesting partitioning
-# RESOURCE_PREFIX=data_onboarding       # Prefix for all dataset names
+**Models** — which Gemini models the agents use:
 
-# Dataplex
-# DATAPLEX_LOCATION=us-central1        # Location for Dataplex data profile scans
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AGENT_MODEL` | `gemini-2.5-flash` | Model for agent reasoning |
+| `TOOL_MODEL` | `gemini-2.5-pro` | Model for tool LLM calls (cross-reference, etc.) |
+| `AGENT_MODEL_LOCATION` | `global` | API endpoint location for agent model |
+| `TOOL_MODEL_LOCATION` | `global` | API endpoint location for tool model |
 
-# File types
-# ACQUIRE_FILE_EXTENSIONS=csv,tsv,json,jsonl,xlsx,xls,parquet,avro,orc,xml,pdf,txt,md,html,zip
-# DATA_FILE_EXTENSIONS=csv,tsv,json,jsonl,xlsx,xls,parquet,avro,orc,xml
-# CONTEXT_FILE_EXTENSIONS=pdf,txt,md,html
-```
+**Web crawling:**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CRAWL_MAX_DEPTH` | `1` | Link depth from starting URL |
+| `CRAWL_MAX_FILES` | `100` | Maximum files to discover |
+| `CRAWL_SAME_ORIGIN_ONLY` | `true` | Only follow same-domain links |
+
+**BigQuery:**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BQ_DATASET_LOCATION` | `US` | Where to create datasets |
+| `PARTITION_MIN_ROWS` | `10000` | Minimum rows before suggesting partitioning |
+| `RESOURCE_PREFIX` | `data_onboarding` | Prefix for all dataset names |
+
+**Dataplex:**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATAPLEX_LOCATION` | `us-central1` | Location for Dataplex data profile scans |
+
+**File types:**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ACQUIRE_FILE_EXTENSIONS` | `csv,tsv,json,...,zip` | All file types to download |
+| `DATA_FILE_EXTENSIONS` | `csv,tsv,json,...,xml` | Files treated as data |
+| `CONTEXT_FILE_EXTENSIONS` | `pdf,txt,md,html` | Files treated as context |
+
+</details>
 
 ### Required Google Cloud APIs
 

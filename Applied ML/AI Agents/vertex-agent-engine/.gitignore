@@ -1,0 +1,13 @@
+# Generated at deploy time — not checked in
+requirements.txt
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Environment
+.env
+
+# ADK local sessions
+.adk/
