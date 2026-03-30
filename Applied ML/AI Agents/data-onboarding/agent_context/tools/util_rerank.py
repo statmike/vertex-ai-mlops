@@ -7,6 +7,7 @@ Supports a two-pass reranking strategy:
 
 import json
 import logging
+import re
 
 from google import genai
 from google.genai import types
@@ -15,6 +16,22 @@ from agent_context.schemas import RerankerResponse, ShortlistResponse
 from agent_orchestrator.config import GOOGLE_CLOUD_PROJECT, TOOL_MODEL, TOOL_MODEL_LOCATION
 
 logger = logging.getLogger(__name__)
+
+
+def _normalize_table_id(raw_id: str) -> str:
+    """Normalize a table ID to project.dataset.table format.
+
+    Handles variants the reranker sometimes produces from Dataplex paths:
+      - "project.dataset.table" → keep as-is
+      - "projects.project.datasets.dataset.tables.table" → strip path components
+      - "projects.project.datasets.dataset.table" → strip partial path
+    """
+    return re.sub(
+        r"^projects[./]([^./]+)[./](?:datasets[./])?([^./]+)[./](?:tables[./])?([^./]+)$",
+        r"\1.\2.\3",
+        raw_id,
+    )
+
 
 RERANKER_SYSTEM_PROMPT = """\
 You are a BigQuery table relevance ranker. Given a user's question and metadata
@@ -111,7 +128,14 @@ Return at most {top_k} tables.
         ),
     )
 
-    return RerankerResponse.model_validate(json.loads(response.text))
+    result = RerankerResponse.model_validate(json.loads(response.text))
+
+    # Normalize table IDs — the reranker sometimes picks up Dataplex path
+    # format from the metadata (e.g., "projects.proj.datasets.ds.tables.tbl")
+    for t in result.ranked_tables:
+        t.table_id = _normalize_table_id(t.table_id)
+
+    return result
 
 
 def _shortlist_pass(

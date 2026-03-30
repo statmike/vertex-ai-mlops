@@ -15,6 +15,7 @@ from agent_context.schemas import (
 )
 from agent_context.tools.util_rerank import (
     _build_detail_metadata,
+    _normalize_table_id,
     format_reranker_markdown,
 )
 
@@ -38,6 +39,20 @@ class _FakeCallbackContext:
             )
         else:
             self.user_content = None
+
+
+class TestNormalizeTableId:
+    def test_already_normalized(self):
+        assert _normalize_table_id("proj.ds.table") == "proj.ds.table"
+
+    def test_full_dataplex_path_with_dots(self):
+        assert _normalize_table_id("projects.proj.datasets.ds.tables.table") == "proj.ds.table"
+
+    def test_partial_path_without_tables(self):
+        assert _normalize_table_id("projects.proj.datasets.ds.table") == "proj.ds.table"
+
+    def test_slash_separated_path(self):
+        assert _normalize_table_id("projects/proj/datasets/ds/tables/table") == "proj.ds.table"
 
 
 class TestShortlistSchema:
@@ -309,3 +324,22 @@ class TestRerankerCallback:
         content = await rerank_and_transfer(ctx)
 
         assert content is None
+
+    @pytest.mark.asyncio
+    @patch("agent_context.tools.callback_rerank._catalog_data", {
+        "proj.ds.t1": {"full_ref": "proj.ds.t1"},
+    })
+    @patch("agent_context.tools.callback_rerank._catalog_summary", "summary")
+    @patch("agent_context.tools.callback_rerank.call_reranker_two_pass")
+    async def test_skips_when_reranker_result_already_in_state(self, mock_reranker):
+        from agent_context.tools.callback_rerank import rerank_and_transfer
+
+        ctx = _FakeCallbackContext("test question")
+        ctx.state["reranker_result"] = {"question": "old", "ranked_tables": []}
+
+        content = await rerank_and_transfer(ctx)
+
+        assert content is None
+        mock_reranker.assert_not_called()
+        # Original result should be preserved
+        assert ctx.state["reranker_result"]["question"] == "old"

@@ -151,8 +151,72 @@ def _build_agent_model():
 
 AGENT_MODEL_INSTANCE = _build_agent_model()
 
+# --- Reranker ---
+TOP_K = int(os.getenv("TOP_K", "10"))
+
 # --- Output ---
 OUTPUT_DIR = os.getenv("OUTPUT_DIR", "./output")
+
+
+# ---------------------------------------------------------------------------
+# Scope — which datasets/tables the chat agent can query.
+#
+# Each entry is either:
+#   "dataset"             — all tables in that dataset
+#   "dataset.table"       — only that specific table
+#
+# When empty (default), the chat agent discovers datasets dynamically
+# from the data_catalog table. When set, only these datasets/tables are
+# available for the reranker and context cache.
+#
+# Set via CHAT_SCOPE env var (comma-separated), e.g.:
+#   CHAT_SCOPE="cboe_bronze,other_dataset.specific_table"
+# ---------------------------------------------------------------------------
+CHAT_SCOPE: list[str] = [
+    s.strip()
+    for s in os.getenv("CHAT_SCOPE", "").split(",")
+    if s.strip()
+]
+
+
+def get_scope_datasets() -> list[str]:
+    """Return unique dataset names from CHAT_SCOPE (preserving order)."""
+    return list(dict.fromkeys(entry.split(".")[0] for entry in CHAT_SCOPE))
+
+
+def get_scoped_tables(dataset: str) -> list[str] | None:
+    """Return the list of specific table names for a dataset, or None if all.
+
+    Returns None when the bare dataset name appears in CHAT_SCOPE (= all tables).
+    Returns a list of table names when only dataset.table entries exist.
+    """
+    if dataset in CHAT_SCOPE:
+        return None  # bare dataset = all tables
+    tables = [
+        entry.split(".", 1)[1]
+        for entry in CHAT_SCOPE
+        if "." in entry and entry.split(".", 1)[0] == dataset
+    ]
+    return tables if tables else None
+
+
+def is_table_in_scope(dataset: str, table: str) -> bool:
+    """Check whether a specific table is in scope."""
+    if not CHAT_SCOPE:
+        return True  # no scope = everything in scope
+    if dataset in CHAT_SCOPE:
+        return True  # bare dataset = all tables
+    return f"{dataset}.{table}" in CHAT_SCOPE
+
+
+def get_dataplex_entry_name(dataset: str, table: str) -> str:
+    """Build a Dataplex entry name for a BQ table in this project."""
+    return (
+        f"projects/{GOOGLE_CLOUD_PROJECT}/locations/{BQ_DATASET_LOCATION.lower()}"
+        f"/entryGroups/@bigquery/entries/bigquery.googleapis.com"
+        f"/projects/{GOOGLE_CLOUD_PROJECT}/datasets/{dataset}/tables/{table}"
+    )
+
 
 # --- Derived ---
 def gcs_bucket_name() -> str:

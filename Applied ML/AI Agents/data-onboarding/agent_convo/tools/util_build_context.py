@@ -132,7 +132,7 @@ def build_enriched_context(
 
     if glossary_terms:
         context["glossary_terms"] = [
-            {"term": term} for term in sorted(glossary_terms)
+            {"displayName": term} for term in sorted(glossary_terms)
         ]
 
     return context

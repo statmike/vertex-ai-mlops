@@ -63,6 +63,16 @@ async def meta_chat(
         artifact_key="meta_chat_chart",
         system_instruction=(
             "Help users explore pipeline metadata, processing history, "
-            "data lineage, schema decisions, and source provenance."
+            "data lineage, schema decisions, and source provenance.\n\n"
+            "Key table guidance:\n"
+            "- **data_catalog**: has `tables_created` (integer count of tables created per "
+            "onboarded source), `dataset_name`, `source_uri`, `domain`, `onboarded_at`. "
+            "Use this table for questions about how many tables exist, what was onboarded, "
+            "or dataset summaries. Do NOT use INFORMATION_SCHEMA — use data_catalog instead.\n"
+            "- **table_lineage**: maps each table to its source files and transformations.\n"
+            "- **processing_log**: timestamped log of onboarding steps and outcomes.\n"
+            "- **schema_decisions**: records why columns/types were chosen.\n"
+            "- **source_manifest**: inventory of downloaded files with sizes and formats.\n"
+            "- **web_provenance**: crawl graph of discovered URLs and pages."
         ),
     )

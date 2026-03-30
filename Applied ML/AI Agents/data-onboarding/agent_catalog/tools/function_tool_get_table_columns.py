@@ -1,4 +1,8 @@
-"""Direct column listing for a specific table using table_documentation."""
+"""Direct column listing for a specific table.
+
+Checks the shared context cache first (instant). Falls back to a BQ
+query against ``table_documentation`` if the table isn't cached.
+"""
 
 import logging
 
@@ -15,10 +19,9 @@ async def get_table_columns(
 ) -> str:
     """List all columns and their descriptions for a specific table.
 
-    Queries the ``table_documentation`` table directly to return complete
-    column information.  Use this when the user asks to describe a specific
-    table's columns — it returns ALL columns, unlike semantic search which
-    only returns a few matches.
+    Checks the shared context cache first for an instant response. Falls
+    back to a BQ query against ``table_documentation`` if the table isn't
+    cached.
 
     Args:
         table_name: Table name (e.g., ``underlying_eod``).  Can be a short
@@ -31,36 +34,58 @@ async def get_table_columns(
     if not GOOGLE_CLOUD_PROJECT:
         return "Cannot query: GOOGLE_CLOUD_PROJECT not set."
 
+    # Try the context cache first (instant, no BQ calls)
+    try:
+        from agent_context.context_cache import get_table_columns_from_cache
+
+        cached = get_table_columns_from_cache(table_name)
+        if cached:
+            return _format_columns(
+                table_name=cached["full_id"].split(".")[-1],
+                full_ref=cached["full_id"],
+                description=cached["description"],
+                columns=cached["columns"],
+            )
+    except ImportError:
+        pass  # context cache not available, fall through to BQ
+
+    # Fallback: query table_documentation directly
+    return await _query_table_documentation(table_name)
+
+
+def _format_columns(
+    table_name: str,
+    full_ref: str,
+    description: str,
+    columns: list[dict],
+) -> str:
+    """Format column info as readable markdown."""
+    parts = [f"**{table_name}** ({full_ref})"]
+    if description:
+        parts.append(f"_{description}_")
+    parts.append(f"\n{len(columns)} columns:\n")
+
+    for col in columns:
+        name = col.get("name", "")
+        bq_type = col.get("bq_type", "STRING")
+        desc = col.get("description", "")
+        if desc:
+            parts.append(f"- **{name}** ({bq_type}): {desc}")
+        else:
+            parts.append(f"- **{name}** ({bq_type})")
+
+    return "\n".join(parts)
+
+
+async def _query_table_documentation(table_name: str) -> str:
+    """Fallback: query BQ table_documentation tables directly."""
     try:
         from google.cloud import bigquery
 
-        client = bigquery.Client(project=GOOGLE_CLOUD_PROJECT)
-
-        # Extract just the short table name if fully qualified
-        short_name = table_name.split(".")[-1] if "." in table_name else table_name
-
-        # Search across all bronze datasets' table_documentation
-        sql = f"""
-            SELECT
-                t.table_catalog || '.' || t.table_schema || '.' || td.table_name AS full_ref,
-                td.table_name,
-                t.table_schema AS dataset_name,
-                td.documentation_md,
-                td.column_details
-            FROM
-                `{GOOGLE_CLOUD_PROJECT}`.`region-US`.INFORMATION_SCHEMA.TABLES t
-            JOIN UNNEST([t.table_schema]) AS ds
-            JOIN `{GOOGLE_CLOUD_PROJECT}`.`{{ds}}`.table_documentation td
-                ON TRUE
-            WHERE
-                t.table_name = 'table_documentation'
-                AND LOWER(td.table_name) = LOWER(@table_name)
-            LIMIT 1
-        """
-
-        # Simpler approach: query the data_catalog to find datasets, then
-        # query table_documentation in each
         from agent_chat.config import META_DATASET
+
+        client = bigquery.Client(project=GOOGLE_CLOUD_PROJECT)
+        short_name = table_name.split(".")[-1] if "." in table_name else table_name
 
         catalog_sql = f"""
             SELECT dataset_name
@@ -93,32 +118,25 @@ async def get_table_columns(
                     row = rows[0]
                     columns = row.column_details or []
                     full_ref = f"{GOOGLE_CLOUD_PROJECT}.{dataset_name}.{row.table_name}"
-
-                    # Extract first line of documentation as description
                     doc_md = row.documentation_md or ""
                     first_line = (
                         doc_md.split("\n")[0].strip().strip("#").strip()
                         if doc_md
                         else ""
                     )
-
-                    parts = [
-                        f"**{row.table_name}** ({full_ref})",
-                    ]
-                    if first_line:
-                        parts.append(f"_{first_line}_")
-                    parts.append(f"\n{len(columns)} columns:\n")
-
-                    for col in columns:
-                        name = col.get("name", "")
-                        bq_type = col.get("bq_type", "STRING")
-                        desc = col.get("description", "")
-                        if desc:
-                            parts.append(f"- **{name}** ({bq_type}): {desc}")
-                        else:
-                            parts.append(f"- **{name}** ({bq_type})")
-
-                    return "\n".join(parts)
+                    return _format_columns(
+                        table_name=row.table_name,
+                        full_ref=full_ref,
+                        description=first_line,
+                        columns=[
+                            {
+                                "name": c.get("name", ""),
+                                "bq_type": c.get("bq_type", "STRING"),
+                                "description": c.get("description", ""),
+                            }
+                            for c in columns
+                        ],
+                    )
 
             except Exception:
                 continue

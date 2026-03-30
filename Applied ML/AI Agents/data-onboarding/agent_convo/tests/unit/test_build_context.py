@@ -85,7 +85,7 @@ class TestBuildEnrichedContext:
 
         # "VIX" should be extracted as a glossary term from column descriptions
         terms = result.get("glossary_terms", [])
-        term_values = [t["term"] for t in terms]
+        term_values = [t["displayName"] for t in terms]
         assert "VIX" in term_values
 
     def test_enhanced_system_instruction(self):

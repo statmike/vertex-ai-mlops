@@ -29,6 +29,11 @@ async def rerank_and_transfer(callback_context: CallbackContext):
     The LLM's only job is to transfer to agent_convo.  The reranker result
     is already in state for agent_convo to auto-pick tables.
     """
+    # Guard: skip if the reranker already ran (prevents double-invocation
+    # when agent_chat re-invokes agent_context after agent_convo answers)
+    if callback_context.state.get("reranker_result"):
+        return None
+
     user_content = callback_context.user_content
     if not user_content or not user_content.parts:
         return None

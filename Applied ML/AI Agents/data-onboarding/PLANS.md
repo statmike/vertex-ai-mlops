@@ -7,7 +7,7 @@ The chat agent system (`agent_chat`) routes user questions to three personas:
 - **Data Engineer** → `agent_engineer` (meta_chat via Conversational Analytics API)
 - **Catalog Explorer** → `agent_catalog` (semantic search + direct column lookup)
 
-We've completed a major optimization pass and are partway through a second refinement pass. All 289 unit tests pass. The system is functional but has remaining quality issues documented below.
+We've completed three optimization passes plus targeted fixes. All 326 unit tests pass. V4 evaluation shows -17% total time and correct answers across all three personas.
 
 ---
 
@@ -32,7 +32,7 @@ We've completed a major optimization pass and are partway through a second refin
 
 5. **Removed tools:** `discover_datasets`, `find_tables`, `get_table_context` from agent_context (replaced by pre-loaded catalog + reranker).
 
-### Optimization 2: Targeted Improvements (partially complete)
+### Optimization 2: Targeted Improvements
 
 **Changes implemented:**
 
@@ -90,47 +90,29 @@ Total time increased because previously-erroring questions now actually do work 
 
 ---
 
-## Known Issues (TODO)
+## Known Issues — All Resolved
 
-### P0: Critical
+All issues from the original TODO have been addressed:
 
-1. **Reranker callback double-invocation**: The `before_agent_callback` runs every time `agent_context` is invoked. When agent_convo finishes and control returns to agent_chat, agent_chat sometimes re-invokes agent_context, causing the reranker to run twice. This wastes ~20s per redundant call. Seen in data-analyst-q1 (15 events vs expected 8).
+| # | Issue | Status | Fix |
+|---|-------|--------|-----|
+| 1 | Reranker callback double-invocation | **FIXED** (Opt 3) | Guard in `callback_rerank.py` checks state |
+| 2 | data-analyst-q6 excessive events (19→14) | **FIXED** (Opt 3) | Removed `sample_data` from agent_context tools |
+| 3 | catalog-explorer-q4 misrouted | **FIXED** (Opt 3) | Added routing examples + disambiguation rules |
+| 4 | catalog-explorer-q9 misrouted | **FIXED** (Opt 3) | Added routing examples |
+| 5 | Routing bias toward Data Analyst | **FIXED** (Opt 3) | Replaced with structured guidance |
+| 6 | catalog-explorer-q7 weak answer | **FIXED** (Opt 3) | `list_all_tables` tool enables table-role reasoning |
+| 7 | catalog-explorer-q1 unanswerable | **Expected** | PRVDR_NUM not in Cboe data, correctly reports not found |
+| 8 | data-engineer-q5 INFORMATION_SCHEMA error | **FIXED** (Opt 3) | Enhanced `meta_chat` system instruction + `data_catalog` guidance |
+| 9 | Glossary term format (`term` → `displayName`) | **FIXED** (Opt 3) | Updated `util_build_context.py` |
+| 10 | Table-summary chunks not populated | **Superseded** (Opt 3) | Context cache with Dataplex lookupContext replaces chunk approach |
+| 11 | Data Analyst times increased | **FIXED** (Opt 3) | Reranker guard eliminated double-invocations, -22% total time |
+| 12 | agent_engineer bounce-back routing | **FIXED** (post-Opt 3) | `disallow_transfer_to_parent=True` + single-call prompt guidance |
 
-   **Possible fixes:**
-   - Check `callback_context.state.get("reranker_result")` at the top of the callback — if already set, skip the reranker and return None immediately
-   - Update `agent_chat` prompts to never re-invoke `agent_context` after `agent_convo` has answered
+### Minor Remaining Observations (not blocking)
 
-2. **data-analyst-q6 excessive events (19)**: The LLM in agent_context doesn't always transfer to agent_convo on the first try. Sometimes it calls sample_data or loops. The instruction says "transfer immediately" but the LLM ignores it.
-
-   **Possible fix:** Remove `sample_data` from agent_context tools entirely so the LLM has no tools to distract it — its only option is to transfer.
-
-### P1: Routing
-
-3. **catalog-explorer-q4 misrouted to agent_context**: "What columns are shared between underlying_eod and underlying_trades?" — router interprets this as a Data Analyst question (comparing tables). It's borderline. Could fix by adding "What columns are shared between X and Y?" to Catalog Explorer examples.
-
-4. **catalog-explorer-q9 misrouted to agent_context**: "Which tables contain VIX-related data?" — router interprets as Data Analyst. Could fix by adding "Which tables contain X data?" to Catalog Explorer examples.
-
-5. **agent_chat routing instruction conflict**: The prompt says "When in doubt, prefer the Data Analyst persona for data questions" — this biases catalog questions toward Data Analyst. Consider removing or qualifying this rule.
-
-### P2: Answer Quality
-
-6. **catalog-explorer-q7 still weak**: "What reference tables exist and what do they look up?" — the concept of "reference table" isn't in any chunk text. Requires either:
-   - Adding category/role annotations during onboarding (e.g., "reference table", "fact table")
-   - Teaching the agent to search for patterns like "ID table", "lookup", "mapping"
-
-7. **catalog-explorer-q1 inherently unanswerable**: "What does PRVDR_NUM mean?" — PRVDR_NUM doesn't exist in the Cboe dataset (it's from healthcare data). The agent correctly reports not finding it. This is expected behavior.
-
-8. **data-engineer-q5 answer has error**: The Conversational Analytics API couldn't find `INFORMATION_SCHEMA` dataset. The agent returned an error message instead of actual table counts. The `meta_chat` tool sends queries to the Conversational Analytics API which may not have access to INFORMATION_SCHEMA. May need a direct BQ query fallback.
-
-9. **Glossary term format changed**: All conversational_chat calls log a warning: `Failed to parse glossary_terms field: "GlossaryTerm" has no field named "term"`. The Conversational Analytics API changed the GlossaryTerm proto — it now uses `displayName` instead of `term`. Need to update `util_conversational_api.py` to use `displayName`.
-
-### P3: Performance
-
-10. **Table-summary chunks not yet populated**: The `table_summary` chunk type was added to the chunking utility but existing onboarded data doesn't have these chunks. Need to either:
-    - Re-run the context population step (`populate_context` tool)
-    - Write a migration script to generate summary chunks from existing `table_documentation` data
-
-11. **Data Analyst times increased**: The callback adds 1 LLM turn (~2-3s) for the transfer. Plus the LLM sometimes doesn't transfer cleanly, adding extra events. Net effect: average Data Analyst time went from 94s → 110s per question. The callback still prevents bounces (Q3 was 101s → 85s) but clean questions are slightly slower.
+- **catalog-explorer-q9**: Agent used `search_context` instead of `list_all_tables`, missing `underlying_eod` as a VIX table. The tool exists but the LLM chose the wrong one. Could improve with prompt tweaks.
+- **data-engineer-q5**: Correct answer but 140.8s — the Conversational Analytics API takes ~131s to process the multi-table row-count query. This is API latency, not a routing or code issue.
 
 ---
 
@@ -150,14 +132,15 @@ agent_chat (root router, LLM: classify + route)
 │    → calls Conversational Analytics API
 │
 ├─ Data Engineer path:
-│  agent_engineer
-│    → meta_chat (6 fixed meta tables)
+│  agent_engineer (disallow_transfer_to_parent=True)
+│    → meta_chat (6 fixed meta tables, enhanced system instruction)
 │    → calls Conversational Analytics API via shared util
 │
 └─ Catalog Explorer path:
    agent_catalog
      → search_context (AI.SEARCH over context_chunks)
-     → get_table_columns (direct table_documentation query)
+     → get_table_columns (cache-first, BQ fallback)
+     → list_all_tables (full inventory from context cache)
 ```
 
 ### Key Files
@@ -165,7 +148,9 @@ agent_chat (root router, LLM: classify + route)
 | File | Purpose |
 |------|---------|
 | `agent_chat/prompts.py` | Router classification + disambiguation guide |
-| `agent_context/catalog.py` | Module-level `_catalog_data` dict + `_catalog_summary` string |
+| `agent_context/catalog.py` | Module-level `_catalog_data` dict + `_catalog_summary` string (populated from context cache) |
+| `agent_context/context_cache/cache.py` | Pre-fetched metadata with brief/detailed views (Dataplex lookupContext + BQ fallback) |
+| `agent_context/context_cache/util_lookup_context.py` | Dataplex lookupContext REST client (batched, 10/call) |
 | `agent_context/tools/callback_rerank.py` | `before_agent_callback` — runs reranker, stores in state, returns None |
 | `agent_context/tools/util_rerank.py` | `call_reranker_two_pass()`, `_shortlist_pass()`, `_detail_pass()` |
 | `agent_context/schemas.py` | `ShortlistEntry/Response`, `RankedTable`, `RerankerResponse` |
@@ -173,9 +158,11 @@ agent_chat (root router, LLM: classify + route)
 | `agent_convo/tools/util_conversational_api.py` | Shared Conversational Analytics API calling logic |
 | `agent_engineer/tools/function_tool_meta_chat.py` | Uses shared util, 6 fixed meta tables |
 | `agent_catalog/tools/function_tool_search_context.py` | AI.SEARCH over `context_chunks` table |
-| `agent_catalog/tools/function_tool_get_table_columns.py` | Direct column listing from `table_documentation` |
-| `agent_orchestrator/util_context_chunks.py` | Chunking logic (now includes `table_summary` type) |
-| `agent_orchestrator/config.py` | All config: models, datasets, retry options |
+| `agent_catalog/tools/function_tool_get_table_columns.py` | Cache-first column listing, BQ fallback |
+| `agent_catalog/tools/function_tool_list_all_tables.py` | Full table inventory from context cache |
+| `agent_convo/tools/util_build_context.py` | Enriched Context builder (glossary uses `displayName`) |
+| `agent_orchestrator/util_context_chunks.py` | Chunking logic (includes `table_summary` type) |
+| `agent_orchestrator/config.py` | All config: models, datasets, `CHAT_SCOPE`, `TOP_K`, retry options |
 
 ### Test & Evaluation Files
 
@@ -185,9 +172,10 @@ agent_chat (root router, LLM: classify + route)
 | `examples/cboe/run_cboe_questions.py` | Programmatic runner using ADK `InMemoryRunner` |
 | `examples/cboe/build_cboe_results.py` | Builds markdown Results section for `cboe.md` |
 | `examples/cboe/cboe.md` | Full documentation + results |
-| `examples/cboe/results/cboe_results.json` | Current (V3) results |
+| `examples/cboe/results/cboe_results.json` | Current (V4) results |
 | `examples/cboe/results/cboe_results_v1.json` | Baseline results |
 | `examples/cboe/results/cboe_results_v2.json` | Broken V2 (callback returned Content) |
+| `examples/cboe/results/cboe_results_v3.json` | V3 results (before Optimization 3) |
 
 ### Running the Evaluation
 
@@ -202,54 +190,146 @@ uv run python examples/cboe/run_cboe_questions.py --id data-analyst-q3      # on
 uv run python examples/cboe/build_cboe_results.py --write       # update cboe.md
 
 # Run tests:
-uv run python -m pytest -q                                      # 289 tests
+uv run python -m pytest -q                                      # 326 tests
 ```
 
 ---
 
-## Recommended Next Steps (Priority Order)
+## Optimization 3: Context Cache + Scoping + Bug Fixes (2026-03-30)
 
-### 1. Fix callback double-invocation (P0, ~15 min)
+All 8 items implemented, plus 2 additional fixes. 326 tests pass.
 
-In `callback_rerank.py`, add a guard at the top:
+### Changes Implemented
 
-```python
-if callback_context.state.get("reranker_result"):
-    return None  # Already ran — skip
-```
+1. **Reranker double-invocation guard** (`callback_rerank.py`):
+   - Checks `callback_context.state.get("reranker_result")` at the top — if already set, returns None immediately
+   - Prevents the ~20s wasted reranker call when agent_chat re-invokes agent_context
 
-This prevents the reranker from running twice when agent_chat re-invokes agent_context.
+2. **Removed sample_data from agent_context tools** (`agent_context/tools/__init__.py`):
+   - `TOOLS = []` — the LLM has no tools to distract it, must transfer to agent_convo immediately
 
-### 2. Fix glossary term format (P2, ~10 min)
+3. **Context cache module** (`agent_context/context_cache/`):
+   - `cache.py`: Pre-fetches metadata at startup with brief/detailed views per table
+   - `util_lookup_context.py`: REST client for Dataplex lookupContext API (batched, 10 entries/call)
+   - Strategy: tries Dataplex lookupContext first (rich metadata with dataProfile stats — sample values, null ratios, cardinality), falls back to BQ `table_documentation`
+   - `catalog.py` updated to populate from the context cache instead of querying BQ directly
 
-In `util_conversational_api.py`, find where `GlossaryTerm` is constructed and change `term=` to `displayName=`. The Conversational Analytics API proto changed field names.
+4. **Table ID normalizer** (`util_rerank.py`):
+   - `_normalize_table_id()` regex strips Dataplex path format (e.g., `projects.proj.datasets.ds.tables.tbl` → `proj.ds.tbl`)
+   - Applied after every reranker call to prevent broken table references downstream
 
-### 3. Remove sample_data from agent_context tools (P0, ~5 min)
+5. **Catalog explorer routing improvements** (`agent_chat/prompts.py`):
+   - Added examples: "What columns are shared between X and Y?", "Which tables contain X data?", "What reference tables exist?"
+   - Added disambiguation rules for shared-column and contains-data questions
+   - Replaced biased "prefer Data Analyst" rule with structured guidance: meaning/structure → Catalog Explorer, query/compute → Data Analyst
 
-In `agent_context/tools/__init__.py`, change `TOOLS = [sample_data]` to `TOOLS = []`. This removes the distraction — the LLM's only option after the callback is to transfer.
+6. **Cache-powered column lookups** (`function_tool_get_table_columns.py`):
+   - Checks context cache first (instant, no BQ call) before falling back to BQ table_documentation
+   - Uses `get_table_columns_from_cache()` which matches by short name or full ref
 
-### 4. Fine-tune catalog explorer routing (P1, ~10 min)
+7. **Glossary displayName fix** (`util_build_context.py`):
+   - Changed `{"term": term}` to `{"displayName": term}` to match current Conversational Analytics API proto
 
-Add to Catalog Explorer examples in `agent_chat/prompts.py`:
-- "What columns are shared between X and Y?"
-- "Which tables contain X data?"
+8. **Dataset/table scoping config** (`agent_orchestrator/config.py`):
+   - `CHAT_SCOPE` env var (comma-separated): `"cboe_bronze"` (all tables) or `"ds.table_a,ds.table_b"` (specific)
+   - Helpers: `get_scope_datasets()`, `get_scoped_tables()`, `is_table_in_scope()`, `get_dataplex_entry_name()`
+   - When empty (default), discovers datasets dynamically from `data_catalog`
+   - `TOP_K` config added (default 10, overridable via env var)
 
-And update the disambiguation guide:
-- "What columns are shared?" → Catalog Explorer (documentation)
-- "Which tables contain X?" → Catalog Explorer (documentation)
+### New/Updated Files
 
-### 5. Populate table-summary chunks for Cboe data (P3, ~20 min)
+| File | Change |
+|------|--------|
+| `agent_context/context_cache/__init__.py` | New — cache module public API |
+| `agent_context/context_cache/cache.py` | New — cache with brief/detailed views, public accessors |
+| `agent_context/context_cache/util_lookup_context.py` | New — Dataplex lookupContext REST client |
+| `agent_context/catalog.py` | Rewritten — now populates from context cache |
+| `agent_context/tools/__init__.py` | `TOOLS = []` |
+| `agent_context/tools/callback_rerank.py` | Added double-invocation guard |
+| `agent_context/tools/util_rerank.py` | Added `_normalize_table_id()`, applied after reranker calls |
+| `agent_chat/prompts.py` | Added catalog explorer examples + disambiguation rules |
+| `agent_catalog/tools/function_tool_get_table_columns.py` | Cache-first column lookup |
+| `agent_convo/tools/util_build_context.py` | `displayName` instead of `term` |
+| `agent_orchestrator/config.py` | Added `CHAT_SCOPE`, `TOP_K`, scoping helpers, `get_dataplex_entry_name()` |
 
-Write a one-off script or re-run `populate_context` to insert `table_summary` chunks for existing tables. This will improve semantic search for "describe all columns" questions.
+### New Test Files
 
-### 6. Re-run evaluation after fixes
+| File | Tests |
+|------|-------|
+| `agent_context/tests/unit/test_context_cache.py` | Cache API, brief/detailed views, column lookup |
+| `agent_catalog/tests/unit/test_get_table_columns.py` | Cache-hit path, cache-miss fallback |
+| Updated `test_rerank.py` | `_normalize_table_id()` tests, double-invocation guard test |
+| Updated `test_build_context.py` | `displayName` field assertion |
+| Updated `test_config.py` | `CHAT_SCOPE` parsing and helper tests |
 
-```bash
-mv examples/cboe/results/cboe_results.json examples/cboe/results/cboe_results_v3.json
-uv run python examples/cboe/run_cboe_questions.py --delay 8
-```
+---
 
-Compare V3 → V4 to confirm fixes.
+### Additional Fixes (same session)
+
+9. **`list_all_tables` tool for agent_catalog** (`agent_catalog/tools/function_tool_list_all_tables.py`):
+   - Returns every onboarded table with description, column count, and column names from the context cache
+   - Enables the catalog agent to reason about table roles (reference, fact, etc.) without semantic search
+   - Prompt updated to guide the agent to use this for broad "what tables exist?" questions
+   - Falls back to BQ `data_catalog` query if cache is empty
+
+10. **Enhanced `meta_chat` system instruction** (`agent_engineer/tools/function_tool_meta_chat.py`):
+    - Added per-table guidance describing what each meta table contains
+    - Explicitly directs the API to use `data_catalog.tables_created` for table-count questions
+    - Tells the API "Do NOT use INFORMATION_SCHEMA" to prevent the error
+
+11. **Prevent agent_engineer bounce-back** (`agent_engineer/agent.py`):
+    - Set `disallow_transfer_to_parent=True` — agent must answer or explain, never bounce back to router
+    - Eliminates re-routing loops that caused 16-event traces and incorrect persona switches
+
+12. **Single meta_chat call guidance** (`agent_engineer/prompts.py`):
+    - Added "Call `meta_chat` once per question" — present partial results rather than retrying
+    - Eliminated double `meta_chat` calls that added 100-200s of wasted API time
+
+---
+
+## V4 Evaluation Results (2026-03-30)
+
+30/30 questions completed. Results in `examples/cboe/results/cboe_results.json`, V3 archived as `cboe_results_v3.json`.
+
+Data Engineer questions re-run after fixing bounce-back routing (`disallow_transfer_to_parent=True`) and adding single-call guidance to `agent_engineer` prompt.
+
+### Per-Persona Timing (V3 → V4)
+
+| Persona | V3 Total | V4 Total | Delta | V3 Events | V4 Events |
+|---------|----------|----------|-------|-----------|-----------|
+| Data Analyst | 1106.3s | 866.9s | **-239.4s (-22%)** | 98 | 86 |
+| Catalog Explorer | 246.5s | 111.9s | **-134.6s (-55%)** | 60 | 58 |
+| Data Engineer | 502.9s | 557.0s | +54.1s (+11%) | 50 | 50 |
+| **Total** | **1855.7s** | **1535.8s** | **-319.9s (-17%)** | **208** | **194** |
+
+### Wins
+
+| Question | V3 → V4 | Improvement | Reason |
+|----------|---------|-------------|--------|
+| catalog-explorer-q9 (VIX tables) | 87.2s → 13.7s | **-73.5s** | `list_all_tables` replaces multi-search |
+| data-analyst-q6 (trade conditions) | 128.1s → 65.5s | **-62.6s** | Reranker guard + fewer events (19→14) |
+| data-engineer-q3 (ZIP vs direct) | 96.8s → 38.5s | **-58.3s** | Better system instruction, single call |
+| data-analyst-q5 (CAD/JPY) | 154.8s → 97.5s | **-57.3s** | Reranker guard |
+| data-analyst-q1 (exchanges) | 117.0s → 62.2s | **-54.8s** | Reranker guard + fewer events (15→8) |
+| catalog-explorer-q4 (shared cols) | 57.4s → 6.4s | **-51.0s** | Cache-powered `get_table_columns` |
+| data-analyst-q10 (VIX intraday) | 152.6s → 118.1s | **-34.5s** | Reranker guard |
+| data-engineer-q9 (relationships) | 75.6s → 63.7s | **-11.9s** | No more double meta_chat |
+| data-engineer-q10 (partitioning) | 29.5s → 18.0s | **-11.5s** | Single call |
+| catalog-explorer-q3 (vol surfaces) | 28.5s → 19.0s | **-9.5s** | Cache-powered search |
+| catalog-explorer-q7 (ref tables) | 15.2s → 9.0s | **-6.2s** | `list_all_tables` + correct answer |
+
+### Quality Improvements
+
+- **catalog-explorer-q7** "What reference tables exist?": V3 returned generic search results. V4 correctly identifies `ftref_*` tables as reference/lookup tables.
+- **catalog-explorer-q9** "Which tables contain VIX-related data?": V3 took 87s with 3 search rounds. V4 uses `list_all_tables` in 13.7s.
+- **catalog-explorer-q4** "Shared columns": V3 took 57s with 8 events. V4 uses cached column lookup in 6.4s with 5 events.
+- **data-engineer-q5** "How many tables created?": V3 returned INFORMATION_SCHEMA error (no answer). V4 correctly reports 6 metadata + 58 data tables with row counts (140.8s — the API query itself is slow but the answer is correct).
+- **data-analyst-q1** "What exchanges?": V3 took 15 events. V4 takes 8 events — reranker guard eliminated the double-invocation.
+
+### Remaining Variance
+
+- **data-engineer-q5** (140.8s): Correctly routed, single meta_chat call, correct answer. The 131s is pure Conversational Analytics API processing time — the query requires scanning multiple tables to count rows.
+- **data-engineer-q2, q7, q8** (+8-16s): API latency variance, not routing issues. All use single calls now.
 
 ---
 

@@ -146,3 +146,57 @@ class TestDomainSlug:
     def test_get_staging_dataset_no_slug(self):
         result = cfg.get_staging_dataset()
         assert result == f"{cfg.RESOURCE_PREFIX}_staging"
+
+
+class TestChatScope:
+    """Verify CHAT_SCOPE parsing and helpers."""
+
+    def test_default_scope_is_empty(self):
+        assert cfg.CHAT_SCOPE == [] or isinstance(cfg.CHAT_SCOPE, list)
+
+    def test_scope_from_env(self, monkeypatch):
+        monkeypatch.setenv("CHAT_SCOPE", "ds1,ds2.table_a,ds2.table_b")
+        importlib.reload(cfg)
+        assert cfg.CHAT_SCOPE == ["ds1", "ds2.table_a", "ds2.table_b"]
+
+    def test_get_scope_datasets(self, monkeypatch):
+        monkeypatch.setenv("CHAT_SCOPE", "ds1,ds2.table_a,ds2.table_b")
+        importlib.reload(cfg)
+        assert cfg.get_scope_datasets() == ["ds1", "ds2"]
+
+    def test_get_scoped_tables_bare_dataset(self, monkeypatch):
+        monkeypatch.setenv("CHAT_SCOPE", "ds1,ds2.table_a")
+        importlib.reload(cfg)
+        assert cfg.get_scoped_tables("ds1") is None  # all tables
+
+    def test_get_scoped_tables_specific(self, monkeypatch):
+        monkeypatch.setenv("CHAT_SCOPE", "ds2.table_a,ds2.table_b")
+        importlib.reload(cfg)
+        assert cfg.get_scoped_tables("ds2") == ["table_a", "table_b"]
+
+    def test_is_table_in_scope_no_scope(self, monkeypatch):
+        monkeypatch.setenv("CHAT_SCOPE", "")
+        importlib.reload(cfg)
+        assert cfg.is_table_in_scope("any", "table") is True
+
+    def test_is_table_in_scope_bare_dataset(self, monkeypatch):
+        monkeypatch.setenv("CHAT_SCOPE", "ds1")
+        importlib.reload(cfg)
+        assert cfg.is_table_in_scope("ds1", "any_table") is True
+        assert cfg.is_table_in_scope("ds2", "table") is False
+
+    def test_is_table_in_scope_specific(self, monkeypatch):
+        monkeypatch.setenv("CHAT_SCOPE", "ds1.table_a")
+        importlib.reload(cfg)
+        assert cfg.is_table_in_scope("ds1", "table_a") is True
+        assert cfg.is_table_in_scope("ds1", "table_b") is False
+
+    def test_get_dataplex_entry_name(self, monkeypatch):
+        monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "test-proj")
+        monkeypatch.setenv("BQ_DATASET_LOCATION", "US")
+        importlib.reload(cfg)
+        name = cfg.get_dataplex_entry_name("my_ds", "my_tbl")
+        assert "test-proj" in name
+        assert "my_ds" in name
+        assert "my_tbl" in name
+        assert "/locations/us/" in name

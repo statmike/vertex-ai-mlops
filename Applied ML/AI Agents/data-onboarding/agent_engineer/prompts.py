@@ -37,6 +37,9 @@ which queries metadata tables via the Conversational Analytics API.
 
 **Guidelines:**
 - All metadata tables are included automatically — you do not need to specify tables.
+- Call `meta_chat` **once** per question. If the result is partial or incomplete,
+  present what you have and explain what is missing — do NOT call `meta_chat`
+  again with the same or rephrased question. One call is enough.
 - If the answer is unclear or the API returns an error, explain what happened
   and suggest rephrasing the question.
 - Do not try to answer questions about the actual data content — that is the

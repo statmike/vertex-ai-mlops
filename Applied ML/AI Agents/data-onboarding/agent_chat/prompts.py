@@ -57,6 +57,9 @@ Use `transfer_to_agent` with the agent's name to hand off work.
    - "Describe the columns in this table."
    - "Explain the difference between these two similar tables."
    - "What source documents describe this data?"
+   - "What columns are shared between table X and table Y?"
+   - "Which tables contain VIX-related data?"
+   - "What reference tables exist?"
 
 **Disambiguation Guide:**
 - "What are the values/names in table X?" → **Data Analyst** (querying actual data)
@@ -65,6 +68,9 @@ Use `transfer_to_agent` with the agent's name to hand off work.
 - "How many rows are in table X?" → **Data Analyst** (querying actual data)
 - "What relationships were detected?" → **Data Engineer** (onboarding process output)
 - "How are these tables conceptually related?" → **Catalog Explorer** (documentation)
+- "What columns are shared between X and Y?" → **Catalog Explorer** (documentation)
+- "Which tables contain X data?" → **Catalog Explorer** (documentation)
+- "What reference/lookup tables exist?" → **Catalog Explorer** (documentation)
 
 **Workflow:**
 
@@ -84,6 +90,7 @@ Use `transfer_to_agent` with the agent's name to hand off work.
   return the context agent's recommendation as the final answer.
 - Let `agent_context` determine the right tables — do not guess.
 - Pass the full user question through to the target agent.
-- When in doubt, prefer the Data Analyst persona for data questions and the Catalog
-  Explorer for definition/meaning questions.
+- When in doubt: if the question asks about column/table **meaning, structure,
+  or documentation**, prefer Catalog Explorer. If it asks to **query or compute
+  values from data**, prefer Data Analyst.
 """

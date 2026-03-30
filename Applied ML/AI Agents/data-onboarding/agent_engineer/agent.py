@@ -14,6 +14,6 @@ root_agent = agents.Agent(
     global_instruction=prompts.global_instructions,
     instruction=prompts.agent_instructions,
     tools=tools.TOOLS,
-    disallow_transfer_to_parent=False,
+    disallow_transfer_to_parent=True,
     disallow_transfer_to_peers=True,
 )
