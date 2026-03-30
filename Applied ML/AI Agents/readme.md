@@ -100,42 +100,69 @@ The [Solution Prototypes](../Solution%20Prototypes/readme.md) folder has example
 
 This folder has examples based on core functionality of agents interacting with GCP services.  These are meant to help learn and explore core concepts.
 
+- **[BigQuery Context Discovery](./bigquery-context/readme.md)**
+  - Multi-agent system comparing five parallel approaches to discovering the best BigQuery tables for answering user questions
+  - **BQ Metadata Tools**: LLM-driven tool calls using ADK BigQueryToolset
+  - **Dataplex Search**: Semantic search with Dataplex SDK
+  - **Dataplex Context**: Zero per-query API calls using cached metadata from Dataplex `lookupContext`
+  - **Context Pre-Filter**: LLM reviews briefs, reranker evaluates with full metadata
+  - **Semantic Context**: Dataplex search combined with cached context
+  - Shared Gemini-based reranker produces structured output with confidence scores, key columns, SQL hints, and join suggestions
+  - Automated benchmark with recall/precision scoring across test questions
+
 - **[Agentic Retrieval with BigQuery](./concept-bq/readme.md)**
-  - Demonstrates three distinct methods for agents to interact with BigQuery
+  - Demonstrates multiple methods for agents to interact with BigQuery data
   - **Python Function Tools**: Custom functions using BigQuery client library for pre-defined and parameterized SQL queries
   - **MCP Toolbox for Databases**: Pre-defined SQL execution and dynamic SQL generation using table metadata
-  - **ADK Built-in Tools**: General-purpose BigQuery tools for metadata and query execution
+  - **ADK Built-in Tools**: General-purpose BigQuery tools for step-by-step metadata and query execution
   - **Conversational Analytics API**: Stateful conversations with automatic chart and summary generation
   - **BigQuery Forecasting**: Time series forecasting with interactive visualizations using AI.FORECAST
-  - Router agent pattern demonstrating sub-agent delegation and memory management
+  - Router agent pattern delegating to specialized sub-agents based on question type
+  - BigQuery Agent Analytics Plugin for logging all events to BigQuery
   - Complete deployment workflows to Vertex AI Agent Engine with templated notebooks
-  - Production-ready agents: `agent_convo_api` and `agent_bq_forecast` with deployment guides
 
 - **[Conversational Analytics API](./conversational-analytics-api/readme.md)**
-  - Build conversational experiences on top of data with stateful and stateless chat modes
+  - Overview and walkthrough of Google's Conversational Analytics API for building conversational experiences on top of data
   - Clear hierarchy: Data Source → Context → Agent → Conversation → Chat
   - Support for BigQuery tables, Looker, and Looker Studio reports
-  - Stateful sessions with automatic conversation history management
-  - Stateless inline queries for one-off questions without pre-configured agents
-  - Comprehensive notebook walkthrough covering all usage modes
-  - Integration examples with ADK agents as function tools
+  - Three usage modes: stateful sessions, stateless with agent, and inline on-demand queries
+  - Comprehensive Jupyter notebook walkthrough covering all usage modes
+
+- **[Data Onboarding](./data-onboarding/readme.md)**
+  - Two multi-agent systems that automate the full data lifecycle: **onboard** data from URLs into BigQuery, then **chat** with it using natural language
+  - **Onboarding pipeline** with sub-agents for acquire → discover → understand → design → implement → validate
+    - Supports CSV, TSV, JSON, Excel, Parquet, Avro, ORC, XML, and ZIP archives
+    - Cross-references data with context documents (PDFs, READMEs, data dictionaries)
+    - Auto-generates meaningful column names, types, and descriptions
+    - Publishes end-to-end lineage to Dataplex and triggers data profile scans
+  - **Chat agent** with three personas for querying onboarded data:
+    - Data Analyst queries actual data via Conversational Analytics API
+    - Data Engineer explores processing logs and lineage
+    - Catalog Explorer performs semantic search over documentation with AI.SEARCH
+  - Deployable to Vertex AI Agent Engine
+
+- **[Image to Graph](./image-to-graph/readme.md)**
+  - Converts complex diagram images (flowcharts, electrical schematics, network diagrams, UML) into structured graph representations
+  - Iterative visual thinking: full-image scan, region identification with bounding boxes, crop and re-examine at detail
+  - Supports local files, HTTPS URLs, GCS paths, and PDF files as input
+  - Optional OpenCV-based preprocessing for structured diagrams (shape detection, contour analysis)
+  - Schema support: auto-generate JSON Schema or provide a custom Pydantic schema
+  - Interactive HTML visualization with linked highlighting, flow subgraphs, and Mermaid diagrams
+  - Q&A sub-agent for answering questions about the extracted graph
 
 - **[Travel Planner Agent](./travel-planner/README.md)**
-  - Multi-agent system using Agent-to-Agent (A2A) protocol for cross-agent communication
+  - Multi-agent travel planning system using Agent-to-Agent (A2A) protocol for cross-agent communication
   - Four specialized remote agents: Travel Brainstormer, Attractions Planner, Travel History, Places of Interest
   - Steering agent pattern for intelligent request delegation
   - MCP server integration with custom BigQuery tools for travel data management
   - Remote agents served as web services communicating via A2A protocol
   - Session state management for tracking user-selected attractions
-  - JSON RPC invocation support for programmatic agent access
 
-- **[Image to Graph](./image-to-graph/readme.md)**
-  - Converts diagram images (flowcharts, schematics, network diagrams) into structured graph representations
-  - Iterative visual analysis: full-image scan, region cropping, edge tracing with Gemini
-  - Outputs nodes, edges, and attributes with bounding boxes overlaid on the source image
-  - Interactive HTML visualization with hover/click highlighting, Mermaid diagram recreation, and searchable graph JSON
-  - Node grouping/nesting support for visual containment (dashed boundary boxes, labeled sections)
-  - Schema workflows: bring your own JSON Schema or let the agent infer one
-  - Q&A sub-agent for answering questions about the extracted graph
-  - BigQuery agent analytics plugin for observability, token usage, and cost analysis
+- **[Vertex AI Agent Engine Deployment](./vertex-agent-engine/readme.md)**
+  - Minimal multi-agent deployment tutorial demonstrating how to deploy ADK agents to Vertex AI Agent Engine
+  - Source-file deployment pattern (under 8 MB limit) with each agent as its own package
+  - AdkApp entrypoint wrapper for Agent Engine with environment variable passthrough
+  - Infrastructure vs. model location separation (`GOOGLE_CLOUD_LOCATION` vs `AGENT_MODEL_LOCATION`)
+  - Complete deployment lifecycle management: create, update, delete, and test
+  - Example agents: router, greeter, and tools agent with math, lookup, and direct Gemini calls
 
