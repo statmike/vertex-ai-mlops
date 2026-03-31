@@ -32,7 +32,7 @@ The onboarding agent doesn't just dump data into a single dataset — it builds 
 
 The bronze layer's `table_documentation` is what connects the two agents: the onboarding agent writes it, and the chat agent reads it to find the right tables for each question. Onboard once, chat immediately.
 
-Both agents deploy to [Vertex AI Agent Engine](https://docs.cloud.google.com/agent-builder/agent-engine/overview) as managed services with persistent sessions, distributed tracing, and auto-scaling.
+The chat agent deploys to [Vertex AI Agent Engine](https://docs.cloud.google.com/agent-builder/agent-engine/overview) as a managed service with persistent sessions, distributed tracing, and auto-scaling. The orchestrator runs locally as a batch pipeline — onboard once, then query the data through the deployed chat agent.
 
 ## Dive In
 
@@ -41,4 +41,5 @@ Both agents deploy to [Vertex AI Agent Engine](https://docs.cloud.google.com/age
 | [**Project README**](https://github.com/statmike/vertex-ai-mlops/tree/main/Applied%20ML/AI%20Agents/data-onboarding/readme.md) | Full architecture, all 12 agents, configuration, what gets created in BigQuery |
 | [**Deployment Guide**](https://github.com/statmike/vertex-ai-mlops/tree/main/Applied%20ML/AI%20Agents/data-onboarding/deploy/readme.md) | Deploy to Agent Engine — packaging, entrypoints, IAM, querying deployed agents |
 | [**Interaction Tutorial**](https://github.com/statmike/vertex-ai-mlops/tree/main/Applied%20ML/AI%20Agents/data-onboarding/deploy/interact.ipynb) | Query deployed agents via Python SDK and REST API |
-| [**Cboe Example**](https://github.com/statmike/vertex-ai-mlops/tree/main/Applied%20ML/AI%20Agents/data-onboarding/examples/cboe/cboe.md) | End-to-end walkthrough with real data, example questions, and timing breakdowns |
+| [**Cboe Example**](https://github.com/statmike/vertex-ai-mlops/tree/main/Applied%20ML/AI%20Agents/data-onboarding/examples/cboe/cboe.md) | End-to-end walkthrough with financial data, questions run locally |
+| [**Medicare Example**](https://github.com/statmike/vertex-ai-mlops/tree/main/Applied%20ML/AI%20Agents/data-onboarding/examples/medicare-provider/readme.md) | Full cycle with CMS healthcare data, questions run against deployed Agent Engine |

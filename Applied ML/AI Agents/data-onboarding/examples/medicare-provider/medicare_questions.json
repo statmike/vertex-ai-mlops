@@ -1,0 +1,152 @@
+[
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q1",
+    "question": "How many unique providers are in the most recent full IPSF dataset?"
+  },
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q2",
+    "question": "What are the top 10 states by number of providers in the full IPSF data?"
+  },
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q3",
+    "question": "Compare the number of providers across the different provider types (HHA, Hospice, IRF, LTCH, SNF, Psych)."
+  },
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q4",
+    "question": "What is the average case mix index across all providers in the full IPSF?"
+  },
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q5",
+    "question": "Which providers have the highest number of beds?"
+  },
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q6",
+    "question": "How has the total number of providers changed across quarterly releases?"
+  },
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q7",
+    "question": "What is the distribution of fiscal year end dates across providers?"
+  },
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q8",
+    "question": "Compare HHA providers across states — which states have the most home health agencies?"
+  },
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q9",
+    "question": "What are the wage index values for providers in California?"
+  },
+  {
+    "persona": "Data Analyst",
+    "id": "data-analyst-q10",
+    "question": "What are the largest SNF providers by bed size?"
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q1",
+    "question": "Show me the processing log for this source."
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q2",
+    "question": "What files were downloaded from CMS?"
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q3",
+    "question": "Which files came from ZIP archives versus direct downloads?"
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q4",
+    "question": "What schema decisions were made for the provider tables?"
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q5",
+    "question": "How many tables were created and what are their row counts?"
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q6",
+    "question": "Were any columns coerced or dropped during loading?"
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q7",
+    "question": "What context documents were found and how were they used?"
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q8",
+    "question": "Show the web provenance — what pages were crawled?"
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q9",
+    "question": "What table relationships were detected across datasets?"
+  },
+  {
+    "persona": "Data Engineer",
+    "id": "data-engineer-q10",
+    "question": "Which tables are partitioned and on what columns?"
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q1",
+    "question": "What does PRVDR_NUM mean?"
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q2",
+    "question": "Describe the columns in the IPSF full table."
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q3",
+    "question": "How are the different IPSF tables related to each other?"
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q4",
+    "question": "What columns are shared between the HHA and SNF tables?"
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q5",
+    "question": "What does the wage index represent in this data?"
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q6",
+    "question": "Explain the difference between the IPSF full file and the provider-type-specific files."
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q7",
+    "question": "What reference or lookup data is available?"
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q8",
+    "question": "What does the case mix index measure?"
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q9",
+    "question": "Which tables contain hospice-related data?"
+  },
+  {
+    "persona": "Catalog Explorer",
+    "id": "catalog-explorer-q10",
+    "question": "What Medicare payment data is available and how are the tables organized?"
+  }
+]

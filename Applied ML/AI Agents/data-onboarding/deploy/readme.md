@@ -38,31 +38,32 @@
 ---
 # Deploying to Vertex AI Agent Engine
 
-This folder contains everything needed to deploy the data-onboarding agents to [Vertex AI Agent Engine](https://docs.cloud.google.com/agent-builder/agent-engine/overview) — Google Cloud's managed runtime for production AI agents.
+This folder contains everything needed to deploy the **chat agent** (`agent_chat`) to [Vertex AI Agent Engine](https://docs.cloud.google.com/agent-builder/agent-engine/overview) — Google Cloud's managed runtime for production AI agents.
 
 Agent Engine provides persistent sessions, Cloud Trace, Cloud Monitoring, Cloud Logging, and auto-scaling with no infrastructure to manage.
 
 ---
 
-## Two Deployments, Two Root Agents
+## Which Agent Gets Deployed?
 
-The data-onboarding system has two independent entry points, each deployed as a separate Agent Engine resource:
+| Agent | Runs where | Why |
+|-------|-----------|-----|
+| **`agent_chat`** | **Agent Engine** (deployed) | Conversational, fast request-response — ideal for Agent Engine |
+| **`agent_orchestrator`** | **Locally** (`uv run adk web`) | Long-running batch pipeline (20–60 min) — best run locally |
 
-| Deployment | Root Agent | What it does |
-|-----------|-----------|-------------|
-| **`orchestrator`** | `agent_orchestrator` | Onboards data from a URL into BigQuery (crawl, download, design, create, validate) |
-| **`chat`** | `agent_chat` | Answers questions about onboarded data (analytics, engineering, catalog exploration) |
+The orchestrator agent crawls sites, downloads files, infers schemas, and creates tables — a batch pipeline that can run for 20–60 minutes per source. Agent Engine is optimized for conversational agents with fast cycles. Long-running tool calls exceed its streaming timeout, and in-memory tool state (schemas, file inventories) is lost when the stream reconnects to a fresh container.
 
-They share the same underlying agent packages and configuration but serve different purposes and can be deployed, updated, and scaled independently.
+The chat agent, by contrast, answers questions in seconds — a perfect Agent Engine workload. Run `agent_orchestrator` locally to onboard data, then query it through the deployed `agent_chat`.
+
+> **Note:** The deploy script still supports an `orchestrator` configuration for advanced users who want to experiment with it, but the recommended workflow is local onboarding + deployed chat.
 
 ---
 
 ## Quick Start
 
 ```bash
-# Deploy
-uv run python deploy/deploy.py chat                       # deploy chat agent
-uv run python deploy/deploy.py orchestrator               # deploy orchestrator
+# Deploy the chat agent
+uv run python deploy/deploy.py chat                       # deploy
 
 # Manage
 uv run python deploy/deploy.py chat --info                # show deployment info + console URL
@@ -93,15 +94,14 @@ At deploy time, the script:
 
 Agent Engine requires an [`AdkApp`](https://cloud.google.com/agent-builder/agent-engine/adk) instance as the entrypoint — not a raw ADK `Agent`. The `AdkApp` wrapper registers the standard API methods (`stream_query`, `create_session`, etc.) that Agent Engine exposes as HTTP endpoints.
 
-Rather than modifying the existing `agent.py` files (which also serve `adk web` locally), thin entrypoint modules in this folder create the `AdkApp` wrapper:
+Rather than modifying the existing `agent.py` files (which also serve `adk web` locally), a thin entrypoint module in this folder creates the `AdkApp` wrapper:
 
 ```
 deploy/
   entrypoint_chat.py           # imports agent_chat.agent.root_agent → wraps in AdkApp
-  entrypoint_orchestrator.py   # imports agent_orchestrator.agent.root_agent → wraps in AdkApp
 ```
 
-Each is just three lines:
+It's just three lines:
 
 ```python
 from vertexai.agent_engines import AdkApp
@@ -109,25 +109,17 @@ from agent_chat.agent import root_agent
 app = AdkApp(agent=root_agent, enable_tracing=True)
 ```
 
-The deploy script points Agent Engine to these:
+The deploy script points Agent Engine to this:
 - `entrypoint_module`: `deploy.entrypoint_chat`
 - `entrypoint_object`: `app`
 
-### Shared Deploy Script
+### Deploy Script
 
-A single `deploy.py` handles both deployments. The first positional argument selects which agent:
-
-```bash
-uv run python deploy/deploy.py chat [--flags]
-uv run python deploy/deploy.py orchestrator [--flags]
-```
-
-All flags (`--update`, `--delete`, `--info`, `--test`, `--skip-local-test`) work the same for both. Each deployment tracks its own state in a `deployment.json` file:
+The `deploy.py` script handles the chat deployment. It tracks deployment state in a `deployment.json` file:
 
 ```
 deploy/
   chat/deployment.json            # chat agent deployment metadata
-  orchestrator/deployment.json    # orchestrator deployment metadata
 ```
 
 ### Environment Variables
@@ -223,25 +215,41 @@ uv run adk web \
   --artifact_service_uri="gs://your-bucket"
 ```
 
-The resource ID is in `deploy/chat/deployment.json` (or `deploy/orchestrator/deployment.json`) after deploying, or use `--info`:
+The resource ID is in `deploy/chat/deployment.json` after deploying, or use `--info`:
 
 ```bash
 uv run python deploy/deploy.py chat --info
 ```
 
-### Running Locally (No Deployment)
+### Recommended Workflow
 
-For local development and testing, use the ADK dev server with no deployment needed:
+The two agents serve different purposes and run in different places:
+
+```
+1. Onboard locally           2. Query via deployed chat agent
+   uv run adk web               Python SDK / REST API / adk web
+   → agent_orchestrator          → agent_chat (on Agent Engine)
+   → crawl, download,           → fast conversational queries
+     analyze, create tables       over the onboarded data
+```
+
+**Onboarding** — Run `agent_orchestrator` locally via `uv run adk web`. Select it from the dropdown and provide a URL. The pipeline runs as a single long-lived process with full access to your GCS bucket and BigQuery:
 
 ```bash
 uv run adk web
+# Select agent_orchestrator → provide a URL → wait for pipeline to complete
 ```
 
-Select the agent from the dropdown:
-- **`agent_orchestrator`** — onboard data from a URL
-- **`agent_chat`** — chat with onboarded data
+**Chat** — Query the onboarded data through the deployed `agent_chat`:
 
-By default, sessions are stored locally (SQLite in `.adk/`). Use `--session_service_uri="memory://"` for ephemeral in-memory sessions.
+```bash
+# Connect local ADK web UI to the deployed chat agent's sessions
+uv run adk web --session_service_uri="agentengine://RESOURCE_ID"
+```
+
+Or query programmatically via the Python SDK or REST API (see above).
+
+By default, local sessions are stored in SQLite (`.adk/`). Use `--session_service_uri="memory://"` for ephemeral in-memory sessions.
 
 ---
 
@@ -289,7 +297,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 | Role | Why | Used by |
 |------|-----|---------|
 | `bigquery.connectionUser` | `AI.SEARCH` and `AI.EMBED` require access to the BQ Cloud Resource connection | `agent_catalog` |
-| `storage.objectViewer` | Read files from GCS staging during onboarding | `agent_orchestrator` pipeline |
+| `storage.objectViewer` | Read files from GCS staging (if orchestrator is deployed) | `agent_orchestrator` pipeline |
 | `dataplex.viewer` | Dataplex `lookupContext` API for rich table metadata | `agent_context` (context cache) |
 
 > **Without these grants**, the agents will partially work but fail on specific tools. For example, Catalog Explorer's `search_context` will return a permission error on the BQ connection.
@@ -319,16 +327,16 @@ When deployed to Agent Engine, the following are automatically available with no
 
 ```
 deploy/
-  deploy.py                      # Shared CLI for deploying both agents
-  entrypoint_chat.py             # AdkApp wrapper for agent_chat
-  entrypoint_orchestrator.py     # AdkApp wrapper for agent_orchestrator
+  deploy.py                      # CLI for deploying agents to Agent Engine
+  entrypoint_chat.py             # AdkApp wrapper for agent_chat (deployed)
+  entrypoint_orchestrator.py     # AdkApp wrapper for agent_orchestrator (optional)
   __init__.py                    # Package marker (needed for entrypoint imports)
-  interact.ipynb                 # Tutorial: query deployed agents (Python SDK + REST)
+  interact.ipynb                 # Tutorial: query deployed chat agent (Python SDK + REST)
   readme.md                      # This file
   chat/
     deployment.json              # Tracks chat deployment state
   orchestrator/
-    deployment.json              # Tracks orchestrator deployment state
+    deployment.json              # Tracks orchestrator deployment state (if deployed)
 ```
 
 ---

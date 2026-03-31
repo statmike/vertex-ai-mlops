@@ -99,7 +99,9 @@ Example questions:
 - **Data Engineer**: "Show me the processing log for this source."
 - **Catalog Explorer**: "What does PRVDR_NUM mean?"
 
-See [examples/cboe/cboe.md](examples/cboe/cboe.md) for a full set of example questions for each persona using Cboe DataShop as the onboarded source, including automated results with timing breakdowns.
+See the examples for full question sets with automated results and timing breakdowns:
+- [examples/cboe/cboe.md](examples/cboe/cboe.md) — **Cboe DataShop**: financial markets data (options, volatility, FX) — questions run locally
+- [examples/medicare-provider/readme.md](examples/medicare-provider/readme.md) — **CMS Medicare Provider Data**: healthcare payment data (parquet) — questions run against **deployed Agent Engine**
 
 ---
 
@@ -488,24 +490,18 @@ Then select the agent from the dropdown:
 - **`agent_orchestrator`** — Onboard data from a URL
 - **`agent_chat`** — Chat with onboarded data
 
-### Deploy to Vertex AI Agent Engine
+### Deploy the Chat Agent to Vertex AI Agent Engine
 
-Both root agents can be deployed to [Vertex AI Agent Engine](https://docs.cloud.google.com/agent-builder/agent-engine/overview) as managed, production-ready services with persistent sessions, Cloud Trace, and Cloud Monitoring — no infrastructure to manage.
-
-Each root agent is a separate deployment:
-
-| Deployment | Root Agent | Purpose |
-|-----------|-----------|---------|
-| `orchestrator` | `agent_orchestrator` | Data onboarding pipeline |
-| `chat` | `agent_chat` | Conversational analytics |
+The chat agent (`agent_chat`) is deployed to [Vertex AI Agent Engine](https://docs.cloud.google.com/agent-builder/agent-engine/overview) — Google Cloud's managed runtime with persistent sessions, Cloud Trace, and Cloud Monitoring — no infrastructure to manage.
 
 ```bash
 uv run python deploy/deploy.py chat                  # Deploy chat agent
-uv run python deploy/deploy.py orchestrator           # Deploy orchestrator
 uv run python deploy/deploy.py chat --test            # Test deployed agent
 uv run python deploy/deploy.py chat --update          # Update existing
 uv run python deploy/deploy.py chat --delete          # Delete deployment
 ```
+
+> **Why only the chat agent?** The orchestrator runs a long batch pipeline (crawling, downloading, schema inference, table creation) that can take 20–60 minutes per source. Agent Engine is optimized for conversational agents with fast request-response cycles — long-running tool calls exceed its streaming timeout and lose in-memory state between reconnections. The chat agent, on the other hand, is conversational and fast — a perfect fit. Run `agent_orchestrator` locally via `uv run adk web`, then query the onboarded data through the deployed chat agent.
 
 See [deploy/readme.md](deploy/readme.md) for full deployment details: packaging, entrypoints, environment variables, and how to query deployed agents.
 

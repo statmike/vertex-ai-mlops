@@ -125,3 +125,129 @@
 ### Notes
 - Source: https://datashop.cboe.com/data-products
 - Source ID: 6e73a197-1de5-5550-9cc4-8c59bcec074b
+
+## 2026-03-31 — Tables created
+
+### Tables
+- `_11_20_25_complete_msn_message_list`
+- `_2025_congressional_district_report`
+- `_508_version_icd_10_cm_conversion_table_fy2026_april_1_2026`
+- `_508_compliant_version_of_icd_10_cm_conversion_table_fy25`
+- `_508_compliant_version_of_sampled_npis`
+- `_508compliantversion_y2`
+- `cmsambdata_y2sample_post`
+- `cmsambdata_y3sample_post`
+- `cmsambdata_y3sample_post508`
+- `cmsambdata_y4sample_post`
+- `cmsambdata_y4sample_post508`
+- `cy2026_landscape_202603`
+- `icd_10_cm_conversion_table_fy2026_april_1_2026`
+- `icd_10_cm_conversion_table_fy2025_effective_10_01_2024_final`
+- `icd_10_cm_conversion_table_fy2026`
+- `ipsf_full`
+- `ipsf_hha`
+- `ipsf_hha_lro`
+- `ipsf_hos`
+- `ipsf_hos_lro`
+- `ipsf_inp`
+- `ipsf_inp_lro`
+- `ipsf_ipf`
+- `ipsf_ipf_lro`
+- `ipsf_irf`
+- `ipsf_irf_lro`
+- `ipsf_ltch`
+- `ipsf_ltch_lro`
+- `ipsf_snf`
+- `ipsf_snf_lro`
+- `msn_message_character_limits`
+- `opsf`
+- `opsf_full`
+- `opsf_lro`
+- `poaexempt_add_codes_fy25`
+- `poaexempt_add_codes_fy26`
+- `poaexempt_codes_fy25`
+- `poaexempt_codes_fy26`
+- `poaexempt_delete_codes_fy25`
+- `poaexempt_delete_codes_fy26`
+- `poaexempt_revise_codes_fy25`
+- `poaexempt_revise_codes_fy26`
+- `vehicles_main_templates_and_instructions_v2`
+- `cmsambdata_y1sample_forposting20feb`
+- `icd10cm_drug_2025`
+- `icd10cm_drug_2026`
+- `icd10cm_eindex_2025`
+- `icd10cm_eindex_2026`
+- `icd10cm_index_2025`
+- `icd10cm_index_2026`
+- `icd10cm_neoplasm_2025`
+- `icd10cm_neoplasm_2026`
+- `icd10cm_tabular_2025`
+- `icd10cm_tabular_2026`
+- `icd10pcs_conversion_table`
+- `icd10pcs_definitions_2026`
+- `icd10pcs_index_2026`
+- `icd10pcs_tables_2026`
+
+### Schema Decisions
+- _11_20_25_complete_msn_message_list: 11 columns — A master list of standardized messages that appear on the Medicare Summary Notice (MSN), a notice sent to beneficiaries explaining decisions on their health care claims. This file includes the message text in English and Spanish, character counts, and metadata about the message's implementation, expiration, and origin.
+- _2025_congressional_district_report: 6 columns — This is not a data table, but rather a document providing an overview, methodology, and assumptions for the '2025 Congressional District Report'. It details how beneficiary address data was geocoded to congressional districts and provides summary statistics of the geocoding results.
+- _508_version_icd_10_cm_conversion_table_fy2026_april_1_2026: 3 columns — A conversion table for the International Classification of Diseases, 10th Revision, Clinical Modification (ICD-10-CM) codes, effective April 1, 2026. It maps new or updated diagnosis codes to their previous code equivalents to assist in data retrieval and longitudinal analysis.
+- _508_compliant_version_of_icd_10_cm_conversion_table_fy25: 3 columns — A conversion table for the International Classification of Diseases, 10th Revision, Clinical Modification (ICD-10-CM) codes for Fiscal Year 2025, effective October 1, 2024. It maps new or updated diagnosis codes to their previous code equivalents.
+- _508_compliant_version_of_sampled_npis: 4 columns — A list of ground ambulance providers and suppliers selected to submit data in Year 1 of the Medicare Ground Ambulance Data Collection System (GADCS). It includes organization names and state-level address information from the National Plan and Provider Enumeration System (NPPES).
+- _508compliantversion_y2: 4 columns — A list of ground ambulance providers and suppliers selected to submit data in Year 2 of the Medicare Ground Ambulance Data Collection System (GADCS). It includes organization names and state-level address information from the National Plan and Provider Enumeration System (NPPES).
+- cmsambdata_y2sample_post: 4 columns — A list of ground ambulance providers and suppliers selected to submit data in Year 2 of the Medicare Ground Ambulance Data Collection System (GADCS). This file appears to be a duplicate of '508compliantversionY2.csv'.
+- cmsambdata_y3sample_post: 4 columns — A list of ground ambulance providers and suppliers selected to submit data in Year 3 of the Medicare Ground Ambulance Data Collection System (GADCS). This file appears to be a duplicate of 'CMSAmbdata_Y3sample_post508.csv'.
+- cmsambdata_y3sample_post508: 4 columns — A list of ground ambulance providers and suppliers selected to submit data in Year 3 of the Medicare Ground Ambulance Data Collection System (GADCS). This file appears to be a duplicate of 'CMSAmbdata_Y3sample_post.xlsx'.
+- cmsambdata_y4sample_post: 4 columns — A list of ground ambulance providers and suppliers selected to submit data in Year 4 of the Medicare Ground Ambulance Data Collection System (GADCS). This file appears to be a duplicate of 'CMSAmbdata_Y4sample_post508.csv'.
+- cmsambdata_y4sample_post508: 4 columns — A list of ground ambulance providers and suppliers selected to submit data in Year 4 of the Medicare Ground Ambulance Data Collection System (GADCS). This file appears to be a duplicate of 'CMSAmbdata_Y4sample_post.xlsx'.
+- cy2026_landscape_202603: 52 columns — This file contains a list of all approved Medicare Advantage (MA) Plans, Cost Plans, Special Needs Plans (SNP), and stand-alone Prescription Drug Plans (PDP) for contract year 2026. It includes detailed information about plan characteristics, service areas, premiums, cost-sharing, and star ratings.
+- icd_10_cm_conversion_table_fy2026_april_1_2026: 3 columns — Data from icd_10_cm_conversion_table_fy2026_april_1_2026
+- icd_10_cm_conversion_table_fy2025_effective_10_01_2024_final: 3 columns — Data from icd_10_cm_conversion_table_fy2025_effective_10_01_2024_final
+- icd_10_cm_conversion_table_fy2026: 3 columns — Data from icd_10_cm_conversion_table_fy2026
+- ipsf_full: 68 columns — Provider Specific File (PSF) for Inpatient Prospective Payment System (IPPS) facilities, containing provider-specific data used for Medicare payment calculations. This is a snapshot from January 1, 2025. It includes financial rates, geographic and provider-specific adjustments, and provider characteristics.
+- ipsf_hha: 68 columns — Data from ipsf_hha
+- ipsf_hha_lro: 68 columns — Data from ipsf_hha_lro
+- ipsf_hos: 68 columns — Data from ipsf_hos
+- ipsf_hos_lro: 68 columns — Data from ipsf_hos_lro
+- ipsf_inp: 68 columns — Data from ipsf_inp
+- ipsf_inp_lro: 68 columns — Data from ipsf_inp_lro
+- ipsf_ipf: 68 columns — Data from ipsf_ipf
+- ipsf_ipf_lro: 68 columns — Data from ipsf_ipf_lro
+- ipsf_irf: 68 columns — Data from ipsf_irf
+- ipsf_irf_lro: 68 columns — Data from ipsf_irf_lro
+- ipsf_ltch: 68 columns — Data from ipsf_ltch
+- ipsf_ltch_lro: 68 columns — Data from ipsf_ltch_lro
+- ipsf_snf: 68 columns — Data from ipsf_snf
+- ipsf_snf_lro: 68 columns — Data from ipsf_snf_lro
+- msn_message_character_limits: 4 columns — Data from msn_message_character_limits
+- opsf: 33 columns — Data from opsf
+- opsf_full: 33 columns — Data from opsf_full
+- opsf_lro: 33 columns — Data from opsf_lro
+- poaexempt_add_codes_fy25: 3 columns — A list of new ICD-10-CM diagnosis codes added to the Present on Admission (POA) exempt list for Fiscal Year 2025. POA exempt means the condition is always considered to be present on admission, so no special indicator is required on claims.
+- poaexempt_add_codes_fy26: 3 columns — Data from poaexempt_add_codes_fy26
+- poaexempt_codes_fy25: 3 columns — Data from poaexempt_codes_fy25
+- poaexempt_codes_fy26: 3 columns — Data from poaexempt_codes_fy26
+- poaexempt_delete_codes_fy25: 2 columns — Data from poaexempt_delete_codes_fy25
+- poaexempt_delete_codes_fy26: 2 columns — Data from poaexempt_delete_codes_fy26
+- poaexempt_revise_codes_fy25: 4 columns — Data from poaexempt_revise_codes_fy25
+- poaexempt_revise_codes_fy26: 4 columns — Data from poaexempt_revise_codes_fy26
+- vehicles_main_templates_and_instructions_v2: 1 columns — Data from vehicles_main_templates_and_instructions_v2
+- cmsambdata_y1sample_forposting20feb: 4 columns — Data from cmsambdata_y1sample_forposting20feb
+- icd10cm_drug_2025: 4 columns — Data from icd10cm_drug_2025
+- icd10cm_drug_2026: 4 columns — Data from icd10cm_drug_2026
+- icd10cm_eindex_2025: 3 columns — Data from icd10cm_eindex_2025
+- icd10cm_eindex_2026: 3 columns — Data from icd10cm_eindex_2026
+- icd10cm_index_2025: 3 columns — Data from icd10cm_index_2025
+- icd10cm_index_2026: 3 columns — Data from icd10cm_index_2026
+- icd10cm_neoplasm_2025: 4 columns — Data from icd10cm_neoplasm_2025
+- icd10cm_neoplasm_2026: 4 columns — Data from icd10cm_neoplasm_2026
+- icd10cm_tabular_2025: 11 columns — The complete tabular list of International Classification of Diseases, 10th Revision, Clinical Modification (ICD-10-CM) codes for Fiscal Year 2025. This file defines the hierarchy and rules for diagnosis coding, including sections, chapters, code descriptions, and instructional notes like 'includes', 'excludes1', 'excludes2', and 'code first'.
+- icd10cm_tabular_2026: 11 columns — Data from icd10cm_tabular_2026
+- icd10pcs_conversion_table: 8 columns — Data from icd10pcs_conversion_table
+- icd10pcs_definitions_2026: 5 columns — Data from icd10pcs_definitions_2026
+- icd10pcs_index_2026: 3 columns — Data from icd10pcs_index_2026
+- icd10pcs_tables_2026: 4 columns — Data from icd10pcs_tables_2026
+
+### Notes
+- Source: https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format
+- Source ID: 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce

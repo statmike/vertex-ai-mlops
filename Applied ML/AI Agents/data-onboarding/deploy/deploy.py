@@ -2,14 +2,16 @@
 
 Uses the new client-based SDK (v1.112.0+) with source-file deployment.
 
+Recommended: deploy only the chat agent. The orchestrator runs long batch
+pipelines (20-60 min) best suited to local execution via `uv run adk web`.
+
 Usage:
-    uv run python deploy/deploy.py orchestrator              # deploy
-    uv run python deploy/deploy.py chat                      # deploy
-    uv run python deploy/deploy.py orchestrator --update     # update existing
-    uv run python deploy/deploy.py chat --delete             # delete
-    uv run python deploy/deploy.py orchestrator --info       # show deployment info
+    uv run python deploy/deploy.py chat                      # deploy chat agent
     uv run python deploy/deploy.py chat --test               # test deployed agent
-    uv run python deploy/deploy.py orchestrator --skip-local-test
+    uv run python deploy/deploy.py chat --update             # update existing
+    uv run python deploy/deploy.py chat --delete             # delete
+    uv run python deploy/deploy.py chat --info               # show deployment info
+    uv run python deploy/deploy.py chat --skip-local-test
 
 Auto-enabled on Agent Engine (no config needed):
     - Persistent session management (cloud-based)
