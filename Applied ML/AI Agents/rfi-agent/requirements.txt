@@ -1,0 +1,7 @@
+google-genai
+google-adk[all]
+python-dotenv
+pydantic
+python-docx
+openpyxl
+pypdf
