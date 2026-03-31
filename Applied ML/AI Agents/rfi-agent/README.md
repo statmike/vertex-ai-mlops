@@ -91,6 +91,7 @@ Folder structure showing the layout of the root agent and sub-agents:
 
 ```text
 RFI_Agent/
+├── dashboard.html                  # Analytics dashboard to visualize RFI JSON state
 ├── main.py                         # Helper script to launch or test the flow
 ├── requirements.txt                # Project dependencies
 ├── data/                           # Data storage
@@ -106,3 +107,6 @@ RFI_Agent/
         ├── qualification_agent/    # Agent for question classification
         └── writer_agent/           # Agent for writing answers back
 ```
+
+## Visualizing Results
+The output JSON file in the `data/output/` folder can be uploaded to `dashboard.html` to get a quick view.
