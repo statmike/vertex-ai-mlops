@@ -32,7 +32,7 @@ The onboarding agent doesn't just dump data into a single dataset — it builds 
 
 The bronze layer's `table_documentation` is what connects the two agents: the onboarding agent writes it, and the chat agent reads it to find the right tables for each question. Onboard once, chat immediately.
 
-The chat agent deploys to [Vertex AI Agent Engine](https://docs.cloud.google.com/agent-builder/agent-engine/overview) as a managed service with persistent sessions, distributed tracing, and auto-scaling. The orchestrator runs locally as a batch pipeline — onboard once, then query the data through the deployed chat agent.
+The chat agent deploys to [Vertex AI Agent Engine](https://docs.cloud.google.com/agent-builder/agent-engine/overview) as a managed service with persistent sessions, distributed tracing, and auto-scaling. The orchestrator runs locally as a batch pipeline — onboard once, then query the data through the deployed chat agent. When multiple sources are onboarded, set `CHAT_SCOPE` to the dataset you want to query and update the deployment — this keeps the agent focused on the right tables.
 
 ## Dive In
 

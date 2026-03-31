@@ -135,6 +135,8 @@ The following are always enabled on deployed agents:
 
 All other `.env` variables (model names, dataset locations, crawl settings, etc.) are passed through as-is.
 
+**Important:** `CHAT_SCOPE` controls which source's tables the chat agent can see. When multiple sources are onboarded, set this to the bronze dataset for the source you want to query (e.g., `data_onboarding_datashop_cboe_com_bronze` for Cboe or `data_onboarding_cms_gov_bronze` for Medicare). To switch sources, update `CHAT_SCOPE` in `.env` and run `deploy.py chat --update`.
+
 ---
 
 ## Using Deployed Agents

@@ -1,7 +1,4 @@
-"""Run Medicare Provider questions through the deployed agent_chat on Agent Engine.
-
-Unlike the CBOE example (which uses a local InMemoryRunner), this example
-demonstrates querying a **deployed** agent via the Vertex AI Python SDK.
+"""Run Medicare Provider questions through agent_chat locally with InMemoryRunner.
 
 Run from the data-onboarding project root:
 
@@ -10,7 +7,9 @@ Run from the data-onboarding project root:
     uv run python examples/medicare-provider/run_medicare_questions.py --id data-analyst-q3
     uv run python examples/medicare-provider/run_medicare_questions.py --resume
 
-Results are written to examples/medicare-provider/results/medicare_results.json.
+Requires CHAT_SCOPE=data_onboarding_cms_gov_bronze in .env to scope the chat
+agent to the Medicare data. Results are written to
+examples/medicare-provider/results/medicare_results.json.
 """
 
 from __future__ import annotations
@@ -22,18 +21,26 @@ import logging
 import os
 import sys
 import time
+import uuid
 from pathlib import Path
 
-# Ensure the project root is on sys.path
+# Ensure the project root is on sys.path so agent_chat etc. are importable
 _project_root = str(Path(__file__).resolve().parent.parent.parent)
 if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
+# Load .env before any agent imports
 from dotenv import load_dotenv
 
 load_dotenv(Path(_project_root) / ".env")
 
-import vertexai
+# Set model location early (matches agent_chat/agent.py)
+_loc = os.getenv("AGENT_MODEL_LOCATION", "")
+if _loc:
+    os.environ["GOOGLE_CLOUD_LOCATION"] = _loc
+
+from google.adk.runners import InMemoryRunner  # noqa: E402
+from google.genai import types  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -51,38 +58,8 @@ for name in (
 
 QUESTIONS_FILE = Path(__file__).parent / "medicare_questions.json"
 RESULTS_FILE = Path(__file__).parent / "results" / "medicare_results.json"
-
-# Load deployment info for the chat agent
-DEPLOY_FILE = Path(_project_root) / "deploy" / "chat" / "deployment.json"
+APP_NAME = "agent_chat"
 USER_ID = "medicare_runner"
-
-
-def _get_deployed_agent():
-    """Get the deployed chat agent from Agent Engine."""
-    project = os.getenv("GOOGLE_CLOUD_PROJECT", "")
-    location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
-
-    if not project:
-        logger.error("GOOGLE_CLOUD_PROJECT not set")
-        sys.exit(1)
-
-    if not DEPLOY_FILE.exists():
-        logger.error("No chat deployment found at %s", DEPLOY_FILE)
-        logger.error("Deploy first: uv run python deploy/deploy.py chat")
-        sys.exit(1)
-
-    meta = json.loads(DEPLOY_FILE.read_text())
-    resource_name = meta.get("resource_name", "")
-    if not resource_name:
-        logger.error("No resource_name in %s", DEPLOY_FILE)
-        sys.exit(1)
-
-    vertexai.init(project=project, location=location)
-    client = vertexai.Client(project=project, location=location)
-    agent = client.agent_engines.get(name=resource_name)
-
-    logger.info("Connected to deployed agent: %s", resource_name)
-    return agent
 
 
 def load_questions(
@@ -117,8 +94,8 @@ def save_results(path: Path, results: dict[str, dict]) -> None:
         json.dump(ordered, f, indent=2)
 
 
-async def run_question(agent, question: dict) -> dict:
-    """Run a single question through the deployed chat agent."""
+async def run_question(runner: InMemoryRunner, question: dict) -> dict:
+    """Run a single question through agent_chat and collect the trace."""
     qid = question["id"]
     text = question["question"]
     persona = question["persona"]
@@ -126,91 +103,124 @@ async def run_question(agent, question: dict) -> dict:
     logger.info("[%s] Starting: %s", qid, text)
 
     # Create a fresh session for this question
-    session = await agent.async_create_session(user_id=USER_ID)
-    session_id = session["id"]
+    session = await runner.session_service.create_session(
+        app_name=APP_NAME,
+        user_id=USER_ID,
+    )
+    session_id = session.id
+
+    user_message = types.Content(
+        role="user",
+        parts=[types.Part(text=text)],
+    )
 
     events = []
     start_time = time.time()
 
-    async for event in agent.async_stream_query(
+    async for event in runner.run_async(
         user_id=USER_ID,
         session_id=session_id,
-        message=text,
+        new_message=user_message,
     ):
         elapsed = time.time() - start_time
         entry = {
+            "timestamp": event.timestamp,
             "elapsed": round(elapsed, 1),
-            "author": event.get("author", ""),
+            "author": event.author,
         }
 
-        # Extract content
-        content = event.get("content")
-        if content:
-            content_str = str(content)
-            entry["content"] = content_str[:5000]
-
-        # Extract parts if available
-        parts = event.get("parts", [])
-        if parts:
+        # Extract content parts
+        if event.content and event.content.parts:
             parts_summary = []
-            for part in parts:
-                if isinstance(part, dict):
-                    if part.get("function_call"):
-                        fc = part["function_call"]
-                        parts_summary.append({
-                            "type": "function_call",
-                            "name": fc.get("name", ""),
-                            "args": fc.get("args", {}),
-                        })
-                    elif part.get("text"):
-                        parts_summary.append({
-                            "type": "text",
-                            "text": part["text"][:5000],
-                        })
-            if parts_summary:
-                entry["parts"] = parts_summary
+            for part in event.content.parts:
+                if part.text:
+                    parts_summary.append({"type": "text", "text": part.text})
+                elif part.function_call:
+                    parts_summary.append({
+                        "type": "function_call",
+                        "name": part.function_call.name,
+                        "args": dict(part.function_call.args) if part.function_call.args else {},
+                    })
+                elif part.function_response:
+                    resp = part.function_response.response
+                    resp_str = str(resp) if resp else ""
+                    parts_summary.append({
+                        "type": "function_response",
+                        "name": part.function_response.name,
+                        "response": resp_str[:5000],
+                    })
+            entry["parts"] = parts_summary
+
+        # Extract actions
+        if event.actions:
+            if event.actions.transfer_to_agent:
+                entry["transfer_to"] = event.actions.transfer_to_agent
 
         events.append(entry)
 
     total_time = round(time.time() - start_time, 1)
 
-    # Extract the final answer — last content from a non-user author
+    # Extract the final answer (last text from a non-user author)
     final_answer = ""
     for evt in reversed(events):
-        content = evt.get("content", "")
-        author = evt.get("author", "")
-        if author and author != "user" and content:
-            # The content from Agent Engine is often a dict-like string
-            # Try to extract the text
-            if isinstance(content, str) and "'text'" in content:
-                # Try to find text parts
-                import re
-                text_matches = re.findall(r"'text': '((?:[^'\\]|\\.)*)'", content)
-                if text_matches:
-                    final_answer = text_matches[-1]
+        if evt["author"] != "user" and "parts" in evt:
+            for part in evt["parts"]:
+                if part["type"] == "text":
+                    final_answer = part["text"]
                     break
-            final_answer = content[:5000]
-            break
+            if final_answer:
+                break
+
+    # Fallback: if no final text, extract from the last main tool response
+    if not final_answer:
+        for evt in reversed(events):
+            if "parts" not in evt:
+                continue
+            for part in evt["parts"]:
+                if part["type"] == "function_response" and part["name"] in (
+                    "conversational_chat", "meta_chat", "search_context", "get_table_columns",
+                ):
+                    resp = part.get("response", "")
+                    # Strip the {'result': '...'} wrapper if present
+                    if resp.startswith("{'result':"):
+                        try:
+                            import ast
+                            resp = ast.literal_eval(resp).get("result", resp)
+                        except Exception:
+                            pass
+                    final_answer = resp
+                    break
+            if final_answer:
+                break
 
     # Build timing breakdown
     timing = []
     for evt in events:
-        if evt.get("author") == "user":
+        if evt["author"] == "user":
             continue
-        step = {"elapsed": evt["elapsed"], "agent": evt.get("author", "")}
+        step = {"elapsed": evt["elapsed"], "agent": evt["author"]}
         if "parts" in evt:
             for part in evt["parts"]:
                 if part["type"] == "function_call":
                     step["action"] = f"call: {part['name']}"
+                elif part["type"] == "function_response":
+                    step["action"] = f"resp: {part['name']}"
                 elif part["type"] == "text":
                     step["action"] = f"text: {part['text'][:100]}"
+        if "transfer_to" in evt:
+            step["transfer_to"] = evt["transfer_to"]
         timing.append(step)
 
-    # Clean up session
-    try:
-        await agent.async_delete_session(user_id=USER_ID, session_id=session_id)
-    except Exception:
-        pass
+    # Extract tool responses for the main tool call
+    tool_response = ""
+    for evt in events:
+        if "parts" not in evt:
+            continue
+        for part in evt["parts"]:
+            if part["type"] == "function_response" and part["name"] in (
+                "conversational_chat", "meta_chat", "search_context", "get_table_columns",
+            ):
+                tool_response = part["response"][:5000]
 
     result = {
         "id": qid,
@@ -219,6 +229,7 @@ async def run_question(agent, question: dict) -> dict:
         "session_id": session_id,
         "total_time_s": total_time,
         "final_answer": final_answer,
+        "tool_response": tool_response,
         "timing": timing,
         "event_count": len(events),
     }
@@ -229,7 +240,7 @@ async def run_question(agent, question: dict) -> dict:
 
 async def main():
     parser = argparse.ArgumentParser(
-        description="Run Medicare questions through deployed agent_chat"
+        description="Run Medicare questions through agent_chat locally"
     )
     parser.add_argument("--persona", type=str, help="Filter by persona name")
     parser.add_argument("--id", type=str, help="Run a single question by ID")
@@ -243,6 +254,15 @@ async def main():
         help="Output file path",
     )
     args = parser.parse_args()
+
+    # Verify CHAT_SCOPE is set for CMS data
+    chat_scope = os.getenv("CHAT_SCOPE", "")
+    if "cms_gov" not in chat_scope:
+        logger.warning(
+            "CHAT_SCOPE=%r — does not include CMS data. "
+            "Set CHAT_SCOPE=data_onboarding_cms_gov_bronze in .env for best results.",
+            chat_scope,
+        )
 
     results_path = Path(args.results)
     questions = load_questions(QUESTIONS_FILE, persona=args.persona, question_id=args.id)
@@ -262,11 +282,14 @@ async def main():
         len(questions), args.delay,
     )
 
-    agent = _get_deployed_agent()
+    # Import agent_chat here (after .env is loaded) — this triggers catalog loading
+    from agent_chat.agent import root_agent
+
+    runner = InMemoryRunner(agent=root_agent, app_name=APP_NAME)
 
     for i, question in enumerate(questions):
         try:
-            result = await run_question(agent, question)
+            result = await run_question(runner, question)
             existing[result["id"]] = result
             save_results(results_path, existing)
             logger.info("Saved result for %s → %s", result["id"], results_path)

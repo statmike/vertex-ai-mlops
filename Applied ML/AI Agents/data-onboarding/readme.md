@@ -101,7 +101,7 @@ Example questions:
 
 See the examples for full question sets with automated results and timing breakdowns:
 - [examples/cboe/cboe.md](examples/cboe/cboe.md) — **Cboe DataShop**: financial markets data (options, volatility, FX) — questions run locally
-- [examples/medicare-provider/readme.md](examples/medicare-provider/readme.md) — **CMS Medicare Provider Data**: healthcare payment data (parquet) — questions run against **deployed Agent Engine**
+- [examples/medicare-provider/readme.md](examples/medicare-provider/readme.md) — **CMS Medicare Provider Data**: healthcare payment data (parquet) — demonstrates **`CHAT_SCOPE`** for multi-source disambiguation
 
 ---
 
@@ -421,6 +421,12 @@ Create a `.env` file. Only two variables are required — everything else has se
 | `CRAWL_MAX_DEPTH` | `1` | Link depth from starting URL |
 | `CRAWL_MAX_FILES` | `100` | Maximum files to discover |
 | `CRAWL_SAME_ORIGIN_ONLY` | `true` | Only follow same-domain links |
+
+**Chat scope:**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CHAT_SCOPE` | *(empty)* | Restrict the chat agent to specific dataset(s). When empty, the agent sees all onboarded datasets — which can cause cross-source confusion when multiple sources are onboarded. Set to the bronze dataset name(s) for the source you want to query (e.g., `data_onboarding_datashop_cboe_com_bronze`). To switch sources, update this value and run `deploy.py chat --update`. |
 
 **BigQuery:**
 

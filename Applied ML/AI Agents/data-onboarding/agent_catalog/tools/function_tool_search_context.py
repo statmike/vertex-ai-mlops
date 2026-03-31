@@ -4,7 +4,7 @@ import logging
 
 from google.adk import tools
 
-from agent_orchestrator.config import BQ_CONTEXT_DATASET, GOOGLE_CLOUD_PROJECT
+from agent_orchestrator.config import BQ_CONTEXT_DATASET, CHAT_SCOPE, GOOGLE_CLOUD_PROJECT
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +36,12 @@ async def search_context(
 
         client = bigquery.Client(project=GOOGLE_CLOUD_PROJECT)
 
+        # When CHAT_SCOPE is set, filter results to only matching datasets
+        scope_filter = ""
+        if CHAT_SCOPE:
+            quoted = ", ".join(f"'{ds}'" for ds in CHAT_SCOPE)
+            scope_filter = f"WHERE base.source_dataset IN ({quoted})"
+
         sql = f"""
             SELECT
                 base.chunk_id,
@@ -51,6 +57,7 @@ async def search_context(
                 top_k => @top_k,
                 options => '{{"use_brute_force":true}}'
             )
+            {scope_filter}
             ORDER BY distance ASC
         """
 

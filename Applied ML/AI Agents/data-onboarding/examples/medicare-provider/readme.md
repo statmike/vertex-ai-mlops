@@ -21,26 +21,15 @@ The data covers multiple provider types across quarterly releases:
 
 ## What This Example Demonstrates
 
-This example shows the **recommended production workflow** — onboard locally, query via deployed Agent Engine:
-
-```
-Local (batch)                              Agent Engine (conversational)
-─────────────                              ────────────────────────────
-uv run adk web                             Python SDK / REST API
-  → agent_orchestrator                       → agent_chat (deployed)
-  → crawl CMS, download parquet,            → fast questions over the
-    infer schemas, create BQ tables            onboarded data
-```
+This example shows the full cycle with a second data source — including how to use `CHAT_SCOPE` to focus the chat agent on the right tables when multiple sources are onboarded:
 
 1. **Onboard** — Run `agent_orchestrator` locally to crawl the CMS page, download parquet files, and create BigQuery tables
-2. **Query** — Ask questions through the **deployed** `agent_chat` on Vertex AI Agent Engine
-3. **Evaluate** — Run all 30 questions programmatically and collect results with timing
+2. **Scope** — Set `CHAT_SCOPE` to point the chat agent at the CMS dataset
+3. **Evaluate** — Run all 30 questions locally and collect results with timing
 
-Unlike the [CBOE example](../cboe/cboe.md) (which runs questions locally), this example queries the **deployed agent** via the Vertex AI Python SDK — demonstrating Agent Engine in production.
+### Why `CHAT_SCOPE`?
 
-### Why this split?
-
-The orchestrator agent runs a long batch pipeline — crawling hundreds of pages, downloading files, inferring schemas, creating tables — that can take 20–60 minutes. Agent Engine is optimized for conversational agents with fast request-response cycles: long-running tool calls exceed its streaming timeout, and in-memory tool state is lost when the connection reconnects to a fresh container. The chat agent responds in seconds — a perfect Agent Engine workload.
+When multiple sources are onboarded (e.g., both Cboe and CMS), the chat agent's reranker sees all ~112 tables in a flat list. Generic terms like "providers" or "states" appear in both financial and healthcare datasets, causing the reranker to pick the wrong source's tables. `CHAT_SCOPE` restricts the chat agent — the reranker, context cache, and catalog search — to tables from a single source, eliminating cross-source confusion.
 
 ---
 
@@ -84,21 +73,25 @@ Total pipeline time: ~2.5 hours (crawling 332 pages, downloading 384 files, anal
 
 ---
 
-## Step 2: Query with the Deployed Chat Agent
+## Step 2: Set Chat Scope
 
-Make sure the chat agent is deployed:
-
-```bash
-uv run python deploy/deploy.py chat --info
-```
-
-Then ask questions interactively via `adk web` (connecting to Agent Engine sessions):
+Point the chat agent at the CMS Medicare data by setting `CHAT_SCOPE`. You can either update `.env` or override it at runtime:
 
 ```bash
-uv run adk web --session_service_uri="agentengine://RESOURCE_ID"
+# Option A: override at runtime (doesn't change .env)
+CHAT_SCOPE=data_onboarding_cms_gov_bronze uv run adk web
+
+# Option B: set in .env permanently
+# CHAT_SCOPE=data_onboarding_cms_gov_bronze
 ```
 
-Or query programmatically — see [Step 3](#step-3-run-all-questions).
+This scopes the reranker, context cache, and catalog search to CMS tables only. Without this, the chat agent would see both Cboe and CMS tables and frequently pick the wrong source.
+
+Select **`agent_chat`** from the dropdown and ask questions, or run all 30 programmatically — see [Step 3](#step-3-run-all-questions).
+
+> **Switching sources:** Use a different `CHAT_SCOPE` value — e.g., `data_onboarding_datashop_cboe_com_bronze` for Cboe.
+
+> **Deploying to Agent Engine:** Set `CHAT_SCOPE` in `.env` before deploying — it's passed as an environment variable to the deployed instance. To switch sources on a deployed agent, update `.env` and run `uv run python deploy/deploy.py chat --update`. See [deploy/readme.md](../../deploy/readme.md) for details.
 
 ### Example Questions
 
@@ -118,28 +111,37 @@ See [medicare_questions.json](medicare_questions.json) for all 30 questions (10 
 
 ## Step 3: Run All Questions
 
-Run all 30 questions against the deployed chat agent and collect results:
+Run all 30 questions locally and collect results. Override `CHAT_SCOPE` at runtime without changing `.env`:
 
 ```bash
 # From the data-onboarding project root:
 
 # Run all 30 questions (sequential, 5s delay between)
-uv run python examples/medicare-provider/run_medicare_questions.py
+CHAT_SCOPE=data_onboarding_cms_gov_bronze \
+  uv run python examples/medicare-provider/run_medicare_questions.py
 
 # Run one persona at a time
-uv run python examples/medicare-provider/run_medicare_questions.py --persona "Data Analyst"
-uv run python examples/medicare-provider/run_medicare_questions.py --persona "Data Engineer"
-uv run python examples/medicare-provider/run_medicare_questions.py --persona "Catalog Explorer"
+CHAT_SCOPE=data_onboarding_cms_gov_bronze \
+  uv run python examples/medicare-provider/run_medicare_questions.py --persona "Data Analyst"
+CHAT_SCOPE=data_onboarding_cms_gov_bronze \
+  uv run python examples/medicare-provider/run_medicare_questions.py --persona "Data Engineer"
+CHAT_SCOPE=data_onboarding_cms_gov_bronze \
+  uv run python examples/medicare-provider/run_medicare_questions.py --persona "Catalog Explorer"
 
 # Run a single question
-uv run python examples/medicare-provider/run_medicare_questions.py --id data-analyst-q3
+CHAT_SCOPE=data_onboarding_cms_gov_bronze \
+  uv run python examples/medicare-provider/run_medicare_questions.py --id data-analyst-q3
 
 # Resume (skip already-completed questions)
-uv run python examples/medicare-provider/run_medicare_questions.py --resume
+CHAT_SCOPE=data_onboarding_cms_gov_bronze \
+  uv run python examples/medicare-provider/run_medicare_questions.py --resume
 
 # Adjust delay between questions (default: 5s)
-uv run python examples/medicare-provider/run_medicare_questions.py --delay 10
+CHAT_SCOPE=data_onboarding_cms_gov_bronze \
+  uv run python examples/medicare-provider/run_medicare_questions.py --delay 10
 ```
+
+> **Tip:** The `CHAT_SCOPE` env var prefix overrides the `.env` file value at runtime, so your `.env` can stay pointed at Cboe (or whatever your default source is).
 
 Results are saved incrementally to `results/medicare_results.json`.
 
@@ -161,7 +163,8 @@ uv run python examples/medicare-provider/build_medicare_results.py --write
 
 | Aspect | CBOE Example | Medicare Example |
 |--------|-------------|-----------------|
-| **Question runner** | Local `InMemoryRunner` | **Deployed Agent Engine** (Python SDK) |
+| **Question runner** | Local `InMemoryRunner` | Local `InMemoryRunner` |
+| **Key concept** | Basic end-to-end walkthrough | **`CHAT_SCOPE`** for multi-source disambiguation |
 | **Data format** | CSV, Excel, ZIP | Parquet (from ZIP archives) |
 | **Unsupported files** | None | SAS format files (skipped) |
 | **Data domain** | Financial markets (options, volatility, FX) | Healthcare (Medicare provider payment data) |
@@ -178,7 +181,7 @@ uv run python examples/medicare-provider/build_medicare_results.py --write
 examples/medicare-provider/
   readme.md                        # This file
   medicare_questions.json           # 30 questions (10 per persona)
-  run_medicare_questions.py         # Runs questions against deployed agent
+  run_medicare_questions.py         # Runs questions locally via InMemoryRunner
   build_medicare_results.py         # Generates Results markdown from JSON
   results/
     medicare_results.json           # Collected answers + timing (after running)
@@ -197,11 +200,28 @@ examples/medicare-provider/
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **81.2s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.3s |
+| 2 | agent_context | `transfer_to_agent` | 60.3s |
+| 3 | agent_convo | `conversational_chat` | 62.5s |
+| | | **Total** | **81.3s** |
 
 **Answer:**
 
-{'parts': [{'text': 'The dataset includes unique providers (identified by their Central Index Key, or CIK) across different reporting periods. Based on the most recent quarter end dates, here is the breakdown of unique providers:\n\n*   **Most Recent Date (2020-12-31):** Contains **1** unique provider.\n*   **Most Recent Full Dataset Date (2020-09-30):** Contains **48** unique providers.\n\nThe discrepancy suggests that the latest reporting period (2020-12-31) may not yet be a "full" dataset, whereas the preceding period (2020-09-30) represents the most complete set of filings currently available in this table.\n\n## Data retrieved\n\nquarter_end_date unique_provider_count\n2020-12-31 1.0\n2020-09-30 48.0\n\n### Insights\n*   **Data Completeness:** The significant drop in unique providers from 48 (in September 2020) to just 1 (in December 2020) indicates that the 2020-12-31 data is likely incomplete or represents an early filing.\n*   **Provider Consistency:** There are a total of 49 unique providers identified across the entire dataset, implying that nearly all providers who have ever filed are represented in the September 2020 "full" dataset.\n\nWhich provider is the only one listed in the most recent 2020-12-31 dataset?\nWhat are the top 5 providers by total shares market value in the 2020-09-30 dataset?\nHow has the total market value of call options changed between the September and December 2020 periods?', 'thought_signature': 'CrQEAY89a19f1P2pb-UzK8iskvRG8mkPC8Co3YE-6zawWjbPBQnNJFLsWm35OlXONihDjMG3v-_PSS39RheUTWTNvdNx0hAckOJoxetjuStwllU2JYRoEWbXNpV67_7_G0WNAo7nAx4CW9YHu-wku27UoxYWD-LLb8jIfYB-S08jIavfm3zLxcdoNqi5J7pM86legYegvZZ5WyAY56boxQhbeUXpmBRVtCqbydR-X8JxETEDd0jkQz_2qous2zITORy5na0JuS-INcF0GfKGGf8yrMPfP8FiMIPF4A_-o0bjZ_ZDfNNfc17JEUcYpu1qa64EaSs8jE25ok58dfhjnyvnJghLMR4-z7QX0BTkZYadAUdhdStkEu2LFOdunGctiaZuxeitI664Dn2rghg8oJ06CLqri1bJ4p6dSyS2wgKGrTVfuUEn1F22gaIz_VM9JxCmiOMbxLSM8m64TH5ILosTcIHADK_IdSGqYQ1du_RXQYk2lutfG_M7NXhhiONZHay4vW6tmFqCyLCYqN5e6dih1qQzzuk0FTAASi6yqmKjGDHKmtzRWGrqZ2ONbxDU7TxvqVdMwTDm4GmdNm9gvZcNungCt9Kfz0CmrFUXsT2dol19igtYAv5fhyVfRnFJQnRqDlXUHqs499Ycom99LaG0Q8OJUdGi4KWFWW2PB_lCzDiG1fhqWM6csesf5UekxqCkfoAaIVcjCWmRCQpun7v-m-lfs4Kt4Ld2hLW3t5q4nczGYlKg'}], 'role': 'model'}
+In the most recent IPSF (Inpatient Prospective Payment System) dataset, there are a total of **69,745** unique Medicare providers. This count is based on the latest available data export dated January 2, 2026.
+
+Here is the data retrieved:
+
+| unique_provider_count | export_date |
+|-----------------------|-------------|
+| 69745.0               | 2026-01-02  |
+
+The dataset provides a snapshot of a wide range of providers across the United States. With nearly 70,000 unique providers identified by their CMS Certification Number (CCN), this indicates a comprehensive coverage of the Medicare provider landscape for inpatient services at the time of the export.
+
+Would you like to know:
+*   What is the breakdown of these providers by provider\_type\_code?
+*   Which state has the highest number of unique providers in this dataset?
+*   How many providers have a waiver\_indicator set to 'Y'?
+*   What is the average bed\_size for hospitals in this dataset?
 
 <a id="data-analyst-q10"></a>
 #### Q10: What are the largest SNF providers by bed size?
@@ -210,11 +230,43 @@ examples/medicare-provider/
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **19.2s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.4s |
+| 2 | agent_context | `transfer_to_agent` | 79.9s |
+| 3 | agent_convo | `conversational_chat` | 82.3s |
+| | | **Total** | **126.1s** |
 
 **Answer:**
 
-{'parts': [{'text': "I couldn't find any relevant tables to answer your question about SNF providers by bed size. Do you have specific table names in mind, or perhaps more details about where this data might be located?", 'thought_signature': 'CqYFAY89a1-TXr3HkgebFqQKLlOmkSYUzUDFItHQWaXnLQud03FMRkHl_eKo5ZJVy-KKGV1wXaeIa6yeyjUXx9IPM4VTSEw8kLGgtNpCPjaoVf0-r2DIqFFVkJeVFpQSQlKDI-ZBr-RTrjftF-ajPajrPPpR6RI8lWum10_SdWUQYNxskBskwCNfcsddLMzbdi7rpmHxkmU5aWbVhOkyyOTEYxG0pkxKWb-i5xD0PElRdC5LMHAWwUKBKETu3cNSJwZ3kHuFtYhfJzSNJmrUj9KEQoKiJ7PyfLOdQf6FKWCKqUkzoszKs0BSVgCtQSJCZuI0HGbVNs2shWA-6CevYXbOcQlv66qvArTMJ3NoI8GV0GSVv8Go7zvcY3en5pJu_NoPxdIKTAoUL_H0g9qwAHQBgLQXy5wwATQYCdtjJ6aUsYDNJP5QTRdnQkDsN_tPjl2-27XW9QkrFN3g1IH2ec5uMkRMH5Mx5q8kJCKClz4r0texjgR3qUpcGmc7J55-F0_WhMFk6S_ZKsxaR-ZXtP3HUdpIfysny-CvgFvDHpMIdaIDkXBaY-fz9Ge76zDL06Y7kX-iV06W9s8aQoJdoVPZLrjqfjU5Ptb8CTNdftQJF23S_5iJoy9E4uDH1eS3Mc1vHG8MT_bWjEkXjnbgSilKGDjb45ZXFx1wh5ydtII-bWfzlNIDsBFIV9XzEa8g756VLx8Uu0rxAIgWe4Tbmw4Fjkf6mIdTGIT_qs11qNVt6RHRvaYmYYxC_np7_8XSntlOxX5vabyFE3nAztUSkvNjvt8cRbGI_NgIts_dz316vkCpMnMGstmGJEujlcJz7E17moRefHsJXHEPO_4IUyMaN4csteAv27A29JNp23zCkyqeHoEb3KFbjBjkIoi-dNl0GyOY4aR6'}], 'role': 'model'}
+### Summary
+I have identified the largest Skilled Nursing Facility (SNF) providers by bed size based on the data in the `ipsf_snf` table. This table contains provider-specific records used for Medicare payment calculations.
+
+The analysis shows the top 10 providers ranked by their maximum reported bed size. Please note that one provider (CCN 345516) shows a significantly higher bed count (over 93,000) than the others, which is likely a data entry error in the source system, as SNFs typically have hundreds, not tens of thousands, of beds.
+
+## Data retrieved
+
+| provider_ccn | max_bed_size |
+|:-------------|:-------------|
+| 345516       | 93002.0      |
+| 0951V3       | 1979.0       |
+| 105559       | 1414.0       |
+| 5152V1       | 1148.0       |
+| 555095       | 1021.0       |
+| 335023       | 889.0        |
+| 395780B      | 874.0        |
+| 335462       | 816.0        |
+| 555727       | 782.0        |
+| 335063       | 775.0        |
+
+### Insights
+*   **Outlier Detection:** The facility with CCN **345516** reports a bed size of 93,002. This value is several orders of magnitude higher than other large facilities, which cluster around 800–2,000 beds. This is likely an error and should be treated with caution during further analysis.
+*   **Scale of Large Providers:** Excluding the outlier, the largest SNF providers generally have between **800 and 2,000 beds**.
+*   **Identification:** The facilities are identified by their **CMS Certification Number (CCN)**, which is the primary identifier for Medicare providers.
+
+What is the average bed size for SNF providers by state?
+List the SNF providers with the highest Medicaid ratios.
+Can we see the bed size distribution for all SNFs (excluding the large outlier)?
+Which SNF providers have been terminated from the Medicare program?
+
 
 <a id="data-analyst-q2"></a>
 #### Q2: What are the top 10 states by number of providers in the full IPSF data?
@@ -223,11 +275,40 @@ examples/medicare-provider/
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **55.8s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.4s |
+| 2 | agent_context | `transfer_to_agent` | 55.8s |
+| 3 | agent_convo | `conversational_chat` | 58.4s |
+| | | **Total** | **104.9s** |
 
 **Answer:**
 
-{'parts': [{'text': "The analysis shows the top 10 states by the number of institutional investment managers (providers) based on Form 13F filing data. New York and California lead with the highest number of providers.\n\n## Data retrieved\n\nstate number_of_providers\nNY 7.0\nCA 5.0\nMN 3.0\nV8 2.0\nMA 2.0\nSC 2.0\nX0 2.0\nNJ 2.0\nA6 2.0\nKY 2.0\n\n### Insights\n- **New York (NY)** has the highest concentration with 7 providers, followed by **California (CA)** with 5 providers.\n- **Minnesota (MN)** ranks third with 3 providers.\n- Other states such as **Massachusetts (MA)**, **South Carolina (SC)**, and **New Jersey (NJ)** follow closely with 2 providers each.\n- The top 10 list also includes some internal or non-standard state codes like 'V8', 'X0', and 'A6', which may represent international locations or specific identifiers in the EDGAR system.\n\nWhat are the top 5 filers by the total market value of shares held?\nWhich states have seen the largest increase in the number of put contracts held this quarter?\nCan we identify any filers with an unusually high percentage of open interest compared to others?\nForecast the total market value of shares for the next quarter based on historical trends."}], 'role': 'model'}
+### Summary
+Based on the full IPPS PSF data, the state with the highest number of Medicare providers is state code **45** with **8,753** providers, followed by state code **05** with **8,036**. The following table and chart show the top 10 states by provider count.
+
+## Data retrieved
+
+state_code  provider_count
+        45          8753.0
+        05          8036.0
+        10          4157.0
+        36          3461.0
+        14          2846.0
+        39          2802.0
+        23          2220.0
+        33          1984.0
+        15          1776.0
+        26          1749.0
+
+### Insights
+- **Significant Concentration**: The top two states (45 and 05) account for a significantly higher number of providers compared to the rest of the top 10 list.
+- **Top 10 Rankings**: The counts for the states ranked 3rd through 10th range from 4,157 down to 1,749 providers.
+- **Provider Distribution**: This data helps in identifying where Medicare providers are most concentrated geographically.
+
+What is the distribution of provider types in the top state (code 45)?
+Which states have the highest average case-mix index among providers?
+Compare the average bed size of providers in the top 5 states.
+Identify the top 10 Metropolitan Statistical Areas (MSAs) with the most providers.
+
 
 <a id="data-analyst-q3"></a>
 #### Q3: Compare the number of providers across the different provider types (HHA, Hospice, IRF, LTCH, SNF, Psych).
@@ -236,11 +317,39 @@ examples/medicare-provider/
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **30.0s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.3s |
+| 2 | agent_context | `transfer_to_agent` | 82.7s |
+| 3 | agent_convo | `conversational_chat` | 85.7s |
+| | | **Total** | **119.3s** |
 
 **Answer:**
 
-I am sorry, but I cannot fulfill this request. The available data catalog does not contain information on healthcare provider types such as HHA, Hospice, IRF, LTCH, SNF, or Psych. My capabilities are limited to the datasets that have been onboarded, which primarily consist of financial market data.
+### Summary
+This analysis compares the number of unique providers across different provider types: Home Health Agencies (HHA), Skilled Nursing Facilities (SNF), Hospice, Inpatient Rehabilitation Facilities (IRF), Inpatient Psychiatric Facilities (Psych), and Long-Term Care Hospitals (LTCH).
+
+## Data retrieved
+
+| provider_type | provider_count |
+|---------------|----------------|
+| HHA           | 22389.0        |
+| SNF           | 22256.0        |
+| Hospice       | 7881.0         |
+| IRF           | 4613.0         |
+| Psych         | 3034.0         |
+| LTCH          | 872.0          |
+
+The data reveals a clear hierarchy in the number of providers across these categories. Home Health Agencies (HHA) and Skilled Nursing Facilities (SNF) are the most prevalent, with 22,389 and 22,256 providers respectively. Together, they represent a significant majority of the provider population in this dataset. Hospice providers follow with 7,881, while Inpatient Rehabilitation Facilities (IRF) and Inpatient Psychiatric Facilities (Psych) have smaller but still substantial counts. Long-Term Care Hospitals (LTCH) represent the smallest category with 872 providers.
+
+### Insights
+- **HHA and SNF Dominance:** The number of HHA and SNF providers is nearly identical and significantly higher than all other provider types, suggesting a large-scale infrastructure for home health and skilled nursing care.
+- **Concentration of Care:** The top two categories (HHA and SNF) account for approximately 73% of the total provider count across these six types.
+- **Specialized Facilities:** Types like LTCH and IRF are much more specialized and fewer in number, which is typical for facilities providing highly specific intensive care.
+
+What is the average bed size for SNF and IRF providers?
+Which states have the highest number of HHA providers?
+Compare the Medicaid ratio across these provider types.
+How many providers are currently active versus terminated in each category?
+
 
 <a id="data-analyst-q4"></a>
 #### Q4: What is the average case mix index across all providers in the full IPSF?
@@ -249,11 +358,22 @@ I am sorry, but I cannot fulfill this request. The available data catalog does n
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **19.0s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.6s |
+| 2 | agent_context | `transfer_to_agent` | 64.2s |
+| 3 | agent_convo | `conversational_chat` | 66.7s |
+| | | **Total** | **81.2s** |
 
 **Answer:**
 
-{'parts': [{'text': "I couldn't access the necessary tables to answer your question. Please ensure that the relevant tables are available or try rephrasing your question.", 'thought_signature': 'CuUZAY89a18BXIGHIGIvulfXG_ZJBZ55Xz29QgeTTKores714Ff62uTJbCAR3QxFYoZe_foZexxU5zwkZdf4V4IrgWUyjzqKRLcPVlZKxFI9BIMTavoRM_VYuJtMO1laejbKqk_VqZkjYqzL4eyPAIWA41Yiox00eI7tbCd83N-LM5U-quei7wcFE4i0KjV_LFA3Cw95cbSJ4IzCvNg6sYzNISZF__PliuY1HhdUgGDlM_T0z1ny7hk-F-VcTdt-6NkxHHEzzX6EwWS7o-ZnxtiWqJtsQtFWnut1e3fNTY1S8N46J6h_k_3jhSPYh4BnSOtmKS2H_ya9i3YCf0ckjJ53_h13OBzwLVVxBZZi80uLeloh4iHW6Rx9L0i2lI1gTIQhorhGSOaoS9pt98SS63SfvD9bZtYLSgD-lRPTK9bTq_XUac7G2mMHYJJzuJTqhM5-Ok0pyNk5Lg7RqP70DjpN5IEgLVIDsKE9-tDQj3KjpyqIEpqOAUGou6xjwkj3GrrzS9Yu7OsywB1am_TOpx9l36plOs8er2IgBMhu2Q9fZuXp158IkXRBoIdGnxlNOCFeZa7LRGfo4Wtr-v9k6otrcFz2oOCmp9EXuLurQxQKb47hXOdSrVfDs-qjh4MmQ99kUAFJo4fdY__dCIOP0tmyYT8PNI2knw6Ipk9sKJJLQ1UbtnNGfCVddATrh6RADY8w69XvM4Go5Fx2bgPgR3IyTHgwX8rKIPmw9jkiAQe9sF6T8G-ZnJq-8SPTYb_BluMRunWWf6zlQDoByaMu6k6meU5akl9ScRkBqmmmOULh_5m1s5Gb5bp_QG43xf54su6ZIPNiWytup8cUWuY5uRCtMXqJbS5fz61k6MGHTeSVdviLs01XJJkNkeVqIuW9SWhMfBXgnuV67EVtXnG41BWVkERVdxGfv5vJM48AHXvah7dTreHDaKTjvUsn6_saMON-0bQ59w_e1QO3BQmLo8sBL4sla5_WcfQXFuaELPlGvc2qve57n5UVbrWwuo48BDao_rByZCXFQt-IKjRMrwRPo965Ktf2W9ZAxylUOGeb6LgzVz5CRFOUaUVIcIJspD8ET05oVi4Pfg_cYeeAfZSvjfR4C-nORwt6iHHe20yIjG30e3bDXiZ1DiymkMN4mWjLd9-CJSwz4k5Ljpl2B18E-BeFtoy4BU6S_A6DjrVOKwYiGlbnPnnBgNIpXCYHBLQvJsZXBn-UTlxXJWEoRLa5SOkJF6O-9rTbabnJJ6xEcBBaI1pfZ2XamsNSFlnCkz5gxk-E0IJsFyxh36Yiil4gTgGTZ8PccGBHANX1bTJz6mF66Ybx48kJgYUwC3-OAK1M-c8Hh0qUZAQuPZdxB-SM5x7oOtaIlSwKQl7UmNiYbUKYzZ5BRfEvja5UPGtWPVlUnRKretWqGV2OUj13ucoIXGPuye-b2lINQCYPjfqq6gCzvEFb65k6JwdOOqID6e8tGmV_qvFvWs6QTyAurpKDcK1bz3pQD2mPWBad5JOOgydFpS9RVeXKkAmCfJTXBbsnuvh_-e-_J9ejcNg7YEKV39ERNo5exm1hM-NCQPhje2sbkrP1blWRgV47V4ODjA8B37bmUAozeR8lfg4vy19EP0pr8aW7P72qfiPofClGzvtMMzxXizazMzjCUfQDSilPkG-VGmMDPPnoXe_kXB_Sl_e7S1r4-IZCgHcV-hrEDYLGVtTOt1PSdXiowYLBMlSfC2eLrOXUJWwcKgObuE1VZAYjyuSjV-RgvSJ6GuW0NM4aHkc_rmtwz3lJkGOTX6jSdnYaQ0z3pmO25ecvbXbH_R_bsgQ2Vu0YL5J2K4t0l7NR9AfLYQm-cdUQhRZalHViLZMntF5QWp3P04umfVIKHgqWnjqjSpaxmZK_OBDNeA9SA0aUG4jjE0HVxT8CGDRF5DzIgpo74HGiHbvUWFxyeKO5qibziPsbMvx3aZjPOnEWs7IRMH6TEVtk4fW9SDstlBoxV6qvkM3oou6RaMcCw5no208T3yAwmCA7nqGuKrv6NkTpra65yLGv1IM7dyl1mR50x7BBDtD2B1AhCDkFPMoSqeZ5e23use3o6pLgPW7AxHQeHk1R4QpcN5fmDgrOOVlvWMLxFtNMc99AxNPaJMoM8r99iKexFeKzu4VZwtS_uzX95xKFihrPXRh_as1-Duc0qhO2RjQZhDbNcrKZ6alK5PSPR9e8uGurE96d-pWQikwRCzY8gBCxD7mwtLJGEdCNpy5N-6NAqBw9evwVN5dM_zkGOhUJcwDftfbQ0NSq6KpaukDnKIMxZUk1OwI6U9Lv8bGfKFDOn0pSbsYP0_adHbtSetVu97mua8btsO9eYJLMQhc75EOGb3sFnLHb9IiUp28v8T-FeAOvVIYpOV6Ohh6MDUNK7PdbaqOV2Xmd9n4MT7UsaSQiadAiOlGJhC_7lnai7QJBg4fDE1RUeOjuNTcfAEZvLpVfAyTLDuzcLKIvP4L1G1taOxoTI_CUkeg5PfiZAZG6VT0FoxkCJx14bxvybAYIFbgOpFEr5CjfGrOluNg6Lqi3RBDqfe0WXGJVuZd6KTBSgCvIQD6ysJO7BooPwn_8OZxDKUz_OfNiBbCgklJ79Z1rlO5i79ZS2NPMFUozOE-TVIjyxS8nXvqT3SWhsoqWNNabuFWojhYaACWtbqXeuBeDNtfpCjg_VxtnjKKlfRZfLgX6R2TqG1uVETH50L322IUJAz-OrfPGc8c_9yfr0F6-wAE40jPuI7CVIEuj3YDRZsaB2mpvxyVI5VDEh5TaKA3iygSt39OVyxAEFTOulmMpsZGGTwRDxqUcrIklqhQioETnBwSOH4hIJYJJNYG1u76vPRJf3sxz9_AHyXwZ7pLmrgj_6gDH3m_A25Enz3GB_yKZZVdCSLdfQ81pqE217zX-DXd5F0erqcZprilbJDiWNbu4uklCfQYwxB2nfUIgDw1-R98EjBAyR9HFGeE1JzmNOGpTpVFE6AWBQ0RBSEJGSDt2qORtWNW0vjk7vxEIRZ8YeTOp6I2dg71S9QRpZGG5oV4-02-bex5nSRR8_AlfvgokUrQcsF-rRfS1SxIyJi0XpnXiCAa5qDoJpzltondTvM8xgqi-N8xA8iDnI8b2MKU3JbYRpELK90R_fyh8cnkw44AYpL3CXMkblKA307VcDYlxps4t9ZRmQCQSGULI0ZQ5kIiXKrFYa_-jn9xH7cZs3SsAXprqo6aEspMjGFVGitCpoTkvB1B4Ne1w92lnlHCkHE8u4oxJIvYl_SXm3vn_INqHmsw3jrGdeS8bqjZJJMcHGQYSpoZc4GdrajmMnDcenPIbSrP7NCSnT_s1D3vUbqqPG8Jt2uTjGfK4cWse-Wyx8oPheGE2SdUgKtE8dqsOz0iK9KZOFxaZSFERwxiwZDW9BpbFlaQpyKy9uC_eQowurbgt-d9TMtz4DYZ_FNNiH2R4w2N5kDA4ZNAALfq0WTXKr3T8dnl4Kcq6eRfv2SKSLLOzF5MCqGtiNt8aX_yhX9cxQ1oPHMXSzvwb7MINWlbiTbGM0OhCk1Rz1l_UhmkOLFEDV7fHmL7S9THY_1UcGqKr5M6_TOxjwo2azVFLg0XycgOrOvybtVvY4Glrul4lzyp8RlFGfRghjdg3tyM2k4Wdat04hDW-ryEcuG3KsnUkeJ_P3MYPL_mqoO5X5vilVqp3bBfRrvc8X2pXEFwsFKrJ-f144SqaEbqcb1QGeMo_SqAZHeiRVvBPuxkwXUNNEZdC_jnvel3MIA6R-D_fk-zkDGurXhlWbrz-V959XGYL3fZGkZ-VeMl4g49AcK_lS2NDqt1Pygbr3meZz1EHANVo0-F8G-vKgd1ok4hkHj5pPQp4vefKu9h920al1GqxN14oB2eKYDbXjAgzYKTKEcJuzpalITbv2bQATdNFTzHBDeWrVmpbWBmpo3zP6A8OMn6FeP36BQnpPtV3xQFaaPYQTkF7_KoZvkrcgGWT3Z1zdVlFk2y7npDnimOzqnHgh2yGObhY0vnwaD85mxdbDChctyvH20uXhMuVCFGqusSp6cf-ZI-CUnYra22TSOyNmOudQkXu_zYRJNPztiehmEDfhibN-JNz2z3Ne6sxfcrf-vkUueEM96eH-9QkLxBFcJzbh-9vtCR54FbVJHqnhhgaB4LVhd4gyA7_xeeloPyauwHsRZ73gwJtnhw7yI3di4m3DysYHsGaJSd0RSDHCJEWymQm2xc2jlyMjcDaR-R9Q0IwBHSBaUl1LMHxIVwtklI-Y7aYxNGjsF5e-gu-o2NjUcFmto7vFBXqqZaFOlTi8bodFVG2v8YLVV-fHYyxnaQmvbZcC-je_oI3y6uGAuRcQX_JnuxVNu_895mGY7JR-rU4L3hQkJzZB1FES0Zgx4GUI7W5Aw=='}], 'role': 'model'}
+The average Case Mix Index (CMI) across all providers in the full Inpatient Provider Specific File (IPSF) is approximately **1.026**.
+
+The Case Mix Index is a relative value assigned to a diagnosis-related group of patients in a medical care environment and is used in determining the allocation of resources to care for and/or treat the patients in the group. An average CMI of 1.026 suggests that, on average, the complexity and resource intensity of the patients treated by these providers are slightly above the national average (which is typically set at a baseline of 1.0).
+
+What is the average case mix index by state?
+Which provider types have the highest average case mix index?
+Is there a correlation between bed size and case mix index?
+Forecast the average case mix index for the next fiscal year.
+
 
 <a id="data-analyst-q5"></a>
 #### Q5: Which providers have the highest number of beds?
@@ -262,11 +382,41 @@ I am sorry, but I cannot fulfill this request. The available data catalog does n
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **19.5s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.3s |
+| 2 | agent_context | `transfer_to_agent` | 75.3s |
+| 3 | agent_convo | `conversational_chat` | 77.7s |
+| | | **Total** | **130.0s** |
 
 **Answer:**
 
-{'parts': [{'text': "I couldn't find any tables that contain information about providers and their bed numbers. Could you please specify which tables I should look into? This will help me answer your question more accurately.", 'thought_signature': 'CvYGAY89a1-M_kzL8U_NSLKJJy5r61fcotGPMJx8wAc6xBO0yLLlG2Nmv-ngRWk-OFtKzJ8lLf0YpvqStGAVS6MW0j0dSvdlyEz8hOKY8Y7ftX1WSEgcqU52WezJ4dgyWAGbyGYK2vMeQDsmI9Q-debbPYTeTwZkF8LLAkG-zkH68B4J-MAhswVHkev8hHO6m7wfbQL_3l8mpu_xPnchvtX9aoVxHJGIL-Gn4EkTaiMM2bYQDxgE-8B4-9NEnw3VuOQbTr7Y_6hKFDB_51p5Uuw41CBFjjPksSYp4RaM7lQxLsCXZBMtsWidHdI7Bxh9NMoRf0UO_S3vfeoi7I0jh1CoWupc6wdqRhBa8bisaaJxG-58KriV3vCfPxhtf45Ewi9QZ77y1-QC0xsY3bndC518c1sVxSObgmElkfnEmcWgPi56bcWQH0PzbbynqDbC9Lt_Ii0RY3TfvbO2Ue_EFcOuL9BfhsKpAV0GODhdZMt9XkzmbGPtrgy9CAnqpp6_sam3HWyhscFsoUQqaqVwAeutIs6T4gqH3b8EKmy-OUMB4jz_rCICDtutJ0FrBeVTWrISsBTht4p0N_23okY5qgwYs5pSkDsolM8uAOVkOTvUOSKSk_TkyLFUSsuvteY5NZndeKrU3V1jCIe8IP-jHZaDCaIaP9BHR5VdYIlW-AbtOGe9ZAErSoYKkEDJSQIfZ2WVOg-Or272lItIYhk7LL34YzJMiWjirS8tkLPZZ_S3VhL17UQOpyTLv9jHzwrgynleBek5fEf0tQKUDfUSlY-xt_LMUZPgJnoU6YEcPsu9BUTmzwugL6Lhq2AHImzfLxXINZlxxbLrzRnj5kZWHjbvPM5is1tKzCyY6x1YiUecbyUnQsSbLblqz6lYH9EFtswznpSzBwAs7aa1MCMja3ojuLnAm8sBb_BJmholzZpY2ttpp0PbKeBYuMMCz1eBbWncfOLsyVyWqAMAgCKtksLhOt5V2TFchMbbJ-oumzGpndDJUiDhxsRNlnsp0SFXGOWrEtvc-ErfgOjcav8C4h5hvg1Q_siX0ozYNzX4QHdOidDlqCkmXB39X574eIsHYpFwd4z1AC-4hTp8ot-FsKyp9RsR5Oazx_nTtolM7OJMzeLo7srVcC_cqu5V7OF0qSyddCAdcGl-y43dcqqlB2xVoCqvTBdCSQ=='}], 'role': 'model'}
+Based on the January 2025 Inpatient Prospective Payment System (IPPS) full data snapshot, I've identified the providers with the highest reported bed counts.
+
+The data initially showed many facilities reporting exactly 99,999 beds. This value is commonly used as a placeholder or data-entry code in healthcare datasets. To provide a clearer picture of real-world capacity, I've filtered the list to show the top 10 unique providers with bed counts below this threshold.
+
+## Data retrieved
+
+| provider_ccn | npi | max_bed_size |
+|:-------------|:----|:-------------|
+| 345516       | 3290 \002\021 | 93002.0      |
+| 345516       | 1891722187 | 93002.0      |
+| 345516       |             | 93002.0      |
+| 140172       | 1588771919 | 20344.0      |
+| 393007       |             | 20000.0      |
+| 050080       |             | 10599.0      |
+| 170091       |             | 9999.0       |
+| 26S021       |             | 4510.0       |
+| 260180A      |             | 4460.0       |
+| 220897       |             | 3410.0       |
+
+### Insights
+- **Data Code 99,999**: Numerous facilities (including CCNs 150910, 150909, and others) reported 99,999 beds, which likely indicates missing or non-reported data.
+- **Largest Reported Facilities**: Among facilities with reported counts, Provider **345516** (NPI 1891722187) reports the highest capacity at 93,002 beds.
+- **Significant Capacity Variances**: The top 10 facilities range from over 90,000 beds down to approximately 3,400 beds, highlighting extreme differences in reported scale between different types of healthcare facilities.
+
+What is the average bed size for providers in each state?
+Can we identify providers with a high case mix index compared to their bed size?
+Forecast the total number of beds across all providers for the next year.
+Detect anomalies in bed size reporting based on historical data.
 
 <a id="data-analyst-q6"></a>
 #### Q6: How has the total number of providers changed across quarterly releases?
@@ -275,11 +425,36 @@ I am sorry, but I cannot fulfill this request. The available data catalog does n
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **74.3s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.5s |
+| 2 | agent_context | `transfer_to_agent` | 71.7s |
+| 3 | agent_convo | `conversational_chat` | 74.0s |
+| | | **Total** | **100.6s** |
 
 **Answer:**
 
-### Summary\nThe following table displays the count of unique institutional investment managers (providers) who filed Form 13F for each quarterly release available in the dataset.\n\n## Data retrieved\n\nquarter_end_date total_providers\n2020-09-30 48.0\n2020-12-31 1.0\n\n### Insights\nThe data shows a sharp decline in the number of providers from **48** in the quarter ending September 30, 2020, to only **1** in the quarter ending December 31, 2020. This dramatic difference suggests that the dataset likely contains complete information for the September quarter but only very limited or preliminary data for the December quarter.\n\nWhat are the names of the providers reported for the 2020-09-30 quarter?\nCompare the total market value of put and call contracts for 2020-09-30.\nShow me the top 5 filers by total market value of shares held in the September 2020 quarter.\nWhich city has the highest number of institutional investment managers?\n
+### Summary
+The total number of healthcare providers, calculated by combining the Inpatient Prospective Payment System (IPPS) and Outpatient Prospective Payment System (OPPS) provider files, has fluctuated over the recent quarterly releases. The data reveals a significant decrease in early 2025, followed by a slight recovery toward the beginning of 2026.
+
+## Data retrieved
+
+release_quarter | provider_count
+--- | ---
+2025-01-01 | 84060.0
+2025-04-01 | 78032.0
+2025-07-01 | 69246.0
+2025-10-01 | 69514.0
+2026-01-01 | 69745.0
+
+### Insights
+*   **Major Decline:** There was a sharp decrease in the total number of providers between the first and third quarters of 2025, dropping from 84,060 to 69,246.
+*   **Stabilization and Growth:** After reaching a low in Q3 2025, the provider count has shown a gradual upward trend, reaching 69,745 by the first quarter of 2026.
+*   **Release Gaps:** The data points correspond to snapshots from the quarterly release cycles, indicating the total active provider footprint at each point in time.
+
+What is the breakdown of providers by state for the latest release?
+Which provider types have seen the most significant changes in count over the last year?
+Forecast the total provider count for the next four quarters.
+Are there any anomalies in the provider count trends for specific census divisions?
+
 
 <a id="data-analyst-q7"></a>
 #### Q7: What is the distribution of fiscal year end dates across providers?
@@ -288,11 +463,51 @@ I am sorry, but I cannot fulfill this request. The available data catalog does n
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **66.1s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.3s |
+| 2 | agent_context | `transfer_to_agent` | 81.9s |
+| 3 | agent_convo | `conversational_chat` | 84.1s |
+| | | **Total** | **166.8s** |
 
 **Answer:**
 
-The data reveals that for the reporting periods present in the system, the vast majority of institutional investment managers reported holdings for the quarter ending **September 30, 2020**.\n\n### Distribution of Reporting Dates\nThe table below shows the number of unique providers (identified by their Central Index Key or CIK) that filed reports for each specific quarter end date.\n\n## Data retrieved\n\n| quarter_end_date | provider_count |\n|:-----------------|:---------------|\n| 2020-09-30       | 48.0           |\n| 2020-12-31       | 1.0            |\n\n### Insights\n- **Predominant Reporting Period**: Nearly all providers in this dataset (48 out of 49 total) filed their 13F forms for the period ending September 30, 2020.\n- **Limited Year-End Data**: Only one provider has a filing for the December 31, 2020, quarter end in the current dataset.\n- **Fiscal vs. Calendar Quarters**: While the question asked for "fiscal year end dates," 13F filings are typically submitted based on standard calendar quarters (ending March, June, September, and December). The data suggest most entries are concentrated in the third calendar quarter of 2020.
+### Summary
+The fiscal year end dates across providers show a strong concentration on specific year-end cycles, particularly the calendar year end (December 31st). While the data spans over a century, the majority of the recorded provider activity occurs in the most recent three decades.
+
+### Yearly Distribution
+The yearly distribution of fiscal year end dates shows that the volume of records in the dataset increases significantly starting in the early 1980s, reflecting the comprehensive nature of the modern provider specific files.
+
+### Fiscal Cycle Distribution
+Analyzing the month and day of the fiscal year end reveals the most common reporting cycles. The majority of providers (nearly 47,404) align their fiscal year end with the calendar year end on **December 31st**. The federal government's fiscal year end on **September 30th** and the mid-year point of **June 30th** are also highly prevalent among providers.
+
+## Data retrieved
+
+| month_day | provider_count |
+|:----------|---------------:|
+| 12-31     |        47404.0 |
+| 09-30     |        16242.0 |
+| 06-30     |        13473.0 |
+| 11-30     |         2594.0 |
+| 11-29     |         2223.0 |
+| 08-31     |         1939.0 |
+| 03-31     |         1859.0 |
+| 05-31     |         1754.0 |
+| 04-30     |         1020.0 |
+| 07-31     |          832.0 |
+| 10-31     |          807.0 |
+| 02-28     |          532.0 |
+| 01-31     |          509.0 |
+| 02-29     |          283.0 |
+| 05-30     |          161.0 |
+| 12-30     |          139.0 |
+| 01-01     |          110.0 |
+| 12-29     |           82.0 |
+| 12-01     |           69.0 |
+| 10-01     |           66.0 |
+
+### Insights
+*   **Dominant Cycles:** The most common fiscal year ends are December 31st, September 30th, and June 30th. These three dates account for the vast majority of all provider fiscal cycles.
+*   **Data Density:** The dataset contains historical records dating back to 1900, but the density of records increases sharply after 1983, with the highest concentration of providers appearing between 2018 and 2021.
+*   **Variability:** Beyond the primary cycles, there are many providers with non-standard fiscal year ends (e.g., November 30th or August 31st), reflecting various organizational or state-specific reporting requirements.
 
 <a id="data-analyst-q8"></a>
 #### Q8: Compare HHA providers across states — which states have the most home health agencies?
@@ -301,11 +516,92 @@ The data reveals that for the reporting periods present in the system, the vast 
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **36.3s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.1s |
+| 2 | agent_context | `transfer_to_agent` | 59.2s |
+| 3 | agent_convo | `conversational_chat` | 61.6s |
+| | | **Total** | **92.2s** |
 
 **Answer:**
 
-I apologize, but I was unable to retrieve the data to answer your question. It seems that no relevant tables were found to perform the comparison of HHA providers across states.\n\nDo you have information about specific BigQuery tables that might contain this data? Or is there anything else I can help you with?
+### Summary
+Based on the analysis of active Home Health Agencies (HHA), this report compares provider counts across different states (identified by their CMS state codes). The data highlights which states have the highest concentration of these agencies.
+
+### Home Health Agency Distribution by State
+The following table and chart show the count of unique, active HHA providers per state code, ranked from highest to lowest.
+
+## Data retrieved
+
+state_code hha_count
+        05    3798.0
+        45    2260.0
+        10    1417.0
+        36     976.0
+        23     924.0
+        39     745.0
+        14     666.0
+        49     429.0
+        22     425.0
+        24     404.0
+        06     392.0
+        26     320.0
+        52     315.0
+        33     291.0
+        29     289.0
+        37     272.0
+        03     271.0
+        16     261.0
+        15     257.0
+        17     253.0
+        19     219.0
+        34     186.0
+        04     178.0
+        46     163.0
+        44     160.0
+        01     132.0
+        28     130.0
+        07     119.0
+        11     117.0
+        18     104.0
+        51      99.0
+        32      97.0
+        50      86.0
+        42      82.0
+        38      76.0
+        13      75.0
+        21      72.0
+        31      69.0
+        53      67.0
+        40      67.0
+        27      64.0
+        43      61.0
+        09      52.0
+        25      47.0
+        30      46.0
+        35      45.0
+        08      42.0
+        20      37.0
+        41      29.0
+        12      28.0
+        02      20.0
+        47      13.0
+        48       9.0
+        55       5.0
+        65       4.0
+        66       3.0
+        59       2.0
+        75       2.0
+      None       2.0
+
+### Insights
+- **Top States:** State code **05** has the highest number of home health agencies with **3,798** providers, significantly leading all other states. State code **45** follows with **2,260**, and state code **10** is third with **1,417**.
+- **Concentration:** The top three states account for a substantial portion of the total HHA providers nationwide, suggesting a high concentration of services in these regions.
+- **Active Status:** These counts reflect only currently active providers (those without a recorded termination date).
+
+What is the average bed size for home health agencies across these states?
+How many HHA providers were terminated in each state in the last 5 years?
+Detect anomalies in the count of HHA providers per state to identify unusual concentrations.
+Forecast the number of new home health agencies expected in state code 05 over the next 12 months.
+
 
 <a id="data-analyst-q9"></a>
 #### Q9: What are the wage index values for providers in California?
@@ -314,11 +610,133 @@ I apologize, but I was unable to retrieve the data to answer your question. It s
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **71.5s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.2s |
+| 2 | agent_context | `transfer_to_agent` | 66.9s |
+| 3 | agent_convo | `conversational_chat` | 69.6s |
+| | | **Total** | **124.3s** |
 
 **Answer:**
 
-I cannot answer this question. All attempts to find relevant data or documentation have failed.
+### Summary
+The following data provides the wage index values for Medicare providers located in California (State Code: 06). The list includes both inpatient and outpatient facilities, highlighting their special and supplemental wage indices, as well as geographic location codes for wage index calculations.
+
+### Data Result
+Showing a snapshot of 100 provider records in California, ordered by their most recent effective date.
+
+## Data retrieved
+
+provider_ccn state_code special_wage_index supplemental_wage_index msa_wage_index_location_code cbsa_wage_index_location effective_date facility_type
+      060013         06               None                   1.0083                                                  None     2026-01-12     Inpatient
+      060049         06               None                   1.0083                         0000                     None     2026-01-12     Inpatient
+      064003         06               None                   0.9756                                                  None     2026-01-12     Inpatient
+      060003         06               None                   1.0083                                                  None     2026-01-07     Inpatient
+      060004         06               None                   1.0083                         0000                     None     2026-01-07     Inpatient
+      060009         06               None                   1.0083                                                 14500     2026-01-07     Inpatient
+      060054         06               None                   1.0083                                                  None     2026-01-07     Inpatient
+      060064         06               None                   1.0083                         2080                     None     2026-01-07     Inpatient
+      063030         06               None                   0.9782                         1720                     None     2026-01-06     Inpatient
+      06T006         06               None                   1.0278                           06                     None     2026-01-02     Inpatient
+      061642         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      062009         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      063030         06               None                   0.9782                         1720                     None     2026-01-01     Inpatient
+      067002         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067004         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067015         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067026         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067044         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067051         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067054         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067056         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067063         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067080         06               None                      NaN                                                  None     2026-01-01     Inpatient
+     067084A         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067098         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067112         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067115         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067117         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067129         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067133         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067136         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067147         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067161         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067169         06               None                      NaN                                                  None     2026-01-01     Inpatient
+     067181A         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067191         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067192         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067193         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067195         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067196         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067198         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067201         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067204         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067208         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067215         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067219         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067224         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067253         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067254         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067272         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067274         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067275         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067277         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067280         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067295         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067325         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067337         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067338         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067339         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067402         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067407         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067408         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067413         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067415         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067416         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067417         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067418         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067420         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067421         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067437         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067441         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067443         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067445         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067449         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067450         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067451         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067452         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067453         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067456         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067457         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067460         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067462         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067463         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067464         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067466         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067468         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067469         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067470         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067471         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067474         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067475         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067476         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067477         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067478         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067479         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067481         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067486         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067487         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067489         06               None                      NaN                                                  None     2026-01-01     Inpatient
+      067490         06               None                      NaN                                                  None     2026-01-01     Inpatient
+
+### Insights
+- **Wage Index Consistency:** Many providers in California share similar supplemental wage index values, such as **1.0083**, which often corresponds to specific metropolitan areas or standardized adjustments.
+- **Geographic Reclassification:** Columns like `msa_wage_index_location_code` and `cbsa_wage_index_location` indicate if a provider's wage index is based on a Core-Based Statistical Area (CBSA) or Metropolitan Statistical Area (MSA) that differs from its actual geographic location.
+- **Data Coverage:** The dataset includes various provider types, ranging from general hospitals (Inpatient) to specialized clinics (Outpatient), with records updated as recently as early 2026.
+
+What is the average supplemental wage index for providers in California?
+Which provider in California has the highest supplemental wage index?
+Compare the wage indices between California and Texas providers.
+Forecast the supplemental wage index for California providers for the next 24 months.
+
 
 ### Data Engineer
 
@@ -329,11 +747,45 @@ I cannot answer this question. All attempts to find relevant data or documentati
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **53.1s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.3s |
+| 2 | agent_engineer | `meta_chat` | 4.7s |
+| | | **Total** | **39.8s** |
 
 **Answer:**
 
-{'parts': [{'text': 'The processing log reveals the history of onboarding activities for the two sources currently in the system: `cms_gov` and `datashop_cboe_com`. The most recent activities are related to the `cms_gov` source, which completed its validation phase on March 31, 2026.\n\nHere is the detailed processing log, ordered by the most recent start time:\n\n| source_id | domain | phase | action | status | started_at | completed_at | details |\n|:---|:---|:---|:---|:---|:---|:---|:---|\n| 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce | cms_gov | validate | validate_lineage | completed | 2026-03-31 16:08:20 | None | {"all_passed":true,"tables_checked":58} |\n| 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce | cms_gov | implement | populate_context_chunks | completed | 2026-03-31 15:58:52 | None | {"chunks_created":1468,"chunks_inserted":1468,"tables_chunked":58} |\n| 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce | cms_gov | implement | publish_lineage | completed | 2026-03-31 15:58:09 | None | {"events_created":618,"process":"projects/1026793852137/locations/us/processes/37459e18-d412-495a-8458-e85b2c179061","run":"projects/1026793852137/locations/us/processes/37459e18-d412-495a-8458-e85b2c179061/runs/218fdf7a-8e12-4780-8cd3-5a0cd186d282"} |\n| 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce | cms_gov | implement | execute_sql | completed | 2026-03-31 15:57:33 | None | {"errors":4,"rows":{"_11_20_25_complete_msn_message_list":651,"_508_compliant_version_of_icd_10_cm_conversion_table_fy25":5409,"_508_compliant_version_of_sampled_npis":2677,"_508_version_icd_10_cm_conversion_table_fy2026_april_1_2026":5896,"_508compliantversion_y2":2665,"cmsambdata_y1sample_forposting20feb":2677,"cmsambdata_y2sample_post":2665,"cmsambdata_y3sample_post":2649,"cmsambdata_y3sample_post508":2649,"cmsambdata_y4sample_post":2635,"cmsambdata_y4sample_post508":2635,"cy2026_landscape_202603":138263,"icd10cm_drug_2025":29,"icd10cm_drug_2026":29,"icd10cm_eindex_2025":24,"icd10cm_eindex_2026":24,"icd10cm_index_2025":28,"icd10cm_index_2026":28,"icd10cm_neoplasm_2025":3,"icd10cm_neoplasm_2026":3,"icd10pcs_conversion_table":17489,"icd10pcs_definitions_2026":19,"icd10pcs_index_2026":29,"icd10pcs_tables_2026":916,"icd_10_cm_conversion_table_fy2025_effective_10_01_2024_final":5406,"icd_10_cm_conversion_table_fy2026_april_1_2026":5893,"ipsf_full":4895679,"ipsf_hha":1077752,"ipsf_hha_lro":110170,"ipsf_hos":240051,"ipsf_hos_lro":39042,"ipsf_inp":1966882,"ipsf_inp_lro":50047,"ipsf_ipf":480220,"ipsf_ipf_lro":24515,"ipsf_irf":448365,"ipsf_irf_lro":22995,"ipsf_ltch":136774,"ipsf_ltch_lro":4347,"ipsf_snf":1681117,"ipsf_snf_lro":111173,"msn_message_character_limits":10,"opsf":1418399,"opsf_full":1406663,"opsf_lro":266721,"poaexempt_add_codes_fy25":49,"poaexempt_add_codes_fy26":209,"poaexempt_codes_fy25":38154,"poaexempt_codes_fy26":38349,"poaexempt_delete_codes_fy25":5,"poaexempt_delete_codes_fy26":14,"poaexempt_revise_codes_fy25":4,"poaexempt_revise_codes_fy26":50,"vehicles_main_templates_and_instructions_v2":56},"tables":54} |\n| 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce | cms_gov | implement | create_external_tables | completed | 2026-03-31 15:07:29 | None | {"created":56,"skipped":2} |\n| 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce | cms_gov | implement | column_recovery | completed | 2026-03-31 15:02:24 | None | {"coerced_to_string":["Unnamed: 5","Unnamed: 7","Unnamed: 8","Unnamed: 9","Unnamed: 10"],"omitted":[],"reason":"Error converting Pandas column with name: \\"Unnamed: 5\\" and datatype: \\"object\\" to an appropriate pyarrow datatype: Array, ListArray, or StructArray","table":"vehicles_main_templates_and_instructions_v2"} |\n| 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce | cms_gov | implement | column_recovery | completed | 2026-03-31 15:00:32 | None | {"coerced_to_string":["page"],"omitted":[],"reason":"Error converting Pandas column with name: \\"page\\" and datatype: \\"object\\" to an appropriate pyarrow datatype: Array, ListArray, or StructArray","table":"msn_message_character_limits"} |\n| 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce | cms_gov | implement | column_recovery | completed | 2026-03-31 14:59:59 | None | {"coerced_to_string":["nppes_organization_name"],"omitted":[],"reason":"Error converting Pandas column with name: \\"nppes_organization_name\\" and datatype: \\"object\\" to an appropriate pyarrow datatype: Array, ListArray, or StructArray","table":"icd_10_cm_conversion_table_fy2025_effective_10_01_2024_final"} |\n| 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce | cms_gov | implement | column_recovery | completed | 2026-03-31 14:59:50 | None | {"coerced_to_string":["nppes_organization_name"],"omitted":[],"reason":"Error converting Pandas column with name: \\"nppes_organization_name\\" and datatype: \\"object\\" to an appropriate pyarrow datatype: Array, ListArray, or StructArray","table":"icd_10_cm_conversion_table_fy2026_april_1_2026"} |\n| 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce | cms_gov | implement | column_recovery | completed | 2026-03-31 14:59:10 | None | {"coerced_to_string":["npi"],"omitt
+I have retrieved the processing log for the most recently onboarded source, which is associated with the dataset **data_onboarding_cms_gov_bronze** (Source ID: `7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce`). The log details the sequence of actions taken across various phases of the onboarding pipeline, from initial acquisition to final validation.
+
+## Data retrieved
+
+                  dataset_name                               log_id                            source_id     phase                  action    status          started_at completed_at
+data_onboarding_cms_gov_bronze f561fea7-f26d-4e56-b0c5-04c57edee2a7 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce   acquire               crawl_url completed 2026-03-31 13:39:38         None
+data_onboarding_cms_gov_bronze ce509ab1-41c1-4ac8-878a-fd8730aaa545 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce   acquire          download_files completed 2026-03-31 13:57:57         None
+data_onboarding_cms_gov_bronze cc2ec77f-a166-4ee0-bfb9-d9b7974543fa 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce  discover          detect_changes completed 2026-03-31 13:58:16         None
+data_onboarding_cms_gov_bronze bcfb7404-274d-40ed-9d2e-ab5fd28a5b27 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce    design        record_decisions completed 2026-03-31 14:55:51         None
+data_onboarding_cms_gov_bronze fd6eec30-8b91-45a7-8986-b3cb5946fcb8 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce implement         column_recovery completed 2026-03-31 14:56:22         None
+data_onboarding_cms_gov_bronze 65959eef-87b8-4ca9-bcd6-871145c18f39 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce implement         column_recovery completed 2026-03-31 14:58:21         None
+data_onboarding_cms_gov_bronze 2c84bf9b-fd15-467c-8ddd-adac0ce3cde8 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce implement         column_recovery completed 2026-03-31 14:59:10         None
+data_onboarding_cms_gov_bronze e312ab70-0cb8-418a-8b5f-ee9f9f080705 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce implement         column_recovery completed 2026-03-31 14:59:50         None
+data_onboarding_cms_gov_bronze a6750de2-180a-44eb-89d3-7b93720d591a 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce implement         column_recovery completed 2026-03-31 14:59:59         None
+data_onboarding_cms_gov_bronze 95e02457-99de-4305-b3d5-3aade96cbc33 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce implement         column_recovery completed 2026-03-31 15:00:32         None
+data_onboarding_cms_gov_bronze 3ab7da6c-93d4-432d-9728-b6a458d0687b 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce implement         column_recovery completed 2026-03-31 15:02:24         None
+data_onboarding_cms_gov_bronze bd712180-931e-4d9e-b4cb-3ca0ffa1b099 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce implement  create_external_tables completed 2026-03-31 15:07:29         None
+data_onboarding_cms_gov_bronze 829fed4c-ca5c-4ea3-9e9c-037a711a8938 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce implement             execute_sql completed 2026-03-31 15:57:33         None
+data_onboarding_cms_gov_bronze 74332917-348d-4086-a2d3-fa5709e1d552 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce implement         publish_lineage completed 2026-03-31 15:58:09         None
+data_onboarding_cms_gov_bronze c4d295a2-0a4f-46c5-80a5-b4d97272e013 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce implement populate_context_chunks completed 2026-03-31 15:58:52         None
+data_onboarding_cms_gov_bronze 6d8d512e-2f0a-4b96-95f1-702b13f5bece 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce  validate        validate_lineage completed 2026-03-31 16:08:20         None
+
+### Insights
+*   **Pipeline Completion**: The onboarding process for this source successfully progressed through all major phases: **Acquire**, **Discover**, **Design**, **Implement**, and **Validate**.
+*   **Activity Breakdown**: The most intensive phase was **Implement**, which involved multiple `column_recovery` actions, the creation of external tables, and the publishing of data lineage.
+*   **Status**: All recorded actions are marked as `completed`, indicating a successful run of the pipeline for this specific source.
+*   **Timeline**: The processing occurred on March 31, 2026, starting with the URL crawl at 1:39 PM and concluding with lineage validation at 4:08 PM.
+
+What are the details of the schema decisions made for this source?
+Can you show me the data lineage for the tables created in the cms_gov dataset?
+How many files were downloaded during the acquire phase for this source?
+Show me the processing logs for a different source, like the datashop_cboe_com domain.
+
 
 <a id="data-engineer-q10"></a>
 #### Q10: Which tables are partitioned and on what columns?
@@ -342,11 +794,25 @@ I cannot answer this question. All attempts to find relevant data or documentati
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **25.8s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.2s |
+| 2 | agent_engineer | `meta_chat` | 4.6s |
+| | | **Total** | **33.2s** |
 
 **Answer:**
 
-{'parts': [{'text': "Five of the six tables in the onboarding metadata dataset are partitioned by day. This partitioning strategy is applied to the primary timestamp column of each table, allowing for efficient time-based filtering.\n\nHere's the breakdown of partitioned tables and their corresponding columns:\n\n*   **source_manifest**: Partitioned daily on **`discovered_at`**.\n*   **processing_log**: Partitioned daily on **`started_at`**.\n*   **table_lineage**: Partitioned daily on **`created_at`**.\n*   **schema_decisions**: Partitioned daily on **`created_at`**.\n*   **web_provenance**: Partitioned daily on **`crawled_at`**.\n\nThe **data_catalog** table is the only one in this set that is not partitioned, likely because it serves as a high-level summary of onboarded sources rather than a high-volume transactional log.\n\nLet me know if you have any other questions!"}], 'role': 'model'}
+The following tables are partitioned by daily granularity:
+
+*   **source_manifest**: Partitioned on the `discovered_at` column.
+*   **processing_log**: Partitioned on the `started_at` column.
+*   **table_lineage**: Partitioned on the `created_at` column.
+*   **schema_decisions**: Partitioned on the `created_at` column.
+*   **web_provenance**: Partitioned on the `crawled_at` column.
+
+The **data_catalog** table is not partitioned, but it is clustered by `dataset_name`.
+
+Partitioning by daily timestamps helps to optimize query performance and cost, especially for queries that filter by time ranges.
+
+Would you like to know about the clustering columns for these tables, or perhaps look into the daily file discovery count?
 
 <a id="data-engineer-q2"></a>
 #### Q2: What files were downloaded from CMS?
@@ -355,11 +821,853 @@ I cannot answer this question. All attempts to find relevant data or documentati
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **45.4s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.4s |
+| 2 | agent_engineer | `meta_chat` | 4.9s |
+| | | **Total** | **283.3s** |
 
 **Answer:**
 
-A total of **1,257 files** were downloaded from the Centers for Medicare & Medicaid Services (CMS). These files include a wide range of formats such as PDFs, Parquet data files, ZIP archives, and Markdown context documents.\n\n### Downloaded Files by Type\n| file_type | file_count | total_size_bytes |\n|:----------|:-----------|:-----------------|\n| pdf       | 505.0      | 991813891.0      |\n| md        | 332.0      | 1564266.0        |\n| parquet   | 174.0      | 384236298.0      |\n| txt       | 89.0       | 256307990.0      |\n| zip       | 51.0       | 762131238.0      |\n| xlsx      | 42.0       | 10531246.0       |\n| xml       | 39.0       | 156489651.0      |\n| csv       | 14.0       | 159964578.0      |\n| html      | 10.0       | 1502008.0        |\n| json      | 1.0        | 202467.0         |\n\nThe majority of the files are **PDF documents** (505), followed by **Markdown files** (332) which typically contain page content or documentation. There is also a significant amount of structured data in **Parquet** (174) and **ZIP** (51) formats.\n\n### Key Large Files\n\n| file_path                                                                                                                   | file_type | file_size_bytes |\n|:----------------------------------------------------------------------------------------------------------------------------|:----------|:----------------|\n| applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/cy2006-cy2025_landscape_files.zip       | zip       | 190768604.0     |\n| applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CY2026_Landscape_202603.csv               | csv       | 79215802.0      |\n| applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CY2026_Landscape_202603.csv               | csv       | 79215802.0      |\n| applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/psf-sas-january-2026.zip               | zip       | 64169558.0      |\n| applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/psf-sas-october-2025-updated-december-2025_1.zip | zip       | 64056701.0      |\n| applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/psf-sas-july-2025.zip                 | zip       | 51965673.0      |\n| applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/psf-sas-january-2025.zip               | zip       | 51189229.0      |\n| applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/icd10cm_index_2026.pdf                   | pdf       | 44104230.0      |\n| applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/icd10cm_index_2026.pdf                   | pdf       | 44100126.0      |\n| applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/icd10cm_index_2026.pdf                   | pdf       | 44100126.0      |\n\nSome of the largest files downloaded include historical landscape files and SAS archives, which often contain substantial amounts of tabular data.\n\n### Insights\n- **Diverse Data Formats**: The onboarding process captured both unstructured (PDF, MD) and structured (Parquet, CSV, XLSX) data, ensuring a comprehensive view of the source.\n- **Large-Scale Data Acquisition**: The presence of ZIP archives exceeding 190 MB indicates that large datasets, such as multi-year landscape files, were successfully acquired.\n- **Documentation Focus**: A significant portion of the downloads (over 800 files between PDF and Markdown) likely represents guidelines, manuals, and page-level documentation.\n\nDo you have any follow-up questions? For example:\n* What tables were created in BigQuery from these CMS files?\n* Show me the schema decisions made for the CMS tables.\n* Can we see the processing log for the CMS data onboarding?\n* Which file types account for the most storage space in bytes?
+A total of **1,257** files were downloaded from the CMS domain (`cms_gov`). These files include a variety of data archives, context documentation, and specific data formats such as Parquet, PDF, and Excel.
+
+The following list shows a partial selection of the downloaded files (truncated to the first 1,000 results):
+
+## Data retrieved
+
+```
+                                                                                                                                                                             file_path file_type  file_size_bytes classification  domain
+                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/2016-2024-congressional-district-reports.zip       zip       10218874.0        unknown cms_gov
+                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/2025-congressional-district-report-508.zip       zip        3615821.0        unknown cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/CMSAmbdata_Y2sample_post.zip       zip         156147.0        unknown cms_gov
+                                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/CMSAmbdata_Y3sample_post_rev.zip       zip         156772.0        unknown cms_gov
+                                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/CMSAmbdata_Y4sample_post_rev.zip       zip         156649.0        unknown cms_gov
+                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/ICD-10-CM-Conversion-Table-FY2025-Effective-10-01-2024-FINAL.zip       zip         152304.0        unknown cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/POAexemptCodesFY25.zip       zip        1659705.0        unknown cms_gov
+                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/Past Rate Announcements and Call Letters.zip       zip       10019439.0        unknown cms_gov
+                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/Vehicles_MainTemplates_and_Instructions_v2_0.zip       zip          30406.0        unknown cms_gov
+                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/Zip File 1 2025 Version Update Summary.zip       zip         106380.0        unknown cms_gov
+                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/Zip File 3 2025 ICD-10-PCS Codes File.zip       zip         662579.0        unknown cms_gov
+                            applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/Zip File 4 2025 ICD-10-PCS Order File (Long and Abbreviated Titles).zip       zip        1318110.0        unknown cms_gov
+                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/Zip File 6 2025 ICD-PCS Conversion Table.zip       zip        1078256.0        unknown cms_gov
+                                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/addendum.zip       zip         275967.0        unknown cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/april-1-2026-addendum.zip       zip         294423.0        unknown cms_gov
+                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/april-1-2026-code-descriptions-in-tabular-order.zip       zip        2242530.0        unknown cms_gov
+                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/april-1-2026-code-tables-tabular-and-index.zip       zip       22755010.0        unknown cms_gov
+                                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/clm104c21_English_Exhibits.zip       zip        2854837.0        unknown cms_gov
+                                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/clm104c21_Spanish_Exhibits.zip       zip        1569295.0        unknown cms_gov
+                                                            applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/cmsambdata_y1sample_forposting20feb.zip       zip         135129.0        unknown cms_gov
+                                                                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/code-descriptions.zip       zip        2194944.0        unknown cms_gov
+                                                                  applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/cy2006-cy2025_landscape_files.zip       zip      190768604.0        unknown cms_gov
+                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/cy2026-medicare-advantage-and-part-d-contract-templates.zip       zip        3772167.0        unknown cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/cy2026_landscape_202603.zip       zip       13529509.0        unknown cms_gov
+                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/icd-10-cm-conversion-table-fy2026-april-1-2026.zip       zip         169772.0        unknown cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/icd10OrderFiles2025_0.zip       zip        2317827.0        unknown cms_gov
+                                                                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/icd10cm_drug_addenda_2026.zip       zip         894553.0        unknown cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/icd10cm_tabular_2025.zip       zip       22809189.0        unknown cms_gov
+                                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/icd10cm_tabular_addenda_2025.zip       zip         743893.0        unknown cms_gov
+                                                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/icd10orderfiles.zip       zip        2204985.0        unknown cms_gov
+                                                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/icd_10_cm_conversion_table_fy2026.zip       zip         167768.0        unknown cms_gov
+                                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/past-medicare-part-d-retail-pharmacy-access-files.zip       zip        4674178.0        unknown cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/poaexemptcodesfy26.zip       zip        1228270.0        unknown cms_gov
+                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/psf-parquet-april-2025.zip       zip       23755139.0        unknown cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/psf-parquet-january-2025.zip       zip       32643200.0        unknown cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/psf-parquet-january-2026.zip       zip       28325532.0        unknown cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/psf-parquet-july-2025.zip       zip       34632958.0        unknown cms_gov
+                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/psf-parquet-october-2025-updated-december-2025.zip       zip       39863584.0        unknown cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/psf-sas-april-2025.zip       zip       32901097.0        unknown cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/psf-sas-january-2025.zip       zip       51189229.0        unknown cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/psf-sas-january-2026.zip       zip       64169558.0        unknown cms_gov
+                                                                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/psf-sas-july-2025.zip       zip       51965673.0        unknown cms_gov
+                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/psf-sas-october-2025-updated-december-2025_1.zip       zip       64056701.0        unknown cms_gov
+                                                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/table-and-index.zip       zip       21881066.0        unknown cms_gov
+                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/zip-file-1-2026-version-update-summary.zip       zip         211846.0        unknown cms_gov
+                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/zip-file-1-pcs_update_summary_2026.zip       zip         105047.0        unknown cms_gov
+                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/zip-file-2-2026-code-tables-and-index.zip       zip        7978738.0        unknown cms_gov
+                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/zip-file-3-2026-icd-10-pcs-codes-file.zip       zip         663322.0        unknown cms_gov
+                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/zip-file-4-2026-icd-10-pcs-order-file-long-and-abbreviated-titles.zip       zip        1319592.0        unknown cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/zip-file-5-2026-addendum.zip       zip         437254.0        unknown cms_gov
+                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/archives/zip-file-6-2026-icd-pcs-conversion-table.zip       zip        1097410.0        unknown cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_000.md        md           1825.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_001.md        md           3045.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_002.md        md           1225.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_003.md        md            904.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_004.md        md            989.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_005.md        md          23038.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_006.md        md           2751.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_007.md        md           3802.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_008.md        md           5143.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_009.md        md           3593.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_100.md        md           1254.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_101.md        md           2370.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_102.md        md           6426.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_103.md        md           4361.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_104.md        md           4842.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_105.md        md           6915.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_106.md        md           5136.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_107.md        md          33885.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_108.md        md           3673.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_109.md        md           3660.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_110.md        md           5056.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_111.md        md           7438.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_112.md        md           3638.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_113.md        md           1888.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_114.md        md           2351.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_115.md        md           4399.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_116.md        md           6568.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_117.md        md           5009.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_118.md        md           2622.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_119.md        md           3910.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_120.md        md           2605.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_121.md        md           4469.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_122.md        md           2454.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_123.md        md           6132.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_124.md        md           1678.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_125.md        md           3781.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_126.md        md          25920.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_127.md        md           1671.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_128.md        md           1248.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_129.md        md           2829.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_130.md        md            573.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_131.md        md            757.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_132.md        md            943.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_133.md        md          17675.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_134.md        md           8324.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_135.md        md            777.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_136.md        md            940.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_137.md        md           9595.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_138.md        md           1363.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_139.md        md           2963.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_140.md        md           3055.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_141.md        md            797.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_142.md        md           1080.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_143.md        md           2768.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_144.md        md            972.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_145.md        md           4394.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_146.md        md           4771.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_147.md        md           1518.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_148.md        md            434.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_149.md        md           4458.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_150.md        md           3355.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_151.md        md           8195.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_152.md        md           8427.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_153.md        md           3723.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_154.md        md           5434.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_155.md        md           3563.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_156.md        md           1949.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_157.md        md            912.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_158.md        md           5237.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_159.md        md           2214.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_160.md        md           7386.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_161.md        md           4176.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_162.md        md           2931.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_163.md        md           2491.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_164.md        md           1102.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_165.md        md           3437.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_166.md        md           1825.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_167.md        md           1404.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_168.md        md            586.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_169.md        md           2202.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_170.md        md           3612.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_171.md        md           9429.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_172.md        md           1012.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_173.md        md           1229.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_174.md        md           3990.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_175.md        md           2794.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_176.md        md           1971.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_177.md        md           4249.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_178.md        md            891.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_179.md        md           5595.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_180.md        md           2454.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_181.md        md            589.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_182.md        md          12930.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_183.md        md            773.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_184.md        md          13821.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_185.md        md           3893.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_186.md        md            384.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_187.md        md           2048.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_188.md        md           1620.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_189.md        md           1258.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_190.md        md           3100.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_191.md        md            855.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_192.md        md           2665.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_193.md        md           4717.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_194.md        md           1112.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_195.md        md          11466.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_196.md        md          12462.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_197.md        md           1707.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_198.md        md           2506.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_199.md        md           3656.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_10.md        md           4287.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_11.md        md           3975.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_12.md        md          54249.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_13.md        md            965.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_14.md        md            968.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_15.md        md           1005.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_16.md        md           1021.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_17.md        md           1896.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_18.md        md          10749.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_19.md        md            872.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_200.md        md           3509.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_201.md        md           1203.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_202.md        md          53809.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_203.md        md           4641.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_204.md        md           4744.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_205.md        md           2969.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_206.md        md           6588.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_207.md        md           9311.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_208.md        md           6726.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_209.md        md            639.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_20.md        md            544.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_210.md        md            813.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_211.md        md            833.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_212.md        md           2535.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_213.md        md           3707.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_214.md        md            697.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_215.md        md           1086.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_216.md        md          17967.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_217.md        md         130099.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_218.md        md          12977.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_219.md        md           4222.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_21.md        md          17578.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_220.md        md           3143.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_221.md        md           4420.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_222.md        md           2364.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_223.md        md           1365.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_224.md        md           5661.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_225.md        md           2124.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_226.md        md           5678.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_227.md        md            999.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_228.md        md           4102.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_229.md        md            770.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_22.md        md           2485.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_230.md        md           1389.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_231.md        md           2458.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_232.md        md           2565.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_233.md        md           5495.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_234.md        md            697.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_235.md        md           1083.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_236.md        md           1803.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_237.md        md            777.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_238.md        md           1188.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_239.md        md            709.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_23.md        md           4013.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_240.md        md            551.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_241.md        md           3137.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_242.md        md           1392.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_243.md        md           1689.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_244.md        md            219.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_245.md        md            225.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_246.md        md           9089.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_247.md        md           2344.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_248.md        md           2638.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_249.md        md           2677.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_24.md        md           1681.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_250.md        md           5147.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_251.md        md           3895.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_252.md        md           6511.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_253.md        md           3440.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_254.md        md           2251.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_255.md        md            353.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_256.md        md           3491.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_257.md        md           4236.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_258.md        md           3251.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_259.md        md           5534.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_25.md        md           6034.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_260.md        md           1796.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_261.md        md           3152.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_262.md        md           1271.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_263.md        md            795.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_264.md        md          10114.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_265.md        md          11908.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_266.md        md            925.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_267.md        md           3162.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_268.md        md           1303.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_269.md        md           1791.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_26.md        md            161.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_270.md        md           3498.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_271.md        md           2238.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_272.md        md           1885.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_273.md        md           1979.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_274.md        md           2241.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_275.md        md           2000.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_276.md        md           2198.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_277.md        md           2372.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_278.md        md            731.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_279.md        md            290.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_27.md        md           3467.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_280.md        md            148.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_281.md        md           4758.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_282.md        md            652.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_283.md        md            954.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_284.md        md            267.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_285.md        md            324.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_286.md        md            460.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_287.md        md           1995.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_288.md        md            640.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_289.md        md           5817.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_28.md        md           1378.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_290.md        md            500.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_291.md        md            553.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_292.md        md           1681.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_293.md        md            737.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_294.md        md            345.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_295.md        md           2136.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_296.md        md           2072.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_297.md        md            604.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_298.md        md           7422.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_299.md        md           6190.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_29.md        md           1562.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_300.md        md           1229.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_301.md        md           2595.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_302.md        md           3982.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_303.md        md           1425.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_304.md        md          10833.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_305.md        md            938.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_306.md        md           7635.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_307.md        md           3207.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_308.md        md           7471.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_309.md        md           2197.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_30.md        md           1785.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_310.md        md           4988.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_311.md        md           4433.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_312.md        md           1891.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_313.md        md           6711.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_314.md        md           2729.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_315.md        md          19193.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_316.md        md           6052.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_317.md        md            914.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_318.md        md           4544.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_319.md        md           1207.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_31.md        md           1827.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_320.md        md           1680.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_321.md        md           1135.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_322.md        md           1466.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_323.md        md           4165.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_324.md        md          26453.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_325.md        md           8802.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_326.md        md           7794.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_327.md        md           4082.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_328.md        md           1253.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_329.md        md            845.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_32.md        md           3145.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_330.md        md          32747.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_331.md        md          32760.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_33.md        md           3610.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_34.md        md           4046.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_35.md        md           1936.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_36.md        md           1434.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_37.md        md           1293.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_38.md        md           2722.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_39.md        md          10487.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_40.md        md           4394.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_41.md        md           1458.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_42.md        md          14211.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_43.md        md           5231.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_44.md        md           7612.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_45.md        md          11598.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_46.md        md          10732.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_47.md        md            849.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_48.md        md            181.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_49.md        md           1185.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_50.md        md           3178.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_51.md        md           4943.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_52.md        md           9162.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_53.md        md           2101.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_54.md        md           4801.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_55.md        md           1710.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_56.md        md          15048.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_57.md        md           1757.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_58.md        md           1909.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_59.md        md           1937.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_60.md        md           1463.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_61.md        md           2412.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_62.md        md           3165.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_63.md        md           1343.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_64.md        md           2415.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_65.md        md           5743.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_66.md        md           3524.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_67.md        md           6435.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_68.md        md           1147.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_69.md        md           4520.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_70.md        md           4003.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_71.md        md           4671.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_72.md        md           2765.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_73.md        md           2206.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_74.md        md            855.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_75.md        md           5895.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_76.md        md           1138.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_77.md        md           1073.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_78.md        md           8899.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_79.md        md           2876.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_80.md        md           2459.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_81.md        md           1635.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_82.md        md            143.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_83.md        md           1708.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_84.md        md           4351.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_85.md        md           8668.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_86.md        md           1672.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_87.md        md           2585.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_88.md        md           5019.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_89.md        md           3291.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_90.md        md           2399.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_91.md        md           3111.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_92.md        md           2674.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_93.md        md           5432.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_94.md        md           1380.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_95.md        md            877.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_96.md        md          17352.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_97.md        md          10120.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_98.md        md           2165.0        context cms_gov
+                                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/context/page_99.md        md           2313.0        context cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/1.1_PartA_Inpatient_120907.pdf       pdf         382501.0        context cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/1.1_PartA_Inpatient_120907.pdf       pdf         382501.0                cms_gov
+                                                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/1.2_BofA_120907.pdf       pdf         362715.0        context cms_gov
+                                                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/1.2_BofA_120907.pdf       pdf         362715.0                cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/1.3_PartA_Hospice_120921.pdf       pdf         355943.0        context cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/1.3_PartA_Hospice_120921.pdf       pdf         355943.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/1.4_PartA_HomeHealth_120921.pdf       pdf         357355.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/1.4_PartA_HomeHealth_120921.pdf       pdf         357355.0        context cms_gov
+                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/1.6_PartB_Assigned_120907.pdf       pdf         369436.0        context cms_gov
+                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/1.6_PartB_Assigned_120907.pdf       pdf         369436.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/1.7_PartB_Unassigned_120907.pdf       pdf         334559.0        context cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/1.7_PartB_Unassigned_120907.pdf       pdf         334559.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/1.8_DME_Assigned_120907.pdf       pdf         340908.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/1.8_DME_Assigned_120907.pdf       pdf         340908.0        context cms_gov
+                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/1.9_DME_Unassigned_120907.pdf       pdf         324319.0                cms_gov
+                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/1.9_DME_Unassigned_120907.pdf       pdf         324319.0        context cms_gov
+                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/11-20-25-complete-msn-message-list.xlsx      xlsx         134474.0                cms_gov
+                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/11-20-25-complete-msn-message-list.xlsx      xlsx         134474.0           data cms_gov
+                                                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/146514_bp102c15.pdf       pdf        1199911.0                cms_gov
+                                                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/146514_bp102c15.pdf       pdf        1199911.0        context cms_gov
+                                                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/182378_MM8921.pdf       pdf          76451.0                cms_gov
+                                                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/182378_MM8921.pdf       pdf          76451.0        context cms_gov
+                                                                    applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.10_Breaking_LongNotes_120409.pdf       pdf         261272.0                cms_gov
+                                                                    applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.10_Breaking_LongNotes_120409.pdf       pdf         261272.0        context cms_gov
+                                                                            applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.11_Combined_A_121015.pdf       pdf         687221.0                cms_gov
+                                                                            applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.11_Combined_A_121015.pdf       pdf         687221.0        context cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.12_Combined_PartB_120907.pdf       pdf         336950.0        context cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.12_Combined_PartB_120907.pdf       pdf         336950.0                cms_gov
+                                                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.13_Pay_120907.pdf       pdf         329718.0                cms_gov
+                                                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.13_Pay_120907.pdf       pdf         329718.0        context cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.14_Envelopes_120409.pdf       pdf         179088.0                cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.14_Envelopes_120409.pdf       pdf         179088.0        context cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.15_Envelope_pay_120409.pdf       pdf         543502.0                cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.15_Envelope_pay_120409.pdf       pdf         543502.0        context cms_gov
+                                                                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.1_Duplicate_120907.pdf       pdf         247755.0                cms_gov
+                                                                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.1_Duplicate_120907.pdf       pdf         247755.0        context cms_gov
+                                                                            applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.26.26_telehealth_faq.pdf       pdf          50985.0                cms_gov
+                                                                            applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.26.26_telehealth_faq.pdf       pdf          50985.0        context cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.2_Deductible_PartB_120907.pdf       pdf         278418.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.2_Deductible_PartB_120907.pdf       pdf         278418.0        context cms_gov
+                                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.3_Deductible_Benefit_120907.pdf       pdf         379643.0                cms_gov
+                                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.3_Deductible_Benefit_120907.pdf       pdf         379643.0        context cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.4_ProviderList_120907.pdf       pdf         246306.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.4_ProviderList_120907.pdf       pdf         246306.0        context cms_gov
+                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.5_ProviderHeader_120622.pdf       pdf         203655.0                cms_gov
+                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.5_ProviderHeader_120622.pdf       pdf         203655.0        context cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.6_Multipledates_120511.pdf       pdf         259441.0                cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.6_Multipledates_120511.pdf       pdf         259441.0        context cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.7_NoneRemain_120409.pdf       pdf         222084.0                cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.7_NoneRemain_120409.pdf       pdf         222084.0        context cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.8_AdjustedClaim_120925.pdf       pdf         219475.0        context cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.8_AdjustedClaim_120925.pdf       pdf         219475.0                cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.9_ContinuedClaims_120409.pdf       pdf         249591.0        context cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2.9_ContinuedClaims_120409.pdf       pdf         249591.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2024.03 - SNF FINAL 508.pdf       pdf        1297877.0        context cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2024.03 - SNF FINAL 508.pdf       pdf        1297877.0                cms_gov
+                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2025 Congressional District Report-508.html      html          82030.0        context cms_gov
+                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2025 Congressional District Report-508.html      html          82030.0                cms_gov
+                                                            applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2025 Congressional District Report-508.pdf       pdf        4453779.0        context cms_gov
+                                                            applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2025 Congressional District Report-508.pdf       pdf        4453779.0                cms_gov
+                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2025 Congressional District Report.xlsx      xlsx         126981.0           data cms_gov
+                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2025 Congressional District Report.xlsx      xlsx         126981.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 1833 Cost Contract.pdf       pdf         170092.0        context cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 1833 Cost Contract.pdf       pdf         170092.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 1876 Cost Contract.pdf       pdf         225047.0        context cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 1876 Cost Contract.pdf       pdf         225047.0                cms_gov
+                                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 800 Series Only PFFS Contract.pdf       pdf         269906.0        context cms_gov
+                                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 800 Series Only PFFS Contract.pdf       pdf         269906.0                cms_gov
+                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 800 Series Only-PDP Contract.pdf       pdf         228490.0        context cms_gov
+                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 800 Series Only-PDP Contract.pdf       pdf         228490.0                cms_gov
+                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 800 Series Only_MA-PD Addendum.pdf       pdf         224864.0        context cms_gov
+                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 800 Series Only_MA-PD Addendum.pdf       pdf         224864.0                cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 CCP Contract.pdf       pdf         244400.0                cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 CCP Contract.pdf       pdf         244400.0        context cms_gov
+                                                                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 ED PDP Contract.pdf       pdf         225031.0        context cms_gov
+                                                                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 ED PDP Contract.pdf       pdf         225031.0                cms_gov
+                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 EGWP Cost Part D Only Addendum.pdf       pdf         190243.0        context cms_gov
+                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 EGWP Cost Part D Only Addendum.pdf       pdf         190243.0                cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 EGWP MA-Only Addendum.pdf       pdf         172269.0                cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 EGWP MA-Only Addendum.pdf       pdf         172269.0        context cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 EGWP MA-PD Addendum.pdf       pdf         203692.0                cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 EGWP MA-PD Addendum.pdf       pdf         203692.0        context cms_gov
+                                                                            applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 EGWP MSA Addendum.pdf       pdf         164842.0        context cms_gov
+                                                                            applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 EGWP MSA Addendum.pdf       pdf         164842.0                cms_gov
+                                                                            applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 EGWP PDP Addendum.pdf       pdf         190661.0                cms_gov
+                                                                            applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 EGWP PDP Addendum.pdf       pdf         190661.0        context cms_gov
+                                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 MA-PD Addendum.pdf       pdf         204141.0                cms_gov
+                                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 MA-PD Addendum.pdf       pdf         204141.0        context cms_gov
+                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 MSA 800 Series-Only Contract.pdf       pdf         251081.0                cms_gov
+                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 MSA 800 Series-Only Contract.pdf       pdf         251081.0        context cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 MSA Contract.pdf       pdf         241503.0                cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 MSA Contract.pdf       pdf         241503.0        context cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 PDP Contract.pdf       pdf         215164.0        context cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 PDP Contract.pdf       pdf         215164.0                cms_gov
+                                                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 PFFS Contract.pdf       pdf         247683.0        context cms_gov
+                                                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 PFFS Contract.pdf       pdf         247683.0                cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 Signature Attestation.pdf       pdf          66260.0        context cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/2026 Signature Attestation.pdf       pdf          66260.0                cms_gov
+                                                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/231921_AmbulanceReport_Rule_31July-e.pdf       pdf        4357312.0                cms_gov
+                                                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/231921_AmbulanceReport_Rule_31July-e.pdf       pdf        4357312.0        context cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.10_SP_Duplicate_120907.pdf       pdf         261577.0                cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.10_SP_Duplicate_120907.pdf       pdf         261577.0        context cms_gov
+                                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.11_SP_Deductible_PartB_120907.pdf       pdf         304780.0                cms_gov
+                                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.11_SP_Deductible_PartB_120907.pdf       pdf         304780.0        context cms_gov
+                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.12_SP_Deductible_Benefit_120907.pdf       pdf         396224.0                cms_gov
+                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.12_SP_Deductible_Benefit_120907.pdf       pdf         396224.0        context cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.13_SP_Providerlist_120907.pdf       pdf         264868.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.13_SP_Providerlist_120907.pdf       pdf         264868.0        context cms_gov
+                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.14_SP_NoneRemain_120622.pdf       pdf         273614.0        context cms_gov
+                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.14_SP_NoneRemain_120622.pdf       pdf         273614.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.15_SP_Adjusted_120409.pdf       pdf         263076.0        context cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.15_SP_Adjusted_120409.pdf       pdf         263076.0                cms_gov
+                                                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.16_SP_Pay_120907.pdf       pdf         323351.0        context cms_gov
+                                                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.16_SP_Pay_120907.pdf       pdf         323351.0                cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.17_SP_NoSHIP_120409.pdf       pdf         380062.0        context cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.17_SP_NoSHIP_120409.pdf       pdf         380062.0                cms_gov
+                                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.1_SP_PartA_120907.pdf       pdf         393943.0        context cms_gov
+                                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.1_SP_PartA_120907.pdf       pdf         393943.0                cms_gov
+                                                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.2_SP_BofA_121016.pdf       pdf         366180.0                cms_gov
+                                                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.2_SP_BofA_121016.pdf       pdf         366180.0        context cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.3_SP_Hospice_121016.pdf       pdf         347214.0                cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.3_SP_Hospice_121016.pdf       pdf         347214.0        context cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.4_SP_HomeHealth_120907.pdf       pdf         343866.0                cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.4_SP_HomeHealth_120907.pdf       pdf         343866.0        context cms_gov
+                                                                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.6_SP_PartB_Assigned_121016.pdf       pdf         373832.0        context cms_gov
+                                                                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.6_SP_PartB_Assigned_121016.pdf       pdf         373832.0                cms_gov
+                                                                    applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.7_SP_PartB_Unassigned_120907.pdf       pdf         328990.0                cms_gov
+                                                                    applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.7_SP_PartB_Unassigned_120907.pdf       pdf         328990.0        context cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.8_SP_DME_Assigned_120907.pdf       pdf         331254.0        context cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.8_SP_DME_Assigned_120907.pdf       pdf         331254.0                cms_gov
+                                                                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.9_SP_DME_Unassigned_120907.pdf       pdf         312406.0        context cms_gov
+                                                                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/3.9_SP_DME_Unassigned_120907.pdf       pdf         312406.0                cms_gov
+                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508-Version-ICD-10-CM-CONVERSION-TABLE-FY2026-April 1 2026.csv       csv         138437.0           data cms_gov
+                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508-Version-ICD-10-CM-CONVERSION-TABLE-FY2026-April 1 2026.csv       csv         138437.0                cms_gov
+                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508-compliant-version-ICD_10_CM_CONVERSION_TABLE_FY2026.txt       txt         138455.0        context cms_gov
+                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508-compliant-version-ICD_10_CM_CONVERSION_TABLE_FY2026.txt       txt         138455.0                cms_gov
+                                                                  applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508-compliant-version-of-Example.txt       txt           1148.0        context cms_gov
+                                                                  applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508-compliant-version-of-Example.txt       txt           1148.0                cms_gov
+                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508-compliant-version-of-Ground Ambulance Vehicles.txt       txt            256.0        context cms_gov
+                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508-compliant-version-of-Ground Ambulance Vehicles.txt       txt            256.0                cms_gov
+                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508-compliant-version-of-Other Vehicles.txt       txt            400.0        context cms_gov
+                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508-compliant-version-of-Other Vehicles.txt       txt            400.0                cms_gov
+                                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508-compliant-version-of-Readme.txt       txt          12163.0                cms_gov
+                                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508-compliant-version-of-Readme.txt       txt          12163.0        context cms_gov
+                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508_Compliant_Version_of_ICD-10-CM-Conversion-Table-FY25.csv       csv         127424.0                cms_gov
+                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508_Compliant_Version_of_ICD-10-CM-Conversion-Table-FY25.csv       csv         127424.0           data cms_gov
+                                                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508_Compliant_Version_of_SampledNPIs.csv       csv         126589.0           data cms_gov
+                                                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508_Compliant_Version_of_SampledNPIs.csv       csv         126589.0                cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508compliantversionY2.csv       csv         125587.0           data cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508compliantversionY2.csv       csv         125587.0                cms_gov
+                                                                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/837i_form_cms_1450_mln006926.pdf       pdf         853296.0        context cms_gov
+                                                                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/837i_form_cms_1450_mln006926.pdf       pdf         853296.0                cms_gov
+                                                                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/8a.pdf       pdf          14626.0        context cms_gov
+                                                                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/8a.pdf       pdf          14626.0                cms_gov
+                                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/About-CMS.html      html         243537.0                cms_gov
+                                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/About-CMS.html      html         243537.0        context cms_gov
+                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Agent-Broker-Help-Desks Updates_051024_0.pdf       pdf         305542.0        context cms_gov
+                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Agent-Broker-Help-Desks Updates_051024_0.pdf       pdf         305542.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Allocation_508compliant.pdf       pdf         339224.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Allocation_508compliant.pdf       pdf         339224.0        context cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS BUCKET 1 FULL.pd_.pdf       pdf         343522.0                cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS BUCKET 1 FULL.pd_.pdf       pdf         343522.0        context cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS BUCKET 2 FULL.pdf       pdf         315805.0                cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS BUCKET 2 FULL.pdf       pdf         315805.0        context cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS BUCKET 3 FULL.pdf       pdf         374651.0                cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS BUCKET 3 FULL.pdf       pdf         374651.0        context cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS BUCKET 4 FULL.pdf       pdf         213023.0        context cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS BUCKET 4 FULL.pdf       pdf         213023.0                cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS BUCKET 5 FULL.pdf       pdf         129889.0        context cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS BUCKET 5 FULL.pdf       pdf         129889.0                cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS BUCKET 6 FULL.pd_.pdf       pdf         329082.0        context cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS BUCKET 6 FULL.pd_.pdf       pdf         329082.0                cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS BUCKET 7 FULL.pd_.pdf       pdf         420178.0                cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS BUCKET 7 FULL.pd_.pdf       pdf         420178.0        context cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS BUCKET 8 FULL.pd_.pdf       pdf         306223.0                cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS BUCKET 8 FULL.pd_.pdf       pdf         306223.0        context cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS BUCKET 9 FULL.pdf       pdf         390452.0                cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS BUCKET 9 FULL.pdf       pdf         390452.0        context cms_gov
+                                                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS Form 18F5.pdf       pdf         175443.0                cms_gov
+                                                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS Form 18F5.pdf       pdf         175443.0        context cms_gov
+                                                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS Form L564.pdf       pdf          90157.0                cms_gov
+                                                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS Form L564.pdf       pdf          90157.0        context cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS Mark License Agreement.pdf       pdf         192608.0                cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS Mark License Agreement.pdf       pdf         192608.0        context cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS-40B (508)July2023.pdf       pdf          96875.0                cms_gov
+                                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS-40B (508)July2023.pdf       pdf          96875.0        context cms_gov
+                                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS-855B - 04052021.pdf       pdf         863590.0        context cms_gov
+                                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS-855B - 04052021.pdf       pdf         863590.0                cms_gov
+                                                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS-855I-508C.pdf       pdf         497728.0                cms_gov
+                                                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS-855I-508C.pdf       pdf         497728.0        context cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS-Form 4040-508.pdf       pdf          82369.0                cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMS-Form 4040-508.pdf       pdf          82369.0        context cms_gov
+                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y2sample_post.xlsx      xlsx         119646.0                cms_gov
+                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y2sample_post.xlsx      xlsx         119646.0           data cms_gov
+                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y3sample_post.xlsx      xlsx         121169.0                cms_gov
+                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y3sample_post.xlsx      xlsx         121169.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y3sample_post508.csv       csv         124302.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y3sample_post508.csv       csv         124302.0                cms_gov
+                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y4sample_post.xlsx      xlsx         120847.0           data cms_gov
+                                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y4sample_post.xlsx      xlsx         120847.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y4sample_post508.csv       csv         124148.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y4sample_post508.csv       csv         124148.0                cms_gov
+                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/COVID-19 Updated Guidance for MA and Part D Plan Sponsors 5.22.20.pdf       pdf         190580.0                cms_gov
+                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/COVID-19 Updated Guidance for MA and Part D Plan Sponsors 5.22.20.pdf       pdf         190580.0        context cms_gov
+                                                  applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CY 2024 MA Enrollment and Disenrollment Guidance.pdf       pdf        2822615.0                cms_gov
+                                                  applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CY 2024 MA Enrollment and Disenrollment Guidance.pdf       pdf        2822615.0        context cms_gov
+                                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CY 2025 MA appendices and exhibits.pdf       pdf        1209299.0                cms_gov
+                                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CY 2025 MA appendices and exhibits.pdf       pdf        1209299.0        context cms_gov
+                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CY 2025 PDP appendices and exhibits.pdf       pdf         891196.0                cms_gov
+                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CY 2025 PDP appendices and exhibits.pdf       pdf         891196.0        context cms_gov
+                                                                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CY2026 DUA AGREEMENT.pdf       pdf          44806.0                cms_gov
+                                                                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CY2026 DUA AGREEMENT.pdf       pdf          44806.0        context cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CY2026_Landscape_202603.csv       csv       79215802.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CY2026_Landscape_202603.csv       csv       79215802.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CY2026_Landscape_ReadMe.txt       txt          11609.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CY2026_Landscape_ReadMe.txt       txt          11609.0        context cms_gov
+                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Contracted_services_508_compliant.pdf       pdf         268782.0                cms_gov
+                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Contracted_services_508_compliant.pdf       pdf         268782.0        context cms_gov
+                                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Crown-Memo.pdf       pdf         110141.0                cms_gov
+                                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Crown-Memo.pdf       pdf         110141.0        context cms_gov
+                                                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/DRA.pdf       pdf         527638.0                cms_gov
+                                                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/DRA.pdf       pdf         527638.0        context cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Document_Type_Descriptions.pdf       pdf         200693.0        context cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Document_Type_Descriptions.pdf       pdf         200693.0                cms_gov
+                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/E-Signature How To Guide_Update_final.pdf       pdf        2503416.0                cms_gov
+                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/E-Signature How To Guide_Update_final.pdf       pdf        2503416.0        context cms_gov
+                                                                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/ESRDReportToCongress.pdf       pdf         984758.0        context cms_gov
+                                                                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/ESRDReportToCongress.pdf       pdf         984758.0                cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/ESRDfinalrule0415.pdf       pdf         888550.0                cms_gov
+                                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/ESRDfinalrule0415.pdf       pdf         888550.0        context cms_gov
+                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/EnrollmentTips - Updated 11-28-16.pdf       pdf          59215.0        context cms_gov
+                                                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/EnrollmentTips - Updated 11-28-16.pdf       pdf          59215.0                cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/FAQsESRDRolloutFINAL082808.pdf       pdf          62917.0        context cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/FAQsESRDRolloutFINAL082808.pdf       pdf          62917.0                cms_gov
+                                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/FR04271999.pdf       pdf         528283.0                cms_gov
+                                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/FR04271999.pdf       pdf         528283.0        context cms_gov
+                                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/FR08072013.pdf       pdf         209778.0                cms_gov
+                                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/FR08072013.pdf       pdf         209778.0        context cms_gov
+                                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/FR08222002.pdf       pdf         444100.0                cms_gov
+                                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/FR08222002.pdf       pdf         444100.0        context cms_gov
+                                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/FR09262003.pdf       pdf         674385.0                cms_gov
+                                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/FR09262003.pdf       pdf         674385.0        context cms_gov
+                                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/FR11072003.pdf       pdf         528960.0        context cms_gov
+                                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/FR11072003.pdf       pdf         528960.0                cms_gov
+                                                                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/FactSheet_june2023_0.pdf       pdf         178681.0                cms_gov
+                                                                              applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/FactSheet_june2023_0.pdf       pdf         178681.0        context cms_gov
+                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Five_Top_GADCS_Tips_Year_1_and_2_508compliant_0.pdf       pdf          80848.0                cms_gov
+                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Five_Top_GADCS_Tips_Year_1_and_2_508compliant_0.pdf       pdf          80848.0        context cms_gov
+                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Five_Top_GADCS_Tips_Year_3_and_Year_4_508compliant.pdf       pdf          65899.0        context cms_gov
+                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Five_Top_GADCS_Tips_Year_3_and_Year_4_508compliant.pdf       pdf          65899.0                cms_gov
+                                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/GADCS-User-Guide-02022024-508.pdf       pdf       12547244.0        context cms_gov
+                                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/GADCS-User-Guide-02022024-508.pdf       pdf       12547244.0                cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Government_508_compliant.pdf       pdf         171768.0        context cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Government_508_compliant.pdf       pdf         171768.0                cms_gov
+                                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/HE_Form_110722final.pdf       pdf         145656.0        context cms_gov
+                                                                               applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/HE_Form_110722final.pdf       pdf         145656.0                cms_gov
+                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/HPMS Memo - COVID-19 Vaccine Significant Cost Determination.pdf       pdf         129264.0        context cms_gov
+                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/HPMS Memo - COVID-19 Vaccine Significant Cost Determination.pdf       pdf         129264.0                cms_gov
+applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/HPMS Memo - Diagnostic Testing of Nursing Home Residents and Patients for Coronavirus Disease 2019.pdf       pdf          98215.0                cms_gov
+applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/HPMS Memo - Diagnostic Testing of Nursing Home Residents and Patients for Coronavirus Disease 2019.pdf       pdf          98215.0        context cms_gov
+                  applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/HPMS Memo - Waiver of Premiums related to COVID-19 Permissive Actions 10-15-2020.pdf       pdf          77365.0        context cms_gov
+                  applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/HPMS Memo - Waiver of Premiums related to COVID-19 Permissive Actions 10-15-2020.pdf       pdf          77365.0                cms_gov
+                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/ICD-10-CM FY25 Guidelines October 1, 2024.pdf       pdf         835361.0        context cms_gov
+                                                         applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/ICD-10-CM FY25 Guidelines October 1, 2024.pdf       pdf         835361.0                cms_gov
+                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/ICD-10-CM-CONVERSION-TABLE-FY2026-April 1 2026.xlsx      xlsx         164738.0           data cms_gov
+                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/ICD-10-CM-CONVERSION-TABLE-FY2026-April 1 2026.xlsx      xlsx         164738.0                cms_gov
+                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/ICD-10-CM-Conversion-Table-FY2025-Effective-10-01-2024-FINAL.xlsx      xlsx         152230.0                cms_gov
+                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/ICD-10-CM-Conversion-Table-FY2025-Effective-10-01-2024-FINAL.xlsx      xlsx         152230.0           data cms_gov
+                                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/ICD_10_CM_CONVERSION_TABLE_FY2026.xlsx      xlsx         164524.0                cms_gov
+                                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/ICD_10_CM_CONVERSION_TABLE_FY2026.xlsx      xlsx         164524.0           data cms_gov
+                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IDE Study Criteria Crosswalk Sep 2014.pdf       pdf          91450.0        context cms_gov
+                                                             applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IDE Study Criteria Crosswalk Sep 2014.pdf       pdf          91450.0                cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_FULL_2025-01-01.parquet   parquet       14487239.0                cms_gov
+                                                                          applied-ml/ai-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_FULL_2025-01-01.parquet   parquet       14487239.0           data cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_FULL_2025-04-01.parquet   parquet        3487863.0                cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_FULL_2025-04-01.parquet   parquet        3487863.0           data cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_Full_2025-07-01.parquet   parquet       14865211.0                cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_Full_2025-07-01.parquet   parquet       14865211.0           data cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_Full_2025-10-01.parquet   parquet       15356754.0           data cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_Full_2025-10-01.parquet   parquet       15356754.0                cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_Full_2026-01-02.parquet   parquet       15583235.0                cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_Full_2026-01-02.parquet   parquet       15583235.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_2025-01-01.parquet   parquet        1683778.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_2025-01-01.parquet   parquet        1683778.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_2025-04-01.parquet   parquet        1739053.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_2025-04-01.parquet   parquet        1739053.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_2025-07-01.parquet   parquet        1752542.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_2025-07-01.parquet   parquet        1752542.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_2025-10-01.parquet   parquet        1775817.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_2025-10-01.parquet   parquet        1775817.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_2026-01-02.parquet   parquet        1810247.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_2026-01-02.parquet   parquet        1810247.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_LRO_2025-01-01.parquet   parquet         589692.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_LRO_2025-01-01.parquet   parquet         589692.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_LRO_2025-04-01.parquet   parquet         618746.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_LRO_2025-04-01.parquet   parquet         618746.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_LRO_2025-07-01.parquet   parquet         626401.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_LRO_2025-07-01.parquet   parquet         626401.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_LRO_2025-10-01.parquet   parquet         642466.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_LRO_2025-10-01.parquet   parquet         642466.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_LRO_2026-01-02.parquet   parquet         652533.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HHA_LRO_2026-01-02.parquet   parquet         652533.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_2025-01-01.parquet   parquet         520036.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_2025-01-01.parquet   parquet         520036.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_2025-04-01.parquet   parquet         525257.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_2025-04-01.parquet   parquet         525257.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_2025-07-01.parquet   parquet         531798.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_2025-07-01.parquet   parquet         531798.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_2025-10-01.parquet   parquet         550244.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_2025-10-01.parquet   parquet         550244.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_2026-01-02.parquet   parquet         552426.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_2026-01-02.parquet   parquet         552426.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_LRO_2025-01-01.parquet   parquet         259334.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_LRO_2025-01-01.parquet   parquet         259334.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_LRO_2025-04-01.parquet   parquet         261762.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_LRO_2025-04-01.parquet   parquet         261762.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_LRO_2025-07-01.parquet   parquet         263359.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_LRO_2025-07-01.parquet   parquet         263359.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_LRO_2025-10-01.parquet   parquet         268914.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_LRO_2025-10-01.parquet   parquet         268914.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_LRO_2026-01-02.parquet   parquet         270877.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_HOS_LRO_2026-01-02.parquet   parquet         270877.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_2025-01-01.parquet   parquet        6431301.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_2025-01-01.parquet   parquet        6431301.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_2025-04-01.parquet   parquet        6464315.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_2025-04-01.parquet   parquet        6464315.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_2025-07-01.parquet   parquet        6576285.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_2025-07-01.parquet   parquet        6576285.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_2025-10-01.parquet   parquet        6659387.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_2025-10-01.parquet   parquet        6659387.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_2025-12-05.parquet   parquet        6753939.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_2025-12-05.parquet   parquet        6753939.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_2026-01-02.parquet   parquet        6736147.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_2026-01-02.parquet   parquet        6736147.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_LRO_2025-01-01.parquet   parquet         681319.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_LRO_2025-01-01.parquet   parquet         681319.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_LRO_2025-04-01.parquet   parquet         682197.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_LRO_2025-04-01.parquet   parquet         682197.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_LRO_2025-07-01.parquet   parquet         684819.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_LRO_2025-07-01.parquet   parquet         684819.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_LRO_2025-10-01.parquet   parquet         184253.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_LRO_2025-10-01.parquet   parquet         184253.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_LRO_2025-12-05.parquet   parquet         680238.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_LRO_2025-12-05.parquet   parquet         680238.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_LRO_2026-01-02.parquet   parquet         687307.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_INP_LRO_2026-01-02.parquet   parquet         687307.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_2025-01-01.parquet   parquet         939464.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_2025-01-01.parquet   parquet         939464.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_2025-04-01.parquet   parquet         949465.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_2025-04-01.parquet   parquet         949465.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_2025-07-01.parquet   parquet         956686.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_2025-07-01.parquet   parquet         956686.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_2025-07-29.parquet   parquet         960735.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_2025-07-29.parquet   parquet         960735.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_2025-10-01.parquet   parquet         968898.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_2025-10-01.parquet   parquet         968898.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_2026-01-02.parquet   parquet         978135.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_2026-01-02.parquet   parquet         978135.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_LRO_2025-01-01.parquet   parquet         180831.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_LRO_2025-01-01.parquet   parquet         180831.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_LRO_2025-04-01.parquet   parquet         182120.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_LRO_2025-04-01.parquet   parquet         182120.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_LRO_2025-07-01.parquet   parquet         684819.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_LRO_2025-07-01.parquet   parquet         684819.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_LRO_2025-07-29.parquet   parquet         183083.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_LRO_2025-07-29.parquet   parquet         183083.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_LRO_2025-10-01.parquet   parquet         184253.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_LRO_2025-10-01.parquet   parquet         184253.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_LRO_2026-01-02.parquet   parquet         183629.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IPF_LRO_2026-01-02.parquet   parquet         183629.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_2025-01-01.parquet   parquet        1189923.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_2025-01-01.parquet   parquet        1189923.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_2025-04-01.parquet   parquet        1202580.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_2025-04-01.parquet   parquet        1202580.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_2025-07-01.parquet   parquet        1220601.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_2025-07-01.parquet   parquet        1220601.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_2025-10-01.parquet   parquet        1233617.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_2025-10-01.parquet   parquet        1233617.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_2026-01-02.parquet   parquet        1248887.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_2026-01-02.parquet   parquet        1248887.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_LRO_2025-01-01.parquet   parquet         235172.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_LRO_2025-01-01.parquet   parquet         235172.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_LRO_2025-04-01.parquet   parquet         235926.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_LRO_2025-04-01.parquet   parquet         235926.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_LRO_2025-07-01.parquet   parquet         236421.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_LRO_2025-07-01.parquet   parquet         236421.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_LRO_2025-10-01.parquet   parquet         237017.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_LRO_2025-10-01.parquet   parquet         237017.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_LRO_2026-01-02.parquet   parquet         238081.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_IRF_LRO_2026-01-02.parquet   parquet         238081.0           data cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_2025-01-01.parquet   parquet         359136.0                cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_2025-01-01.parquet   parquet         359136.0           data cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_2025-04-01.parquet   parquet         366667.0                cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_2025-04-01.parquet   parquet         366667.0           data cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_2025-07-01.parquet   parquet         372736.0           data cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_2025-07-01.parquet   parquet         372736.0                cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_2025-10-01.parquet   parquet         371793.0           data cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_2025-10-01.parquet   parquet         371793.0                cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_2026-01-02.parquet   parquet         379725.0           data cms_gov
+                                                                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_2026-01-02.parquet   parquet         379725.0                cms_gov
+                                                                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_LRO_2025-01-01.parquet   parquet          86873.0                cms_gov
+                                                                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_LRO_2025-01-01.parquet   parquet          86873.0           data cms_gov
+                                                                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_LRO_2025-04-01.parquet   parquet          86705.0           data cms_gov
+                                                                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_LRO_2025-04-01.parquet   parquet          86705.0                cms_gov
+                                                                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_LRO_2025-07-01.parquet   parquet          87171.0                cms_gov
+                                                                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_LRO_2025-07-01.parquet   parquet          87171.0           data cms_gov
+                                                                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_LRO_2025-10-01.parquet   parquet          86611.0                cms_gov
+                                                                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_LRO_2025-10-01.parquet   parquet          86611.0           data cms_gov
+                                                                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_LRO_2026-01-02.parquet   parquet          87255.0           data cms_gov
+                                                                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_LTCH_LRO_2026-01-02.parquet   parquet          87255.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_2025-01-01.parquet   parquet        3515822.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_2025-01-01.parquet   parquet        3515822.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_2025-04-01.parquet   parquet        3487863.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_2025-04-01.parquet   parquet        3487863.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_2025-07-01.parquet   parquet        3498918.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_2025-07-01.parquet   parquet        3498918.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_2025-10-01.parquet   parquet        3651931.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_2025-10-01.parquet   parquet        3651931.0                cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_2026-01-02.parquet   parquet        3711642.0           data cms_gov
+                                                                           applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_2026-01-02.parquet   parquet        3711642.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_LRO_2025-01-01.parquet   parquet         843709.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_LRO_2025-01-01.parquet   parquet         843709.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_LRO_2025-04-01.parquet   parquet         847963.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_LRO_2025-04-01.parquet   parquet         847963.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_LRO_2025-07-01.parquet   parquet         850209.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_LRO_2025-07-01.parquet   parquet         850209.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_LRO_2025-10-01.parquet   parquet         908940.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_LRO_2025-10-01.parquet   parquet         908940.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_LRO_2026-01-02.parquet   parquet         933700.0           data cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_SNF_LRO_2026-01-02.parquet   parquet         933700.0                cms_gov
+                                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/MA_Step_Therapy_HPMS_Memo_8_7_2018.pdf       pdf          57614.0        context cms_gov
+                                                                applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/MA_Step_Therapy_HPMS_Memo_8_7_2018.pdf       pdf          57614.0                cms_gov
+                    applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/MLN Enrollment Webcast Presentation Multi_Factor Authentication for I&A System.pdf       pdf        1214232.0        context cms_gov
+                    applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/MLN Enrollment Webcast Presentation Multi_Factor Authentication for I&A System.pdf       pdf        1214232.0                cms_gov
+                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/MLN Enrollment Webcast Transcript Multi-Factor Authentication for I&A System.pdf       pdf         296515.0        context cms_gov
+                      applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/MLN Enrollment Webcast Transcript Multi-Factor Authentication for I&A System.pdf       pdf         296515.0                cms_gov
+                                                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/MMAProvisions.pdf       pdf         234297.0        context cms_gov
+                                                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/MMAProvisions.pdf       pdf         234297.0                cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/MPS-QuickReferenceChart-1.html      html          43618.0        context cms_gov
+                                                                        applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/MPS-QuickReferenceChart-1.html      html          43618.0                cms_gov
+                                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/MSN Message Character Limits.xlsx      xlsx          22278.0           data cms_gov
+                                                                     applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/MSN Message Character Limits.xlsx      xlsx          22278.0                cms_gov
+                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Mandatory-Clinical-Trial-Identifier-Number-QsAs.pdf       pdf          94198.0                cms_gov
+                                                   applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Mandatory-Clinical-Trial-Identifier-Number-QsAs.pdf       pdf          94198.0        context cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Med-Prov-Enroll-MLN9658742.html      html         116865.0                cms_gov
+                                                                       applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Med-Prov-Enroll-MLN9658742.html      html         116865.0        context cms_gov
+                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Medicare_Ground_Ambulance_Data_Collection_System_Instrument_Nov_2023_508.pdf       pdf         710062.0        context cms_gov
+                          applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Medicare_Ground_Ambulance_Data_Collection_System_Instrument_Nov_2023_508.pdf       pdf         710062.0                cms_gov
+                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Medicare_Provider-Supplier_Enrollment_National_Education_Products.pdf       pdf         145363.0                cms_gov
+                                 applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/Medicare_Provider-Supplier_Enrollment_National_Education_Products.pdf       pdf         145363.0        context cms_
 
 <a id="data-engineer-q3"></a>
 #### Q3: Which files came from ZIP archives versus direct downloads?
@@ -368,11 +1676,47 @@ A total of **1,257 files** were downloaded from the Centers for Medicare & Medic
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **92.4s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.8s |
+| 2 | agent_engineer | `meta_chat` | 5.3s |
+| | | **Total** | **95.5s** |
 
 **Answer:**
 
-Based on the pipeline metadata in the `source_manifest`, files can be classified as originating from ZIP archives or being acquired via direct download by analyzing their original source URLs.\n\n### Summary\nThe following table provides a breakdown of files by their acquisition source and file type.\n\n*   **From ZIP Archive**: These are files (e.g., PDF, Parquet, CSV) that were extracted from a downloaded ZIP archive. They share an `original_url` that points to a `.zip` file.\n*   **Direct Download**: These are files that were downloaded as-is from the web. This category includes the ZIP archives themselves, as well as standalone documents like PDFs and Markdown files.\n\n## Data retrieved\n\n| source_type     | file_type | file_count |\n| :-------------- | :-------- | :--------- |\n| Direct Download | pdf       | 410.0      |\n| Direct Download | md        | 352.0      |\n| Direct Download | csv       | 123.0      |\n| Direct Download | zip       | 94.0       |\n| Direct Download | parquet   | 87.0       |\n| Direct Download | txt       | 51.0       |\n| Direct Download | xlsx      | 24.0       |\n| Direct Download | xml       | 13.0       |\n| Direct Download | html      | 9.0        |\n| Direct Download | gz        | 4.0        |\n| Direct Download | json      | 2.0        |\n| Direct Download |           | 2.0        |\n| From ZIP Archive| pdf       | 136.0      |\n| From ZIP Archive| parquet   | 87.0       |\n| From ZIP Archive| txt       | 53.0       |\n| From ZIP Archive| xml       | 26.0       |\n| From ZIP Archive| xlsx      | 20.0       |\n| From ZIP Archive| csv       | 7.0        |\n| From ZIP Archive| html      | 1.0        |\n\n### Insights\n- **Extraction Volume**: A significant portion of the data (330 files) was extracted from ZIP archives. This includes nearly all of the Parquet files (87) and a substantial number of PDFs (136).\n- **Direct Content**: The majority of files (1,171) were direct downloads. This is dominated by reference and context documents such as PDFs (410) and Markdown files (352).\n- **Archive Inventory**: There are **94 ZIP archives** currently inventoried in the system, which served as the source for the extracted files listed above.\n\nWould you like to know:\n*   Which ZIP archives yielded the most extracted files?\n*   The distribution of file sizes for files from ZIPs vs direct downloads?\n*   Which onboarded source (domain) relied most heavily on ZIP archives?\n*   The timeline of when these files were first discovered?
+Based on the analysis of the onboarding metadata, files can be distinguished by their origin: **Direct Downloads** are identified by the presence of an original source URL, while **Files from ZIP archives** (and other processing) are typically recorded without an original URL as they were extracted from archives or generated during the pipeline's processing phases.
+
+### File Origin Breakdown
+The following table summarizes the files by their origin and type. "Extracted from ZIP" specifically refers to data files (CSV, Parquet, XLSX, XML) that were uncovered from archives, whereas "Direct Downloads" include the initial files acquired from the web.
+
+```
+                       file_origin file_type  file_count
+                   Direct Download       pdf       292.0
+                   Direct Download   parquet        87.0
+                   Direct Download       csv        65.0
+                   Direct Download       txt        62.0
+                   Direct Download       xml        26.0
+                   Direct Download      xlsx        23.0
+                   Direct Download      html         5.0
+                   Direct Download        gz         2.0
+                   Direct Download                   1.0
+         Extracted from ZIP (Data)   parquet        87.0
+         Extracted from ZIP (Data)       csv        65.0
+         Extracted from ZIP (Data)      xlsx        21.0
+         Extracted from ZIP (Data)       xml        13.0
+                    Other/Internal      json         2.0
+                    Other/Internal        gz         2.0
+                    Other/Internal                   1.0
+Processed Context (from PDF/other)        md       352.0
+Processed Context (from PDF/other)       pdf       254.0
+Processed Context (from PDF/other)       txt        42.0
+Processed Context (from PDF/other)      html         5.0
+```
+
+### Key Insights
+
+*   **Direct Downloads**: A total of **563 files** were downloaded directly. The most common directly downloaded file types are **PDFs (292)**, followed by **Parquet (87)** and **CSV (65)**.
+*   **Extracted from ZIP Archives**: There are **186 data files** (Parquet, CSV, XLSX, and XML) that were extracted from the **94 ZIP archives** identified in the inventory. These files do not have direct source URLs because they reside within the downloaded archives.
+*   **Processed Context**: Additionally, **653 context files** (mostly **Markdown (352)** and **PDF (254)**) were generated or extracted (e.g., page-level extraction from larger documents) during the onboarding process to provide additional metadata for the datasets.
+*   **Archive Folder**: ZIP archives themselves are stored in the `archives/` directory, while their extracted contents are placed in the `files/` directory for further processing.
 
 <a id="data-engineer-q4"></a>
 #### Q4: What schema decisions were made for the provider tables?
@@ -381,11 +1725,46 @@ Based on the pipeline metadata in the `source_manifest`, files can be classified
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **53.2s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.2s |
+| 2 | agent_engineer | `meta_chat` | 4.4s |
+| | | **Total** | **74.8s** |
 
 **Answer:**
 
-{'parts': [{'text': 'Here are the schema decisions made for the provider tables:\n\n### Summary\nThe schema decisions for provider-related tables, primarily from CMS (Centers for Medicare & Medicaid Services) data, focused on standardizing identifiers, handling temporal data through partitioning, and optimizing query performance via clustering. The tables cover ground ambulance providers and Inpatient Prospective Payment System (IPPS) facilities.\n\n### Key Schema Decisions\n\n#### 1. Inpatient Prospective Payment System (IPPS) Provider Files\nThe `ipsf_full` table serves as a comprehensive "Provider Specific File" (PSF) snapshot. Key decisions included:\n*   **Optimization Strategy**:\n    *   **Partitioning**: The table is partitioned by `effective_date` on a **MONTH** basis to improve temporal query efficiency.\n    *   **Clustering**: It is clustered by `provider_type_code`, `provider_ccn`, `npi`, and `waiver_indicator` to speed up filtering on these common identifiers.\n*   **Data Type Standardization**:\n    *   Several columns originally ingested as strings or objects (e.g., `effective_date`, `fiscal_year_begin_date`, `termination_date`) were marked for parsing into proper **DATE** types.\n*   **Key Identifier Recognition**:\n    *   **CCN (CMS Certification Number)**: Identified as a primary key for joining with other provider-level data.\n    *   **NPI (National Provider Identifier)**: Recognized as a unique 10-digit health care provider ID, essential for cross-dataset integration.\n\n#### 2. Ground Ambulance Provider Tables\nThese tables (e.g., `_508_compliant_version_of_sampled_npis`, `_508compliantversion_y2`) list organizations selected for the Medicare Ground Ambulance Data Collection System.\n*   **Entity Extraction**: The `npi` column was specifically enriched and extracted from descriptive text fields where it was implicitly contained.\n*   **Header Handling**: Schema logic accounted for headers (like "NPPES Organization Name") being located in the first row of data for specific CSV files.\n*   **Deduplication**: The onboarding process identified several files as duplicates across different years (e.g., Year 2 and Year 3 samples), leading to consolidated schema proposals.\n\n### Provider Schema Decisions Summary\n\n| table_name                                | reasoning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+### Summary
+Based on the metadata, several schema decisions were made for tables related to healthcare providers, specifically ground ambulance providers and facilities under the Inpatient Prospective Payment System (IPPS). These decisions involve specific partitioning, clustering, and data enrichment strategies to support Medicare payment analysis and provider tracking.
+
+## Data retrieved
+
+| decision_id | table_name | reasoning | status | proposal | created_at |
+|:---|:---|:---|:---|:---|:---|
+| 159a3627-73a0-4191-9f66-3411fd76111e | _508_compliant_version_of_sampled_npis | A list of ground ambulance providers and suppliers selected to submit data in Year 1 of the Medicare Ground Ambulance Data Collection System (GADCS). It includes organization names and state-level address information from the National Plan and Provider Enumeration System (NPPES). | proposed | {"cluster_by":[],"columns":[{"category":"text","dtype":"object","name":"medicare_ground_ambulance_data_collection","source_name":"Medicare Ground Ambulance Data Collection"},{"category":"text","dtype":"object","name":"unnamed_1","source_name":"Unnamed: 1"},{"category":"text","dtype":"object","name":"unnamed_2","source_name":"Unnamed: 2"},{"category":"text","dtype":"object","name":"unnamed_3","source_name":"Unnamed: 3"}],"description":"A list of ground ambulance providers and suppliers selected to submit data in Year 1 of the Medicare Ground Ambulance Data Collection System (GADCS). It includes organization names and state-level address information from the National Plan and Provider Enumeration System (NPPES).","enriched_columns":[{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"Implicitly contains the National Provider Identifier (NPI) of the selected ground ambulance organization.","mode":"NULLABLE","name":"npi","notes":"This column contains descriptive text and should be processed to extract relevant information or used as file-level metadata.","source_name":"Medicare Ground Ambulance Data Collection"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The legal business name of the ground ambulance organization as registered in NPPES.","mode":"NULLABLE","name":"nppes_organization_name","notes":"Header 'NPPES Organization Name' is in the first data row.","source_name":"Unnamed: 1"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The state abbreviation for the organization's practice address as registered in NPPES.","mode":"NULLABLE","name":"nppes_practice_address_state","notes":"Header 'NPPES Practice Address State' is in the first data row.","source_name":"Unnamed: 2"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The state abbreviation for the organization's mailing address as registered in NPPES.","mode":"NULLABLE","name":"nppes_mailing_address_state","notes":"Header 'NPPES Mailing Address State' is in the first data row.","source_name":"Unnamed: 3"}],"full_table_id":"statmike-mlops-349915.data_onboarding_cms_gov_bronze._508_compliant_version_of_sampled_npis","partition_by":null,"related_tables":{},"row_count":500,"source_file":"508_Compliant_Version_of_SampledNPIs.csv","source_files":["508_Compliant_Version_of_SampledNPIs.csv"],"source_path":"applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508_Compliant_Version_of_SampledNPIs.csv","source_paths":["applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508_Compliant_Version_of_SampledNPIs.csv"],"table_name":"_508_compliant_version_of_sampled_npis"} | 2026-03-31 14:55:49 |
+| 86d13749-549c-4cd6-bd5b-d5cdea5940fb | _508compliantversion_y2 | A list of ground ambulance providers and suppliers selected to submit data in Year 2 of the Medicare Ground Ambulance Data Collection System (GADCS). It includes organization names and state-level address information from the National Plan and Provider Enumeration System (NPPES). | proposed | {"cluster_by":[],"columns":[{"category":"text","dtype":"object","name":"medicare_ground_ambulance_data_collection","source_name":"Medicare Ground Ambulance Data Collection"},{"category":"text","dtype":"object","name":"unnamed_1","source_name":"Unnamed: 1"},{"category":"text","dtype":"object","name":"unnamed_2","source_name":"Unnamed: 2"},{"category":"text","dtype":"object","name":"unnamed_3","source_name":"Unnamed: 3"}],"description":"A list of ground ambulance providers and suppliers selected to submit data in Year 2 of the Medicare Ground Ambulance Data Collection System (GADCS). It includes organization names and state-level address information from the National Plan and Provider Enumeration System (NPPES).","enriched_columns":[{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"Implicitly contains the National Provider Identifier (NPI) of the selected ground ambulance organization.","mode":"NULLABLE","name":"npi","notes":"This column contains descriptive text and should be processed to extract relevant information or used as file-level metadata.","source_name":"Medicare Ground Ambulance Data Collection"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The legal business name of the ground ambulance organization as registered in NPPES.","mode":"NULLABLE","name":"nppes_organization_name","notes":"Header 'NPPES Organization Name' is in the first data row.","source_name":"Unnamed: 1"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The state abbreviation for the organization's practice address as registered in NPPES.","mode":"NULLABLE","name":"nppes_practice_address_state","notes":"Header 'NPPES Practice Address State' is in the first data row.","source_name":"Unnamed: 2"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The state abbreviation for the organization's mailing address as registered in NPPES.","mode":"NULLABLE","name":"nppes_mailing_address_state","notes":"Header 'NPPES Mailing Address State' is in the first data row.","source_name":"Unnamed: 3"}],"full_table_id":"statmike-mlops-349915.data_onboarding_cms_gov_bronze._508compliantversion_y2","partition_by":null,"related_tables":{},"row_count":500,"source_file":"508compliantversionY2.csv","source_files":["508compliantversionY2.csv"],"source_path":"applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508compliantversionY2.csv","source_paths":["applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/508compliantversionY2.csv"],"table_name":"_508compliantversion_y2"} | 2026-03-31 14:55:49 |
+| 76335ee9-ffc8-44b9-95ad-77d7082a4a85 | cmsambdata_y2sample_post | A list of ground ambulance providers and suppliers selected to submit data in Year 2 of the Medicare Ground Ambulance Data Collection System (GADCS). This file appears to be a duplicate of '508compliantversionY2.csv'. | proposed | {"cluster_by":[],"columns":[{"category":"text","dtype":"object","name":"medicare_ground_ambulance_data_collection","source_name":"Medicare Ground Ambulance Data Collection"},{"category":"text","dtype":"object","name":"unnamed_1","source_name":"Unnamed: 1"},{"category":"text","dtype":"object","name":"unnamed_2","source_name":"Unnamed: 2"},{"category":"text","dtype":"object","name":"unnamed_3","source_name":"Unnamed: 3"}],"description":"A list of ground ambulance providers and suppliers selected to submit data in Year 2 of the Medicare Ground Ambulance Data Collection System (GADCS). This file appears to be a duplicate of '508compliantversionY2.csv'.","enriched_columns":[{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"Implicitly contains the National Provider Identifier (NPI) of the selected ground ambulance organization.","mode":"NULLABLE","name":"npi","notes":"This column contains descriptive text and should be processed to extract relevant information or used as file-level metadata.","source_name":"Medicare Ground Ambulance Data Collection"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The legal business name of the ground ambulance organization as registered in NPPES.","mode":"NULLABLE","name":"nppes_organization_name","notes":"Header 'NPPES Organization Name' is in the first data row.","source_name":"Unnamed: 1"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The state abbreviation for the organization's practice address as registered in NPPES.","mode":"NULLABLE","name":"nppes_practice_address_state","notes":"Header 'NPPES Practice Address State' is in the first data row.","source_name":"Unnamed: 2"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The state abbreviation for the organization's mailing address as registered in NPPES.","mode":"NULLABLE","name":"nppes_mailing_address_state","notes":"Header 'NPPES Mailing Address State' is in the first data row.","source_name":"Unnamed: 3"}],"full_table_id":"statmike-mlops-349915.data_onboarding_cms_gov_bronze.cmsambdata_y2sample_post","partition_by":null,"related_tables":{},"row_count":500,"source_file":"CMSAmbdata_Y2sample_post.xlsx","source_files":["CMSAmbdata_Y2sample_post.xlsx"],"source_path":"applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y2sample_post.xlsx","source_paths":["applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y2sample_post.xlsx"],"table_name":"cmsambdata_y2sample_post"} | 2026-03-31 14:55:49 |
+| 6fa4a65a-d4a9-42e5-852c-4b52305343db | cmsambdata_y3sample_post | A list of ground ambulance providers and suppliers selected to submit data in Year 3 of the Medicare Ground Ambulance Data Collection System (GADCS). This file appears to be a duplicate of 'CMSAmbdata_Y3sample_post508.csv'. | proposed | {"cluster_by":[],"columns":[{"category":"text","dtype":"object","name":"medicare_ground_ambulance_data_collection","source_name":"Medicare Ground Ambulance Data Collection"},{"category":"text","dtype":"object","name":"unnamed_1","source_name":"Unnamed: 1"},{"category":"text","dtype":"object","name":"unnamed_2","source_name":"Unnamed: 2"},{"category":"text","dtype":"object","name":"unnamed_3","source_name":"Unnamed: 3"}],"description":"A list of ground ambulance providers and suppliers selected to submit data in Year 3 of the Medicare Ground Ambulance Data Collection System (GADCS). This file appears to be a duplicate of 'CMSAmbdata_Y3sample_post508.csv'.","enriched_columns":[{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"Implicitly contains the National Provider Identifier (NPI) of the selected ground ambulance organization.","mode":"NULLABLE","name":"npi","notes":"This column contains descriptive text and should be processed to extract relevant information or used as file-level metadata.","source_name":"Medicare Ground Ambulance Data Collection"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The legal business name of the ground ambulance organization as registered in NPPES.","mode":"NULLABLE","name":"nppes_organization_name","notes":"Header 'NPPES Organization Name' is in the first data row.","source_name":"Unnamed: 1"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The state abbreviation for the organization's practice address as registered in NPPES.","mode":"NULLABLE","name":"nppes_practice_address_state","notes":"Header 'NPPES Practice Address State' is in the first data row.","source_name":"Unnamed: 2"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The state abbreviation for the organization's mailing address as registered in NPPES.","mode":"NULLABLE","name":"nppes_mailing_address_state","notes":"Header 'NPPES Mailing Address State' is in the first data row.","source_name":"Unnamed: 3"}],"full_table_id":"statmike-mlops-349915.data_onboarding_cms_gov_bronze.cmsambdata_y3sample_post","partition_by":null,"related_tables":{},"row_count":500,"source_file":"CMSAmbdata_Y3sample_post.xlsx","source_files":["CMSAmbdata_Y3sample_post.xlsx"],"source_path":"applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y3sample_post.xlsx","source_paths":["applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y3sample_post.xlsx"],"table_name":"cmsambdata_y3sample_post"} | 2026-03-31 14:55:49 |
+| 8e390930-ad1d-436f-96e7-6a685d4f5670 | cmsambdata_y3sample_post508 | A list of ground ambulance providers and suppliers selected to submit data in Year 3 of the Medicare Ground Ambulance Data Collection System (GADCS). This file appears to be a duplicate of 'CMSAmbdata_Y3sample_post.xlsx'. | proposed | {"cluster_by":[],"columns":[{"category":"text","dtype":"object","name":"medicare_ground_ambulance_data_collection","source_name":"Medicare Ground Ambulance Data Collection"},{"category":"text","dtype":"object","name":"unnamed_1","source_name":"Unnamed: 1"},{"category":"text","dtype":"object","name":"unnamed_2","source_name":"Unnamed: 2"},{"category":"text","dtype":"object","name":"unnamed_3","source_name":"Unnamed: 3"}],"description":"A list of ground ambulance providers and suppliers selected to submit data in Year 3 of the Medicare Ground Ambulance Data Collection System (GADCS). This file appears to be a duplicate of 'CMSAmbdata_Y3sample_post.xlsx'.","enriched_columns":[{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"Implicitly contains the National Provider Identifier (NPI) of the selected ground ambulance organization.","mode":"NULLABLE","name":"npi","notes":"This column contains descriptive text and should be processed to extract relevant information or used as file-level metadata.","source_name":"Medicare Ground Ambulance Data Collection"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The legal business name of the ground ambulance organization as registered in NPPES.","mode":"NULLABLE","name":"nppes_organization_name","notes":"Header 'NPPES Organization Name' is in the first data row.","source_name":"Unnamed: 1"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The state abbreviation for the organization's practice address as registered in NPPES.","mode":"NULLABLE","name":"nppes_practice_address_state","notes":"Header 'NPPES Practice Address State' is in the first data row.","source_name":"Unnamed: 2"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The state abbreviation for the organization's mailing address as registered in NPPES.","mode":"NULLABLE","name":"nppes_mailing_address_state","notes":"Header 'NPPES Mailing Address State' is in the first data row.","source_name":"Unnamed: 3"}],"full_table_id":"statmike-mlops-349915.data_onboarding_cms_gov_bronze.cmsambdata_y3sample_post508","partition_by":null,"related_tables":{},"row_count":500,"source_file":"CMSAmbdata_Y3sample_post508.csv","source_files":["CMSAmbdata_Y3sample_post508.csv"],"source_path":"applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y3sample_post508.csv","source_paths":["applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y3sample_post508.csv"],"table_name":"cmsambdata_y3sample_post508"} | 2026-03-31 14:55:49 |
+| 4a981078-cd47-4681-90fe-aae828785d34 | cmsambdata_y4sample_post | A list of ground ambulance providers and suppliers selected to submit data in Year 4 of the Medicare Ground Ambulance Data Collection System (GADCS). This file appears to be a duplicate of 'CMSAmbdata_Y4sample_post508.csv'. | proposed | {"cluster_by":[],"columns":[{"category":"text","dtype":"object","name":"medicare_ground_ambulance_data_collection","source_name":"Medicare Ground Ambulance Data Collection"},{"category":"text","dtype":"object","name":"unnamed_1","source_name":"Unnamed: 1"},{"category":"text","dtype":"object","name":"unnamed_2","source_name":"Unnamed: 2"},{"category":"text","dtype":"object","name":"unnamed_3","source_name":"Unnamed: 3"}],"description":"A list of ground ambulance providers and suppliers selected to submit data in Year 4 of the Medicare Ground Ambulance Data Collection System (GADCS). This file appears to be a duplicate of 'CMSAmbdata_Y4sample_post508.csv'.","enriched_columns":[{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"Implicitly contains the National Provider Identifier (NPI) of the selected ground ambulance organization.","mode":"NULLABLE","name":"npi","notes":"This column contains descriptive text and should be processed to extract relevant information or used as file-level metadata.","source_name":"Medicare Ground Ambulance Data Collection"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The legal business name of the ground ambulance organization as registered in NPPES.","mode":"NULLABLE","name":"nppes_organization_name","notes":"Header 'NPPES Organization Name' is in the first data row.","source_name":"Unnamed: 1"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The state abbreviation for the organization's practice address as registered in NPPES.","mode":"NULLABLE","name":"nppes_practice_address_state","notes":"Header 'NPPES Practice Address State' is in the first data row.","source_name":"Unnamed: 2"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The state abbreviation for the organization's mailing address as registered in NPPES.","mode":"NULLABLE","name":"nppes_mailing_address_state","notes":"Header 'NPPES Mailing Address State' is in the first data row.","source_name":"Unnamed: 3"}],"full_table_id":"statmike-mlops-349915.data_onboarding_cms_gov_bronze.cmsambdata_y4sample_post","partition_by":null,"related_tables":{},"row_count":500,"source_file":"CMSAmbdata_Y4sample_post.xlsx","source_files":["CMSAmbdata_Y4sample_post.xlsx"],"source_path":"applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y4sample_post.xlsx","source_paths":["applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y4sample_post.xlsx"],"table_name":"cmsambdata_y4sample_post"} | 2026-03-31 14:55:49 |
+| 934ec4f4-811d-4aca-a2f4-353b7728d4ab | cmsambdata_y4sample_post508 | A list of ground ambulance providers and suppliers selected to submit data in Year 4 of the Medicare Ground Ambulance Data Collection System (GADCS). This file appears to be a duplicate of 'CMSAmbdata_Y4sample_post.xlsx'. | proposed | {"cluster_by":[],"columns":[{"category":"text","dtype":"object","name":"medicare_ground_ambulance_data_collection","source_name":"Medicare Ground Ambulance Data Collection"},{"category":"text","dtype":"object","name":"unnamed_1","source_name":"Unnamed: 1"},{"category":"text","dtype":"object","name":"unnamed_2","source_name":"Unnamed: 2"},{"category":"text","dtype":"object","name":"unnamed_3","source_name":"Unnamed: 3"}],"description":"A list of ground ambulance providers and suppliers selected to submit data in Year 4 of the Medicare Ground Ambulance Data Collection System (GADCS). This file appears to be a duplicate of 'CMSAmbdata_Y4sample_post.xlsx'.","enriched_columns":[{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"Implicitly contains the National Provider Identifier (NPI) of the selected ground ambulance organization.","mode":"NULLABLE","name":"npi","notes":"This column contains descriptive text and should be processed to extract relevant information or used as file-level metadata.","source_name":"Medicare Ground Ambulance Data Collection"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The legal business name of the ground ambulance organization as registered in NPPES.","mode":"NULLABLE","name":"nppes_organization_name","notes":"Header 'NPPES Organization Name' is in the first data row.","source_name":"Unnamed: 1"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The state abbreviation for the organization's practice address as registered in NPPES.","mode":"NULLABLE","name":"nppes_practice_address_state","notes":"Header 'NPPES Practice Address State' is in the first data row.","source_name":"Unnamed: 2"},{"attributed_to":["page_025.md","page_330.md"],"bq_type":"STRING","description":"The state abbreviation for the organization's mailing address as registered in NPPES.","mode":"NULLABLE","name":"nppes_mailing_address_state","notes":"Header 'NPPES Mailing Address State' is in the first data row.","source_name":"Unnamed: 3"}],"full_table_id":"statmike-mlops-349915.data_onboarding_cms_gov_bronze.cmsambdata_y4sample_post508","partition_by":null,"related_tables":{},"row_count":500,"source_file":"CMSAmbdata_Y4sample_post508.csv","source_files":["CMSAmbdata_Y4sample_post508.csv"],"source_path":"applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y4sample_post508.csv","source_paths":["applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/CMSAmbdata_Y4sample_post508.csv"],"table_name":"cmsambdata_y4sample_post508"} | 2026-03-31 14:55:49 |
+| 2f2f3b99-d216-4967-ad2d-a6f2c471abf8 | ipsf_full | Provider Specific File (PSF) for Inpatient Prospective Payment System (IPPS) facilities, containing provider-specific data used for Medicare payment calculations. This is a snapshot from January 1, 2025. It includes financial rates, geographic and provider-specific adjustments, and provider characteristics. | proposed | {"cluster_by":["provider_type_code","provider_ccn","npi","waiver_indicator"],"columns":[{"category":"categorical","dtype":"string","name":"provider_ccn","source_name":"providerCcn"},{"category":"datetime_candidate","dtype":"object","name":"effective_date","source_name":"effectiveDate"},{"category":"datetime_candidate","dtype":"object","name":"fiscal_year_begin_date","source_name":"fiscalYearBeginDate"},{"category":"datetime_candidate","dtype":"object","name":"export_date","source_name":"exportDate"},{"category":"datetime_candidate","dtype":"object","name":"termination_date","source_name":"terminationDate"},{"category":"categorical","dtype":"string","name":"waiver_indicator","source_name":"waiverIndicator"},{"category":"categorical","dtype":"string","name":"intermediary_number","source_name":"intermediaryNumber"},{"category":"categorical","dtype":"string","name":"provider_type","source_name":"providerType"},{"category":"categorical","dtype":"string","name":"census_division","source_name":"censusDivision"},{"category":"categorical","dtype":"string","name":"msa_actual_geographic_location","source_name":"msaActualGeographicLocation"},{"category":"categorical","dtype":"string","name":"msa_wage_index_location","source_name":"msaWageIndexLocation"},{"category":"categorical","dtype":"string","name":"msa_standardized_amount_location","source_name":"msaStandardizedAmountLocation"},{"category":"datetime_candidate","dtype":"string","name":"sole_community_or_medicare_dependent_hospital_base_year","source_name":"soleCommunityOrMedicareDependentHospitalBaseYear"},{"category":"datetime_candidate","dtype":"string","name":"change_code_for_lugar_reclassification","source_name":"changeCodeForLugarReclassification"},{"category":"datetime_candidate","dtype":"string","name":"temporary_relief_indicator","source_name":"temporaryReliefIndicator"},{"category":"datetime_candidate","dtype":"string","name":"federal_pps_blend","source_name":"federalPpsBlend"},{"category":"categorical","dtype":"string","name":"state_code","source_name":"stateCode"},{"category":"Float64","dtype":"Float64","name":"case_mix_adjusted_cost_per_discharge_pps_facility_specific_rate","source_name":"caseMixAdjustedCostPerDischarge_PpsFacilitySpecificRate"},{"category":"Float64","dtype":"Float64","name":"cost_of_living_adjustment","source_name":"costOfLivingAdjustment"},{"category":"Float64","dtype":"Float64","name":"interns_to_beds_ratio","source_name":"internsToBedsRatio"},{"category":"Int64","dtype":"Int64","name":"bed_size","source_name":"bedSize"},{"category":"Float64","dtype":"Float64","name":"operating_cost_to_charge_ratio","source_name":"operatingCostToChargeRatio"},{"category":"Float64","dtype":"Float64","name":"case_mix_index","source_name":"caseMixIndex"},{"category":"Float64","dtype":"Float64","name":"supplemental_security_income_ratio","source_name":"supplementalSecurityIncomeRatio"},{"category":"Float64","dtype":"Float64","name":"medicaid_ratio","source_name":"medicaidRatio"},{"category":"Float64","dtype":"Float64","name":"special_provider_update_factor","source_name":"specialProviderUpdateFactor"},{"category":"Float64","dtype":"Float64","name":"operating_dsh","source_name":"operatingDsh"},{"category":"datetime_candidate","dtype":"object","name":"fiscal_year_end_date","source_name":"fiscalYearEndDate"},{"category":"categorical","dtype":"string","name":"special_payment_indicator","source_name":"specialPaymentIndicator"},{"category":"categorical","dtype":"string","name":"hospital_quality_indicator","source_name":"hospitalQualityIndicator"},{"category":"categorical","dtype":"string","name":"cbsa_actual_geographic_location","source_name":"cbsaActualGeographicLocation"},{"category":"categorical","dtype":"string","name":"cbsa_wage_index_location","source_name":"cbsaWageIndexLocation"},{"category":"datetime_candidate","dtype":"string","name":"cbsa_standardized_amount_location","source_name":"cbsaStandardizedAmountLocation"},{"category":"Float64","dtype":"Float64","name":"special_wage_index","source_name":"specialWageIndex"},{"category":"Float64","dtype":"Float64","name":"pass_through_amount_for_capital","source_name":"passThroughAmountForCapital"},{"category":"Float64","dtype":"Float64","name":"pass_through_amount_for_direct_medical_education","source_name":"passThroughAmountForDirectMedicalEducation"},{"category":"Float64","dtype":"Float64","name":"pass_through_amount_for_organ_acquisition","source_name":"passThroughAmountForOrganAcquisition"},{"category":"Float64","dtype":"Float64","name":"pass_through_total_amount","source_name":"passThroughTotalAmount"},{"category":"categorical","dtype":"string","name":"capital_pps_payment_code","source_name":"capitalPpsPaymentCode"},{"category":"Float64","dtype":"Float64","name":"hospital_specific_capital_rate","source_name":"hospitalSpecificCapitalRate"},{"category":"Float64","dtype":"Float64","name":"old_capital_hold_harmless_rate","source_name":"oldCapitalHoldHarmlessRate"},{"category":"Float64","dtype":"Float64","name":"new_capital_hold_harmless_rate","source_name":"newCapitalHoldHarmlessRate"},{"category":"Float64","dtype":"Float64","name":"capital_cost_to_charge_ratio","source_name":"capitalCostToChargeRatio"},{"category":"datetime_candidate","dtype":"string","name":"new_hospital","source_name":"newHospital"},{"category":"Float64","dtype":"Float64","name":"capital_indirect_medical_education_ratio","source_name":"capitalIndirectMedicalEducationRatio"},{"category":"Float64","dtype":"Float64","name":"capital_exception_payment_rate","source_name":"capitalExceptionPaymentRate"},{"category":"categorical","dtype":"string","name":"vbp_participant_indicator","source_name":"vbpParticipantIndicator"},{"category":"Float64","dtype":"Float64","name":"vbp_adjustment","source_name":"vbpAdjustment"},{"category":"Int64","dtype":"Int64","name":"hrr_participant_indicator","source_name":"hrrParticipantIndicator"},{"category":"Float64","dtype":"Float64","name":"hrr_adjustment","source_name":"hrrAdjustment"},{"category":"Float64","dtype":"Float64","name":"bundle_model1_discount","source_name":"bundleModel1Discount"},{"category":"categorical","dtype":"string","name":"hac_reduction_participant_indicator","source_name":"hacReductionParticipantIndicator"},{"category":"Float64","dtype":"Float64","name":"uncompensated_care_amount","source_name":"uncompensatedCareAmount"},{"category":"datetime_candidate","dtype":"string","name":"ehr_reduction_indicator","source_name":"ehrReductionIndicator"},{"category":"Float64","dtype":"Float64","name":"low_volume_adjustment_factor","source_name":"lowVolumeAdjustmentFactor"},{"category":"datetime_candidate","dtype":"string","name":"county_code","source_name":"countyCode"},{"category":"Float64","dtype":"Float64","name":"medicare_performance_adjustment","source_name":"medicarePerformanceAdjustment"},{"category":"datetime_candidate","dtype":"string","name":"ltch_dpp_indicator","source_name":"ltchDppIndicator"},{"category":"Float64","dtype":"Float64","name":"supplemental_wage_index","source_name":"supplementalWageIndex"},{"category":"datetime_candidate","dtype":"string","name":"supplemental_wage_index_indicator","source_name":"supplementalWageIndexIndicator"},{"category":"categorical","dtype":"string","name":"change_code_wage_index_reclassification","source_name":"changeCodeWageIndexReclassification"},{"category":"categorical","dtype":"string","name":"national_provider_identifier","source_name":"nationalProviderIdentifier"},{"category":"Float64","dtype":"Float64","name":"pass_through_amount_for_allogenic_stem_cell_acquisition","source_name":"passThroughAmountForAllogenicStemCellAcquisition"},{"category":"datetime_candidate","dtype":"string","name":"pps_blend_year_indicator","source_name":"ppsBlendYearIndicator"},{"category":"datetime_candidate","dtype":"object","name":"last_updated","source_name":"lastUpdated"},{"category":"Float64","dtype":"Float64","name":"pass_through_amount_for_direct_graduate_medical_education","source_name":"passThroughAmountForDirectMedicalEducation"},{"category":"Float64","dtype":"Float64","name":"pass_through_amount_for_kidney_acquisition","source_name":"passThroughAmountForKidneyAcquisition"},{"category":"Float64","dtype":"Float64","name":"pass_through_amount_for_supply_chain","source_name":"passThroughAmountForSupplyChain"}],"description":"Provider Specific File (PSF) for Inpatient Prospective Payment System (IPPS) facilities, containing provider-specific data used for Medicare payment calculations. This is a snapshot from January 1, 2025. It includes financial rates, geographic and provider-specific adjustments, and provider characteristics.","enriched_columns":[{"attributed_to":["page_000.md","page_301.md"],"bq_type":"STRING","description":"The 6-digit CMS Certification Number (CCN), a unique identifier for the Medicare provider.","mode":"NULLABLE","name":"provider_ccn","notes":"This is a primary key for joining with other provider-level data.","source_name":"providerCcn"},{"attributed_to":["page_000.md"],"bq_type":"DATE","description":"The date on which the specific rate, factor, or data element in this record became effective.","mode":"NULLABLE","name":"effective_date","notes":"Data is stored as an object/string and needs to be parsed to a DATE type.","source_name":"effectiveDate"},{"attributed_to":["page_000.md"],"bq_type":"DATE","description":"The start date of the provider's fiscal year.","mode":"NULLABLE","name":"fiscal_year_begin_date","notes":"Data is stored as an object/string and needs to be parsed to a DATE type.","source_name":"fiscalYearBeginDate"},{"attributed_to":["page_000.md"],"bq_type":"DATE","description":"The date the data was exported from the source system, indicating the snapshot date of the file.","mode":"NULLABLE","name":"export_date","notes":"This value is the same for all rows in the file and should ideally be stored as table-level metadata or in a separate column added during ingestion.","source_name":"exportDate"},{"attributed_to":["page_107.md"],"bq_type":"DATE","description":"The date the provider's participation in the Medicare program was terminated, if applicable.","mode":"NULLABLE","name":"termination_date","notes":"Very high null percentage (99.2%) is expected as most providers are active. Data is stored as an object/string.","source_name":"terminationDate"},{"bq_type":"STRING","description":"An indicator for any special waivers the provider may have.","mode":"NULLABLE","name":"waiver_indicator","notes":null,"source_name":"waiverIndicator"},{"attributed_to":["page_315.md"],"bq_type":"STRING","description":"Identifier for the Medicare Administrative Contractor (MAC) or Fiscal Intermediary responsible for processing the provider's claims.","mode":"NULLABLE","name":"intermediary_number","notes":"This can be used to link to MAC-specific information.","source_name":"intermediaryNumber"},{"attributed_to":["page_000.md","page_102.md"],"bq_type":"STRING","description":"A code indicating the type of provider (e.g., '00' for hospital).","mode":"NULLABLE","name":"provider_type_code","notes":"The meaning of these codes would need to be looked up in a separate data dictionary. For this file group, provider type can be inferred from the filename.","source_name":"providerType"},{"bq_type":"STRING","description":"A code representing the U.S. Census Division where the provider is located.","mode":"NULLABLE","name":"census_division_code","notes":null,"source_name":"censusDivision"},{"bq_type":"STRING","description":"A code for the Metropolitan Statistical Area (MSA) of the provider's actual geographic location.","mode":"NULLABLE","name":"msa_actual_geographic_location_code","notes":null,"source_name":"msaActualGeographicLocation"},{"attributed_to":["page_302.md"],"bq_type":"STRING","description":"A code for the Metropolitan Statistical Area (MSA) used for the provider's wage index calculation, which may differ from the actual location due to reclassification.","mode":"NULLABLE","name":"msa_wage_index_location_code","notes":null,"source_name":"msaWageIndexLocation"},{"bq_type":"STRING","description":"","mode":"NULLABLE","name":"msa_standardized_amount_location","notes":"","source_name":"msaStandardizedAmountLocation"},{"bq_type":"TIMESTAMP","description":"","mode":"NULLABLE","name":"sole_community_or_medicare_dependent_hospital_base_year","notes":"","source_name":"soleCommunityOrMedicareDependentHospitalBaseYear"},{"bq_type":"TIMESTAMP","description":"","mode":"NULLABLE","name":"change_code_for_lugar_reclassification","notes":"","source_name":"changeCodeForLugarReclassification"},{"bq_type":"TIMESTAMP","description":"","mode":"NULLABLE","name":"temporary_relief_indicator","notes":"","source_name":"temporaryReliefIndicator"},{"bq_type":"TIMESTAMP","description":"","mode":"NULLABLE","name":"federal_pps_blend","notes":"","source_name":"federalPpsBlend"},{"bq_type":"STRING","description":"","mode":"NULLABLE","name":"state_code","notes":"","source_name":"stateCode"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"case_mix_adjusted_cost_per_discharge_pps_facility_specific_rate","notes":"","source_name":"caseMixAdjustedCostPerDischarge_PpsFacilitySpecificRate"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"cost_of_living_adjustment","notes":"","source_name":"costOfLivingAdjustment"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"interns_to_beds_ratio","notes":"","source_name":"internsToBedsRatio"},{"bq_type":"INT64","description":"","mode":"NULLABLE","name":"bed_size","notes":"","source_name":"bedSize"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"operating_cost_to_charge_ratio","notes":"","source_name":"operatingCostToChargeRatio"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"case_mix_index","notes":"","source_name":"caseMixIndex"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"supplemental_security_income_ratio","notes":"","source_name":"supplementalSecurityIncomeRatio"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"medicaid_ratio","notes":"","source_name":"medicaidRatio"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"special_provider_update_factor","notes":"","source_name":"specialProviderUpdateFactor"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"operating_dsh","notes":"","source_name":"operatingDsh"},{"bq_type":"TIMESTAMP","description":"","mode":"NULLABLE","name":"fiscal_year_end_date","notes":"","source_name":"fiscalYearEndDate"},{"bq_type":"STRING","description":"","mode":"NULLABLE","name":"special_payment_indicator","notes":"","source_name":"specialPaymentIndicator"},{"bq_type":"STRING","description":"","mode":"NULLABLE","name":"hospital_quality_indicator","notes":"","source_name":"hospitalQualityIndicator"},{"bq_type":"STRING","description":"","mode":"NULLABLE","name":"cbsa_actual_geographic_location","notes":"","source_name":"cbsaActualGeographicLocation"},{"bq_type":"STRING","description":"","mode":"NULLABLE","name":"cbsa_wage_index_location","notes":"","source_name":"cbsaWageIndexLocation"},{"bq_type":"TIMESTAMP","description":"","mode":"NULLABLE","name":"cbsa_standardized_amount_location","notes":"","source_name":"cbsaStandardizedAmountLocation"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"special_wage_index","notes":"","source_name":"specialWageIndex"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"pass_through_amount_for_capital","notes":"","source_name":"passThroughAmountForCapital"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"pass_through_amount_for_direct_medical_education","notes":"","source_name":"passThroughAmountForDirectMedicalEducation"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"pass_through_amount_for_organ_acquisition","notes":"","source_name":"passThroughAmountForOrganAcquisition"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"pass_through_total_amount","notes":"","source_name":"passThroughTotalAmount"},{"bq_type":"STRING","description":"","mode":"NULLABLE","name":"capital_pps_payment_code","notes":"","source_name":"capitalPpsPaymentCode"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"hospital_specific_capital_rate","notes":"","source_name":"hospitalSpecificCapitalRate"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"old_capital_hold_harmless_rate","notes":"","source_name":"oldCapitalHoldHarmlessRate"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"new_capital_hold_harmless_rate","notes":"","source_name":"newCapitalHoldHarmlessRate"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"capital_cost_to_charge_ratio","notes":"","source_name":"capitalCostToChargeRatio"},{"bq_type":"TIMESTAMP","description":"","mode":"NULLABLE","name":"new_hospital","notes":"","source_name":"newHospital"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"capital_indirect_medical_education_ratio","notes":"","source_name":"capitalIndirectMedicalEducationRatio"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"capital_exception_payment_rate","notes":"","source_name":"capitalExceptionPaymentRate"},{"bq_type":"STRING","description":"","mode":"NULLABLE","name":"vbp_participant_indicator","notes":"","source_name":"vbpParticipantIndicator"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"vbp_adjustment","notes":"","source_name":"vbpAdjustment"},{"bq_type":"INT64","description":"","mode":"NULLABLE","name":"hrr_participant_indicator","notes":"","source_name":"hrrParticipantIndicator"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"hrr_adjustment","notes":"","source_name":"hrrAdjustment"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"bundle_model1_discount","notes":"","source_name":"bundleModel1Discount"},{"bq_type":"STRING","description":"","mode":"NULLABLE","name":"hac_reduction_participant_indicator","notes":"","source_name":"hacReductionParticipantIndicator"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"uncompensated_care_amount","notes":"","source_name":"uncompensatedCareAmount"},{"bq_type":"TIMESTAMP","description":"","mode":"NULLABLE","name":"ehr_reduction_indicator","notes":"","source_name":"ehrReductionIndicator"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"low_volume_adjustment_factor","notes":"","source_name":"lowVolumeAdjustmentFactor"},{"bq_type":"TIMESTAMP","description":"","mode":"NULLABLE","name":"county_code","notes":"","source_name":"countyCode"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"medicare_performance_adjustment","notes":"","source_name":"medicarePerformanceAdjustment"},{"bq_type":"TIMESTAMP","description":"","mode":"NULLABLE","name":"ltch_dpp_indicator","notes":"","source_name":"ltchDppIndicator"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"supplemental_wage_index","notes":"","source_name":"supplementalWageIndex"},{"bq_type":"TIMESTAMP","description":"","mode":"NULLABLE","name":"supplemental_wage_index_indicator","notes":"","source_name":"supplementalWageIndexIndicator"},{"bq_type":"STRING","description":"","mode":"NULLABLE","name":"change_code_wage_index_reclassification","notes":"","source_name":"changeCodeWageIndexReclassification"},{"attributed_to":["page_007.md","page_330.md"],"bq_type":"STRING","description":"The National Provider Identifier (NPI), a unique 10-digit identification number for the health care provider.","mode":"NULLABLE","name":"npi","notes":"This is a key identifier for joining with other datasets. Empty strings likely represent missing NPIs and should be treated as NULLs.","source_name":"nationalProviderIdentifier"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"pass_through_amount_for_allogenic_stem_cell_acquisition","notes":"","source_name":"passThroughAmountForAllogenicStemCellAcquisition"},{"bq_type":"TIMESTAMP","description":"","mode":"NULLABLE","name":"pps_blend_year_indicator","notes":"","source_name":"ppsBlendYearIndicator"},{"bq_type":"DATE","description":"The date the record was last updated in the source system.","mode":"NULLABLE","name":"last_updated_date","notes":"Data is stored as an object/string and needs to be parsed to a DATE type.","source_name":"lastUpdated"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"pass_through_amount_for_direct_graduate_medical_education","notes":"","source_name":"passThroughAmountForDirectMedicalEducation"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"pass_through_amount_for_kidney_acquisition","notes":"","source_name":"passThroughAmountForKidneyAcquisition"},{"bq_type":"FLOAT64","description":"","mode":"NULLABLE","name":"pass_through_amount_for_supply_chain","notes":"","source_name":"passThroughAmountForSupplyChain"}],"full_table_id":"statmike-mlops-349915.data_onboarding_cms_gov_bronze.ipsf_full","partition_by":{"column":"effective_date","type":"MONTH"},"related_tables":{"contains":["ipsf_hha","ipsf_hos","ipsf_inp","ipsf_ipf","ipsf_irf","ipsf_ltch","ipsf_snf"]},"row_count":4895679,"source_file":"IPSF_FULL_2025-01-01.parquet","source_files":["IPSF_FULL_2025-01-01.parquet","IPSF_FULL_2025-04-01.parquet","IPSF_Full_2025-07-01.parquet","IPSF_Full_2025-10-01.parquet","IPSF_Full_2026-01-02.parquet"],"source_path":"applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_FULL_2025-01-01.parquet","source_paths":["applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_FULL_2025-01-01.parquet","applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_FULL_2025-04-01.parquet","applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_Full_2025-07-01.parquet","applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_Full_2025-10-01.parquet","applied-ml/ai-agents/data-onboarding/7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce/files/IPSF_Full_2026-01-02.parquet"],"table_name":"ipsf_full"} | 2026-03-31 14:55:49 |
+
+### Key Schema Decisions
+
+#### 1. Inpatient Prospective Payment System (IPPS) Provider Data
+For the `ipsf_full` table, which contains provider-specific files for Medicare payment calculations:
+*   **Partitioning:** The table is partitioned by **month** based on the `effective_date` to optimize time-based queries.
+*   **Clustering:** It is clustered by `provider_type_code`, `provider_ccn`, `npi`, and `waiver_indicator` to improve the performance of searches for specific provider identifiers and characteristics.
+*   **Enrichment:** Data was enriched with specific column mappings for unique identifiers like the **National Provider Identifier (NPI)** and **CMS Certification Number (CCN)**, which are critical for joining this dataset with other healthcare tables.
+
+#### 2. Ground Ambulance Data Collection System (GADCS) Tables
+Multiple tables (e.g., `_508_compliant_version_of_sampled_npis`, `cmsambdata_y3sample_post`) were created to track ambulance providers selected for data submission across different years (Year 1 through Year 4):
+*   **Purpose:** These tables identify ground ambulance providers and suppliers from the National Plan and Provider Enumeration System (NPPES).
+*   **Data Extraction:** The schema designs focused on extracting and mapping the **NPI**, legal organization names, and state-level address information (practice and mailing) to provide a clean list of participants for the Medicare Ground Ambulance Data Collection System.
+*   **Duplicate Management:** The pipeline identified several files as duplicates of earlier versions (e.g., `cmsambdata_y2sample_post` being a duplicate of the 508-compliant version), allowing for better data governance.
+
+### Insights
+*   **Identifier-Centric Design:** Significant emphasis was placed on ensuring the `npi` and `provider_ccn` columns were correctly mapped and used for clustering, highlighting their importance as primary keys for the entire data onboarding ecosystem.
+*   **Temporal Tracking:** The use of partitioning on `effective_date` and the ingestion of multiple snapshot files (like the quarterly IPPS files) indicate a design that prioritizes tracking changes in provider status and financial rates over time.
+*   **Data Quality:** Identifying duplicates during the onboarding phase helps prevent data redundancy in the bronze layer, ensuring that downstream analysis remains efficient.
 
 <a id="data-engineer-q5"></a>
 #### Q5: How many tables were created and what are their row counts?
@@ -394,11 +1773,52 @@ Based on the pipeline metadata in the `source_manifest`, files can be classified
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **104.8s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.1s |
+| 2 | agent_engineer | `meta_chat` | 4.2s |
+| | | **Total** | **90.6s** |
 
 **Answer:**
 
-The data onboarding pipeline has successfully created **116 tables** across two primary sources. These tables contain over **15.1 million rows** of data. Additionally, the system maintains **6 metadata tables** to track the processing log, schema decisions, and data lineage.\n\n### Onboarded Data Overview\nThe onboarding process for the two sources resulted in the following data volume:\n*   **CMS.gov Source:** 58 tables were proposed, with 54 successfully populated containing **14,659,203 rows**. Major tables include `ipsf_full` (4.9M rows) and `opsf` (1.4M rows).\n*   **Cboe Datashop Source:** 58 tables were created containing **511,160 rows**. Significant tables include `underlying_trades` (108.5k rows) and various option market data summaries.\n\n### Pipeline Metadata\nThe metadata tables track the state and history of the onboarding pipeline:\n\n## Data retrieved\n\n      table_name  row_count\n source_manifest     1501.0\n  processing_log       27.0\n   table_lineage      185.0\nschema_decisions      116.0\n  web_provenance      625.0\n    data_catalog        2.0\n\n### Insights\n*   **High Data Volume:** The CMS.gov dataset represents the bulk of the onboarded data, with nearly 15 million rows across approximately 54 active tables.\n*   **Pipeline Health:** The `processing_log` and `source_manifest` tables indicate active tracking of over 1,500 file assets and 27 major processing actions.\n*   **Schema Consistency:** All 116 tables created have corresponding entries in the `schema_decisions` table, ensuring that every design choice is documented and traceable.\n\nWhich source has the largest files in the manifest?\nWhat were the reasons for the schema decisions made for the CMS tables?\nAre there any failed actions in the processing log?\nShow me the table lineage for the ipsf_full table.\n
+A total of **112 tables** were created during the data onboarding process across two main bronze datasets. The row counts for these tables were recorded in the processing logs during the pipeline's execution.
+
+### Created Tables by Dataset
+The tables are distributed between the Cboe and CMS datasets as follows:
+
+                                                       dataset  table_count
+statmike-mlops-349915.data_onboarding_datashop_cboe_com_bronze         58.0
+          statmike-mlops-349915.data_onboarding_cms_gov_bronze         54.0
+
+### Top Tables by Row Count
+The row counts were extracted from the processing logs. Below are the top tables from each source, sorted by row count:
+
+**CMS Bronze Dataset (Total 54 Tables):**
+- `ipsf_full`: 4,895,679 rows
+- `ipsf_inp`: 1,966,882 rows
+- `ipsf_snf`: 1,681,117 rows
+- `opsf`: 1,418,399 rows
+- `opsf_full`: 1,406,663 rows
+- `ipsf_hha`: 1,077,752 rows
+- `ipsf_ipf`: 480,220 rows
+- `ipsf_irf`: 448,365 rows
+- `opsf_lro`: 266,721 rows
+- `ipsf_hos`: 240,051 rows
+
+**Cboe Bronze Dataset (Total 58 Tables):**
+- `eod_theos_cboe_prop_20251215_1600`: 99,047 rows
+- `cboe_cfe_trades_rth`: 48,599 rows
+- `cboe_equity_short_sales_edgx`: 36,206 rows
+- `underlying_options_eodcalcs_2023_08_25_cgi_or_historical`: 32,672 rows
+- `underlying_options_eodcalcs_2023_08_25_no_cgi_subscription`: 32,672 rows
+- `ftref_fit_parameters`: 26,772 rows
+- `ftref_early_exercise_strike_by_option_class`: 26,676 rows
+- `ftref_traded_vega_ratio`: 26,518 rows
+- `cboe_equity_svr_edgx`: 9,222 rows
+- `cboe_equity_svr_bzx`: 8,588 rows
+
+### Insights
+- **Data Skew**: The CMS dataset contains significantly larger tables, with `ipsf_full` exceeding 4.8 million rows, whereas the largest Cboe table is around 99,000 rows.
+- **Categorization**: Most large tables in the CMS dataset are related to "IPSF" (Inpatient) and "OPSF" (Outpatient) files, while Cboe's largest data involves theoretical end-of-day calculations and futures trades.
+- **Metadata Accessibility**: While table row counts are not stored in the primary `table_lineage` metadata, they are systematically recorded in the `processing_log` during the validation and execution phases.
 
 <a id="data-engineer-q6"></a>
 #### Q6: Were any columns coerced or dropped during loading?
@@ -407,11 +1827,28 @@ The data onboarding pipeline has successfully created **116 tables** across two 
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **56.2s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.1s |
+| 2 | agent_engineer | `meta_chat` | 4.6s |
+| | | **Total** | **46.6s** |
 
 **Answer:**
 
-Based on the processing logs, **no columns were dropped** during the loading process. However, several columns across multiple tables were **coerced to strings** as part of a "column recovery" process. This happened when the pipeline encountered errors converting data from the source (Pandas/PyArrow) to BigQuery types. The system prioritized data retention through type coercion over dropping columns.\n\nHere are the details of the coerced columns:\n\n| table_name | coerced_columns | omitted_columns | reason | started_at |\n|:---|:---|:---|:---|:---|\n| vehicles_main_templates_and_instructions_v2 | ["Unnamed: 5", "Unnamed: 7", "Unnamed: 8", "Unnamed: 9", "Unnamed: 10"] | [] | Error converting Pandas column with name: "Unnamed: 5" and datatype: "object" to an appropriate pyarrow datatype: Array, ListArray, or StructArray | 2026-03-31 15:02:24 |\n| msn_message_character_limits | ["page"] | [] | Error converting Pandas column with name: "page" and datatype: "object" to an appropriate pyarrow datatype: Array, ListArray, or StructArray | 2026-03-31 15:00:32 |\n| icd_10_cm_conversion_table_fy2025_effective_10_01_2024_final | ["nppes_organization_name"] | [] | Error converting Pandas column with name: "nppes_organization_name" and datatype: "object" to an appropriate pyarrow datatype: Array, ListArray, or StructArray | 2026-03-31 14:59:59 |\n| icd_10_cm_conversion_table_fy2026_april_1_2026 | ["nppes_organization_name"] | [] | Error converting Pandas column with name: "nppes_organization_name" and datatype: "object" to an appropriate pyarrow datatype: Array, ListArray, or StructArray | 2026-03-31 14:59:50 |\n| cmsambdata_y4sample_post | ["npi"] | [] | Error converting Pandas column with name: "npi" and datatype: "object" to an appropriate pyarrow datatype: Array, ListArray, or StructArray | 2026-03-31 14:59:10 |\n| cmsambdata_y3sample_post | ["npi"] | [] | Error converting Pandas column with name: "npi" and datatype: "object" to an appropriate pyarrow datatype: Array, ListArray, or StructArray | 2026-03-31 14:58:21 |\n| _11_20_25_complete_msn_message_list | ["message_number", "character_count_english", "character_count_spanish", "message_implementation_date", "message_expiration_date", "associated_cr_tdl"] | [] | Error converting Pandas column with name: "message_number" and datatype: "object" to an appropriate pyarrow datatype: Array, ListArray, or StructArray | 2026-03-31 14:56:22 |\n| livevol_trade_condition_ids | ["CTA Code", "UTP Code"] | [] | Error converting Pandas column with name: "CTA Code" and datatype: "object" to an appropriate pyarrow datatype: Array, ListArray, or StructArray | 2026-03-26 15:34:45 |\n\n**Insights:**\n*   **No Data Loss**: The "omitted" field in the recovery logs is empty for all recorded tables, indicating that the pipeline prioritized data retention through type coercion over dropping columns.\n*   **Common Patterns**: Many coerced columns involve identifiers (like `npi`, `CTA Code`, `UTP Code`) or descriptive text (like `nppes_organization_name`), suggesting that these fields often contain mixed types or formatting that the automated schema detection couldn\'t resolve into more specific types like integers or dates.\n*   **Recovery Reason**: The primary reason for coercion was a conversion error between Pandas and PyArrow datatypes, particularly for "object" type columns that could not be mapped to standard structured types.
+Based on the processing logs:
+
+**No columns were dropped** during the loading process.
+
+However, several columns were **coerced to strings** to resolve data type conversion errors. This happened because the pipeline encountered issues converting "object" type Pandas columns to appropriate pyarrow data types (such as Array, ListArray, or StructArray).
+
+Here are some examples of tables and the columns that were coerced to strings:
+
+*   **vehicles_main_templates_and_instructions_v2**: `Unnamed: 5`, `Unnamed: 7`, `Unnamed: 8`, `Unnamed: 9`, `Unnamed: 10`
+*   **msn_message_character_limits**: `page`
+*   **icd_10_cm_conversion_table_fy2025_effective_10_01_2024_final**: `nppes_organization_name`
+*   **icd_10_cm_conversion_table_fy2026_april_1_2026**: `nppes_organization_name`
+*   **cmsambdata_y4sample_post**: `npi`
+*   **cmsambdata_y3sample_post**: `npi`
+*   **_11_20_25_complete_msn_message_list**: `message_number`, `character_count_english`, `character_count_spanish`, `message_implementation_date`, `message_expiration_date`, `associated_cr_tdl`
+*   **livevol_trade_condition_ids**: `CTA Code`, `UTP Code`
 
 <a id="data-engineer-q7"></a>
 #### Q7: What context documents were found and how were they used?
@@ -420,11 +1857,15 @@ Based on the processing logs, **no columns were dropped** during the loading pro
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **49.8s** |
+| 1 | agent_chat | `transfer_to_agent` | 3.5s |
+| 2 | agent_engineer | `meta_chat` | 5.9s |
+| | | **Total** | **28.2s** |
 
 **Answer:**
 
-{'parts': [{'text': 'During the onboarding process, 653 documents were identified as "context" documents. These include technical specifications, factsheets, user guides, and converted markdown files, with file types such as PDF, TXT, MD, and HTML.\n\nThese documents were primarily used during the `implement` phase of the pipeline, specifically through the `populate_context_chunks` action. This process broke down the documents into smaller, searchable segments (chunks). For example, one run produced 853 chunks, and another produced 1,468 chunks. These chunks assist AI agents in making informed decisions about table schemas, column mappings, and overall data lineage.\n\nThe process shows a heavy reliance on technical documentation like Cboe Open-Close Specs and CMS Medicare Manuals, indicating a sophisticated "Retrieval-Augmented Generation" (RAG) approach to understand the data being onboarded.\n\nHere is a partial list of the context documents found:\n\n| file_path                                                                                                            | file_type | file_size_bytes | classification | source_id                            |\n|----------------------------------------------------------------------------------------------------------------------|-----------|-----------------|----------------|--------------------------------------|\n| applied-ml/ai-agents/data-onboarding/6e73a197-1de5-5550-9cc4-8c59bcec074b/context/page_000.md                      | md        | 1554.0          | context        | 6e73a197-1de5-5550-9cc4-8c59bcec074b |\n| applied-ml/ai-agents/data-onboarding/6e73a197-1de5-5550-9cc4-8c59bcec074b/context/page_001.md                      | md        | 2683.0          | context        | 6e73a197-1de5-5550-9cc4-8c59bcec074b |\n| applied-ml/ai-agents/data-onboarding/6e73a197-1de5-5550-9cc4-8c59bcec074b/context/page_002.md                      | md        | 1704.0          | context        | 6e73a197-1de5-5550-9cc4-8c59bcec074b |\n| applied-ml/ai-agents/data-onboarding/6e73a197-1de5-5550-9cc4-8c59bcec074b/context/page_003.md                      | md        | 21734.0         | context        | 6e73a197-1de5-5550-9cc4-8c59bcec074b |\n| applied-ml/ai-agents/data-onboarding/6e73a197-1de5-5550-9cc4-8c59bcec074b/context/page_004.md                      | md        | 2687.0          | context        | 6e73a197-1de5-5550-9cc4-8c59bcec074b |\n| applied-ml/ai-agents/data-onboarding/6e73a197-1de5-5550-9cc4-8c59bcec074b/context/page_005.md                      | md        | 2694.0          | context        | 6e73a197-1de5-5550-9cc4-8c59bcec074b |\n| applied-ml/ai-agents/data-onboarding/6e73a197-1de5-5550-9cc4-8c59bcec074b/context/page_006.md                      | md        | 2697.0          | context        | 6e73a197-1de5-5550-9cc4-8c59bcec074b |\n| applied-ml/ai-agents/data-onboarding/6e73a197-1de5-5550-9cc4-8c59bcec074b/context/page_007.md                      | md        | 2692.0          | context        | 6e73a197-1de5-5550-9cc4-8c59bcec074b |\n| applied-ml/ai-agents/data-onboarding/6e73a197-1de5-5550-9cc4-8c59bcec074b/context/page_008.md                      | md        | 2691.0          | context        | 6e73a197-1de5-5550-9cc4-8c59bcec074b |\n| applied-ml/ai-agents/data-onboarding/6e73a197-1de5-5550-9cc4-8c59bcec074b/context/page_009.md                      | md        | 3229.0          | context        | 6e73a197-1de5-5550-9cc4-8c59bcec074b |\n| applied-ml/ai-agents/data-onboarding/6e73a197-1de5-5550-9cc4-8c59bcec074b/context/page_010.md                      | md        | 43738.0         | context        | 6e73a197-1de5-5550-9cc4-8c59bcec074b |\n| applied-ml/ai-agents/data-onboarding/6e73a197-1de5-5550-9cc4-8c59bcec074b/context/page_011.md                      | md        | 21002.0         | context        | 6e73a197-1de5-5550-9cc4-8c59bcec074b |\n| applied-ml/ai-agents/data-onboarding/6e73a197-1de5-5550-9cc4-8c59bcec074b/context/page_012.md                      | md        | 25091.0         | context        | 6e73a197-1de5-5550-9cc4-8c59bcec074b |\n| applied-ml/ai-agents/data-onboarding/6e73a197-1de5-5550-9cc4-8c59bcec074b/context/page_013.md                      | md        | 27508.0         | context        | 6e73a197-1de5-5550-9cc4-8c59bcec074b |\n| applied-ml/ai-agents/data-onboarding/6e73a197-1de5-5550-9cc4-8c59bcec074b/context/page_014.md                      | md        | 41764.0         | context        | 6e73a197-1de5-5550-9cc4-8c59bcec074b |\n| applied-ml/ai-agents/data-onboarding/6e73a197-1de5-5550-9cc4-8c59bcec074b/context/page_015.md                      | md        | 16514.0         | context        | 6e73a197-1de5-5550-9cc4-8c59bcec074b |\n| applied-ml/ai-agents/data-onboarding/6e73a197-1de5-5550-9cc4-8c59bcec074b/context/page_016.md                      | md        | 19718.0         | context        | 6e73a197-1de5-5550-9cc4-8c59bcec074b |\n| applied-ml/ai-agents/data-onboarding/6e73a197-1de5-5550-9cc4-8c59bcec074b/context/page_017.md                  
+Analyzing context. I've retrieved context for 6 tables.
+
+I'm now formulating a query to extract context documents from `source_manifest`, focusing on those classified as 'context'. Then, I plan to cross-reference these with the `data_catalog`, specifically its `context_documents` field, and the descriptive content for each dataset. Finally, I intend to integrate the findings with relevant schema decisions, scrutinizing their reasoning.
 
 <a id="data-engineer-q8"></a>
 #### Q8: Show the web provenance — what pages were crawled?
@@ -433,11 +1874,38 @@ Based on the processing logs, **no columns were dropped** during the loading pro
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **28.2s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.3s |
+| 2 | agent_engineer | `meta_chat` | 4.9s |
+| | | **Total** | **30.3s** |
 
 **Answer:**
 
-The following table displays the web provenance metadata, showcasing the URLs that were recently crawled as part of the data onboarding process. The results show a series of pages discovered from the CMS.gov domain, specifically relating to Medicare payment systems and regulations.\n\n| url | page_title | parent_url | crawled_at | provenance_id | source_id |\n|:---|:---|:---|:---|:---|:---|\n| https://www.cms.gov/medicare/regulations-guidance/guidance | https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format | 2026-03-31 13:39:34 | 8289d269-346e-4919-8c4a-8cb1291e18b8 | 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce |\n| https://www.cms.gov/medicare/enrollment-renewal/managed-care-eligibility-enrollment | https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format | 2026-03-31 13:39:34 | f18242f3-7208-4464-b926-6c998123612e | 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce |\n| https://www.cms.gov/medicare/regulations-guidance/geographic-classification-review-board | https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format | 2026-03-31 13:39:34 | 0dea6aa0-0814-461c-b4b7-8e346c7ee023 | 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce |\n| https://www.cms.gov/medicare/regulations-guidance/original-medicare-payment-regulations | https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format | 2026-03-31 13:39:34 | 71f2e1f3-4195-41f4-967f-fed20b634340 | 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce |\n| https://www.cms.gov/medicare/enrollment-renewal/health-plans | https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format | 2026-03-31 13:39:34 | ddcf44f3-c0ee-436f-ae96-5ed705244a71 | 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce |\n| https://www.cms.gov/about-cms | https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format | 2026-03-31 13:39:34 | 4be70c92-15ee-4ddc-a41c-b9399535e7bf | 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce |\n| https://www.cms.gov/medicare/coverage/evidence | https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format | 2026-03-31 13:39:34 | b898e01a-e391-4cbf-84c0-52c0b2c216eb | 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce |\n| https://www.cms.gov/medicare/coverage/center | https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format | 2026-03-31 13:39:34 | dab80b74-50b2-4395-952c-69339c347c12 | 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce |\n| https://www.cms.gov/medicare-coverage-database/search.aspx | https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format | 2026-03-31 13:39:34 | ba647423-45e6-4455-9dd1-3d8a7c6f659e | 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce |\n| https://www.cms.gov/medicare/coverage/preventive-services-coverage | https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format | 2026-03-31 13:39:34 | 012b4f48-b0a1-4c31-accd-93e5b24fe668 | 7a9bbbaf-2a6b-5237-99c5-fc2e59d4d9ce |\n\nInsights:\n\n*   **Focused Crawling:** A significant number of the recently crawled pages originate from a single parent URL: `https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format`. This indicates a deep crawl of the Medicare provider-specific data section.\n*   **Domain Concentration:** The current provenance records are heavily concentrated on the `cms.gov` domain, focusing on regulatory guidance, enrollment, and coverage information.\n*   **Source Correlation:** All the top results are associated with the same `source_id` (`7a9bbbaf...`), suggesting they are part of a unified onboarding effort for CMS data.\n\nHere are some follow-up questions you might consider:\n\n*   Which source has the most crawled pages?\n*   What are the most common file types discovered from these crawled pages?\n*   Show the table lineage for data onboarded from the cms_gov domain.\n*   Detect any anomalies in the daily number of pages crawled over the past month.\n
+The web provenance shows that a total of **625 pages and files** were crawled across two primary domains: **cms.gov** and **datashop.cboe.com**. The crawled content includes informational web pages, technical specifications (PDFs), data archives (ZIPs), and reference files (XLSX, CSV).
+
+The most recent crawls were from `cms.gov` on 2026-03-31 and `datashop.cboe.com` on 2026-03-26.
+
+Here are some of the most recently crawled URLs:
+
+| url                                                                                                                                                                                        | parent_url                                                                                                          | page_title | status_code | crawled_at          |
+|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------|:-----------|:------------|:--------------------|
+| https://www.cms.gov/files/zip/2025-icd-10-pcs-conversion-table.zip                                                                                                                     | https://www.cms.gov/medicare/coding-billing/icd-10-codes                                                            | None       | nan         | 2026-03-31 13:39:34 |
+| https://www.cms.gov/files/zip/2025-version-update-summary.zip                                                                                                                          | https://www.cms.gov/medicare/coding-billing/icd-10-codes                                                            | None       | nan         | 2026-03-31 13:39:34 |
+| https://www.cms.gov/marketplace/resources/letters                                                                                                                                      | https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format       | None       | 200.0       | 2026-03-31 13:39:34 |
+| https://www.cms.gov/marketplace-private-insurance/resources/marketplace-coverage-transitions                                                                                             | https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format       | None       | 200.0       | 2026-03-31 13:39:34 |
+| https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format                                                                            | None                                                                                                                | None       | 200.0       | 2026-03-31 13:39:34 |
+| https://www.cms.gov/priorities/key-initiatives/burden-reduction                                                                                                                        | https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format       | None       | 200.0       | 2026-03-31 13:39:34 |
+| https://www.cms.gov/about-cms/contact/newsroom                                                                                                                                         | https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format       | None       | 200.0       | 2026-03-31 13:39:34 |
+| https://www.cms.gov/fraud                                                                                                                                                              | https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format       | None       | 200.0       | 2026-03-31 13:39:34 |
+| https://www.cms.gov/data-research                                                                                                                                                      | https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format       | None       | 200.0       | 2026-03-31 13:39:34 |
+| https://www.cms.gov/priorities/key-initiatives/e-health                                                                                                                                | https://www.cms.gov/medicare/payment/prospective-payment-systems/provider-specific-data-public-use-sas-format       | None       | 200.0       | 2026-03-31 13:39:34 |
+
+Insights from the crawled data:
+*   **Domain Focus:** The pipeline successfully traversed deep into the CMS (Centers for Medicare & Medicaid Services) and Cboe Datashop sites, capturing both high-level landing pages and direct links to data assets.
+*   **Data Asset Discovery:** Many of the crawled URLs are direct links to data files (e.g., `.zip` for ICD-10 codes, `.pdf` for specifications, and `.xlsx` for message lists), indicating a thorough discovery of structured data sources.
+*   **Health and Finance Context:** The provenance confirms a focus on healthcare billing/coding (CMS) and financial market data (Cboe), matching the intended onboarding scope.
+*   **Recursive Crawling:** The `parent_url` field demonstrates how the crawler moves from main product pages to specific document and sample data links.
+
+Would you like to know how many files of each type (pdf, csv, zip) were discovered, or which parent URLs yielded the most discovered links? I can also check for any failed crawls.
 
 <a id="data-engineer-q9"></a>
 #### Q9: What table relationships were detected across datasets?
@@ -446,11 +1914,41 @@ The following table displays the web provenance metadata, showcasing the URLs th
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **22.7s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.6s |
+| 2 | agent_engineer | `meta_chat` | 5.0s |
+| | | **Total** | **25.2s** |
 
 **Answer:**
 
-The table relationships detected across the onboarded datasets primarily focus on the **CMS Medicare Payment** data, specifically within the `data_onboarding_cms_gov_bronze` dataset.\n\nThese relationships include:\n\n### Hierarchical Containment:\n*   **`ipsf_full`**: Acts as a master container for specialized sub-tables such as `ipsf_hha` (Home Health Agency), `ipsf_hos` (Hospice), `ipsf_inp` (Inpatient), `ipsf_ipf` (Inpatient Psychiatric Facility), `ipsf_irf` (Inpatient Rehabilitation Facility), `ipsf_ltch` (Long Term Care Hospital), and `ipsf_snf` (Skilled Nursing Facility).\n*   **`opsf_full`**: Contains the core `opsf` (Outpatient Provider Specific File) table.\n\n### Snapshots and History:\nMost core tables have a corresponding "LRO" (Latest Record Only) snapshot or version, indicating temporal tracking for historical and current data. Examples include:\n*   `ipsf_hha` &rarr; `ipsf_hha_lro`\n*   `ipsf_hos` &rarr; `ipsf_hos_lro`\n*   `ipsf_inp` &rarr; `ipsf_inp_lro`\n*   `opsf` &rarr; `opsf_lro`\n\n### Shared Keys:\nThese tables are linked via an extensive set of shared keys, enabling joins and cross-sectional analysis. The most notable keys are:\n*   **`provider_ccn`**: A primary link across all provider-specific files.\n*   **`npi`**: National Provider Identifier.\n*   **Temporal keys**: `effective_date`, `fiscal_year_begin_date`, and `export_date`.\n*   **Geographic/System keys**: `cbsa_actual_geographic_location`, `state_code`, and `county_code`.\n\n### Insights:\n*   **Unified Structure**: The data model uses a "Full" table concept as an umbrella for specialized provider types, ensuring data integrity across different care settings.\n*   **Temporal Tracking**: The consistent presence of "LRO" snapshots suggests the pipeline is designed to handle slowly changing dimensions or record versioning.\n*   **Rich Join Potential**: The high density of shared keys (`provider_ccn`, `npi`, `cbsa`) allows for deep cross-sectional analysis of healthcare providers.
+Table relationships were primarily detected for the `data_onboarding_cms_gov_bronze` dataset. There were no specific relationships recorded for the `data_onboarding_datashop_cboe_com_bronze` dataset.
+
+For the `data_onboarding_cms_gov_bronze` dataset, the relationships include:
+
+**Containment Hierarchies**:
+*   `ipsf_full` acts as a parent table and contains:
+    *   `ipsf_hha` (Home Health)
+    *   `ipsf_hos` (Hospice)
+    *   `ipsf_inp` (Inpatient)
+    *   `ipsf_ipf` (Inpatient Psychiatric)
+    *   `ipsf_irf` (Inpatient Rehabilitation)
+    *   `ipsf_ltch` (Long-Term Care Hospital)
+    *   `ipsf_snf` (Skilled Nursing Facility)
+*   `opsf_full` contains the `opsf` table.
+
+**Snapshotting**:
+Most major tables (e.g., `ipsf_hha`, `ipsf_inp`, `opsf`) have corresponding **LRO (Latest Record Only)** snapshot tables (e.g., `ipsf_hha_lro`).
+
+**Shared Keys**:
+These tables share a consistent set of primary and descriptive keys, such as `provider_ccn`, `effective_date`, `npi`, and `fiscal_year_begin_date`, which facilitates cross-table analysis and data integrity.
+
+For example, the `ipsf_hha` table's relationships are detailed as:
+*   `contained_by`: `ipsf_full`
+*   `has_snapshot`: `ipsf_hha_lro`
+*   `shared_keys`: A long list of common keys including `provider_ccn`, `effective_date`, `fiscal_year_begin_date`, `export_date`, etc.
+
+The same pattern applies to `ipsf_hos`, `ipsf_inp`, `ipsf_ipf`, `ipsf_irf`, `ipsf_ltch`, `ipsf_snf`, and `opsf` and their respective `_lro` snapshots.
+
+Would you like to know more about the column mappings for the `ipsf_full` table, or perhaps see the processing logs for the `cms_gov` dataset?
 
 ### Catalog Explorer
 
@@ -461,11 +1959,13 @@ The table relationships detected across the onboarded datasets primarily focus o
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **6.3s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.5s |
+| 2 | agent_catalog | `search_context` | 4.7s |
+| | | **Total** | **10.8s** |
 
 **Answer:**
 
-{'parts': [{'text': "I couldn't find a direct definition for `PRVDR_NUM` in the available documentation. The search returned results for `carrier_code` and other indicators, but not `PRVDR_NUM` itself.\n\nPerhaps you can provide more context, such as the table this column belongs to? This would help me narrow down the search.", 'thought_signature': 'CpUFAY89a1_JQgzp6AP-qFvFoTqY5A0pGhsyUk-byNPeWpmKQ79t_5qsnGuSUH3CloYEfB1VEZk47ckJYUhOMrFMDTOuAE8jR_YEzvBcsf_4wGDvy-53Eqs1Xbsn9lMQAIqp6sW_e8Y8u08GVygsIYdhy-C8NkwPIuaOyfu2XEJJnxS3uM1SRp1cqRTe8kgbU9J3GR67GH77Fhs0zY8-cGQ4ej6EDaHIyP-jHKdlFcYy_ssT-X5Tin-eSAGmRAVgtBxpM1rNmNMGBr7re0BGY_-UNmwKSUOoH7HgSVj_zhoFyrfGU3HsHDVoaeoWO25Xj1xwMMwXbMxh6B21m5uA-FZWs9eolwlhVL6znpC8uZeqV1UAM09D1uajMNfOyH4l6sYqgVApnVDiEGN3TT2owG7bytNrpxW9bGWVf46D2BZAUkG_iCWcdkto9yJLTc8V2eDDnO-CX6euG2_c05TD_8SRPsPtvlB9omMmuOvd2AREkdBhaYlq8wVfZbPUs1SYym4dpEMePoVpbCInCmaC8Dn-uamrSCHrqDRow9Jiozs9ri2dCSHvn8m-oSqAIejQ52s0LRoB8ClvSD5fuzFbydinJ1nZHupaTGzYL2QUxpfulHTI_4ngHzgTdg8gFeDb8JhLT8kZz47nBityT-vwTtbnTDlAd02RE96ZHa9bcgBuAdwnwT84zbTl8-YjUtXt4NdqG1C7fZPmhXc-YJB8EkeafvdCqtPnkq5K3PpWxTDc2yvmsElHLx94UHlmIBjOYyxgRxbvXPoYinae9qLLwBfLMZwgJIj7Jhhv7TL5OuVjIi_SgY5FIdFwbmMppZEmZ7zuIpPcj4GK7Jyv5l7TVWUS49iqwbX2PQxj09cZCUEgQI4G4HJ5cw=='}], 'role': 'model'}
+I couldn't find a direct definition for `PRVDR_NUM` in the available documentation. The search returned results for other columns like `carrier_code`, `message_number`, `vbp_participant_indicator`, and `hrr_participant_indicator`, but nothing specific to `PRVDR_NUM`.
 
 <a id="catalog-explorer-q10"></a>
 #### Q10: What Medicare payment data is available and how are the tables organized?
@@ -474,11 +1974,40 @@ The table relationships detected across the onboarded datasets primarily focus o
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **6.8s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.1s |
+| 2 | agent_catalog | `search_context` | 4.6s |
+| 3 | agent_catalog | `search_context` | 10.4s |
+| 4 | agent_catalog | `list_all_tables` | 15.3s |
+| | | **Total** | **25.1s** |
 
 **Answer:**
 
-I don\'t see any tables specifically identified as "Medicare payment data" in the available inventory. The tables listed are primarily related to financial market data, including options, equities, and various indices.\n\nIf you are looking for information on Medicare payment data, please let me know if there\'s a different term or type of data I should be looking for.
+There is a variety of Medicare payment data available, primarily categorized into provider-specific payment calculations and Medicare plan information.
+
+**Available Medicare Payment Data:**
+
+1.  **Provider-Specific Payment Calculation Data**: These tables, found in the `data_onboarding_cms_gov_bronze` dataset, contain detailed information used for calculating Medicare payments to various healthcare providers.
+    *   **`ipsf_full`**: This table contains "Provider Specific File (PSF) for Inpatient Prospective Payment System (IPPS) facilities, containing provider-specific data used for Medicare payment calculations. This is a snapshot from January 1, 2025. It includes financial rates, geographic and provider-specific adjustments, and provider characteristics."
+    *   Similar tables exist for specific facility types under IPPS, such as:
+        *   `ipsf_hha` (Home Health Agency)
+        *   `ipsf_hos` (Hospice)
+        *   `ipsf_inp` (Inpatient)
+        *   `ipsf_ipf` (Inpatient Psychiatric Facility)
+        *   `ipsf_irf` (Inpatient Rehabilitation Facility)
+        *   `ipsf_ltch` (Long-Term Care Hospital)
+        *   `ipsf_snf` (Skilled Nursing Facility)
+    *   **`opsf_full` and `opsf`**: These tables contain data related to the Outpatient Prospective Payment System, likely mirroring the `ipsf` tables for outpatient services.
+    *   Many of these provider-specific tables also have `_lro` versions (e.g., `ipsf_hha_lro`), which may represent limited reimbursement options or specific subsets of the data.
+
+2.  **Medicare Plan Information**:
+    *   **`cy2026_landscape_202603`**: This table provides a list of "all approved Medicare Advantage (MA) Plans, Cost Plans, Special Needs Plans (SNP), and stand-alone Prescription Drug Plans (PDP) for contract year 2026. It includes detailed information about plan characteristics, service areas, premiums, cost-sharing, and star ratings."
+
+**How the Tables are Organized:**
+
+1.  **By Prospective Payment System (PPS) and Facility Type**: The `ipsf_` and `opsf_` tables are organized by the type of Prospective Payment System (Inpatient or Outpatient) and then further by the specific facility or provider type (e.g., hospital, skilled nursing facility, home health agency). These tables contain financial rates, geographic and provider-specific adjustments, and provider characteristics relevant to Medicare payment calculations.
+2.  **By Contract Year for Plan Data**: The `cy2026_landscape_202603` table is organized by contract year and provides comprehensive details about Medicare Advantage and Prescription Drug Plans offered within that year, including premiums and cost-sharing.
+
+In addition to these direct payment-related tables, there are also numerous supporting tables in the `data_onboarding_cms_gov_bronze` dataset related to ICD-10 codes (for diagnoses and procedures), ground ambulance provider data (e.g., `_508_compliant_version_of_sampled_npis`), and Medicare Summary Notice (MSN) messages, which indirectly contribute to the understanding of Medicare healthcare and payment processes.
 
 <a id="catalog-explorer-q2"></a>
 #### Q2: Describe the columns in the IPSF full table.
@@ -487,11 +2016,34 @@ I don\'t see any tables specifically identified as "Medicare payment data" in th
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **9.5s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.0s |
+| 2 | agent_catalog | `get_table_columns` | 4.0s |
+| | | **Total** | **7.9s** |
 
 **Answer:**
 
-I couldn\'t find a table named "IPSF full table" in the available datasets. Please check the table name and try again. If you have an alternative name or more context about the table, I can try to search for it using that information.
+The `ipsf_full` table (statmike-mlops-349915.data_onboarding_cms_gov_bronze.ipsf_full) contains 68 columns providing provider-specific data for Inpatient Prospective Payment System (IPPS) facilities. This data is used for Medicare payment calculations and includes financial rates, geographic and provider-specific adjustments, and provider characteristics.
+
+Here are some key columns and their descriptions:
+
+*   **provider_ccn**: The 6-digit CMS Certification Number (CCN), a unique identifier for the Medicare provider.
+*   **effective_date**: The date on which the specific rate, factor, or data element in this record became effective.
+*   **fiscal_year_begin_date**: The start date of the provider's fiscal year.
+*   **export_date**: The date the data was exported from the source system, indicating the snapshot date of the file.
+*   **termination_date**: The date the provider's participation in the Medicare program was terminated, if applicable.
+*   **npi**: The National Provider Identifier (NPI), a unique 10-digit identification number for the health care provider.
+*   **provider_type_code**: A code indicating the type of provider (e.g., '00' for hospital).
+*   **census_division_code**: A code representing the U.S. Census Division where the provider is located.
+*   **msa_actual_geographic_location_code**: A code for the Metropolitan Statistical Area (MSA) of the provider's actual geographic location.
+*   **bed_size**: The number of beds in the facility.
+*   **case_mix_adjusted_cost_per_discharge_pps_facility_specific_rate**: Case mix adjusted cost per discharge PPS facility specific rate.
+*   **cost_of_living_adjustment**: Cost of living adjustment.
+*   **operating_dsh**: Operating disproportionate share hospital (DSH) adjustment.
+*   **vbp_adjustment**: Value-Based Purchasing (VBP) adjustment.
+*   **uncompensated_care_amount**: Amount for uncompensated care.
+*   **last_updated_date**: The date the record was last updated in the source system.
+
+For a complete list and more detailed documentation, you can query `data_onboarding_cms_gov_bronze.table_documentation` where `table_name = 'ipsf_full'`.
 
 <a id="catalog-explorer-q3"></a>
 #### Q3: How are the different IPSF tables related to each other?
@@ -500,11 +2052,20 @@ I couldn\'t find a table named "IPSF full table" in the available datasets. Plea
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **6.2s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.4s |
+| 2 | agent_catalog | `search_context` | 4.5s |
+| | | **Total** | **9.8s** |
 
 **Answer:**
 
-The `data_onboarding_cms_gov_bronze.ipsf_full` table contains the following IPSF tables:\n* `ipsf_hha`\n* `ipsf_hos`\n* `ipsf_inp`\n* `ipsf_ipf`\n* `ipsf_irf`\n* `ipsf_ltch`\n* `ipsf_snf`
+The `data_onboarding_cms_gov_bronze.ipsf_full` table contains the following IPSF tables:
+*   `ipsf_hha`
+*   `ipsf_hos`
+*   `ipsf_inp`
+*   `ipsf_ipf`
+*   `ipsf_irf`
+*   `ipsf_ltch`
+*   `ipsf_snf`
 
 <a id="catalog-explorer-q4"></a>
 #### Q4: What columns are shared between the HHA and SNF tables?
@@ -513,11 +2074,82 @@ The `data_onboarding_cms_gov_bronze.ipsf_full` table contains the following IPSF
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **7.9s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.3s |
+| 2 | agent_catalog | `list_all_tables` | 5.4s |
+| | | **Total** | **16.3s** |
 
 **Answer:**
 
-Based on the search results, the column `sole_community_or_medicare_dependent_hospital_base_year` appears in both `data_onboarding_cms_gov_bronze.ipsf_hha` (as a STRING) and `data_onboarding_cms_gov_bronze.ipsf_snf` (as a TIMESTAMP).
+The `ipsf_hha` and `ipsf_snf` tables share all of their 68 columns. These common columns are:
+
+*   `provider_ccn`
+*   `effective_date`
+*   `fiscal_year_begin_date`
+*   `export_date`
+*   `termination_date`
+*   `waiver_indicator`
+*   `intermediary_number`
+*   `provider_type_code`
+*   `census_division_code`
+*   `msa_actual_geographic_location_code`
+*   `msa_wage_index_location_code`
+*   `msa_standardized_amount_location`
+*   `sole_community_or_medicare_dependent_hospital_base_year`
+*   `change_code_for_lugar_reclassification`
+*   `temporary_relief_indicator`
+*   `federal_pps_blend`
+*   `state_code`
+*   `case_mix_adjusted_cost_per_discharge_pps_facility_specific_rate`
+*   `cost_of_living_adjustment`
+*   `interns_to_beds_ratio`
+*   `bed_size`
+*   `operating_cost_to_charge_ratio`
+*   `case_mix_index`
+*   `supplemental_security_income_ratio`
+*   `medicaid_ratio`
+*   `special_provider_update_factor`
+*   `operating_dsh`
+*   `fiscal_year_end_date`
+*   `special_payment_indicator`
+*   `hospital_quality_indicator`
+*   `cbsa_actual_geographic_location`
+*   `cbsa_wage_index_location`
+*   `cbsa_standardized_amount_location`
+*   `special_wage_index`
+*   `pass_through_amount_for_capital`
+*   `pass_through_amount_for_direct_medical_education`
+*   `pass_through_amount_for_organ_acquisition`
+*   `pass_through_total_amount`
+*   `capital_pps_payment_code`
+*   `hospital_specific_capital_rate`
+*   `old_capital_hold_harmless_rate`
+*   `new_capital_hold_harmless_rate`
+*   `capital_cost_to_charge_ratio`
+*   `new_hospital`
+*   `capital_indirect_medical_education_ratio`
+*   `capital_exception_payment_rate`
+*   `vbp_participant_indicator`
+*   `vbp_adjustment`
+*   `hrr_participant_indicator`
+*   `hrr_adjustment`
+*   `bundle_model1_discount`
+*   `hac_reduction_participant_indicator`
+*   `uncompensated_care_amount`
+*   `ehr_reduction_indicator`
+*   `low_volume_adjustment_factor`
+*   `county_code`
+*   `medicare_performance_adjustment`
+*   `ltch_dpp_indicator`
+*   `supplemental_wage_index`
+*   `supplemental_wage_index_indicator`
+*   `change_code_wage_index_reclassification`
+*   `npi`
+*   `pass_through_amount_for_allogenic_stem_cell_acquisition`
+*   `pps_blend_year_indicator`
+*   `last_updated_date`
+*   `pass_through_amount_for_direct_graduate_medical_education`
+*   `pass_through_amount_for_kidney_acquisition`
+*   `pass_through_amount_for_supply_chain`
 
 <a id="catalog-explorer-q5"></a>
 #### Q5: What does the wage index represent in this data?
@@ -526,11 +2158,24 @@ Based on the search results, the column `sole_community_or_medicare_dependent_ho
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **8.5s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.3s |
+| 2 | agent_catalog | `search_context` | 4.4s |
+| | | **Total** | **11.0s** |
 
 **Answer:**
 
-I couldn\'t find a direct description of what "wage index" represents in the available documentation. However, I found several columns that contain "wage index" in their name across various tables:\n\n*   `data_onboarding_cms_gov_bronze.ipsf_ltch.cbsa_wage_index_location`\n*   `data_onboarding_cms_gov_bronze.ipsf_ipf.cbsa_wage_index_location`\n*   `data_onboarding_cms_gov_bronze.ipsf_irf.cbsa_wage_index_location`\n*   `data_onboarding_cms_gov_bronze.ipsf_snf.cbsa_wage_index_location`\n*   `data_onboarding_cms_gov_bronze.ipsf_ltch_lro.cbsa_wage_index_location`\n*   `data_onboarding_cms_gov_bronze.ipsf_snf_lro.cbsa_wage_index_location`\n*   `data_onboarding_cms_gov_bronze.ipsf_ipf_lro.cbsa_wage_index_location`\n*   `data_onboarding_cms_gov_bronze.ipsf_irf_lro.cbsa_wage_index_location`\n*   `data_onboarding_cms_gov_bronze.opsf_full.supplemental_wage_index_indicator`\n*   `data_onboarding_cms_gov_bronze.opsf.supplemental_wage_index_indicator`\n\nThese columns are present in tables such as `ipsf_ltch`, `ipsf_ipf`, `ipsf_irf`, `ipsf_snf`, `ipsf_ltch_lro`, `ipsf_snf_lro`, `ipsf_ipf_lro`, `ipsf_irf_lro`, `opsf_full`, and `opsf`. Unfortunately, the documentation for these specific columns does not provide a detailed explanation of what the wage index represents.
+The documentation does not provide a specific definition for "wage index" or what it represents. However, the search results indicate that there are several columns related to `cbsa_wage_index_location` and `supplemental_wage_index_indicator` in various tables, such as:
+
+*   `data_onboarding_cms_gov_bronze.ipsf_ipf.cbsa_wage_index_location`
+*   `data_onboarding_cms_gov_bronze.ipsf_ltch.cbsa_wage_index_location`
+*   `data_onboarding_cms_gov_bronze.ipsf_irf.cbsa_wage_index_location`
+*   `data_onboarding_cms_gov_bronze.ipsf_ltch_lro.cbsa_wage_index_location`
+*   `data_onboarding_cms_gov_bronze.ipsf_ipf_lro.cbsa_wage_index_location`
+*   `data_onboarding_cms_gov_bronze.ipsf_irf_lro.cbsa_wage_index_location`
+*   `data_onboarding_cms_gov_bronze.ipsf_snf.cbsa_wage_index_location`
+*   `data_onboarding_cms_gov_bronze.ipsf_full.supplemental_wage_index_indicator`
+*   `data_onboarding_cms_gov_bronze.ipsf_snf_lro.cbsa_wage_index_location`
+*   `data_onboarding_cms_gov_bronze.ipsf_ipf.supplemental_wage_index_indicator`
 
 <a id="catalog-explorer-q6"></a>
 #### Q6: Explain the difference between the IPSF full file and the provider-type-specific files.
@@ -539,11 +2184,15 @@ I couldn\'t find a direct description of what "wage index" represents in the ava
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **7.2s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.1s |
+| 2 | agent_catalog | `search_context` | 4.5s |
+| | | **Total** | **11.2s** |
 
 **Answer:**
 
-The `ipsf_full` table (`data_onboarding_cms_gov_bronze.ipsf_full`) appears to be a comprehensive file that contains data for various provider types. The "provider-type-specific files" are individual tables derived from or contained within `ipsf_full`, such as:\n\n*   `data_onboarding_cms_gov_bronze.ipsf_hha`\n*   `data_onboarding_cms_gov_bronze.ipsf_hos`\n*   `data_onboarding_cms_gov_bronze.ipsf_inp`\n*   `data_onboarding_cms_gov_bronze.ipsf_ipf`\n*   `data_onboarding_cms_gov_bronze.ipsf_irf`\n*   `data_onboarding_cms_gov_bronze.ipsf_ltch`\n*   `data_onboarding_cms_gov_bronze.ipsf_snf`\n\nThis suggests that `ipsf_full` is an aggregated or complete dataset, and the other `ipsf_` tables represent subsets of this data, each specific to a particular type of provider.
+The `data_onboarding_cms_gov_bronze.ipsf_full` file is a comprehensive dataset that **contains** data from various provider-type-specific files.
+
+The provider-type-specific files, such as `data_onboarding_cms_gov_bronze.ipsf_hha`, `data_onboarding_cms_gov_bronze.ipsf_hos`, `data_onboarding_cms_gov_bronze.ipsf_inp`, `data_onboarding_cms_gov_bronze.ipsf_ipf`, `data_onboarding_cms_gov_bronze.ipsf_irf`, `data_onboarding_cms_gov_bronze.ipsf_ltch`, and `data_onboarding_cms_gov_bronze.ipsf_snf`, represent subsets of the full file, each focused on a particular type of provider.
 
 <a id="catalog-explorer-q7"></a>
 #### Q7: What reference or lookup data is available?
@@ -552,11 +2201,50 @@ The `ipsf_full` table (`data_onboarding_cms_gov_bronze.ipsf_full`) appears to be
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **8.0s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.3s |
+| 2 | agent_catalog | `list_all_tables` | 4.5s |
+| | | **Total** | **21.4s** |
 
 **Answer:**
 
-Based on the available tables, the following appear to be reference or lookup data:\n\n*   **livevol_exchange_ids** (`1026793852137.data_onboarding_datashop_cboe_com_bronze.livevol_exchange_ids`): This table contains `trade_condition_id`, `display_name`, `full_name`, and `security_type`, suggesting it\'s used to look up information about exchange identifiers.\n*   **livevol_trade_condition_ids** (`1026793852137.data_onboarding_datashop_cboe_com_bronze.livevol_trade_condition_ids`): This table includes `trade_condition_id`, `condition_name`, and `security_type`, indicating its use for looking up trade condition details.\n\nAdditionally, several tables starting with "ftref" contain reference data related to options and equities:\n\n*   **ftref_early_exercise_strike_by_option_class** (`1026793852137.data_onboarding_datashop_cboe_com_bronze.ftref_early_exercise_strike_by_option_class`)\n*   **ftref_event_free_realized_volatility** (`1026793852137.data_onboarding_datashop_cboe_com_bronze.ftref_event_free_realized_volatility`)\n*   **ftref_fit_parameters** (`1026793852137.data_onboarding_datashop_cboe_com_bronze.ftref_fit_parameters`)\n*   **ftref_implied_earnings_move** (`1026793852137.data_onboarding_datashop_cboe_com_bronze.ftref_implied_earnings_move`)\n*   **ftref_traded_vega_ratio** (`1026793852137.data_onboarding_datashop_cboe_com_bronze.ftref_traded_vega_ratio`)
+Based on the available table descriptions, here are some tables that appear to be reference or lookup data:
+
+*   **_11_20_25_complete_msn_message_list** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze._11_20_25_complete_msn_message_list`): A master list of standardized messages that appear on the Medicare Summary Notice (MSN).
+*   **_508_compliant_version_of_icd_10_cm_conversion_table_fy25** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze._508_compliant_version_of_icd_10_cm_conversion_table_fy25`): A conversion table for ICD-10-CM codes for Fiscal Year 2025.
+*   **_508_version_icd_10_cm_conversion_table_fy2026_april_1_2026** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze._508_version_icd_10_cm_conversion_table_fy2026_april_1_2026`): A conversion table for ICD-10-CM codes for Fiscal Year 2026.
+*   **cy2026_landscape_202603** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.cy2026_landscape_202603`): Contains a list of all approved Medicare Advantage (MA) Plans, Cost Plans, Special Needs Plans (SNP), and stand-alone Prescription Drug Plans (PDP) for contract year 2026.
+*   **icd10cm_drug_2025** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.icd10cm_drug_2025`): Contains data related to ICD10-CM drug codes for 2025.
+*   **icd10cm_drug_2026** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.icd10cm_drug_2026`): Contains data related to ICD10-CM drug codes for 2026.
+*   **icd10cm_eindex_2025** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.icd10cm_eindex_2025`): Contains data related to ICD10-CM e-index for 2025.
+*   **icd10cm_eindex_2026** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.icd10cm_eindex_2026`): Contains data related to ICD10-CM e-index for 2026.
+*   **icd10cm_index_2025** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.icd10cm_index_2025`): Contains data related to ICD10-CM index for 2025.
+*   **icd10cm_index_2026** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.icd10cm_index_2026`): Contains data related to ICD10-CM index for 2026.
+*   **icd10cm_neoplasm_2025** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.icd10cm_neoplasm_2025`): Contains data related to ICD10-CM neoplasm codes for 2025.
+*   **icd10cm_neoplasm_2026** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.icd10cm_neoplasm_2026`): Contains data related to ICD10-CM neoplasm codes for 2026.
+*   **icd10pcs_conversion_table** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.icd10pcs_conversion_table`): A conversion table for ICD10-PCS codes.
+*   **icd10pcs_definitions_2026** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.icd10pcs_definitions_2026`): Contains definitions for ICD10-PCS codes for 2026.
+*   **icd10pcs_index_2026** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.icd10pcs_index_2026`): Contains index data for ICD10-PCS codes for 2026.
+*   **icd10pcs_tables_2026** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.icd10pcs_tables_2026`): Contains table data for ICD10-PCS codes for 2026.
+*   **msn_message_character_limits** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.msn_message_character_limits`): Provides character limits for MSN messages.
+*   **poaexempt_add_codes_fy25** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.poaexempt_add_codes_fy25`): A list of new ICD-10-CM diagnosis codes added to the Present on Admission (POA) exempt list for Fiscal Year 2025.
+*   **poaexempt_add_codes_fy26** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.poaexempt_add_codes_fy26`): A list of new ICD-10-CM diagnosis codes added to the Present on Admission (POA) exempt list for Fiscal Year 2026.
+*   **poaexempt_codes_fy25** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.poaexempt_codes_fy25`): Contains POA exempt codes for Fiscal Year 2025.
+*   **poaexempt_codes_fy26** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.poaexempt_codes_fy26`): Contains POA exempt codes for Fiscal Year 2026.
+*   **poaexempt_delete_codes_fy25** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.poaexempt_delete_codes_fy25`): Contains POA exempt codes to be deleted for Fiscal Year 2025.
+*   **poaexempt_delete_codes_fy26** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.poaexempt_delete_codes_fy26`): Contains POA exempt codes to be deleted for Fiscal Year 2026.
+*   **poaexempt_revise_codes_fy25** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.poaexempt_revise_codes_fy25`): Contains POA exempt codes to be revised for Fiscal Year 2025.
+*   **poaexempt_revise_codes_fy26** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.poaexempt_revise_codes_fy26`): Contains POA exempt codes to be revised for Fiscal Year 2026.
+
+Additionally, the following tables relate to sampled NPIs for ground ambulance providers, which can serve as reference lists for those specific samples:
+
+*   **_508_compliant_version_of_sampled_npis** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze._508_compliant_version_of_sampled_npis`)
+*   **_508compliantversion_y2** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze._508compliantversion_y2`)
+*   **cmsambdata_y1sample_forposting20feb** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.cmsambdata_y1sample_forposting20feb`)
+*   **cmsambdata_y2sample_post** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.cmsambdata_y2sample_post`)
+*   **cmsambdata_y3sample_post** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.cmsambdata_y3sample_post`)
+*   **cmsambdata_y3sample_post508** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.cmsambdata_y3sample_post508`)
+*   **cmsambdata_y4sample_post** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.cmsambdata_y4sample_post`)
+*   **cmsambdata_y4sample_post508** (`statmike-mlops-349915.data_onboarding_cms_gov_bronze.cmsambdata_y4sample_post508`)
 
 <a id="catalog-explorer-q8"></a>
 #### Q8: What does the case mix index measure?
@@ -565,11 +2253,26 @@ Based on the available tables, the following appear to be reference or lookup da
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **5.8s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.1s |
+| 2 | agent_catalog | `search_context` | 4.7s |
+| | | **Total** | **10.5s** |
 
 **Answer:**
 
-{'parts': [{'text': "I couldn't find a description for the `case_mix_index` column in the available documentation. All the relevant entries had an empty description field.", 'thought_signature': 'Cu0DAY89a18GNjEtiaS-5woO8IWXToXAkWVhtN9hKJYpo0oXTnUA8xUhLPf9tRg4RUlGSXHX178eO5G0SaNuoZV14fvKJmC8sYhY4bIL69ShG6zQWAUHTfLBm4NBkc9pJaJNh3mZpZI0p-cGurv3qipxJPUpxhHybaTBnFT1VBf8fWr9zfzs6CBZtINWbnilxganO9uR36zUjn7yhFaLP42fgj_NWNTZ_HrnQ1D4fRkdSi1RxoU6bhQGl6db75QAuktSqtE-njbxLPHO96dezTSUN1VYY8PkfVzngqg-_ufu8k_ztsRQPN7bspPeUER1VKvVhHKrageCCzAessuG9bVFZtZ5qDOynwYZx9VGmFGKh8VnwnL19WG77Ru7s_ZuYjGrZZK54Odr03FkzlS_ykzihI5giWmVIfZOnHJfKQoPfm0UqCRPXpXyPJTXLuM1hH1efkJ7e6CDllvhsIk8yTX7SGdEdh47rKiD8Bhra_FAZT7tdwm48_pr9Ocl0oVqi92VRRvw8H_KG_hTTySYLBhhDKD7cKo9kisA2zpGTNMY5REv1kBwPRYsiN27hz_nlpJAmOlj_ivrl1-ehz1HqjzqAPAsAIZWlNiwev8gS4NNQRXNkkWUUJ04LVNOrPzI_vPEu37BY9MTz5y4sBO1kA=='}], 'role': 'model'}
+The documentation does not provide a definition for "case mix index". It appears as a column in several tables within the `data_onboarding_cms_gov_bronze` dataset, including:
+
+*   `data_onboarding_cms_gov_bronze.ipsf_hos.case_mix_index`
+*   `data_onboarding_cms_gov_bronze.ipsf_hos_lro.case_mix_index`
+*   `data_onboarding_cms_gov_bronze.ipsf_full.case_mix_index`
+*   `data_onboarding_cms_gov_bronze.ipsf_hha.case_mix_index`
+*   `data_onboarding_cms_gov_bronze.ipsf_ltch.case_mix_index`
+*   `data_onboarding_cms_gov_bronze.ipsf_inp.case_mix_index`
+*   `data_onboarding_cms_gov_bronze.ipsf_hha_lro.case_mix_index`
+*   `data_onboarding_cms_gov_bronze.ipsf_irf.case_mix_index`
+*   `data_onboarding_cms_gov_bronze.ipsf_snf.case_mix_index`
+*   `data_onboarding_cms_gov_bronze.ipsf_inp_lro.case_mix_index`
+
+However, the specific meaning or what it measures is not detailed in the available documentation.
 
 <a id="catalog-explorer-q9"></a>
 #### Q9: Which tables contain hospice-related data?
@@ -578,9 +2281,15 @@ Based on the available tables, the following appear to be reference or lookup da
 
 | Step | Agent | Action | Time |
 |------|-------|--------|------|
-| | | **Total** | **22.1s** |
+| 1 | agent_chat | `transfer_to_agent` | 2.3s |
+| 2 | agent_catalog | `search_context` | 4.6s |
+| | | **Total** | **14.2s** |
 
 **Answer:**
 
-Based on the semantic search for "hospice-related data" and the context of the `cms_gov` dataset, the following tables are likely to contain hospice-related data:\n\n*   **`1026793852137.data_onboarding_cms_gov_bronze.ipsf_full`**: This table appears to be a comprehensive table that contains data from various healthcare provider types, including those that might offer hospice services or data related to hospice patients.\n*   **`1026793852137.data_onboarding_cms_gov_bronze.ipsf_hha`**: Likely contains data related to Home Health Agencies, which can provide hospice care.\n*   **`1026793852137.data_onboarding_cms_gov_bronze.ipsf_hha_lro`**: Another table related to Home Health Agencies.\n*   **`1026793852137.data_onboarding_cms_gov_bronze.ipsf_hos`**: Likely contains hospital-related data, which may include hospice units or patient data.\n*   **`1026793852137.data_onboarding_cms_gov_bronze.ipsf_hos_lro`**: Another table related to hospitals.\n*   **`1026793852137.data_onboarding_cms_gov_bronze.ipsf_irf`**: Likely contains data related to Inpatient Rehabilitation Facilities, which might also be involved in or interact with hospice care.\n\nThese tables are part of the `data_onboarding_cms_gov_bronze` dataset, indicating their origin from the Centers for Medicare & Medicaid Services, further supporting their relevance to healthcare services like hospice.
+I could not find any tables explicitly containing "hospice-related data" based on my initial search. The results pointed to columns within tables like `data_onboarding_cms_gov_bronze.ipsf_hha`, `data_onboarding_cms_gov_bronze.ipsf_hha_lro`, `data_onboarding_cms_gov_bronze.ipsf_hos`, `data_onboarding_cms_gov_bronze.ipsf_hos_lro`, and `data_onboarding_cms_gov_bronze.ipsf_irf`, but these columns are general indicators and the tables themselves do not explicitly mention hospice in their descriptions.
+
+It's possible that hospice data is integrated into broader healthcare datasets without being explicitly named "hospice" in the table or column descriptions.
+
+Would you like me to try searching for a broader term like "patient care" or "end-of-life care" to see if any relevant tables appear?
 
