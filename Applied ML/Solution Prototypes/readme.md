@@ -75,6 +75,13 @@ This folder contains solution prototypes that integrate multiple aspects of Appl
     - Deployment to Vertex AI Agent Engine with application integration examples
     - Interactive UI for fraud analysts to review and investigate flagged documents
 
+- **[Product Hierarchy](./product-hierarchy/README.md)** - Classify new products into a Department → Category taxonomy
+  - **Synthetic Data Generation**: Gemini structured output with Pydantic schemas to generate realistic product catalogs
+  - **Flat Classification** (Approaches 1-4): Fuzzy string matching, semantic embedding nearest neighbor, centroid matching, and gradient boosting — treating each Department/Category path as an independent label
+  - **Local Classifiers** (Approaches 5-7): Top-down hierarchical classification — predict Department first, then route to per-department Category classifiers. Demonstrates cascading error risk.
+  - **Multi-Task Learning** (Approaches 8-9): Keras neural networks with shared hidden layers and separate output heads. Compares independent heads (which can produce invalid combinations) vs. conditional architecture (department prediction feeds into category head)
+  - **Comparison**: Side-by-side results across all nine approaches with discussion of when to use each paradigm
+
 - **[Time Series](./time-series/readme.md)** - Conversational forecasting with interactive visualizations
   - **Agentic Retrieval**: Natural language queries for time series data stored in BigQuery
   - **MCP Toolbox Integration**: Pre-defined tools for querying historical data and generating forecasts

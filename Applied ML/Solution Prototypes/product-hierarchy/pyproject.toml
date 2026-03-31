@@ -1,0 +1,17 @@
+[project]
+name = "product-hierarchy"
+version = "0.1.0"
+description = "Product hierarchy example notebooks"
+requires-python = ">=3.10"
+dependencies = [
+    "google-genai",
+    "thefuzz",
+    "scikit-learn",
+    "pandas",
+    "numpy",
+    "pydantic",
+    "keras",
+    "tensorflow",
+    "pip",
+    "ipykernel",
+]
