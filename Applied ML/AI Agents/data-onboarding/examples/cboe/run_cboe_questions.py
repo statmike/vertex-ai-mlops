@@ -7,8 +7,10 @@ Run from the data-onboarding project root:
     uv run python examples/cboe/run_cboe_questions.py --id data-analyst-q3     # one question
     uv run python examples/cboe/run_cboe_questions.py --resume                 # skip already-completed
 
-Results are written to examples/cboe/results/cboe_results.json (append-safe —
-existing results are preserved and new ones are merged in).
+Requires CHAT_SCOPE=data_onboarding_datashop_cboe_com_bronze in .env to scope
+the chat agent to the Cboe data. Results are written to
+examples/cboe/results/cboe_results.json (append-safe — existing results are
+preserved and new ones are merged in).
 """
 
 import argparse
@@ -253,6 +255,15 @@ async def main():
     parser.add_argument("--delay", type=float, default=5.0, help="Seconds between questions (default: 5)")
     parser.add_argument("--results", type=str, default=str(RESULTS_FILE), help="Output file path")
     args = parser.parse_args()
+
+    # Verify CHAT_SCOPE is set for Cboe data
+    chat_scope = os.getenv("CHAT_SCOPE", "")
+    if "cboe" not in chat_scope:
+        logger.warning(
+            "CHAT_SCOPE=%r — does not include Cboe data. "
+            "Set CHAT_SCOPE=data_onboarding_datashop_cboe_com_bronze in .env for best results.",
+            chat_scope,
+        )
 
     results_path = Path(args.results)
     questions = load_questions(QUESTIONS_FILE, persona=args.persona, question_id=args.id)
