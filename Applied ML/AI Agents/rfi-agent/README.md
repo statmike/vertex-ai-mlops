@@ -109,4 +109,9 @@ RFI_Agent/
 ```
 
 ## Visualizing Results
-The output JSON file in the `data/output/` folder can be uploaded to `dashboard.html` to get a quick view.
+## Visualizing Results
+The output JSON file in the `data/output/` folder can be uploaded to `dashboard.html` to get an analytical view of the processed RFI data.
+
+It is a HTML file that users can use to see exactly what the AI extracted, what it answered, and where it failed to confidently generate a response.
+
+![Sample Dashboard](./assets/dashboard.png)
