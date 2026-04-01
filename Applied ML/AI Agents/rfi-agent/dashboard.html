@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFI Agent Analytics Dashboard</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-primary: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.5);
+
+            --badge-generic: #10b981;
+            --badge-specific: #f59e0b;
+            --badge-completed: #3b82f6;
+            --badge-critiqued: #8b5cf6;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        header {
+            padding: 2rem 4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--glass-border);
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            margin: 0;
+            font-size: 2rem;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .upload-btn-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .btn {
+            border: 1px solid var(--accent-primary);
+            color: white;
+            background-color: rgba(99, 102, 241, 0.2);
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .btn:hover {
+            background-color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+
+        .upload-btn-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        main {
+            padding: 3rem 4rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 5rem 0;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+            display: none;
+            /* Hidden until loaded */
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+        }
+
+        .meta-card h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.2rem;
+            margin-top: 0;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 0.5rem;
+        }
+
+        .meta-item {
+            margin: 1rem 0;
+        }
+
+        .meta-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .meta-value {
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .questions-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .question-card {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .q-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .q-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .badges {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge.generic {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid var(--badge-generic);
+            color: var(--badge-generic);
+        }
+
+        .badge.specific {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid var(--badge-specific);
+            color: var(--badge-specific);
+        }
+
+        .badge.completed {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid var(--badge-completed);
+            color: var(--badge-completed);
+        }
+
+        .badge.critiqued {
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid var(--badge-critiqued);
+            color: var(--badge-critiqued);
+        }
+
+        .ai-section {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 0.5rem;
+            border-left: 3px solid var(--accent-primary);
+        }
+
+        .ai-label {
+            font-size: 0.8rem;
+            color: var(--accent-primary);
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .ai-text {
+            color: #cbd5e1;
+            line-height: 1.6;
+            margin: 0;
+            white-space: pre-wrap;
+        }
+
+        .confidence-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #34d399, #10b981);
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>RFI Agent Nexus</h1>
+        <div class="upload-btn-wrapper">
+            <button class="btn">Load JSON State</button>
+            <input type="file" id="fileInput" accept=".json" />
+        </div>
+    </header>
+
+    <main>
+        <div class="empty-state" id="emptyState">
+            Select a completed RFI JSON generated by the agent to visualize the extraction and AI response paths.
+        </div>
+
+        <div class="dashboard-grid" id="dashboardGrid">
+
+            <div class="sidebar">
+                <div class="glass-card meta-card">
+                    <h2>Document Metadata</h2>
+                    <div class="meta-item">
+                        <div class="meta-label">Filename</div>
+                        <div class="meta-value" id="metaFilename">--</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Format Type</div>
+                        <div class="meta-value" id="metaType">--</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Final Status</div>
+                        <div class="meta-value" id="metaStatus">--</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Total Questions Processed</div>
+                        <div class="meta-value" id="metaCount">0</div>
+                    </div>
+                    <div class="meta-item"
+                        style="margin-top: 1.5rem; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
+                        <div class="meta-label">Classification Breakdown</div>
+                        <div class="meta-value" id="metaClassGeneric"
+                            style="color: var(--badge-generic); font-size: 0.95rem; margin-top: 0.5rem;">0 Generic</div>
+                        <div class="meta-value" id="metaClassSpecific"
+                            style="color: var(--badge-specific); font-size: 0.95rem;">0 Project Specific</div>
+                    </div>
+                    <div class="meta-item"
+                        style="margin-top: 1.5rem; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
+                        <div class="meta-label">Resolution Status</div>
+                        <div class="meta-value" id="metaStatusAnswered"
+                            style="color: var(--badge-completed); font-size: 0.95rem; margin-top: 0.5rem;">0 AI Answered
+                        </div>
+                        <div class="meta-value" id="metaStatusEscalated"
+                            style="color: var(--badge-critiqued); font-size: 0.95rem;">0 Escalated for Review</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="questions-container" id="questionsContainer">
+                <!-- DOM Elements injected here -->
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    try {
+                        const jsonData = JSON.parse(e.target.result);
+                        renderDashboard(jsonData);
+                    } catch (err) {
+                        alert("Invalid JSON file uploaded.");
+                        console.error(err);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        function renderDashboard(data) {
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('dashboardGrid').style.display = 'grid';
+
+            // Populate Metadata
+            document.getElementById('metaFilename').textContent = data.document.filename || 'Unknown';
+            document.getElementById('metaType').textContent = (data.document.type || 'N/A').toUpperCase();
+            document.getElementById('metaStatus').textContent = data.document.status || 'Unknown';
+            document.getElementById('metaCount').textContent = data.questions ? data.questions.length : 0;
+
+            let genericCount = 0;
+            let specificCount = 0;
+            let aiAnsweredCount = 0;
+            let escalatedCount = 0;
+
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+
+            if (data.questions && data.questions.length > 0) {
+                data.questions.forEach((q, index) => {
+
+                    // Analytics aggregation
+                    if (q.qualification && q.qualification.question_type) {
+                        const type = q.qualification.question_type.toLowerCase();
+                        if (type === 'generic') genericCount++;
+                        if (type === 'project_specific') specificCount++;
+                    }
+
+                    if (q.answer && q.answer.text) {
+                        if (q.answer.text.includes("Requires Human") || q.answer.text.includes("Human SE Architecture")) {
+                            escalatedCount++;
+                        } else {
+                            aiAnsweredCount++;
+                        }
+                    }
+
+                    // Create Card
+                    const card = document.createElement('div');
+                    card.className = `glass-card question-card fade-in`;
+                    card.style.animationDelay = `${index * 0.1}s`;
+
+                    // Badges Logic
+                    let badgesHtml = `<div class="badge ${q.status}">${q.status}</div>`;
+                    if (q.qualification && q.qualification.question_type) {
+                        const qType = q.qualification.question_type.toLowerCase();
+                        badgesHtml += `<div class="badge ${qType}">${qType}</div>`;
+                    }
+
+                    // Answer UI
+                    let answerUI = '';
+                    if (q.answer && q.answer.text) {
+                        const confPercentage = q.answer.confidence_score ? (q.answer.confidence_score * 100).toFixed(0) : 100;
+                        answerUI = `
+                            <div class="ai-section">
+                                <div class="ai-label">✨ AI Generated Response (Score: ${confPercentage}%)</div>
+                                <p class="ai-text">${q.answer.text}</p>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" style="width: ${confPercentage}%"></div>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    // Critique Reason UI
+                    let critiqueUI = '';
+                    if (q.critique && q.critique.feedback) {
+                        critiqueUI = `
+                            <div class="ai-section" style="border-left-color: #ef4444; background: rgba(239, 68, 68, 0.05);">
+                                <div class="ai-label" style="color: #ef4444;">⚠️ Critique Feedback (Retry ${q.critique.retry_count})</div>
+                                <p class="ai-text" style="color: #fca5a5; font-size: 0.9em;">${q.critique.feedback}</p>
+                            </div>
+                        `;
+                    }
+
+                    // Qualification Reason UI
+                    let qualReasonUI = '';
+                    if (q.qualification && q.qualification.reasoning) {
+                        qualReasonUI = `
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.8rem; font-style: italic;">
+                                ↳ Analyst Reasoning: ${q.qualification.reasoning}
+                            </div>
+                        `;
+                    }
+
+                    card.innerHTML = `
+                        <div class="q-header">
+                            <h3 class="q-text">${q.text}</h3>
+                            <div class="badges">${badgesHtml}</div>
+                        </div>
+                        ${qualReasonUI}
+                        ${critiqueUI}
+                        ${answerUI}
+                    `;
+
+                    container.appendChild(card);
+                });
+
+                // Update Analytics UI
+                document.getElementById('metaClassGeneric').textContent = `${genericCount} Generic`;
+                document.getElementById('metaClassSpecific').textContent = `${specificCount} Project Specific`;
+                document.getElementById('metaStatusAnswered').textContent = `${aiAnsweredCount} AI Answered`;
+                document.getElementById('metaStatusEscalated').textContent = `${escalatedCount} Escalated for Review`;
+
+            } else {
+                container.innerHTML = '<div class="glass-card">No questions found in this RFI snippet.</div>';
+            }
+        }
+    </script>
+</body>
+
+</html>
