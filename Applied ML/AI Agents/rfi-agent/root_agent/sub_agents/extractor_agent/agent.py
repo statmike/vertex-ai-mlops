@@ -1,5 +1,7 @@
 from google.adk.agents.llm_agent import Agent
 from google.adk.agents import Context
+from root_agent.prompts import EXTRACTOR_INSTRUCTION
+from root_agent.config import MODEL
 
 def extractor_tool(context: Context, file_path: str) -> str:
     from root_agent.sub_agents.extractor_agent.doc_tools import parse_docx, parse_excel, parse_pdf
@@ -39,8 +41,8 @@ def extractor_tool(context: Context, file_path: str) -> str:
 
 extractor = Agent(
     name="extractor_agent",
-    model="gemini-2.5-pro",
+    model=MODEL,
     description="Your job is to read DOCX, Excel, or PDF files from the raw input and extract all RFI questions into the central RFIState JSON. Use the extracting tool provided.",
-    instruction="Execute the extractor tool to parse the file. When it completes, just reply with a text summary of your work. Do NOT attempt to use tools like `transfer_to_agent` to pass control; the framework will handle that automatically.",
+    instruction=EXTRACTOR_INSTRUCTION,
     tools=[extractor_tool]
 )

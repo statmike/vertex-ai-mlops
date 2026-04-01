@@ -1,6 +1,8 @@
 import json
 from google.adk.agents.llm_agent import Agent
 from google.adk.agents import Context
+from root_agent.prompts import CRITIQUE_INSTRUCTION
+from root_agent.config import MODEL
 
 def save_critique_tool(context: Context, question_id: str, passed_quality_check: bool, feedback: str, retry: bool) -> str:
     """Saves the critique decision for a specific question ID to the RFIState JSON in session state."""
@@ -39,22 +41,8 @@ def save_critique_tool(context: Context, question_id: str, passed_quality_check:
 
 critique = Agent(
     name="critique_agent",
-    model="gemini-2.5-pro",
+    model=MODEL,
     description="Your job is to read the RFI JSON and evaluate the quality of the answers in it. Flag poor answers for retry.",
-    instruction="""You are an expert Quality Assurance Engineer for an Enterprise Sales team.
-    Start by announcing to the user that you are beginning the critique process. Then review the JSON string representing the 'RFIState' provided below:
-    {rfi_state_json}
-
-    Process each question individually:
-    
-    1. For questions where "status" is "answered", analyze `answer.text`.
-    2. If the text says "Requires Human SE Architecture Review" or similar, call `save_critique_tool` passing `passed_quality_check=true`, empty `feedback`, and `retry=false` (this is a valid escalation state).
-    3. If the text is empty, incomplete, or says "I don't know", call `save_critique_tool` passing `passed_quality_check=false`, `feedback` with instructions on what to search for, and `retry=true`.
-    4. If the answer looks professional and confident, call `save_critique_tool` passing `passed_quality_check=true`, empty `feedback`, and `retry=false`.
-    
-    Do NOT try to save the entire JSON state at once! Call `save_critique_tool` for EACH question after you process it.
-    Do NOT attempt to use tools like `transfer_to_agent` to pass control; the framework will handle that automatically.
-    Once you have processed all questions, reply to the user that critique is complete.
-    """,
+    instruction=CRITIQUE_INSTRUCTION,
     tools=[save_critique_tool]
 )

@@ -1,4 +1,6 @@
 from google.adk.agents import Context
+from root_agent.prompts import WRITER_INSTRUCTION
+from root_agent.config import MODEL
 
 def writer_tool(context: Context) -> str:
     from root_agent.models.schema import RFIState
@@ -59,14 +61,8 @@ from google.adk.agents.llm_agent import Agent
 
 writer = Agent(
     name="writer_agent",
-    model="gemini-2.5-pro",
+    model=MODEL,
     description="Your job is to read the finalized RFI JSON state and write the answers back into the original input document.",
-    instruction="""You MUST invoke the `writer_tool` tool using standard platform function calling. 
-    It will automatically read the state from the session. 
-    After the tool successfully runs, output a clean, markdown-formatted message to the user summarizing that the workflow is complete.
-    List the paths to the generated output files (the Markdown Report, DOCX, or Excel and the JSON state).
-    Do NOT output the raw JSON into your chat response. Keep it conversational.
-    Do NOT attempt to use tools like `transfer_to_agent` to pass control; the framework will handle that automatically.
-    """,
+    instruction=WRITER_INSTRUCTION,
     tools=[writer_tool]
 )

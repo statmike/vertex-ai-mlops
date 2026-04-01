@@ -29,14 +29,14 @@ The following diagram illustrates how the Root Agent orchestrates the sub-agents
 
 ![Agent Architecture Diagram](./assets/agent_architecture.png)
 
-### ADK Agent Flow
-
 ![ADK Agent Flow](./assets/adk_agent_flow.png)
 
 ### Key Features
 - **Centralized State**: Uses a concrete JSON structure to track question status (`extracted` -> `qualified` -> `answered` -> `critiqued` -> `completed`).
-- **Grounding**: Initial Implementation uses Google Search Grounding for answering questions. This could be extended to support internal documentation by using Vertex AI Search Data store or Custom RAG implementation using Vertex AI.
+- **Hybrid Grounding**: Supports both internal documentation and Google Search for answering questions.
 - **Multi-Format Support**: Works with Microsoft Word (.docx), Excel (.xlsx), and PDF (.pdf) files. Note: For PDFs, the system generates a Markdown report as output because writing back to a PDF is complex.
+- **Centralized Prompt Management**: All agent instructions are stored in `root_agent/prompts.py` for easy maintenance.
+- **Environment Driven Configuration**: Model name and Google Cloud project details are managed via a `.env` file loaded via `root_agent/config.py`.
 
 ## JSON State Structure
 
@@ -83,6 +83,59 @@ The JSON file acts as the "single source of truth" passed between agents. Here i
 }
 ```
 
+## Prerequisites
+
+- **Python**: Version 3.12 or higher.
+- **Google GenAI / ADK**: Access to Gemini models.
+- **Libraries**:
+  - `google-genai`
+  - `google-adk[all]`
+  - Document parsing libraries: `python-docx`, `openpyxl`, `pypdf`.
+
+## Installation
+
+1. **Clone the repository** (if not already done).
+2. **Create a virtual environment**:
+   ```bash
+   python -m venv .venv
+   ```
+3. **Activate the virtual environment**:
+   - On macOS/Linux: `source .venv/bin/activate`
+   - On Windows: `.venv\Scripts\activate`
+4. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+## Configuration
+
+This project uses Google Cloud and Vertex AI.
+
+1. **Authentication**: Ensure you are authenticated with Google Cloud using Application Default Credentials (ADC):
+   ```bash
+   gcloud auth application-default login
+   ```
+
+2. **Environment Variables**: Create a `.env` file in the `root_agent/` directory with the following content:
+   ```env
+   GOOGLE_GENAI_USE_VERTEXAI=TRUE
+   GOOGLE_CLOUD_PROJECT=vertexai-demo-ltfpzhaw
+   GOOGLE_CLOUD_LOCATION=us-central1
+   MODEL=gemini-2.5-pro
+   ```
+   The model configuration is centralized in `root_agent/config.py`.
+
+## Usage
+
+The agent is run via the ADK web interface:
+
+1. **Start the web server**:
+   ```bash
+   adk web
+   ```
+2. **Access the interface**: Open your browser and navigate to `http://localhost:8000`.
+
+
 ## Project Structure
 
 Folder structure showing the layout of the root agent and sub-agents:
@@ -96,7 +149,10 @@ RFI_Agent/
 │   ├── input/                      # Input artifacts (Docx, Excel, PDF)
 │   └── output/                     # Finalized documents (or MD reports)
 └── root_agent/                     # The main steering orchestrator
+    ├── .env                        # Environment variables
     ├── agent.py                    # Defines the root_agent
+    ├── config.py                   # Centralized configuration loading
+    ├── prompts.py                  # Centralized storage for agent instructions
     ├── models/                     # Data schemas (e.g., Pydantic)
     └── sub_agents/                 # Directory holding sub-agents
         ├── answering_agent/        # Agent for generated responses
@@ -109,6 +165,11 @@ RFI_Agent/
 ## Visualizing Results
 The output JSON file in the `data/output/` folder can be uploaded to `dashboard.html` to get an analytical view of the processed RFI data.
 
-It is a HTML file that users can use to see exactly what the AI extracted, what it answered, and where it failed to confidently generate a response.
+It is a standalone HTML file that provides a rich, interactive visualization of the results:
+
+- **Interactive Visualization**: Load the JSON file directly in your browser.
+- **Premium Design**: Uses modern aesthetics with dark mode and glassmorphism.
+- **Document Analytics**: Displays metadata, classification breakdown (Generic vs. Specific), and answer status.
+- **Detailed Question Cards**: Shows extracted text, status badges, AI answers with confidence scores, and any critique feedback.
 
 ![Sample Dashboard](./assets/dashboard.png)

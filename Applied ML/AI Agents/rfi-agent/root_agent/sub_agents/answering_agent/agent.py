@@ -1,6 +1,7 @@
-import os
 import json
 from google.adk.agents.llm_agent import Agent
+from root_agent.prompts import ANSWERING_INSTRUCTION
+from root_agent.config import MODEL
 
 def google_search(query: str) -> str:
     """Searches the open web for facts, standard service definitions, and regulatory compliance."""
@@ -41,25 +42,8 @@ def save_answer_tool(context: Context, question_id: str, answer_text: str, confi
 
 answering = Agent(
     name="answering_agent",
-    model="gemini-2.5-pro",
+    model=MODEL,
     description="Your job is to generate answers for questions in the RFI state using your Google Search engine.",
-    instruction="""You are an expert RFI Answering assistant.
-    Start by announcing to the user that you are beginning the answering process. Then review the JSON string representing the 'RFIState' provided below:
-    {rfi_state_json}
-
-    Process each question individually:
-    
-    1. For questions where "qualification.question_type" is "generic":
-       - Call `google_search` to find internal or external information.
-       - **Fallback Rule**: If `google_search` returns a generic mock snippet that does not help answer the specific question, DO NOT give up! Instead, use your own internal knowledge to provide a professional, standard industry answer.
-       - Call `save_answer_tool` to save the ID, the answer text, and a confidence score (0.0 to 1.0).
-       
-    2. For questions where "qualification.question_type" is "project_specific":
-       - Call `save_answer_tool` with the text "Requires Human SE Architecture Review" and confidence `0.0`.
-       
-    Do NOT try to save the entire JSON state at once! Call `save_answer_tool` for EACH question after you generate its answer.
-    Do NOT attempt to use tools like `transfer_to_agent` to pass control; the framework will handle that automatically.
-    Once you have processed all questions, reply to the user that answering is complete.
-    """,
+    instruction=ANSWERING_INSTRUCTION,
     tools=[google_search, save_answer_tool]
 )
