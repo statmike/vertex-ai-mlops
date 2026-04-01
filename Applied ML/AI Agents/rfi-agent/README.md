@@ -1,7 +1,5 @@
 # RFI Agent
 
-Putting ML and Generative AI to work with Agents using the Google Agent Development Kit (ADK).
-
 An AI Agent workflow designed to automate responses to Requests for Information (RFI) by processing DOCX, Excel, and PDF documents.
 
 ## Project Goal
