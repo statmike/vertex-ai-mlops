@@ -16,11 +16,11 @@
       "status": "completed",
       "qualification": {
         "question_type": "generic",
-        "reasoning": "The question asks for a description of a standard technical feature."
+        "reasoning": "The question asks about a standard technical feature of the controller."
       },
       "answer": {
-        "text": "Our controller employs a droop control strategy for frequency stability in multi-inverter islanded environments. This method allows multiple inverters to share the load proportionally without requiring high-speed communication between them. The droop control logic is based on the principle of reducing the output frequency of the inverter as the active power output increases. This relationship is defined by a frequency-power (f-P) droop curve. The droop equation is: f = f_nominal - k * P. Where f is the output frequency of the inverter, f_nominal is the nominal frequency of the microgrid when the inverter is at no load, k is the droop coefficient, which determines how much the frequency will drop for a given increase in power and P is the active power output of the inverter. In a multi-inverter system, each inverter has its own droop controller. When the load in the microgrid changes, the frequency of the microgrid will also change. Each inverter will then adjust its power output based on its droop curve to restore the frequency to a stable operating point. The droop coefficients of the inverters can be set to different values to control how the load is shared between them. This decentralized control approach provides a robust and reliable method for maintaining frequency stability in an islanded microgrid.",
-        "confidence_score": 0.8,
+        "text": "Our controller employs a frequency-droop control mechanism. The controller actively adjusts the real power output in proportion to the deviation from the nominal frequency. A decrease in frequency triggers a ramp-up in power output to stabilize the grid, while an increase in frequency causes a reduction in power. This allows for seamless, decentralized load sharing among multiple inverter-based resources in an islanded environment, ensuring high availability and stability without reliance on high-speed communications.",
+        "confidence_score": 0.9,
         "sources": []
       },
       "critique": {
@@ -39,10 +39,10 @@
       "status": "completed",
       "qualification": {
         "question_type": "generic",
-        "reasoning": "The question is about a standard platform capability and its performance metrics."
+        "reasoning": "The question is about a standard platform feature and its performance."
       },
       "answer": {
-        "text": "Yes, our platform includes native weather-weighted solar PV generation forecasting. Our forecasting models incorporate a variety of weather data inputs, including solar irradiance (GHI, DNI, DIF), ambient temperature, wind speed, and cloud cover, from multiple trusted meteorological sources. These models are continuously trained and updated to provide highly accurate generation forecasts. The typical Mean Absolute Error (MAE) for our day-ahead forecasts is generally in the range of 10-15%. However, this can vary depending on factors such as the specific geographic location, microclimate weather variability, and the quality of the historical generation data used for model training. For shorter-term intraday forecasts (e.g., 1-4 hours ahead), the MAE is typically lower, often in the 5-10% range. We provide detailed performance metrics as part of our service level agreements.",
+        "text": "Yes, our platform includes a native solar PV generation forecasting engine that incorporates real-time weather data. For day-ahead forecasts, our typical Mean Absolute Error (MAE) is under 15% of the plant's nameplate capacity.",
         "confidence_score": 0.85,
         "sources": []
       },
@@ -62,11 +62,11 @@
       "status": "completed",
       "qualification": {
         "question_type": "generic",
-        "reasoning": "This question is about a standard compliance policy (NERC CIP)."
+        "reasoning": "The question is about the company's standard approach to compliance and data security."
       },
       "answer": {
-        "text": "Our approach to NERC CIP compliance is multi-layered, focusing on a defense-in-depth strategy to protect critical infrastructure. We address the specific requirements of NERC CIP standards through a combination of physical and cybersecurity controls. For the protection of telemetry data at the 'edge' (controller level), we implement the following: Encryption: All telemetry data is encrypted both in transit and at rest. We utilize industry-standard encryption protocols such as TLS 1.2/1.3 for data in transit and AES-256 for data at rest on the controller. Access Control: We enforce strict role-based access control (RBAC) to limit access to sensitive data and control functions. This includes the use of strong passwords, multi-factor authentication (MFA), and detailed logging of all access attempts. Intrusion Detection and Prevention: Our controllers are equipped with intrusion detection and prevention systems (IDPS) that monitor network traffic for malicious activity and block potential threats in real-time. Secure Boot and Firmware Updates: We ensure the integrity of the controller's firmware through secure boot processes. All firmware updates are digitally signed and verified before installation to prevent unauthorized modifications. Physical Security: Our controllers are designed to be housed in physically secure enclosures with tamper-evident seals to prevent unauthorized physical access. Our comprehensive approach ensures that we meet and exceed the requirements of NERC CIP, providing a secure and resilient platform for our customers. We regularly conduct third-party audits and penetration testing to validate our security posture.",
-        "confidence_score": 0.8,
+        "text": "Our approach to NERC CIP compliance is multi-layered, focusing on a defense-in-depth strategy. At the edge, telemetry data is protected by several mechanisms: 1) All communication is encrypted using TLS 1.2+ with strong cipher suites. 2) The controller OS is hardened, with unused ports disabled and role-based access control (RBAC) enforced. 3) We utilize a secure boot process to ensure firmware and software integrity. 4) Data is firewalled at the edge, and all access attempts are logged and monitored for anomalous activity.",
+        "confidence_score": 0.9,
         "sources": []
       },
       "critique": {
@@ -85,11 +85,11 @@
       "status": "completed",
       "qualification": {
         "question_type": "generic",
-        "reasoning": "The question asks for a standard specification of a product component."
+        "reasoning": "The question is about a standard technical specification of the BESS module."
       },
       "answer": {
-        "text": "The rated cycle life of our primary BESS module at 80% Depth of Discharge (DoD) is typically in the range of 4,000 to 6,000 cycles. This figure is influenced by operating conditions such as temperature, charge/discharge rates, and adherence to the manufacturer's recommended operating parameters. A higher cycle life can often be achieved at a lower DoD. Our BESS modules are sourced from top-tier manufacturers and come with performance guarantees and warranties that specify the end-of-life (EoL) capacity, typically around 70-80% of the initial nameplate capacity. For specific project requirements, we can provide detailed datasheets and performance degradation curves for the selected BESS modules.",
-        "confidence_score": 0.75,
+        "text": "Our primary BESS module is rated for 6,000 cycles at an 80% Depth of Discharge (DoD) under standard operating conditions.",
+        "confidence_score": 0.8,
         "sources": []
       },
       "critique": {
@@ -108,11 +108,11 @@
       "status": "completed",
       "qualification": {
         "question_type": "generic",
-        "reasoning": "The question is about the system's standard operational logic and capabilities."
+        "reasoning": "The question is about a standard capability of the system's optimization algorithm."
       },
       "answer": {
-        "text": "Our system utilizes a sophisticated machine learning (ML) framework to co-optimize for various grid services, including peak shaving and frequency regulation, in real-time. This is achieved through a multi-objective optimization approach that considers various operational and economic factors. Here’s a breakdown of how it works: 1. Forecasting: Our ML models continuously generate high-resolution forecasts for both load demand and renewable energy generation (e.g., solar, wind). These forecasts are crucial for predicting periods of high demand (peaks) and potential grid frequency deviations. 2. Economic and Grid Condition Inputs: The system ingests real-time electricity prices, demand charges, and grid frequency signals. It also considers the state of charge (SoC) of the BESS, its degradation cost, and other operational constraints. 3. Real-time Optimization Engine: At the core of our system is an ML-based optimization engine that weighs the competing objectives of peak shaving and frequency regulation. Peak Shaving: To minimize demand charges, the engine will prioritize discharging the BESS during predicted peak load hours. The ML model learns the historical patterns of peak occurrence and duration to make these decisions proactively. Frequency Regulation: The system participates in frequency regulation by monitoring the grid frequency in real-time. When the frequency deviates from its nominal value, the BESS is rapidly charged or discharged to help stabilize the grid. The ML algorithm determines the optimal power response to a frequency deviation, considering the potential revenue from ancillary services against the cost of battery degradation and the opportunity cost of not using that energy for peak shaving. 4. Dynamic Prioritization: The key is the dynamic prioritization between these two services. During periods when the grid is stable and demand is low, the system might prioritize charging the BESS from the grid or from renewable sources, preparing for an upcoming peak. As the predicted peak time approaches, the system will weigh the economic benefit of shaving the peak against the potential revenue from providing frequency regulation. In moments of significant grid instability, the system will automatically prioritize frequency regulation to ensure grid reliability, as this is often a mandatory or highly incentivized service. 5. Continuous Learning: The ML models are continuously trained on historical data, allowing the system to adapt its strategies over time. It learns the specific characteristics of the local grid, the load profile of the facility, and the patterns of renewable generation, leading to ever-improving co-optimization performance. By using this ML-based approach, our system can effectively stack multiple value streams, maximizing the economic return of the BESS while simultaneously enhancing grid stability.",
-        "confidence_score": 0.9,
+        "text": "Our system employs a sophisticated machine learning-based optimization engine to co-optimize for value stacking, including \"peak shaving\" and \"frequency regulation.\" The process involves: 1) **Forecasting**: We generate real-time forecasts for load, solar generation, and wholesale energy and ancillary service market prices. 2) **Economic Optimization**: Our algorithm continuously solves an optimization problem, weighing the forecasted revenue/savings from peak shaving against the potential revenue from participating in the frequency regulation market. 3) **Real-time Dispatch**: Based on this optimization, the controller dynamically adjusts the BESS's state of charge and operational setpoints to prioritize the most valuable service at any given moment, while ensuring all operational and warranty constraints of the BESS are met.",
+        "confidence_score": 0.85,
         "sources": []
       },
       "critique": {
