@@ -1,0 +1,14 @@
+[project]
+name = "dataflow-examples"
+version = "0.1.0"
+description = "Apache Beam / Dataflow example notebooks"
+requires-python = ">=3.10"
+dependencies = [
+    "apache-beam[gcp]>=2.71.0",
+    "torch>=2.0.0",
+    "transformers>=4.40.0",
+    "google-cloud-pubsub>=2.0.0",
+    "pandas",
+    "pip",
+    "ipykernel",
+]

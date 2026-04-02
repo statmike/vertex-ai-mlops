@@ -44,4 +44,6 @@ Streaming and batch ML pipelines on Google Cloud Dataflow using Apache Beam's Ru
 
 - **[GPU Inference Benchmark](gpu/benchmark/README.md)** — An 8-phase capacity planning study comparing two approaches to GPU model serving in Dataflow streaming pipelines: Local GPU (model on the worker) vs Vertex AI Endpoint (model on a managed endpoint). Benchmarks BERT text classification across T4 and L4 GPUs to find the cheapest config for 1000 msg/s at p99 < 750ms.
 
+- **[Examples](examples/README.md)** — Standalone notebook examples for Dataflow streaming pipelines with RunInference. Includes event-mode model hot-swap using HuggingFace models via Pub/Sub side input — swap models at runtime without restarting the pipeline.
+
 - **[Python to Java Translation Guide](python-to-java.md)** — How to translate Python RunInference pipelines to Java using Beam's multi-language (Fn API) support. Covers RunInference, ModelHandler, KeyedModelHandler, event-mode hot-swap, and PredictionResult — wrapping Python ML logic as an external transform callable from a Java pipeline on Dataflow Runner v2.
