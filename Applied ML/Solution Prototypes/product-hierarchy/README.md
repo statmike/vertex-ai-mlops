@@ -38,13 +38,13 @@
 ---
 # Product Hierarchy
 
-Example notebooks for product hierarchy classification.
+Classify products into a Department → Category hierarchy using nine approaches across three paradigms: flat classification, top-down hierarchical classifiers, and multi-task learning.
 
-## Notebook
+## Notebooks
 
-[**product-hierarchy.ipynb**](product-hierarchy.ipynb) — Classify new products into a Department → Category hierarchy using nine approaches across three paradigms.
+### 1. [product-hierarchy.ipynb](product-hierarchy.ipynb) — Python-First (Synthetic Data)
 
-The notebook generates a synthetic product catalog and ambiguous "incoming vendor products" using **Gemini structured output** with Pydantic schemas, then classifies the new products using:
+Generates a synthetic product catalog and ambiguous "incoming vendor products" using **Gemini structured output** with Pydantic schemas, then classifies the new products using all nine approaches in Python.
 
 **Part 1: Flat Classification** — Each Department/Category path is treated as an independent label.
 
@@ -72,10 +72,38 @@ The notebook generates a synthetic product catalog and ambiguous "incoming vendo
 
 The notebook concludes with a side-by-side comparison of all nine approaches and a decision guide for choosing the right paradigm.
 
+### 2. [product-hierarchy-bq.ipynb](product-hierarchy-bq.ipynb) — SQL-First (Real Data in BigQuery)
+
+Takes the same nine approaches and applies them to **real data** (~29K products from `bigquery-public-data.thelook_ecommerce.products`) using **BigQuery SQL** wherever possible. Embeddings, vector search, centroid computation, and model training all happen in the data warehouse — no data movement required.
+
+| # | Approach | Implementation |
+|---|----------|----------------|
+| 1 | Levenshtein Distance | Spark — Dataproc Serverless |
+| 2 | Semantic Embeddings (Nearest Neighbor) | SQL — `VECTOR_SEARCH` |
+| 3 | Centroid Matching | SQL — `VECTOR_SEARCH` with unnest/avg/re-aggregate centroids |
+| 4 | Gradient Boosting Classifier | SQL — `CREATE MODEL` (BOOSTED_TREE_CLASSIFIER) |
+| 5 | Hierarchical Embeddings | SQL — `VECTOR_SEARCH` with department routing |
+| 6 | Hierarchical Centroids | SQL — `VECTOR_SEARCH` (dept + category centroids) |
+| 7 | Hierarchical GBC | SQL — Cascading `CREATE MODEL` + `ML.PREDICT` |
+| 8 | MTL — Independent Heads | Python — Keras (embeddings pulled from BQ) |
+| 9 | MTL — Conditional Category Head | Python — Keras (embeddings pulled from BQ) |
+
+**Bonus — Serve Keras Models via BigQuery ML:** The Keras MTL models are exported as TensorFlow SavedModel, uploaded to GCS, and imported into BigQuery with `CREATE MODEL ... OPTIONS(MODEL_TYPE='TENSORFLOW')`. Predictions are then served with `ML.PREDICT` entirely in SQL — bringing Python-trained deep learning models into the same SQL-based serving path as the BQML-native approaches.
+
+**Key differences from notebook 1:** 90/10 stratified train/test split, `text-embedding-005` via `AI.EMBED` (768-dim) — the standard embedding endpoint for BigQuery AI functions (notebook 1 uses `gemini-embedding-001` via the GenAI SDK), and statistically meaningful accuracy on ~2,900 test products.
+
 ## Prerequisites
 
 - A Google Cloud project with billing enabled
 - [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) installed and authenticated
+- Required APIs enabled (each notebook includes a cell to enable these):
+
+| API | Notebook 1 | Notebook 2 | Purpose |
+|-----|:---:|:---:|---------|
+| [Vertex AI](https://console.cloud.google.com/apis/library/aiplatform.googleapis.com) | x | x | Gemini models, embeddings |
+| [BigQuery](https://console.cloud.google.com/apis/library/bigquery.googleapis.com) | | x | Data storage, BQML, `AI.EMBED`, `VECTOR_SEARCH` |
+| [BigQuery Connection](https://console.cloud.google.com/apis/library/bigqueryconnection.googleapis.com) | | x | Required for `AI.EMBED` to call Vertex AI models |
+| [Dataproc](https://console.cloud.google.com/apis/library/dataproc.googleapis.com) | | x | Approach 1 — Spark Connect via Dataproc Serverless |
 
 ## Environment Setup
 
