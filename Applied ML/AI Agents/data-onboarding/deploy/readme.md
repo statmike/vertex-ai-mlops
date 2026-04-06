@@ -269,40 +269,56 @@ This enables the Cloud Telemetry API, which Agent Engine uses to store distribut
 
 ### IAM Grants for the Reasoning Engine Service Agent
 
-When deployed, agents run as the Reasoning Engine Service Agent — not your user credentials. This service account needs access to BigQuery, GCS, and Dataplex resources that the agents use at runtime.
+When deployed, agents run as the Reasoning Engine Service Agent — not your user credentials. This service account needs access to BigQuery, GCS, Dataplex, and the Conversational Analytics API.
 
 The service account follows the pattern:
 ```
 service-PROJECT_NUMBER@gcp-sa-aiplatform-re.iam.gserviceaccount.com
 ```
 
-Some roles are granted automatically when Agent Engine is first enabled (`bigquery.dataViewer`, `bigquery.jobUser`). The following additional roles are required for this project's agents:
+Some roles are granted automatically when Agent Engine is first enabled (`bigquery.dataViewer`, `bigquery.jobUser`). The following additional roles are required for the chat agent to work correctly:
 
 ```bash
 PROJECT_ID=YOUR_PROJECT_ID
 PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
 RE_SA="service-${PROJECT_NUMBER}@gcp-sa-aiplatform-re.iam.gserviceaccount.com"
 
+# Conversational Analytics API — needed by agent_convo and agent_engineer to query data
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$RE_SA" --role="roles/cloudaicompanion.user" --quiet
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$RE_SA" --role="roles/geminidataanalytics.dataAgentStatelessUser" --quiet
+
 # BigQuery connection access — needed by agent_catalog for AI.SEARCH/AI.EMBED
 gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:$RE_SA" --role="roles/bigquery.connectionUser" --quiet
 
-# GCS read access — needed by agent_orchestrator to read staged files
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member="serviceAccount:$RE_SA" --role="roles/storage.objectViewer" --quiet
-
 # Dataplex read access — needed by agent_context for lookupContext API (context cache)
 gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:$RE_SA" --role="roles/dataplex.viewer" --quiet
+
+# GCS read access — needed if orchestrator is deployed (optional for chat-only)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:$RE_SA" --role="roles/storage.objectViewer" --quiet
 ```
+
+#### Role summary
 
 | Role | Why | Used by |
 |------|-----|---------|
-| `bigquery.connectionUser` | `AI.SEARCH` and `AI.EMBED` require access to the BQ Cloud Resource connection | `agent_catalog` |
-| `storage.objectViewer` | Read files from GCS staging (if orchestrator is deployed) | `agent_orchestrator` pipeline |
+| `bigquery.dataViewer` | Read BigQuery tables (bronze data, meta tables, context_chunks) | All agents *(auto-granted)* |
+| `bigquery.jobUser` | Run BigQuery queries | All agents *(auto-granted)* |
+| `cloudaicompanion.user` | Conversational Analytics API access | `agent_convo`, `agent_engineer` |
+| `geminidataanalytics.dataAgentStatelessUser` | Conversational Analytics API (stateless mode) | `agent_convo`, `agent_engineer` |
+| `bigquery.connectionUser` | `AI.SEARCH` and `AI.EMBED` via BQ Cloud Resource connection | `agent_catalog` |
 | `dataplex.viewer` | Dataplex `lookupContext` API for rich table metadata | `agent_context` (context cache) |
+| `storage.objectViewer` | Read files from GCS staging (optional — only if orchestrator is deployed) | `agent_orchestrator` pipeline |
 
-> **Without these grants**, the agents will partially work but fail on specific tools. For example, Catalog Explorer's `search_context` will return a permission error on the BQ connection.
+> **Without these grants**, the deployed agent will partially work but fail on specific tools. Common symptoms:
+> - **Missing `cloudaicompanion.user` or `geminidataanalytics.dataAgentStatelessUser`**: Data Analyst and Data Engineer questions return "No tables available" — the Conversational Analytics API calls fail silently and no SQL is generated.
+> - **Missing `bigquery.connectionUser`**: Catalog Explorer's `search_context` returns a permission error on the BQ Cloud Resource connection.
+> - **Missing `dataplex.viewer`**: Context cache falls back to `table_documentation` (still works, but with less metadata).
 
 To run the [interact.ipynb](interact.ipynb) notebook, install the Jupyter kernel (one-time setup):
 
