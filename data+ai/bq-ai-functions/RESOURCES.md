@@ -575,8 +575,9 @@ When `flatten_json_output` is TRUE:
 These are higher-level "managed" AI functions that provide **simplified interfaces** and **automatic prompt optimization** for common tasks. Unlike the general-purpose functions, these functions automatically structure your prompts to improve output quality and return simple scalar values rather than full model response structs.
 
 **Key characteristics:**
-- All are **scalar functions** returning simple types (BOOL, FLOAT64, STRING/ARRAY\<STRING\>).
 - All are in **Preview** status.
+- `AI.IF`, `AI.SCORE`, and `AI.CLASSIFY` are **scalar functions** returning simple types (BOOL, FLOAT64, STRING/ARRAY\<STRING\>).
+- `AI.AGG` is an **aggregate function** (like `SUM`, `COUNT`) that returns STRING -- one result per GROUP BY group.
 - All use **dynamic shared quota (DSQ)** only -- no Provisioned Throughput support.
 - BigQuery **automatically chooses** the model if no endpoint is specified (optimizing for cost-to-quality tradeoff).
 - Return `NULL` on error (no detailed status or full_response fields).
@@ -586,18 +587,24 @@ These are higher-level "managed" AI functions that provide **simplified interfac
 - `AI.IF` relates to `AI.GENERATE_BOOL` -- AI.IF has prompt optimization and simpler output; AI.GENERATE_BOOL provides more control and detailed output.
 - `AI.SCORE` relates to `AI.GENERATE_DOUBLE` -- AI.SCORE automatically generates a scoring rubric; AI.GENERATE_DOUBLE provides more control and detailed output.
 - `AI.CLASSIFY` has no direct general-purpose counterpart but can be approximated with AI.GENERATE using output_schema.
+- `AI.AGG` relates to manual aggregation with `AI.GENERATE` (using `STRING_AGG` or `ARRAY_AGG` to batch rows into a single prompt) -- AI.AGG automatically handles multi-level batching and can process data exceeding the Gemini context window.
 
-| Feature | AI.IF | AI.SCORE | AI.CLASSIFY |
-|---------|-------|----------|-------------|
-| **Return Type** | BOOL | FLOAT64 | STRING or ARRAY\<STRING\> |
-| **Purpose** | Evaluate natural language condition | Rate/score inputs on a scale | Classify into user-defined categories |
-| **Unique Input** | `PROMPT` only | `PROMPT` only | `INPUT` + `CATEGORIES` + optional `OUTPUT_MODE` |
-| **Prompt Optimization** | Yes (auto-structures prompts) | Yes (auto-generates scoring rubric) | Yes (auto-structures for classification) |
-| **Model Parameter Control** | No | No | No |
-| **Multimodal Support** | Yes (STRUCT prompt) | Yes (STRUCT prompt) | Yes (STRUCT prompt) |
-| **Error Return** | NULL | NULL | NULL |
-| **Provisioned Throughput** | Not supported (DSQ only) | Not supported (DSQ only) | Not supported (DSQ only) |
-| **Rows per Job** | 10,000,000 | 10,000,000 | 10,000,000 |
+| Feature | AI.IF | AI.SCORE | AI.CLASSIFY | AI.AGG |
+|---------|-------|----------|-------------|--------|
+| **Function Type** | Scalar | Scalar | Scalar | Aggregate |
+| **Return Type** | BOOL | FLOAT64 | STRING or ARRAY\<STRING\> | STRING |
+| **Purpose** | Evaluate natural language condition | Rate/score inputs on a scale | Classify into user-defined categories | Aggregate data with natural language instructions |
+| **Unique Input** | `PROMPT` only | `PROMPT` only | `INPUT` + `CATEGORIES` + optional `OUTPUT_MODE` | `INPUT` + `INSTRUCTION` |
+| **Supports DISTINCT** | No | No | No | Yes |
+| **Supports GROUP BY** | No (scalar) | No (scalar) | No (scalar) | Yes (aggregate) |
+| **Auto-batching** | No | No | No | Yes (multi-level) |
+| **Prompt Optimization** | Yes (auto-structures prompts) | Yes (auto-generates scoring rubric) | Yes (auto-structures for classification) | Yes (auto-batches and aggregates) |
+| **Model Parameter Control** | No | No | No | No |
+| **Multimodal Support** | Yes (STRUCT prompt) | Yes (STRUCT prompt) | Yes (STRUCT prompt) | Yes (STRUCT input with ObjectRefRuntime) |
+| **Error Return** | NULL | NULL | NULL | NULL (partial results on partial failure) |
+| **Provisioned Throughput** | Not supported (DSQ only) | Not supported (DSQ only) | Not supported (DSQ only) | Not supported (DSQ only) |
+| **Rows per Job** | 10,000,000 | 10,000,000 | 10,000,000 | 20,000,000 (recommended) |
+| **Output Cap** | N/A | N/A | N/A | 10,000 tokens per group |
 
 ---
 
@@ -754,6 +761,61 @@ FROM `bigquery-public-data.bbc_news.fulltext`;
 **Provisioned throughput:** Not supported. Uses dynamic shared quota (DSQ) only.
 
 **BigFrames API:** `bigframes.bigquery.ai.classify(input, categories)` — Returns a Series of STRING directly (not a struct). Takes `categories` as a list/tuple. Example: `bbq.ai.classify(df["text"], ["positive", "negative", "neutral"])`.
+
+---
+
+### `AI.AGG`
+- **Description:** (Preview) Aggregate function that uses a Vertex AI Gemini model to aggregate data based on natural language instructions. Automatically performs multi-level aggregation through batching, so it can analyze data exceeding the Gemini context window. Returns a single STRING per group.
+- **Use cases:** Sentiment analysis across reviews, content summarization of text or images, log analysis and incident investigation, agent performance analysis, finding common categories or patterns across data, summarizing grouped data.
+- [documentation](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-agg)
+- **Type:** Aggregate function -- returns a single STRING value per group (Preview). Use with GROUP BY for per-group results; without GROUP BY, aggregates all rows.
+
+**Syntax:**
+```sql
+AI.AGG(
+  [ DISTINCT ]
+  INPUT,
+  INSTRUCTION
+  [, connection_id => 'CONNECTION']
+  [, endpoint => 'ENDPOINT']
+)
+```
+
+**Inputs:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `DISTINCT` | keyword | Optional | When specified, deduplicates input values before aggregating. |
+| `INPUT` | STRING or STRUCT | Required (must be first argument) | The data to aggregate. STRING value, or STRUCT consisting of STRING values, ObjectRefRuntime values, and arrays of STRING and ObjectRefRuntime values. ObjectRefRuntime values reference text or image data in Cloud Storage (generated by `OBJ.GET_ACCESS_URL`). |
+| `INSTRUCTION` | STRING | Required (must be second argument) | Natural language aggregation prompt describing what to extract or summarize from the input data. Can be a string literal or query parameter. |
+| `CONNECTION` | STRING | Optional | Connection to use, format: `[PROJECT_ID.]LOCATION.CONNECTION_ID`. If not specified, end-user credentials are used. |
+| `ENDPOINT` | STRING | Optional | Vertex AI endpoint. Any Gemini model that doesn't require thinking budget. If not specified, BigQuery chooses a model for you. |
+
+**Outputs:**
+
+| Return Type | Description |
+|-------------|-------------|
+| STRING | The aggregated result for the group. One result per GROUP BY group, or one result total without GROUP BY. |
+| STRING (partial) | If some Vertex AI calls fail, returns partial results from successful calls. |
+| NULL | Returned if all calls to Vertex AI fail, or if all input rows are invalid. |
+
+**Output cap:** 10,000 tokens per group.
+
+**Supported models:** Any Gemini model that doesn't require thinking budget. If no endpoint specified, BigQuery dynamically chooses a model. Uses various `gemini-2.5-*` models.
+
+**Best practices:**
+- Use `TO_JSON_STRING` to pass multiple columns as structured input -- the model sees each row's full context.
+- Use `DISTINCT` to remove duplicate inputs and reduce token usage.
+- Keep groups under 20 million rows per query and under 1,000 distinct groups to avoid timeouts.
+- Prefer AI.AGG over manual aggregation with AI.GENERATE (STRING_AGG/ARRAY_AGG into a prompt) -- AI.AGG handles batching automatically and scales beyond the context window.
+
+**Limitations:** Preview status. Returns NULL on total failure (no detailed error info). No model parameter control (temperature, top_p, etc.). Output capped at 10,000 tokens per group. Recommended limit of 20 million rows per query and 1,000 distinct groups. Cannot use Gemini models that require thinking budget.
+
+**Locations:** All regions supporting Gemini models, plus US and EU multi-regions.
+
+**Provisioned throughput:** Not supported. Uses dynamic shared quota (DSQ) only.
+
+**BigFrames API:** No native BigFrames API. Use `bpd.read_gbq_query(sql)` to execute AI.AGG queries and get results as a BigFrames DataFrame.
 
 ---
 ## Embedding Generation and Semantic Search

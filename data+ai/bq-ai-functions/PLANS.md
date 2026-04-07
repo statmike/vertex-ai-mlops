@@ -320,6 +320,7 @@ Tables and other notebook-specific resources use a `{function_name}_` prefix:
 | `ai_generate_embedding` | `ai_generate_embedding_docs`, model: `embedding_multimodal`, GCS: `gs://BUCKET/bq_ai_functions/ai_generate_embedding/` |
 | `content_moderation` (workflow) | `workflow_mod_posts`, `workflow_mod_flagged`, `workflow_mod_classified`, `workflow_mod_scored` |
 | `multimodal_analysis` (workflow) | `workflow_mm_embeddings`, GCS: `gs://BUCKET/bq_ai_functions/multimodal_analysis/` |
+| `log_analysis` (workflow) | `workflow_log_tickets`, `workflow_log_classified`, `workflow_log_scored` |
 
 ### Cleanup strategy
 
@@ -362,6 +363,7 @@ Every workflow notebook's overview cell (cell-0) includes a **Functions used:** 
 | AI.IF | Content Moderation |
 | AI.CLASSIFY | Content Analysis, Document Intelligence, Content Moderation |
 | AI.SCORE | Content Analysis, Document Intelligence, Content Moderation |
+| AI.AGG | Content Analysis, Content Moderation, Document Intelligence, Log Analysis |
 | AI.EMBED | Semantic Search, RAG Pipeline, Multimodal Analysis |
 | AI.SIMILARITY | Multimodal Analysis |
 | VECTOR_SEARCH | Semantic Search, RAG Pipeline |
@@ -452,6 +454,11 @@ Build out the full-treatment functions, starting with the most commonly used:
 - [x] Content Moderation workflow (AI.GENERATE_TABLE → AI.IF → AI.CLASSIFY → AI.SCORE → AI.GENERATE)
 - [x] Multimodal Analysis workflow (document rendering → AI.EMBED → ML.DISTANCE → AI.SIMILARITY → AI.GENERATE)
 - [x] README.md and RESOURCES.md updated with implementation learnings (inline ObjectRef vs object tables, multimodal statistics, cross-modal similarity, PDF limitations)
+
+### Phase 9: New Functions
+- [x] AI.AGG — aggregate function with auto-batching (function notebook + SQL + RESOURCES.md + README.md)
+- [x] AI.AGG added to existing workflows: Content Analysis, Content Moderation, Document Intelligence
+- [x] [Log Analysis](workflows/log_analysis/log_analysis.ipynb) — classify, score, and summarize support tickets with AI.AGG
 
 ---
 
@@ -818,6 +825,7 @@ Each function's documentation URL is already recorded in `RESOURCES.md`. An audi
 | 2026-03-16 | Multimodal/ObjectRef documentation | Updated README.md: renamed ObjectRef column to Multimodal with per-function input method labels, added Multimodal Input section with pattern legend. Updated RESOURCES.md: added Multimodal Input Patterns section with 4 patterns (STRUCT prompt, tuple+object table, EXTERNAL_OBJECT_TRANSFORM, ObjectRef content), SQL examples, and summary table. Updated compatible functions lists. |
 | 2026-03-16 | Phase 8 expansion | Added multimodal embedding examples to AI.EMBED, AI.GENERATE_EMBEDDING, AI.SIMILARITY notebooks + SQL files (multimodalembedding@001). Added multimodal note to ML.GENERATE_EMBEDDING. Created Content Moderation workflow (AI.GENERATE_TABLE → AI.IF → AI.CLASSIFY → AI.SCORE → AI.GENERATE). Created Multimodal Analysis workflow (document rendering → AI.EMBED → ML.DISTANCE → AI.SIMILARITY → AI.GENERATE). Updated all cross-references (7 function notebook Featured in lines, README.md workflows table, PLANS.md mapping table). |
 | 2026-03-16 | Docs review post-implementation | README.md: Fixed AI.SCORE and AI.CLASSIFY multimodal labels from "Object table" to "STRUCT prompt" (both accept STRUCT with ObjectRefRuntime). RESOURCES.md: Added multimodal best practices to AI.EMBED (default 1408 dims, PDF not supported, inline ObjectRef preferred), AI.GENERATE_EMBEDDING (statistics not returned by multimodal model, inline ObjectRef avoids reservation requirement), AI.SIMILARITY (cross-modal text↔image capability). Updated Managed Functions table. Added "Object tables vs inline ObjectRef" guidance to Unstructured Data Infrastructure section. |
+| 2026-04-07 | AI.AGG — new function + workflow | Added AI.AGG (Preview aggregate function with auto-batching). Created functions/ai_agg/ with notebook + SQL. Added to RESOURCES.md Managed Functions section with comparison table. Added to README.md function map, relationship diagram, and key distinctions. Added AI.AGG alternative cells to Content Analysis, Content Moderation, and Document Intelligence workflows. Created new Log Analysis workflow (AI.GENERATE_TABLE → AI.CLASSIFY → AI.SCORE → AI.AGG). Updated all cross-references. |
 
 ---
 

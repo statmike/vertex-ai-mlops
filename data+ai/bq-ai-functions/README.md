@@ -59,13 +59,14 @@ Workflows compose multiple AI functions together for end-to-end scenarios. See [
 | Workflow | Functions Used | Description |
 |----------|---------------|-------------|
 | [Data Enrichment](workflows/data_enrichment/) | AI.GENERATE (Google Search grounding + output_schema) | Fix misspellings, fill missing fields, and correct errors using grounded web lookups |
-| [Content Analysis Pipeline](workflows/content_analysis/) | AI.GENERATE_TABLE, AI.CLASSIFY, AI.SCORE, AI.GENERATE | Generate sample data, classify it, score it, and summarize findings |
+| [Content Analysis Pipeline](workflows/content_analysis/) | AI.GENERATE_TABLE, AI.CLASSIFY, AI.SCORE, AI.GENERATE, AI.AGG | Generate sample data, classify it, score it, and summarize findings |
 | [Semantic Search System](workflows/semantic_search/) | AI.EMBED, VECTOR_SEARCH, AI.SEARCH | Build and query a semantic search index |
 | [RAG Pipeline](workflows/rag_pipeline/) | AI.GENERATE_TABLE, AI.EMBED, VECTOR_SEARCH, AI.GENERATE | Generate a knowledge base, embed, search, answer questions |
 | [Time Series Intelligence](workflows/time_series_intelligence/) | AI.FORECAST, AI.DETECT_ANOMALIES, AI.EVALUATE | Forecast, detect anomalies, evaluate accuracy |
-| [Document Intelligence](workflows/document_intelligence/) | AI.CLASSIFY, AI.GENERATE, AI.SCORE | Classify mixed documents, extract key fields, score quality, summarize findings |
-| [Content Moderation](workflows/content_moderation/) | AI.GENERATE_TABLE, AI.IF, AI.CLASSIFY, AI.SCORE, AI.GENERATE | Flag, categorize, and score user-generated content for moderation |
+| [Document Intelligence](workflows/document_intelligence/) | AI.CLASSIFY, AI.GENERATE, AI.SCORE, AI.AGG | Classify mixed documents, extract key fields, score quality, summarize findings |
+| [Content Moderation](workflows/content_moderation/) | AI.GENERATE_TABLE, AI.IF, AI.CLASSIFY, AI.SCORE, AI.GENERATE, AI.AGG | Flag, categorize, and score user-generated content for moderation |
 | [Multimodal Analysis](workflows/multimodal_analysis/) | AI.EMBED, AI.SIMILARITY, AI.GENERATE | Embed document images, find similar documents, generate visual descriptions |
+| [Log Analysis](workflows/log_analysis/) | AI.GENERATE_TABLE, AI.CLASSIFY, AI.SCORE, AI.AGG | Classify tickets, score priority, summarize patterns with AI.AGG |
 
 ---
 
@@ -110,6 +111,7 @@ See the [Unstructured Data Infrastructure](RESOURCES.md#unstructured-data-infras
 | `AI.IF` | [notebook](functions/ai_if/ai_if.ipynb) · [sql](functions/ai_if/ai_if.sql) | Scalar | Preview | BOOL | STRUCT prompt | Evaluate a natural language condition. Optimizes query plan to reduce Gemini calls. |
 | `AI.SCORE` | [notebook](functions/ai_score/ai_score.ipynb) · [sql](functions/ai_score/ai_score.sql) | Scalar | Preview | FLOAT64 | STRUCT prompt | Rate inputs on a scale you describe. Auto-generates a scoring rubric. |
 | `AI.CLASSIFY` | [notebook](functions/ai_classify/ai_classify.ipynb) · [sql](functions/ai_classify/ai_classify.sql) | Scalar | Preview | STRING or ARRAY | STRUCT prompt | Classify inputs into categories you provide. Supports multi-label. |
+| `AI.AGG` | [notebook](functions/ai_agg/ai_agg.ipynb) · [sql](functions/ai_agg/ai_agg.sql) | Aggregate | Preview | STRING | STRUCT input | Aggregate data with natural language instructions. Auto-batches beyond context window. |
 
 ### Embeddings & Search — Create vectors, compute similarity, search semantically
 
@@ -193,6 +195,10 @@ When unsure, default to `RETRIEVAL_DOCUMENT` / `RETRIEVAL_QUERY`. See the [`AI.E
 │  AI.CLASSIFY ── unique   │   │                                      │
 │       categories input   │   │  VECTOR_SEARCH ◄── top-K search     │
 │                          │   │       pre-computed embeddings         │
+│  AI.AGG ──── aggregate   │   │                                      │
+│       summarize groups   │   │                                      │
+│       auto-batches       │   │                                      │
+│                          │   │                                      │
 └──────────────────────────┘   │                                      │
                                │  AI.SEARCH ◄── simplified search     │
 ┌──────────────────────────┐   │       needs autonomous embedding     │
@@ -211,6 +217,7 @@ When unsure, default to `RETRIEVAL_DOCUMENT` / `RETRIEVAL_QUERY`. See the [`AI.E
 
 **Key distinctions:**
 - **Scalar functions** (AI.GENERATE, AI.IF, AI.EMBED, etc.) operate on individual values — use them in SELECT, WHERE, JOIN.
+- **Aggregate functions** (AI.AGG) operate across groups of rows — use with GROUP BY, like SUM or COUNT.
 - **Table-valued functions** (AI.GENERATE_TEXT, VECTOR_SEARCH, AI.FORECAST, etc.) operate on tables — use them in FROM.
 - **"No model needed"** functions specify an endpoint directly or use a built-in model. **"Requires model"** functions need a `CREATE MODEL` statement first. See [Setup Reference](setup/) for details.
 - **Multimodal functions** process documents, images, audio, or video from Cloud Storage. Input methods vary by function — see the [Multimodal Input](#multimodal-input--documents-images-audio-video) section above.
@@ -232,6 +239,7 @@ bq-ai-functions/
 │   ├── ai_if/
 │   ├── ai_score/
 │   ├── ai_classify/
+│   ├── ai_agg/
 │   ├── ai_embed/
 │   ├── ai_generate_embedding/
 │   ├── vector_search/
@@ -249,5 +257,6 @@ bq-ai-functions/
     ├── time_series_intelligence/
     ├── document_intelligence/
     ├── content_moderation/
-    └── multimodal_analysis/
+    ├── multimodal_analysis/
+    └── log_analysis/
 ```
