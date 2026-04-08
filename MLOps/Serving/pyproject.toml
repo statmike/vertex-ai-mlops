@@ -1,0 +1,22 @@
+[project]
+name = "mlops-serving"
+version = "0.1.0"
+description = "Model serving example notebooks for Vertex AI"
+requires-python = ">=3.10"
+dependencies = [
+    "google-cloud-aiplatform",
+    "google-cloud-storage",
+    "google-cloud-bigquery",
+    "google-cloud-artifact-registry",
+    "google-cloud-build",
+    "google-cloud-run",
+    "transformers",
+    "torch",
+    "sentencepiece",
+    "tensorflow",
+    "docker",
+    "numpy",
+    "pandas",
+    "pip",
+    "ipykernel",
+]
