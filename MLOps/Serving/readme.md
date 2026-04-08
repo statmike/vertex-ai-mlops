@@ -275,6 +275,18 @@ Two approaches:
             - BigQuery
             - File List
             - TFRecord Files
+- Deploy a model to a dedicated public endpoint with production isolation, traffic splitting, and lifecycle management
+    - [Vertex AI Dedicated Public Endpoint](./Vertex%20AI%20Dedicated%20Public%20Endpoint.ipynb)
+        - Build a custom FastAPI container for HuggingFace sentiment models with Cloud Build
+        - Create a dedicated public endpoint (`dedicated_endpoint_enabled=True`) and deploy two model versions
+        - Shift traffic between models, validate predictions, and undeploy cleanly
+        - Demonstrates the recommended default endpoint type: 10 MB payloads, up to 1-hour timeout, unlimited QPM, gRPC and SSE streaming support
+- Deploy a model to a shared public endpoint — the simplest setup with trade-offs on payload size and timeout
+    - [Vertex AI Shared Public Endpoint](./Vertex%20AI%20Shared%20Public%20Endpoint.ipynb)
+        - Build a custom FastAPI container for HuggingFace sentiment models with Cloud Build
+        - Create a shared public endpoint (the default, no special flags) and deploy two model versions
+        - Shift traffic between models, validate predictions, and undeploy cleanly
+        - Highlights limitations: 1.5 MB payload, 60-second timeout, 30K QPM, HTTP only — but the only type supporting tuned Gemini deployment and AutoML with explainability
 - Deploy models to a PSC private endpoint, swap models with traffic splitting, and prove the private IP stays stable through lifecycle changes
     - [Vertex AI Private Endpoint With PSC](./Vertex%20AI%20Private%20Endpoint%20With%20PSC.ipynb)
         - Build a custom FastAPI container for HuggingFace sentiment models with Cloud Build
@@ -282,6 +294,8 @@ Two approaches:
         - Set up PSC networking: reserve an internal IP and create a forwarding rule pointing to the service attachment
         - Shift traffic between models and undeploy while verifying the private IP and connection remain uninterrupted
         - Self-contained demo with a GCE VM test client for sending requests to the private IP
+- Private Endpoint (VPC Peering) — not demonstrated in a notebook
+    - Uses [VPC Network Peering](https://cloud.google.com/vpc/docs/vpc-peering) with the Vertex AI service project for private network access. This is the most restricted endpoint type: no traffic splitting, no request/response logging, no streaming, HTTP only, and a 60-second timeout. Requires establishing VPC peering with `servicenetworking.googleapis.com` before creating the endpoint. For new private deployments, **prefer the PSC approach** — it supports traffic splitting, logging, gRPC, streaming, larger payloads, longer timeouts, and works across multiple VPCs without the limitations of peering. See the [Choose an endpoint type](https://cloud.google.com/vertex-ai/docs/predictions/choose-endpoint-type) documentation for full details.
 - Import TensorFlow SavedModel format model directly into BigQuery and get serverless predictions with SQL
     - [Serve TensorFlow SavedModel Format With BigQuery](./Serve%20TensorFlow%20SavedModel%20Format%20With%20BigQuery.ipynb) 
 
