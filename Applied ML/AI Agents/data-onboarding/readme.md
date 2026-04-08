@@ -308,6 +308,58 @@ The core API calling logic (session management, response processing, chart handl
 
 </details>
 
+<details>
+<summary>Thinking mode — fast vs. thinking</summary>
+
+The Conversational Analytics API supports two thinking modes that control how it generates SQL and answers:
+
+| Mode | Enum value | Behavior |
+|------|------------|----------|
+| **Thinking** (default) | `ChatRequest.ThinkingMode.THINKING` | Solves complex problems — more deliberate, higher quality, slower |
+| **Fast** | `ChatRequest.ThinkingMode.FAST` | Answers quickly — less deliberation, lower latency |
+| **Unspecified** | `ChatRequest.ThinkingMode.THINKING_MODE_UNSPECIFIED` | Resolves to Thinking |
+
+Currently, the code does not set `thinking_mode`, so every API call uses the default Thinking mode. This is defined in the `google.cloud.geminidataanalytics_v1alpha` SDK as a field on the `ChatRequest` proto.
+
+**Where to change it:** The API call is built in [`agent_convo/tools/util_conversational_api.py`](agent_convo/tools/util_conversational_api.py) in the `call_conversational_api()` function. The request payload is assembled around line 96:
+
+```python
+request_payload = {
+    "parent": f"projects/{os.getenv('GOOGLE_CLOUD_PROJECT')}/locations/global",
+    "messages": history + [user_message],
+    "inline_context": context,
+}
+```
+
+To set the mode, add `thinking_mode` to this dict:
+
+```python
+request_payload = {
+    "parent": ...,
+    "messages": ...,
+    "inline_context": context,
+    "thinking_mode": geminidataanalytics.ChatRequest.ThinkingMode.FAST,
+}
+```
+
+Because we use the **stateless** pattern (`inline_context` with client-managed session history in ADK state), every `chat()` call is independent — the mode can be toggled per call without affecting session state or prior conversation history.
+
+**Implementation options:**
+
+1. **Manual code change** — Edit `util_conversational_api.py` and hardcode the mode in the `request_payload`. Simplest approach — one line, applies to all API calls (both `agent_convo` and `agent_engineer` since they share this utility).
+
+2. **Environment variable** — Read a `CONVO_THINKING_MODE` env var at call time and map it to the enum. This lets you switch modes between deployments or at runtime without changing code:
+   ```
+   # In .env
+   CONVO_THINKING_MODE=FAST
+   ```
+
+3. **Per-persona mode** — Pass the mode as a parameter through `call_conversational_api()`. This allows different defaults per persona — for example, Data Analyst questions (complex multi-table SQL) could use Thinking while Data Engineer questions (simpler meta-table queries) could use Fast.
+
+4. **Dynamic — agent-driven** — Expose the mode as a parameter on the `conversational_chat` tool itself, letting the LLM agent decide based on question complexity. The router or reranker could assess whether a question needs deep reasoning or is straightforward, and set the mode accordingly.
+
+</details>
+
 ### Persona 2: Data Engineer (`agent_engineer`)
 
 For questions about the onboarding pipeline — processing history, schema decisions, data lineage, source tracking.
