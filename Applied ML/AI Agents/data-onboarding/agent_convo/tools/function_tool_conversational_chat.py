@@ -72,8 +72,9 @@ async def conversational_chat(
 
     if not bigquery_tables:
         return (
-            "No tables available. Either provide bigquery_tables or ensure "
-            "the reranker has run and stored results in state."
+            "No tables available — the reranker has not run yet for this "
+            "question. Transfer back to agent_context to find the right "
+            "tables first, then I can answer the question."
         )
 
     # Build enriched context from reranker if available

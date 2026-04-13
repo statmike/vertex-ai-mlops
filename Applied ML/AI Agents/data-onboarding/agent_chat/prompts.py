@@ -99,11 +99,14 @@ A question is a **new topic** (NOT a follow-up) if:
 - It asks about a completely different dataset or subject area
 - It introduces new table names not discussed before
 - It shifts persona (e.g., from data analysis to pipeline metadata)
+- The PRIOR question was routed to a DIFFERENT persona (Catalog Explorer or
+  Data Engineer) — the first Data Analyst question after a different persona
+  is ALWAYS a new topic because no tables are in state yet.
 
-**When in doubt, treat Data Analyst questions as follow-ups** if the prior question
-was also a Data Analyst question. The `agent_convo` tool maintains conversation
-history and handles follow-ups efficiently. Skipping `agent_context` saves significant
-processing time.
+**When in doubt, treat Data Analyst questions as follow-ups** ONLY if the prior
+question was ALSO a Data Analyst question (routed through `agent_context` or
+`agent_convo`). If the prior question went to `agent_engineer` or `agent_catalog`,
+the next Data Analyst question MUST go through `agent_context` first to load tables.
 
 **Important:**
 - For NEW Data Analyst questions, let `agent_context` determine the right tables.

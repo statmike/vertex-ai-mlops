@@ -307,6 +307,88 @@ async def _summarize_for_voice(question: str, full_answer: str) -> str:
     return full_answer
 
 
+async def _try_derive_answer(
+    question: str, qa_history: list[dict],
+) -> str | None:
+    """Check if a new question can be answered from prior Q&A pairs.
+
+    Uses a lightweight model (flash-lite, ~0.5s) to avoid a full agent_chat
+    round-trip (~8-12s) for derivable questions like:
+      - "how many tables?" after listing tables
+      - "which was highest?" after showing a ranking
+      - "what about state X?" when prior answer included that state
+
+    Returns a voice-ready answer if derivable, None otherwise.
+    """
+    from google.genai import types
+
+    # Build context from recent Q&A pairs
+    context_lines = []
+    for entry in qa_history[-3:]:  # Last 3 for relevance
+        context_lines.append(f"Q: {entry['question']}")
+        context_lines.append(f"A: {entry['answer']}")
+    context = "\n".join(context_lines)
+
+    prompt = (
+        f"Prior conversation:\n{context}\n\n"
+        f"New question: \"{question}\"\n\n"
+        "Can you answer the new question using ONLY the information in the "
+        "prior answers above? Rules:\n"
+        "- If YES: respond with a natural 1-2 sentence voice answer.\n"
+        "- If NO (needs new data, different tables, or information not present): "
+        "respond with exactly: NO\n"
+        "- Be strict — only answer if the information is clearly present.\n"
+        "- Do not guess or extrapolate beyond what the prior answers state."
+    )
+
+    try:
+        client = _get_genai_client()
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: client.models.generate_content(
+                model=_SUMMARY_MODEL,
+                contents=prompt,
+                config=types.GenerateContentConfig(temperature=0.1),
+            ),
+        )
+        result = response.text.strip()
+        if result and result.upper() != "NO" and len(result) > 5:
+            logger.info(
+                "Derivability check: answered from cache (%d chars)",
+                len(result),
+            )
+            return result
+    except Exception as e:
+        logger.debug("Derivability check failed: %s", e)
+
+    return None
+
+
+def _add_follow_up_context(question: str, qa_history: list[dict]) -> str:
+    """Add brief session context so the orchestrator identifies follow-ups.
+
+    When voice asks a follow-up question, the orchestrator may not have
+    enough context from the question alone to know tables are already loaded.
+    Including the recent question history lets it skip the reranker for
+    genuine follow-ups on the same dataset.
+
+    Only adds context when there IS recent history — first questions pass
+    through unmodified.
+    """
+    if not qa_history:
+        return question
+
+    # Include last 2 questions as brief context
+    recent = qa_history[-2:]
+    lines = [f"- {e['question']}" for e in recent]
+    context = "\n".join(lines)
+    return (
+        f"Session context (previous questions):\n{context}\n\n"
+        f"New question: {question}"
+    )
+
+
 async def ask_data_question(
     question: str,
     tool_context: tools.ToolContext,
@@ -363,13 +445,30 @@ async def ask_data_question(
         tool_context.state["_qa_history"] = qa_history
         return summary
 
+    # Derivability check: can a prior answer answer this new question?
+    # Uses flash-lite (~0.5s) to avoid a full agent_chat round-trip (~8-12s)
+    # for questions like "how many tables?" after "what tables do you have?"
+    if qa_history:
+        derived = await _try_derive_answer(question, qa_history)
+        if derived:
+            logger.info("Voice bridge: derived answer from prior Q&A cache")
+            qa_history.append({"question": question.strip(), "answer": derived})
+            if len(qa_history) > 5:
+                qa_history.pop(0)
+            tool_context.state["_qa_history"] = qa_history
+            return derived
+
     tool_context.state["_ask_data_pending"] = True
+
+    # Enrich question with session context so the orchestrator can
+    # identify follow-ups and skip the reranker when appropriate.
+    enriched = _add_follow_up_context(question, qa_history)
 
     try:
         if _AGENT_MODE == "agent_engine":
-            raw_answer = await _run_remote(question, tool_context)
+            raw_answer = await _run_remote(enriched, tool_context)
         else:
-            raw_answer = await _run_local(question, tool_context)
+            raw_answer = await _run_local(enriched, tool_context)
 
         if not raw_answer:
             return "I wasn't able to get an answer. Could you try rephrasing?"
