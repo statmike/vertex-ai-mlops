@@ -629,7 +629,8 @@
     padding: 2rem;
     background: rgba(15, 19, 28, 0.4);
     backdrop-filter: blur(30px);
-    overflow: visible;
+    overflow-y: auto;
+    max-height: 70vh;
 }
 
 /* --- Data table --- */
@@ -735,6 +736,31 @@
 .insight-text .stat {
     color: var(--primary);
     font-weight: 600;
+}
+
+/* --- Insights block --- */
+
+.insight-card.insights-block {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    background: rgba(0, 227, 253, 0.04);
+    border-left: 3px solid var(--secondary);
+}
+
+.insight-card.insights-block .insight-icon {
+    width: 2rem;
+    height: 2rem;
+    background: rgba(0, 227, 253, 0.12);
+}
+
+.insight-card.insights-block .insight-icon .material-symbols-outlined {
+    font-size: 0.875rem;
+    color: var(--secondary);
+}
+
+.insight-card.insights-block .insight-text {
+    font-size: 0.8125rem;
 }
 
 /* --- Follow-up chips --- */

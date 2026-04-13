@@ -64,14 +64,24 @@ const Chat = {
                 _setPipelineStage(c, 'orchestrator', 'done');
                 _setPipelineStage(c, 'persona', 'active',
                     _agentLabel(event.to), _agentIcon(event.to));
-                this._addStep(c, 'route',
-                    `Routing to ${_agentLabel(event.to)}`,
-                    _agentIcon(event.to));
+                // Use direct label for non-persona agents (reranker/context),
+                // "Routing to X" for persona agents
+                const stepLabel = event.to === 'agent_context'
+                    ? _agentLabel(event.to)
+                    : `Routing to ${_agentLabel(event.to)}`;
+                this._addStep(c, 'route', stepLabel, _agentIcon(event.to));
                 break;
 
             case 'thinking':
                 c.state = 'thinking';
-                _setPipelineStage(c, 'persona', 'done');
+                // Infer persona from tool if no transfer event set it
+                const inferredPersona = _toolToPersona(event.tool);
+                if (inferredPersona && !c.activePersona) {
+                    c.activePersona = inferredPersona;
+                }
+                _setPipelineStage(c, 'persona', 'done',
+                    _agentLabel(c.activePersona || inferredPersona),
+                    _agentIcon(c.activePersona || inferredPersona));
                 _setPipelineStage(c, 'tools', 'active', event.label, _toolIcon(event.tool));
                 this._addStep(c, 'tool', event.label, _toolIcon(event.tool));
                 break;
@@ -107,9 +117,13 @@ const Chat = {
 
             case 'text':
                 if (event.role === 'user') break;
+                // Filter thinking narration (e.g., "Analyzing the Data\nI have successfully...")
+                if (_isThinkingNarration(event.content || '')) break;
                 if (event.is_answer || c.state === 'thinking') {
                     c.state = 'responding';
                 }
+                // Deduplicate: skip if this text substantially matches a recent text part
+                if (_isDuplicateText(c.responseParts, event.content)) break;
                 _setPipelineStage(c, 'tools', 'done');
                 _setPipelineStage(c, 'result', 'active');
                 c.responseParts.push({ type: 'text', content: event.content, persona: c.activePersona });
@@ -209,9 +223,10 @@ const Chat = {
         container.innerHTML = '<div class="chat-spacer"></div>' + html;
         if (wasNearBottom) container.scrollTop = container.scrollHeight;
 
-        // Wire up toggle buttons and render Vega charts after innerHTML is set
+        // Wire up toggle buttons, Vega charts, and follow-up chips
         _wireToggles(container);
         _renderVegaCharts(container);
+        _wireSuggestedQueries(container);
     },
 };
 
@@ -307,7 +322,7 @@ function _renderFullEntry(e, idx, isLatest) {
 }
 
 
-/** Render a collapsed previous entry — question + final answer only. */
+/** Render a collapsed previous entry — question + answer + expandable full details. */
 function _renderCollapsedEntry(e, idx) {
     let html = '';
     const icon = _sourceIcon(e.source);
@@ -326,12 +341,16 @@ function _renderCollapsedEntry(e, idx) {
         </div>
     `;
 
-    // Show only the last text part (the final answer) inline
+    // Find the best answer text part (skip parts that are only follow-up questions or thinking)
     const textParts = e.responseParts.filter(p => p.type === 'text');
-    const lastText = textParts.length > 0 ? textParts[textParts.length - 1].content : '';
+    const answerText = _bestAnswerText(textParts);
     const hasDetails = e.responseParts.some(p => p.type === 'sql' || p.type === 'data' || p.type === 'chart');
+    const hasTimeline = e.timelineSteps && e.timelineSteps.length > 0;
 
-    if (lastText) {
+    if (answerText) {
+        // For collapsed view, strip insights/follow-ups — just show the core answer
+        const { body } = _splitTextSections(answerText);
+        const displayText = body || answerText;
         html += `
             <div class="response-card compact">
                 <div class="inner">
@@ -340,25 +359,57 @@ function _renderCollapsedEntry(e, idx) {
                             <span class="material-symbols-outlined">${icon}</span>
                         </div>
                         <div class="insight-text markdown-content">
-                            ${_renderMarkdown(lastText)}
+                            ${_renderMarkdown(displayText)}
                         </div>
                     </div>
         `;
 
-        // Expandable detail section
-        if (hasDetails) {
-            const detailCount = e.responseParts.filter(p => p.type !== 'text').length;
+        // Expandable full details — pipeline, timeline, SQL, data, charts
+        if (hasDetails || hasTimeline) {
+            const parts = [];
+            if (hasTimeline) parts.push(`${e.timelineSteps.length} steps`);
+            if (hasDetails) {
+                const detailTypes = [];
+                if (e.responseParts.some(p => p.type === 'sql')) detailTypes.push('SQL');
+                if (e.responseParts.some(p => p.type === 'data')) detailTypes.push('data');
+                if (e.responseParts.some(p => p.type === 'chart')) detailTypes.push('chart');
+                parts.push(detailTypes.join(', '));
+            }
             html += `
                 <div class="collapsible" style="margin-top: 1rem;">
                     <button class="collapsible-toggle" data-target="details-${idx}">
                         <span class="material-symbols-outlined toggle-icon">chevron_right</span>
-                        <span>${detailCount} detail${detailCount > 1 ? 's' : ''} (SQL, data${e.responseParts.some(p => p.type === 'chart') ? ', chart' : ''})</span>
+                        <span>Details: ${parts.join(' + ')}</span>
                     </button>
                     <div class="collapsible-body" id="details-${idx}">
-                        ${_renderParts(e.responseParts.filter(p => p.type !== 'text'), idx, true)}
-                    </div>
-                </div>
             `;
+            // Pipeline bar
+            if (e.pipelineStages) {
+                html += _renderPipelineBar(e.pipelineStages);
+            }
+            // Timeline
+            if (hasTimeline) {
+                html += '<div class="timeline" style="margin-bottom: 1rem;">';
+                for (const step of e.timelineSteps) {
+                    const timing = step.elapsed != null ? `<span class="step-timing">${_formatElapsed(step.elapsed)}</span>` : '';
+                    html += `
+                        <div class="timeline-step ${step.status}">
+                            <div class="timeline-icon"><span class="material-symbols-outlined">${step.icon}</span></div>
+                            <div class="timeline-label">
+                                <span class="step-num">Step ${String(step.num).padStart(2, '0')}</span>
+                                <span class="step-text">${step.label}</span>
+                            </div>
+                            ${timing}
+                        </div>
+                    `;
+                }
+                html += '</div>';
+            }
+            // Response details (SQL, data, charts)
+            if (hasDetails) {
+                html += _renderParts(e.responseParts.filter(p => p.type !== 'text'), idx, true);
+            }
+            html += '</div></div>';
         }
 
         html += '</div></div>';
@@ -442,16 +493,7 @@ function _renderParts(parts, entryIdx, collapsed) {
                 break;
 
             case 'text':
-                html += `
-                    <div class="insight-card">
-                        <div class="insight-icon">
-                            <span class="material-symbols-outlined">auto_awesome</span>
-                        </div>
-                        <div class="insight-text markdown-content">
-                            ${_renderMarkdown(part.content)}
-                        </div>
-                    </div>
-                `;
+                html += _renderTextPart(part.content);
                 break;
         }
     }
@@ -491,6 +533,22 @@ function _renderVegaCharts(container) {
         } catch (err) {
             console.error('Vega parse error:', err);
         }
+    });
+}
+
+/** Wire up suggested query chips — clicking sends the question. */
+function _wireSuggestedQueries(container) {
+    container.querySelectorAll('.suggested-query').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const input = document.getElementById('chat-input');
+            if (input) {
+                input.value = btn.textContent;
+                input.dispatchEvent(new Event('input'));
+                // Trigger send via the send button
+                const sendBtn = document.getElementById('send-btn');
+                if (sendBtn) sendBtn.click();
+            }
+        });
     });
 }
 
@@ -547,11 +605,235 @@ function _renderDataTable(text) {
 }
 
 
+// --- Text part rendering ---
+
+/**
+ * Render a text part, extracting insights and follow-up suggestions
+ * into distinct visual blocks.
+ */
+function _renderTextPart(text) {
+    if (!text || !text.trim()) return '';
+
+    const { body, insights, followUps } = _splitTextSections(text);
+    let html = '';
+
+    // Main body text
+    if (body.trim()) {
+        html += `
+            <div class="insight-card">
+                <div class="insight-icon">
+                    <span class="material-symbols-outlined">auto_awesome</span>
+                </div>
+                <div class="insight-text markdown-content">
+                    ${_renderMarkdown(body)}
+                </div>
+            </div>
+        `;
+    }
+
+    // Insights section
+    if (insights.trim()) {
+        html += `
+            <div class="insight-card insights-block">
+                <div class="insight-icon">
+                    <span class="material-symbols-outlined">lightbulb</span>
+                </div>
+                <div class="insight-text markdown-content">
+                    ${_renderMarkdown(insights)}
+                </div>
+            </div>
+        `;
+    }
+
+    // Follow-up suggestions as chips
+    if (followUps.length > 0) {
+        html += '<div class="follow-up-chips">';
+        for (const q of followUps) {
+            html += `<button class="chip suggested-query">${_escapeHtml(q)}</button>`;
+        }
+        html += '</div>';
+    }
+
+    return html;
+}
+
+/**
+ * Split text content into body, insights, and follow-up questions.
+ *
+ * Detects:
+ *   - "### Insights" (or "**Insights**") section → insights block
+ *   - Trailing lines ending with "?" → follow-up suggestions
+ *   - Everything else → body
+ */
+function _splitTextSections(text) {
+    const lines = text.split('\n');
+    let body = [];
+    let insights = [];
+    let followUps = [];
+    let section = 'body'; // 'body' | 'insights'
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmed = line.trim();
+
+        // Detect insights header
+        if (/^#{1,3}\s*insights/i.test(trimmed) || /^\*\*insights\*\*/i.test(trimmed)) {
+            section = 'insights';
+            continue;
+        }
+
+        if (section === 'insights') {
+            insights.push(line);
+        } else {
+            body.push(line);
+        }
+    }
+
+    // Extract trailing follow-up suggestions from whichever section ends last
+    const source = insights.length > 0 ? insights : body;
+    // Walk backwards to find consecutive suggestion lines (questions or imperatives)
+    while (source.length > 0) {
+        const last = source[source.length - 1].trim();
+        if (!last) {
+            source.pop(); // skip trailing blank lines
+            continue;
+        }
+        if (_isSuggestionLine(last)) {
+            followUps.unshift(last);
+            source.pop();
+        } else {
+            break;
+        }
+    }
+
+    return {
+        body: body.join('\n').trim(),
+        insights: insights.join('\n').trim(),
+        followUps,
+    };
+}
+
+
+/**
+ * Find the best "answer" text from a list of text parts.
+ * Skips parts that are only follow-up questions or short thinking narration.
+ * Prefers the last substantive text part.
+ */
+function _bestAnswerText(textParts) {
+    // Walk backwards to find the last text that has real answer content
+    for (let i = textParts.length - 1; i >= 0; i--) {
+        const text = (textParts[i].content || '').trim();
+        if (!text) continue;
+
+        // Skip if it's follow-up suggestions (2-5 short lines, mostly questions/imperatives)
+        const lines = text.split('\n').filter(l => l.trim());
+        if (_isFollowUpSuggestions(lines)) continue;
+
+        // Skip insights-only sections (start with ### Insights or **Insights**)
+        if (/^#{1,3}\s*insights/i.test(text) || /^\*\*insights\*\*/i.test(text)) continue;
+
+        // Skip thinking narration: title line + first-person "I" statement
+        // Pattern: "Analyzing the Data\nI have successfully..." or
+        //          "Providing the Final Count\nI've just received..."
+        if (_isThinkingNarration(text)) continue;
+
+        return text;
+    }
+    // Fallback: return the last non-empty part
+    for (let i = textParts.length - 1; i >= 0; i--) {
+        if (textParts[i].content && textParts[i].content.trim()) {
+            return textParts[i].content.trim();
+        }
+    }
+    return '';
+}
+
+
+/** Check if a single line looks like a follow-up suggestion (question or imperative). */
+function _isSuggestionLine(line) {
+    const t = line.trim();
+    if (t.length < 10 || t.length > 150) return false;
+    // Questions
+    if (t.endsWith('?')) return true;
+    // Imperative suggestions: "Show...", "List...", "Compare...", etc.
+    if (/^(Show|List|Compare|Display|Explain|Describe|Find|Get|Tell|Give|Plot|Chart|Summarize|Break down|Calculate|Count|Identify)\s/i.test(t)) return true;
+    return false;
+}
+
+/** Check if an array of lines is a block of follow-up suggestions. */
+function _isFollowUpSuggestions(lines) {
+    if (lines.length < 2 || lines.length > 5) return false;
+    // At least half must be suggestions, and all must be short
+    const suggestions = lines.filter(l => _isSuggestionLine(l.trim()));
+    return suggestions.length >= lines.length * 0.5 && lines.every(l => l.trim().length < 150);
+}
+
+
+/**
+ * Detect model "thinking narration" — short title + first-person explanation.
+ * Examples:
+ *   "Analyzing the Data\nI have successfully retrieved..."
+ *   "Providing the Final Count\nI've just received the result..."
+ *   "Concluding the Analysis\nI've successfully received..."
+ */
+function _isThinkingNarration(text) {
+    const lines = text.split('\n').filter(l => l.trim());
+    if (lines.length === 0) return false;
+
+    // Single-line check: starts with gerund/verb phrase + first person
+    // e.g., "Analyzing context\nRetrieved context for 1 table."
+    const firstLine = lines[0].trim();
+
+    // Title-like first line (short, no period, capitalized)
+    const isTitleLine = firstLine.length < 60 && !firstLine.includes('.') && /^[A-Z]/.test(firstLine);
+
+    if (lines.length >= 2 && isTitleLine) {
+        const rest = lines.slice(1).join(' ').trim();
+        // First-person narration: "I have...", "I've...", "I am...", "I'm..."
+        if (/^(I\s|I'[a-z])/i.test(rest)) return true;
+        // Retrieval/context narration: "Retrieved context..."
+        if (/^Retrieved\s/i.test(rest)) return true;
+    }
+
+    // Two-line context retrieval pattern: "Analyzing context\nRetrieved context..."
+    if (lines.length <= 2 && /^(Analyzing|Retrieved|Processing)\s/i.test(firstLine)) {
+        return true;
+    }
+
+    return false;
+}
+
+
+// --- Dedup helpers ---
+
+/** Check if incoming text substantially duplicates a recent text part. */
+function _isDuplicateText(parts, newText) {
+    if (!newText) return false;
+    const cleaned = newText.replace(/\s+/g, ' ').trim();
+    if (cleaned.length < 20) return false; // too short to judge
+    // Check the last 5 text parts for overlap
+    const textParts = parts.filter(p => p.type === 'text').slice(-5);
+    for (const p of textParts) {
+        const existing = (p.content || '').replace(/\s+/g, ' ').trim();
+        // If the new text starts with the same first 60 chars as an existing part, it's a dupe
+        if (existing.length > 40 && cleaned.length > 40) {
+            const existStart = existing.substring(0, 60);
+            const newStart = cleaned.substring(0, 60);
+            if (existStart === newStart) return true;
+        }
+        // If one contains the other
+        if (existing.length > 40 && cleaned.includes(existing.substring(0, 60))) return true;
+        if (cleaned.length > 40 && existing.includes(cleaned.substring(0, 60))) return true;
+    }
+    return false;
+}
+
+
 // --- Label helpers ---
 
 function _agentLabel(agentName) {
     const labels = {
-        'agent_context': 'Data Analyst',
+        'agent_context': 'Finding Tables',
         'agent_convo': 'Data Analyst',
         'agent_engineer': 'Data Engineer',
         'agent_catalog': 'Catalog Explorer',
@@ -563,7 +845,7 @@ function _agentLabel(agentName) {
 
 function _agentIcon(agentName) {
     const icons = {
-        'agent_context': 'analytics',
+        'agent_context': 'filter_list',
         'agent_convo': 'query_stats',
         'agent_engineer': 'engineering',
         'agent_catalog': 'menu_book',
@@ -583,6 +865,19 @@ function _personaClass(agentName) {
         'agent_chat': 'orchestrator',
     };
     return classes[agentName] || 'orchestrator';
+}
+
+/** Infer the persona agent from a tool name (for follow-ups without transfer events). */
+function _toolToPersona(toolName) {
+    const map = {
+        'conversational_chat': 'agent_convo',
+        'meta_chat': 'agent_engineer',
+        'search_context': 'agent_catalog',
+        'get_table_columns': 'agent_catalog',
+        'list_all_tables': 'agent_catalog',
+        'rerank_tables': 'agent_context',
+    };
+    return map[toolName] || null;
 }
 
 function _toolIcon(toolName) {
