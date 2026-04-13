@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Data Onboarding</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link href="/static/css/theme.css" rel="stylesheet" />
+    <link href="/static/css/components.css" rel="stylesheet" />
+    <link href="/static/css/voice.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+</head>
+<body>
+    <!-- Background -->
+    <div class="nebula-bg" style="position: fixed; inset: 0; z-index: 0; pointer-events: none;"></div>
+
+    <!-- Top bar -->
+    <header class="top-bar glass">
+        <span class="brand">Data Onboarding</span>
+
+        <!-- Session management -->
+        <div class="session-controls">
+            <span class="material-symbols-outlined session-icon">forum</span>
+            <span id="session-label" class="session-label">No session</span>
+            <button id="new-session-btn" class="session-btn" title="New session">
+                <span class="material-symbols-outlined">add</span>
+            </button>
+            <div class="session-dropdown-wrap">
+                <button id="session-history-btn" class="session-btn" title="Previous sessions">
+                    <span class="material-symbols-outlined">history</span>
+                </button>
+                <div id="session-dropdown" class="session-dropdown"></div>
+            </div>
+        </div>
+
+        <!-- Mode toggles + status -->
+        <div class="status">
+            <button id="text-toggle" class="mode-toggle active">
+                <span class="material-symbols-outlined">chat</span>
+                <span>Text</span>
+            </button>
+            <button id="voice-toggle" class="mode-toggle">
+                <span class="material-symbols-outlined">mic_none</span>
+                <span>Voice</span>
+            </button>
+            <div id="status-dot" class="status-dot"></div>
+            <span id="status-text">Connecting...</span>
+        </div>
+    </header>
+
+    <!-- Main content — flex column, fills viewport between top bar and input bar -->
+    <div class="app-container" id="app-container">
+        <div id="chat-content" class="no-scrollbar" style="flex: 1; overflow-y: auto;">
+            <!-- Rendered by chat.js -->
+        </div>
+        <div id="voice-content" style="display: none;">
+            <!-- Rendered by voice.js -->
+        </div>
+    </div>
+
+    <!-- Input bar (text mode) -->
+    <div id="text-input-bar" class="input-bar">
+        <span class="material-symbols-outlined" style="color: var(--secondary); margin-left: 1rem;">auto_awesome</span>
+        <input id="chat-input" type="text" placeholder="Ask a question about your data..." autocomplete="off" />
+        <button id="send-btn" class="send-btn">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+        </button>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/ws.js"></script>
+    <script src="/static/js/chat.js"></script>
+    <script src="/static/js/audio.js"></script>
+    <script src="/static/js/voice.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

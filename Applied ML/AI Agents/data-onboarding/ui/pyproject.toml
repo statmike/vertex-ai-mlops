@@ -1,0 +1,18 @@
+[project]
+name = "data-onboarding-ui"
+version = "0.1.0"
+description = "Custom web UI for the data-onboarding chat agent"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "websockets>=15.0",
+    "google-cloud-aiplatform>=1.140",
+    "google-adk>=1.28",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.9",
+]

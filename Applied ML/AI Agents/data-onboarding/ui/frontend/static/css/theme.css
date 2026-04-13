@@ -1,0 +1,85 @@
+/* Design system — derived from sketch/DESIGN.md ("The Celestial Curator") */
+
+:root {
+    /* Surface hierarchy */
+    --surface: #0a0e16;
+    --surface-dim: #0a0e16;
+    --surface-container-lowest: #000000;
+    --surface-container-low: #0f131c;
+    --surface-container: #151a24;
+    --surface-container-high: #1a202b;
+    --surface-container-highest: #202632;
+    --surface-bright: #262c39;
+    --surface-variant: #202632;
+
+    /* Accents */
+    --primary: #85adff;
+    --primary-dim: #689cff;
+    --primary-container: #6d9fff;
+    --on-primary: #002c66;
+    --secondary: #00e3fd;
+    --secondary-dim: #00d4ec;
+    --on-secondary: #004d57;
+    --tertiary: #ac89ff;
+    --tertiary-dim: #874cff;
+    --on-tertiary: #290067;
+
+    /* Text */
+    --on-surface: #ebedfa;
+    --on-surface-variant: #a7abb6;
+    --on-background: #ebedfa;
+    --outline: #727580;
+    --outline-variant: #444852;
+
+    /* Error */
+    --error: #ff716c;
+
+    /* Elevation */
+    --glow-primary: rgba(133, 173, 255, 0.08);
+    --glow-secondary: rgba(0, 227, 253, 0.15);
+    --glow-ambient: rgba(133, 173, 255, 0.1);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Manrope', sans-serif;
+    background-color: var(--surface);
+    color: var(--on-surface);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.6;
+}
+
+::selection {
+    background: rgba(133, 173, 255, 0.3);
+}
+
+/* Nebula background */
+.nebula-bg {
+    background:
+        radial-gradient(circle at 50% 50%, rgba(133, 173, 255, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 20% 80%, rgba(0, 227, 253, 0.03) 0%, transparent 40%),
+        radial-gradient(circle at 80% 20%, rgba(172, 137, 255, 0.03) 0%, transparent 40%);
+}
+
+/* Glassmorphism */
+.glass {
+    background: rgba(38, 44, 57, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.glass-subtle {
+    background: rgba(21, 26, 36, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* No scrollbar utility */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

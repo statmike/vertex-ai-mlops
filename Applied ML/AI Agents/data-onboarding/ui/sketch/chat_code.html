@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Aetheris | Celestial Analysis</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-dim": "#d7383b",
+                        "secondary-fixed": "#26e6ff",
+                        "on-primary-fixed-variant": "#002a61",
+                        "on-secondary-fixed": "#003a42",
+                        "tertiary-fixed": "#bda1ff",
+                        "surface-container": "#151a24",
+                        "surface-container-high": "#1a202b",
+                        "tertiary": "#ac89ff",
+                        "on-error": "#490006",
+                        "on-tertiary": "#290067",
+                        "on-secondary": "#004d57",
+                        "surface-dim": "#0a0e16",
+                        "secondary-container": "#006875",
+                        "on-primary-fixed": "#000000",
+                        "primary-fixed-dim": "#5391ff",
+                        "primary": "#85adff",
+                        "tertiary-dim": "#874cff",
+                        "error-container": "#9f0519",
+                        "on-primary": "#002c66",
+                        "background": "#0a0e16",
+                        "on-background": "#ebedfa",
+                        "secondary-dim": "#00d4ec",
+                        "surface-variant": "#202632",
+                        "on-surface": "#ebedfa",
+                        "surface-container-highest": "#202632",
+                        "surface-container-low": "#0f131c",
+                        "surface-container-lowest": "#000000",
+                        "surface-tint": "#85adff",
+                        "primary-container": "#6d9fff",
+                        "outline-variant": "#444852",
+                        "secondary-fixed-dim": "#00d7f0",
+                        "tertiary-fixed-dim": "#b190ff",
+                        "primary-fixed": "#6d9fff",
+                        "surface": "#0a0e16",
+                        "on-tertiary-container": "#f8f1ff",
+                        "secondary": "#00e3fd",
+                        "inverse-primary": "#005bc3",
+                        "tertiary-container": "#7000ff",
+                        "outline": "#727580",
+                        "on-secondary-fixed-variant": "#005964",
+                        "on-secondary-container": "#e8fbff",
+                        "primary-dim": "#689cff",
+                        "inverse-on-surface": "#51555f",
+                        "inverse-surface": "#f9f9ff",
+                        "on-tertiary-fixed-variant": "#4700a7",
+                        "surface-bright": "#262c39",
+                        "error": "#ff716c",
+                        "on-error-container": "#ffa8a3",
+                        "on-surface-variant": "#a7abb6",
+                        "on-primary-container": "#00214f",
+                        "on-tertiary-fixed": "#1f0052"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Manrope"],
+                        "label": ["Manrope"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #0a0e16;
+            color: #ebedfa;
+            font-family: 'Manrope', sans-serif;
+            overflow-x: hidden;
+        }
+        .celestial-glow {
+            background: radial-gradient(circle at 50% 50%, rgba(133, 173, 255, 0.05) 0%, transparent 70%);
+        }
+        .glass-panel {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-background min-h-screen relative celestial-glow">
+<!-- TopNavBar -->
+<header class="fixed top-4 left-1/2 -translate-x-1/2 w-[95%] rounded-full bg-slate-950/60 backdrop-blur-xl flex justify-between items-center px-6 py-3 z-50 shadow-[0_0_40px_rgba(133,173,255,0.08)] bg-gradient-to-br from-slate-800/40 to-slate-900/40">
+<div class="flex items-center gap-3">
+<span class="text-lg font-bold tracking-tighter text-blue-300">Aetheris</span>
+<div class="h-4 w-px bg-slate-700 mx-2"></div>
+<nav class="hidden md:flex gap-6 items-center">
+<a class="text-cyan-400 font-bold font-manrope tracking-widest uppercase text-xs" href="#">Intelligence</a>
+<a class="text-slate-400 hover:text-blue-200 transition-colors duration-300 font-manrope tracking-widest uppercase text-xs" href="#">Network</a>
+<a class="text-slate-400 hover:text-blue-200 transition-colors duration-300 font-manrope tracking-widest uppercase text-xs" href="#">Security</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-blue-300 hover:text-blue-200 cursor-pointer">account_tree</span>
+<span class="material-symbols-outlined text-blue-300 hover:text-blue-200 cursor-pointer">notifications</span>
+<img alt="User profile" class="w-8 h-8 rounded-full object-cover" data-alt="Close up portrait of a professional woman with a calm expression against a soft dark studio background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBaOsAqx01vj9PTCDJSL2f6X9D-sr8e3jTYioxv7vDPu9QxjZMsrMsN01Ym_9bWe4Ct0krBxQ_wuKWRlDwJydFyHRvkR7y1_u54naY3guajezT9XvQ-6k1i0Hs7Scdpq29rzBppvDQTh8pXwUezP4FY5AiqBgkc5RDUaxJHWWEH-CrpIicW0cQDve5S7p2Cb8fF_mbmQO5oMfhH3e534AEIaPMxO5LZbEmu1IF6pmxzETCgUH1AhQNG-UmtGMlpopvr1HUkXxThSb4"/>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="group fixed left-6 top-1/2 -translate-y-1/2 h-[870px] w-20 hover:w-64 rounded-[3rem] transition-all duration-500 ease-in-out overflow-hidden bg-slate-900/70 backdrop-blur-2xl z-50 shadow-[0_0_60px_rgba(133,173,255,0.1)] bg-gradient-to-b from-slate-800/50 to-slate-950/50 flex flex-col items-center py-8">
+<div class="mb-12 flex flex-col items-center group-hover:items-start group-hover:px-6 w-full">
+<span class="material-symbols-outlined text-blue-300 text-3xl">auto_awesome</span>
+<div class="hidden group-hover:block mt-4">
+<p class="text-xl font-black text-blue-300">Aetheris AI</p>
+<p class="text-[0.65rem] uppercase tracking-[0.2em] text-on-surface-variant">Celestial Curator</p>
+</div>
+</div>
+<nav class="flex flex-col gap-4 w-full px-3">
+<a class="flex items-center gap-4 p-3 bg-blue-400/10 text-cyan-400 rounded-full transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="opacity-0 group-hover:opacity-100 whitespace-nowrap font-manrope">Intelligence</span>
+</a>
+<a class="flex items-center gap-4 p-3 text-slate-400 hover:bg-slate-800/50 hover:text-blue-200 rounded-full transition-all" href="#">
+<span class="material-symbols-outlined">hub</span>
+<span class="opacity-0 group-hover:opacity-100 whitespace-nowrap font-manrope">Nexus</span>
+</a>
+<a class="flex items-center gap-4 p-3 text-slate-400 hover:bg-slate-800/50 hover:text-blue-200 rounded-full transition-all" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="opacity-0 group-hover:opacity-100 whitespace-nowrap font-manrope">Patterns</span>
+</a>
+<a class="flex items-center gap-4 p-3 text-slate-400 hover:bg-slate-800/50 hover:text-blue-200 rounded-full transition-all" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="opacity-0 group-hover:opacity-100 whitespace-nowrap font-manrope">Archive</span>
+</a>
+<a class="flex items-center gap-4 p-3 text-slate-400 hover:bg-slate-800/50 hover:text-blue-200 rounded-full transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="opacity-0 group-hover:opacity-100 whitespace-nowrap font-manrope">Settings</span>
+</a>
+</nav>
+<div class="mt-auto group-hover:px-4 w-full">
+<button class="w-full flex items-center justify-center p-3 bg-primary text-on-primary rounded-full font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
+<span class="material-symbols-outlined">add</span>
+<span class="hidden group-hover:inline ml-2">New Insight</span>
+</button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="pt-32 pb-48 px-6 max-w-5xl mx-auto min-h-screen">
+<!-- User Inquiry Section -->
+<div class="mb-16 flex flex-col items-center">
+<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-surface-container-high/50 text-on-surface-variant text-[0.65rem] uppercase tracking-widest mb-6">
+<span class="material-symbols-outlined text-xs">history</span>
+                Current Inquiry
+            </div>
+<h1 class="text-3xl md:text-5xl font-headline font-light text-center leading-tight tracking-tight mb-8">
+                "Show me the <span class="text-primary font-semibold">quarterly revenue trends</span> versus projected market volatility for 2024."
+            </h1>
+</div>
+<!-- Intelligence Flow (Thinking Process) -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-12 items-start">
+<!-- Vertical Timeline -->
+<div class="md:col-span-3 flex flex-col gap-8 py-8 relative">
+<div class="absolute left-6 top-8 bottom-8 w-px bg-gradient-to-b from-primary/40 via-secondary/40 to-transparent"></div>
+<div class="flex items-center gap-4 relative z-10 group">
+<div class="w-12 h-12 rounded-full bg-surface-bright flex items-center justify-center border border-primary/20 shadow-[0_0_15px_rgba(133,173,255,0.2)]">
+<span class="material-symbols-outlined text-primary text-sm">database</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[0.65rem] uppercase tracking-tighter text-on-surface-variant font-bold">Step 01</span>
+<span class="text-sm font-medium">Aggregating Data</span>
+</div>
+</div>
+<div class="flex items-center gap-4 relative z-10 opacity-70">
+<div class="w-12 h-12 rounded-full bg-surface-bright flex items-center justify-center border border-outline-variant/30">
+<span class="material-symbols-outlined text-secondary text-sm">schema</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[0.65rem] uppercase tracking-tighter text-on-surface-variant font-bold">Step 02</span>
+<span class="text-sm font-medium">Vectorizing Trends</span>
+</div>
+</div>
+<div class="flex items-center gap-4 relative z-10 opacity-40">
+<div class="w-12 h-12 rounded-full bg-surface-bright flex items-center justify-center border border-outline-variant/30">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">model_training</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[0.65rem] uppercase tracking-tighter text-on-surface-variant font-bold">Step 03</span>
+<span class="text-sm font-medium">Predictive Mapping</span>
+</div>
+</div>
+</div>
+<!-- Visualization Canvas -->
+<div class="md:col-span-9">
+<div class="relative group p-1 rounded-xl bg-gradient-to-br from-primary/10 via-transparent to-secondary/10">
+<div class="rounded-xl bg-slate-900/40 backdrop-blur-3xl p-8 shadow-2xl relative overflow-hidden">
+<!-- Top Action Area -->
+<div class="flex justify-between items-center mb-12">
+<div>
+<h3 class="text-xl font-headline font-semibold text-on-surface">Revenue Momentum Spectrum</h3>
+<p class="text-on-surface-variant text-sm mt-1 font-body">Synthetic data projection based on H1 performance</p>
+</div>
+<div class="flex gap-2">
+<button class="p-2 rounded-full hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">share</span>
+</button>
+<button class="p-2 rounded-full hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">download</span>
+</button>
+</div>
+</div>
+<!-- Frameless Chart Area -->
+<div class="relative h-[400px] w-full flex items-end justify-between px-4 pb-12">
+<!-- Background Grid Lines -->
+<div class="absolute inset-0 flex flex-col justify-between py-12 pointer-events-none opacity-5">
+<div class="h-px bg-on-surface w-full"></div>
+<div class="h-px bg-on-surface w-full"></div>
+<div class="h-px bg-on-surface w-full"></div>
+<div class="h-px bg-on-surface w-full"></div>
+</div>
+<!-- Abstract Area Chart Shape (using SVG) -->
+<div class="absolute inset-0 px-4 py-12">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 1000 400">
+<defs>
+<lineargradient id="chartFill" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#85adff" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#85adff" stop-opacity="0"></stop>
+</lineargradient>
+<lineargradient id="chartStroke" x1="0" x2="1" y1="0" y2="0">
+<stop offset="0%" stop-color="#85adff"></stop>
+<stop offset="100%" stop-color="#00e3fd"></stop>
+</lineargradient>
+</defs>
+<path d="M0,350 Q100,320 200,280 T400,200 T600,250 T800,100 T1000,150 L1000,400 L0,400 Z" fill="url(#chartFill)"></path>
+<path d="M0,350 Q100,320 200,280 T400,200 T600,250 T800,100 T1000,150" fill="none" stroke="url(#chartStroke)" stroke-linecap="round" stroke-width="4"></path>
+</svg>
+</div>
+<!-- Floating Data Tooltip (Mock) -->
+<div class="absolute top-1/3 right-1/4 z-20 group-hover:scale-110 transition-transform duration-500">
+<div class="glass-panel bg-surface-bright/80 p-4 rounded-xl shadow-2xl border border-primary/20">
+<p class="text-[0.65rem] uppercase font-bold text-on-surface-variant">Q3 Peak Projection</p>
+<p class="text-xl font-headline font-bold text-secondary">$4.2M</p>
+<div class="flex items-center gap-1 mt-1 text-[0.65rem] text-primary">
+<span class="material-symbols-outlined text-xs">trending_up</span>
+                                        +12.4% vs Last Year
+                                    </div>
+</div>
+</div>
+<!-- X-Axis Labels -->
+<div class="flex w-full justify-between mt-auto pt-4 border-t border-outline-variant/10">
+<span class="text-[0.65rem] font-bold text-on-surface-variant">JAN</span>
+<span class="text-[0.65rem] font-bold text-on-surface-variant">MAR</span>
+<span class="text-[0.65rem] font-bold text-on-surface-variant">JUN</span>
+<span class="text-[0.65rem] font-bold text-on-surface-variant">SEP</span>
+<span class="text-[0.65rem] font-bold text-on-surface-variant">DEC</span>
+</div>
+</div>
+<!-- AI Insight Card -->
+<div class="mt-8 flex gap-6 items-start">
+<div class="shrink-0 w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-sm">auto_awesome</span>
+</div>
+<div class="space-y-4">
+<p class="text-on-surface-variant leading-relaxed text-sm">
+                                    Analysis indicates a high-confidence surge in late Q3, potentially tied to seasonal market shifts. Projected volatility remains low at <span class="text-primary font-semibold">1.4σ</span>. Recommend adjusting liquid assets by <span class="text-secondary font-semibold">8%</span> to capitalize on the momentum.
+                                </p>
+<div class="flex gap-2">
+<span class="px-3 py-1 rounded-full bg-surface-container text-[0.65rem] border border-outline-variant/20 hover:border-primary/50 cursor-pointer transition-all">Drill Down into Q3</span>
+<span class="px-3 py-1 rounded-full bg-surface-container text-[0.65rem] border border-outline-variant/20 hover:border-primary/50 cursor-pointer transition-all">Risk Assessment</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Refined Input Area) -->
+<footer class="fixed bottom-8 left-1/2 -translate-x-1/2 w-[600px] max-w-[90vw] rounded-full bg-slate-900/80 backdrop-blur-3xl z-50 shadow-[0_0_50px_rgba(0,227,253,0.15)] flex items-center p-1.5 focus-within:ring-4 focus-within:ring-blue-500/20 transition-all">
+<div class="flex-1 flex items-center px-6">
+<span class="material-symbols-outlined text-cyan-400 mr-4">bubble_chart</span>
+<input class="bg-transparent border-none focus:ring-0 w-full text-on-surface placeholder:text-slate-500 font-manrope font-medium tracking-tight" placeholder="Deepen analysis or ask a new question..." type="text"/>
+</div>
+<div class="flex items-center gap-2 pr-1.5">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-800 transition-all">
+<span class="material-symbols-outlined">attach_file</span>
+</button>
+<button class="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+</footer>
+</body></html>
