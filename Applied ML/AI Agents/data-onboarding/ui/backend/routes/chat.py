@@ -73,12 +73,21 @@ async def chat_ws(ws: WebSocket):
                     if parsed_events:
                         types = [e.get("type") for e in parsed_events]
                         logger.info("Event #%d → %s", event_idx, types)
-                        # Log function call args for debugging
                         for e in parsed_events:
                             if e.get("type") == "thinking":
-                                logger.debug(
+                                logger.info(
                                     "  tool=%s args=%s",
                                     e.get("tool"), e.get("args"),
+                                )
+                            elif e.get("type") == "text":
+                                logger.info(
+                                    "  text: %.200s",
+                                    e.get("content", ""),
+                                )
+                            elif e.get("type") == "transfer":
+                                logger.info(
+                                    "  transfer → %s",
+                                    e.get("to", ""),
                                 )
                     for event in parsed_events:
                         history.append(session_id, event, source="text")

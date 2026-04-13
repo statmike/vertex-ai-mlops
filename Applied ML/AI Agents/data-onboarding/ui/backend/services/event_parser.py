@@ -70,6 +70,12 @@ def parse_event(raw_event: dict) -> list[dict]:
             if fc:
                 name = fc.get("name", "")
                 args = fc.get("args", {})
+
+                # Skip transfer_to_agent thinking events — the transfer
+                # event (from actions) already handles routing display
+                if name == "transfer_to_agent":
+                    continue
+
                 events.append({
                     "type": "thinking",
                     "author": author,
