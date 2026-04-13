@@ -504,6 +504,7 @@ def cmd_update(agent_name: str) -> None:
                 "display_name": config["display_name"],
                 "description": config["description"],
                 "env_vars": env_vars,
+                "agent_framework": "google-adk",
             },
         )
     finally:

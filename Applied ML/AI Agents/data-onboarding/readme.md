@@ -49,6 +49,7 @@ Two multi-agent systems built with [Google ADK](https://google.github.io/adk-doc
 - [Two Motions](#two-motions) — High-level overview of both workflows
 - [Onboarding Agent](#onboarding-agent-agent_orchestrator) — Pipeline stages and 7 sub-agents
 - [Chat Agent](#chat-agent-agent_chat) — Three-persona router and 4 sub-agents
+- [Voice Agent](#voice-agent-agent_voice) — Spoken data exploration via Gemini Live API
 - [What Gets Created in BigQuery](#what-gets-created-in-bigquery) — Datasets and tables produced
 - [Configuration](#configuration) — Environment variables and required APIs
 - [Setup & Usage](#setup--usage) — Install, run locally, deploy to Agent Engine
@@ -319,44 +320,11 @@ The Conversational Analytics API supports two thinking modes that control how it
 | **Fast** | `ChatRequest.ThinkingMode.FAST` | Answers quickly — less deliberation, lower latency |
 | **Unspecified** | `ChatRequest.ThinkingMode.THINKING_MODE_UNSPECIFIED` | Resolves to Thinking |
 
-Currently, the code does not set `thinking_mode`, so every API call uses the default Thinking mode. This is defined in the `google.cloud.geminidataanalytics_v1alpha` SDK as a field on the `ChatRequest` proto.
+The mode is controlled via the `CONVO_THINKING_MODE` environment variable (default: `THINKING`). Set `CONVO_THINKING_MODE=FAST` in `.env` for lower latency at the cost of less deliberate SQL generation.
 
-**Where to change it:** The API call is built in [`agent_convo/tools/util_conversational_api.py`](agent_convo/tools/util_conversational_api.py) in the `call_conversational_api()` function. The request payload is assembled around line 96:
-
-```python
-request_payload = {
-    "parent": f"projects/{os.getenv('GOOGLE_CLOUD_PROJECT')}/locations/global",
-    "messages": history + [user_message],
-    "inline_context": context,
-}
-```
-
-To set the mode, add `thinking_mode` to this dict:
-
-```python
-request_payload = {
-    "parent": ...,
-    "messages": ...,
-    "inline_context": context,
-    "thinking_mode": geminidataanalytics.ChatRequest.ThinkingMode.FAST,
-}
-```
+The mode can also be overridden **per-call** — both `conversational_chat` and `meta_chat` tools expose a `thinking_mode` parameter that the LLM agent can set to override the default for a specific question (e.g., use THINKING for complex multi-table joins, FAST for simple lookups).
 
 Because we use the **stateless** pattern (`inline_context` with client-managed session history in ADK state), every `chat()` call is independent — the mode can be toggled per call without affecting session state or prior conversation history.
-
-**Implementation options:**
-
-1. **Manual code change** — Edit `util_conversational_api.py` and hardcode the mode in the `request_payload`. Simplest approach — one line, applies to all API calls (both `agent_convo` and `agent_engineer` since they share this utility).
-
-2. **Environment variable** — Read a `CONVO_THINKING_MODE` env var at call time and map it to the enum. This lets you switch modes between deployments or at runtime without changing code:
-   ```
-   # In .env
-   CONVO_THINKING_MODE=FAST
-   ```
-
-3. **Per-persona mode** — Pass the mode as a parameter through `call_conversational_api()`. This allows different defaults per persona — for example, Data Analyst questions (complex multi-table SQL) could use Thinking while Data Engineer questions (simpler meta-table queries) could use Fast.
-
-4. **Dynamic — agent-driven** — Expose the mode as a parameter on the `conversational_chat` tool itself, letting the LLM agent decide based on question complexity. The router or reranker could assess whether a question needs deep reasoning or is straightforward, and set the mode accordingly.
 
 </details>
 
@@ -382,6 +350,69 @@ The BQ Cloud Resource connection and IAM grants are created automatically during
    - **Catalog Explorer** → `agent_catalog` (AI.SEARCH over context chunks)
 2. **Follow-up questions** go directly to the last active agent (session history preserved)
 3. **Persona changes** restart routing — the question is reclassified and sent to the right agent
+
+---
+
+## Voice Agent (`agent_voice`)
+
+A standalone voice assistant that delegates to `agent_chat` via a single tool, enabling conversational data exploration through speech using the [Gemini Live API](https://cloud.google.com/vertex-ai/generative-ai/docs/live-api).
+
+```
+Browser (mic) ──ws──→ /ws/voice ──Live API──→ agent_voice (always local)
+                                                   │
+                                            ask_data_question()
+                                                   │
+                                    ┌──────────────┴──────────────┐
+                                    │                             │
+                             AGENT_MODE=local              AGENT_MODE=agent_engine
+                                    │                             │
+                           agent_chat (local)          agent_chat (deployed on VAE)
+                           Runner.run_async()          async_stream_query()
+                                    │                             │
+                                    └──────────────┬──────────────┘
+                                                   │
+                                            voice summary ◄── raw answer
+                                              (flash-lite)
+                                                   │
+                                           concise spoken answer
+```
+
+### Architecture
+
+Unlike approaches that clone or patch the text agent for voice (fragile — every fix creates new problems), `agent_voice` is a **separate agent with a single tool**. The voice model (`gemini-live-2.5-flash-native-audio`) handles audio I/O and decides when to call the tool.
+
+The bridge tool (`ask_data_question`) supports two backends, controlled by `AGENT_MODE`:
+
+| Mode | How agent_chat runs | Sessions | Observability |
+|------|-------------------|----------|---------------|
+| `local` | In-process via `Runner.run_async()` | In-memory (ephemeral) | Local logs only |
+| `agent_engine` | Remote via Vertex AI SDK `async_stream_query()` | Cloud-managed (persistent) | Cloud Monitoring, Logging, Trace |
+
+In both modes, `agent_voice` itself always runs locally — the Gemini Live API requires a direct WebSocket connection that can't be proxied through Agent Engine. Only the data processing (`agent_chat`) is delegated.
+
+| Component | What it does |
+|-----------|-------------|
+| `agent_voice/agent.py` | Root agent definition — model is overridden to the live audio model at runtime |
+| `agent_voice/prompts.py` | Voice-specific instructions — always call the tool, narrate naturally, scope awareness |
+| `agent_voice/tools/function_tool_ask_data.py` | Bridge tool — runs agent_chat (local or VAE), summarizes for voice |
+
+### Voice Summarization
+
+The bridge tool includes a **summarization step** that condenses `agent_chat`'s detailed text response (tables, SQL, markdown) into 2-4 spoken sentences using `gemini-2.5-flash-lite`. This serves two purposes:
+
+1. **Better voice UX** — the live model receives a concise, speakable answer instead of raw data
+2. **Context management** — the live model's 32K context window stays small, preventing it from accumulating enough "knowledge" to skip the tool on follow-up questions
+
+### Guards
+
+The tool includes guards for live mode reliability:
+
+- **Concurrency guard** — if the tool is already processing a question, duplicate calls return immediately
+- **Repeat detection** — if the same question is asked again, the cached answer is returned without re-running the pipeline
+
+### Running Voice Mode
+
+Voice mode is served through the [custom web UI](ui/readme.md). See the UI README for setup instructions, architecture details, and configuration.
 
 ---
 
@@ -465,6 +496,14 @@ Create a `.env` file. Only two variables are required — everything else has se
 | `TOOL_MODEL` | `gemini-2.5-pro` | Model for tool LLM calls (cross-reference, etc.) |
 | `AGENT_MODEL_LOCATION` | `global` | API endpoint location for agent model |
 | `TOOL_MODEL_LOCATION` | `global` | API endpoint location for tool model |
+| `SHORTLIST_MODEL` | `gemini-2.5-flash-lite` | Lightweight model for reranker shortlist pass |
+| `VOICE_SUMMARY_MODEL` | `gemini-2.5-flash-lite` | Model for condensing answers into voice-friendly summaries |
+
+**Conversational Analytics API:**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CONVO_THINKING_MODE` | `THINKING` | API thinking mode — `THINKING` (deliberate) or `FAST` (low latency) |
 
 **Web crawling:**
 
@@ -547,6 +586,17 @@ uv run adk web
 Then select the agent from the dropdown:
 - **`agent_orchestrator`** — Onboard data from a URL
 - **`agent_chat`** — Chat with onboarded data
+
+### Custom Web UI (text + voice)
+
+For a richer experience with voice mode, data table rendering, and charts, use the [custom web UI](ui/readme.md):
+
+```bash
+cd ui
+../.venv/bin/uvicorn backend.app:app --port 8080
+```
+
+See [ui/readme.md](ui/readme.md) for full setup, voice mode details, and Cloud Run deployment.
 
 ### Deploy the Chat Agent to Vertex AI Agent Engine
 
