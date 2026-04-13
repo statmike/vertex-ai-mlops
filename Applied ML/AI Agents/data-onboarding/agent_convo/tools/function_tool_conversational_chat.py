@@ -33,6 +33,7 @@ async def conversational_chat(
     chart: bool,
     tool_context: tools.ToolContext,
     bigquery_tables: list[dict[str, str]] | None = None,
+    thinking_mode: str | None = None,
 ) -> str:
     """Answer a question using the Conversational Analytics API.
 
@@ -46,6 +47,9 @@ async def conversational_chat(
             ``dataset_id``, and ``table_id``. When omitted, tables are
             auto-extracted from the ``reranker_result`` in session state.
         tool_context: The ADK tool context for session state.
+        thinking_mode: Optional thinking mode override — ``"THINKING"``
+            (deliberate, high quality) or ``"FAST"`` (quick, lower latency).
+            If not provided, uses the ``CONVO_THINKING_MODE`` env var default.
 
     Returns:
         The API response as text, or a message about a chart artifact.
@@ -87,4 +91,5 @@ async def conversational_chat(
             "Help users explore, analyze, and give detailed reports "
             "for the provided data sources."
         ),
+        thinking_mode=thinking_mode,
     )

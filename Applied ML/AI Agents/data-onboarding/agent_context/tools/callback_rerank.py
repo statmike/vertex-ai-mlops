@@ -22,25 +22,38 @@ async def rerank_and_transfer(callback_context: CallbackContext):
     """Run two-pass reranker and store results in state.
 
     1. Extract the user question from callback_context.user_content.
-    2. Call the two-pass reranker (shortlist → detail).
-    3. Store the structured result AND formatted markdown in session state.
-    4. Return None — the LLM runs next and transfers to agent_convo.
+    2. Check if prior reranker results can be reused (follow-up detection).
+    3. If new topic, run the two-pass reranker (shortlist → detail).
+    4. Store the structured result AND formatted markdown in session state.
+    5. Return None — the LLM runs next and transfers to agent_convo.
 
     The LLM's only job is to transfer to agent_convo.  The reranker result
     is already in state for agent_convo to auto-pick tables.
     """
-    # Guard: skip if the reranker already ran (prevents double-invocation
-    # when agent_chat re-invokes agent_context after agent_convo answers)
-    if callback_context.state.get("reranker_result"):
-        return None
-
     user_content = callback_context.user_content
     if not user_content or not user_content.parts:
         return None
-
     question = user_content.parts[0].text
     if not question:
         return None
+
+    # Guard: reuse prior results if this looks like a follow-up
+    prior = callback_context.state.get("reranker_result")
+    if prior:
+        prior_question = prior.get("question", "")
+        if _is_likely_followup(question, prior_question):
+            logger.info(
+                "Reranker callback: reusing prior result (follow-up). "
+                "Prior: %.60s → Current: %.60s",
+                prior_question, question,
+            )
+            return None
+        # New topic — clear stale results so we re-run
+        logger.info(
+            "Reranker callback: new topic detected, re-running. "
+            "Prior: %.60s → Current: %.60s",
+            prior_question, question,
+        )
 
     if not _catalog_data:
         return None
@@ -72,3 +85,59 @@ async def rerank_and_transfer(callback_context: CallbackContext):
 
     # Always return None — let the LLM handle the transfer
     return None
+
+
+def _is_likely_followup(current: str, previous: str) -> bool:
+    """Heuristic check: is the current question a follow-up to the previous?
+
+    Uses lightweight signals to avoid an LLM call. Errs on the side of
+    returning True (reusing results) since the Conversational Analytics API
+    handles follow-ups gracefully even with the same table set.
+    """
+    if not previous:
+        return False
+
+    c = current.strip().lower()
+
+    # Short questions are almost always follow-ups
+    if len(c.split()) <= 4:
+        return True
+
+    # Explicit follow-up signals
+    followup_starts = [
+        "now ", "also ", "and ", "what about ", "how about ",
+        "can you ", "show me ", "filter ", "sort ", "group ",
+        "break ", "chart ", "compare ", "exclude ", "include ",
+        "instead ", "same ", "that ", "those ", "this ", "these ",
+    ]
+    if any(c.startswith(s) for s in followup_starts):
+        return True
+
+    # Pronoun references to prior data
+    pronoun_signals = [
+        " that ", " those ", " this ", " these ", " it ",
+        " them ", " the same ", " again ",
+    ]
+    if any(s in f" {c} " for s in pronoun_signals):
+        return True
+
+    # If both questions share key nouns, likely same topic
+    prev_words = set(previous.strip().lower().split())
+    curr_words = set(c.split())
+    # Remove common stop words
+    stops = {
+        "the", "a", "an", "is", "are", "was", "were", "what", "how",
+        "show", "me", "can", "you", "do", "does", "in", "for", "of",
+        "to", "by", "and", "or", "with", "from", "on", "at", "my",
+        "i", "we", "they", "it", "be", "have", "has", "had", "will",
+        "would", "could", "should", "may", "might", "about", "up",
+    }
+    prev_content = prev_words - stops
+    curr_content = curr_words - stops
+    if prev_content and curr_content:
+        overlap = prev_content & curr_content
+        # If more than 30% of content words overlap, likely same topic
+        if len(overlap) / min(len(prev_content), len(curr_content)) > 0.3:
+            return True
+
+    return False

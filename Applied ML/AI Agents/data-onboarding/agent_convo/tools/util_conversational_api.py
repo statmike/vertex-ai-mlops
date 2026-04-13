@@ -5,6 +5,7 @@ Used by both ``conversational_chat`` (agent_convo) and ``meta_chat``
 processing, and chart handling logic.
 """
 
+import base64
 import json
 import logging
 import os
@@ -16,12 +17,23 @@ from google.protobuf.json_format import MessageToDict, ParseDict
 
 from .util_build_context import build_enriched_context
 from .utils.conversational_analytics_api_helpers import (
+    handle_chart_response,
     handle_data_response,
     handle_text_response,
-    show_message,
 )
 
 logger = logging.getLogger(__name__)
+
+# Cached gRPC client — avoid connection setup on every API call
+_chat_client = None
+
+
+def _get_chat_client():
+    """Return a cached DataChatServiceClient."""
+    global _chat_client
+    if _chat_client is None:
+        _chat_client = geminidataanalytics.DataChatServiceClient()
+    return _chat_client
 
 
 async def call_conversational_api(
@@ -33,6 +45,7 @@ async def call_conversational_api(
     artifact_key: str,
     reranker_result: dict | None = None,
     system_instruction: str = "",
+    thinking_mode: str | None = None,
 ) -> str:
     """Call the Conversational Analytics API with session management.
 
@@ -47,9 +60,12 @@ async def call_conversational_api(
         artifact_key: Key for saving chart artifacts.
         reranker_result: Optional reranker result dict for enriched context.
         system_instruction: Base system instruction for the API.
+        thinking_mode: Optional override — ``"THINKING"`` or ``"FAST"``.
+            If None, uses ``CONVO_THINKING_MODE`` from environment.
 
     Returns:
-        The API response as text, or a message about a chart artifact.
+        JSON string with ``answer`` (human-readable for the LLM) and
+        ``parts`` (typed list for rich UI rendering).
     """
     try:
         # Create a stable key from the datasource list for session management
@@ -93,14 +109,23 @@ async def call_conversational_api(
             user_message=dict(text=question)
         )
 
+        # Determine thinking mode: use per-call override, else env var default
+        from agent_orchestrator.config import CONVO_THINKING_MODE
+        mode_str = (thinking_mode or CONVO_THINKING_MODE).upper()
+        mode_enum = (
+            geminidataanalytics.ChatRequest.ThinkingMode.FAST
+            if mode_str == "FAST"
+            else geminidataanalytics.ChatRequest.ThinkingMode.THINKING
+        )
+
         request_payload = {
             "parent": f"projects/{os.getenv('GOOGLE_CLOUD_PROJECT')}/locations/global",
             "messages": history + [user_message],
             "inline_context": context,
+            "thinking_mode": mode_enum,
         }
 
-        conversation_client = geminidataanalytics.DataChatServiceClient()
-        stream = conversation_client.chat(request=request_payload)
+        stream = _get_chat_client().chat(request=request_payload)
         responses = list(stream)
 
         if not responses:
@@ -119,58 +144,90 @@ async def call_conversational_api(
         except Exception:
             pass  # session history won't persist but the answer still works
 
-        # Process responses — keep only useful parts
-        content_parts = []
-        for resp in responses:
+        # Process responses into typed parts for rich UI rendering.
+        # Each API message becomes a labeled part; text parts are also
+        # collected into a plain-text ``answer`` for the LLM.
+        parts: list[dict] = []
+        text_pieces: list[str] = []
+
+        for i, resp in enumerate(responses):
             try:
                 m = resp.system_message
+
+                # Log each message type for debugging
+                msg_types = [
+                    t for t in ("text", "data", "schema", "chart")
+                    if t in m
+                ]
+                logger.info(
+                    "API response[%d] types=%s", i, msg_types,
+                )
+
                 if "text" in m:
                     piece = handle_text_response(getattr(m, "text"))
                     if piece and piece.strip():
-                        content_parts.append(piece.strip())
+                        parts.append({"type": "text", "content": piece.strip()})
+                        text_pieces.append(piece.strip())
+
                 elif "data" in m:
                     data_resp = getattr(m, "data")
+                    if "generated_sql" in data_resp:
+                        sql = data_resp.generated_sql
+                        parts.append({"type": "sql", "content": sql})
                     if "result" in data_resp:
                         piece = handle_data_response(data_resp)
                         if piece and piece.strip():
-                            content_parts.append(piece.strip())
-            except Exception:
+                            parts.append({"type": "data", "content": piece.strip()})
+                            text_pieces.append(piece.strip())
+
+                elif "chart" in m:
+                    chart_resp = getattr(m, "chart")
+                    logger.info(
+                        "Chart response[%d]: has_query=%s has_result=%s",
+                        i, "query" in chart_resp, "result" in chart_resp,
+                    )
+
+                    if "result" in chart_resp:
+                        # Try to extract Vega-Lite spec for client-side rendering
+                        from .utils.conversational_analytics_api_helpers import (
+                            extract_vega_spec,
+                        )
+                        vega_spec = extract_vega_spec(chart_resp)
+                        if vega_spec:
+                            parts.append({
+                                "type": "chart",
+                                "vega_spec": vega_spec,
+                            })
+                            logger.info("Chart: Vega-Lite spec extracted")
+
+                        # Also try server-side PNG rendering
+                        chart_bytes = handle_chart_response(chart_resp)
+                        if isinstance(chart_bytes, bytes):
+                            artifact_part = Part.from_bytes(
+                                data=chart_bytes, mime_type="image/png",
+                            )
+                            version = await tool_context.save_artifact(
+                                filename=artifact_key, artifact=artifact_part,
+                            )
+                            b64 = base64.b64encode(chart_bytes).decode()
+                            parts.append({
+                                "type": "chart",
+                                "image": f"data:image/png;base64,{b64}",
+                            })
+                            logger.info("Chart: PNG artifact saved (v%s)", version)
+                        else:
+                            logger.warning(
+                                "Chart: PNG render returned %s: %s",
+                                type(chart_bytes).__name__,
+                                str(chart_bytes)[:200],
+                            )
+            except Exception as e:
+                logger.warning("Error processing response[%d]: %s", i, e)
                 continue
-        content = "\n\n".join(content_parts) if content_parts else "No content in API response."
 
-        if not chart:
-            return content
+        answer = "\n\n".join(text_pieces) if text_pieces else "No content in API response."
 
-        # Look for chart in responses
-        chart_content = None
-        chart_index = -1
-        for i in range(len(responses) - 1, -1, -1):
-            response_message = responses[i]
-            if "chart" in response_message.system_message:
-                chart_content = show_message(response_message)
-                chart_index = i
-                break
-
-        if chart_content and isinstance(chart_content, bytes):
-            artifact_part = Part.from_bytes(
-                data=chart_content, mime_type="image/png"
-            )
-            version = await tool_context.save_artifact(
-                filename=artifact_key, artifact=artifact_part
-            )
-
-            if chart_index == len(responses) - 1:
-                return (
-                    f"Successfully generated a chart. It is available in the "
-                    f"artifact with key (version = {version}): {artifact_key}"
-                )
-            else:
-                return (
-                    f"{content}\nSuccessfully generated a chart. It is available "
-                    f"in the artifact with key (version = {version}): {artifact_key}"
-                )
-        else:
-            return f"{content}\nNote: A chart was requested but not found in the response."
+        return json.dumps({"answer": answer, "parts": parts})
 
     except Exception as e:
         return f"Error during Conversational Analytics API call: {e}"

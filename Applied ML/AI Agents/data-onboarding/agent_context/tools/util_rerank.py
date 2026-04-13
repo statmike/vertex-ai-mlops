@@ -7,6 +7,7 @@ Supports a two-pass reranking strategy:
 
 import json
 import logging
+import os
 import re
 
 from google import genai
@@ -16,6 +17,24 @@ from agent_context.schemas import RerankerResponse, ShortlistResponse
 from agent_orchestrator.config import GOOGLE_CLOUD_PROJECT, TOOL_MODEL, TOOL_MODEL_LOCATION
 
 logger = logging.getLogger(__name__)
+
+# Lighter model for the shortlist screening pass (simple categorization task)
+SHORTLIST_MODEL = os.environ.get("SHORTLIST_MODEL", "gemini-2.5-flash-lite")
+
+# Cached genai client — avoid re-creating on every reranker call
+_genai_client = None
+
+
+def _get_client() -> genai.Client:
+    """Return a cached genai Client."""
+    global _genai_client
+    if _genai_client is None:
+        _genai_client = genai.Client(
+            vertexai=True,
+            project=GOOGLE_CLOUD_PROJECT,
+            location=TOOL_MODEL_LOCATION or "us-central1",
+        )
+    return _genai_client
 
 
 def _normalize_table_id(raw_id: str) -> str:
@@ -75,14 +94,6 @@ For each relevant table, provide:
 Include any table that might be relevant — it's better to include a
 borderline table than to miss one. Sort by confidence descending.
 """
-
-
-def _get_client() -> genai.Client:
-    return genai.Client(
-        vertexai=True,
-        project=GOOGLE_CLOUD_PROJECT,
-        location=TOOL_MODEL_LOCATION or "us-central1",
-    )
 
 
 def call_reranker(
@@ -167,7 +178,7 @@ def _shortlist_pass(
 """
 
     response = client.models.generate_content(
-        model=TOOL_MODEL,
+        model=SHORTLIST_MODEL,
         contents=user_prompt,
         config=types.GenerateContentConfig(
             system_instruction=SHORTLIST_SYSTEM_PROMPT,

@@ -8,7 +8,7 @@ import logging
 
 from google.adk import tools
 
-from agent_orchestrator.config import GOOGLE_CLOUD_PROJECT
+from agent_orchestrator.config import CHAT_SCOPE, GOOGLE_CLOUD_PROJECT
 
 logger = logging.getLogger(__name__)
 
@@ -82,19 +82,23 @@ async def _query_table_documentation(table_name: str) -> str:
     try:
         from google.cloud import bigquery
 
-        from agent_chat.config import META_DATASET
+        from agent_orchestrator.config import BQ_META_DATASET, get_scope_datasets
 
         client = bigquery.Client(project=GOOGLE_CLOUD_PROJECT)
         short_name = table_name.split(".")[-1] if "." in table_name else table_name
 
-        catalog_sql = f"""
-            SELECT dataset_name
-            FROM `{GOOGLE_CLOUD_PROJECT}.{META_DATASET}.data_catalog`
-        """
-        datasets = [
-            row.dataset_name
-            for row in client.query(catalog_sql).result()
-        ]
+        # Use scoped datasets when CHAT_SCOPE is set, otherwise discover all
+        if CHAT_SCOPE:
+            datasets = get_scope_datasets()
+        else:
+            catalog_sql = f"""
+                SELECT dataset_name
+                FROM `{GOOGLE_CLOUD_PROJECT}.{BQ_META_DATASET}.data_catalog`
+            """
+            datasets = [
+                row.dataset_name
+                for row in client.query(catalog_sql).result()
+            ]
 
         for dataset_name in datasets:
             doc_table = f"{GOOGLE_CLOUD_PROJECT}.{dataset_name}.table_documentation"

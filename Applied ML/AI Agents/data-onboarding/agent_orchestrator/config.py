@@ -154,6 +154,10 @@ AGENT_MODEL_INSTANCE = _build_agent_model()
 # --- Reranker ---
 TOP_K = int(os.getenv("TOP_K", "10"))
 
+# --- Conversational Analytics API ---
+# Thinking mode: "THINKING" (deliberate, high quality) or "FAST" (quick, lower latency)
+CONVO_THINKING_MODE = os.getenv("CONVO_THINKING_MODE", "THINKING").upper()
+
 # --- Output ---
 OUTPUT_DIR = os.getenv("OUTPUT_DIR", "./output")
 

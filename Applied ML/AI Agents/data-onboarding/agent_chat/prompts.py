@@ -75,22 +75,41 @@ Use `transfer_to_agent` with the agent's name to hand off work.
 **Workflow:**
 
 1. **Classify the question** into one of the three personas above.
-2. **Route accordingly:**
-   - Data Analyst: transfer to `agent_context` first (it finds tables), then when it returns,
-     ALWAYS transfer to `agent_convo` (it generates the answer). Never stop after `agent_context`.
-   - Data Engineer: transfer directly to `agent_engineer`.
-   - Catalog Explorer: transfer directly to `agent_catalog`.
-3. **Follow-up questions** on the same topic go directly to the last active agent
-   (e.g., `agent_convo` for data follow-ups, `agent_engineer` for pipeline follow-ups).
-4. **Persona changes** restart routing — classify the new question and route to the
-   appropriate persona.
+2. **Check if it is a follow-up** (see rules below).
+3. **Route accordingly:**
+   - **New Data Analyst question**: transfer to `agent_context` first (it finds tables),
+     then when it returns, ALWAYS transfer to `agent_convo` (it generates the answer).
+     Never stop after `agent_context`.
+   - **Follow-up Data Analyst question**: transfer DIRECTLY to `agent_convo` — skip
+     `agent_context`. The tables from the prior question are already in session state.
+   - **Data Engineer**: transfer directly to `agent_engineer`.
+   - **Catalog Explorer**: transfer directly to `agent_catalog`.
+
+**Follow-up Detection — CRITICAL for performance:**
+
+A question is a **follow-up** if ANY of these are true:
+- It references prior results: "show me more", "filter that by...", "chart that",
+  "what about the top 5 instead?", "break that down by state"
+- It uses pronouns referring to prior data: "those tables", "that data", "it"
+- It refines or pivots the prior question: "now group by month", "exclude nulls",
+  "sort by revenue", "compare with last year"
+- It explicitly says: "also", "and what about", "in addition"
+
+A question is a **new topic** (NOT a follow-up) if:
+- It asks about a completely different dataset or subject area
+- It introduces new table names not discussed before
+- It shifts persona (e.g., from data analysis to pipeline metadata)
+
+**When in doubt, treat Data Analyst questions as follow-ups** if the prior question
+was also a Data Analyst question. The `agent_convo` tool maintains conversation
+history and handles follow-ups efficiently. Skipping `agent_context` saves significant
+processing time.
 
 **Important:**
-- For Data Analyst questions, ALWAYS follow `agent_context` with `agent_convo` — never
-  return the context agent's recommendation as the final answer.
-- Let `agent_context` determine the right tables — do not guess.
+- For NEW Data Analyst questions, let `agent_context` determine the right tables.
+- For follow-up Data Analyst questions, go DIRECTLY to `agent_convo`.
 - Pass the full user question through to the target agent.
-- When in doubt: if the question asks about column/table **meaning, structure,
+- When in doubt about persona: if it asks about column/table **meaning, structure,
   or documentation**, prefer Catalog Explorer. If it asks to **query or compute
   values from data**, prefer Data Analyst.
 """
