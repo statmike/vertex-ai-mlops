@@ -57,6 +57,21 @@ For sql_hints, provide concrete SQL guidance like:
 """
 
 
+_genai_client = None
+
+
+def _get_client() -> genai.Client:
+    """Return a cached genai Client."""
+    global _genai_client
+    if _genai_client is None:
+        _genai_client = genai.Client(
+            vertexai=True,
+            project=GOOGLE_CLOUD_PROJECT,
+            location=TOOL_MODEL_LOCATION or "us-central1",
+        )
+    return _genai_client
+
+
 def call_reranker(
     question: str,
     candidate_metadata: str,
@@ -76,11 +91,7 @@ def call_reranker(
     Returns:
         RerankerResponse with ranked tables.
     """
-    client = genai.Client(
-        vertexai=True,
-        project=GOOGLE_CLOUD_PROJECT,
-        location=TOOL_MODEL_LOCATION or "us-central1",
-    )
+    client = _get_client()
 
     user_prompt = f"""\
 ## User Question

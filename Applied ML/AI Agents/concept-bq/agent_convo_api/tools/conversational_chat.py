@@ -11,6 +11,17 @@ from .utils.conversational_analytics_api_helpers import (
     show_message,
 )
 
+# Cached gRPC client — avoid connection setup on every API call
+_chat_client = None
+
+
+def _get_chat_client():
+    """Return a cached DataChatServiceClient."""
+    global _chat_client
+    if _chat_client is None:
+        _chat_client = geminidataanalytics.DataChatServiceClient()
+    return _chat_client
+
 async def conversational_chat(question: str, chart: bool, bigquery_tables: List[Dict[str, str]], tool_context: tools.ToolContext) -> str:
     """Answers a question using the Conversational Analytics API.
     This API can analyze data sources and respond with answers, tables, and even visual charts.
@@ -71,8 +82,7 @@ async def conversational_chat(question: str, chart: bool, bigquery_tables: List[
             "inline_context": context
         }
 
-        conversation_client = geminidataanalytics.DataChatServiceClient()
-        stream = conversation_client.chat(request=request_payload)
+        stream = _get_chat_client().chat(request=request_payload)
         responses = list(stream)
 
         if not responses:

@@ -2,5 +2,6 @@
   "resource_name": "projects/1026793852137/locations/us-central1/reasoningEngines/8489373808279420928",
   "deployed_at": "2026-03-30T22:00:52.005731",
   "display_name": "vertex-agent-engine-tutorial",
-  "description": "Tutorial multi-agent system deployed to Vertex AI Agent Engine."
+  "description": "Tutorial multi-agent system deployed to Vertex AI Agent Engine.",
+  "last_updated_at": "2026-04-12T18:35:21.083073"
 }
