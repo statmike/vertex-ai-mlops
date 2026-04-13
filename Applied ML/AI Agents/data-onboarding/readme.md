@@ -393,8 +393,8 @@ In both modes, `agent_voice` itself always runs locally — the Gemini Live API 
 | Component | What it does |
 |-----------|-------------|
 | `agent_voice/agent.py` | Root agent definition — model is overridden to the live audio model at runtime |
-| `agent_voice/prompts.py` | Voice-specific instructions — always call the tool, narrate naturally, scope awareness |
-| `agent_voice/tools/function_tool_ask_data.py` | Bridge tool — runs agent_chat (local or VAE), summarizes for voice |
+| `agent_voice/prompts.py` | Voice-specific instructions — when to call tool vs. answer directly, narration style, scope awareness |
+| `agent_voice/tools/function_tool_ask_data.py` | Bridge tool — answer cascade (cache → history → derivability → agent_chat), cross-channel session sharing, voice summarization |
 
 ### Voice Summarization
 
@@ -403,12 +403,26 @@ The bridge tool includes a **summarization step** that condenses `agent_chat`'s 
 1. **Better voice UX** — the live model receives a concise, speakable answer instead of raw data
 2. **Context management** — the live model's 32K context window stays small, preventing it from accumulating enough "knowledge" to skip the tool on follow-up questions
 
-### Guards
+### Cross-Channel Session Sharing
 
-The tool includes guards for live mode reliability:
+When both text and voice are active, they share the **same `agent_chat` session**. This means:
 
-- **Concurrency guard** — if the tool is already processing a question, duplicate calls return immediately
-- **Repeat detection** — if the same question is asked again, the cached answer is returned without re-running the pipeline
+- Tables loaded by a text question are available to voice follow-ups (and vice versa)
+- The orchestrator can identify voice follow-ups and skip the reranker when tables are already in state
+- The bridge tool enriches voice questions with session context (recent Q&A history) to improve orchestrator routing
+
+Voice-originated events stream to the text panel in real-time through an event queue, so users see the full pipeline visualization (pipeline bar, timeline, SQL, data, charts) for voice questions in the text panel.
+
+### Answer Cascade
+
+Before making a full `agent_chat` call (~8-12s), the bridge tool checks a cascade of faster paths:
+
+1. **Concurrency guard** — if already processing, returns immediately
+2. **Repeat phrases** — "repeat that", "say that again" → returns cached last answer
+3. **Exact repeat** — same question as a recent one → returns cached answer
+4. **Cross-channel history** — scans the shared history store for prior answers from text chat
+5. **Derivability check** — uses `flash-lite` (~0.5s) to check if the answer can be derived from recent Q&A pairs (e.g., "how many tables?" after listing tables)
+6. **Full pipeline** — delegates to `agent_chat` via local Runner or VAE
 
 ### Running Voice Mode
 

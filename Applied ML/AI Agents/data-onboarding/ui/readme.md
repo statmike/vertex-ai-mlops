@@ -105,6 +105,12 @@ Voice mode uses a **delegation architecture**: `agent_voice` is a standalone age
 
 The bridge tool includes a **voice summarization step** — after `agent_chat` returns a detailed text answer (with tables, SQL, markdown), a lightweight model (`gemini-2.5-flash-lite`) condenses it into 2-4 spoken sentences. This keeps the voice model's 32K context window small and produces naturally speakable answers.
 
+### Cross-Channel Session Sharing
+
+Text and voice share the **same `agent_chat` session**. Tables loaded by a text question are available to voice follow-ups, and vice versa. Voice-originated events stream to the text panel in real-time through an event queue, so users see the full pipeline visualization (pipeline bar, timeline steps, SQL queries, data tables, charts) for voice questions alongside text questions.
+
+Before making a full `agent_chat` call, the bridge tool checks faster paths: cached repeats, cross-channel history, and a lightweight derivability check (`flash-lite`, ~0.5s) that can answer questions from prior Q&A without re-running the pipeline.
+
 ### Run Mode Comparison
 
 | | `AGENT_MODE=local` | `AGENT_MODE=agent_engine` |
@@ -156,6 +162,7 @@ These are set in the main project `.env` and apply when running in local mode:
 | `backend/routes/sessions.py` | REST session management (create, list, delete) |
 | `backend/services/agent_engine.py` | Agent runner management — text Runner, voice Runner, Live API streaming |
 | `backend/services/event_parser.py` | Maps agent events → frontend event types (thinking steps, data, charts) |
+| `backend/services/history.py` | In-memory event history per session — enables cross-channel lookups and backfill |
 
 ### Frontend
 
@@ -178,8 +185,8 @@ The voice agent lives in the main project directory (not under `ui/`) since it's
 | File | Purpose |
 |------|---------|
 | `agent_voice/agent.py` | Agent definition — model overridden to live audio model at runtime |
-| `agent_voice/prompts.py` | Voice instructions — always call tool, narrate naturally, scope awareness |
-| `agent_voice/tools/function_tool_ask_data.py` | Bridge tool — delegates to agent_chat (local or VAE), summarizes for voice |
+| `agent_voice/prompts.py` | Voice instructions — when to call tool vs. answer directly, narration style, scope awareness |
+| `agent_voice/tools/function_tool_ask_data.py` | Bridge tool — answer cascade (cache → history → derivability → agent_chat), cross-channel session sharing, voice summarization |
 
 ---
 
@@ -188,13 +195,14 @@ The voice agent lives in the main project directory (not under `ui/`) since it's
 ### How It Works
 
 1. User clicks the voice toggle in the UI → browser opens WebSocket to `/ws/voice`
-2. Backend creates a Gemini Live API session with `agent_voice` via `Runner.run_live()`
+2. Backend creates a Gemini Live API session with `agent_voice` via `Runner.run_live()`, linked to the shared text session
 3. Browser captures microphone audio (16kHz PCM) and sends it over the WebSocket
-4. The live model (`gemini-live-2.5-flash-native-audio`) processes speech and decides to call `ask_data_question`
-5. The tool calls `agent_chat` — locally via `Runner.run_async()` or on VAE via `async_stream_query()`, depending on `AGENT_MODE`
-6. The raw answer is summarized into 2-4 spoken sentences by `gemini-2.5-flash-lite`
-7. The summary is returned to the live model, which narrates it as audio
-8. Audio chunks stream back through the WebSocket to the browser for playback
+4. The live model (`gemini-live-2.5-flash-native-audio`) processes speech and decides whether to call `ask_data_question` or answer directly (for conversational responses, derivable answers)
+5. The bridge tool checks its answer cascade (cache → history → derivability) before calling `agent_chat`
+6. If `agent_chat` is needed, it runs locally via `Runner.run_async()` or on VAE via `async_stream_query()` — events stream to the text panel in real-time
+7. The raw answer is summarized into 2-4 spoken sentences by `gemini-2.5-flash-lite`
+8. The summary is returned to the live model, which narrates it as audio
+9. Audio chunks stream back through the WebSocket to the browser for playback
 
 ### Audio Timing
 
