@@ -17,6 +17,8 @@ dependencies = [
     "docker",
     "numpy",
     "pandas",
+    "kfp",
+    "google-cloud-pipeline-components",
     "pip",
     "ipykernel",
 ]

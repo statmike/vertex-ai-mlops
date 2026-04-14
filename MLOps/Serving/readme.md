@@ -294,6 +294,13 @@ Two approaches:
         - Set up PSC networking: reserve an internal IP and create a forwarding rule pointing to the service attachment
         - Shift traffic between models and undeploy while verifying the private IP and connection remain uninterrupted
         - Self-contained demo with a GCE VM test client for sending requests to the private IP
+- Automate model rollout on a PSC private endpoint using Vertex AI Pipelines
+    - [Vertex AI PSC Endpoint - Pipeline Model Swap](./Vertex%20AI%20PSC%20Endpoint%20-%20Pipeline%20Model%20Swap.ipynb)
+        - Set up PSC infrastructure (endpoint, networking, VM) and deploy an initial model manually
+        - Define a Kubeflow Pipeline with components for: verify endpoint, deploy at 0% traffic, shift traffic, verify deployment health, undeploy old models, and notify
+        - Pipeline validates deployment via the management API; PSC forwarding rules are not transitive through VPC peering, so prediction testing is done independently from the GCE VM
+        - Uses `dsl.ExitHandler` for notification and `dsl.If` to only undeploy when deployment is verified
+        - Independently verify predictions through the PSC private IP from the GCE VM after the pipeline completes
 - Private Endpoint (VPC Peering) — not demonstrated in a notebook
     - Uses [VPC Network Peering](https://cloud.google.com/vpc/docs/vpc-peering) with the Vertex AI service project for private network access. This is the most restricted endpoint type: no traffic splitting, no request/response logging, no streaming, HTTP only, and a 60-second timeout. Requires establishing VPC peering with `servicenetworking.googleapis.com` before creating the endpoint. For new private deployments, **prefer the PSC approach** — it supports traffic splitting, logging, gRPC, streaming, larger payloads, longer timeouts, and works across multiple VPCs without the limitations of peering. See the [Choose an endpoint type](https://cloud.google.com/vertex-ai/docs/predictions/choose-endpoint-type) documentation for full details.
 - Import TensorFlow SavedModel format model directly into BigQuery and get serverless predictions with SQL
