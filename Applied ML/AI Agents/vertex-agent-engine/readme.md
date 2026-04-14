@@ -87,7 +87,7 @@ vertex-agent-engine/
 ├── agent_tools/                  # Sub-agent — facts and calculations
 │   ├── __init__.py
 │   ├── agent.py                  #   defines tools_agent
-│   └── tools.py                  #   lookup and calculate tools
+│   └── tools.py                  #   lookup, calculate, and explain tools
 │
 └── deploy/                       # Deployment infrastructure
     ├── __init__.py               #   package marker (needed for imports)
@@ -269,11 +269,28 @@ cp .env.example .env
 
 ## Run Locally
 
-Before deploying, run the agents locally to see how they work:
+Before deploying, run the agents locally to see how they work. There are two modes:
+
+### Fully local
+
+Run everything locally — agent logic, sessions, and state are all in-memory:
 
 ```bash
-uv run adk web
+uv run adk web .
 ```
+
+### Local agents with Agent Engine sessions
+
+Run agent logic locally but use a deployed Agent Engine instance for persistent, cloud-backed session management. This is useful for testing local code changes against production session state, or for debugging without redeploying:
+
+```bash
+uv run adk web . \
+  --session_service_uri="agentengine://projects/PROJECT/locations/LOCATION/reasoningEngines/RESOURCE_ID"
+```
+
+Replace the URI with your deployed agent's resource name (from `uv run python deploy/deploy.py --info` or `deploy/app/deployment.json`). Sessions created in this mode persist in Agent Engine and are accessible from the deployed agent and the Python SDK/REST API.
+
+### Try it out
 
 Select **`agent_router`** from the dropdown in the ADK web UI. Try these questions to exercise each sub-agent and tool:
 
