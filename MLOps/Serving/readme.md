@@ -298,8 +298,9 @@ Two approaches:
     - [Vertex AI PSC Endpoint - Pipeline Model Swap](./Vertex%20AI%20PSC%20Endpoint%20-%20Pipeline%20Model%20Swap.ipynb)
         - Set up PSC infrastructure (endpoint, networking, VM) and deploy an initial model manually
         - Define a Kubeflow Pipeline with components for: verify endpoint, deploy at 0% traffic, shift traffic, verify deployment health, undeploy old models, and notify
+        - KFP artifacts (`dsl.Artifact` for endpoint, `dsl.Model` for model) flow between components and create lineage in Vertex AI ML Metadata — including model registry version tracking
         - Pipeline validates deployment via the management API; PSC forwarding rules are not transitive through VPC peering, so prediction testing is done independently from the GCE VM
-        - Uses `dsl.ExitHandler` for notification and `dsl.If` to only undeploy when deployment is verified
+        - Uses `dsl.ExitHandler` for notification, `dsl.If`/`dsl.Else` for conditional undeploy vs automatic rollback on verification failure
         - Independently verify predictions through the PSC private IP from the GCE VM after the pipeline completes
 - Private Endpoint (VPC Peering) — not demonstrated in a notebook
     - Uses [VPC Network Peering](https://cloud.google.com/vpc/docs/vpc-peering) with the Vertex AI service project for private network access. This is the most restricted endpoint type: no traffic splitting, no request/response logging, no streaming, HTTP only, and a 60-second timeout. Requires establishing VPC peering with `servicenetworking.googleapis.com` before creating the endpoint. For new private deployments, **prefer the PSC approach** — it supports traffic splitting, logging, gRPC, streaming, larger payloads, longer timeouts, and works across multiple VPCs without the limitations of peering. See the [Choose an endpoint type](https://cloud.google.com/vertex-ai/docs/predictions/choose-endpoint-type) documentation for full details.
