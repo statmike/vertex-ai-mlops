@@ -22,6 +22,8 @@ dependencies = [
     "grpcio",
     "httpx",
     "aiohttp",
+    "google-cloud-monitoring",
+    "matplotlib",
     "pip",
     "ipykernel",
 ]

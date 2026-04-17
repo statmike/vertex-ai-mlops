@@ -172,21 +172,20 @@ Method x language x protocol x async support x streaming x endpoint compatibilit
 
 **File:** `Vertex AI Endpoint - Autoscaling.ipynb`
 
-**Goal:** Understand and observe autoscaling behavior on Vertex AI Endpoints through load testing and metric observation.
+**Goal:** Understand and observe autoscaling behavior on Vertex AI Endpoints through load testing and live metric visualization.
 
 **Setup:**
 - Same HuggingFace sentiment model + custom FastAPI container
-- Deploy to a dedicated public endpoint with configurable autoscaling
+- Deploy to a dedicated public endpoint with configurable autoscaling (min=1, max=5)
 
 **Sections:**
-- Configure autoscaling: `min_replica_count`, `max_replica_count`, explain what drives scale decisions
-- Generate sustained load with `asyncio` + `aiohttp` (no external tools needed) — borrow concurrency pattern from the prediction methods notebook
-- Observe replica count via Cloud Monitoring metrics or Vertex AI API
-- Cold start penalty: `min_replica_count=0` vs keeping a warm replica
-- Scale-up and scale-down timing
-- Compare behavior across machine types (n1-standard-4 vs n1-standard-8)
-- Cost implications of autoscaling choices
-- Cross-reference to Dataflow streaming autoscaling for the serving-in-pipeline case
+- Autoscaling mechanics explainer: formula, evaluation cycle, 5-minute lookback window, default thresholds
+- Cloud Monitoring metric discovery and reusable query helper with sparse metric handling
+- 4-panel matplotlib dashboard: replicas (actual vs target), CPU utilization, predictions/sec, P95 latency
+- Experiment 1: CPU-triggered scale-up/scale-down with full lifecycle observation
+- Experiment 2: Request-count scaling via `mutateDeployedModel` REST API (no redeploy)
+- Experiment 3: Lower CPU threshold (30%) to show earlier trigger
+- Configuration reference: all parameters, `mutateDeployedModel` vs redeploy, cost implications, gotchas
 - Cleanup
 
-**Status:** Planning
+**Status:** Complete

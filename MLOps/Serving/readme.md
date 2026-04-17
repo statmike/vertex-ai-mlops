@@ -316,6 +316,15 @@ Two approaches:
         - Error handling with exponential backoff retries
         - Endpoint type compatibility chart: which methods work with which endpoint types
         - Cross-references to PSC notebooks for private endpoint prediction examples
+- Understand and observe autoscaling behavior through load testing and live metric visualization
+    - [Vertex AI Endpoint - Autoscaling](./Vertex%20AI%20Endpoint%20-%20Autoscaling.ipynb)
+        - Deploy with configurable autoscaling: `min_replica_count=1`, `max_replica_count=5`, CPU target 60%
+        - Explore Cloud Monitoring metrics: discover available metrics, build a reusable query helper with sparse metric handling (raw query + pandas resample + ffill)
+        - Experiment 1 — CPU-triggered scaling: generate sustained load, watch scale-up, observe the 5-minute stabilization window and scale-down timing
+        - Experiment 2 — Request-count scaling: switch to traffic-based scaling with `mutateDeployedModel` REST API (no redeploy), compare behavior with CPU-based
+        - Experiment 3 — Threshold tuning: lower CPU target from 60% to 30%, show earlier trigger with moderate load
+        - 4-panel matplotlib dashboard: replicas (actual vs target), CPU utilization with threshold line, predictions/sec, P95 latency — all on shared time axes with event markers
+        - Configuration reference: all autoscaling parameters, `mutateDeployedModel` vs redeploy, cost implications, gotchas (reserved vCPU, single-threaded servers, GPU+CPU interaction, scale-to-zero)
 - Private Endpoint (VPC Peering) — not demonstrated in a notebook
     - Uses [VPC Network Peering](https://cloud.google.com/vpc/docs/vpc-peering) with the Vertex AI service project for private network access. This is the most restricted endpoint type: no traffic splitting, no request/response logging, no streaming, HTTP only, and a 60-second timeout. Requires establishing VPC peering with `servicenetworking.googleapis.com` before creating the endpoint. For new private deployments, **prefer the PSC approach** — it supports traffic splitting, logging, gRPC, streaming, larger payloads, longer timeouts, and works across multiple VPCs without the limitations of peering. See the [Choose an endpoint type](https://cloud.google.com/vertex-ai/docs/predictions/choose-endpoint-type) documentation for full details.
 - Import TensorFlow SavedModel format model directly into BigQuery and get serverless predictions with SQL
