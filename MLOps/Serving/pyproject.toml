@@ -19,6 +19,9 @@ dependencies = [
     "pandas",
     "kfp",
     "google-cloud-pipeline-components",
+    "grpcio",
+    "httpx",
+    "aiohttp",
     "pip",
     "ipykernel",
 ]

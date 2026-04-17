@@ -302,6 +302,20 @@ Two approaches:
         - Pipeline validates deployment via the management API; PSC forwarding rules are not transitive through VPC peering, so prediction testing is done independently from the GCE VM
         - Uses `dsl.ExitHandler` for notification, `dsl.If`/`dsl.Else` for conditional undeploy vs automatic rollback on verification failure
         - Independently verify predictions through the PSC private IP from the GCE VM after the pipeline completes
+- Every way to request predictions from a Vertex AI Endpoint — comprehensive multi-language reference
+    - [Vertex AI Endpoint - Prediction Methods](./Vertex%20AI%20Endpoint%20-%20Prediction%20Methods.ipynb)
+        - Deploy a single model to a dedicated public endpoint and demonstrate every prediction method
+        - Python SDK high-level: `predict()`, `raw_predict()`, `predict_async()`, `stream_raw_predict()`
+        - Python SDK low-level (gapic): `PredictionServiceClient` and `PredictionServiceAsyncClient` for sync/async predict and raw_predict
+        - Dedicated endpoint direct URL: route requests through the unique DNS (`dedicated_endpoint_dns`)
+        - REST API in Python (`requests`, `httpx` async), `curl`, plus reference examples in Node.js, Java, and Go
+        - gcloud CLI: `gcloud ai endpoints predict` and `gcloud ai endpoints raw-predict`
+        - gRPC transport: inspect and use the gRPC channel underlying the gapic client
+        - Streaming (SSE): `stream_raw_predict` and `:streamRawPredict` REST endpoint
+        - Sync vs async concurrency benchmarks with `asyncio.Semaphore`
+        - Error handling with exponential backoff retries
+        - Endpoint type compatibility chart: which methods work with which endpoint types
+        - Cross-references to PSC notebooks for private endpoint prediction examples
 - Private Endpoint (VPC Peering) — not demonstrated in a notebook
     - Uses [VPC Network Peering](https://cloud.google.com/vpc/docs/vpc-peering) with the Vertex AI service project for private network access. This is the most restricted endpoint type: no traffic splitting, no request/response logging, no streaming, HTTP only, and a 60-second timeout. Requires establishing VPC peering with `servicenetworking.googleapis.com` before creating the endpoint. For new private deployments, **prefer the PSC approach** — it supports traffic splitting, logging, gRPC, streaming, larger payloads, longer timeouts, and works across multiple VPCs without the limitations of peering. See the [Choose an endpoint type](https://cloud.google.com/vertex-ai/docs/predictions/choose-endpoint-type) documentation for full details.
 - Import TensorFlow SavedModel format model directly into BigQuery and get serverless predictions with SQL
