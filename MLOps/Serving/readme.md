@@ -262,6 +262,21 @@ Two approaches:
 
 ---
 
+## Batch Inference
+
+For batch inference — processing large datasets through ML models in a single operation — see the dedicated **[Batch Inference](./Batch/readme.md)** series. Four self-contained notebooks cover the same problem (sentiment analysis with HuggingFace models) across different GCP platforms:
+
+| Notebook | Platform | Key Differentiator |
+|----------|----------|-------------------|
+| [Vertex AI Batch Prediction](./Batch/Vertex%20AI%20Batch%20Prediction.ipynb) | Vertex AI | Managed, container-based, `instanceConfig` column control |
+| [Batch Inference With Dataflow](./Batch/Batch%20Inference%20With%20Dataflow.ipynb) | Dataflow | Beam pipelines, native pre/post processing, `KeyedModelHandler` |
+| [Batch Inference With Dataproc](./Batch/Batch%20Inference%20With%20Dataproc.ipynb) | Dataproc Serverless | PySpark, `mapPartitions`, Dataproc ML Library |
+| [Orchestrating Batch Inference With Airflow](./Batch/Orchestrating%20Batch%20Inference%20With%20Airflow.ipynb) | Cloud Composer | Scheduling, data dependencies, Airflow → KFP and direct patterns |
+
+Each notebook demonstrates multi-model inference, pre/post processing, and KFP orchestration via Vertex AI Pipelines. See the [Batch readme](./Batch/readme.md) for the full decision framework.
+
+---
+
 ## Tutorials and Examples
 
 **Workflows:**
