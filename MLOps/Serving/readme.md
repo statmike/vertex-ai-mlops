@@ -325,6 +325,12 @@ Two approaches:
         - Experiment 3 — Threshold tuning: lower CPU target from 60% to 30%, show earlier trigger with moderate load
         - 4-panel matplotlib dashboard: replicas (actual vs target), CPU utilization with threshold line, predictions/sec, P95 latency — all on shared time axes with event markers
         - Configuration reference: all autoscaling parameters, `mutateDeployedModel` vs redeploy, cost implications, gotchas (reserved vCPU, single-threaded servers, GPU+CPU interaction, scale-to-zero)
+- Deploy the same custom prediction container to Cloud Run and compare with Vertex AI Endpoints
+    - [Serving Models on Cloud Run](./Serving%20Models%20on%20Cloud%20Run.ipynb)
+        - Deploy the same FastAPI container to Cloud Run — same Docker image, same model, different platform. Container portability via explicit `AIP_*` environment variables.
+        - Authentication deep dive: Cloud Run uses OIDC **ID tokens** (not the access tokens used with Vertex AI). Demonstrates the common mistake, the correct pattern with `google.oauth2.id_token.fetch_id_token()`, granting `roles/run.invoker`, and public access with `allUsers`.
+        - Traffic splitting between revisions: deploy DistilBERT (v1), update to BERT (v2), split traffic 50/50, verify both models serving via different label formats, shift 100% to v2
+        - Configuration reference: autoscaling comparison (scale-to-zero, concurrency-based vs CPU-based), GPU on Cloud Run (L4, constraints), decision framework for when to choose Cloud Run vs Vertex AI
 - Private Endpoint (VPC Peering) — not demonstrated in a notebook
     - Uses [VPC Network Peering](https://cloud.google.com/vpc/docs/vpc-peering) with the Vertex AI service project for private network access. This is the most restricted endpoint type: no traffic splitting, no request/response logging, no streaming, HTTP only, and a 60-second timeout. Requires establishing VPC peering with `servicenetworking.googleapis.com` before creating the endpoint. For new private deployments, **prefer the PSC approach** — it supports traffic splitting, logging, gRPC, streaming, larger payloads, longer timeouts, and works across multiple VPCs without the limitations of peering. See the [Choose an endpoint type](https://cloud.google.com/vertex-ai/docs/predictions/choose-endpoint-type) documentation for full details.
 - Import TensorFlow SavedModel format model directly into BigQuery and get serverless predictions with SQL

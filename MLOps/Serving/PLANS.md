@@ -138,7 +138,7 @@ _*CLI works for management but prediction routing differs for private endpoints_
 ### Summary Table
 Method x language x protocol x async support x streaming x endpoint compatibility x notes
 
-**Status:** Planning
+**Status:** Complete
 
 ---
 
@@ -149,22 +149,17 @@ Method x language x protocol x async support x streaming x endpoint compatibilit
 **Goal:** Deploy the same custom container to Cloud Run and compare with Vertex AI Endpoints. Same model, different platform — when to choose which.
 
 **Setup:**
-- Same HuggingFace sentiment model + custom FastAPI container
-- Deploy to Cloud Run (public, IAM-authenticated)
+- Same HuggingFace sentiment model + custom FastAPI container (DistilBERT + BERT)
+- Deploy to Cloud Run (IAM-authenticated by default)
 
 **Sections:**
-- Deploy container to Cloud Run with `gcloud run deploy`
-- Send predictions (curl, requests, Python client)
-- Traffic splitting between revisions (Cloud Run's native blue/green)
-- GPU on Cloud Run for larger models
-- IAM-based access control vs Vertex AI endpoint auth
-- Decision framework: Cloud Run vs Vertex AI Endpoint
-  - Need model monitoring, Model Registry, batch prediction, explainability? -> Vertex AI
-  - Need simplicity, lower cost, no ML-specific features? -> Cloud Run
-  - Need GPU? -> Both support it now
+- Deploy container to Cloud Run with `run_v2` Python SDK, setting `AIP_*` env vars explicitly for container portability
+- Authentication deep dive: ID tokens vs access tokens, `google.oauth2.id_token.fetch_id_token()`, granting `roles/run.invoker`, public access with `allUsers`
+- Traffic splitting between revisions: deploy v1 (DistilBERT), update to v2 (BERT), split 50/50, shift 100% to v2
+- Configuration reference: autoscaling comparison, GPU on Cloud Run, decision framework
 - Cleanup
 
-**Status:** Planning
+**Status:** Complete
 
 ---
 
