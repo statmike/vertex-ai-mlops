@@ -1,0 +1,328 @@
+{
+  "components": {
+    "comp-batch-predict-op": {
+      "executorLabel": "exec-batch-predict-op",
+      "inputDefinitions": {
+        "parameters": {
+          "bigquery_destination_prefix": {
+            "parameterType": "STRING"
+          },
+          "bigquery_source": {
+            "parameterType": "STRING"
+          },
+          "bq_dataset": {
+            "parameterType": "STRING"
+          },
+          "location": {
+            "parameterType": "STRING"
+          },
+          "machine_type": {
+            "parameterType": "STRING"
+          },
+          "model_resource_name": {
+            "parameterType": "STRING"
+          },
+          "project": {
+            "parameterType": "STRING"
+          },
+          "replica_count": {
+            "parameterType": "NUMBER_INTEGER"
+          }
+        }
+      },
+      "outputDefinitions": {
+        "parameters": {
+          "Output": {
+            "parameterType": "STRING"
+          }
+        }
+      }
+    },
+    "comp-postprocess-bq": {
+      "executorLabel": "exec-postprocess-bq",
+      "inputDefinitions": {
+        "parameters": {
+          "bq_dataset": {
+            "parameterType": "STRING"
+          },
+          "output_table": {
+            "parameterType": "STRING"
+          },
+          "predictions_table": {
+            "parameterType": "STRING"
+          },
+          "project": {
+            "parameterType": "STRING"
+          },
+          "source_table": {
+            "parameterType": "STRING"
+          }
+        }
+      },
+      "outputDefinitions": {
+        "parameters": {
+          "Output": {
+            "parameterType": "STRING"
+          }
+        }
+      }
+    },
+    "comp-preprocess-bq": {
+      "executorLabel": "exec-preprocess-bq",
+      "inputDefinitions": {
+        "parameters": {
+          "bq_dataset": {
+            "parameterType": "STRING"
+          },
+          "project": {
+            "parameterType": "STRING"
+          },
+          "source_table": {
+            "parameterType": "STRING"
+          },
+          "staging_table": {
+            "parameterType": "STRING"
+          }
+        }
+      },
+      "outputDefinitions": {
+        "parameters": {
+          "Output": {
+            "parameterType": "STRING"
+          }
+        }
+      }
+    }
+  },
+  "deploymentSpec": {
+    "executors": {
+      "exec-batch-predict-op": {
+        "container": {
+          "args": [
+            "--executor_input",
+            "{{$}}",
+            "--function_to_execute",
+            "batch_predict_op"
+          ],
+          "command": [
+            "sh",
+            "-c",
+            "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location 'google-cloud-aiplatform'  &&  python3 -m pip install --quiet --no-warn-script-location 'kfp==2.16.0' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"$0\" \"$@\"\n",
+            "sh",
+            "-ec",
+            "program_path=$(mktemp -d)\n\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\n_KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+            "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import *\n\ndef batch_predict_op(\n    project: str,\n    location: str,\n    model_resource_name: str,\n    bigquery_source: str,\n    bigquery_destination_prefix: str,\n    bq_dataset: str,\n    machine_type: str,\n    replica_count: int,\n) -> str:\n    \"\"\"Run Vertex AI batch prediction on a BQ table.\"\"\"\n    from google.cloud import aiplatform\n    aiplatform.init(project=project, location=location)\n\n    model = aiplatform.Model(model_resource_name)\n    job = model.batch_predict(\n        job_display_name='pipeline-batch-predict',\n        bigquery_source=bigquery_source,\n        bigquery_destination_prefix=bigquery_destination_prefix,\n        instances_format='bigquery',\n        machine_type=machine_type,\n        starting_replica_count=replica_count,\n        max_replica_count=replica_count,\n    )\n    output_table = job.output_info.bigquery_output_table\n    # Normalize table reference \u2014 may be just the table name without project.dataset\n    output_table = output_table.replace('bq://', '').replace(':', '.')\n    if output_table.count('.') < 2:\n        output_table = f'{project}.{bq_dataset}.{output_table}'\n    print(f'Batch prediction output: {output_table}')\n    return output_table\n\n"
+          ],
+          "image": "python:3.10"
+        }
+      },
+      "exec-postprocess-bq": {
+        "container": {
+          "args": [
+            "--executor_input",
+            "{{$}}",
+            "--function_to_execute",
+            "postprocess_bq"
+          ],
+          "command": [
+            "sh",
+            "-c",
+            "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location 'google-cloud-bigquery'  &&  python3 -m pip install --quiet --no-warn-script-location 'kfp==2.16.0' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"$0\" \"$@\"\n",
+            "sh",
+            "-ec",
+            "program_path=$(mktemp -d)\n\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\n_KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+            "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import *\n\ndef postprocess_bq(\n    project: str,\n    bq_dataset: str,\n    predictions_table: str,\n    source_table: str,\n    output_table: str,\n) -> str:\n    \"\"\"Transform predictions: parse JSON, join to source for enrichment.\"\"\"\n    from google.cloud import bigquery\n    client = bigquery.Client(project=project)\n\n    # The predictions table has: id, text, prediction (JSON string)\n    # Post-processing: parse prediction JSON, join to source for category\n    query = f\"\"\"\n    CREATE OR REPLACE TABLE `{project}.{bq_dataset}.{output_table}` AS\n    SELECT DISTINCT\n        p.id,\n        p.text,\n        JSON_VALUE(p.prediction, '$.label') AS predicted_label,\n        CAST(JSON_VALUE(p.prediction, '$.score') AS FLOAT64) AS confidence,\n        s.category,\n        CURRENT_TIMESTAMP() AS scored_at\n    FROM `{predictions_table}` p\n    LEFT JOIN (SELECT DISTINCT id, category FROM `{project}.{bq_dataset}.{source_table}`) s USING (id)\n    ORDER BY p.id\n    \"\"\"\n    client.query(query).result()\n    count = client.query(f'SELECT COUNT(*) c FROM `{project}.{bq_dataset}.{output_table}`').result()\n    for row in count:\n        print(f'Results table {output_table}: {row.c} rows')\n    return f'{project}.{bq_dataset}.{output_table}'\n\n"
+          ],
+          "image": "python:3.10"
+        }
+      },
+      "exec-preprocess-bq": {
+        "container": {
+          "args": [
+            "--executor_input",
+            "{{$}}",
+            "--function_to_execute",
+            "preprocess_bq"
+          ],
+          "command": [
+            "sh",
+            "-c",
+            "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location 'google-cloud-bigquery'  &&  python3 -m pip install --quiet --no-warn-script-location 'kfp==2.16.0' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"$0\" \"$@\"\n",
+            "sh",
+            "-ec",
+            "program_path=$(mktemp -d)\n\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\n_KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+            "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import *\n\ndef preprocess_bq(\n    project: str,\n    bq_dataset: str,\n    source_table: str,\n    staging_table: str,\n) -> str:\n    \"\"\"Clean and filter data in BigQuery, write to staging table.\"\"\"\n    from google.cloud import bigquery\n    client = bigquery.Client(project=project)\n\n    query = f\"\"\"\n    CREATE OR REPLACE TABLE `{project}.{bq_dataset}.{staging_table}` AS\n    SELECT DISTINCT\n        id,\n        TRIM(text) AS text\n    FROM `{project}.{bq_dataset}.{source_table}`\n    WHERE text IS NOT NULL\n        AND LENGTH(TRIM(text)) > 0\n    ORDER BY id\n    \"\"\"\n    client.query(query).result()\n    count = client.query(f'SELECT COUNT(*) c FROM `{project}.{bq_dataset}.{staging_table}`').result()\n    for row in count:\n        print(f'Staging table {staging_table}: {row.c} rows')\n    return f'bq://{project}.{bq_dataset}.{staging_table}'\n\n"
+          ],
+          "image": "python:3.10"
+        }
+      }
+    }
+  },
+  "pipelineInfo": {
+    "description": "Pre-process data, run batch prediction, post-process results",
+    "name": "batch-prediction-pipeline"
+  },
+  "root": {
+    "dag": {
+      "tasks": {
+        "batch-predict-op": {
+          "cachingOptions": {
+            "enableCache": true
+          },
+          "componentRef": {
+            "name": "comp-batch-predict-op"
+          },
+          "dependentTasks": [
+            "preprocess-bq"
+          ],
+          "inputs": {
+            "parameters": {
+              "bigquery_destination_prefix": {
+                "runtimeValue": {
+                  "constant": "bq://{{$.inputs.parameters['pipelinechannel--project']}}.{{$.inputs.parameters['pipelinechannel--bq_dataset']}}"
+                }
+              },
+              "bigquery_source": {
+                "taskOutputParameter": {
+                  "outputParameterKey": "Output",
+                  "producerTask": "preprocess-bq"
+                }
+              },
+              "bq_dataset": {
+                "componentInputParameter": "bq_dataset"
+              },
+              "location": {
+                "componentInputParameter": "location"
+              },
+              "machine_type": {
+                "componentInputParameter": "machine_type"
+              },
+              "model_resource_name": {
+                "componentInputParameter": "model_resource_name"
+              },
+              "pipelinechannel--bq_dataset": {
+                "componentInputParameter": "bq_dataset"
+              },
+              "pipelinechannel--project": {
+                "componentInputParameter": "project"
+              },
+              "project": {
+                "componentInputParameter": "project"
+              },
+              "replica_count": {
+                "componentInputParameter": "replica_count"
+              }
+            }
+          },
+          "taskInfo": {
+            "name": "batch-predict-op"
+          }
+        },
+        "postprocess-bq": {
+          "cachingOptions": {
+            "enableCache": true
+          },
+          "componentRef": {
+            "name": "comp-postprocess-bq"
+          },
+          "dependentTasks": [
+            "batch-predict-op"
+          ],
+          "inputs": {
+            "parameters": {
+              "bq_dataset": {
+                "componentInputParameter": "bq_dataset"
+              },
+              "output_table": {
+                "runtimeValue": {
+                  "constant": "{{$.inputs.parameters['pipelinechannel--source_table']}}_results"
+                }
+              },
+              "pipelinechannel--source_table": {
+                "componentInputParameter": "source_table"
+              },
+              "predictions_table": {
+                "taskOutputParameter": {
+                  "outputParameterKey": "Output",
+                  "producerTask": "batch-predict-op"
+                }
+              },
+              "project": {
+                "componentInputParameter": "project"
+              },
+              "source_table": {
+                "componentInputParameter": "source_table"
+              }
+            }
+          },
+          "taskInfo": {
+            "name": "postprocess-bq"
+          }
+        },
+        "preprocess-bq": {
+          "cachingOptions": {
+            "enableCache": true
+          },
+          "componentRef": {
+            "name": "comp-preprocess-bq"
+          },
+          "inputs": {
+            "parameters": {
+              "bq_dataset": {
+                "componentInputParameter": "bq_dataset"
+              },
+              "pipelinechannel--source_table": {
+                "componentInputParameter": "source_table"
+              },
+              "project": {
+                "componentInputParameter": "project"
+              },
+              "source_table": {
+                "componentInputParameter": "source_table"
+              },
+              "staging_table": {
+                "runtimeValue": {
+                  "constant": "{{$.inputs.parameters['pipelinechannel--source_table']}}_staging"
+                }
+              }
+            }
+          },
+          "taskInfo": {
+            "name": "preprocess-bq"
+          }
+        }
+      }
+    },
+    "inputDefinitions": {
+      "parameters": {
+        "bq_dataset": {
+          "parameterType": "STRING"
+        },
+        "location": {
+          "parameterType": "STRING"
+        },
+        "machine_type": {
+          "defaultValue": "n1-standard-4",
+          "isOptional": true,
+          "parameterType": "STRING"
+        },
+        "model_resource_name": {
+          "parameterType": "STRING"
+        },
+        "project": {
+          "parameterType": "STRING"
+        },
+        "replica_count": {
+          "defaultValue": 2.0,
+          "isOptional": true,
+          "parameterType": "NUMBER_INTEGER"
+        },
+        "source_table": {
+          "parameterType": "STRING"
+        }
+      }
+    }
+  },
+  "schemaVersion": "2.1.0",
+  "sdkVersion": "kfp-2.16.0"
+}

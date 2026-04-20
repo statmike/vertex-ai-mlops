@@ -10,11 +10,11 @@ Four self-contained notebooks covering batch inference on GCP. All use the same 
 
 ## Notebook 1: Vertex AI Batch Prediction
 
-**Status:** Not Started
+**Status:** Draft Complete — Ready for Testing
 
 **File:** `Vertex AI Batch Prediction.ipynb`
 
-The managed, container-based path. Same FastAPI container from the online serving notebooks, uploaded to Model Registry, used for batch prediction.
+The managed, container-based path. Same FastAPI container from the online serving notebooks (modified to handle both string and object inputs), uploaded to Model Registry, used for batch prediction.
 
 ### Structure
 
