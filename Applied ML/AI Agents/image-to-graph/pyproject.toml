@@ -5,7 +5,7 @@ description = "An ADK agent that converts complex diagram images into structured
 readme = "readme.md"
 requires-python = ">=3.13.3"
 dependencies = [
-    "google-adk>=1.14.0",
+    "google-adk>=1.31.0",
     "google-cloud-storage>=2.18.0",
     "google-genai>=1.64.0",
     "pydantic>=2.12.5",

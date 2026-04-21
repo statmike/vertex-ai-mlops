@@ -5,7 +5,7 @@ description = "A multi-agent ADK system that automates data onboarding into BigQ
 readme = "readme.md"
 requires-python = ">=3.13.3"
 dependencies = [
-    "google-adk>=1.14.0",
+    "google-adk>=1.31.0",
     "google-genai>=1.64.0",
     "google-cloud-aiplatform[agent_engines,adk]>=1.112.0",
     "google-cloud-bigquery>=3.31.0",
