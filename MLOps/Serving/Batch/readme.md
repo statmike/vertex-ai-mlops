@@ -97,10 +97,10 @@ The Apache Beam path. Models load directly into Dataflow workers — no containe
 The Spark path. For teams in the PySpark ecosystem, or when data lives in formats Spark handles well. Uses Dataproc Serverless — no cluster management.
 
 **What you'll learn:**
-- PySpark inference with `mapPartitions` — load model once per partition, avoid per-row serialization overhead
-- Dataproc ML Library: `PyTorchModelHandler` and `VertexAIModelHandler` as alternatives to custom UDFs
-- Pre/post processing with Spark transformations: `filter()`, `withColumn()`, window functions
-- Multi-model: partition-based routing (single pass) and sequential approaches
+- Pandas UDF (`@pandas_udf`) with module-level model caching — load model once per executor, process Arrow-optimized batches
+- Dataproc Serverless runtime 2.2 — torch and transformers pre-installed, no container build or dependency hacks
+- Pre/post processing with Spark transformations: `select()`, `withColumn()`, `lit()`
+- Multi-model: sequential batch jobs with side-by-side comparison in BigQuery
 - KFP pipeline with `DataprocPySparkBatchOp`: parameterized Serverless Spark job from Vertex AI Pipelines
 
 **Best for:** Teams already using PySpark for data processing who want to add ML inference without leaving the Spark ecosystem.

@@ -226,7 +226,7 @@ The Apache Beam path. Models load directly into Dataflow workers via `RunInferen
 
 ## Notebook 3: Batch Inference With Dataproc
 
-**Status:** Draft Complete — Ready for Testing
+**Status:** Complete
 
 **File:** `Batch Inference With Dataproc.ipynb`
 
