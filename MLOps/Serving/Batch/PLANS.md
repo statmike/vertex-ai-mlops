@@ -10,7 +10,7 @@ Four self-contained notebooks covering batch inference on GCP. All use the same 
 
 ## Notebook 1: Vertex AI Batch Prediction
 
-**Status:** Draft Complete — Ready for Testing
+**Status:** Complete
 
 **File:** `Vertex AI Batch Prediction.ipynb`
 
@@ -104,7 +104,7 @@ The managed, container-based path. Same FastAPI container from the online servin
 
 ## Notebook 2: Batch Inference With Dataflow
 
-**Status:** Not Started
+**Status:** Complete
 
 **File:** `Batch Inference With Dataflow.ipynb`
 

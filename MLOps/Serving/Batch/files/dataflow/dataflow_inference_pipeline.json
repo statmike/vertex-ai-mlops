@@ -1,0 +1,228 @@
+{
+  "components": {
+    "comp-dataflow-python": {
+      "executorLabel": "exec-dataflow-python",
+      "inputDefinitions": {
+        "parameters": {
+          "args": {
+            "defaultValue": [],
+            "description": "The list of args to pass to the Python file. Can include additional parameters for the Dataflow Runner.",
+            "isOptional": true,
+            "parameterType": "LIST"
+          },
+          "location": {
+            "defaultValue": "us-central1",
+            "description": "Location of the Dataflow job. If not set, defaults to `'us-central1'`.",
+            "isOptional": true,
+            "parameterType": "STRING"
+          },
+          "project": {
+            "defaultValue": "{{$.pipeline_google_cloud_project_id}}",
+            "description": "Project to create the Dataflow job. Defaults to the project in which the PipelineJob is run.",
+            "isOptional": true,
+            "parameterType": "STRING"
+          },
+          "python_module_path": {
+            "description": "The GCS path to the Python file to run.",
+            "parameterType": "STRING"
+          },
+          "requirements_file_path": {
+            "defaultValue": "",
+            "description": "The GCS path to the pip requirements file.",
+            "isOptional": true,
+            "parameterType": "STRING"
+          },
+          "temp_location": {
+            "description": "A GCS path for Dataflow to stage temporary job files created during the execution of the pipeline.",
+            "parameterType": "STRING"
+          }
+        }
+      },
+      "outputDefinitions": {
+        "parameters": {
+          "gcp_resources": {
+            "description": "Serialized gcp_resources proto tracking the Dataflow job. For more details, see https://github.com/kubeflow/pipelines/blob/master/components/google-cloud/google_cloud_pipeline_components/proto/README.md.",
+            "parameterType": "STRING"
+          }
+        }
+      }
+    }
+  },
+  "deploymentSpec": {
+    "executors": {
+      "exec-dataflow-python": {
+        "container": {
+          "args": [
+            "--project",
+            "{{$.inputs.parameters['project']}}",
+            "--location",
+            "{{$.inputs.parameters['location']}}",
+            "--python_module_path",
+            "{{$.inputs.parameters['python_module_path']}}",
+            "--temp_location",
+            "{{$.inputs.parameters['temp_location']}}",
+            "--requirements_file_path",
+            "{{$.inputs.parameters['requirements_file_path']}}",
+            "--args",
+            "{{$.inputs.parameters['args']}}",
+            "--gcp_resources",
+            "{{$.outputs.parameters['gcp_resources'].output_file}}"
+          ],
+          "command": [
+            "python3",
+            "-u",
+            "-m",
+            "google_cloud_pipeline_components.container.v1.dataflow.dataflow_launcher"
+          ],
+          "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:2.22.0"
+        }
+      }
+    }
+  },
+  "pipelineInfo": {
+    "description": "Run sentiment batch inference via Dataflow",
+    "name": "dataflow-batch-inference"
+  },
+  "root": {
+    "dag": {
+      "tasks": {
+        "dataflow-python": {
+          "cachingOptions": {
+            "enableCache": true
+          },
+          "componentRef": {
+            "name": "comp-dataflow-python"
+          },
+          "inputs": {
+            "parameters": {
+              "args": {
+                "runtimeValue": {
+                  "constant": [
+                    "--bq_dataset",
+                    "{{$.inputs.parameters['pipelinechannel--bq_dataset']}}",
+                    "--source_table",
+                    "{{$.inputs.parameters['pipelinechannel--source_table']}}",
+                    "--output_table",
+                    "{{$.inputs.parameters['pipelinechannel--output_table']}}",
+                    "--model_gcs_uri",
+                    "{{$.inputs.parameters['pipelinechannel--model_gcs_uri']}}",
+                    "--requirements_file",
+                    "{{$.inputs.parameters['pipelinechannel--requirements_gcs_path']}}",
+                    "--staging_location",
+                    "{{$.inputs.parameters['pipelinechannel--staging_location']}}",
+                    "--machine_type",
+                    "{{$.inputs.parameters['pipelinechannel--machine_type']}}",
+                    "--num_workers",
+                    "{{$.inputs.parameters['pipelinechannel--num_workers']}}",
+                    "--max_num_workers",
+                    "{{$.inputs.parameters['pipelinechannel--max_workers']}}",
+                    "--save_main_session"
+                  ]
+                }
+              },
+              "location": {
+                "componentInputParameter": "region"
+              },
+              "pipelinechannel--bq_dataset": {
+                "componentInputParameter": "bq_dataset"
+              },
+              "pipelinechannel--machine_type": {
+                "componentInputParameter": "machine_type"
+              },
+              "pipelinechannel--max_workers": {
+                "componentInputParameter": "max_workers"
+              },
+              "pipelinechannel--model_gcs_uri": {
+                "componentInputParameter": "model_gcs_uri"
+              },
+              "pipelinechannel--num_workers": {
+                "componentInputParameter": "num_workers"
+              },
+              "pipelinechannel--output_table": {
+                "componentInputParameter": "output_table"
+              },
+              "pipelinechannel--requirements_gcs_path": {
+                "componentInputParameter": "requirements_gcs_path"
+              },
+              "pipelinechannel--source_table": {
+                "componentInputParameter": "source_table"
+              },
+              "pipelinechannel--staging_location": {
+                "componentInputParameter": "staging_location"
+              },
+              "project": {
+                "componentInputParameter": "project"
+              },
+              "python_module_path": {
+                "componentInputParameter": "pipeline_gcs_path"
+              },
+              "temp_location": {
+                "componentInputParameter": "temp_location"
+              }
+            }
+          },
+          "taskInfo": {
+            "name": "dataflow-python"
+          }
+        }
+      }
+    },
+    "inputDefinitions": {
+      "parameters": {
+        "bq_dataset": {
+          "parameterType": "STRING"
+        },
+        "machine_type": {
+          "defaultValue": "n1-standard-4",
+          "isOptional": true,
+          "parameterType": "STRING"
+        },
+        "max_workers": {
+          "defaultValue": "4",
+          "isOptional": true,
+          "parameterType": "STRING"
+        },
+        "model_gcs_uri": {
+          "parameterType": "STRING"
+        },
+        "num_workers": {
+          "defaultValue": "2",
+          "isOptional": true,
+          "parameterType": "STRING"
+        },
+        "output_table": {
+          "defaultValue": "pipeline_predictions",
+          "isOptional": true,
+          "parameterType": "STRING"
+        },
+        "pipeline_gcs_path": {
+          "parameterType": "STRING"
+        },
+        "project": {
+          "parameterType": "STRING"
+        },
+        "region": {
+          "parameterType": "STRING"
+        },
+        "requirements_gcs_path": {
+          "parameterType": "STRING"
+        },
+        "source_table": {
+          "parameterType": "STRING"
+        },
+        "staging_location": {
+          "defaultValue": "",
+          "isOptional": true,
+          "parameterType": "STRING"
+        },
+        "temp_location": {
+          "defaultValue": "",
+          "isOptional": true,
+          "parameterType": "STRING"
+        }
+      }
+    }
+  },
+  "schemaVersion": "2.1.0",
+  "sdkVersion": "kfp-2.16.0"
+}

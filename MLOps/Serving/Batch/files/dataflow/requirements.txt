@@ -1,0 +1,4 @@
+transformers
+torch
+sentencepiece
+google-cloud-storage

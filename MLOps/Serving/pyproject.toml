@@ -20,6 +20,7 @@ dependencies = [
     "pandas",
     "kfp",
     "google-cloud-pipeline-components",
+    "apache-beam[gcp]",
     "grpcio",
     "httpx",
     "aiohttp",
