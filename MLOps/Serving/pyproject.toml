@@ -21,6 +21,7 @@ dependencies = [
     "kfp",
     "google-cloud-pipeline-components",
     "apache-beam[gcp]",
+    "google-cloud-dataproc",
     "grpcio",
     "httpx",
     "aiohttp",
