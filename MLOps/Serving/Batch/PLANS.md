@@ -363,11 +363,11 @@ The Spark path. PySpark for data processing, model inference via UDFs or Datapro
 
 ## Notebook 4: Orchestrating Batch Inference With Airflow
 
-**Status:** Not Started
+**Status:** Draft Complete — Ready for Testing
 
 **File:** `Orchestrating Batch Inference With Airflow.ipynb`
 
-The scheduling and coordination layer. Cloud Composer (managed Airflow) handles when to run batch inference and what happens around it — data dependencies, cross-system coordination, alerting, and backfill. Self-contained — includes its own simplified pipeline definitions rather than depending on Notebooks 1-3.
+The scheduling and coordination layer. Cloud Composer (managed Airflow) handles when to run batch inference and what happens around it — data dependencies, cross-system coordination, alerting, and backfill. Self-contained for 3 of 4 patterns (Dataproc, Dataflow, KFP). Vertex AI Batch shown as reference (requires Notebook 1 for model setup).
 
 ### Structure
 

@@ -1,0 +1,1 @@
+# Vertex AI serving container

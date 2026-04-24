@@ -26,6 +26,7 @@ dependencies = [
     "httpx",
     "aiohttp",
     "google-cloud-monitoring",
+    "google-cloud-orchestration-airflow",
     "matplotlib",
     "pip",
     "ipykernel",
