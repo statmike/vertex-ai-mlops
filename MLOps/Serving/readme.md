@@ -277,6 +277,23 @@ Each notebook demonstrates multi-model inference, pre/post processing, and KFP o
 
 ---
 
+## Online Prediction
+
+For online prediction — real-time, low-latency serving via Vertex AI Endpoints — see the dedicated **[Online Prediction](./Online/readme.md)** series. Six notebooks cover each endpoint type, prediction methods, and autoscaling:
+
+| Notebook | Focus | Key Differentiator |
+|----------|-------|-------------------|
+| [Dedicated Public Endpoint](./Online/Vertex%20AI%20Dedicated%20Public%20Endpoint.ipynb) | Endpoint type | Recommended default: 10 MB, 1-hour timeout, gRPC, SSE |
+| [Shared Public Endpoint](./Online/Vertex%20AI%20Shared%20Public%20Endpoint.ipynb) | Endpoint type | Simplest setup, tuned Gemini + AutoML explainability support |
+| [Private Endpoint With PSC](./Online/Vertex%20AI%20Private%20Endpoint%20With%20PSC.ipynb) | Endpoint type | Private networking via PSC, GCE VM test client |
+| [PSC Endpoint - Pipeline Model Swap](./Online/Vertex%20AI%20PSC%20Endpoint%20-%20Pipeline%20Model%20Swap.ipynb) | MLOps | KFP-automated rollout with health checks and rollback |
+| [Prediction Methods](./Online/Vertex%20AI%20Endpoint%20-%20Prediction%20Methods.ipynb) | Reference | Every prediction method: SDK, REST, gRPC, streaming, multi-language |
+| [Autoscaling](./Online/Vertex%20AI%20Endpoint%20-%20Autoscaling.ipynb) | Operations | Load testing, live metrics dashboard, runtime reconfiguration |
+
+All notebooks use the same HuggingFace sentiment models in a custom FastAPI container. See the [Online readme](./Online/readme.md) for full descriptions.
+
+---
+
 ## Tutorials and Examples
 
 **Workflows:**
@@ -290,56 +307,6 @@ Each notebook demonstrates multi-model inference, pre/post processing, and KFP o
             - BigQuery
             - File List
             - TFRecord Files
-- Deploy a model to a dedicated public endpoint with production isolation, traffic splitting, and lifecycle management
-    - [Vertex AI Dedicated Public Endpoint](./Vertex%20AI%20Dedicated%20Public%20Endpoint.ipynb)
-        - Build a custom FastAPI container for HuggingFace sentiment models with Cloud Build
-        - Create a dedicated public endpoint (`dedicated_endpoint_enabled=True`) and deploy two model versions
-        - Shift traffic between models, validate predictions, and undeploy cleanly
-        - Demonstrates the recommended default endpoint type: 10 MB payloads, up to 1-hour timeout, unlimited QPM, gRPC and SSE streaming support
-- Deploy a model to a shared public endpoint — the simplest setup with trade-offs on payload size and timeout
-    - [Vertex AI Shared Public Endpoint](./Vertex%20AI%20Shared%20Public%20Endpoint.ipynb)
-        - Build a custom FastAPI container for HuggingFace sentiment models with Cloud Build
-        - Create a shared public endpoint (the default, no special flags) and deploy two model versions
-        - Shift traffic between models, validate predictions, and undeploy cleanly
-        - Highlights limitations: 1.5 MB payload, 60-second timeout, 30K QPM, HTTP only — but the only type supporting tuned Gemini deployment and AutoML with explainability
-- Deploy models to a PSC private endpoint, swap models with traffic splitting, and prove the private IP stays stable through lifecycle changes
-    - [Vertex AI Private Endpoint With PSC](./Vertex%20AI%20Private%20Endpoint%20With%20PSC.ipynb)
-        - Build a custom FastAPI container for HuggingFace sentiment models with Cloud Build
-        - Create a PSC-enabled private endpoint and deploy the first model (the service attachment only exists after deploy — no serving infrastructure is provisioned until then)
-        - Set up PSC networking: reserve an internal IP and create a forwarding rule pointing to the service attachment
-        - Shift traffic between models and undeploy while verifying the private IP and connection remain uninterrupted
-        - Self-contained demo with a GCE VM test client for sending requests to the private IP
-- Automate model rollout on a PSC private endpoint using Vertex AI Pipelines
-    - [Vertex AI PSC Endpoint - Pipeline Model Swap](./Vertex%20AI%20PSC%20Endpoint%20-%20Pipeline%20Model%20Swap.ipynb)
-        - Set up PSC infrastructure (endpoint, networking, VM) and deploy an initial model manually
-        - Define a Kubeflow Pipeline with components for: verify endpoint, deploy at 0% traffic, shift traffic, verify deployment health, undeploy old models, and notify
-        - KFP artifacts (`dsl.Artifact` for endpoint, `dsl.Model` for model) flow between components and create lineage in Vertex AI ML Metadata — including model registry version tracking
-        - Pipeline validates deployment via the management API; PSC forwarding rules are not transitive through VPC peering, so prediction testing is done independently from the GCE VM
-        - Uses `dsl.ExitHandler` for notification, `dsl.If`/`dsl.Else` for conditional undeploy vs automatic rollback on verification failure
-        - Independently verify predictions through the PSC private IP from the GCE VM after the pipeline completes
-- Every way to request predictions from a Vertex AI Endpoint — comprehensive multi-language reference
-    - [Vertex AI Endpoint - Prediction Methods](./Vertex%20AI%20Endpoint%20-%20Prediction%20Methods.ipynb)
-        - Deploy a single model to a dedicated public endpoint and demonstrate every prediction method
-        - Python SDK high-level: `predict()`, `raw_predict()`, `predict_async()`, `stream_raw_predict()`
-        - Python SDK low-level (gapic): `PredictionServiceClient` and `PredictionServiceAsyncClient` for sync/async predict and raw_predict
-        - Dedicated endpoint direct URL: route requests through the unique DNS (`dedicated_endpoint_dns`)
-        - REST API in Python (`requests`, `httpx` async), `curl`, plus reference examples in Node.js, Java, and Go
-        - gcloud CLI: `gcloud ai endpoints predict` and `gcloud ai endpoints raw-predict`
-        - gRPC transport: inspect and use the gRPC channel underlying the gapic client
-        - Streaming (SSE): `stream_raw_predict` and `:streamRawPredict` REST endpoint
-        - Sync vs async concurrency benchmarks with `asyncio.Semaphore`
-        - Error handling with exponential backoff retries
-        - Endpoint type compatibility chart: which methods work with which endpoint types
-        - Cross-references to PSC notebooks for private endpoint prediction examples
-- Understand and observe autoscaling behavior through load testing and live metric visualization
-    - [Vertex AI Endpoint - Autoscaling](./Vertex%20AI%20Endpoint%20-%20Autoscaling.ipynb)
-        - Deploy with configurable autoscaling: `min_replica_count=1`, `max_replica_count=5`, CPU target 60%
-        - Explore Cloud Monitoring metrics: discover available metrics, build a reusable query helper with sparse metric handling (raw query + pandas resample + ffill)
-        - Experiment 1 — CPU-triggered scaling: generate sustained load, watch scale-up, observe the 5-minute stabilization window and scale-down timing
-        - Experiment 2 — Request-count scaling: switch to traffic-based scaling with `mutateDeployedModel` REST API (no redeploy), compare behavior with CPU-based
-        - Experiment 3 — Threshold tuning: lower CPU target from 60% to 30%, show earlier trigger with moderate load
-        - 4-panel matplotlib dashboard: replicas (actual vs target), CPU utilization with threshold line, predictions/sec, P95 latency — all on shared time axes with event markers
-        - Configuration reference: all autoscaling parameters, `mutateDeployedModel` vs redeploy, cost implications, gotchas (reserved vCPU, single-threaded servers, GPU+CPU interaction, scale-to-zero)
 - Deploy the same custom prediction container to Cloud Run and compare with Vertex AI Endpoints
     - [Serving Models on Cloud Run](./Serving%20Models%20on%20Cloud%20Run.ipynb)
         - Deploy the same FastAPI container to Cloud Run — same Docker image, same model, different platform. Container portability via explicit `AIP_*` environment variables.
