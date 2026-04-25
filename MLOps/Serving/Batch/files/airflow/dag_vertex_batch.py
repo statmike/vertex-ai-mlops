@@ -7,7 +7,7 @@ from airflow.providers.google.cloud.operators.vertex_ai.batch_prediction_job imp
 
 PROJECT_ID = 'statmike-mlops-349915'
 REGION = 'us-central1'
-MODEL_RESOURCE = 'projects/1026793852137/locations/us-central1/models/2262987344497868800'
+MODEL_RESOURCE = 'projects/1026793852137/locations/us-central1/models/5809783157284667392'
 BQ_DATASET = 'mlops_airflow_batch'
 SOURCE_TABLE = 'input_data'
 
