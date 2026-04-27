@@ -36,7 +36,6 @@
 </table><br/><br/>
 
 ---
----
 # Online Prediction
 
 > You are here: `vertex-ai-mlops/MLOps/Serving/Online/readme.md`
@@ -109,6 +108,17 @@ Understand and observe autoscaling behavior through load testing and live metric
 - Reconfigure autoscaling at runtime with `mutateDeployedModel` (no redeploy)
 - Configuration reference: all parameters, cost implications, gotchas
 
+### 7. [Vertex AI Endpoint - Model Cohosting](./Vertex%20AI%20Endpoint%20-%20Model%20Cohosting.ipynb)
+
+Deploy multiple models to a shared VM pool using `DeploymentResourcePool` — cost-efficient for low-traffic models.
+
+**What you'll learn:**
+- Create a `DeploymentResourcePool` with specified machine type and autoscaling
+- Deploy both sentiment models to the same pool with independent endpoints
+- Understand resource sharing: models share GPU/CPU memory, efficient for low-traffic models
+- Scaling behavior: pool scales based on aggregate load across all cohosted models
+- When to cohost vs when to use separate deployments (noisy neighbor, SLA, isolation trade-offs)
+
 ## Endpoint Type Comparison
 
 See the [parent readme](../readme.md#vertex-ai-endpoint-types) for the full comparison table and decision tree covering all four endpoint types (Dedicated Public, Shared Public, Dedicated Private via PSC, Private via VPC Peering).
@@ -125,7 +135,8 @@ Online/
 │   ├── psc-private-endpoint/
 │   ├── psc-pipeline-model-swap/      ← Container source + compiled KFP pipeline
 │   ├── prediction-methods/
-│   └── autoscaling/
+│   ├── autoscaling/
+│   └── model-cohosting/
 ```
 
 ## Prerequisites

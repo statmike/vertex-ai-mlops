@@ -289,8 +289,37 @@ For online prediction — real-time, low-latency serving via Vertex AI Endpoints
 | [PSC Endpoint - Pipeline Model Swap](./Online/Vertex%20AI%20PSC%20Endpoint%20-%20Pipeline%20Model%20Swap.ipynb) | MLOps | KFP-automated rollout with health checks and rollback |
 | [Prediction Methods](./Online/Vertex%20AI%20Endpoint%20-%20Prediction%20Methods.ipynb) | Reference | Every prediction method: SDK, REST, gRPC, streaming, multi-language |
 | [Autoscaling](./Online/Vertex%20AI%20Endpoint%20-%20Autoscaling.ipynb) | Operations | Load testing, live metrics dashboard, runtime reconfiguration |
+| [Model Cohosting](./Online/Vertex%20AI%20Endpoint%20-%20Model%20Cohosting.ipynb) | Cost optimization | DeploymentResourcePool, shared VMs, per-model endpoints |
 
 All notebooks use the same HuggingFace sentiment models in a custom FastAPI container. See the [Online readme](./Online/readme.md) for full descriptions.
+
+---
+
+## Remote Models — SQL-Based Inference
+
+For calling Vertex AI Endpoints from SQL — no Python needed for inference — see the **[Remote Models](./Remote%20Models/readme.md)** series. Three GCP database services can call an endpoint as a remote model via their native SQL interface, plus BigQuery can import models directly via ONNX:
+
+| Notebook | Database | SQL Function | Key Differentiator |
+|----------|----------|-------------|-------------------|
+| [BQML Remote Model](./Remote%20Models/BQML%20Remote%20Model%20on%20Vertex%20AI%20Endpoint.ipynb) | BigQuery | `ML.PREDICT()` | OLAP batch scoring, Cloud Resource Connection |
+| [AlloyDB AI Remote Model](./Remote%20Models/AlloyDB%20AI%20Remote%20Model%20on%20Vertex%20AI%20Endpoint.ipynb) | AlloyDB | `google_ml.predict_row()` | OLTP row-level predictions, `google_ml_integration` |
+| [Spanner ML Remote Model](./Remote%20Models/Spanner%20ML%20Remote%20Model%20on%20Vertex%20AI%20Endpoint.ipynb) | Spanner | `ML.PREDICT()` | Globally distributed inference, Enterprise edition |
+| [BQML Import via ONNX](./Remote%20Models/BQML%20Import%20Model%20via%20ONNX.ipynb) | BigQuery | `ML.PREDICT()` | Model runs IN BigQuery, no endpoint needed, < 250 MB |
+
+See the [Remote Models readme](./Remote%20Models/readme.md) for the full database ML comparison table.
+
+---
+
+## Additional Serving Platforms
+
+Beyond Vertex AI Endpoints, the same container can be deployed to other GCP platforms:
+
+| Notebook | Platform | Key Differentiator |
+|----------|----------|-------------------|
+| [Serving Models on Cloud Run](./Serving%20Models%20on%20Cloud%20Run.ipynb) | Cloud Run | Scale-to-zero, OIDC auth, revision-based traffic splitting |
+| [Serving Models on GKE](./Serving%20Models%20on%20GKE.ipynb) | GKE Autopilot | Full Kubernetes control, HPA autoscaling, custom networking |
+| [Serving Models With Cloud Functions](./Serving%20Models%20With%20Cloud%20Functions.ipynb) | Cloud Functions | Lightest serverless option, no container needed, source deploy |
+| [Vertex AI Pre-built Serving Containers](./Vertex%20AI%20Pre-built%20Serving%20Containers.ipynb) | Vertex AI | No Dockerfile, no Cloud Build — pre-built TorchServe/TF Serving |
 
 ---
 
