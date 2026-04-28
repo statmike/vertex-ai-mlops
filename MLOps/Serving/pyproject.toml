@@ -39,6 +39,7 @@ dependencies = [
     "google-cloud-functions",
     "onnx",
     "onnxruntime",
+    "onnxscript",
     "torch-model-archiver",
     "pip",
     "ipykernel",
