@@ -40,7 +40,7 @@
 
 > You are here: `vertex-ai-mlops/MLOps/Serving/readme.md`
 
-This section focuses on turning trained machine learning models into production-ready services. 21 notebooks explore every major GCP serving pattern — online prediction, batch inference, SQL-based inference, and multi-platform deployment — all using the same HuggingFace sentiment models for consistency.
+This section focuses on turning trained machine learning models into production-ready services. 26 notebooks explore every major GCP serving pattern — online prediction, batch inference, SQL-based inference, multi-platform deployment, and Triton Inference Server — all using the same HuggingFace sentiment models for consistency.
 
 ## Environment Setup
 
@@ -142,6 +142,22 @@ The same custom prediction container deployed to different GCP platforms. See th
 | [Vertex AI Pre-built Serving Containers](./Platforms/Vertex%20AI%20Pre-built%20Serving%20Containers.ipynb) | Vertex AI | No Dockerfile, no Cloud Build — pre-built TorchServe/TF Serving |
 
 See the [Platforms readme](./Platforms/readme.md) for the full platform comparison table.
+
+---
+
+## Triton Inference Server
+
+[NVIDIA Triton Inference Server](https://developer.nvidia.com/triton-inference-server) — a standardized serving platform with model repository, multi-backend support, dynamic batching, and ensemble pipelines. See the **[Triton](./Triton/readme.md)** series for 5 notebooks progressing from local Docker fundamentals to production deployment on three platforms:
+
+| Notebook | Focus | Key Differentiator |
+|----------|-------|-------------------|
+| [Fundamentals](./Triton/Triton%20Inference%20Server%20-%20Fundamentals.ipynb) | Core concepts | Model repository, Python + ONNX backends, HTTP/gRPC clients, dynamic batching |
+| [Pipelines and Ensembles](./Triton/Triton%20Inference%20Server%20-%20Pipelines%20and%20Ensembles.ipynb) | Server-side pipelines | Declarative ensembles, BLS imperative routing, model swap |
+| [Triton on Vertex AI](./Triton/Triton%20on%20Vertex%20AI%20Endpoints.ipynb) | Managed deployment | rawPredict, multi-model routing, L4 GPU + TensorRT |
+| [Triton on Cloud Run](./Triton/Triton%20on%20Cloud%20Run.ipynb) | Serverless | L4 GPU, OIDC auth, cold start analysis, concurrency tuning |
+| [Triton on GKE](./Triton/Triton%20on%20GKE.ipynb) | Full control | GCS FUSE model repo, HPA with Triton metrics, production probes |
+
+Notebooks 1-2 run CPU-only with local Docker (no GCP project needed). Notebooks 3-5 deploy to GCP with L4 GPU. See the [Triton readme](./Triton/readme.md) for full descriptions.
 
 ---
 

@@ -41,6 +41,7 @@ dependencies = [
     "onnxruntime",
     "onnxscript",
     "torch-model-archiver",
+    "tritonclient[all]",
     "pip",
     "ipykernel",
 ]
