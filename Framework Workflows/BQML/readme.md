@@ -56,7 +56,7 @@ A new way to interact with BigQuery and BigQuery ML is [BigQuery DataFrames](htt
 This repository also has a series of notebook based workflows for many BigQuery ML methods that can be reviewed here: [../../03 - BigQuery ML (BQML)](../../03%20-%20BigQuery%20ML%20(BQML)/readme.md).  These workflows will be reviewed, updated, and migrated to this folder.
 
 **Related Workflows:**
-- `vertex-ai-mlops/MLOps/Serving/`
+- `vertex-ai-mlops/MLOps/Serving/SQL Inference/`
     - Import TensorFlow SavedModel format model directly into BigQuery and get serverless predictions with SQL
-        - [Serve TensorFlow SavedModel Format With BigQuery](../../MLOps/Serving/Serve%20TensorFlow%20SavedModel%20Format%20With%20BigQuery.ipynb) 
+        - [Serve TensorFlow SavedModel Format With BigQuery](../../MLOps/Serving/SQL%20Inference/Serve%20TensorFlow%20SavedModel%20Format%20With%20BigQuery.ipynb) 
    
