@@ -40,7 +40,7 @@
 
 > You are here: `vertex-ai-mlops/MLOps/Serving/readme.md`
 
-This section focuses on turning trained machine learning models into production-ready services, a critical step in the MLOps lifecycle. We'll explore various techniques and tools for deploying models on Vertex AI and other GCP services, enabling you to efficiently serve predictions for your applications.
+This section focuses on turning trained machine learning models into production-ready services. 21 notebooks explore every major GCP serving pattern — online prediction, batch inference, SQL-based inference, and multi-platform deployment — all using the same HuggingFace sentiment models for consistency.
 
 ## Environment Setup
 
@@ -81,12 +81,75 @@ Each notebook includes an environment setup cell that installs required packages
 
 ---
 
-## Serving Methods
+## Online Prediction
 
-There are two primary approaches to model serving, each with its own set of considerations:
+Real-time, low-latency serving via Vertex AI Endpoints. See the **[Online Prediction](./Online/readme.md)** series for 7 notebooks covering every endpoint type, prediction method, autoscaling, and cost optimization:
 
-- **Online Prediction:**  Provides real-time, on-demand predictions with low latency. Ideal for applications requiring immediate responses, such as web applications, fraud detection systems, and interactive chatbots.
-- **Batch Prediction:** Processes a collection of input data points in a single operation. Suitable for scenarios where immediate feedback isn't critical, like generating daily reports, analyzing customer behavior trends, or making recommendations.
+| Notebook | Focus | Key Differentiator |
+|----------|-------|-------------------|
+| [Dedicated Public Endpoint](./Online/Vertex%20AI%20Dedicated%20Public%20Endpoint.ipynb) | Endpoint type | Recommended default: 10 MB, 1-hour timeout, gRPC, SSE |
+| [Shared Public Endpoint](./Online/Vertex%20AI%20Shared%20Public%20Endpoint.ipynb) | Endpoint type | Simplest setup, tuned Gemini + AutoML explainability support |
+| [Private Endpoint With PSC](./Online/Vertex%20AI%20Private%20Endpoint%20With%20PSC.ipynb) | Endpoint type | Private networking via PSC, GCE VM test client |
+| [PSC Endpoint - Pipeline Model Swap](./Online/Vertex%20AI%20PSC%20Endpoint%20-%20Pipeline%20Model%20Swap.ipynb) | MLOps | KFP-automated rollout with health checks and rollback |
+| [Prediction Methods](./Online/Vertex%20AI%20Endpoint%20-%20Prediction%20Methods.ipynb) | Reference | Every prediction method: SDK, REST, gRPC, streaming, multi-language |
+| [Autoscaling](./Online/Vertex%20AI%20Endpoint%20-%20Autoscaling.ipynb) | Operations | Load testing, live metrics dashboard, runtime reconfiguration |
+| [Model Cohosting](./Online/Vertex%20AI%20Endpoint%20-%20Model%20Cohosting.ipynb) | Cost optimization | DeploymentResourcePool, shared VMs, per-model endpoints |
+
+All notebooks use the same HuggingFace sentiment models in a custom FastAPI container. See the [Online readme](./Online/readme.md) for full descriptions.
+
+---
+
+## Batch Inference
+
+Processing large datasets through ML models in a single operation. See the **[Batch Inference](./Batch/readme.md)** series for 4 notebooks covering the same problem across different platforms:
+
+| Notebook | Platform | Key Differentiator |
+|----------|----------|-------------------|
+| [Vertex AI Batch Prediction](./Batch/Vertex%20AI%20Batch%20Prediction.ipynb) | Vertex AI | Managed, container-based, `instanceConfig` column control |
+| [Batch Inference With Dataflow](./Batch/Batch%20Inference%20With%20Dataflow.ipynb) | Dataflow | Beam pipelines, native pre/post processing, `KeyedModelHandler` |
+| [Batch Inference With Dataproc](./Batch/Batch%20Inference%20With%20Dataproc.ipynb) | Dataproc Serverless | PySpark, Pandas UDF, runtime 2.2 pre-installed ML libs |
+| [Orchestrating Batch Inference With Airflow](./Batch/Orchestrating%20Batch%20Inference%20With%20Airflow.ipynb) | Cloud Composer | Scheduling, data dependencies, Airflow → KFP and direct patterns |
+
+Each notebook demonstrates multi-model inference, pre/post processing, and KFP orchestration. See the [Batch readme](./Batch/readme.md) for the full decision framework.
+
+---
+
+## SQL Inference
+
+Run ML predictions directly from SQL — no Python serving code needed. See the **[SQL Inference](./SQL%20Inference/readme.md)** series for 5 notebooks covering two patterns: **remote models** (SQL calls a Vertex AI Endpoint) and **model import** (model runs inside the database engine):
+
+| Notebook | Database | Pattern | Key Differentiator |
+|----------|----------|---------|-------------------|
+| [BQML Remote Model](./SQL%20Inference/BQML%20Remote%20Model%20on%20Vertex%20AI%20Endpoint.ipynb) | BigQuery | Remote model | OLAP batch scoring, `ML.PREDICT()` via Cloud Resource Connection |
+| [AlloyDB AI Remote Model](./SQL%20Inference/AlloyDB%20AI%20Remote%20Model%20on%20Vertex%20AI%20Endpoint.ipynb) | AlloyDB | Remote model | OLTP row-level predictions, `google_ml.predict_row()` |
+| [Spanner ML Remote Model](./SQL%20Inference/Spanner%20ML%20Remote%20Model%20on%20Vertex%20AI%20Endpoint.ipynb) | Spanner | Remote model | Globally distributed inference, `ML.PREDICT()` |
+| [BQML Import via ONNX](./SQL%20Inference/BQML%20Import%20Model%20via%20ONNX.ipynb) | BigQuery | Model import | Model runs IN BigQuery, no endpoint needed, < 250 MB |
+| [BQ TF SavedModel](./SQL%20Inference/Serve%20TensorFlow%20SavedModel%20Format%20With%20BigQuery.ipynb) | BigQuery | Model import | Import TensorFlow SavedModel for serverless SQL predictions |
+
+See the [SQL Inference readme](./SQL%20Inference/readme.md) for the full database ML comparison table.
+
+---
+
+## Serving Platforms
+
+The same custom prediction container deployed to different GCP platforms. See the **[Platforms](./Platforms/readme.md)** series for 4 notebooks demonstrating container portability:
+
+| Notebook | Platform | Key Differentiator |
+|----------|----------|-------------------|
+| [Serving Models on Cloud Run](./Platforms/Serving%20Models%20on%20Cloud%20Run.ipynb) | Cloud Run | Scale-to-zero, OIDC auth, revision-based traffic splitting |
+| [Serving Models on GKE](./Platforms/Serving%20Models%20on%20GKE.ipynb) | GKE Autopilot | Full Kubernetes control, HPA autoscaling, Workload Identity |
+| [Serving Models With Cloud Functions](./Platforms/Serving%20Models%20With%20Cloud%20Functions.ipynb) | Cloud Functions | Lightest serverless option, no container needed, source deploy |
+| [Vertex AI Pre-built Serving Containers](./Platforms/Vertex%20AI%20Pre-built%20Serving%20Containers.ipynb) | Vertex AI | No Dockerfile, no Cloud Build — pre-built TorchServe/TF Serving |
+
+See the [Platforms readme](./Platforms/readme.md) for the full platform comparison table.
+
+---
+
+## Foundational Notebook
+
+| Notebook | Focus |
+|----------|-------|
+| [Understanding Prediction IO With FastAPI](./Understanding%20Prediction%20IO%20With%20FastAPI.ipynb) | Build a custom prediction container, serve online and batch predictions across local, Vertex AI, and Cloud Run |
 
 ---
 
@@ -121,92 +184,6 @@ When deploying models for online prediction on Vertex AI, you choose an [endpoin
 | **Encryption in transit** | TLS (CA-signed) | TLS (CA-signed) | TLS (self-signed, optional) | None |
 | **Tuned Gemini deployment** | No | **Yes** | No | No |
 | **AutoML + explainability** | No | **Yes** | No | No |
-
-### Creating Each Endpoint Type
-
-#### Dedicated Public Endpoint (recommended)
-
-```python
-from google.cloud import aiplatform
-
-aiplatform.init(project = PROJECT_ID, location = REGION)
-
-# Create a dedicated public endpoint
-endpoint = aiplatform.Endpoint.create(
-    display_name = "my-dedicated-public-endpoint",
-    dedicated_endpoint_enabled = True,
-)
-
-# Deploy a model
-endpoint.deploy(
-    model = model,
-    deployed_model_display_name = "model-v1",
-    machine_type = "n1-standard-4",
-    min_replica_count = 1,
-    max_replica_count = 5,
-)
-```
-
-#### Shared Public Endpoint
-
-```python
-# Create a shared public endpoint (the default when dedicated_endpoint_enabled is not set)
-endpoint = aiplatform.Endpoint.create(
-    display_name = "my-shared-public-endpoint",
-)
-
-# Deploy a model — traffic_percentage controls traffic splitting across deployed models
-endpoint.deploy(
-    model = model,
-    deployed_model_display_name = "model-v1",
-    machine_type = "n1-standard-4",
-    min_replica_count = 1,
-    max_replica_count = 3,
-    traffic_percentage = 100,
-)
-```
-
-#### Dedicated Private Endpoint using PSC (recommended for private access)
-
-```python
-# Step 1: Create endpoint with PSC enabled
-endpoint = aiplatform.Endpoint.create(
-    display_name = "my-psc-endpoint",
-    dedicated_endpoint_enabled = True,
-    enable_private_service_connect = True,
-    project_allowlist = [PROJECT_ID],  # projects allowed to connect
-)
-
-# Step 2: Deploy model
-endpoint.deploy(
-    model = model,
-    deployed_model_display_name = "model-v1",
-    machine_type = "n1-standard-4",
-    min_replica_count = 1,
-    max_replica_count = 3,
-)
-
-# Step 3: Create a PSC forwarding rule in your VPC (via gcloud or Terraform)
-# pointing to the service attachment from endpoint.private_service_connect_config
-```
-
-#### Private Endpoint (VPC Peering)
-
-```python
-# Requires VPC peering with servicenetworking.googleapis.com already established
-endpoint = aiplatform.Endpoint.create(
-    display_name = "my-vpc-peering-endpoint",
-    network = f"projects/{PROJECT_NUMBER}/global/networks/{VPC_NETWORK}",
-)
-
-endpoint.deploy(
-    model = model,
-    deployed_model_display_name = "model-v1",
-    machine_type = "n1-standard-4",
-    min_replica_count = 1,
-    max_replica_count = 3,
-)
-```
 
 ### Choosing an Endpoint Type
 
@@ -262,93 +239,9 @@ Two approaches:
 
 ---
 
-## Batch Inference
+## Related Workflows
 
-For batch inference — processing large datasets through ML models in a single operation — see the dedicated **[Batch Inference](./Batch/readme.md)** series. Four self-contained notebooks cover the same problem (sentiment analysis with HuggingFace models) across different GCP platforms:
-
-| Notebook | Platform | Key Differentiator |
-|----------|----------|-------------------|
-| [Vertex AI Batch Prediction](./Batch/Vertex%20AI%20Batch%20Prediction.ipynb) | Vertex AI | Managed, container-based, `instanceConfig` column control |
-| [Batch Inference With Dataflow](./Batch/Batch%20Inference%20With%20Dataflow.ipynb) | Dataflow | Beam pipelines, native pre/post processing, `KeyedModelHandler` |
-| [Batch Inference With Dataproc](./Batch/Batch%20Inference%20With%20Dataproc.ipynb) | Dataproc Serverless | PySpark, Pandas UDF, runtime 2.2 pre-installed ML libs |
-| [Orchestrating Batch Inference With Airflow](./Batch/Orchestrating%20Batch%20Inference%20With%20Airflow.ipynb) | Cloud Composer | Scheduling, data dependencies, Airflow → KFP and direct patterns |
-
-Each notebook demonstrates multi-model inference, pre/post processing, and KFP orchestration via Vertex AI Pipelines. See the [Batch readme](./Batch/readme.md) for the full decision framework.
-
----
-
-## Online Prediction
-
-For online prediction — real-time, low-latency serving via Vertex AI Endpoints — see the dedicated **[Online Prediction](./Online/readme.md)** series. Six notebooks cover each endpoint type, prediction methods, and autoscaling:
-
-| Notebook | Focus | Key Differentiator |
-|----------|-------|-------------------|
-| [Dedicated Public Endpoint](./Online/Vertex%20AI%20Dedicated%20Public%20Endpoint.ipynb) | Endpoint type | Recommended default: 10 MB, 1-hour timeout, gRPC, SSE |
-| [Shared Public Endpoint](./Online/Vertex%20AI%20Shared%20Public%20Endpoint.ipynb) | Endpoint type | Simplest setup, tuned Gemini + AutoML explainability support |
-| [Private Endpoint With PSC](./Online/Vertex%20AI%20Private%20Endpoint%20With%20PSC.ipynb) | Endpoint type | Private networking via PSC, GCE VM test client |
-| [PSC Endpoint - Pipeline Model Swap](./Online/Vertex%20AI%20PSC%20Endpoint%20-%20Pipeline%20Model%20Swap.ipynb) | MLOps | KFP-automated rollout with health checks and rollback |
-| [Prediction Methods](./Online/Vertex%20AI%20Endpoint%20-%20Prediction%20Methods.ipynb) | Reference | Every prediction method: SDK, REST, gRPC, streaming, multi-language |
-| [Autoscaling](./Online/Vertex%20AI%20Endpoint%20-%20Autoscaling.ipynb) | Operations | Load testing, live metrics dashboard, runtime reconfiguration |
-| [Model Cohosting](./Online/Vertex%20AI%20Endpoint%20-%20Model%20Cohosting.ipynb) | Cost optimization | DeploymentResourcePool, shared VMs, per-model endpoints |
-
-All notebooks use the same HuggingFace sentiment models in a custom FastAPI container. See the [Online readme](./Online/readme.md) for full descriptions.
-
----
-
-## Remote Models — SQL-Based Inference
-
-For calling Vertex AI Endpoints from SQL — no Python needed for inference — see the **[Remote Models](./Remote%20Models/readme.md)** series. Three GCP database services can call an endpoint as a remote model via their native SQL interface, plus BigQuery can import models directly via ONNX:
-
-| Notebook | Database | SQL Function | Key Differentiator |
-|----------|----------|-------------|-------------------|
-| [BQML Remote Model](./Remote%20Models/BQML%20Remote%20Model%20on%20Vertex%20AI%20Endpoint.ipynb) | BigQuery | `ML.PREDICT()` | OLAP batch scoring, Cloud Resource Connection |
-| [AlloyDB AI Remote Model](./Remote%20Models/AlloyDB%20AI%20Remote%20Model%20on%20Vertex%20AI%20Endpoint.ipynb) | AlloyDB | `google_ml.predict_row()` | OLTP row-level predictions, `google_ml_integration` |
-| [Spanner ML Remote Model](./Remote%20Models/Spanner%20ML%20Remote%20Model%20on%20Vertex%20AI%20Endpoint.ipynb) | Spanner | `ML.PREDICT()` | Globally distributed inference, Enterprise edition |
-| [BQML Import via ONNX](./Remote%20Models/BQML%20Import%20Model%20via%20ONNX.ipynb) | BigQuery | `ML.PREDICT()` | Model runs IN BigQuery, no endpoint needed, < 250 MB |
-
-See the [Remote Models readme](./Remote%20Models/readme.md) for the full database ML comparison table.
-
----
-
-## Additional Serving Platforms
-
-Beyond Vertex AI Endpoints, the same container can be deployed to other GCP platforms:
-
-| Notebook | Platform | Key Differentiator |
-|----------|----------|-------------------|
-| [Serving Models on Cloud Run](./Serving%20Models%20on%20Cloud%20Run.ipynb) | Cloud Run | Scale-to-zero, OIDC auth, revision-based traffic splitting |
-| [Serving Models on GKE](./Serving%20Models%20on%20GKE.ipynb) | GKE Autopilot | Full Kubernetes control, HPA autoscaling, custom networking |
-| [Serving Models With Cloud Functions](./Serving%20Models%20With%20Cloud%20Functions.ipynb) | Cloud Functions | Lightest serverless option, no container needed, source deploy |
-| [Vertex AI Pre-built Serving Containers](./Vertex%20AI%20Pre-built%20Serving%20Containers.ipynb) | Vertex AI | No Dockerfile, no Cloud Build — pre-built TorchServe/TF Serving |
-
----
-
-## Tutorials and Examples
-
-**Workflows:**
-- Building a custom prediction container that works for online and batch predition across local, Vertex AI Endpoints, Vertex AI Batch Predictions, and Cloud Run
-    - [Understanding Prediction IO With FastAPI](./Understanding%20Prediction%20IO%20With%20FastAPI.ipynb)
-        - Build A Custom Container with FastAPI that repeara the inputs as output predictions
-        - Serve **online predictions** with the container: locally, on Vertex AI Prediction Endpoints, on Cloud Run
-        - Serve **batch predictions** with Vertex AI Batch Prediction and multiple input types:
-            - JSONL
-            - CSV
-            - BigQuery
-            - File List
-            - TFRecord Files
-- Deploy the same custom prediction container to Cloud Run and compare with Vertex AI Endpoints
-    - [Serving Models on Cloud Run](./Serving%20Models%20on%20Cloud%20Run.ipynb)
-        - Deploy the same FastAPI container to Cloud Run — same Docker image, same model, different platform. Container portability via explicit `AIP_*` environment variables.
-        - Authentication deep dive: Cloud Run uses OIDC **ID tokens** (not the access tokens used with Vertex AI). Demonstrates the common mistake, the correct pattern with `google.oauth2.id_token.fetch_id_token()`, granting `roles/run.invoker`, and public access with `allUsers`.
-        - Traffic splitting between revisions: deploy DistilBERT (v1), update to BERT (v2), split traffic 50/50, verify both models serving via different label formats, shift 100% to v2
-        - Configuration reference: autoscaling comparison (scale-to-zero, concurrency-based vs CPU-based), GPU on Cloud Run (L4, constraints), decision framework for when to choose Cloud Run vs Vertex AI
-- Private Endpoint (VPC Peering) — not demonstrated in a notebook
-    - Uses [VPC Network Peering](https://cloud.google.com/vpc/docs/vpc-peering) with the Vertex AI service project for private network access. This is the most restricted endpoint type: no traffic splitting, no request/response logging, no streaming, HTTP only, and a 60-second timeout. Requires establishing VPC peering with `servicenetworking.googleapis.com` before creating the endpoint. For new private deployments, **prefer the PSC approach** — it supports traffic splitting, logging, gRPC, streaming, larger payloads, longer timeouts, and works across multiple VPCs without the limitations of peering. See the [Choose an endpoint type](https://cloud.google.com/vertex-ai/docs/predictions/choose-endpoint-type) documentation for full details.
-- Import TensorFlow SavedModel format model directly into BigQuery and get serverless predictions with SQL
-    - [Serve TensorFlow SavedModel Format With BigQuery](./Serve%20TensorFlow%20SavedModel%20Format%20With%20BigQuery.ipynb) 
-
-**Related Workflows:**
-- `vertex-ai-mlops/Framework Workflows/Catboost/`
+- `vertex-ai-mlops/Framework Workflows/CatBoost/`
     -  Customize prediction responses
         -  [CatBoost Custom Prediction With FastAPI](../../Framework%20Workflows/CatBoost/CatBoost%20Custom%20Prediction%20With%20FastAPI.ipynb)
             - Create multiple FastAPI apps in the same container. One that serves simple responses, another that gives details responses
