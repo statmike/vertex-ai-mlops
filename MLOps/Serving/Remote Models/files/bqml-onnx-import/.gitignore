@@ -1,0 +1,3 @@
+# Model artifacts generated at runtime
+*.onnx
+*.onnx.data

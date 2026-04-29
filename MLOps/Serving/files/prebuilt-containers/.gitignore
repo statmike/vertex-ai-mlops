@@ -1,0 +1,8 @@
+# Model artifacts generated at runtime
+*.mar
+*.safetensors
+*.pb
+*.data-*
+*.index
+model_store/
+tf_saved_model/
