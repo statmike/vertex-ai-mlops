@@ -42,6 +42,33 @@ MLOps/Serving/
 
 ---
 
+## Run and Revise
+
+Notebooks that need a full test run (execute all cells, fix issues, verify outputs). Mark each as done after a clean run.
+
+### Triton Series (5 notebooks — code-reviewed, not yet run)
+
+- [ ] `Triton/Triton Inference Server - Fundamentals.ipynb` — CPU-only local Docker, Python + ONNX backends, HTTP/gRPC clients, dynamic batching
+- [ ] `Triton/Triton Inference Server - Pipelines and Ensembles.ipynb` — CPU-only local Docker, ensembles, BLS, model swap
+- [ ] `Triton/Triton on Vertex AI Endpoints.ipynb` — GCP deploy, rawPredict, multi-model, GPU exercise
+- [ ] `Triton/Triton on Cloud Run.ipynb` — Cloud Run with L4 GPU, OIDC auth, concurrency
+- [ ] `Triton/Triton on GKE.ipynb` — GKE Autopilot with L4 GPU, GCS FUSE, HPA, production probes
+
+### Dataproc Series (4 notebooks — newly created, not yet run)
+
+- [ ] `data+ai/dataproc/examples/dataproc-serverless-fundamentals.ipynb` — Runtimes, BQ connector, SDK submission, Spark properties, job lifecycle
+- [ ] `data+ai/dataproc/examples/dataproc-batch-inference.ipynb` — Pandas UDF vs mapPartitions, multi-model, performance tuning
+- [ ] `data+ai/dataproc/examples/dataproc-structured-streaming.ipynb` — Provisioned cluster, GCS file stream, foreachBatch, Pandas UDF
+- [ ] `data+ai/dataproc/examples/dataproc-vertex-ai-endpoint.ipynb` — Deploy endpoint, call from Spark, model-on-worker vs model-on-endpoint
+
+### Dataflow Basics (1 notebook — newly created, not yet run)
+
+- [ ] `data+ai/dataflow/examples/dataflow-runinference-basics.ipynb` — ModelHandler, KeyedModelHandler, simple Pub/Sub streaming pipeline
+
+**Run order:** Triton 1-2 first (CPU-only, fast iteration), then Triton 3-5 (GCP deploys), then Dataproc 1-4, then Dataflow basics.
+
+---
+
 ## Remaining Notebooks
 
 ### 1. LLM Serving With vLLM

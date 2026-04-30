@@ -1,0 +1,20 @@
+[project]
+name = "dataproc-examples"
+version = "0.1.0"
+description = "Dataproc ML inference example notebooks"
+requires-python = ">=3.10"
+dependencies = [
+    "google-cloud-dataproc>=5.0.0",
+    "google-cloud-bigquery>=3.0.0",
+    "google-cloud-storage>=2.0.0",
+    "google-cloud-aiplatform>=1.30.0",
+    "transformers>=4.40.0",
+    "torch>=2.0.0",
+    "sentencepiece",
+    "pandas",
+    "db-dtypes",
+    "pip",
+]
+
+[dependency-groups]
+dev = ["ipykernel"]

@@ -23,6 +23,15 @@ data+ai/
 │   ├── readme.md                   # (existing) — section navigation
 │   ├── python-to-java.md           # (existing) — multi-language RunInference translation guide
 │   └── gpu/benchmark/              # (existing) — Local GPU vs Vertex AI benchmark
+├── dataproc/                       # (existing) — Spark ML inference on Dataproc
+│   ├── readme.md                   # (existing)
+│   └── examples/                   # (existing) — Dataproc notebook examples
+│       ├── readme.md               # (existing)
+│       ├── pyproject.toml           # (existing)
+│       ├── dataproc-serverless-fundamentals.ipynb  # (existing)
+│       ├── dataproc-batch-inference.ipynb           # (existing)
+│       ├── dataproc-structured-streaming.ipynb      # (existing)
+│       └── dataproc-vertex-ai-endpoint.ipynb        # (existing)
 ├── bq-ml/                          # planned — ML models inside BigQuery
 │   └── readme.md
 ├── tabular-data/                   # (existing) — reading tabular data for ML

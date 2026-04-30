@@ -44,6 +44,7 @@ Example notebooks for Apache Beam and Google Cloud Dataflow.
 
 | Notebook | Description |
 |----------|-------------|
+| [dataflow-runinference-basics.ipynb](dataflow-runinference-basics.ipynb) | RunInference fundamentals — ModelHandler, KeyedModelHandler, simple streaming pipeline |
 | [dataflow-runinference-model-hotswap-event-mode.ipynb](dataflow-runinference-model-hotswap-event-mode.ipynb) | Streaming inference with event-mode model hot-swap via Pub/Sub |
 | [dataflow-runinference-model-hotswap-watch-mode.ipynb](dataflow-runinference-model-hotswap-watch-mode.ipynb) | Streaming inference with watch-mode model hot-swap via GCS polling |
 

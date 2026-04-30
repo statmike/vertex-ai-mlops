@@ -50,4 +50,6 @@ Resources for machine learning and AI across Google Cloud data services — data
 
 - **[Dataflow](dataflow/)** — Dataflow streaming ML pipelines: GPU inference benchmarks comparing Local GPU vs Vertex AI Endpoint approaches, event-mode and watch-mode model hot-swap examples, and a Python-to-Java translation guide for multi-language RunInference pipelines.
 
+- **[Dataproc](dataproc/)** — Spark ML inference on Dataproc: batch inference with Pandas UDFs, Structured Streaming with foreachBatch, calling Vertex AI Endpoints from Spark, and Dataproc Serverless fundamentals.
+
 - **[Google Cloud Databases](gcp-databases.md)** — Overview of Google Cloud's managed database portfolio (BigQuery, Cloud SQL, AlloyDB, Spanner, Bigtable, Firestore, Memorystore) and their AI/ML integration capabilities.

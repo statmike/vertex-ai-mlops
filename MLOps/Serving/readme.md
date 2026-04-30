@@ -248,10 +248,30 @@ Two approaches:
     - [Scale Testing: Streaming with Vertex AI Endpoint](../../Framework%20Workflows/PyTorch/serving/scale-tests-dataflow-streaming-vertex.ipynb)
     - See the full [PyTorch Serving readme](../../Framework%20Workflows/PyTorch/serving/readme.md) for all workflows
 - `vertex-ai-mlops/data+ai/dataflow/` — Standalone Dataflow examples and advanced topics:
+    - [RunInference Basics](../../data%2Bai/dataflow/examples/dataflow-runinference-basics.ipynb)
     - [Model Hot-Swap (Event Mode via Pub/Sub)](../../data%2Bai/dataflow/examples/dataflow-runinference-model-hotswap-event-mode.ipynb)
     - [Model Hot-Swap (Watch Mode via GCS polling)](../../data%2Bai/dataflow/examples/dataflow-runinference-model-hotswap-watch-mode.ipynb)
     - [GPU Inference Benchmark (Local GPU vs Vertex AI Endpoint)](../../data%2Bai/dataflow/gpu/benchmark/README.md)
     - [Python to Java Translation Guide](../../data%2Bai/dataflow/python-to-java.md)
+
+---
+
+## Serving on Dataproc
+
+Spark-based ML inference on [Dataproc](https://cloud.google.com/dataproc), using PySpark Pandas UDFs for batch and streaming workloads. Dataproc Serverless Runtime 2.2 ships with torch and transformers pre-installed — no custom container or dependency installation needed.
+
+Two approaches:
+- **Model on Worker** — Load the model directly into Spark executors via Pandas UDF with module-level caching (highest throughput, no endpoint needed)
+- **Call a Vertex AI Endpoint** — Workers call a deployed endpoint via `aiplatform.Endpoint.predict()` (centralized model management, no ML libs needed on workers)
+
+**Examples in this repository:**
+- `vertex-ai-mlops/data+ai/dataproc/` — Standalone Dataproc examples:
+    - [Dataproc Serverless Fundamentals](../../data%2Bai/dataproc/examples/dataproc-serverless-fundamentals.ipynb)
+    - [Spark Batch Inference](../../data%2Bai/dataproc/examples/dataproc-batch-inference.ipynb)
+    - [Spark Structured Streaming for ML](../../data%2Bai/dataproc/examples/dataproc-structured-streaming.ipynb)
+    - [Spark + Vertex AI Endpoint](../../data%2Bai/dataproc/examples/dataproc-vertex-ai-endpoint.ipynb)
+- `vertex-ai-mlops/MLOps/Serving/Batch/` — Dataproc as a batch inference platform with KFP orchestration:
+    - [Batch Inference With Dataproc](./Batch/Batch%20Inference%20With%20Dataproc.ipynb)
 
 ---
 
