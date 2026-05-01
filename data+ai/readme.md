@@ -52,4 +52,8 @@ Resources for machine learning and AI across Google Cloud data services — data
 
 - **[Dataproc](dataproc/)** — Spark ML inference on Dataproc: batch inference with Pandas UDFs, Structured Streaming with foreachBatch, calling Vertex AI Endpoints from Spark, and Dataproc Serverless fundamentals.
 
+- **[AlloyDB](alloydb/)** — ML inference with AlloyDB AI using `ML.PREDICT()` to call Vertex AI Endpoints for SQL-based predictions.
+
+- **[Spanner](spanner/)** — ML inference with Spanner ML using `ML.PREDICT()` to call Vertex AI Endpoints for SQL-based predictions.
+
 - **[Google Cloud Databases](gcp-databases.md)** — Overview of Google Cloud's managed database portfolio (BigQuery, Cloud SQL, AlloyDB, Spanner, Bigtable, Firestore, Memorystore) and their AI/ML integration capabilities.
