@@ -61,11 +61,11 @@ Notebooks that need a full test run (execute all cells, fix issues, verify outpu
 - [x] `data+ai/dataproc/examples/dataproc-structured-streaming.ipynb` — Provisioned cluster, GCS file stream, foreachBatch, Pandas UDF
 - [x] `data+ai/dataproc/examples/dataproc-vertex-ai-endpoint.ipynb` — Deploy endpoint, call from Spark, model-on-worker vs model-on-endpoint
 
-### Dataflow Basics (1 notebook — not yet run)
+### Dataflow Basics (1 notebook — complete)
 
-- [ ] `data+ai/dataflow/examples/dataflow-runinference-basics.ipynb` — ModelHandler, KeyedModelHandler, simple Pub/Sub streaming pipeline
+- [x] `data+ai/dataflow/examples/dataflow-runinference-basics.ipynb` — ModelHandler, KeyedModelHandler, simple Pub/Sub streaming pipeline
 
-**Remaining:** Dataflow basics notebook.
+**Remaining:** 4 Triton notebooks.
 
 ---
 
