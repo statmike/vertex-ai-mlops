@@ -36,9 +36,9 @@
 </table><br/><br/>
 
 ---
-# Dataproc
+# Dataproc (Managed Service for Apache Spark)
 
-ML inference on Google Cloud Dataproc using PySpark. Covers batch inference with Pandas UDFs, Spark Structured Streaming with ML, and calling Vertex AI Endpoints from Spark jobs.
+ML inference on [Dataproc](https://cloud.google.com/dataproc/docs) (Managed Service for Apache Spark) using PySpark. Covers batch inference with Pandas UDFs, Spark Structured Streaming with ML, and calling Vertex AI Endpoints from Spark jobs.
 
 ## Contents
 

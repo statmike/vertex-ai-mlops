@@ -36,9 +36,9 @@
 </table><br/><br/>
 
 ---
-# Dataproc Examples
+# Dataproc (Managed Service for Apache Spark) — Examples
 
-Example notebooks for ML inference on Google Cloud Dataproc using PySpark.
+Example notebooks for ML inference on [Dataproc](https://cloud.google.com/dataproc/docs) (Managed Service for Apache Spark) using PySpark.
 
 ## Notebooks
 
