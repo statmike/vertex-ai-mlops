@@ -65,7 +65,18 @@ Notebooks that need a full test run (execute all cells, fix issues, verify outpu
 
 - [x] `data+ai/dataflow/examples/dataflow-runinference-basics.ipynb` — ModelHandler, KeyedModelHandler, simple Pub/Sub streaming pipeline
 
-**Remaining:** 0. All Run and Revise notebooks complete.
+### vLLM Series (6 notebooks — testing)
+
+Test order: local notebooks first (fast iteration, no cloud cost), then cloud in order of complexity.
+
+- [ ] `vLLM/vLLM - Fundamentals.ipynb` — local GPU, vLLM + Gemma 4 E2B, OpenAI API, LoRA, structured output, tool calling, speculative decoding
+- [ ] `vLLM/vLLM Multimodal Serving.ipynb` — local GPU, Gemma 4 E4B, image+text via OpenAI vision API
+- [ ] `vLLM/vLLM on Vertex AI Endpoints.ipynb` — pre-built container, rawPredict, Gemma 4 26B-A4B MoE on L4
+- [ ] `vLLM/vLLM on Cloud Run.ipynb` — Dockerfile build, OIDC auth, scale-to-zero, single L4
+- [ ] `vLLM/vLLM on GKE.ipynb` — Autopilot cluster, K8s manifests, LoadBalancer, HPA, Inference Gateway
+- [ ] `vLLM/Triton with vLLM Backend.ipynb` — local Docker, Triton + vLLM backend, multi-model serving
+
+**Remaining:** 6 vLLM notebooks to test.
 
 ---
 
@@ -73,7 +84,7 @@ Notebooks that need a full test run (execute all cells, fix issues, verify outpu
 
 ### 1. vLLM — LLM Serving (6 notebooks)
 
-**Status:** Not Started
+**Status:** Built, testing in progress
 
 **Folder:** `vLLM/` (new subfolder, same structure as `Triton/`)
 
@@ -91,6 +102,14 @@ Notebooks that need a full test run (execute all cells, fix issues, verify outpu
 4. `vLLM on GKE.ipynb` — Autopilot, HPA with vLLM metrics, Inference Gateway
 5. `vLLM Multimodal Serving.ipynb` — Image+text inference with Gemma 4 E4B
 6. `Triton with vLLM Backend.ipynb` — vLLM as Triton backend, bridges both series
+
+**Test order** (local first for fast iteration, then cloud in order of complexity):
+- [ ] `vLLM - Fundamentals.ipynb` — local GPU, validates vLLM + Gemma 4 basics; if this breaks, nothing else works
+- [ ] `vLLM Multimodal Serving.ipynb` — local GPU, validates multimodal support before cloud deploys
+- [ ] `vLLM on Vertex AI Endpoints.ipynb` — simplest cloud deploy (pre-built container, no Dockerfile)
+- [ ] `vLLM on Cloud Run.ipynb` — adds Dockerfile build, OIDC auth, scale-to-zero
+- [ ] `vLLM on GKE.ipynb` — most complex (cluster, K8s manifests, LoadBalancer routing)
+- [ ] `Triton with vLLM Backend.ipynb` — last, depends on both Triton and vLLM understanding; local Docker
 
 ---
 
