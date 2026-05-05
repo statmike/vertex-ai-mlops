@@ -194,11 +194,37 @@ vLLM/
 │   └── vllm-triton/             ← Triton config.pbtxt + Dockerfile
 ```
 
+## GPU Requirement
+
+**All notebooks in this series require a GPU.** vLLM is a GPU-based inference engine — it uses CUDA for model execution, KV cache management, and attention computation. There is no CPU-only mode.
+
+Each notebook includes a GPU check cell that fails fast with clear guidance if no GPU is detected, rather than producing cryptic errors from vLLM's device detection.
+
+**Where to run these notebooks:**
+
+| Platform | GPU Options | Notes |
+|----------|------------|-------|
+| [Google Colab](https://colab.research.google.com/) | T4 (free), L4/A100 (paid) | Easiest way to get started |
+| [Colab Enterprise](https://cloud.google.com/colab/docs/introduction) | L4, A100 | Managed, runs in your GCP project |
+| [Vertex AI Workbench](https://cloud.google.com/vertex-ai/docs/workbench/introduction) | Configurable (T4, L4, A100, etc.) | Full JupyterLab environment |
+| [Cloud Workstations](https://cloud.google.com/workstations/docs/overview) | Attach GPU to workstation config | IDE of choice (VS Code, JetBrains, etc.) |
+| Local machine | Any NVIDIA GPU with CUDA drivers | At least 8 GB VRAM recommended |
+
+The **local notebooks** (Fundamentals, Multimodal, Triton+vLLM) run the vLLM server on the same GPU where the notebook is running — a T4 or L4 is sufficient. The **cloud deployment notebooks** (Vertex AI, Cloud Run, GKE) provision their own GPUs on the target platform, so the notebook itself doesn't need a GPU.
+
+## HuggingFace Authentication
+
+Gemma 4 models are gated on HuggingFace — you must [accept the license](https://huggingface.co/google/gemma-4-E2B-it) and provide an access token. Each notebook handles authentication with two methods:
+
+1. **Google Cloud Secret Manager (automated)** — If you store your HuggingFace token in Secret Manager, the notebook loads it automatically. Set the `HF_SECRET_NAME` parameter in the inputs cell (defaults to `hugging-face-notebooks-read`). This is fully hands-off for Restart & Run All.
+
+2. **Interactive login widget (fallback)** — If Secret Manager isn't available, an `ipywidgets` login form appears. Paste your [HuggingFace token](https://huggingface.co/settings/tokens) and click **Login**. The token is cached to `~/.cache/huggingface/token`, so subsequent runs skip the widget.
+
 ## Prerequisites
 
-- A GCP project with billing enabled
-- GPU access (T4 for local notebooks, L4 for deployment notebooks)
-- A [Hugging Face account](https://huggingface.co/join) with an access token — Gemma 4 models require accepting the [license agreement](https://huggingface.co/google/gemma-4-E2B-it)
-- APIs enabled: Vertex AI, Cloud Run, GKE, Cloud Build, Artifact Registry (as needed per notebook)
+- A GCP project with billing enabled (used for Secret Manager token access and cloud deployments)
+- GPU access — see [GPU Requirement](#gpu-requirement) above
+- A [Hugging Face account](https://huggingface.co/join) with an access token — see [HuggingFace Authentication](#huggingface-authentication) above
+- APIs enabled: Secret Manager, Vertex AI, Cloud Run, GKE, Cloud Build, Artifact Registry (as needed per notebook)
 - Python >= 3.10 with the packages listed in the parent [`pyproject.toml`](../pyproject.toml)
 - Each notebook includes its own setup cells — no pre-configuration needed beyond a GCP project and HuggingFace token

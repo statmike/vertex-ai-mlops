@@ -47,6 +47,7 @@ dependencies = [
     "huggingface_hub",
     "Pillow",
     "pydantic",
+    "ipywidgets",
     "pip",
     "ipykernel",
 ]
