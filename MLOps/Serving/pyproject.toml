@@ -42,6 +42,11 @@ dependencies = [
     "onnxscript",
     "torch-model-archiver",
     "tritonclient[all]",
+    "vllm",
+    "openai",
+    "huggingface_hub",
+    "Pillow",
+    "pydantic",
     "pip",
     "ipykernel",
 ]

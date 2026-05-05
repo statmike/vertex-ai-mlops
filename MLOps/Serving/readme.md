@@ -40,7 +40,7 @@
 
 > You are here: `vertex-ai-mlops/MLOps/Serving/readme.md`
 
-This section focuses on turning trained machine learning models into production-ready services. 26 notebooks explore every major GCP serving pattern — online prediction, batch inference, SQL-based inference, multi-platform deployment, and Triton Inference Server — all using the same HuggingFace sentiment models for consistency.
+This section focuses on turning trained machine learning models into production-ready services. 32 notebooks explore every major GCP serving pattern — online prediction, batch inference, SQL-based inference, multi-platform deployment, Triton Inference Server, and vLLM for LLM serving — using HuggingFace sentiment models for traditional ML and Gemma 4 models for LLM inference.
 
 ## Environment Setup
 
@@ -158,6 +158,23 @@ See the [Platforms readme](./Platforms/readme.md) for the full platform comparis
 | [Triton on GKE](./Triton/Triton%20on%20GKE.ipynb) | Full control | GCS FUSE model repo, HPA with Triton metrics, production probes |
 
 Notebooks 1-2 run CPU-only with local Docker (no GCP project needed). Notebooks 3-5 deploy to GCP with L4 GPU. See the [Triton readme](./Triton/readme.md) for full descriptions.
+
+---
+
+## vLLM — LLM Serving
+
+[vLLM](https://docs.vllm.ai/) — a high-throughput LLM serving engine with PagedAttention, continuous batching, and an OpenAI-compatible API. Purpose-built for large language models, separate from the Triton/FastAPI patterns used for traditional ML. See the **[vLLM](./vLLM/readme.md)** series for 6 notebooks covering fundamentals through production deployment on three platforms:
+
+| Notebook | Focus | Key Differentiator |
+|----------|-------|-------------------|
+| [Fundamentals](./vLLM/vLLM%20-%20Fundamentals.ipynb) | Core + advanced | PagedAttention, LoRA, structured output, tool calling, speculative decoding |
+| [vLLM on Vertex AI](./vLLM/vLLM%20on%20Vertex%20AI%20Endpoints.ipynb) | Managed deployment | Pre-built optimized container, rawPredict, Model Garden |
+| [vLLM on Cloud Run](./vLLM/vLLM%20on%20Cloud%20Run.ipynb) | Serverless | Single L4 GPU, scale-to-zero, SSE streaming |
+| [vLLM on GKE](./vLLM/vLLM%20on%20GKE.ipynb) | Full control | HPA with vLLM metrics, Inference Gateway, multi-GPU |
+| [Multimodal Serving](./vLLM/vLLM%20Multimodal%20Serving.ipynb) | Vision | Gemma 4 image+text inference |
+| [Triton + vLLM](./vLLM/Triton%20with%20vLLM%20Backend.ipynb) | Integration | vLLM as Triton backend, bridges both series |
+
+All notebooks use [Gemma 4](https://ai.google.dev/gemma/docs/core) models. Notebook 1 runs locally with GPU. Notebooks 2-4 deploy to GCP. See the [vLLM readme](./vLLM/readme.md) for full descriptions and platform comparison.
 
 ---
 

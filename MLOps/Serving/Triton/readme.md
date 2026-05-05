@@ -140,6 +140,10 @@ Triton/
 │   └── triton-gke/               ← Dockerfile + model_repository for Cloud Build
 ```
 
+## Related
+
+- **[Triton with vLLM Backend](../vLLM/Triton%20with%20vLLM%20Backend.ipynb)** — Use vLLM as a Triton backend for LLM serving. Combines Triton's multi-model management with vLLM's LLM inference engine. Part of the [vLLM series](../vLLM/readme.md).
+
 ## Prerequisites
 
 - A GCP project with billing enabled

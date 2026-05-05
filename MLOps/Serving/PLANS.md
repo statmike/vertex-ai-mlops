@@ -71,18 +71,26 @@ Notebooks that need a full test run (execute all cells, fix issues, verify outpu
 
 ## Remaining Notebooks
 
-### 1. LLM Serving With vLLM
+### 1. vLLM — LLM Serving (6 notebooks)
 
 **Status:** Not Started
 
-**File:** `LLM Serving With vLLM.ipynb` (root level)
+**Folder:** `vLLM/` (new subfolder, same structure as `Triton/`)
 
 **What it covers:**
-- Deploy an open LLM (Gemma 2B or 7B) with vLLM on Vertex AI Endpoints
-- OpenAI-compatible API via `rawPredict`
-- Key vLLM concepts: continuous batching, PagedAttention, speculative decoding, streaming
-- Benchmarking: tokens/sec, time-to-first-token, concurrent throughput
-- Compare: vLLM vs Model Garden vs Gemini API
+- vLLM serving engine for Gemma 4 models: PagedAttention, continuous batching, OpenAI-compatible API
+- Advanced features: LoRA adapters, structured output, tool calling, speculative decoding
+- Deploy to Vertex AI (pre-built container), Cloud Run (scale-to-zero), GKE (HPA, Inference Gateway)
+- Multimodal inference: image + text with Gemma 4's native vision capabilities
+- Triton + vLLM backend: bridge the Triton and vLLM series
+
+**Notebooks:**
+1. `vLLM - Fundamentals.ipynb` — Core concepts + advanced features (LoRA, structured output, tool calling, speculative decoding), local GPU, Gemma 4 E2B
+2. `vLLM on Vertex AI Endpoints.ipynb` — Pre-built container, rawPredict/streamRawPredict, Gemma 4 26B-A4B MoE
+3. `vLLM on Cloud Run.ipynb` — Single L4, scale-to-zero, SSE streaming, OIDC auth
+4. `vLLM on GKE.ipynb` — Autopilot, HPA with vLLM metrics, Inference Gateway
+5. `vLLM Multimodal Serving.ipynb` — Image+text inference with Gemma 4 E4B
+6. `Triton with vLLM Backend.ipynb` — vLLM as Triton backend, bridges both series
 
 ---
 
@@ -95,18 +103,30 @@ MLOps/Serving/
 ├── SQL Inference/                                             (5 notebooks)
 ├── Platforms/                                                 (4 notebooks)
 ├── Triton/                                                    (5 notebooks)
+├── vLLM/                                                      (6 notebooks) ← NEW
+│   ├── vLLM - Fundamentals.ipynb
+│   ├── vLLM on Vertex AI Endpoints.ipynb
+│   ├── vLLM on Cloud Run.ipynb
+│   ├── vLLM on GKE.ipynb
+│   ├── vLLM Multimodal Serving.ipynb
+│   └── Triton with vLLM Backend.ipynb
 ├── Understanding Prediction IO With FastAPI.ipynb
-├── LLM Serving With vLLM.ipynb                                ← NEW
 ├── PLANS.md, pyproject.toml, readme.md
 ```
 
-**Total remaining: 1** (vLLM)
+**Total remaining: 6** (vLLM series)
 
 ---
 
 ## Build Order
 
-1. **LLM Serving With vLLM** — GPU-heavy, benefits from all prior Serving knowledge
+1. **vLLM Scaffold** — `vLLM/readme.md`, `.gitignore`, update PLANS.md/pyproject.toml/Serving readme
+2. **vLLM - Fundamentals** — Foundation, teaches all vLLM concepts locally
+3. **vLLM on Vertex AI Endpoints** — Simplest deployment (pre-built container)
+4. **vLLM on Cloud Run** — Adds OIDC, scale-to-zero
+5. **vLLM on GKE** — Most complex (K8s, HPA, Inference Gateway)
+6. **vLLM Multimodal Serving** — Independent, any GPU
+7. **Triton with vLLM Backend** — Bridges series, must be last
 
 ---
 
@@ -135,3 +155,7 @@ MLOps/Serving/
 New dependencies to add as notebooks are built:
 - ~~`tritonclient[all]` — Triton client library (Triton series)~~ ✓ Added
 - `vllm` — vLLM engine (LLM serving, GPU required)
+- `openai` — OpenAI SDK for vLLM's compatible API
+- `huggingface_hub` — HuggingFace model access (Gemma 4 is gated)
+- `Pillow` — Image handling for multimodal inference
+- `pydantic` — Structured output schema definitions
