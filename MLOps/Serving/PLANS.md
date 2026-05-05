@@ -46,13 +46,13 @@ MLOps/Serving/
 
 Notebooks that need a full test run (execute all cells, fix issues, verify outputs). Mark each as done after a clean run.
 
-### Triton Series (5 notebooks — 1 complete, 4 remaining)
+### Triton Series (5 notebooks — all complete)
 
 - [x] `Triton/Triton Inference Server - Fundamentals.ipynb` — CPU-only local Docker, Python + ONNX backends, HTTP/gRPC clients, dynamic batching
-- [ ] `Triton/Triton Inference Server - Pipelines and Ensembles.ipynb` — CPU-only local Docker, ensembles, BLS, model swap
-- [ ] `Triton/Triton on Vertex AI Endpoints.ipynb` — GCP deploy, rawPredict, multi-model, GPU exercise
-- [ ] `Triton/Triton on Cloud Run.ipynb` — Cloud Run with L4 GPU, OIDC auth, concurrency
-- [ ] `Triton/Triton on GKE.ipynb` — GKE Autopilot with L4 GPU, GCS FUSE, HPA, production probes
+- [x] `Triton/Triton Inference Server - Pipelines and Ensembles.ipynb` — CPU-only local Docker, linear/fan-out ensembles, routing/cascade BLS, model swap
+- [x] `Triton/Triton on Vertex AI Endpoints.ipynb` — L4 GPU, full ensemble pipeline, rawPredict, multi-model routing
+- [x] `Triton/Triton on Cloud Run.ipynb` — CPU ONNX-direct, OIDC auth, concurrency, GPU exercise
+- [x] `Triton/Triton on GKE.ipynb` — CPU ONNX-direct, GKE Autopilot, HPA, Prometheus metrics, GPU exercise
 
 ### Dataproc Series (4 notebooks — all complete)
 
@@ -65,7 +65,7 @@ Notebooks that need a full test run (execute all cells, fix issues, verify outpu
 
 - [x] `data+ai/dataflow/examples/dataflow-runinference-basics.ipynb` — ModelHandler, KeyedModelHandler, simple Pub/Sub streaming pipeline
 
-**Remaining:** 4 Triton notebooks.
+**Remaining:** 0. All Run and Revise notebooks complete.
 
 ---
 
