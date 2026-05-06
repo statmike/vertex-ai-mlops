@@ -273,6 +273,21 @@ Sections:
 
 **Recommendation:** Both. Quick `cbt`/GoogleSQL demos in NB1 show breadth. Deeper multi-language examples in NB8 serve production teams.
 
+### Priority 6: TTL for Feature Values
+
+**Gap:** No notebook demonstrates time-to-live (TTL) for feature values — automatically expiring stale features so the serving layer never returns outdated data. This is distinct from GC policies (which manage cell versions for storage); TTL is about feature freshness semantics.
+
+**Options:**
+- A. Add a TTL section to NB4 (History and Time Travel) — it already covers GC policies and `MaxAgeGCRule`, so TTL is a natural extension
+- B. Add to NB7 (Schema Evolution and Operations) — fits the operational/lifecycle theme
+- C. Dedicated notebook
+
+**Content:**
+- `MaxAgeGCRule` as TTL: set a short max age so stale features are automatically deleted
+- Application-level TTL: store a `_ttl` or `_expires_at` column, check at read time, skip expired rows
+- Combining TTL with cell versioning: keep N versions but expire anything older than X hours
+- Trade-offs: GC-based TTL is eventually consistent (compaction timing), application-level TTL adds read complexity but is immediate
+
 ### Lower Priority (Nice to Have)
 
 | Item | Where | Notes |
