@@ -1,6 +1,6 @@
 # Bigtable Feature Store — Plans & Status
 
-> Last updated: 2026-05-06
+> Last updated: 2026-05-07
 
 ## What We Built
 
@@ -19,7 +19,7 @@
 
 | # | Notebook | Cells | Size | Status |
 |---|----------|-------|------|--------|
-| 0 | Environment | 42 (23 md, 19 code) | 52 KB | **Built** |
+| 0 | Environment | 42 (23 md, 19 code) | 52 KB | **Built + tested** — label column with learnable signal, ~5% NULLs on 5 columns, `list_clusters()` fix |
 | 1 | Fundamentals | 48 (25 md, 23 code) | 49 KB | **Built + cbt/GoogleSQL/BQ reads** |
 | 2 | Serialization | 58 (24 md, 34 code) | 78 KB | **Built** |
 | 3 | Synchronization | 55 (26 md, 29 code) | 67 KB | **Built + executable streaming + validation** |
@@ -43,18 +43,21 @@ Run notebooks in this order. NB0 creates all shared resources; NB1 creates the f
 - [ ] Ensure no leftover `bigtable_feature_store` BQ dataset (or accept reuse)
 - [ ] Install kernel: `cd Bigtable && uv sync && uv run python -m ipykernel install --user --name bigtable-feature-store --display-name "Bigtable Feature Store"`
 
-### NB0: Environment
+### NB0: Environment ✅
 
-- [ ] Restart & Run All completes without errors
-- [ ] BQ dataset `bigtable_feature_store` created
-- [ ] `dense_features` table: ~130,000 rows, 200+ columns, all BQ data types present
-- [ ] `sparse_events` table: ~2.6M rows, 5 event types
-- [ ] Data investigation plots render (entity group distribution, daily volume, histograms)
-- [ ] Bigtable instance `feature-store` created (DEVELOPMENT, us-central1-a)
-- [ ] Bigtable table `features` created with column families: `features`, `metadata`
-- [ ] APIs enabled: bigquery, bigqueryreservation, bigquerydatatransfer, bigtable, bigtableadmin, pubsub, monitoring
-- [ ] Review: Does the Bigtable architecture explanation (instances → clusters → nodes) read clearly?
-- [ ] Review: Does "Ways to Access Bigtable" section cover enough interfaces?
+- [x] Restart & Run All completes without errors
+- [x] BQ dataset `bigtable_feature_store` created
+- [x] `dense_features` table: 130,000 rows, 224 columns (19 distinct data types)
+- [x] `sparse_events` table: 2,600,000 rows, 5 event types (each ~20%)
+- [x] Data investigation plots render (entity group distribution, daily volume, histograms)
+- [x] Bigtable instance `feature-store` created (DEVELOPMENT, us-central1-a)
+- [x] Bigtable table `features` created with column families: `features`, `metadata`
+- [x] APIs enabled: bigquery, bigqueryreservation, bigquerydatatransfer, bigtable, bigtableadmin, pubsub, monitoring
+- [x] `label` column: 30.5% positive / 69.5% negative — derived from `feature_int_1`, `feature_float_1`, `feature_float_3`, `feature_bool_1` with noise
+- [x] NULL rates: ~5% on `feature_float_3`, `feature_float_4`, `feature_string_2`, `feature_date_2`, `feature_numeric_2`
+- [x] Review: Bigtable architecture explanation reads clearly
+- [x] Review: "Ways to Access Bigtable" section covers client libraries, SQL interfaces, CLI tools
+- [x] Fix: `list_clusters()` returns tuple `(clusters, failed_locations)` — unpacked correctly
 
 ### NB1: Fundamentals
 
@@ -270,8 +273,8 @@ Sections:
 
 ## Execution Order
 
-### Phase 1: Test & Verify (current)
-1. Run NB0 → verify all resources created
+### Phase 1: Test & Verify (in progress)
+1. ~~Run NB0 → verify all resources created~~ **DONE** — label + NULLs added, `list_clusters` fix
 2. Run NB1 → verify end-to-end flow
 3. Run NB2-NB7 in any order → verify each independently
 4. Fix any issues found during testing
