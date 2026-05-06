@@ -1,6 +1,6 @@
 # Bigtable Feature Store — Plans & Status
 
-> Last updated: 2026-05-07
+> Last updated: 2026-05-08
 
 ## What We Built
 
@@ -59,33 +59,42 @@ Run notebooks in this order. NB0 creates all shared resources; NB1 creates the f
 - [x] Review: "Ways to Access Bigtable" section covers client libraries, SQL interfaces, CLI tools
 - [x] Fix: `list_clusters()` returns tuple `(clusters, failed_locations)` — unpacked correctly
 
-### NB1: Fundamentals
+### NB1: Fundamentals ✅
 
-- [ ] Prerequisite check passes (finds BQ dataset + Bigtable instance from NB0)
-- [ ] BQ latency measurement works (SELECT on dense_features)
-- [ ] Enterprise reservation created successfully
-- [ ] App profile created via gcloud
-- [ ] EXPORT DATA completes — verify rows in Bigtable
-- [ ] `#schema` metadata row written and read back correctly
-- [ ] `decode_features()` function works on single-row read
-- [ ] Batch read returns DataFrame with correct values
-- [ ] Latency shootout: BQ vs Bigtable chart renders, Bigtable significantly faster
-- [ ] Native column mapping preview works
-- [ ] Cleanup: reservation and assignment deleted
+- [x] Prerequisite check passes (finds BQ dataset + Bigtable instance from NB0)
+- [x] BQ latency measurement works (SELECT on dense_features)
+- [x] Enterprise reservation created successfully
+- [x] App profile created via gcloud
+- [x] EXPORT DATA completes — verify rows in Bigtable
+- [x] `#schema` metadata row written and read back correctly
+- [x] `decode_features()` function works on single-row read
+- [x] Batch read returns DataFrame with correct values
+- [x] Latency shootout: BQ vs Bigtable chart renders, Bigtable significantly faster
+- [x] Native column mapping preview works
+- [x] Cleanup: reservation and assignment deleted
+- [x] Fix: cbt CLI and GoogleSQL read examples added
+- [x] Fix: BigQuery external table (federated query) example added
 
-### NB2: Serialization
+### NB2: Serialization ✅
 
-- [ ] Prerequisite check passes
-- [ ] Reservation created
-- [ ] 5 Bigtable tables created (features-native, features-json, features-concat, features-proto, features-hybrid)
-- [ ] Data type challenge: INFORMATION_SCHEMA query works, type classification table renders
-- [ ] Method 1 (Native): EXPORT DATA with individual columns, read-back works
-- [ ] Method 2 (JSON): TO_JSON_STRING export, read-back works
-- [ ] Method 3 (Concat): CONCAT export, delimiter trap discussion present
-- [ ] Method 4 (Protobuf): Dynamic protobuf schema generation, binary write, read-back with FileDescriptorSet
-- [ ] Method 5 (Hybrid): Native hot features + protobuf blob
-- [ ] Tax Analysis: storage size comparison, latency benchmark chart renders
-- [ ] Cleanup: reservation deleted, demo tables deleted
+- [x] Prerequisite check passes
+- [x] Reservation created (conditional 180s wait — skips if already exists)
+- [x] 5 Bigtable tables created (features-native, features-json, features-concat, features-proto, features-hybrid)
+- [x] Data type challenge: INFORMATION_SCHEMA query works, type classification table renders (203 BT-native, 21 complex)
+- [x] Method 1 (Native): EXPORT DATA with individual columns, read-back works — all 222 features
+- [x] Method 2 (JSON): TO_JSON_STRING export, read-back works — all 222 features
+- [x] Method 3 (Concat): CONCAT export, delimiter trap discussion present — all 222 features
+- [x] Method 4 (Protobuf): Dynamic protobuf schema generation, binary write, read-back with FileDescriptorSet — all 222 features
+- [x] Method 5 (Hybrid): Native hot features + protobuf blob — all 222 features
+- [x] Tax Analysis: storage size comparison, latency benchmark chart renders
+- [x] Cleanup: reservation deleted, demo tables retained for later notebooks
+- [x] Fix: compound row key (`entity_group#entity_id`) — original used single column causing collisions
+- [x] Fix: `cast_sql()` helper — GEOGRAPHY uses `ST_ASTEXT()`, ARRAY/STRUCT/RANGE/JSON use `TO_JSON_STRING()`
+- [x] Fix: CONCAT NULL propagation — `COALESCE(cast, '')` prevents NULL poisoning entire row
+- [x] Fix: protobuf v6.x — `message_factory.GetMessageClass()` replaces removed `GetPrototype()`
+- [x] Fix: TYPE_BYTES protobuf fields — `.encode('utf-8')` for string values
+- [x] Fix: `_is_null()` helper — `pd.notna()` fails on list values from ARRAY columns
+- [x] Fix: all 5 methods now serialize all 222 features (was 201 for non-JSON methods)
 
 ### NB3: Synchronization
 
@@ -275,10 +284,12 @@ Sections:
 
 ### Phase 1: Test & Verify (in progress)
 1. ~~Run NB0 → verify all resources created~~ **DONE** — label + NULLs added, `list_clusters` fix
-2. Run NB1 → verify end-to-end flow
-3. Run NB2-NB7 in any order → verify each independently
-4. Fix any issues found during testing
-5. Final review of markdown quality, flow, and readability
+2. ~~Run NB1 → verify end-to-end flow~~ **DONE** — cbt/GoogleSQL/BQ federated reads added
+3. ~~Run NB2 → verify all 5 serialization methods~~ **DONE** — compound row key, cast_sql, NULL handling, protobuf v6 fixes, all 222 features across all methods
+4. Run NB3-NB7 in any order → verify each independently
+5. Run NB8-NB9 → verify serving and dynamic features
+6. Fix any issues found during testing
+7. Final review of markdown quality, flow, and readability
 
 ### Phase 2: Fill Gaps (COMPLETE)
 1. ~~Build NB8 (Serving Integration) — the "so what" notebook~~ **DONE** (46 cells)
