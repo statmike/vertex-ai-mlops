@@ -96,18 +96,24 @@ Run notebooks in this order. NB0 creates all shared resources; NB1 creates the f
 - [x] Fix: `_is_null()` helper — `pd.notna()` fails on list values from ARRAY columns
 - [x] Fix: all 5 methods now serialize all 222 features (was 201 for non-JSON methods)
 
-### NB3: Synchronization
+### NB3: Synchronization ✅
 
-- [ ] Prerequisite check passes
-- [ ] Reservation + app profile created
-- [ ] One-time EXPORT DATA completes, row count verified
-- [ ] `overwrite = true` vs `overwrite = false` comparison cell reads clearly
-- [ ] Scheduled query pattern (Data Transfer Service) — API call shown (not executed is OK)
-- [ ] Orchestration alternatives section (Airflow/Composer, Cloud Scheduler, Workflows) present
-- [ ] Continuous query SQL with `APPENDS()` — shown as reference pattern
-- [ ] Streaming pipeline architecture diagram present
-- [ ] Propagation Race: test row inserted, EXPORT DATA timed, propagation measured
-- [ ] Cleanup: reservation resources deleted
+- [x] Prerequisite check passes
+- [x] Reservation + app profile created (conditional 180s wait)
+- [x] One-time EXPORT DATA completes, 130K rows verified in Bigtable
+- [x] `overwrite = true` vs `overwrite = false` comparison — corrected (no upsert mode)
+- [x] Scheduled query pattern (Data Transfer Service) — API call shown (not executed)
+- [x] Orchestration alternatives section (Airflow/Composer, Cloud Scheduler, Workflows) present
+- [x] Continuous query SQL with `APPENDS()` — shown as reference pattern, upsert semantics noted
+- [x] Streaming pipeline: executable Pub/Sub → Bigtable demo (20 events published, pulled, written, verified, cleaned up)
+- [x] Post-export validation: row count, sample check (10/10), schema row — all PASS
+- [x] Propagation Race: test row inserted, EXPORT DATA in 1.6s, row verified in Bigtable
+- [x] Cleanup: reservation and assignment deleted, no ongoing charges
+- [x] Fix: `BT_COLUMN_FAMILY.encode()` → `BT_COLUMN_FAMILY` (string key, not bytes) in validation
+- [x] Fix: `b'_values'` → `b'_schema'` for schema row column qualifier
+- [x] Fix: `overwrite = false` → `overwrite = true` in propagation race (no upsert mode for EXPORT DATA)
+- [x] Fix: corrected markdown framing — `overwrite = false` requires empty table, not upsert
+- [x] Fix: continuous query SQL uses upsert semantics natively (no overwrite option)
 
 ### NB4: History and Time Travel
 
@@ -286,10 +292,11 @@ Sections:
 1. ~~Run NB0 → verify all resources created~~ **DONE** — label + NULLs added, `list_clusters` fix
 2. ~~Run NB1 → verify end-to-end flow~~ **DONE** — cbt/GoogleSQL/BQ federated reads added
 3. ~~Run NB2 → verify all 5 serialization methods~~ **DONE** — compound row key, cast_sql, NULL handling, protobuf v6 fixes, all 222 features across all methods
-4. Run NB3-NB7 in any order → verify each independently
-5. Run NB8-NB9 → verify serving and dynamic features
-6. Fix any issues found during testing
-7. Final review of markdown quality, flow, and readability
+4. ~~Run NB3 → verify synchronization patterns~~ **DONE** — overwrite semantics corrected, validation cell fixed, Pub/Sub demo working
+5. Run NB4-NB7 in any order → verify each independently
+6. Run NB8-NB9 → verify serving and dynamic features
+7. Fix any issues found during testing
+8. Final review of markdown quality, flow, and readability
 
 ### Phase 2: Fill Gaps (COMPLETE)
 1. ~~Build NB8 (Serving Integration) — the "so what" notebook~~ **DONE** (46 cells)
