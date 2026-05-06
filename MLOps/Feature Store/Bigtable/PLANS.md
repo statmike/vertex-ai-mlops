@@ -293,10 +293,11 @@ Sections:
 2. ~~Run NB1 → verify end-to-end flow~~ **DONE** — cbt/GoogleSQL/BQ federated reads added
 3. ~~Run NB2 → verify all 5 serialization methods~~ **DONE** — compound row key, cast_sql, NULL handling, protobuf v6 fixes, all 222 features across all methods
 4. ~~Run NB3 → verify synchronization patterns~~ **DONE** — overwrite semantics corrected, validation cell fixed, Pub/Sub demo working
-5. Run NB4-NB7 in any order → verify each independently
-6. Run NB8-NB9 → verify serving and dynamic features
-7. Fix any issues found during testing
-8. Final review of markdown quality, flow, and readability
+5. ~~Run NB4 → verify history and time travel~~ **DONE** — metric_1/2/3→feature_1/2/3 alias, TimestampRangeFilter API fix
+6. Run NB5-NB7 in any order → verify each independently
+7. Run NB8-NB9 → verify serving and dynamic features
+8. Fix any issues found during testing
+9. Final review of markdown quality, flow, and readability
 
 ### Phase 2: Fill Gaps (COMPLETE)
 1. ~~Build NB8 (Serving Integration) — the "so what" notebook~~ **DONE** (46 cells)
