@@ -41,6 +41,10 @@
 
 A core part of MLOps, for going from model to MODELS, is feature management.  [Vertex AI Feature Store](https://cloud.google.com/vertex-ai/docs/featurestore/latest/overview) is an excellent way manage features and short-cut the process of deploying models into production systems.
 
+> **Also in this series: [Bigtable Feature Store](../Bigtable/readme.md)**
+>
+> Vertex AI Feature Store is a **managed** feature store — Google handles the online serving infrastructure, sync, and feature registry. For teams that need **full control** over the serving layer — direct writes from applications, streaming ingestion via Pub/Sub and Dataflow, multi-region replication, custom serialization, or fine-grained read/write priority isolation — see the [Bigtable Feature Store](../Bigtable/readme.md) series. Both approaches use BigQuery as the offline store. See the [comparison table](../readme.md#choosing-an-approach) in the parent readme.
+
 >**Versions**
 >
 >Vertex AI Feature Store (pre-2023) is now named [Vertex Ai Feature Store (Legacy)](https://cloud.google.com/vertex-ai/docs/featurestore#vaifs_legacy).  The new feature store is [Vertex AI Feature Store](https://cloud.google.com/vertex-ai/docs/featurestore).  This readme will now focus on the latest feature store but for information regarding the legacy feature store see:

@@ -1,0 +1,25 @@
+[project]
+name = "bigtable-feature-store"
+version = "0.1.0"
+description = "Bigtable Feature Store notebook series"
+requires-python = ">=3.10"
+dependencies = [
+    "google-cloud-bigtable",
+    "google-cloud-bigquery",
+    "google-cloud-bigquery-reservation",
+    "google-cloud-pubsub",
+    "google-cloud-storage",
+    "google-cloud-monitoring",
+    "google-cloud-aiplatform",
+    "db-dtypes",
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "protobuf",
+    "grpcio",
+    "scikit-learn",
+    "fastapi",
+    "uvicorn",
+    "requests",
+    "ipykernel",
+]
