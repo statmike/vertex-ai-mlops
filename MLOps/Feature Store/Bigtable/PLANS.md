@@ -257,7 +257,9 @@ All 8 original MYPLANS.md modules are fully covered. We also added content beyon
 
 ## What's Missing — Planned Additions
 
-### Priority 1: Serving Integration Notebook (NB8)
+> **Status:** Priorities 1–5 are complete (built in Phase 2). Priority 6 (TTL) is deferred to Phase 4.
+
+### ~~Priority 1: Serving Integration Notebook (NB8)~~ ✅ COMPLETE
 
 **Gap:** We teach writing features to Bigtable and reading them back — in notebooks. But we never show the payoff: a serving application that reads features from Bigtable before making a prediction. The Vertex AI series has a CatBoost example (`CatBoost Prediction With Vertex AI Feature Store`). The Bigtable series needs its equivalent.
 
@@ -292,7 +294,7 @@ NB8 should include a section that demonstrates this coordination:
 
 NB7 should cross-reference NB8 for this topic: "For production schema migration during live serving, see NB8 Section X." NB8 should cross-reference NB7 for the mechanics: "For schema versioning fundamentals, see NB7 Sections 2-4."
 
-### Priority 2: Serving with Dynamic Feature Computation (NB9)
+### ~~Priority 2: Serving with Dynamic Feature Computation (NB9)~~ ✅ COMPLETE
 
 **Gap:** At serving time, a new event arrives (e.g., a user clicks something) and the model needs features that depend on that event combined with pre-computed features already in Bigtable. Examples: "clicks in the last 30 seconds" requires the new click + the running count; "average transaction amount" requires the new transaction + the stored running average. The client shouldn't have to compute this — the serving layer should handle it with minimal latency.
 
@@ -309,7 +311,7 @@ Sections:
 
 **Why it matters:** This is the pattern that separates a demo feature store from a production one. Most real ML systems need both pre-computed features (batch) and real-time features (streaming/dynamic). Showing how to combine them at serving time with minimal client complexity is the advanced story.
 
-### Priority 3: Executable Streaming Pipeline (fix NB3 + NB5)
+### ~~Priority 3: Executable Streaming Pipeline (fix NB3 + NB5)~~ ✅ COMPLETE
 
 **Gap:** NB3 (Synchronization) shows Pub/Sub → Dataflow → Bigtable as pseudocode. This needs to be real, executable code — not reference patterns.
 
@@ -321,7 +323,7 @@ Sections:
 - NB5: The streaming section should also use real Pub/Sub messages, not simulated data. Create a topic, publish events, consume and write to Bigtable — all executable.
 - Both notebooks should show the full loop: publish event → consume → write to Bigtable → read back → measure end-to-end latency
 
-### Priority 4: Feature Validation & Data Quality
+### ~~Priority 4: Feature Validation & Data Quality~~ ✅ COMPLETE
 
 **Gap:** No notebook covers how to verify features were exported correctly or detect feature drift.
 
@@ -331,7 +333,7 @@ Sections:
 
 **Recommendation:** Option A — add validation cells to existing notebooks rather than creating a new one. Post-export verification is a natural fit for NB3. Feature drift monitoring fits NB7.
 
-### Priority 5: Multi-Language Read Examples
+### ~~Priority 5: Multi-Language Read Examples~~ ✅ COMPLETE
 
 **Gap:** All notebooks use Python. Teams with Go/Java/Node.js serving stacks can't directly use our patterns.
 
@@ -366,14 +368,14 @@ Decision deferred until NB7-NB9 testing is complete and we can evaluate where TT
 
 ### Lower Priority (Nice to Have)
 
-| Item | Where | Notes |
-|------|-------|-------|
-| Terraform/IaC for Bigtable provisioning | NB7 or dedicated section | Show `google_bigtable_instance` resource block |
-| CI/CD testing patterns | NB7 | How to integration-test feature store pipelines |
-| Bigtable emulator for local dev | NB0 or NB8 | `gcloud beta emulators bigtable start` |
-| BigQuery external table reading from Bigtable | NB8 | Federated query: BQ → Bigtable |
-| Materialized views in Bigtable | Future NB | GoogleSQL continuous materialized views |
-| Feature store for embeddings / vector features | Future NB | Store and retrieve embedding vectors, compare with Vertex AI Feature Store's vector search |
+| Item | Where | Status | Notes |
+|------|-------|--------|-------|
+| Terraform/IaC for Bigtable provisioning | NB7 or dedicated section | Pending | Show `google_bigtable_instance` resource block |
+| CI/CD testing patterns | NB7 | Pending | How to integration-test feature store pipelines |
+| Bigtable emulator for local dev | NB0 or NB8 | Phase 5 | `gcloud beta emulators bigtable start` |
+| ~~BigQuery external table reading from Bigtable~~ | NB8 | **Done** | Federated query: BQ → Bigtable (Section 3d) |
+| Materialized views in Bigtable | Future NB | Pending | GoogleSQL continuous materialized views |
+| Feature store for embeddings / vector features | Future NB | Phase 5 | Store and retrieve embedding vectors, compare with Vertex AI Feature Store's vector search |
 
 ---
 
@@ -403,8 +405,57 @@ Decision deferred until NB7-NB9 testing is complete and we can evaluate where TT
 7. ~~Add feature drift monitoring cells to NB7~~ **DONE** (50→56 cells, includes BQ ML validation functions)
 8. ~~Update readme.md with NB8 and NB9 entries~~ **DONE**
 
-### Phase 3: Polish
+### Phase 3: Polish (IN PROGRESS)
 1. Run full series end-to-end one more time
 2. Review all markdown for clarity, scannability, and consistency
-3. Ensure every concept links to documentation
-4. Final commit
+3. ~~Fix broken cross-reference links in NB1~~ **DONE** — 4 links corrected
+4. ~~Add cross-references between related notebooks~~ **DONE** — NB3↔NB5, NB4→NB7, NB5→NB9, NB6→NB2, NB9→NB1/NB5/NB8
+5. ~~Add missing documentation links~~ **DONE** — autoscaling, IAM, connection pooling, retry/timeout, row key best practices
+6. Final commit
+
+### Phase 4: Short-term Content Additions
+Enterprise-grade gaps identified during testing. These can be added as sections within existing notebooks without restructuring.
+
+1. **TTL / Feature Freshness** (NB4 + NB8)
+   - NB4: Add section on `MaxAgeGCRule` as TTL, combining with `MaxVersionsGCRule`, application-level `_expires_at` column pattern
+   - NB8: Add serving-time freshness check — skip or flag predictions when features are older than a threshold
+   - Trade-offs: GC-based TTL is eventually consistent (compaction timing) vs application-level TTL (immediate but adds read complexity)
+
+2. **Security & IAM** (NB7)
+   - Add section to NB7 covering [IAM roles and permissions](https://cloud.google.com/bigtable/docs/access-control): `bigtable.reader`, `bigtable.user`, `bigtable.admin`
+   - Service account best practices for serving endpoints (read-only) vs admin operations
+   - Column-family-level access control patterns
+   - Cross-reference: [Bigtable security overview](https://cloud.google.com/bigtable/docs/security)
+
+3. **Autoscaling & Capacity Planning** (NB7)
+   - Expand Section 7 (Cost Optimization) with executable autoscaling configuration via `gcloud bigtable clusters update`
+   - CPU target tuning: 60% for latency-sensitive serving vs 70% for batch workloads
+   - Capacity planning: estimating nodes from QPS requirements (~10K reads/node for 10ms p99)
+   - Cross-reference: [Bigtable autoscaling](https://cloud.google.com/bigtable/docs/autoscaling), [understanding performance](https://cloud.google.com/bigtable/docs/performance)
+
+### Phase 5: Longer-term Content
+These require new notebooks or significant additions. Lower urgency — the 10-notebook series is complete without them.
+
+1. **Final Project: Real-time Recommendation Engine**
+   - New notebook that ties the entire series together: a mini-recommendation system using all patterns
+   - User features in Bigtable (batch-synced from BQ), item features (direct writes), interaction counts (atomic increments)
+   - Serving endpoint that reads user features + item features + real-time signals → produces ranked recommendations
+   - End-to-end latency measurement: feature read + model inference + response
+   - Uses: NB0 data, NB1 export, NB2 serialization, NB5 streaming writes, NB6 key design, NB8 serving, NB9 dynamic features
+
+2. **Embeddings & Vector Features**
+   - New notebook covering embedding storage and retrieval in Bigtable
+   - Store embedding vectors as serialized payloads (protobuf, binary, base64)
+   - Nearest-neighbor search patterns: brute-force scan vs pre-computed ANN indices
+   - Comparison with Vertex AI Feature Store's built-in vector search capabilities
+   - Use case: product embeddings for similarity-based recommendations
+
+3. **Bigtable Emulator for Local Development**
+   - Add section to NB0 (Environment): `gcloud beta emulators bigtable start` for local testing
+   - Show how to run notebook cells against the emulator vs production
+   - Useful for CI/CD pipelines that can't connect to a live Bigtable instance
+
+4. **Multi-Region Replication**
+   - Expand NB7 with replication topology patterns (single-cluster, multi-cluster, cross-region)
+   - Consistency models: eventual vs strong consistency with single-cluster routing
+   - Failover testing: simulate cluster failure, verify reads still work via multi-cluster routing
