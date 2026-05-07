@@ -142,20 +142,25 @@ Run notebooks in this order. NB0 creates all shared resources; NB1 creates the f
 - [ ] Idempotency patterns documented
 - [ ] Cleanup: experiment table deleted
 
-### NB6: Key Design and Organization
+### NB6: Key Design and Organization ✅
 
-- [ ] Prerequisite check passes
-- [ ] Row key anatomy explanation with compound key format
-- [ ] Key distribution visualization renders (bar chart, pie chart)
-- [ ] Hotspot anti-patterns demonstrated with visualizations
-- [ ] 4 key design patterns compared with distribution plots
-- [ ] Creates `features-key-design` table, writes 300 rows from BQ
-- [ ] Point reads, prefix scans, filtered scans, multi-row reads all work
-- [ ] Creates `features-multi-cf` table with 3 column families
-- [ ] Selective reads per family demonstrated
-- [ ] Single table vs multi-table decision matrix present
-- [ ] Key Visualizer section (console URLs, simulated heatmaps)
-- [ ] Cleanup: demo tables deleted
+- [x] Prerequisite check passes
+- [x] Row key anatomy explanation with compound key format
+- [x] Key distribution visualization renders (bar chart, pie chart)
+- [x] Hotspot anti-patterns demonstrated with visualizations (timestamp, skewed, hash-only)
+- [x] 4 key design patterns compared with distribution plots
+- [x] Creates `features-key-design` table, writes 300 rows from BQ (100 per group: A, B, C)
+- [x] Point reads, prefix scans, filtered scans, multi-row reads all work (4/4 keys found)
+- [x] Latency comparison table: point read, prefix scan, filtered scan, multi-row read
+- [x] Creates `features-multi-cf` table with 3 column families (features, metadata, streaming)
+- [x] Selective reads per family demonstrated (features-only, metadata-only, full row)
+- [x] GC policy demo: 7 versions written, 8 retained (GC not yet compacted), max 5 policy
+- [x] Single table vs multi-table decision matrix present
+- [x] Key Visualizer section (console URLs, simulated heatmaps for 3 patterns)
+- [x] Cleanup: demo tables deleted
+- [x] Fix: `BQ_SOURCE_TABLE_A` corrected from `'entity_features_dense'` to `'dense_features'`
+- [x] Fix: `entity_id` format — already a zero-padded string, removed `:06d` int format spec
+- [x] Fix: balanced per-group query using `ROW_NUMBER()` window function (was `LIMIT 300` returning only group A)
 
 ### NB7: Schema Evolution and Operations
 
@@ -310,7 +315,8 @@ Sections:
 4. ~~Run NB3 → verify synchronization patterns~~ **DONE** — overwrite semantics corrected, validation cell fixed, Pub/Sub demo working
 5. ~~Run NB4 → verify history and time travel~~ **DONE** — metric_1/2/3→feature_1/2/3 alias, TimestampRangeFilter API fix
 6. ~~Run NB5 → verify streaming and direct writes~~ **DONE** — ConditionalRow API fix (set_cell with state= param, not set_cell_on_true/false)
-7. Run NB6-NB7 → verify each independently
+7. ~~Run NB6 → verify key design and organization~~ **DONE** — table name fix (entity_features_dense→dense_features), entity_id format fix (already zero-padded string, not int), balanced per-group query for multi-group demos
+8. Run NB7 → verify schema evolution and operations
 7. Run NB8-NB9 → verify serving and dynamic features
 9. Fix any issues found during testing
 10. Final review of markdown quality, flow, and readability
