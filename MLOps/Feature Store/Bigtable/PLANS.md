@@ -26,8 +26,8 @@
 | 4 | History and Time Travel | 57 (33 md, 24 code) | 59 KB | **Built** |
 | 5 | Streaming and Direct Writes | 70 (37 md, 33 code) | 75 KB | **Built + Pub/Sub demo** |
 | 6 | Key Design and Organization | 63 (30 md, 33 code) | 69 KB | **Built** |
-| 7 | Schema Evolution and Operations | 56 (28 md, 28 code) | 76 KB | **Built + drift monitoring + BQ ML validation** |
-| 8 | Serving Integration | 46 (22 md, 24 code) | 42 KB | **Built** |
+| 7 | Schema Evolution and Operations | 57 (30 md, 27 code) | 76 KB | **Built + drift monitoring + BQ ML validation + NB8 cross-ref** |
+| 8 | Serving Integration | 53 (26 md, 27 code) | 42 KB | **Built + tested** — real label, 5 read methods, FastAPI, schema evolution Section 6 |
 | 9 | Dynamic Features | 47 (23 md, 24 code) | 47 KB | **Built** |
 
 ---
@@ -115,32 +115,32 @@ Run notebooks in this order. NB0 creates all shared resources; NB1 creates the f
 - [x] Fix: corrected markdown framing — `overwrite = false` requires empty table, not upsert
 - [x] Fix: continuous query SQL uses upsert semantics natively (no overwrite option)
 
-### NB4: History and Time Travel
+### NB4: History and Time Travel ✅
 
-- [ ] Prerequisite check passes
-- [ ] Creates `features-history-key` table (key-based history design)
-- [ ] Creates `features-history-cell` table (cell versioning design)
-- [ ] Writes sample entities with timestamps to both tables
-- [ ] Key-based: prefix range scan works, `read_features_at_time_key_design()` works
-- [ ] Cell versioning: `CellsColumnLimitFilter(1)` returns latest, `TimestampRangeFilter` returns PIT
-- [ ] Point-in-time joins implemented for both designs
-- [ ] `ML.FEATURES_AT_TIME` and `ML.ENTITY_FEATURES_AT_TIME` BQ queries work
-- [ ] GC policy demo tables created and GC behavior demonstrated
-- [ ] Trade-off summary table present and clear
-- [ ] Cleanup: demo tables deleted
+- [x] Prerequisite check passes
+- [x] Creates `features-history-key` table (key-based history design)
+- [x] Creates `features-history-cell` table (cell versioning design)
+- [x] Writes sample entities with timestamps to both tables
+- [x] Key-based: prefix range scan works, `read_features_at_time_key_design()` works
+- [x] Cell versioning: `CellsColumnLimitFilter(1)` returns latest, `TimestampRangeFilter` returns PIT
+- [x] Point-in-time joins implemented for both designs
+- [x] `ML.FEATURES_AT_TIME` and `ML.ENTITY_FEATURES_AT_TIME` BQ queries work
+- [x] GC policy demo tables created and GC behavior demonstrated
+- [x] Trade-off summary table present and clear
+- [x] Cleanup: demo tables deleted
 
-### NB5: Streaming and Direct Writes
+### NB5: Streaming and Direct Writes ✅
 
-- [ ] Prerequisite check passes
-- [ ] Creates `features-writes` table with `MaxVersionsGCRule(3)`
-- [ ] Single-row write + read-back works
-- [ ] Batch write (1,000 rows) completes, throughput measured
-- [ ] Atomic increment (`increment_cell_value`) works, concurrent test passes
-- [ ] Conditional write (`CheckAndMutateRow`) state transition works
-- [ ] Change streams section present (reference pattern — may not execute if not enabled)
-- [ ] Dual-write architecture diagrams present
-- [ ] Idempotency patterns documented
-- [ ] Cleanup: experiment table deleted
+- [x] Prerequisite check passes
+- [x] Creates `features-writes` table with `MaxVersionsGCRule(3)`
+- [x] Single-row write + read-back works
+- [x] Batch write (1,000 rows) completes, throughput measured
+- [x] Atomic increment (`increment_cell_value`) works, concurrent test passes
+- [x] Conditional write (`CheckAndMutateRow`) state transition works
+- [x] Change streams section present (reference pattern — may not execute if not enabled)
+- [x] Dual-write architecture diagrams present
+- [x] Idempotency patterns documented
+- [x] Cleanup: experiment table deleted
 
 ### NB6: Key Design and Organization ✅
 
@@ -162,19 +162,52 @@ Run notebooks in this order. NB0 creates all shared resources; NB1 creates the f
 - [x] Fix: `entity_id` format — already a zero-padded string, removed `:06d` int format spec
 - [x] Fix: balanced per-group query using `ROW_NUMBER()` window function (was `LIMIT 300` returning only group A)
 
-### NB7: Schema Evolution and Operations
+### NB7: Schema Evolution and Operations ✅
 
-- [ ] Prerequisite check passes
-- [ ] Versioned schema rows (`#schema#v1`, `#schema#v2`, `#schema#current`) written and read
-- [ ] Schema upgrade and rollback demonstrated
-- [ ] Adding features: v1 → v2 with backward-compatible decoder
-- [ ] Removing features: deprecated metadata, decoder skips deprecated columns
-- [ ] Backfill: reads existing rows, batch-appends new features
-- [ ] Cloud Monitoring queries execute (may return no data if instance is new)
-- [ ] App profiles: created via gcloud, priority levels explained
-- [ ] Cost estimation table present
-- [ ] Production readiness checklist (20+ items)
-- [ ] Cleanup: demo rows, schema versions, and app profiles deleted
+- [x] Prerequisite check passes
+- [x] Versioned schema rows (`#schema#v1`, `#schema#v2`, `#schema#current`) written and read
+- [x] Schema upgrade and rollback demonstrated
+- [x] Adding features: v1 → v2 with backward-compatible decoder
+- [x] Removing features: deprecated metadata, decoder skips deprecated columns
+- [x] Backfill: reads existing rows, batch-appends new features (using isolated `backfill_*` demo rows)
+- [x] Cloud Monitoring queries execute (248 requests: 223 ReadRows, 25 MutateRows, CPU 1.4-1.9%)
+- [x] App profiles: created via gcloud, priority levels explained
+- [x] Cost estimation: conceptual breakdown (storage footprint, node-hour scenarios), no dollar amounts
+- [x] Production readiness checklist (20+ items)
+- [x] Cleanup: 214 demo rows (`backfill_*`) + 2 app profiles deleted
+- [x] Data validation: ML.DESCRIBE_DATA works, ML.VALIDATE_DATA_DRIFT clean (JSD < 0.001)
+- [x] Drift detection: all 5 features OK (shift < 0.06σ)
+- [x] NB8 cross-reference cell added (points to NB8 Section 6)
+- Pre-test fixes applied:
+  - Fix: schema V1/V2/V3 column order reordered to match NB1 EXPORT DATA order (5 INT64 then 5 FLOAT64)
+  - Fix: demo row value generation reordered to match schema column order
+  - Fix: backfill redesigned to use dedicated `backfill_*` rows — zero side effects on shared serving data
+  - Fix: cleanup deletes `backfill_*` rows via batched `mutate_rows()`
+  - Fix: ML.DESCRIBE_DATA — removed invalid `categorical_default_threshold` param
+  - Fix: ML.VALIDATE_DATA_SKEW — changed to reference pattern (requires trained BQML model)
+  - Fix: cost analysis — removed specific dollar amounts, restructured to conceptual tables with pricing page link
+  - Design: production schema evolution during live serving deferred to NB8 (see NB7↔NB8 cross-reference in Priority 1)
+
+### NB8: Serving Integration ✅
+
+- [x] Prerequisite check passes (BQ dataset + Bigtable data from NB0/NB1)
+- [x] Model trained on real `label` column from `dense_features` (70/30 split, 81.2% accuracy)
+- [x] Single-entity read+predict: 7.6ms read, 14.4ms total, proper two-class probabilities
+- [x] Batch predictions: 50 entities, mean read 7.5ms, mean total 13.6ms
+- [x] Latency charts render (stacked bar + histogram)
+- [x] 5 read methods demonstrated: Python client, cbt CLI, GoogleSQL, BQ external table, REST/gRPC
+- [x] BQ external table: created and queried via UNNEST(features.column)
+- [x] FastAPI serving endpoint: /predict and /health, runs on background thread
+- [x] 10 prediction requests with realistic probability mix (0s and 1s)
+- [x] 100 concurrent requests: wall p50=145ms, server-side read p50=6.9ms
+- [x] Schema evolution during live serving (Section 6): 60 requests, 0 errors across 3 phases
+- [x] Latency flat during migration: baseline 11.0ms → migration 11.1ms → post-switch 11.3ms
+- [x] Cleanup: 50 backfilled rows restored, versioned schema rows deleted, external table dropped
+- Fixes applied:
+  - Fix: synthetic label `feature_float_1 + feature_float_2 > 1.0` always true — switched to real `label` column from NB0
+  - Fix: `CAST(label AS INT64)` fails on string "positive" — use `CASE WHEN label = 'positive' THEN 1 ELSE 0 END`
+  - Fix: `predict_proba` single-class IndexError — robust probability display with `join()`
+  - Fix: BQ external table query — `features._values` doesn't exist, use `UNNEST(features.column) AS col WHERE col.name = '_values'`
 
 ### Post-run
 
@@ -229,6 +262,20 @@ Sections:
 
 **Why it matters:** This is the "so what" notebook. Every prior notebook is infrastructure — this one shows the application. A startup engineer finishes this and has a deployable serving stack. An enterprise architect sees how the pieces compose.
 
+**NB7↔NB8 Cross-Reference: Production Schema Evolution During Live Serving**
+
+NB7 teaches schema evolution mechanics (versioned schemas, backward-compatible decoders, backfill) using isolated demo rows (`backfill_*` prefix) so it has zero side effects on shared serving data. But this design intentionally skips the hardest production problem: coordinating schema changes with data changes while a serving layer is actively reading features. The timing gap — when the schema says "v2" but some rows still have v1 data — is where production incidents happen.
+
+NB8 should include a section that demonstrates this coordination:
+- A running serving endpoint reads features from Bigtable
+- Schema evolves (v1 → v2) while the endpoint is live
+- Backfill runs against real serving data (not isolated demo rows)
+- Show what happens when the decoder encounters mixed v1/v2 rows during the transition
+- Demonstrate the backward-compatible decoder's resilience (trailing fields ignored)
+- Measure: does serving latency or accuracy degrade during the migration window?
+
+NB7 should cross-reference NB8 for this topic: "For production schema migration during live serving, see NB8 Section X." NB8 should cross-reference NB7 for the mechanics: "For schema versioning fundamentals, see NB7 Sections 2-4."
+
 ### Priority 2: Serving with Dynamic Feature Computation (NB9)
 
 **Gap:** At serving time, a new event arrives (e.g., a user clicks something) and the model needs features that depend on that event combined with pre-computed features already in Bigtable. Examples: "clicks in the last 30 seconds" requires the new click + the running count; "average transaction amount" requires the new transaction + the stored running average. The client shouldn't have to compute this — the serving layer should handle it with minimal latency.
@@ -278,20 +325,28 @@ Sections:
 
 **Recommendation:** Both. Quick `cbt`/GoogleSQL demos in NB1 show breadth. Deeper multi-language examples in NB8 serve production teams.
 
-### Priority 6: TTL for Feature Values
+### Priority 6: TTL for Feature Values (DECISION PENDING)
 
 **Gap:** No notebook demonstrates time-to-live (TTL) for feature values — automatically expiring stale features so the serving layer never returns outdated data. This is distinct from GC policies (which manage cell versions for storage); TTL is about feature freshness semantics.
 
-**Options:**
-- A. Add a TTL section to NB4 (History and Time Travel) — it already covers GC policies and `MaxAgeGCRule`, so TTL is a natural extension
-- B. Add to NB7 (Schema Evolution and Operations) — fits the operational/lifecycle theme
-- C. Dedicated notebook
+**Open question:** TTL is a cross-cutting concern that touches multiple notebooks, not just one:
+- **NB4 (History and Time Travel)** — extends GC policies and `MaxAgeGCRule` naturally
+- **NB7 (Schema Evolution and Operations)** — fits the operational/lifecycle theme
+- **NB8 (Serving Integration)** — stale feature detection at serving time affects prediction quality
+- **NB9 (Dynamic Features)** — TTL interacts with streaming feature updates and freshness guarantees
 
-**Content:**
+Given the breadth, two approaches:
+- **Option A: Standalone TTL notebook** — comprehensive treatment with cross-references to NB4/NB7/NB8/NB9 for the contexts where TTL applies
+- **Option B: Integrate throughout** — add TTL sections to each relevant notebook where the pattern applies in context
+
+Decision deferred until NB7-NB9 testing is complete and we can evaluate where TTL fits most naturally in each notebook's flow.
+
+**Content (wherever it lands):**
 - `MaxAgeGCRule` as TTL: set a short max age so stale features are automatically deleted
 - Application-level TTL: store a `_ttl` or `_expires_at` column, check at read time, skip expired rows
 - Combining TTL with cell versioning: keep N versions but expire anything older than X hours
 - Trade-offs: GC-based TTL is eventually consistent (compaction timing), application-level TTL adds read complexity but is immediate
+- Interaction with streaming updates: how TTL affects dynamic/real-time features
 
 ### Lower Priority (Nice to Have)
 
@@ -316,8 +371,9 @@ Sections:
 5. ~~Run NB4 → verify history and time travel~~ **DONE** — metric_1/2/3→feature_1/2/3 alias, TimestampRangeFilter API fix
 6. ~~Run NB5 → verify streaming and direct writes~~ **DONE** — ConditionalRow API fix (set_cell with state= param, not set_cell_on_true/false)
 7. ~~Run NB6 → verify key design and organization~~ **DONE** — table name fix (entity_features_dense→dense_features), entity_id format fix (already zero-padded string, not int), balanced per-group query for multi-group demos
-8. Run NB7 → verify schema evolution and operations
-7. Run NB8-NB9 → verify serving and dynamic features
+8. ~~Run NB7 → verify schema evolution and operations~~ **DONE** — ML.DESCRIBE_DATA fix, cost analysis conceptual restructure, NB8 cross-ref added
+7. ~~Run NB8 → verify serving integration~~ **DONE** — label fix (use real label column), BQ external table UNNEST fix, predict_proba robustness
+8. Run NB9 → verify dynamic features
 9. Fix any issues found during testing
 10. Final review of markdown quality, flow, and readability
 
