@@ -1,6 +1,6 @@
 # Bigtable Feature Store — Plans & Status
 
-> Last updated: 2026-05-08
+> Last updated: 2026-05-07
 
 ## What We Built
 
@@ -28,7 +28,7 @@
 | 6 | Key Design and Organization | 63 (30 md, 33 code) | 69 KB | **Built** |
 | 7 | Schema Evolution and Operations | 57 (30 md, 27 code) | 76 KB | **Built + drift monitoring + BQ ML validation + NB8 cross-ref** |
 | 8 | Serving Integration | 53 (26 md, 27 code) | 42 KB | **Built + tested** — real label, 5 read methods, FastAPI, schema evolution Section 6 |
-| 9 | Dynamic Features | 47 (23 md, 24 code) | 47 KB | **Built** |
+| 9 | Dynamic Features | 47 (23 md, 24 code) | 47 KB | **Built + tested** — 3 patterns, Pub/Sub streaming, combined serving |
 
 ---
 
@@ -187,6 +187,22 @@ Run notebooks in this order. NB0 creates all shared resources; NB1 creates the f
   - Fix: ML.VALIDATE_DATA_SKEW — changed to reference pattern (requires trained BQML model)
   - Fix: cost analysis — removed specific dollar amounts, restructured to conceptual tables with pricing page link
   - Design: production schema evolution during live serving deferred to NB8 (see NB7↔NB8 cross-reference in Priority 1)
+
+### NB9: Dynamic Features ✅
+
+- [x] Prerequisite check passes (Bigtable instance from NB0)
+- [x] Creates `features-dynamic` table with 3 column families (counters, aggregates, metadata)
+- [x] 10 entities seeded with baseline features
+- [x] Pattern 1 — Read-Modify-Write: atomic increment 100→101, 100 rapid increments at 6.6ms mean
+- [x] Counter decay: windowed reads with TimestampRangeFilter, 3 events in 30-min window (correct)
+- [x] Pattern 2 — Read+Compute: 5.6ms mean, amount_vs_avg ratio computed at serve time
+- [x] Pattern 3 — Streaming Aggregation: 50 events published to Pub/Sub, 50 pulled and processed, all 10 entities updated
+- [x] Latency comparison charts render (event-time vs serve-time)
+- [x] Combined serving: single read → counter + aggregate + derived features, 9.2ms total
+- [x] Cleanup: table, subscription, topic all deleted
+- Fixes applied:
+  - Fix: windowed event spacing changed from 10min to 12min — avoids inclusive boundary at exactly 30min
+  - Fix: Pub/Sub pull retry loop — pulls up to 5 times with 3s waits to collect all messages
 
 ### NB8: Serving Integration ✅
 
@@ -363,7 +379,7 @@ Decision deferred until NB7-NB9 testing is complete and we can evaluate where TT
 
 ## Execution Order
 
-### Phase 1: Test & Verify (in progress)
+### Phase 1: Test & Verify (COMPLETE)
 1. ~~Run NB0 → verify all resources created~~ **DONE** — label + NULLs added, `list_clusters` fix
 2. ~~Run NB1 → verify end-to-end flow~~ **DONE** — cbt/GoogleSQL/BQ federated reads added
 3. ~~Run NB2 → verify all 5 serialization methods~~ **DONE** — compound row key, cast_sql, NULL handling, protobuf v6 fixes, all 222 features across all methods
@@ -373,8 +389,8 @@ Decision deferred until NB7-NB9 testing is complete and we can evaluate where TT
 7. ~~Run NB6 → verify key design and organization~~ **DONE** — table name fix (entity_features_dense→dense_features), entity_id format fix (already zero-padded string, not int), balanced per-group query for multi-group demos
 8. ~~Run NB7 → verify schema evolution and operations~~ **DONE** — ML.DESCRIBE_DATA fix, cost analysis conceptual restructure, NB8 cross-ref added
 7. ~~Run NB8 → verify serving integration~~ **DONE** — label fix (use real label column), BQ external table UNNEST fix, predict_proba robustness
-8. Run NB9 → verify dynamic features
-9. Fix any issues found during testing
+8. ~~Run NB9 → verify dynamic features~~ **DONE** — windowed event spacing fix, Pub/Sub pull retry loop
+9. ~~Fix any issues found during testing~~ **DONE** — all fixes applied during testing
 10. Final review of markdown quality, flow, and readability
 
 ### Phase 2: Fill Gaps (COMPLETE)
