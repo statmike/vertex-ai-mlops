@@ -23,10 +23,10 @@
 | 1 | Fundamentals | 48 (25 md, 23 code) | 49 KB | **Built + cbt/GoogleSQL/BQ reads** |
 | 2 | Serialization | 58 (24 md, 34 code) | 78 KB | **Built** |
 | 3 | Synchronization | 55 (26 md, 29 code) | 67 KB | **Built + executable streaming + validation** |
-| 4 | History and Time Travel | 57 (33 md, 24 code) | 59 KB | **Built** |
+| 4 | History and Time Travel | 60 (35 md, 25 code) | 59 KB | **Built** — TTL/freshness section added |
 | 5 | Streaming and Direct Writes | 70 (37 md, 33 code) | 75 KB | **Built + Pub/Sub demo** |
 | 6 | Key Design and Organization | 63 (30 md, 33 code) | 69 KB | **Built** |
-| 7 | Schema Evolution and Operations | 57 (30 md, 27 code) | 76 KB | **Built + drift monitoring + BQ ML validation + NB8 cross-ref** |
+| 7 | Schema Evolution and Operations | 60 (32 md, 28 code) | 76 KB | **Built + drift monitoring + BQ ML validation + NB8 cross-ref + Security/IAM + autoscaling** |
 | 8 | Serving Integration | 53 (26 md, 27 code) | 42 KB | **Built + tested** — real label, 5 read methods, FastAPI, schema evolution Section 6 |
 | 9 | Dynamic Features | 47 (23 md, 24 code) | 47 KB | **Built + tested** — 3 patterns, Pub/Sub streaming, combined serving |
 
@@ -257,7 +257,7 @@ All 8 original MYPLANS.md modules are fully covered. We also added content beyon
 
 ## What's Missing — Planned Additions
 
-> **Status:** Priorities 1–5 are complete (built in Phase 2). Priority 6 (TTL) is deferred to Phase 4.
+> **Status:** Priorities 1–5 are complete (built in Phase 2). Priority 6 (TTL) is complete (built in Phase 4).
 
 ### ~~Priority 1: Serving Integration Notebook (NB8)~~ ✅ COMPLETE
 
@@ -343,28 +343,12 @@ Sections:
 
 **Recommendation:** Both. Quick `cbt`/GoogleSQL demos in NB1 show breadth. Deeper multi-language examples in NB8 serve production teams.
 
-### Priority 6: TTL for Feature Values (DECISION PENDING)
+### ~~Priority 6: TTL for Feature Values~~ ✅ COMPLETE
 
-**Gap:** No notebook demonstrates time-to-live (TTL) for feature values — automatically expiring stale features so the serving layer never returns outdated data. This is distinct from GC policies (which manage cell versions for storage); TTL is about feature freshness semantics.
-
-**Open question:** TTL is a cross-cutting concern that touches multiple notebooks, not just one:
-- **NB4 (History and Time Travel)** — extends GC policies and `MaxAgeGCRule` naturally
-- **NB7 (Schema Evolution and Operations)** — fits the operational/lifecycle theme
-- **NB8 (Serving Integration)** — stale feature detection at serving time affects prediction quality
-- **NB9 (Dynamic Features)** — TTL interacts with streaming feature updates and freshness guarantees
-
-Given the breadth, two approaches:
-- **Option A: Standalone TTL notebook** — comprehensive treatment with cross-references to NB4/NB7/NB8/NB9 for the contexts where TTL applies
-- **Option B: Integrate throughout** — add TTL sections to each relevant notebook where the pattern applies in context
-
-Decision deferred until NB7-NB9 testing is complete and we can evaluate where TTL fits most naturally in each notebook's flow.
-
-**Content (wherever it lands):**
-- `MaxAgeGCRule` as TTL: set a short max age so stale features are automatically deleted
-- Application-level TTL: store a `_ttl` or `_expires_at` column, check at read time, skip expired rows
-- Combining TTL with cell versioning: keep N versions but expire anything older than X hours
-- Trade-offs: GC-based TTL is eventually consistent (compaction timing), application-level TTL adds read complexity but is immediate
-- Interaction with streaming updates: how TTL affects dynamic/real-time features
+Implemented in Phase 4 (Option B — integrate throughout):
+- **NB4**: TTL & Feature Freshness section after GC policies — `MaxAgeGCRule` vs application-level `_last_updated`, freshness demo code, patterns table
+- **NB8**: Feature Freshness subsection in Production Patterns — `predict_with_freshness()` reference pattern
+- Cross-references between NB4 and NB8 in both directions
 
 ### Lower Priority (Nice to Have)
 
@@ -413,25 +397,25 @@ Decision deferred until NB7-NB9 testing is complete and we can evaluate where TT
 5. ~~Add missing documentation links~~ **DONE** — autoscaling, IAM, connection pooling, retry/timeout, row key best practices
 6. Final commit
 
-### Phase 4: Short-term Content Additions
-Enterprise-grade gaps identified during testing. These can be added as sections within existing notebooks without restructuring.
+### Phase 4: Short-term Content Additions ✅ COMPLETE
+Enterprise-grade gaps identified during testing. Added as sections within existing notebooks.
 
-1. **TTL / Feature Freshness** (NB4 + NB8)
-   - NB4: Add section on `MaxAgeGCRule` as TTL, combining with `MaxVersionsGCRule`, application-level `_expires_at` column pattern
-   - NB8: Add serving-time freshness check — skip or flag predictions when features are older than a threshold
-   - Trade-offs: GC-based TTL is eventually consistent (compaction timing) vs application-level TTL (immediate but adds read complexity)
+1. ~~**TTL / Feature Freshness** (NB4 + NB8)~~ ✅
+   - NB4: Added TTL & Feature Freshness section after GC policies — `MaxAgeGCRule` vs application-level `_last_updated`, freshness demo code, patterns table
+   - NB8: Added Feature Freshness subsection to Production Patterns — `predict_with_freshness()` reference pattern, cross-reference to NB4
+   - NB4↔NB8 cross-references in both directions
 
-2. **Security & IAM** (NB7)
-   - Add section to NB7 covering [IAM roles and permissions](https://cloud.google.com/bigtable/docs/access-control): `bigtable.reader`, `bigtable.user`, `bigtable.admin`
-   - Service account best practices for serving endpoints (read-only) vs admin operations
-   - Column-family-level access control patterns
-   - Cross-reference: [Bigtable security overview](https://cloud.google.com/bigtable/docs/security)
+2. ~~**Security & IAM** (NB7)~~ ✅
+   - Added Section 8: Security and IAM — IAM roles table (`reader`/`user`/`admin`), read-only `get-iam-policy` cell, reference gcloud commands, network security (VPC SC, CMEK)
+   - Production Readiness Checklist renumbered to Section 9 with dedicated Security subsection
 
-3. **Autoscaling & Capacity Planning** (NB7)
-   - Expand Section 7 (Cost Optimization) with executable autoscaling configuration via `gcloud bigtable clusters update`
-   - CPU target tuning: 60% for latency-sensitive serving vs 70% for batch workloads
-   - Capacity planning: estimating nodes from QPS requirements (~10K reads/node for 10ms p99)
-   - Cross-reference: [Bigtable autoscaling](https://cloud.google.com/bigtable/docs/autoscaling), [understanding performance](https://cloud.google.com/bigtable/docs/performance)
+3. ~~**Autoscaling & Capacity Planning** (NB7)~~ ✅
+   - Expanded autoscaling subsection in Section 7 — capacity planning table, QPS estimation formula, dev instance note, storage-target parameter
+   - Link to autoscaling documentation
+
+4. ~~**Topic-to-Notebook Map** (readme.md)~~ ✅
+   - Added Topic Map section with 16 topics mapped to relevant notebooks
+   - Updated Notebook Comparison table entries for NB4, NB7, NB8
 
 ### Phase 5: Longer-term Content
 These require new notebooks or significant additions. Lower urgency — the 10-notebook series is complete without them.

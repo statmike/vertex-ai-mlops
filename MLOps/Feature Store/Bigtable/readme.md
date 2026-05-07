@@ -179,6 +179,8 @@ Maintaining the feature store over time — versioned schemas, backfilling witho
 - Monitoring: Cloud Monitoring for disk utilization, CPU, and throughput; alerting on degradation
 - App profiles in production: single-cluster routing for consistency vs multi-cluster routing for availability
 - Cost optimization: node scaling based on throughput, SSD vs HDD (spoiler: SSD for feature stores), committed use discounts
+- Security & IAM: least-privilege roles (`bigtable.reader`/`user`/`admin`), VPC Service Controls, CMEK
+- Autoscaling & capacity planning: CPU targets, node estimation, production vs development instances
 - Production checklist: replication, backup, access control, and operational runbook
 
 ### 8. [Bigtable Feature Store — Serving Integration](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb)
@@ -190,7 +192,7 @@ The "so what" notebook — train a model on features from BigQuery, serve predic
 - Read features from Bigtable at inference time and measure the latency breakdown (read → decode → predict)
 - Five read methods compared: [Python client](https://cloud.google.com/python/docs/reference/bigtable/latest), [`cbt` CLI](https://cloud.google.com/bigtable/docs/cbt-overview), [GoogleSQL](https://cloud.google.com/bigtable/docs/googlesql-overview), [BigQuery external tables](https://cloud.google.com/bigquery/docs/bigtable-options), and REST/gRPC
 - Build a [FastAPI](https://fastapi.tiangolo.com/) serving endpoint: receive request → read features → predict → respond
-- Connection pooling, [app profiles](https://cloud.google.com/bigtable/docs/app-profiles) for serving priority, and Cloud Run deployment patterns
+- Connection pooling, [app profiles](https://cloud.google.com/bigtable/docs/app-profiles) for serving priority, feature freshness gating, and Cloud Run deployment patterns
 - Schema evolution during live serving: backfill rows and switch schema versions with zero errors and no latency degradation
 - End-to-end latency analysis under concurrent load
 
@@ -214,12 +216,35 @@ Real-time feature computation at serving time — what happens when a new event 
 | [Fundamentals](./Bigtable%20Feature%20Store%20-%20Fundamentals.ipynb) | End-to-end | EXPORT DATA, schema metadata, latency benchmark |
 | [Serialization](./Bigtable%20Feature%20Store%20-%20Serialization.ipynb) | Encoding | Native, JSON, concat, protobuf, hybrid; storage and latency benchmarks |
 | [Synchronization](./Bigtable%20Feature%20Store%20-%20Synchronization.ipynb) | Data freshness | One-time, scheduled, continuous sync; reservation management |
-| [History and Time Travel](./Bigtable%20Feature%20Store%20-%20History%20and%20Time%20Travel.ipynb) | Temporal features | Key-based vs cell versioning, point-in-time joins, training data |
+| [History and Time Travel](./Bigtable%20Feature%20Store%20-%20History%20and%20Time%20Travel.ipynb) | Temporal features | Key-based vs cell versioning, point-in-time joins, TTL/feature freshness, training data |
 | [Streaming and Direct Writes](./Bigtable%20Feature%20Store%20-%20Streaming%20and%20Direct%20Writes.ipynb) | Write path | Direct writes, batch mutations, change streams, dual-write |
 | [Key Design and Organization](./Bigtable%20Feature%20Store%20-%20Key%20Design%20and%20Organization.ipynb) | Data modeling | Row key patterns, hotspot avoidance, column family strategy |
-| [Schema Evolution and Operations](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) | Production | Versioned schemas, backfilling, monitoring, cost optimization |
-| [Serving Integration](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) | Application | Model training, feature serving, multi-language reads, FastAPI endpoint, live schema evolution |
+| [Schema Evolution and Operations](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) | Production | Versioned schemas, backfilling, monitoring, security/IAM, autoscaling, cost optimization |
+| [Serving Integration](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) | Application | Model training, feature serving, multi-language reads, FastAPI endpoint, feature freshness, live schema evolution |
 | [Dynamic Features](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb) | Real-time | Atomic counters, read+compute, streaming aggregation, pattern comparison |
+
+## Topic Map
+
+Some topics span multiple notebooks. Use this map to find all coverage of a topic:
+
+| Topic | Notebooks |
+|-------|-----------|
+| Schema design & metadata | [NB1](./Bigtable%20Feature%20Store%20-%20Fundamentals.ipynb), [NB6](./Bigtable%20Feature%20Store%20-%20Key%20Design%20and%20Organization.ipynb), [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
+| Row key design | [NB0](./Bigtable%20Feature%20Store%20-%20Environment.ipynb), [NB1](./Bigtable%20Feature%20Store%20-%20Fundamentals.ipynb), [NB6](./Bigtable%20Feature%20Store%20-%20Key%20Design%20and%20Organization.ipynb) |
+| Serialization & encoding | [NB1](./Bigtable%20Feature%20Store%20-%20Fundamentals.ipynb), [NB2](./Bigtable%20Feature%20Store%20-%20Serialization.ipynb), [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) |
+| Data sync (BQ → Bigtable) | [NB1](./Bigtable%20Feature%20Store%20-%20Fundamentals.ipynb), [NB3](./Bigtable%20Feature%20Store%20-%20Synchronization.ipynb), [NB5](./Bigtable%20Feature%20Store%20-%20Streaming%20and%20Direct%20Writes.ipynb) |
+| Schema evolution & versioning | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb), [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) |
+| GC policies & TTL | [NB4](./Bigtable%20Feature%20Store%20-%20History%20and%20Time%20Travel.ipynb), [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
+| Feature freshness | [NB4](./Bigtable%20Feature%20Store%20-%20History%20and%20Time%20Travel.ipynb), [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) |
+| App profiles & routing | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb), [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) |
+| Monitoring & alerting | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
+| Security & IAM | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
+| Autoscaling & capacity | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
+| Cost optimization | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
+| Latency benchmarking | [NB1](./Bigtable%20Feature%20Store%20-%20Fundamentals.ipynb), [NB2](./Bigtable%20Feature%20Store%20-%20Serialization.ipynb), [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb), [NB9](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb) |
+| Point-in-time joins | [NB4](./Bigtable%20Feature%20Store%20-%20History%20and%20Time%20Travel.ipynb) |
+| Real-time / streaming features | [NB5](./Bigtable%20Feature%20Store%20-%20Streaming%20and%20Direct%20Writes.ipynb), [NB9](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb) |
+| Model serving | [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb), [NB9](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb) |
 
 ## Prerequisites
 
