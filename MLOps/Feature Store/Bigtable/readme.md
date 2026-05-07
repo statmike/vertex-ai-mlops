@@ -183,14 +183,15 @@ Maintaining the feature store over time — versioned schemas, backfilling witho
 
 ### 8. [Bigtable Feature Store — Serving Integration](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb)
 
-The "so what" notebook — train a model on features from BigQuery, serve predictions from Bigtable, and measure end-to-end latency. Demonstrates five read methods and a Flask-based serving application pattern.
+The "so what" notebook — train a model on features from BigQuery, serve predictions from Bigtable, and measure end-to-end latency. Demonstrates five read methods, a FastAPI serving application, and schema evolution during live serving.
 
 **What you'll learn:**
 - Train a simple model on features queried from BigQuery
 - Read features from Bigtable at inference time and measure the latency breakdown (read → decode → predict)
 - Five read methods compared: [Python client](https://cloud.google.com/python/docs/reference/bigtable/latest), [`cbt` CLI](https://cloud.google.com/bigtable/docs/cbt-overview), [GoogleSQL](https://cloud.google.com/bigtable/docs/googlesql-overview), [BigQuery external tables](https://cloud.google.com/bigquery/docs/bigtable-options), and REST/gRPC
-- Build a Flask serving endpoint: receive request → read features → predict → respond
+- Build a [FastAPI](https://fastapi.tiangolo.com/) serving endpoint: receive request → read features → predict → respond
 - Connection pooling, [app profiles](https://cloud.google.com/bigtable/docs/app-profiles) for serving priority, and Cloud Run deployment patterns
+- Schema evolution during live serving: backfill rows and switch schema versions with zero errors and no latency degradation
 - End-to-end latency analysis under concurrent load
 
 ### 9. [Bigtable Feature Store — Dynamic Features](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb)
@@ -217,7 +218,7 @@ Real-time feature computation at serving time — what happens when a new event 
 | [Streaming and Direct Writes](./Bigtable%20Feature%20Store%20-%20Streaming%20and%20Direct%20Writes.ipynb) | Write path | Direct writes, batch mutations, change streams, dual-write |
 | [Key Design and Organization](./Bigtable%20Feature%20Store%20-%20Key%20Design%20and%20Organization.ipynb) | Data modeling | Row key patterns, hotspot avoidance, column family strategy |
 | [Schema Evolution and Operations](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) | Production | Versioned schemas, backfilling, monitoring, cost optimization |
-| [Serving Integration](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) | Application | Model training, feature serving, multi-language reads, Flask endpoint |
+| [Serving Integration](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) | Application | Model training, feature serving, multi-language reads, FastAPI endpoint, live schema evolution |
 | [Dynamic Features](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb) | Real-time | Atomic counters, read+compute, streaming aggregation, pattern comparison |
 
 ## Prerequisites
