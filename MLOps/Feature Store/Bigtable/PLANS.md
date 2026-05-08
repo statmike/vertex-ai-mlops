@@ -26,7 +26,7 @@
 | 4 | History and Time Travel | 60 (35 md, 25 code) | 59 KB | **Built** — TTL/freshness section added |
 | 5 | Streaming and Direct Writes | 70 (37 md, 33 code) | 75 KB | **Built + Pub/Sub demo** |
 | 6 | Key Design and Organization | 63 (30 md, 33 code) | 69 KB | **Built** |
-| 7 | Schema Evolution and Operations | 60 (32 md, 28 code) | 76 KB | **Built + drift monitoring + BQ ML validation + NB8 cross-ref + Security/IAM + autoscaling** |
+| 7 | Schema Evolution and Operations | 62 (34 md, 28 code) | 76 KB | **Built + drift monitoring + BQ ML validation + NB8 cross-ref + Security/IAM + autoscaling + Terraform/IaC + CI/CD** |
 | 8 | Serving Integration | 53 (26 md, 27 code) | 42 KB | **Built + tested** — real label, 5 read methods, FastAPI, schema evolution Section 6 |
 | 9 | Dynamic Features | 47 (23 md, 24 code) | 47 KB | **Built + tested** — 3 patterns, Pub/Sub streaming, combined serving |
 
@@ -354,8 +354,8 @@ Implemented in Phase 4 (Option B — integrate throughout):
 
 | Item | Where | Status | Notes |
 |------|-------|--------|-------|
-| Terraform/IaC for Bigtable provisioning | NB7 or dedicated section | Pending | Show `google_bigtable_instance` resource block |
-| CI/CD testing patterns | NB7 | Pending | How to integration-test feature store pipelines |
+| ~~Terraform/IaC for Bigtable provisioning~~ | NB7 | **Done** | `google_bigtable_instance`, table, GC policy, IAM resource blocks |
+| ~~CI/CD testing patterns~~ | NB7 | **Done** | Testing strategy table, pytest integration test pattern, emulator usage |
 | Bigtable emulator for local dev | NB0 or NB8 | Phase 5 | `gcloud beta emulators bigtable start` |
 | ~~BigQuery external table reading from Bigtable~~ | NB8 | **Done** | Federated query: BQ → Bigtable (Section 3d) |
 | Materialized views in Bigtable | Future NB | Pending | GoogleSQL continuous materialized views |
