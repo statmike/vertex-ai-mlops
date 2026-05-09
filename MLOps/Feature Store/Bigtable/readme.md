@@ -131,6 +131,7 @@ Keeping Bigtable in sync with BigQuery — from one-time backfills to continuous
 - [BigQuery reservation](https://cloud.google.com/bigquery/docs/reservations-intro) management: dedicated slots for export jobs to avoid contention
 - Post-export validation: row count comparison, sample verification, and schema consistency checks
 - [Data Boost](https://cloud.google.com/bigtable/docs/data-boost-overview): serverless batch reads for training export and analytics without impacting serving
+- [Continuous materialized views](https://cloud.google.com/bigtable/docs/continuous-materialized-views) (Preview): pre-computed aggregations within Bigtable using GoogleSQL, automatically updated as source data changes
 - Measure propagation latency across all three sync patterns
 - The freshness trade-off: cost vs latency for each synchronization strategy
 
@@ -177,11 +178,13 @@ Maintaining the feature store over time — versioned schemas, backfilling witho
 **What you'll learn:**
 - Versioned schemas: what happens when a feature is dropped, renamed, or changes type
 - Versioned schemas: use feature metadata columns to tell the serving app how to decode each payload version
+- Feature registry: centralized metadata row (`#registry`) for feature discovery, ownership tracking, lineage, and freshness SLA compliance
 - Backfilling: update historical features in Bigtable without interrupting live inference traffic
 - Monitoring: Cloud Monitoring for disk utilization, CPU, and throughput; alerting on degradation
 - App profiles in production: single-cluster routing for consistency vs multi-cluster routing for availability
 - Cost optimization: node scaling based on throughput, SSD vs HDD (spoiler: SSD for feature stores), committed use discounts
 - Security & IAM: least-privilege roles (`bigtable.reader`/`user`/`admin`), VPC Service Controls, CMEK
+- [Authorized views](https://cloud.google.com/bigtable/docs/authorized-views-overview): row-level and column-family-level access control without data duplication
 - Autoscaling & capacity planning: CPU targets, node estimation, production vs development instances
 - Production checklist: replication, backup, access control, and operational runbook
 
@@ -253,11 +256,11 @@ Set up and use the [Bigtable emulator](https://cloud.google.com/bigtable/docs/em
 | [Environment](./Bigtable%20Feature%20Store%20-%20Environment.ipynb) | Setup | BQ data generation, Bigtable instance, data type coverage |
 | [Fundamentals](./Bigtable%20Feature%20Store%20-%20Fundamentals.ipynb) | End-to-end | EXPORT DATA, schema metadata, latency benchmark |
 | [Serialization](./Bigtable%20Feature%20Store%20-%20Serialization.ipynb) | Encoding | Native, JSON, concat, protobuf, hybrid; storage and latency benchmarks |
-| [Synchronization](./Bigtable%20Feature%20Store%20-%20Synchronization.ipynb) | Data freshness | One-time, scheduled, continuous sync; reservation management; Data Boost |
+| [Synchronization](./Bigtable%20Feature%20Store%20-%20Synchronization.ipynb) | Data freshness | One-time, scheduled, continuous sync; reservation management; Data Boost; continuous materialized views (Preview) |
 | [History and Time Travel](./Bigtable%20Feature%20Store%20-%20History%20and%20Time%20Travel.ipynb) | Temporal features | Key-based vs cell versioning, point-in-time joins, TTL/feature freshness, training data |
 | [Streaming and Direct Writes](./Bigtable%20Feature%20Store%20-%20Streaming%20and%20Direct%20Writes.ipynb) | Write path | Direct writes, batch mutations, change streams, dual-write |
 | [Key Design and Organization](./Bigtable%20Feature%20Store%20-%20Key%20Design%20and%20Organization.ipynb) | Data modeling | Row key patterns, hotspot avoidance, column family strategy |
-| [Schema Evolution and Operations](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) | Production | Versioned schemas, backfilling, monitoring, security/IAM, autoscaling, cost optimization |
+| [Schema Evolution and Operations](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) | Production | Versioned schemas, feature registry, backfilling, monitoring, security/IAM, authorized views, autoscaling, cost optimization |
 | [Serving Integration](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) | Application | Model training, feature serving, multi-language reads, FastAPI endpoint, training-serving skew, feature freshness, live schema evolution |
 | [Dynamic Features](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb) | Real-time | Atomic counters, read+compute, streaming aggregation, pattern comparison |
 | [Vector Storage and KNN Search](./Bigtable%20Feature%20Store%20-%20Vector%20Storage%20and%20KNN%20Search.ipynb) | Embeddings | Vector encoding, cosine/euclidean distance, brute-force KNN, performance benchmarks |
@@ -291,6 +294,9 @@ Some topics span multiple notebooks. Use this map to find all coverage of a topi
 | Vector storage / KNN search | [NB10](./Bigtable%20Feature%20Store%20-%20Vector%20Storage%20and%20KNN%20Search.ipynb) |
 | Multi-cluster replication | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb), [NB11](./Bigtable%20Feature%20Store%20-%20Replication.ipynb) |
 | Emulator / local dev | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb), [NB12](./Bigtable%20Feature%20Store%20-%20Emulator.ipynb) |
+| Feature registry / catalog | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
+| Continuous materialized views | [NB3](./Bigtable%20Feature%20Store%20-%20Synchronization.ipynb) |
+| Authorized views | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
 
 ## Prerequisites
 

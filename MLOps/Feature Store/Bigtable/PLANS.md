@@ -1,6 +1,6 @@
 # Bigtable Feature Store — Plans & Status
 
-> Last updated: 2026-05-09 (Phase 5 complete)
+> Last updated: 2026-05-09 (Phase 6 complete)
 
 ## What We Built
 
@@ -10,7 +10,7 @@
 
 | File | Status | Notes |
 |------|--------|-------|
-| `readme.md` | **Built** | Series overview, Key Concepts, 10 notebook descriptions with "What you'll learn", comparison table, Documentation reference (20 Bigtable + 11 BigQuery links), cross-reference to Vertex AI series |
+| `readme.md` | **Built** | Series overview, Key Concepts, 13 notebook descriptions with "What you'll learn", comparison table, topic map (19 topics), Documentation reference (20 Bigtable + 11 BigQuery links), cross-reference to Vertex AI series |
 | `pyproject.toml` | **Built** | uv project config with all dependencies |
 | `../readme.md` (hub) | **Updated** | Comparison table (Vertex AI vs Bigtable), expanded descriptions |
 | `../vertex/readme.md` | **Updated** | Cross-reference callout to Bigtable series |
@@ -22,11 +22,11 @@
 | 0 | Environment | 42 (23 md, 19 code) | 52 KB | **Built + tested** — label column with learnable signal, ~5% NULLs on 5 columns, `list_clusters()` fix |
 | 1 | Fundamentals | 48 (25 md, 23 code) | 49 KB | **Built + cbt/GoogleSQL/BQ reads** |
 | 2 | Serialization | 58 (24 md, 34 code) | 78 KB | **Built** |
-| 3 | Synchronization | 58 (28 md, 30 code) | 71 KB | **Built + executable streaming + validation + Data Boost** |
+| 3 | Synchronization | 62 (31 md, 31 code) | ~78 KB | **Built + executable streaming + validation + Data Boost + continuous materialized views (Preview)** |
 | 4 | History and Time Travel | 60 (35 md, 25 code) | 59 KB | **Built** — TTL/freshness section added |
 | 5 | Streaming and Direct Writes | 70 (37 md, 33 code) | 75 KB | **Built + Pub/Sub demo** |
 | 6 | Key Design and Organization | 63 (30 md, 33 code) | 69 KB | **Built** |
-| 7 | Schema Evolution and Operations | 62 (34 md, 28 code) | 76 KB | **Built + drift monitoring + BQ ML validation + NB8 cross-ref + Security/IAM + autoscaling + Terraform/IaC + CI/CD** |
+| 7 | Schema Evolution and Operations | 70 (38 md, 32 code) | ~88 KB | **Built + drift monitoring + BQ ML validation + NB8 cross-ref + Security/IAM + autoscaling + Terraform/IaC + CI/CD + feature registry + authorized views** |
 | 8 | Serving Integration | 57 (28 md, 29 code) | 48 KB | **Built + tested** — real label, 5 read methods, FastAPI, schema evolution, training-serving skew |
 | 9 | Dynamic Features | 47 (23 md, 24 code) | 47 KB | **Built + tested** — 3 patterns, Pub/Sub streaming, combined serving |
 | 10 | Vector Storage and KNN Search | 30 (15 md, 15 code) | ~35 KB | **Built** — float32 binary encoding, brute-force KNN, GoogleSQL COSINE_DISTANCE, performance benchmarks |
@@ -400,7 +400,7 @@ Implemented in Phase 4 (Option B — integrate throughout):
 | ~~CI/CD testing patterns~~ | NB7 | **Done** | Testing strategy table, pytest integration test pattern, emulator usage |
 | ~~Bigtable emulator for local dev~~ | NB12 | **Done** | Full notebook: emulator setup, testing patterns, CI/CD YAML, limitations |
 | ~~BigQuery external table reading from Bigtable~~ | NB8 | **Done** | Federated query: BQ → Bigtable (Section 3d) |
-| Materialized views in Bigtable | Future NB | Phase 6 | GoogleSQL continuous materialized views |
+| ~~Materialized views in Bigtable~~ | NB3 | **Done** | Continuous materialized views (Preview) — reference patterns, comparison table |
 | ~~Feature store for embeddings / vector features~~ | NB10 | **Done** | Float32 binary encoding, brute-force KNN with GoogleSQL, performance benchmarks |
 
 ---
@@ -504,8 +504,38 @@ New notebooks and sections for vector search, replication, emulator, training-se
    - readme.md: updated NB3 (Data Boost) and NB8 (training-serving skew) descriptions
    - PLANS.md: Phase 5 section, notebook table, testing checklists
 
-### Phase 6: Future Content
-These require new notebooks or significant additions. Lower urgency — the 13-notebook series is comprehensive without them.
+### Phase 6: Feature Registry, Materialized Views, Authorized Views ✅ COMPLETE
+Sections added to existing notebooks — no new notebooks created.
+
+1. **Final Project: Real-time Recommendation Engine** — deferred (see Future Content below)
+
+2. ~~**Feature Registry / Catalog** (NB7)~~ ✅
+   - Added Section 5 to NB7: `#registry` metadata row with per-feature descriptions, owners, freshness SLAs, lineage, and status
+   - Feature discovery queries: by owner, by status (deprecated), freshness SLA compliance
+   - Feature lineage tracking: `depends_on`, `transforms`, `used_by`, `sync_method` fields
+   - Registry patterns comparison: metadata-row vs Dataplex vs custom database
+
+3. ~~**Continuous Materialized Views** (NB3)~~ ✅
+   - Added Section 8 to NB3: Preview feature (as of May 2026) — reference patterns only, not executed
+   - GoogleSQL `CREATE CONTINUOUS MATERIALIZED VIEW` examples (aggregation + secondary index)
+   - Key characteristics: eventually consistent, up to 5 per table, GC-synced, cannot modify query
+   - Comparison table: materialized views vs EXPORT DATA vs continuous queries vs streaming pipeline
+
+4. ~~**Authorized Views** (NB7)~~ ✅
+   - Added Section 10 to NB7: row-level and column-family-level access control without data duplication
+   - Reference `gcloud` commands for two view definitions (ML team view, Team A view)
+   - Python read pattern using authorized view
+   - Access control patterns comparison: IAM, authorized views, separate tables, app-level filtering
+
+5. ~~**readme.md and PLANS.md updates**~~ ✅
+   - readme.md: updated NB3 and NB7 descriptions, comparison table, 3 new topic map entries
+   - PLANS.md: Phase 6 completion, notebook table updates
+
+---
+
+## Future Content
+
+These would require new notebooks. Lower urgency — the 13-notebook series is comprehensive without them.
 
 1. **Final Project: Real-time Recommendation Engine**
    - New notebook that ties the entire series together: a mini-recommendation system using all patterns
@@ -513,17 +543,3 @@ These require new notebooks or significant additions. Lower urgency — the 13-n
    - Serving endpoint that reads user features + item features + real-time signals → produces ranked recommendations
    - End-to-end latency measurement: feature read + model inference + response
    - Uses: NB0 data, NB1 export, NB2 serialization, NB5 streaming writes, NB6 key design, NB8 serving, NB9 dynamic features
-
-2. **Feature Registry / Catalog**
-   - Centralized metadata about all features: descriptions, owners, data types, lineage
-   - Schema row patterns from NB7 extended to a full registry
-   - Feature discovery: "what features exist for entity X?"
-
-3. **Continuous Materialized Views**
-   - GoogleSQL continuous materialized views for real-time aggregation
-   - Comparison with streaming aggregation patterns from NB9
-   - Use case: running aggregates maintained automatically by Bigtable
-
-4. **Authorized Views**
-   - Row-level and column-family-level access control without duplicating tables
-   - Use case: ML team sees features but not PII columns; different teams see different entity groups
