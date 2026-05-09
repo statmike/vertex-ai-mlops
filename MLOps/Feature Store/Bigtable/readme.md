@@ -105,7 +105,7 @@ End-to-end flow from BigQuery to Bigtable to serving. This is the "hello world" 
 - Store a self-describing schema row (`#schema`) so clients can decode without hardcoded column maps
 - Read features by row key using the Python client library
 - Measure and compare read latency: single-row lookups, multi-row reads, filtered reads
-- Visualize data distribution with the Bigtable Key Visualizer
+- Visualize how data distributes across entity groups
 
 ### 2. [Bigtable Feature Store — Serialization](./Bigtable%20Feature%20Store%20-%20Serialization.ipynb)
 
@@ -127,8 +127,9 @@ Keeping Bigtable in sync with BigQuery — from one-time backfills to continuous
 **What you'll learn:**
 - One-time sync: manual `EXPORT DATA` for initial load and backfilling
 - Scheduled sync: BigQuery scheduled queries and Data Transfer Service for periodic refreshes
-- Continuous sync: Pub/Sub to Dataflow pipelines for near-real-time feature propagation
+- Continuous sync: [continuous queries](https://cloud.google.com/bigquery/docs/continuous-queries-introduction) with `APPENDS()` for near-real-time feature propagation, plus streaming pipeline patterns via Pub/Sub
 - [BigQuery reservation](https://cloud.google.com/bigquery/docs/reservations-intro) management: dedicated slots for export jobs to avoid contention
+- Post-export validation: row count comparison, sample verification, and schema consistency checks
 - Measure propagation latency across all three sync patterns
 - The freshness trade-off: cost vs latency for each synchronization strategy
 
@@ -174,7 +175,7 @@ Maintaining the feature store over time — versioned schemas, backfilling witho
 
 **What you'll learn:**
 - Versioned schemas: what happens when a feature is dropped, renamed, or changes type
-- Versioned protobufs: use feature metadata columns to tell the serving app how to decode each payload version
+- Versioned schemas: use feature metadata columns to tell the serving app how to decode each payload version
 - Backfilling: update historical features in Bigtable without interrupting live inference traffic
 - Monitoring: Cloud Monitoring for disk utilization, CPU, and throughput; alerting on degradation
 - App profiles in production: single-cluster routing for consistency vs multi-cluster routing for availability

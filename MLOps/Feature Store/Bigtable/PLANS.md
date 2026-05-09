@@ -1,6 +1,6 @@
 # Bigtable Feature Store — Plans & Status
 
-> Last updated: 2026-05-07
+> Last updated: 2026-05-09
 
 ## What We Built
 
@@ -389,13 +389,14 @@ Implemented in Phase 4 (Option B — integrate throughout):
 7. ~~Add feature drift monitoring cells to NB7~~ **DONE** (50→56 cells, includes BQ ML validation functions)
 8. ~~Update readme.md with NB8 and NB9 entries~~ **DONE**
 
-### Phase 3: Polish (IN PROGRESS)
-1. Run full series end-to-end one more time
-2. Review all markdown for clarity, scannability, and consistency
+### Phase 3: Polish ✅ COMPLETE
+1. ~~Run full series end-to-end one more time~~ **DONE** — all 10 notebooks Restart & Run All
+2. ~~Review all markdown for clarity, scannability, and consistency~~ **DONE** — cross-references, summary tables, "What's Next" sections verified
 3. ~~Fix broken cross-reference links in NB1~~ **DONE** — 4 links corrected
 4. ~~Add cross-references between related notebooks~~ **DONE** — NB3↔NB5, NB4→NB7, NB5→NB9, NB6→NB2, NB9→NB1/NB5/NB8
 5. ~~Add missing documentation links~~ **DONE** — autoscaling, IAM, connection pooling, retry/timeout, row key best practices
-6. Final commit
+6. ~~Final review fixes~~ **DONE** — NB0 series table corrected, NB2 broken link + summary table fixed, NB3 attribution fix (NB1→NB0), NB6 next-notebook text corrected, NB9 sub-microsecond→sub-millisecond, readme alignment (Key Visualizer, Dataflow, versioned protobufs)
+7. Final commit
 
 ### Phase 4: Short-term Content Additions ✅ COMPLETE
 Enterprise-grade gaps identified during testing. Added as sections within existing notebooks.
