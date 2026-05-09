@@ -1,16 +1,16 @@
 # Bigtable Feature Store — Plans & Status
 
-> Last updated: 2026-05-09 (Phase 6 complete)
+> Last updated: 2026-05-09 (Phase 6 complete + NB13)
 
 ## What We Built
 
-13 notebooks (NB0–NB12), a series readme, and a `pyproject.toml` for a folder-level uv environment. All notebooks share consistent config, pixel-tracking headers, prerequisite checks (NB1-12 → NB0), and the `bigtable-feature-store` kernel. 60+ verified Google Cloud documentation links across all files — zero 404s.
+14 notebooks (NB0–NB13), a series readme, and a `pyproject.toml` for a folder-level uv environment. All notebooks share consistent config, pixel-tracking headers, prerequisite checks (NB1-12 → NB0), and the `bigtable-feature-store` kernel. 60+ verified Google Cloud documentation links across all files — zero 404s.
 
 ### Supporting Files
 
 | File | Status | Notes |
 |------|--------|-------|
-| `readme.md` | **Built** | Series overview, Key Concepts, 13 notebook descriptions with "What you'll learn", comparison table, topic map (19 topics), Documentation reference (20 Bigtable + 11 BigQuery links), cross-reference to Vertex AI series |
+| `readme.md` | **Built** | Series overview, Key Concepts, 14 notebook descriptions with "What you'll learn", comparison table, topic map (21 topics), Documentation reference (20 Bigtable + 11 BigQuery links), cross-reference to Vertex AI series |
 | `pyproject.toml` | **Built** | uv project config with all dependencies |
 | `../readme.md` (hub) | **Updated** | Comparison table (Vertex AI vs Bigtable), expanded descriptions |
 | `../vertex/readme.md` | **Updated** | Cross-reference callout to Bigtable series |
@@ -32,6 +32,7 @@
 | 10 | Vector Storage and KNN Search | 30 (15 md, 15 code) | ~35 KB | **Built** — float32 binary encoding, brute-force KNN, GoogleSQL COSINE_DISTANCE, performance benchmarks |
 | 11 | Replication | 26 (15 md, 11 code) | ~28 KB | **Built** — Production instance, 2 clusters, app profiles, replication lag measurement |
 | 12 | Emulator | 18 (11 md, 7 code) | ~20 KB | **Built** — local dev, pytest fixtures, CI/CD patterns (GitHub Actions + Cloud Build) |
+| 13 | Production Deployment | 40 (18 md, 22 code) | ~45 KB | **Built** — Terraform IaC (init/plan/apply/destroy), Go/Java/Node.js clients |
 
 ---
 

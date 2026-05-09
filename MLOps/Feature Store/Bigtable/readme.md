@@ -249,6 +249,19 @@ Set up and use the [Bigtable emulator](https://cloud.google.com/bigtable/docs/em
 - Testing patterns: pytest fixtures, GitHub Actions, Cloud Build
 - Conditional test skipping for GoogleSQL-dependent features
 
+### 13. [Bigtable Feature Store — Production Deployment](./Bigtable%20Feature%20Store%20-%20Production%20Deployment.ipynb)
+
+Deploy a complete feature store with [Terraform](https://www.terraform.io/) and read features from Go, Java, and Node.js — the two enterprise fundamentals missing from a notebook-only Python workflow.
+
+**What you'll learn:**
+- Install Terraform and write a complete configuration: instance, table, column families, GC policies, app profiles
+- The `init → plan → apply` workflow: see exactly what Terraform will create before it creates anything
+- Manage infrastructure changes: add a column family via Terraform, review the diff, apply
+- [Go client](https://pkg.go.dev/cloud.google.com/go/bigtable): gRPC-native, compiled, ideal for high-throughput serving
+- [Java client](https://cloud.google.com/java/docs/reference/google-cloud-bigtable/latest/overview): enterprise-grade, Maven-based
+- [Node.js client](https://cloud.google.com/nodejs/docs/reference/bigtable/latest): async/await, serverless-friendly
+- `terraform destroy`: one command removes all infrastructure — no orphaned resources
+
 ## Notebook Comparison
 
 | Notebook | Focus | Key Topics |
@@ -266,6 +279,7 @@ Set up and use the [Bigtable emulator](https://cloud.google.com/bigtable/docs/em
 | [Vector Storage and KNN Search](./Bigtable%20Feature%20Store%20-%20Vector%20Storage%20and%20KNN%20Search.ipynb) | Embeddings | Vector encoding, cosine/euclidean distance, brute-force KNN, performance benchmarks |
 | [Replication](./Bigtable%20Feature%20Store%20-%20Replication.ipynb) | High availability | Multi-cluster setup, app profiles, replication lag, failover patterns |
 | [Emulator](./Bigtable%20Feature%20Store%20-%20Emulator.ipynb) | Local dev | Emulator setup, testing patterns, CI/CD, limitations |
+| [Production Deployment](./Bigtable%20Feature%20Store%20-%20Production%20Deployment.ipynb) | Enterprise | Terraform IaC, Go/Java/Node.js clients, infrastructure lifecycle |
 
 ## Topic Map
 
@@ -297,6 +311,8 @@ Some topics span multiple notebooks. Use this map to find all coverage of a topi
 | Feature registry / catalog | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
 | Continuous materialized views | [NB3](./Bigtable%20Feature%20Store%20-%20Synchronization.ipynb) |
 | Authorized views | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
+| Terraform / IaC | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb), [NB13](./Bigtable%20Feature%20Store%20-%20Production%20Deployment.ipynb) |
+| Multi-language clients (Go, Java, Node.js) | [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb), [NB13](./Bigtable%20Feature%20Store%20-%20Production%20Deployment.ipynb) |
 
 ## Prerequisites
 
