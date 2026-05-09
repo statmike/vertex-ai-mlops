@@ -130,6 +130,7 @@ Keeping Bigtable in sync with BigQuery — from one-time backfills to continuous
 - Continuous sync: [continuous queries](https://cloud.google.com/bigquery/docs/continuous-queries-introduction) with `APPENDS()` for near-real-time feature propagation, plus streaming pipeline patterns via Pub/Sub
 - [BigQuery reservation](https://cloud.google.com/bigquery/docs/reservations-intro) management: dedicated slots for export jobs to avoid contention
 - Post-export validation: row count comparison, sample verification, and schema consistency checks
+- [Data Boost](https://cloud.google.com/bigtable/docs/data-boost-overview): serverless batch reads for training export and analytics without impacting serving
 - Measure propagation latency across all three sync patterns
 - The freshness trade-off: cost vs latency for each synchronization strategy
 
@@ -194,6 +195,7 @@ The "so what" notebook — train a model on features from BigQuery, serve predic
 - Five read methods compared: [Python client](https://cloud.google.com/python/docs/reference/bigtable/latest), [`cbt` CLI](https://cloud.google.com/bigtable/docs/cbt-overview), [GoogleSQL](https://cloud.google.com/bigtable/docs/googlesql-overview), [BigQuery external tables](https://cloud.google.com/bigquery/docs/bigtable-options), and REST/gRPC
 - Build a [FastAPI](https://fastapi.tiangolo.com/) serving endpoint: receive request → read features → predict → respond
 - Connection pooling, [app profiles](https://cloud.google.com/bigtable/docs/app-profiles) for serving priority, feature freshness gating, and Cloud Run deployment patterns
+- Training-serving skew detection: compare features from BigQuery (training) vs Bigtable (serving) to catch precision loss and staleness
 - Schema evolution during live serving: backfill rows and switch schema versions with zero errors and no latency degradation
 - End-to-end latency analysis under concurrent load
 
@@ -209,6 +211,41 @@ Real-time feature computation at serving time — what happens when a new event 
 - Latency comparison across all three patterns with visualizations
 - Combining patterns in production: batch features + atomic counters + serve-time computation in a single Bigtable read
 
+### 10. [Bigtable Feature Store — Vector Storage and KNN Search](./Bigtable%20Feature%20Store%20-%20Vector%20Storage%20and%20KNN%20Search.ipynb)
+
+Store embedding vectors in Bigtable and query for nearest neighbors using GoogleSQL. Bigtable supports brute-force KNN — no index required, but query time scales linearly with table size.
+
+**What you'll learn:**
+- Vector encoding: raw binary float32 in a standalone column (`struct.pack` / `struct.unpack`)
+- Why vectors must be standalone columns — `TO_VECTOR32()` requires raw bytes, not protobuf or JSON
+- KNN search with `COSINE_DISTANCE()` and `EUCLIDEAN_DISTANCE()` via [GoogleSQL](https://cloud.google.com/bigtable/docs/googlesql-overview)
+- Performance benchmarks: latency vs table size and vector dimensionality
+- Combining vectors with scalar features in a single table and row
+- When Bigtable KNN is sufficient vs when to use a dedicated vector database
+
+### 11. [Bigtable Feature Store — Replication](./Bigtable%20Feature%20Store%20-%20Replication.ipynb)
+
+Multi-cluster [replication](https://cloud.google.com/bigtable/docs/replication-overview) for high availability and disaster recovery. Creates a separate Production instance (Development instances cannot replicate), demonstrates replication behavior, and cleans up.
+
+**What you'll learn:**
+- Create a Production instance with two clusters in different zones
+- App profiles for replication: multi-cluster routing (automatic failover) vs single-cluster routing (strong consistency)
+- Measure replication lag between clusters
+- Failover patterns: automatic vs manual
+- Replication topology: single-zone, multi-zone, multi-region
+- Cost implications of multi-cluster deployments
+
+### 12. [Bigtable Feature Store — Emulator](./Bigtable%20Feature%20Store%20-%20Emulator.ipynb)
+
+Set up and use the [Bigtable emulator](https://cloud.google.com/bigtable/docs/emulator) for local development and CI/CD testing — no GCP project or billing required.
+
+**What you'll learn:**
+- Start the emulator: `gcloud beta emulators bigtable start`
+- What the emulator supports and doesn't (no GoogleSQL, no admin API, no replication, no persistence)
+- Connect with the same Python client code used against production
+- Testing patterns: pytest fixtures, GitHub Actions, Cloud Build
+- Conditional test skipping for GoogleSQL-dependent features
+
 ## Notebook Comparison
 
 | Notebook | Focus | Key Topics |
@@ -216,13 +253,16 @@ Real-time feature computation at serving time — what happens when a new event 
 | [Environment](./Bigtable%20Feature%20Store%20-%20Environment.ipynb) | Setup | BQ data generation, Bigtable instance, data type coverage |
 | [Fundamentals](./Bigtable%20Feature%20Store%20-%20Fundamentals.ipynb) | End-to-end | EXPORT DATA, schema metadata, latency benchmark |
 | [Serialization](./Bigtable%20Feature%20Store%20-%20Serialization.ipynb) | Encoding | Native, JSON, concat, protobuf, hybrid; storage and latency benchmarks |
-| [Synchronization](./Bigtable%20Feature%20Store%20-%20Synchronization.ipynb) | Data freshness | One-time, scheduled, continuous sync; reservation management |
+| [Synchronization](./Bigtable%20Feature%20Store%20-%20Synchronization.ipynb) | Data freshness | One-time, scheduled, continuous sync; reservation management; Data Boost |
 | [History and Time Travel](./Bigtable%20Feature%20Store%20-%20History%20and%20Time%20Travel.ipynb) | Temporal features | Key-based vs cell versioning, point-in-time joins, TTL/feature freshness, training data |
 | [Streaming and Direct Writes](./Bigtable%20Feature%20Store%20-%20Streaming%20and%20Direct%20Writes.ipynb) | Write path | Direct writes, batch mutations, change streams, dual-write |
 | [Key Design and Organization](./Bigtable%20Feature%20Store%20-%20Key%20Design%20and%20Organization.ipynb) | Data modeling | Row key patterns, hotspot avoidance, column family strategy |
 | [Schema Evolution and Operations](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) | Production | Versioned schemas, backfilling, monitoring, security/IAM, autoscaling, cost optimization |
-| [Serving Integration](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) | Application | Model training, feature serving, multi-language reads, FastAPI endpoint, feature freshness, live schema evolution |
+| [Serving Integration](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) | Application | Model training, feature serving, multi-language reads, FastAPI endpoint, training-serving skew, feature freshness, live schema evolution |
 | [Dynamic Features](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb) | Real-time | Atomic counters, read+compute, streaming aggregation, pattern comparison |
+| [Vector Storage and KNN Search](./Bigtable%20Feature%20Store%20-%20Vector%20Storage%20and%20KNN%20Search.ipynb) | Embeddings | Vector encoding, cosine/euclidean distance, brute-force KNN, performance benchmarks |
+| [Replication](./Bigtable%20Feature%20Store%20-%20Replication.ipynb) | High availability | Multi-cluster setup, app profiles, replication lag, failover patterns |
+| [Emulator](./Bigtable%20Feature%20Store%20-%20Emulator.ipynb) | Local dev | Emulator setup, testing patterns, CI/CD, limitations |
 
 ## Topic Map
 
@@ -237,7 +277,7 @@ Some topics span multiple notebooks. Use this map to find all coverage of a topi
 | Schema evolution & versioning | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb), [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) |
 | GC policies & TTL | [NB4](./Bigtable%20Feature%20Store%20-%20History%20and%20Time%20Travel.ipynb), [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
 | Feature freshness | [NB4](./Bigtable%20Feature%20Store%20-%20History%20and%20Time%20Travel.ipynb), [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) |
-| App profiles & routing | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb), [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) |
+| App profiles & routing | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb), [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb), [NB11](./Bigtable%20Feature%20Store%20-%20Replication.ipynb) |
 | Monitoring & alerting | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
 | Security & IAM | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
 | Autoscaling & capacity | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
@@ -246,6 +286,11 @@ Some topics span multiple notebooks. Use this map to find all coverage of a topi
 | Point-in-time joins | [NB4](./Bigtable%20Feature%20Store%20-%20History%20and%20Time%20Travel.ipynb) |
 | Real-time / streaming features | [NB5](./Bigtable%20Feature%20Store%20-%20Streaming%20and%20Direct%20Writes.ipynb), [NB9](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb) |
 | Model serving | [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb), [NB9](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb) |
+| Training-serving skew | [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) |
+| Data Boost (batch reads) | [NB3](./Bigtable%20Feature%20Store%20-%20Synchronization.ipynb) |
+| Vector storage / KNN search | [NB10](./Bigtable%20Feature%20Store%20-%20Vector%20Storage%20and%20KNN%20Search.ipynb) |
+| Multi-cluster replication | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb), [NB11](./Bigtable%20Feature%20Store%20-%20Replication.ipynb) |
+| Emulator / local dev | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb), [NB12](./Bigtable%20Feature%20Store%20-%20Emulator.ipynb) |
 
 ## Prerequisites
 

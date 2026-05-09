@@ -1,10 +1,10 @@
 # Bigtable Feature Store — Plans & Status
 
-> Last updated: 2026-05-09
+> Last updated: 2026-05-09 (Phase 5 complete)
 
 ## What We Built
 
-10 notebooks, a series readme, and a `pyproject.toml` for a folder-level uv environment. All notebooks share consistent config, pixel-tracking headers, prerequisite checks (NB1-9 → NB0), and the `bigtable-feature-store` kernel. 60+ verified Google Cloud documentation links across all files — zero 404s.
+13 notebooks (NB0–NB12), a series readme, and a `pyproject.toml` for a folder-level uv environment. All notebooks share consistent config, pixel-tracking headers, prerequisite checks (NB1-12 → NB0), and the `bigtable-feature-store` kernel. 60+ verified Google Cloud documentation links across all files — zero 404s.
 
 ### Supporting Files
 
@@ -22,13 +22,16 @@
 | 0 | Environment | 42 (23 md, 19 code) | 52 KB | **Built + tested** — label column with learnable signal, ~5% NULLs on 5 columns, `list_clusters()` fix |
 | 1 | Fundamentals | 48 (25 md, 23 code) | 49 KB | **Built + cbt/GoogleSQL/BQ reads** |
 | 2 | Serialization | 58 (24 md, 34 code) | 78 KB | **Built** |
-| 3 | Synchronization | 55 (26 md, 29 code) | 67 KB | **Built + executable streaming + validation** |
+| 3 | Synchronization | 58 (28 md, 30 code) | 71 KB | **Built + executable streaming + validation + Data Boost** |
 | 4 | History and Time Travel | 60 (35 md, 25 code) | 59 KB | **Built** — TTL/freshness section added |
 | 5 | Streaming and Direct Writes | 70 (37 md, 33 code) | 75 KB | **Built + Pub/Sub demo** |
 | 6 | Key Design and Organization | 63 (30 md, 33 code) | 69 KB | **Built** |
 | 7 | Schema Evolution and Operations | 62 (34 md, 28 code) | 76 KB | **Built + drift monitoring + BQ ML validation + NB8 cross-ref + Security/IAM + autoscaling + Terraform/IaC + CI/CD** |
-| 8 | Serving Integration | 53 (26 md, 27 code) | 42 KB | **Built + tested** — real label, 5 read methods, FastAPI, schema evolution Section 6 |
+| 8 | Serving Integration | 57 (28 md, 29 code) | 48 KB | **Built + tested** — real label, 5 read methods, FastAPI, schema evolution, training-serving skew |
 | 9 | Dynamic Features | 47 (23 md, 24 code) | 47 KB | **Built + tested** — 3 patterns, Pub/Sub streaming, combined serving |
+| 10 | Vector Storage and KNN Search | 30 (15 md, 15 code) | ~35 KB | **Built** — float32 binary encoding, brute-force KNN, GoogleSQL COSINE_DISTANCE, performance benchmarks |
+| 11 | Replication | 26 (15 md, 11 code) | ~28 KB | **Built** — Production instance, 2 clusters, app profiles, replication lag measurement |
+| 12 | Emulator | 18 (11 md, 7 code) | ~20 KB | **Built** — local dev, pytest fixtures, CI/CD patterns (GitHub Actions + Cloud Build) |
 
 ---
 
@@ -225,6 +228,45 @@ Run notebooks in this order. NB0 creates all shared resources; NB1 creates the f
   - Fix: `predict_proba` single-class IndexError — robust probability display with `join()`
   - Fix: BQ external table query — `features._values` doesn't exist, use `UNNEST(features.column) AS col WHERE col.name = '_values'`
 
+### NB10: Vector Storage and KNN Search (Phase 5)
+
+- [ ] Configuration cell runs, prerequisites checked
+- [ ] Vector encoding: `struct.pack` demo encodes/decodes correctly
+- [ ] `features-vectors` table created with `embeddings` + `metadata` column families
+- [ ] 1,000 entities written with 128-dim normalized vectors (5 category centroids)
+- [ ] Read-back verifies vector dimensions and values
+- [ ] GoogleSQL `COSINE_DISTANCE` query constructs correctly
+- [ ] Python brute-force KNN returns top-10 neighbors with cosine/euclidean distances
+- [ ] Use cases section: similar entity lookup, candidate retrieval, limitations table
+- [ ] Performance: latency vs table size benchmark (100–1000 rows), chart renders
+- [ ] Performance: latency vs dimensionality benchmark (32–512 dims), chart renders
+- [ ] Combined serving: single read for vector + scalar features
+- [ ] Cleanup: `features-vectors` table deleted
+
+### NB11: Replication (Phase 5)
+
+- [ ] Configuration cell runs
+- [ ] Production instance `feature-store-replicated` created (PRODUCTION type)
+- [ ] Second cluster `feature-store-rep-c2` added in `us-central1-b`
+- [ ] `features-rep` table created with column families
+- [ ] 100 sample entities written
+- [ ] App profiles created: `single-cluster` (route to c1) and `multi-cluster` (route-any)
+- [ ] Replication lag measurement: write via default, poll via multi-cluster until found
+- [ ] Topology patterns table present (single-zone, multi-zone, multi-region)
+- [ ] Cleanup: entire `feature-store-replicated` instance deleted
+
+### NB12: Emulator (Phase 5)
+
+- [ ] Configuration cell runs (no GCP project needed)
+- [ ] Support/unsupported table present (12 features compared)
+- [ ] Emulator starts via `subprocess.Popen`, `BIGTABLE_EMULATOR_HOST` set
+- [ ] Client connects to emulator, table created
+- [ ] Write 3 entities + schema row, read back successfully
+- [ ] Batch mutations and prefix scans work
+- [ ] Testing patterns: pytest fixture, GitHub Actions YAML, Cloud Build YAML shown
+- [ ] Conditional test skipping for GoogleSQL documented
+- [ ] Cleanup: emulator process terminated, env var cleared
+
 ### Post-run
 
 - [ ] Bigtable instance `feature-store` still exists and is healthy
@@ -251,13 +293,13 @@ Cross-reference of MYPLANS.md modules against what we built:
 | **Module 8**: Monitoring, Key Visualizer, cost optimization | NB7: Schema Evolution and Operations | **Full** | Cloud Monitoring + cost estimation + production checklist |
 | **Final Project**: Real-time recommendation engine | — | **Not built** | See "What's Missing" below |
 
-All 8 original MYPLANS.md modules are fully covered. We also added content beyond the original plan: Bigtable architecture explanation, client library catalog, orchestration alternatives, overwrite mode comparison, documentation reference tables, and cross-references to the Vertex AI series.
+All 8 original MYPLANS.md modules are fully covered. We also added content beyond the original plan: Bigtable architecture explanation, client library catalog, orchestration alternatives, overwrite mode comparison, documentation reference tables, cross-references to the Vertex AI series, and three advanced-topic notebooks (vector/KNN search, replication, emulator).
 
 ---
 
 ## What's Missing — Planned Additions
 
-> **Status:** Priorities 1–5 are complete (built in Phase 2). Priority 6 (TTL) is complete (built in Phase 4).
+> **Status:** Priorities 1–6 are complete (Phases 2–4). All items below were addressed in their respective phases.
 
 ### ~~Priority 1: Serving Integration Notebook (NB8)~~ ✅ COMPLETE
 
@@ -356,10 +398,10 @@ Implemented in Phase 4 (Option B — integrate throughout):
 |------|-------|--------|-------|
 | ~~Terraform/IaC for Bigtable provisioning~~ | NB7 | **Done** | `google_bigtable_instance`, table, GC policy, IAM resource blocks |
 | ~~CI/CD testing patterns~~ | NB7 | **Done** | Testing strategy table, pytest integration test pattern, emulator usage |
-| Bigtable emulator for local dev | NB0 or NB8 | Phase 5 | `gcloud beta emulators bigtable start` |
+| ~~Bigtable emulator for local dev~~ | NB12 | **Done** | Full notebook: emulator setup, testing patterns, CI/CD YAML, limitations |
 | ~~BigQuery external table reading from Bigtable~~ | NB8 | **Done** | Federated query: BQ → Bigtable (Section 3d) |
-| Materialized views in Bigtable | Future NB | Pending | GoogleSQL continuous materialized views |
-| Feature store for embeddings / vector features | Future NB | Phase 5 | Store and retrieve embedding vectors, compare with Vertex AI Feature Store's vector search |
+| Materialized views in Bigtable | Future NB | Phase 6 | GoogleSQL continuous materialized views |
+| ~~Feature store for embeddings / vector features~~ | NB10 | **Done** | Float32 binary encoding, brute-force KNN with GoogleSQL, performance benchmarks |
 
 ---
 
@@ -418,8 +460,52 @@ Enterprise-grade gaps identified during testing. Added as sections within existi
    - Added Topic Map section with 16 topics mapped to relevant notebooks
    - Updated Notebook Comparison table entries for NB4, NB7, NB8
 
-### Phase 5: Longer-term Content
-These require new notebooks or significant additions. Lower urgency — the 10-notebook series is complete without them.
+### Phase 5: Advanced Topics ✅ COMPLETE
+New notebooks and sections for vector search, replication, emulator, training-serving skew, and Data Boost.
+
+1. ~~**Training-Serving Skew Detection** (NB8)~~ ✅
+   - Added Section 6 to NB8: compares BQ training values to BT serving values for 50 random entities
+   - Per-feature skew metrics: max/mean absolute difference, correlation
+   - Histogram visualization of BQ-BT differences for float features (ROUND(x,4) precision loss pattern)
+   - Skew monitoring patterns table: batch comparison, continuous monitoring, statistical tests, shadow serving
+   - Cross-references to NB3 (sync strategies) and NB7 (drift monitoring)
+
+2. ~~**Data Boost for Batch Reads** (NB3)~~ ✅
+   - Added Section 7 to NB3: serverless compute for read-only scans, isolated from serving nodes
+   - Key characteristics table (scan-only, read-only, up to 35-min lag)
+   - Reference `gcloud` commands for Data Boost app profile creation (prints only — Dev instance limitation)
+   - Data Boost vs Regular App Profiles comparison table
+
+3. ~~**Vector Storage and KNN Search** (NB10 — new notebook)~~ ✅
+   - 30 cells covering float32 binary encoding, standalone column requirement, brute-force KNN
+   - 1,000 entities with 128-dim normalized vectors in 5 category clusters
+   - GoogleSQL `COSINE_DISTANCE` / `EUCLIDEAN_DISTANCE` with `TO_VECTOR32()`
+   - Python brute-force KNN implementation for comparison
+   - Performance benchmarks: latency vs table size (100–1000 rows), latency vs dimensionality (32–512 dims)
+   - Combined serving: vector + scalar features from a single row read
+
+4. ~~**Multi-Region Replication** (NB11 — new notebook)~~ ✅
+   - 26 cells covering Production instance creation, multi-cluster replication, app profiles
+   - Creates `feature-store-replicated` Production instance with 2 clusters (us-central1-a, us-central1-b)
+   - App profiles: single-cluster routing (strong consistency) vs multi-cluster routing (automatic failover)
+   - Replication lag measurement: write via default, poll via multi-cluster until data appears
+   - Topology patterns: single-zone, multi-zone, multi-region with architecture diagrams
+   - Full cleanup: deletes entire replicated instance
+
+5. ~~**Bigtable Emulator for Local Development** (NB12 — new notebook)~~ ✅
+   - 18 cells covering emulator setup, usage, and testing patterns
+   - Detailed support table: 12 features compared (emulator vs production)
+   - Key limitation: emulator does NOT support GoogleSQL/SQL queries (KNN from NB10 cannot be tested)
+   - pytest fixture for emulator lifecycle, GitHub Actions YAML, Cloud Build YAML
+   - Conditional test skipping for GoogleSQL-dependent tests
+
+6. ~~**readme.md and PLANS.md updates**~~ ✅
+   - readme.md: NB10, NB11, NB12 descriptions, comparison table rows, 5 new topic map entries
+   - readme.md: updated NB3 (Data Boost) and NB8 (training-serving skew) descriptions
+   - PLANS.md: Phase 5 section, notebook table, testing checklists
+
+### Phase 6: Future Content
+These require new notebooks or significant additions. Lower urgency — the 13-notebook series is comprehensive without them.
 
 1. **Final Project: Real-time Recommendation Engine**
    - New notebook that ties the entire series together: a mini-recommendation system using all patterns
@@ -428,19 +514,16 @@ These require new notebooks or significant additions. Lower urgency — the 10-n
    - End-to-end latency measurement: feature read + model inference + response
    - Uses: NB0 data, NB1 export, NB2 serialization, NB5 streaming writes, NB6 key design, NB8 serving, NB9 dynamic features
 
-2. **Embeddings & Vector Features**
-   - New notebook covering embedding storage and retrieval in Bigtable
-   - Store embedding vectors as serialized payloads (protobuf, binary, base64)
-   - Nearest-neighbor search patterns: brute-force scan vs pre-computed ANN indices
-   - Comparison with Vertex AI Feature Store's built-in vector search capabilities
-   - Use case: product embeddings for similarity-based recommendations
+2. **Feature Registry / Catalog**
+   - Centralized metadata about all features: descriptions, owners, data types, lineage
+   - Schema row patterns from NB7 extended to a full registry
+   - Feature discovery: "what features exist for entity X?"
 
-3. **Bigtable Emulator for Local Development**
-   - Add section to NB0 (Environment): `gcloud beta emulators bigtable start` for local testing
-   - Show how to run notebook cells against the emulator vs production
-   - Useful for CI/CD pipelines that can't connect to a live Bigtable instance
+3. **Continuous Materialized Views**
+   - GoogleSQL continuous materialized views for real-time aggregation
+   - Comparison with streaming aggregation patterns from NB9
+   - Use case: running aggregates maintained automatically by Bigtable
 
-4. **Multi-Region Replication**
-   - Expand NB7 with replication topology patterns (single-cluster, multi-cluster, cross-region)
-   - Consistency models: eventual vs strong consistency with single-cluster routing
-   - Failover testing: simulate cluster failure, verify reads still work via multi-cluster routing
+4. **Authorized Views**
+   - Row-level and column-family-level access control without duplicating tables
+   - Use case: ML team sees features but not PII columns; different teams see different entity groups
