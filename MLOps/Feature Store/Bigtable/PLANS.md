@@ -536,7 +536,7 @@ Sections added to existing notebooks — no new notebooks created.
 
 ## Future Content
 
-These would require new notebooks. Lower urgency — the 13-notebook series is comprehensive without them.
+These would require new notebooks. Lower urgency — the 14-notebook series is comprehensive without them.
 
 1. **Final Project: Real-time Recommendation Engine**
    - New notebook that ties the entire series together: a mini-recommendation system using all patterns
