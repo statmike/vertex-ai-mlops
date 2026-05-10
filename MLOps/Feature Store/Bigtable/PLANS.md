@@ -1,16 +1,16 @@
 # Bigtable Feature Store — Plans & Status
 
-> Last updated: 2026-05-09 (Phase 6 complete + NB13)
+> Last updated: 2026-05-10 (Phase 6 complete + NB13 + NB14)
 
 ## What We Built
 
-14 notebooks (NB0–NB13), a series readme, and a `pyproject.toml` for a folder-level uv environment. All notebooks share consistent config, pixel-tracking headers, prerequisite checks (NB1-12 → NB0), and the `bigtable-feature-store` kernel. 60+ verified Google Cloud documentation links across all files — zero 404s.
+15 notebooks (NB0–NB14), a series readme, and a `pyproject.toml` for a folder-level uv environment. All notebooks share consistent config, pixel-tracking headers, prerequisite checks (NB1-12 → NB0), and the `bigtable-feature-store` kernel. 60+ verified Google Cloud documentation links across all files — zero 404s.
 
 ### Supporting Files
 
 | File | Status | Notes |
 |------|--------|-------|
-| `readme.md` | **Built** | Series overview, Key Concepts, 14 notebook descriptions with "What you'll learn", comparison table, topic map (21 topics), Documentation reference (20 Bigtable + 11 BigQuery links), cross-reference to Vertex AI series |
+| `readme.md` | **Built** | Series overview, Key Concepts, 15 notebook descriptions with "What you'll learn", comparison table, topic map (22 topics), Documentation reference (20 Bigtable + 11 BigQuery links), cross-reference to Vertex AI series |
 | `pyproject.toml` | **Built** | uv project config with all dependencies |
 | `../readme.md` (hub) | **Updated** | Comparison table (Vertex AI vs Bigtable), expanded descriptions |
 | `../vertex/readme.md` | **Updated** | Cross-reference callout to Bigtable series |
@@ -33,6 +33,7 @@
 | 11 | Replication | 26 (15 md, 11 code) | ~28 KB | **Built** — Production instance, 2 clusters, app profiles, replication lag measurement |
 | 12 | Emulator | 18 (11 md, 7 code) | ~20 KB | **Built** — local dev, pytest fixtures, CI/CD patterns (GitHub Actions + Cloud Build) |
 | 13 | Production Deployment | 40 (18 md, 22 code) | ~45 KB | **Built** — Terraform IaC (init/plan/apply/destroy), Go/Java/Node.js clients |
+| 14 | Recommendation Engine | 48 (24 md, 24 code) | ~55 KB | **Built + tested** — Capstone: multi-entity table, vector KNN, atomic counters, Pub/Sub streaming, RandomForest ranking, FastAPI serving, freshness analysis |
 
 ---
 
@@ -292,9 +293,9 @@ Cross-reference of MYPLANS.md modules against what we built:
 | **Module 6**: Single table, key namespacing, ordering problem | NB6: Key Design and Organization | **Full** | Compound keys + hotspots + prefix scans + column families |
 | **Module 7**: Schema evolution, versioned protobufs, backfilling | NB7: Schema Evolution and Operations | **Full** | Versioned schemas + backfill + monitoring + operations |
 | **Module 8**: Monitoring, Key Visualizer, cost optimization | NB7: Schema Evolution and Operations | **Full** | Cloud Monitoring + cost estimation + production checklist |
-| **Final Project**: Real-time recommendation engine | — | **Not built** | See "What's Missing" below |
+| **Final Project**: Real-time recommendation engine | NB14: Recommendation Engine | **Full** | Two-stage recommendation: KNN retrieval + RandomForest ranking, atomic counters, Pub/Sub streaming, FastAPI serving, freshness analysis |
 
-All 8 original MYPLANS.md modules are fully covered. We also added content beyond the original plan: Bigtable architecture explanation, client library catalog, orchestration alternatives, overwrite mode comparison, documentation reference tables, cross-references to the Vertex AI series, and three advanced-topic notebooks (vector/KNN search, replication, emulator).
+All 8 original MYPLANS.md modules are fully covered, including the Final Project (NB14 — Recommendation Engine). We also added content beyond the original plan: Bigtable architecture explanation, client library catalog, orchestration alternatives, overwrite mode comparison, documentation reference tables, cross-references to the Vertex AI series, three advanced-topic notebooks (vector/KNN search, replication, emulator), and a production deployment notebook (Terraform + multi-language clients).
 
 ---
 
@@ -536,11 +537,4 @@ Sections added to existing notebooks — no new notebooks created.
 
 ## Future Content
 
-These would require new notebooks. Lower urgency — the 14-notebook series is comprehensive without them.
-
-1. **Final Project: Real-time Recommendation Engine**
-   - New notebook that ties the entire series together: a mini-recommendation system using all patterns
-   - User features in Bigtable (batch-synced from BQ), item features (direct writes), interaction counts (atomic increments)
-   - Serving endpoint that reads user features + item features + real-time signals → produces ranked recommendations
-   - End-to-end latency measurement: feature read + model inference + response
-   - Uses: NB0 data, NB1 export, NB2 serialization, NB5 streaming writes, NB6 key design, NB8 serving, NB9 dynamic features
+All planned content is complete. The 15-notebook series (NB0–NB14) covers the full scope of the original MYPLANS.md plan plus significant additional content.

@@ -262,6 +262,19 @@ Deploy a complete feature store with [Terraform](https://www.terraform.io/) and 
 - [Node.js client](https://cloud.google.com/nodejs/docs/reference/bigtable/latest): async/await, serverless-friendly
 - `terraform destroy`: one command removes all infrastructure — no orphaned resources
 
+### 14. [Bigtable Feature Store — Recommendation Engine](./Bigtable%20Feature%20Store%20-%20Recommendation%20Engine.ipynb)
+
+The capstone notebook — a fully self-contained two-stage recommendation system that ties together patterns from across the entire series. Creates its own table, generates its own data, trains its own model, and cleans up everything at the end.
+
+**What you'll learn:**
+- Multi-entity table design: users, items, and metadata in a single table using [key namespacing](./Bigtable%20Feature%20Store%20-%20Key%20Design%20and%20Organization.ipynb) (`USER#`, `ITEM#`)
+- 64-dimensional [vector embeddings](./Bigtable%20Feature%20Store%20-%20Vector%20Storage%20and%20KNN%20Search.ipynb) for candidate retrieval via brute-force KNN
+- [Atomic counters](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb) for real-time interaction tracking (views, clicks, purchases)
+- [Streaming event ingestion](./Bigtable%20Feature%20Store%20-%20Streaming%20and%20Direct%20Writes.ipynb) via Pub/Sub → Bigtable counter updates
+- Two-stage recommendation: KNN retrieval (500 → 50 candidates) followed by RandomForest ranking (50 → top 10)
+- [FastAPI serving endpoint](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) with concurrent load testing and latency breakdown
+- Feature freshness experiment: how stale embeddings cause recommendation drift
+
 ## Notebook Comparison
 
 | Notebook | Focus | Key Topics |
@@ -280,6 +293,7 @@ Deploy a complete feature store with [Terraform](https://www.terraform.io/) and 
 | [Replication](./Bigtable%20Feature%20Store%20-%20Replication.ipynb) | High availability | Multi-cluster setup, app profiles, replication lag, failover patterns |
 | [Emulator](./Bigtable%20Feature%20Store%20-%20Emulator.ipynb) | Local dev | Emulator setup, testing patterns, CI/CD, limitations |
 | [Production Deployment](./Bigtable%20Feature%20Store%20-%20Production%20Deployment.ipynb) | Enterprise | Terraform IaC, Go/Java/Node.js clients, infrastructure lifecycle |
+| [Recommendation Engine](./Bigtable%20Feature%20Store%20-%20Recommendation%20Engine.ipynb) | Capstone | Multi-entity table, vector KNN, atomic counters, streaming, two-stage ranking, FastAPI, freshness |
 
 ## Topic Map
 
@@ -293,7 +307,7 @@ Some topics span multiple notebooks. Use this map to find all coverage of a topi
 | Data sync (BQ → Bigtable) | [NB1](./Bigtable%20Feature%20Store%20-%20Fundamentals.ipynb), [NB3](./Bigtable%20Feature%20Store%20-%20Synchronization.ipynb), [NB5](./Bigtable%20Feature%20Store%20-%20Streaming%20and%20Direct%20Writes.ipynb) |
 | Schema evolution & versioning | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb), [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) |
 | GC policies & TTL | [NB4](./Bigtable%20Feature%20Store%20-%20History%20and%20Time%20Travel.ipynb), [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
-| Feature freshness | [NB4](./Bigtable%20Feature%20Store%20-%20History%20and%20Time%20Travel.ipynb), [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) |
+| Feature freshness | [NB4](./Bigtable%20Feature%20Store%20-%20History%20and%20Time%20Travel.ipynb), [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb), [NB14](./Bigtable%20Feature%20Store%20-%20Recommendation%20Engine.ipynb) |
 | App profiles & routing | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb), [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb), [NB11](./Bigtable%20Feature%20Store%20-%20Replication.ipynb) |
 | Monitoring & alerting | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
 | Security & IAM | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
@@ -301,11 +315,11 @@ Some topics span multiple notebooks. Use this map to find all coverage of a topi
 | Cost optimization | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
 | Latency benchmarking | [NB1](./Bigtable%20Feature%20Store%20-%20Fundamentals.ipynb), [NB2](./Bigtable%20Feature%20Store%20-%20Serialization.ipynb), [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb), [NB9](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb) |
 | Point-in-time joins | [NB4](./Bigtable%20Feature%20Store%20-%20History%20and%20Time%20Travel.ipynb) |
-| Real-time / streaming features | [NB5](./Bigtable%20Feature%20Store%20-%20Streaming%20and%20Direct%20Writes.ipynb), [NB9](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb) |
-| Model serving | [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb), [NB9](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb) |
+| Real-time / streaming features | [NB5](./Bigtable%20Feature%20Store%20-%20Streaming%20and%20Direct%20Writes.ipynb), [NB9](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb), [NB14](./Bigtable%20Feature%20Store%20-%20Recommendation%20Engine.ipynb) |
+| Model serving | [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb), [NB9](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb), [NB14](./Bigtable%20Feature%20Store%20-%20Recommendation%20Engine.ipynb) |
 | Training-serving skew | [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb) |
 | Data Boost (batch reads) | [NB3](./Bigtable%20Feature%20Store%20-%20Synchronization.ipynb) |
-| Vector storage / KNN search | [NB10](./Bigtable%20Feature%20Store%20-%20Vector%20Storage%20and%20KNN%20Search.ipynb) |
+| Vector storage / KNN search | [NB10](./Bigtable%20Feature%20Store%20-%20Vector%20Storage%20and%20KNN%20Search.ipynb), [NB14](./Bigtable%20Feature%20Store%20-%20Recommendation%20Engine.ipynb) |
 | Multi-cluster replication | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb), [NB11](./Bigtable%20Feature%20Store%20-%20Replication.ipynb) |
 | Emulator / local dev | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb), [NB12](./Bigtable%20Feature%20Store%20-%20Emulator.ipynb) |
 | Feature registry / catalog | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
@@ -313,6 +327,7 @@ Some topics span multiple notebooks. Use this map to find all coverage of a topi
 | Authorized views | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
 | Terraform / IaC | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb), [NB13](./Bigtable%20Feature%20Store%20-%20Production%20Deployment.ipynb) |
 | Multi-language clients (Go, Java, Node.js) | [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb), [NB13](./Bigtable%20Feature%20Store%20-%20Production%20Deployment.ipynb) |
+| Recommendation engine (capstone) | [NB14](./Bigtable%20Feature%20Store%20-%20Recommendation%20Engine.ipynb) |
 
 ## Prerequisites
 
