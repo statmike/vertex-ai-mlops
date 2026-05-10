@@ -43,7 +43,7 @@ How are you going to manage data, features, training, models, deployment, monito
 
 Let's talk about MLOps!
 
-> Note: This folder is in active development and is the primary focus of this repository for 2024.  Check back often and provide feedback as it will help guide the build-out.
+> Note: This folder is in active development.  Check back often and provide feedback as it will help guide the build-out.
 
 ---
 ## Table of Contents
@@ -123,14 +123,14 @@ Whew!! Is that enough?  The value of practicing MLOps is clear.  The core to thi
     <img src="./resources/images/external/mlops/overview.png" width="90%">
 </center><p>
 
-Links To Content:
-- Orchestration with [Pipelines](./Pipelines/readme.md)
-- Feature Management with [Vertex AI Feature Store](./Feature%20Store/readme.md)
-- [Model Evaluation](./Model%20Evaluation/readme.md)
-- [Model Monitoring](./Model%20Monitoring/readme.md)
-- [Experiment Tracking](./Experiment%20Tracking/readme.md)
-- [Model Serving](./Serving/readme.md)
-- More planned!
+| Section | Notebooks | Description |
+|---|---|---|
+| [Pipelines](./Pipelines/readme.md) | 12 | Orchestration with Vertex AI Pipelines — components, IO, control flow, scheduling, notifications, management, testing, and reusable patterns using KFP |
+| [Feature Store](./Feature%20Store/readme.md) | 21 | Feature management with two approaches: [Vertex AI Feature Store](./Feature%20Store/vertex/readme.md) (6 notebooks — managed sync, feature registry, embeddings) and [Bigtable Feature Store](./Feature%20Store/Bigtable/readme.md) (15 notebooks — direct writes, streaming, replication, vectors, recommendation engine) |
+| [Model Serving](./Serving/readme.md) | 32 | Every major GCP serving pattern — [online prediction](./Serving/Online/readme.md) (7), [batch inference](./Serving/Batch/readme.md) (4), [SQL inference](./Serving/SQL%20Inference/readme.md) (5), [multi-platform deployment](./Serving/Platforms/readme.md) (4), [Triton Inference Server](./Serving/Triton/readme.md) (5), [vLLM for LLM serving](./Serving/vLLM/readme.md) (6), plus a foundational FastAPI notebook |
+| [Model Evaluation](./Model%20Evaluation/readme.md) | 3 | Evaluation metrics and Vertex AI Model Registry integration for binary, multi-class, and multi-label classification |
+| [Model Monitoring](./Model%20Monitoring/readme.md) | 2 | Feature skew and drift detection with BigQuery ML monitoring and Vertex AI Model Monitoring V2 |
+| [Experiment Tracking](./Experiment%20Tracking/readme.md) | 1 | Vertex AI Experiments — logging parameters, metrics, and artifacts with autologging for common ML frameworks |
 
 ### Environment Setup Tips
 
