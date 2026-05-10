@@ -36,535 +36,114 @@
 </table><br/><br/>
 
 ---
-# Vertex AI for Machine Learning Operations
+# MLOps on GCP
 
->**2025 UPDATE:** The repository is progressing toward an MLOps focused approach for predictive and generative AI operations.
->
->The main focus of the repository is new content developed in:
->- MLOps
->- Frameworks
->- Applied *
->   - mostly Applied GenAI and Applied Forecasting
->
->What to expect in 2025:
->- Much more MLOps content in the `/MLOps` folder
->- A detailed review of GenAI tooling in the `Applied GenAI` folder
->- Many framework specific workflows in the `Frameworks` folder
->- Migration of all the numbered folders to these main folders
->- Collapsing all the Applied * folders into a single 'Applied Workflows' folder with subfolders by topic: GenAI, Forecasting, ...
->- A complete rewrite of this readme.md file
->- Content that is deemed stale is moved into subfolders named `legacy` and links from/to are updated.
+Google Cloud's AI platform has evolved through several names — **Cloud ML Engine**, then **AI Platform**, then **Vertex AI**, and as of April 2026, **[Gemini Enterprise Agent Platform](https://cloud.google.com/blog/products/ai-machine-learning/introducing-gemini-enterprise-agent-platform)**. Each renaming reflects an expansion in scope: from custom model training, to a unified ML platform with AutoML and managed notebooks, to the current vision that brings together model building, agent development, orchestration, and governance in a single platform. This repository has tracked that evolution, and its recent content — AI agents with ADK, agent deployment on Agent Engine (formerly Vertex AI Agent Builder), and agentic workflows — reflects exactly where the platform is heading.
 
->**2024 UPDATE:**  This repository is evolving from end-to-end workflows for various frameworks into an MLOps focused approach for development of predictive and generative AI operations.  The new approach is being developed in the [MLOps](./MLOps/readme.md) folder.  Once it nears completion, the content in this repository will be rearranged into the following structure:
->- MLOps
->    - Pipelines
->    - Experiments
->    - Feature Store
->    - Model Monitoring
->    - ...
->- Applied Examples
->    - Forecasting
->    - GenAI
->    - ...
->- Framework Workflows
->    - BigQuery ML
->    - TensorFlow
->    - scikit-learn
->    - ...
-> - ...
+While the AI platform is the anchor, this repository reaches across the broader Google Cloud ecosystem. You'll find workflows that integrate BigQuery and BigQuery ML for in-database analytics and AI functions, Dataflow (Apache Beam) and Dataproc (Managed Apache Spark) for batch and streaming inference, Cloud Composer (Airflow) for orchestration, and Cloud Run and GKE for model serving. Database services — Spanner, AlloyDB, Cloud SQL, Memorystore, Firestore, and Bigtable — appear throughout as feature stores, vector search backends, and SQL-based inference endpoints. The goal is to show how these services work together in real ML and AI workflows, not just in isolation.
 
-
-
-<p align="center"><center>
-    <img src="./MLOps/resources/images/external/mlops/overview.png" width="90%">
-</center><p>
-
-
-
----
-> This is the original readme from prior to the shift in this repository.  After the content rearrangement is complete and this information is incorporate above it will be removed.  
-
-## 👋 I'm Mike
-
-I want to share and enable [Vertex AI](https://cloud.google.com/vertex-ai/docs/start/introduction-unified-platform) from [Google Cloud](https://cloud.google.com/vertex-ai) with you.  The goal here is to share a comprehensive set of end-to-end workflows for machine learning that each cover the range of data to model to serving and managing - even automating the flow.  Regardless of your data type, skill level or framework preferences you will find something helpful here.  You can even ask for what you need and I might be able to work it into updates! 
-
-<p align="center" width="100%"><center>
-    <a href="https://youtu.be/snUEwsft1wY" target="_blank" rel="noopener noreferrer">
-      <kbd><img width="50%" src="architectures/thumbnails/playbutton/readme.png"></kbd>
-    </a>
-</center></p>
-<p align="center">Click to watch on YouTube</p>
-<p align="center">Click <a href="https://youtube.com/playlist?list=PLgxF613RsGoUuEjJJxJW2JYyZ8g1qOUou" target="_blank" rel="noopener noreferrer">here</a> to see current playlist for this repository</p>
-
----
-## Tracking
-
-To better understand which content is most helpful to users, this repository uses tracking pixels in each markdown (`.md`) and notebook (`.ipynb`) file.  **No user or location data is collected.**  The only information captured is that the content was rendered/viewed which gives us a daily count of usage.  Please share any concerns you have with this in [repositories discussion board](https://github.com/statmike/vertex-ai-mlops/discussions) and I am happy to also provide a branch without the tracking.  
-
-A script is provided to remove this tracking from your local copy of this repository in the file `pixel_remove.py` in the folder [pixel](./architectures/tracking/setup/pixel/readme.md).  This readme also has the complete code for creating the tracking in case you want to use replicate it or just understand it in greater detail.
-
----
-## Approach Used In This Repository
-
-This repository is presented as workflows using, primarily, interactive python notebooks `.ipynb`.  Why?  These are easy to review, share, and move.  They contain elements for both code and narrative. The narrative can be written with plain text, Markdown and/or HTML which makes providing visual explanations easy.  This reinforces the goal of this repository: information that is easily accessible, portable, and great for starting points in your own work.
-
-In notebooks, execution is driven from the locally attached compute.  In this repository that means the Python code is currently running in the notebooks compute.  The code in this repository heavily leans on orchestrating services in GCP rather than doing data compute in the local environment to the notebook.  That means these notebooks are designed to run on minimal machine sizes, like `n1-standard2` even.  The heavy work of training and serving is done on Vertex AI, BigQuery, and other Google Cloud services.  You will even find notebooks that author code, and then deploy the code in services like Vertex AI Custon Training and Vertex AI Pipelines.  
-
-There are sections that use other languages, like R, as well as creating files that are external to the notebooks: `dockerfile`, `.py` scripts and modules, etc.
-
-The code in this repository is opinionated.  It is not completely production ready as well as not simply ad-hoc exploration.  It aims to the right of the continum of exploration to deployment: 'hello-world' to CI/CD/CT.  In our data science daily work we might think of the process as:
-
-<p align="center" width="100%"><center>
-    <img src="./architectures/architectures/images/readme/code_progression.png">
-</center></p>
-
-In **explore**, everything is code as you go.  At some point in this exploration ideas find value and need to be developed.
-
-In **develop**, the approach is usually something like:
-- make it work
-    - get a working end to end flow
-- clean it up
-    - revisit the code and remove parts that are no longer needed and reorder based on what is learned
-- generalize it
-    - parameterize
-    - use functions
-    - control flow: start using logic to check for out of bound conditions
-- optimize it
-    - better use of data structures to handle data usage during execution
-    - consider execution timing and optimize for the simoultaneous goal of readability (= maintainability) and compute time
-
-In many cases, getting from development to **deployment** is simple:
-- schedule a notebook - a lot like skipping the **develop** stage
-- deploy a pipeline
-- create a cloud function
-
-But, inevitably, as a workflow proves value it requires more effort before you **deploy**:
-- error handling
-- unit testing
-- move from specialized code to generalized code: 
-    - use classes
-    - control environment handling
-
-So where does the code in the repository fall? In the late **develop** phase with strong readability and adaptibility.
-
-<p align="center" width="100%"><center>
-    <img src="./architectures/architectures/images/readme/code_progression_star.png">
-</center></p>
-
----
-## Table of Contents
-- [Considerations](#considerations)
-- [Overview](#overview)
-- [Vertex AI](#vertex)
-- [Interacting With Vertex AI](#vertexsdk)
-- [Setup](#setup)
-- [Helpful Sections](#helpful)
-- [More Resources](#resources)
-
----
-<a id = 'considerations'></a>
-## Considerations
-
-### Data Type
-
--  Tables: Tabular, structured data in rows and columns
--  Language: Text for translation and/or understanding
--  Vision: Images
--  Video
-
-### Convenience Level
-
--  Use Pre-Trained APIs
--  Automate building Custom Models
--  End-to-end Custom ML with core tools in the framework of your choice
-
-### Framework Preferences
-
--  [Scikit-learn](https://scikit-learn.org/stable/index.html)
--  [XGBoost](https://xgboost.readthedocs.io/en/latest/)
--  [Tensorflow](https://www.tensorflow.org/)
--  [Pytorch](https://pytorch.org/)
--  [Spark MLlib](https://spark.apache.org/docs/latest/ml-guide.html)
--  [R](https://www.r-project.org/)
--  [Julia](https://julialang.org/)
--  More!
-
----
-<a id = 'overview'></a>
-## Overview
-
-This is a series of workflow demonstrations that use the same data source to build and deploy the same machine learning model with different frameworks and automation.  These are meant to help get started in understanding and learning Vertex AI and provide starting points for new projects.  
-
-The demonstrations focus on workflows and don't delve into the specifics of ML frameworks other than how to integrate and automate with Vertex AI. Let me know if you have ideas for more workflows or details to include!
-
-To understand the contents of this repository, the following charts uncover the groupings of the content.
-
-| Direction |
-:-------------------------:
-![](./architectures/architectures/images/readme/decision_training.png)
-
-### Pre-Trained APIs
-<table style='text-align:center;vertical-align:middle' width="100%" cellpadding="1" cellspacing="0">
-    <tr>
-        <th colspan='4'>Pre-Trained Models</th>
-        <th rowspan='2'>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl/v1/32px.svg">
-            <a href="https://cloud.google.com/vertex-ai/docs/beginner/beginners-guide" target="_blank">AutoML</a>
-        </th>
-    </tr>
-    <tr>
-        <th>Data Type</th>
-        <th>Pre-Trained Model</th>
-        <th>Prediction Types</th>
-        <th>Related Solutions</th>
-    </tr>
-    <tr>
-        <td rowspan='2'>
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
-            <br>Text
-        </td>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_translation_api/v1/32px.svg">
-            <br><a href="https://cloud.google.com/translate/docs/overview" target="_blank">Cloud Translation API</a>
-        </td>
-        <td>Detect, Translate</td>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/text-to-speech/v1/32px.svg">
-            <br><a href="https://cloud.google.com/text-to-speech/docs/basics" target="_blank">Cloud Text-to-Speech</a>
-        </td>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_translation/v1/32px.svg">
-            <br><a href="https://cloud.google.com/translate/automl/docs" target="_blank">AutoML Translation</a>
-        </td>
-    </tr>
-            <tr>
-                <td>
-                   <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_natural_language_api/v1/32px.svg">
-                   <br><a href="https://cloud.google.com/natural-language/docs/quickstarts" target="_blank">Cloud Natural Language API</a>
-                </td>
-                <td>
-                    Entities (Identify and label), Sentiment, Entity Sentiment, Syntax, Content Classification
-                </td>
-                <td>
-                    <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/healthcare_nlp_api/v1/32px.svg">
-                    <br><a href="https://cloud.google.com/healthcare-api/docs/how-tos/nlp" target="_blank">Healthceare Natural Language API</a>
-                </td>
-                <td>
-                    <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_natural_language/v1/32px.svg">
-                    <br><a href="https://cloud.google.com/vertex-ai/docs/training-overview#text_data" target="_blank">AutoML Text</a>
-            </tr>
-    <tr>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/image/default/40px.svg">
-            <br>Image
-        </td>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_vision_api/v1/32px.svg">
-            <br><a href="https://cloud.google.com/vision/docs/features-list" target="_blank">Cloud Vision API</a>
-        </td>
-        <td>
-            Crop Hint, OCR, Face Detect, Image Properties, Label Detect, Landmark Detect, Logo Detect, Object Localization, Safe Search, Web Detect
-        </td>
-        <td>
-            <table>
-                <tr>
-                    <td>
-                        <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/document_ai/v1/32px.svg">
-                        <br><a href="https://cloud.google.com/document-ai/docs/processors-list" target="_blank">Document AI</a>
-                    </td>
-                    <td>
-                        <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/visual_inspection/v1/32px.svg">
-                        <br><a href="" taget="_blank">Visual Inspection AI</a>
-                    </td>
-                </tr>
-            </table>
-        </td>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_vision/v1/32px.svg">
-            <br><a href="https://cloud.google.com/vertex-ai/docs/training-overview#image_data" target="_blank">AutoML Image</a>
-        </td>
-    </tr>
-    <tr>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/mic/default/40px.svg">
-            <br>Audio
-        </td>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/media_translation_api/v1/32px.svg">
-            <br><a href="https://cloud.google.com/media-translation" target="_blank">Cloud Media Translation API</a>
-        </td>
-        <td>Real-time speech translation</td>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/speech-to-text/v1/32px.svg">
-            <br><a href="https://cloud.google.com/speech-to-text/docs/basics" target="_blank">Cloud Speech-to-Text</a>
-        </td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/videocam/default/40px.svg">
-            <br>Video
-        </td>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/video_intelligence_api/v1/32px.svg">
-            <br><a href="https://cloud.google.com/video-intelligence/docs/quickstarts" target="_blank">Cloud Video Intelligence API</a>
-        </td>
-        <td>
-            Label Detect*, Shot Detect*, Explicit Content Detect*, Speech Transcription, Object Tracking*, Text Detect, Logo Detect, Face Detect, Person Detect, Celebrity Recognition
-        </td>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/cloud_vision_api/v1/32px.svg">
-            <br><a href="https://cloud.google.com/vision-ai/docs/overview" target="_blank">Vertex AI Vision</a>
-        </td>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_video_intelligence/v1/32px.svg">
-            <br><a href="https://cloud.google.com/vertex-ai/docs/training-overview#video_data" target="_blank">AutoML Video</a>
-        </td>
-    </tr>
-</table>
-
-
-### AutoML
-<table style='text-align:center;vertical-align:middle' width="100%" cellpadding="1" cellspacing="0">
-    <tr>
-        <th colspan='3'>AutoML</th>
-    </tr>
-    <tr>
-        <th>Data Type</th>
-        <th>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl/v1/32px.svg">
-            <br><a href="https://cloud.google.com/vertex-ai/docs/beginner/beginners-guide" target="_blank">AutoML</a>
-        </th>
-        <th>Prediction Types</th>
-    </tr>
-    <tr>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/table/default/40px.svg">
-            <br>Table
-        </td>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_tables/v1/32px.svg">
-            <br><a href="https://cloud.google.com/vertex-ai/docs/training-overview#tabular_data" target="_blank">AutoML Tables</a>
-        </td>
-        <td>
-            <dl>
-                <dt>Classification</dt>
-                    <dd>Binary</dd>
-                    <dd>Multi-class</dd>
-                <dt>Regression</dt>
-                <dt>Forecasting</dt>
-            </dl>
-        </td>
-    </tr>
-    <tr>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/image/default/40px.svg">
-            <br>Image
-        </td>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_vision/v1/32px.svg">
-            <br><a href="https://cloud.google.com/vertex-ai/docs/training-overview#image_data" target="_blank">AutoML Image</a>
-        </td>
-        <td>
-            <dl>
-                <dt>Classification</dt>
-                    <dd>Single-label</dd>
-                    <dd>Multi-label</dd>
-                <dt>Object Detection</dt>
-            </dl>
-        </td>
-    </tr>
-    <tr>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/videocam/default/40px.svg">
-            <br>Video
-        </td>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_video_intelligence/v1/32px.svg">
-            <br><a href="https://cloud.google.com/vertex-ai/docs/training-overview#video_data" target="_blank">AutoML Video</a>
-        </td>
-        <td>
-            <dl>
-                <dt>Classification</dt>
-                <dt>Object Detection</dt>
-                <dt>Action Recognition</dt>
-            </dl>
-        </td>
-    </tr>
-    <tr>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
-            <br>Text
-        </td>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_natural_language/v1/32px.svg">
-            <br><a href="https://cloud.google.com/vertex-ai/docs/training-overview#text_data" target="_blank">AutoML Text</a>
-        </td>
-        <td>
-            <dl>
-                <dt>Classification</dt>
-                    <dd>Single-label</dd>
-                    <dd>Multi-label</dd>
-                <dt>Entity Extraction</dt>
-                <dt>Sentiment Analysis</dt>
-            </dl>
-        </td>
-    </tr>
-    <tr>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/text_snippet/default/40px.svg">
-            <br>Text
-        </td>
-        <td>
-            <img src="https://fonts.gstatic.com/s/i/gcpiconscolors/automl_translation/v1/32px.svg">
-            <br><a href="https://cloud.google.com/translate/automl/docs" target="_blank">AutoML Translation</a>
-        </td>
-        <td>
-            Translation
-        </td>
-    </tr>
-</table>
-
-### With Training Data
-
-This work focuses on cases where you have training data:
-
-| Overview |
-:-------------------------:
-![](./architectures/overview/high_level.png)
-
-|AutoML|BigQuery ML|Vertex AI| Forecasting with AutoML, BigQuery ML, OSS Prophet |
-:---:|:---:|:---:|:---:
-![](./architectures/overview/02_overview.png)|![](./architectures/overview/03_overview.png)|![](./architectures/overview/05_overview.png)|![](./architectures/overview/forecasting_overview.png)
-
-### Vertex AI For ML Training
-
-<p align="center" width="100%">
-    <img src="./architectures/overview/training.png" width="45%">
-    &nbsp; &nbsp; &nbsp; &nbsp;
-    <img src="./architectures/overview/training2.png" width="45%">
-</p>
-
----
-<a id = 'vertex'></a>
-## Vetex AI
-
-Vetex AI is a platform for end-to-end model development.  It consist of core components that make the processes of MLOps possible for design patterns of all types.
+A comprehensive collection of **470+ interactive notebooks** covering custom ML, generative AI, and agent development on Google Cloud — from training and serving to pipelines, feature stores, and production deployment. Each notebook is a hands-on workflow you can learn from, adapt, and use as a starting point for your own projects.
 
 <p align="center">
-  <img alt="Components" src="architectures/slides/readme_arch.png" width="45%">
-&nbsp; &nbsp; &nbsp; &nbsp;
-  <img alt="Console" src="architectures/slides/readme_console.png" width="45%">
+    <img src="./MLOps/resources/images/external/mlops/overview.png" width="90%">
 </p>
 
 ---
-<a id = 'vertexsdk'></a>
-## Interacting with Vertex AI
-Many Vertex AI resources can be viewed and monitored directly in the [GCP Console](https://console.cloud.google.com/vertex-ai).  Vertex AI resources are primarily created, and modified with the [Vertex AI API](https://cloud.google.com/vertex-ai/docs/reference).  
 
-The API is accessible from:
-- the command line with [`gcloud ai`](https://cloud.google.com/sdk/gcloud/reference/ai), 
-- [REST](https://cloud.google.com/vertex-ai/docs/reference/rest),
-- [gRPC](https://cloud.google.com/vertex-ai/docs/reference/rpc), 
-- or the [client libraries](https://cloud.google.com/vertex-ai/docs/start/client-libraries) (built on top of gRPC) for
-    - [Python](https://cloud.google.com/python/docs/reference/aiplatform/latest), 
-    - [Java](https://cloud.google.com/java/docs/reference/google-cloud-aiplatform/latest/overview), and 
-    - [Node.js](https://cloud.google.com/nodejs/docs/reference/aiplatform/latest).  
+## [MLOps](./MLOps/readme.md) — 74 notebooks
 
-The notebooks in this repository primarily use the Python client `aiplatform`.  There is occasional use of `aiplatform.gapic`,  `aiplatform_v1` and `aiplatform_v1beta1`.
+End-to-end machine learning operations on Vertex AI: everything between training a model and running it reliably in production.
 
-For the full details on the APIs versions and layers and how/when to use each, [see this helpful note](./Tips/aiplatform_notes.md).
-
-**Install the Vertex AI Python Client**
-```python
-pip install google-cloud-aiplatform
-```
-
-**Example Usage: Listing all Models in Vertex AI Model Registry**
-```python
-PROJECT = 'statmike-mlops-349915'
-REGION = 'us-central1'
-
-# List all models for project in region with: aiplatform
-from google.cloud import aiplatform
-aiplatform.init(project = PROJECT, location = REGION)
-
-model_list = aiplatform.Model.list()
-```
+- **[Serving](./MLOps/Serving/readme.md)** (32 notebooks) — Online endpoints (dedicated, shared, private with PSC), batch inference (Vertex AI, Dataflow, Dataproc, Airflow), SQL-based inference (BigQuery ML, AlloyDB, Spanner), multi-platform deployment (Cloud Run, GKE, Cloud Functions), Triton Inference Server, and vLLM for LLM serving
+- **[Feature Store](./MLOps/Feature%20Store/readme.md)** (21 notebooks) — Vertex AI managed feature store and a 15-notebook deep dive into building a self-managed Bigtable feature store covering serialization, sync patterns, history, schema evolution, vector search, replication, and a recommendation engine capstone
+- **[Pipelines](./MLOps/Pipelines/readme.md)** (13 notebooks) — Vertex AI Pipelines with KFP: components, I/O, control flow, scheduling, notifications, management, testing, and reusable modular patterns
+- **[Model Evaluation](./MLOps/Model%20Evaluation/readme.md)** (3 notebooks) — Binary, multi-class, and multi-label classification evaluation with Vertex AI Model Registry
+- **[Model Monitoring](./MLOps/Model%20Monitoring/readme.md)** (2 notebooks) — Feature skew and drift detection with BigQuery ML and Vertex AI
+- **[Experiment Tracking](./MLOps/Experiment%20Tracking/readme.md)** (1 notebook) — Logging parameters, metrics, and artifacts with Vertex AI Experiments
 
 ---
-<a id = 'setup'></a>
-## Setup
 
-The demonstrations are presented in a series of notebooks that are best run in JupyterLab. These can be reviewed directly in [this repository on GitHub](https://github.com/statmike/vertex-ai-mlops) or cloned to your Jupyter instance on [Vertex AI Workbench Instances](https://cloud.google.com/vertex-ai/docs/workbench/instances/introduction).
+## [data+ai](./data+ai/readme.md) — 40 notebooks
 
-### Option 1: Review And Use Individual Files
+Machine learning and AI capabilities across Google Cloud's data services — bring inference to where the data lives.
 
-Select the files and review them directly in the browser or IDE of your choice.  This can be helpful for general understanding and selecting sections to copy/paste to your project.  Some options to get a local copy of this repositories content:
-- use git: `git clone https://github.com/statmike/vertex-ai-mlops`
-- use `wget` to copy individual files directly from GitHub:
-    - Go to the notebook on GitHub.com and right-click the download link. Then select copy link address.
-    - Alternatively, click the Raw button on GitHub and then copy the URL that loads.
-    - Run the following from a notebook cell or directly from a terminal (without the !). Note the slightly different address that points directly to raw content on GitHub.
-        - `!wget "https://raw.githubusercontent.com/statmike/vertex-ai-mlops/main/<path and filename>.ipynb"`
-- Use [Colab](https://colab.research.google.com/) (and soon [Vetex AI Enterprise Colab](https://cloud.google.com/vertex-ai/docs/colab/create-console-quickstart)) to open the notebooks. Many of the notebooks have section at the top with buttons for opening directly in Colab.  Some notebooks don't yet have this feature and some use local Docker which is not available on Colab.  
-
-### Option 2: Run These Notebooks in a Vertex AI Workbench based Notebook 
-
-TL;DR
-> In Google Cloud Console, Select/Create a Project then go to Vertex AI > Workbench > Instances
-> - Create a new notebook and Open JupyterLab
-> - Clone this repository using Git Menu, Open and run `00 - Environment Setup.ipynb`
-
-1. Create a Project
-   1. [Link](https://console.cloud.google.com/cloud-resource-manager), Alternatively, go to: Console > IAM & Admin > Manage Resources
-   1. Click "+ Create Project"
-   1. Provide: name, billing account, organization, location
-   1. Click "Create"
-1. Enable the APIs: Vertex AI API and Notebooks API
-   1. [Link](https://console.cloud.google.com/flows/enableapi?apiid=aiplatform.googleapis.com,notebooks.googleapis.com)
-      1. Alternatively, go to: 
-         1. Console > Vertex AI, then enable API
-         1. Then Console > Vertex AI > Workbench, then enable API
-1. Create A Notebook with [Vertex AI Workbench Instances](https://cloud.google.com/vertex-ai/docs/workbench/instances/introduction):
-    1. Go to: Console > Vertex AI > Workbench > Instances - [direct link](https://console.cloud.google.com/vertex-ai/workbench/instances)
-    1. Create a new instance - [instructions](https://cloud.google.com/vertex-ai/docs/workbench/instances/create)    
-    1. Once it is started, click the `Open JupyterLab` link.
-    1. Clone this repository to the JupyterLab instance:
-        1. Either:
-            1. Go to the `Git` menu and choose `Clone a Repository`
-            1. Choose the Git icon on the left toolbar and click `Clone a Repository`
-        1. Provide the Clone URI of this repository: [https://github.com/statmike/vertex-ai-mlops.git](https://github.com/statmike/vertex-ai-mlops.git)
-        1. In the File Browser you will now have the folder "vertex-ai-mlops" that contains the files from this repository
-1. Setup the Notebook Environment for these workflows
-   1. Open the notebook vertex-ai-mlops/00 - Environment Setup
-   1. Follow the instructions and run the cells
-
-Resources on these items:
-- [Google Cloud Projects](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
-- [Vertex AI environment](https://cloud.google.com/vertex-ai/docs/start/cloud-environment)
-- [Introduction to Vertex AI Workbench](https://cloud.google.com/vertex-ai/docs/workbench/introduction)
-- [Create a Vetex AI Workbench Instance](https://cloud.google.com/vertex-ai/docs/workbench/instances/create-console-quickstart)
+- **[BigQuery AI Functions](./data+ai/bq-ai-functions/README.md)** (32 notebooks) — 21 individual function guides covering all 20 built-in AI functions (AI.GENERATE, AI.EMBED, AI.FORECAST, AI.CLASSIFY, and more), plus 9 end-to-end workflows for RAG pipelines, semantic search, document intelligence, content moderation, and time series analysis
+- **[Dataflow](./data+ai/dataflow/readme.md)** (3 notebooks) — Streaming and batch ML inference with Apache Beam's RunInference API, including model hot-swap patterns and a GPU inference benchmarking study
+- **[Dataproc](./data+ai/dataproc/readme.md)** (4 notebooks) — Spark ML inference on managed Dataproc: serverless fundamentals, batch inference with Pandas UDFs, Structured Streaming, and Vertex AI Endpoint integration
+- **[Composer](./data+ai/composer/readme.md)** — Orchestrating batch ML inference with Airflow across Dataproc, Dataflow, KFP, and Vertex AI
+- **[AlloyDB](./data+ai/alloydb/readme.md)** & **[Spanner](./data+ai/spanner/readme.md)** — SQL-based ML inference using ML.PREDICT() to call Vertex AI Endpoints
+- **[Tabular Data](./data+ai/tabular-data/readme.md)** (1 notebook) — Efficient BigQuery read patterns for ML workflows with benchmarks and cost analysis
 
 ---
-<a id = 'helpful'></a>
-## Helpful Sections
-- [Learning Machine Learning](./Learn%20ML/readme.md)
-    - I often get asked "How do I learn about ML?".  There are lots of good answers. ....
-- [Explorations](./Explorations/readme.md)
-    - This is a series of projects for exploring new, new-to-me, and emerging tools in the ML world!
-- [Tips](./Tips/readme.md)
-    - Tips for using the repository and notebooks with examples of core skills like building containers, parameterizing jobs and interacting with other GCP services. These tips help with scaling jobs and developing them with a focus on CI/CD.
+
+## [Applied GenAI](./Applied%20GenAI/readme.md) — 53 notebooks
+
+Practical generative AI workflows that go beyond simple prompting — grounding LLMs with your data through retrieval, ranking, and evaluation.
+
+- **[Generate](./Applied%20GenAI/Generate/readme.md)** (10 notebooks) — Google Gen AI SDK, Gemini API, Imagen, Veo, token management, long context retrieval, and multimodal prompting
+- **[Retrieval](./Applied%20GenAI/Retrieval/readme.md)** (11 notebooks) — Vector search across 11 Google Cloud databases (BigQuery, Vertex AI Vector Search, Feature Store, Spanner, AlloyDB, Cloud SQL, Memorystore, Firestore, Bigtable, and more) with cost and latency comparisons
+- **[Embeddings](./Applied%20GenAI/Embeddings/readme.md)** (7 notebooks) — Text, image, and multimodal embeddings with visualization, similarity math, and hierarchical classification
+- **[Chunking](./Applied%20GenAI/Chunking/readme.md)** (3 notebooks) — Document processing with Document AI Layout Parser and PyMuPDF for structure-aware chunking
+- **[Ranking](./Applied%20GenAI/Ranking/readme.md)** (1 notebook) — Cross-encoder re-ranking with the Vertex AI Ranking API
+- **[Evaluation](./Applied%20GenAI/Evaluation/readme.md)** (2 notebooks) — GenAI evaluation metrics and prompt optimization using LLM-as-judge approaches
+- **[Validate](./Applied%20GenAI/Validate/readme.md)** (1 notebook) — Grounding verification with the Vertex AI Check Grounding API
+- **[Solutions](./Applied%20GenAI/Solutions/readme.md)** (8 notebooks) — Production-ready multi-format parsing with hybrid search (dense + sparse embeddings, BM25, RRF reranking)
+- **[RAG Engine](./Applied%20GenAI/rag-engine/readme.md)** — Vertex AI RAG Engine workflows with custom backends and hybrid search
 
 ---
-<a id = 'resources'></a>
-## More Resources Like This Repository
 
-This is my personal repository of demonstrations I use for learning and sharing Vertex AI.  There are many more resources available.  Within each notebook I have included a resources section and a related training section. 
+## [Applied Forecasting](./Applied%20Forecasting/readme.md) — 20 notebooks
 
-- GitHub [Many Examples For Real World Scenarios!](https://github.com/jchavezar/vertex-ai-samples) by [@jcavezar](https://github.com/jchavezar)
-- GitHub [GoogleCloudPlatform/vertex-ai-samples](https://github.com/GoogleCloudPlatform/vertex-ai-samples)
-- GitHub [GoogleCloudPlatform/mlops-with-vertex-ai](https://github.com/GoogleCloudPlatform/mlops-with-vertex-ai)
+A complete learning path for time series forecasting on Google Cloud, from SQL-based methods to foundation models, all using NYC Citibike public data.
+
+- **BigQuery ML** — Univariate ARIMA+, multivariate ARIMA+ XREG, regression-based forecasting, and handling granularity/missing data
+- **Vertex AI AutoML** — Console (no-code), Python client, simultaneous training, and Tabular Workflows
+- **Advanced Models** — Seq2Seq+, Temporal Fusion Transformer, Time series Dense Encoder
+- **Custom Models** — Prophet in-notebook and with custom containers on Vertex AI
+- **Foundation Models** — TimesFM and TimesFM 2.5 for zero-shot forecasting
+- **MLOps** — Pipelines for BQML ARIMA+, Prophet, and forecasting tournaments with KFP; online serving with Vertex AI Prediction Endpoints
+
+---
+
+## [Framework Workflows](./Framework%20Workflows/readme.md) — 34 notebooks
+
+End-to-end ML workflows for specific frameworks, all training on the same BigQuery data source and sharing a common Vertex AI Model Registry and prediction endpoint.
+
+- **[PyTorch](./Framework%20Workflows/PyTorch/readme.md)** (20 notebooks) — Training autoencoders plus 19 serving notebooks covering Vertex AI Endpoints, BigQuery ML (ONNX), AlloyDB, Spanner, Dataflow, TorchServe, and scale testing
+- **[Keras](./Framework%20Workflows/Keras/readme.md)** (3 notebooks) — Multi-backend Keras with JAX and TensorFlow backends, autoencoder training, and BigQuery serving
+- **[CatBoost](./Framework%20Workflows/CatBoost/readme.md)** (3 notebooks) — Gradient boosted trees with custom FastAPI containers and Feature Store integration
+- **[Vertex AI AutoML](./Framework%20Workflows/Vertex%20AI%20AutoML/readme.md)** (6 notebooks) — Tabular classification, architecture review, TabNet, Wide and Deep, and feature engineering
+- **[Flax](./Framework%20Workflows/Flax/readme.md)** (1 notebook) — Neural networks with JAX using Flax
+- **[R](./Framework%20Workflows/R/readme.md)** (1 notebook) — R on Vertex AI Pipelines with KFP container components
+
+---
+
+## [Applied ML](./Applied%20ML/readme.md) — 26 notebooks
+
+Applied machine learning patterns for real-world problems: agents, solution prototypes, forecasting, and optimization.
+
+- **[AI Agents](./Applied%20ML/AI%20Agents/readme.md)** (8 projects) — Data onboarding agents, conversational analytics, BigQuery context discovery, travel planning with A2A protocol, image-to-graph conversion, and Vertex AI Agent Engine deployment — built with ADK, MCP, and MCP Toolbox
+- **[Solution Prototypes](./Applied%20ML/Solution%20Prototypes/readme.md)** — End-to-end solutions for document processing (8 notebooks: extraction, embeddings, anomaly detection, agent deployment), product hierarchy classification (9 approaches across 3 paradigms), and time series chat with interactive forecasting
+- **[Forecasting](./Applied%20ML/Forecasting/readme.md)** — Hierarchical forecasting with BigQuery ML
+- **[Optimization](./Applied%20ML/Optimization/readme.md)** — Vertex AI Vizier for black-box optimization with multi-objective support and safety thresholds
+
+---
+
+## Additional Content
+
+This repository also contains framework-specific workflow series for [TensorFlow](./05%20-%20TensorFlow/readme.md) (28 notebooks), [BigQuery ML](./03%20-%20BigQuery%20ML%20(BQML)/readme.md) (26 notebooks), [scikit-learn](./04%20-%20scikit-learn/readme.md) (12 notebooks), [R](./08%20-%20R/readme.md) (12 notebooks), and [AutoML](./02%20-%20Vertex%20AI%20AutoML/readme.md) (6 notebooks), along with topics like [Tips](./Tips/readme.md), [Working With Document AI](./Working%20With/readme.md), and several other Applied topics. For a full description of all content, see [readme-legacy.md](./readme-legacy.md).
+
+---
+
+## Approach
+
+These notebooks are designed to be readable, adaptable starting points — not production-hardened code or ad-hoc exploration, but the sweet spot between the two. The heavy lifting is done by Google Cloud services; notebooks orchestrate rather than compute, so most run on minimal machine sizes. Each notebook is self-contained with narrative, code, and visual explanations in one portable file.
+
+---
+
+## More Resources
+
+- GitHub: [Real World Vertex AI Scenarios](https://github.com/jchavezar/vertex-ai-samples) by [@jchavezar](https://github.com/jchavezar)
+- GitHub: [GoogleCloudPlatform/vertex-ai-samples](https://github.com/GoogleCloudPlatform/vertex-ai-samples)
+- GitHub: [GoogleCloudPlatform/mlops-with-vertex-ai](https://github.com/GoogleCloudPlatform/mlops-with-vertex-ai)
 - [Overview of Data Science on Google Cloud](https://cloud.google.com/data-science)
-
-
