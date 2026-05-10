@@ -314,6 +314,7 @@ Some topics span multiple notebooks. Use this map to find all coverage of a topi
 | Autoscaling & capacity | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
 | Cost optimization | [NB7](./Bigtable%20Feature%20Store%20-%20Schema%20Evolution%20and%20Operations.ipynb) |
 | Latency benchmarking | [NB1](./Bigtable%20Feature%20Store%20-%20Fundamentals.ipynb), [NB2](./Bigtable%20Feature%20Store%20-%20Serialization.ipynb), [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb), [NB9](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb) |
+| Feature history (key-based vs cell versioning) | [NB4](./Bigtable%20Feature%20Store%20-%20History%20and%20Time%20Travel.ipynb), [NB6](./Bigtable%20Feature%20Store%20-%20Key%20Design%20and%20Organization.ipynb) |
 | Point-in-time joins | [NB4](./Bigtable%20Feature%20Store%20-%20History%20and%20Time%20Travel.ipynb) |
 | Real-time / streaming features | [NB5](./Bigtable%20Feature%20Store%20-%20Streaming%20and%20Direct%20Writes.ipynb), [NB9](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb), [NB14](./Bigtable%20Feature%20Store%20-%20Recommendation%20Engine.ipynb) |
 | Model serving | [NB8](./Bigtable%20Feature%20Store%20-%20Serving%20Integration.ipynb), [NB9](./Bigtable%20Feature%20Store%20-%20Dynamic%20Features.ipynb), [NB14](./Bigtable%20Feature%20Store%20-%20Recommendation%20Engine.ipynb) |
