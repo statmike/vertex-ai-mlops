@@ -777,22 +777,43 @@ A new end-to-end workflow notebook is added.
 
 ### How to run an audit
 
-Each function's documentation URL is already recorded in `RESOURCES.md`. An audit compares our content against the current official documentation.
+Each function's documentation URL is recorded in the table below and mirrored in `RESOURCES.md`. An audit compares our content against the current official documentation to catch status changes, new parameters, new models, and other updates.
 
-**Process:**
+**Step 1 — Prepare.** Review the audit log to see what was last checked and when. Note any Google Cloud Next announcements or blog posts since the last audit.
 
-1. For each function, fetch its documentation URL from `RESOURCES.md`
-2. Compare the current docs against our `RESOURCES.md` entry — look for:
-   - Status changes (Preview → GA)
-   - New or removed parameters
-   - New or retired model versions
-   - Syntax changes
-   - New capabilities (grounding, new output fields, etc.)
-   - Changes to limitations or locations
-3. For any differences found, apply the relevant checklist above
-4. Record what was checked and changed in the audit log below
+**Step 2 — Fetch and compare by category.** For each function, fetch its documentation URL and compare against the corresponding `RESOURCES.md` entry. Work in category batches (Generation, Managed, Embeddings & Search, Forecasting, Document Processing) to spot cross-cutting patterns. For each function, check:
+- Status changes (Preview → GA, or new Preview badges)
+- New, removed, or changed parameters (name, type, default, range)
+- Syntax changes (new overloads, reordered params)
+- New or retired model versions / endpoints
+- New output columns or changed output types
+- New capabilities (grounding, caching, optimized mode, etc.)
+- Changed limitations (row limits, page limits, timeouts, region restrictions)
+- Changed locations or provisioned throughput behavior
+- New best practices or known issues sections
+- BigFrames API additions or changes
 
-**Documentation URLs (from RESOURCES.md):**
+**Step 3 — Classify each change.** Map each difference to a change type (status change, new capability, removed capability, new function) and apply the relevant checklist from the "Change types and checklists" section above.
+
+**Step 4 — Update files in order.**
+1. `RESOURCES.md` — All function entry updates (work top-to-bottom through the file)
+2. `RESOURCES.md` — Comparison tables at the top of each section (must match per-function entries)
+3. `README.md` — Function map tables (status, multimodal, descriptions) and relationship diagram
+4. `PLANS.md` — Documentation URLs table (add new functions), cross-referencing mapping table, audit log
+
+**Step 5 — Check for new functions.** Search for newly announced BigQuery AI functions (blog posts, release notes, docs index pages). For each:
+- If reference docs exist: add full `RESOURCES.md` entry + `README.md` row using the "New function" checklist
+- If only announced (no reference docs): add to the "Tracked upcoming functions" table below with status and source link
+
+**Step 6 — Verify consistency.**
+- Grep for status labels (Preview/GA) and confirm they match across `RESOURCES.md`, `README.md`, and `PLANS.md`
+- Cross-check comparison tables in `RESOURCES.md` against per-function entries
+- Verify the documentation URLs table below is complete
+- Record the audit in the audit log
+
+**Step 7 — Identify notebook impacts.** List notebooks that need updates based on the changes found. Notebook updates require a fresh "Restart & Run All" pass before review.
+
+**Documentation URLs:**
 
 | Function | Documentation URL |
 |----------|-------------------|
@@ -806,6 +827,7 @@ Each function's documentation URL is already recorded in `RESOURCES.md`. An audi
 | AI.IF | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-if |
 | AI.SCORE | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-score |
 | AI.CLASSIFY | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-classify |
+| AI.AGG | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-agg |
 | AI.EMBED | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-embed |
 | AI.GENERATE_EMBEDDING | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate-embedding |
 | ML.GENERATE_EMBEDDING | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-generate-embedding |
@@ -815,6 +837,16 @@ Each function's documentation URL is already recorded in `RESOURCES.md`. An audi
 | AI.FORECAST | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-forecast |
 | AI.DETECT_ANOMALIES | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-detect-anomalies |
 | AI.EVALUATE | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-evaluate |
+| ML.PROCESS_DOCUMENT | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-process-document |
+
+### Tracked upcoming functions
+
+Functions announced but without published reference documentation. Check periodically and move to full coverage when docs publish.
+
+| Function | Category | Status | Announced | Source | Expected Doc URL |
+|----------|----------|--------|-----------|--------|-----------------|
+| AI.PARSE_DOCUMENT | Document Processing | Preview | Cloud Next 2026 (Apr) | [Blog](https://cloud.google.com/blog/products/data-analytics/unveiling-new-bigquery-capabilities-for-the-agentic-era) | bigqueryml-syntax-ai-parse-document |
+| HYBRID_SEARCH | Embeddings & Search | Preview | Cloud Next 2026 (Apr) | [Blog](https://cloud.google.com/blog/products/data-analytics/unveiling-new-bigquery-capabilities-for-the-agentic-era) | search_functions#hybrid_search |
 
 ### Audit log
 
@@ -826,6 +858,63 @@ Each function's documentation URL is already recorded in `RESOURCES.md`. An audi
 | 2026-03-16 | Phase 8 expansion | Added multimodal embedding examples to AI.EMBED, AI.GENERATE_EMBEDDING, AI.SIMILARITY notebooks + SQL files (multimodalembedding@001). Added multimodal note to ML.GENERATE_EMBEDDING. Created Content Moderation workflow (AI.GENERATE_TABLE → AI.IF → AI.CLASSIFY → AI.SCORE → AI.GENERATE). Created Multimodal Analysis workflow (document rendering → AI.EMBED → ML.DISTANCE → AI.SIMILARITY → AI.GENERATE). Updated all cross-references (7 function notebook Featured in lines, README.md workflows table, PLANS.md mapping table). |
 | 2026-03-16 | Docs review post-implementation | README.md: Fixed AI.SCORE and AI.CLASSIFY multimodal labels from "Object table" to "STRUCT prompt" (both accept STRUCT with ObjectRefRuntime). RESOURCES.md: Added multimodal best practices to AI.EMBED (default 1408 dims, PDF not supported, inline ObjectRef preferred), AI.GENERATE_EMBEDDING (statistics not returned by multimodal model, inline ObjectRef avoids reservation requirement), AI.SIMILARITY (cross-modal text↔image capability). Updated Managed Functions table. Added "Object tables vs inline ObjectRef" guidance to Unstructured Data Infrastructure section. |
 | 2026-04-07 | AI.AGG — new function + workflow | Added AI.AGG (Preview aggregate function with auto-batching). Created functions/ai_agg/ with notebook + SQL. Added to RESOURCES.md Managed Functions section with comparison table. Added to README.md function map, relationship diagram, and key distinctions. Added AI.AGG alternative cells to Content Analysis, Content Moderation, and Document Intelligence workflows. Created new Log Analysis workflow (AI.GENERATE_TABLE → AI.CLASSIFY → AI.SCORE → AI.AGG). Updated all cross-references. |
+| 2026-05-10 | Full audit — all functions | **Managed functions:** AI.IF and AI.CLASSIFY gained `examples`, `embeddings` (Preview), `optimization_mode` (Preview) params for optimized mode (230x cost reduction). AI.IF, AI.SCORE, AI.CLASSIFY gained `max_error_ratio`. AI.AGG added known issues section. **Embeddings:** AI.EMBED and AI.SIMILARITY gained `model` param (`embeddinggemma-300m` built-in). Four new embedding models across AI.EMBED/AI.SIMILARITY/AI.GENERATE_EMBEDDING/ML.GENERATE_EMBEDDING: `embeddinggemma-300m`, `gemini-embedding-001`, `text-multilingual-embedding-002`, `gemini-embedding-2-preview` (multimodal incl. PDFs). **Forecasting:** AI.FORECAST gained `forecast_end_timestamp`. AI.DETECT_ANOMALIES: Preview → GA, gained `context_window`. AI.EVALUATE gained `context_window` and `mean_absolute_scaled_error` output. **Generation:** AI.GENERATE: `thinking_level` for Gemini 3.0+, grounding requires 2.0+. AI.GENERATE_TEXT: `USE_CHAT_MODE` for Open models. **Document Processing:** ML.PROCESS_DOCUMENT max pages 100→130, added 120s timeout and batch size of 10. **New functions tracked:** AI.PARSE_DOCUMENT (Preview, docs pending), HYBRID_SEARCH (Preview, docs pending). Expanded audit procedure in PLANS.md. |
+
+### Notebook update plan (May 2026 audit)
+
+Notebook updates following the 2026-05-10 documentation audit. Two categories per group:
+- **Revise + verify**: Needs content edits (new cells, updated descriptions) before a Restart & Run All
+- **Verify only**: No content changes expected — just confirm it still runs clean
+
+Each notebook is touched exactly once: revise (if needed) → Restart & Run All → review. Workflow: Claude edits → Mike does Restart & Run All → Claude reviews outputs. One notebook at a time, checked off as completed.
+
+#### Function notebooks — Revise + verify
+
+| # | Notebook | Changes Needed | Priority |
+|---|----------|---------------|----------|
+| 1 | `functions/ai_embed/ai_embed.ipynb` | New `model` param, built-in `embeddinggemma-300m`, 4 new embedding models (esp. `gemini-embedding-2-preview` multimodal) | High |
+| 2 | `functions/ai_similarity/ai_similarity.ipynb` | New `model` param, same new models as AI.EMBED | Medium |
+| 3 | `functions/ai_generate_embedding/ai_generate_embedding.ipynb` | New `gemini-embedding-2-preview` model support | Medium |
+| 4 | `functions/ai_if/ai_if.ipynb` | New `examples`, `optimization_mode` (Preview), `embeddings` (Preview), `max_error_ratio` params | High |
+| 5 | `functions/ai_classify/ai_classify.ipynb` | Same new params as AI.IF | High |
+| 6 | `functions/ai_score/ai_score.ipynb` | New `max_error_ratio` param | Medium |
+| 7 | `functions/ai_detect_anomalies/ai_detect_anomalies.ipynb` | Status Preview → GA, new `context_window` param | Medium |
+| 8 | `functions/ai_evaluate/ai_evaluate.ipynb` | New `context_window` param, new MASE output metric | Medium |
+| 9 | `functions/ai_forecast/ai_forecast.ipynb` | New `forecast_end_timestamp` alternative to `horizon` | Low |
+| 10 | `functions/ai_generate/ai_generate.ipynb` | `thinking_level` for Gemini 3.0+ | Low |
+| 11 | `functions/ml_process_document/ml_process_document.ipynb` | Page limit 100→130, 120s timeout, batch size of 10 | Low |
+
+#### Function notebooks — Verify only
+
+| # | Notebook | Notes |
+|---|----------|-------|
+| 12 | `functions/ai_agg/ai_agg.ipynb` | No doc changes (known issues are runtime, not notebook content) |
+| 13 | `functions/ai_generate_text/ai_generate_text.ipynb` | USE_CHAT_MODE is Open-models-only; verify existing examples still run |
+| 14 | `functions/ai_generate_table/ai_generate_table.ipynb` | No doc changes |
+| 15 | `functions/ai_generate_bool/ai_generate_bool.ipynb` | No doc changes |
+| 16 | `functions/ai_generate_double/ai_generate_double.ipynb` | No doc changes |
+| 17 | `functions/ai_generate_int/ai_generate_int.ipynb` | No doc changes |
+| 18 | `functions/ml_generate_text/ml_generate_text.ipynb` | No doc changes |
+| 19 | `functions/ml_generate_embedding/ml_generate_embedding.ipynb` | No doc changes |
+| 20 | `functions/ai_search/ai_search.ipynb` | No doc changes |
+| 21 | `functions/vector_search/vector_search.ipynb` | No doc changes |
+| 22 | `overview.ipynb` | No doc changes — verify interactive tour still runs |
+
+#### Workflow notebooks — Verify only
+
+All workflows use functions that were updated. Verify they still run clean. If a workflow would benefit from demoing a new capability (e.g., optimized mode in Content Moderation), promote it to "Revise + verify" during review.
+
+| # | Notebook | Functions with changes |
+|---|----------|-----------------------|
+| 23 | `workflows/content_analysis/content_analysis.ipynb` | AI.CLASSIFY, AI.SCORE, AI.AGG |
+| 24 | `workflows/content_moderation/content_moderation.ipynb` | AI.IF, AI.CLASSIFY, AI.SCORE, AI.AGG |
+| 25 | `workflows/data_enrichment/data_enrichment.ipynb` | AI.GENERATE |
+| 26 | `workflows/document_intelligence/document_intelligence.ipynb` | AI.CLASSIFY, AI.SCORE, AI.AGG |
+| 27 | `workflows/log_analysis/log_analysis.ipynb` | AI.CLASSIFY, AI.SCORE, AI.AGG |
+| 28 | `workflows/multimodal_analysis/multimodal_analysis.ipynb` | AI.EMBED, AI.SIMILARITY |
+| 29 | `workflows/rag_pipeline/rag_pipeline.ipynb` | AI.EMBED |
+| 30 | `workflows/semantic_search/semantic_search.ipynb` | AI.EMBED, AI.SEARCH |
+| 31 | `workflows/time_series_intelligence/time_series_intelligence.ipynb` | AI.FORECAST, AI.DETECT_ANOMALIES, AI.EVALUATE |
 
 ---
 

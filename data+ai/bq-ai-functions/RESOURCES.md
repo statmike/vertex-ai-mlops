@@ -105,7 +105,7 @@ AI.GENERATE(
 |-----------|------|----------|---------|-------------|
 | `prompt` (positional, must be first) | STRING or STRUCT | Required | -- | The prompt to send to the model. Can be a STRING value or a STRUCT containing one or more fields of type STRING, ARRAY\<STRING\>, ObjectRefRuntime, or ARRAY\<ObjectRefRuntime\>. STRUCT fields are concatenated in order (like CONCAT). At most one video object is allowed. |
 | `endpoint` | STRING | Optional | `gemini-2.5-flash` | The Vertex AI endpoint for the model. Specify any GA or preview Gemini model by name (BigQuery auto-resolves the full endpoint). Can also specify a full global endpoint URL. |
-| `model_params` | JSON literal | Optional | -- | Additional parameters conforming to the `generateContent` request body format. Can set any field except `contents`. Supports `thinking_config`, `cachedContent`, `tools` (e.g., `googleSearch`, `googleMaps`), `generation_config`, etc. |
+| `model_params` | JSON literal | Optional | -- | Additional parameters conforming to the `generateContent` request body format. Can set any field except `contents`. Supports `thinking_config` (use `thinking_budget` for Gemini 2.5 models, `thinking_level` for Gemini 3.0+), `cachedContent`, `tools` (e.g., `googleSearch` — requires Gemini 2.0+, `googleMaps`), `generation_config`, etc. |
 | `output_schema` | STRING | Optional | -- | Schema for structured output as comma-separated fields. Each field has a name, data type, and optional `OPTIONS(description = '...')`. Supported types: `STRING`, `INT64`, `FLOAT64`, `BOOL`, `ARRAY`, `STRUCT`. When specified, replaces the `result` field in output with custom schema fields. |
 | `connection_id` | STRING | Optional | End-user credentials | Connection for model communication, in format `[PROJECT_ID].LOCATION.CONNECTION_ID`. |
 | `request_type` | STRING | Optional | `UNSPECIFIED` | Quota type. Values: `SHARED` (DSQ only), `DEDICATED` (Provisioned Throughput only, error if unavailable), `UNSPECIFIED` (default -- uses Provisioned Throughput first if purchased, overflows to DSQ). |
@@ -126,7 +126,7 @@ Returns a STRUCT with:
 | `full_response` | JSON | Full response from `projects.locations.endpoints.generateContent`. |
 | `status` | STRING | API response status. Empty if successful. |
 
-**Supported models:** Any GA or preview Gemini model. Default: `gemini-2.5-flash`. Examples: `gemini-2.5-flash`, `gemini-3-pro-preview`, `gemini-3-flash-preview`. Can use global endpoint for cross-region processing.
+**Supported models:** Any GA or preview Gemini model. Default: `gemini-2.5-flash`. Can use global endpoint for cross-region processing.
 
 **Best practices:**
 - Function incurs Vertex AI charges each time it is called. Track costs accordingly.
@@ -137,6 +137,8 @@ Returns a STRUCT with:
 - At most one video object per prompt.
 - Global endpoint does not allow controlling or knowing the data processing region.
 - Gemini 2.5 models incur thinking charges; budget can be set for Flash/Flash-Lite but not Pro.
+- Google Search grounding requires Gemini 2.0 or later models.
+- For Gemini 3.0+, use `thinking_level` (`LOW`, `MEDIUM`, `HIGH`) in `thinking_config` instead of `thinking_budget`.
 
 **Locations:** All regions that support Gemini models, plus US and EU multi-regions.
 
@@ -215,6 +217,7 @@ AI.GENERATE_TEXT(
         [, TOP_K AS top_k]
         [, TOP_P AS top_p]
         [, TEMPERATURE AS temperature]
+        [, USE_CHAT_MODE AS use_chat_mode]
       }
       | [, MODEL_PARAMS AS model_params]
     }
@@ -256,6 +259,7 @@ AI.GENERATE_TEXT(
 | `ground_with_google_search` | BOOL | Gemini | Optional | FALSE | -- | Enable Google Search grounding |
 | `safety_settings` | ARRAY\<STRUCT\<STRING AS category, STRING AS threshold\>\> | Gemini | Optional | BLOCK_MEDIUM_AND_ABOVE | -- | Content safety filtering |
 | `request_type` | STRING | Gemini | Optional | UNSPECIFIED | SHARED, DEDICATED, UNSPECIFIED | Quota type for Provisioned Throughput |
+| `use_chat_mode` | BOOL | Open models | Optional | FALSE | -- | When TRUE, enables chat mode for open models. |
 | `model_params` | JSON string | All | Optional | -- | -- | JSON conforming to generateContent request body. Cannot be used simultaneously with top-level parameters. |
 
 Safety settings categories: `HARM_CATEGORY_HATE_SPEECH`, `HARM_CATEGORY_DANGEROUS_CONTENT`, `HARM_CATEGORY_HARASSMENT`, `HARM_CATEGORY_SEXUALLY_EXPLICIT`
@@ -412,7 +416,7 @@ Returns a STRUCT per row:
 
 **Best practices:** Incurs Vertex AI charges each call. Materialize data to a table before calling with LIMIT to minimize charges.
 
-**Limitations:** Preview feature (Pre-GA Offerings Terms apply). Video limited to 2 minutes. At most one video object per prompt. Gemini 2.5 thinking charges apply.
+**Limitations:** Preview feature (Pre-GA Offerings Terms apply). Video limited to 2 minutes. At most one video object per prompt. Gemini 2.5 thinking charges apply. For Gemini 3.0+, use `thinking_level` in `thinking_config` instead of `thinking_budget`.
 
 **Locations:** All regions supporting Gemini models, plus US and EU multi-regions.
 
@@ -563,7 +567,7 @@ When `flatten_json_output` is TRUE:
 | `ml_generate_text_grounding_result` | STRING | Grounding sources (Gemini only, when ground_with_google_search is TRUE) |
 | `ml_generate_text_status` | STRING | API status |
 
-**Supported models:** Same as AI.GENERATE_TEXT (remote models over Gemini, Claude, Llama, Mistral, open models).
+**Supported models:** Same as AI.GENERATE_TEXT (remote models over Gemini, Claude, Llama, Mistral, open models). Also explicitly supports remote models over fine-tuned Gemini models.
 
 **Best practices / Limitations / Locations / Provisioned throughput:** Same as AI.GENERATE_TEXT.
 
@@ -601,6 +605,9 @@ These are higher-level "managed" AI functions that provide **simplified interfac
 | **Prompt Optimization** | Yes (auto-structures prompts) | Yes (auto-generates scoring rubric) | Yes (auto-structures for classification) | Yes (auto-batches and aggregates) |
 | **Model Parameter Control** | No | No | No | No |
 | **Multimodal Support** | Yes (STRUCT prompt) | Yes (STRUCT prompt) | Yes (STRUCT prompt) | Yes (STRUCT input with ObjectRefRuntime) |
+| **Few-shot Examples** | Yes (`examples` param) | No | Yes (`examples` param) | No |
+| **Optimized Mode** | Yes (`optimization_mode`, `embeddings` — Preview) | No | Yes (`optimization_mode`, `embeddings` — Preview) | No |
+| **Error Ratio Control** | Yes (`max_error_ratio`) | Yes (`max_error_ratio`) | Yes (`max_error_ratio`) | No |
 | **Error Return** | NULL | NULL | NULL | NULL (partial results on partial failure) |
 | **Provisioned Throughput** | Not supported (DSQ only) | Not supported (DSQ only) | Not supported (DSQ only) | Not supported (DSQ only) |
 | **Rows per Job** | 10,000,000 | 10,000,000 | 10,000,000 | 20,000,000 (recommended) |
@@ -618,8 +625,12 @@ These are higher-level "managed" AI functions that provide **simplified interfac
 ```sql
 AI.IF(
   [ prompt => ] 'PROMPT'
+  [, examples => EXAMPLES ]
   [, connection_id => 'CONNECTION' ]
   [, endpoint => 'ENDPOINT' ]
+  [, embeddings => EMBEDDINGS ]
+  [, optimization_mode => 'OPTIMIZATION_MODE' ]
+  [, max_error_ratio => MAX_ERROR_RATIO ]
 )
 ```
 
@@ -628,8 +639,12 @@ AI.IF(
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `PROMPT` | STRING or STRUCT | Required (must be first argument) | The prompt value to send to the model. STRING or STRUCT with STRING/ARRAY\<STRING\>/ObjectRefRuntime/ARRAY\<ObjectRefRuntime\> fields. At most one video object. |
+| `EXAMPLES` | ARRAY\<STRUCT\<STRING, BOOL\>\> | Optional | Few-shot examples to guide the model. Each struct maps an example input string to an expected BOOL output. Example: `[("I love this product", TRUE), ("The product performed well", FALSE)]`. |
 | `CONNECTION` | STRING | Optional | Connection to use, format: `[PROJECT_ID].LOCATION.CONNECTION_ID`. If not specified, end-user credentials are used. |
 | `ENDPOINT` | STRING | Optional | Vertex AI endpoint. Any GA or preview Gemini model. If not specified, BigQuery ML dynamically chooses a model for best cost-to-quality tradeoff. |
+| `EMBEDDINGS` | (Preview) | Optional | Embeddings for optimized mode. Can be generated on-the-fly via `AI.EMBED(...)` or pre-materialized. If autonomous embedding generation is enabled on the table, BigQuery automatically uses the embeddings. |
+| `OPTIMIZATION_MODE` | STRING | Optional (Preview) | `MINIMIZE_COST` (default when embeddings provided — trains a local distilled model, up to 230x token reduction) or `MAXIMIZE_QUALITY` (always uses remote LLM). Requires ~3,000 rows minimum. |
+| `MAX_ERROR_RATIO` | FLOAT64 | Optional | Range 0.0–1.0, default 1.0. If the error ratio exceeds this threshold, the query fails with an error describing the most frequent error types. Not supported when `optimization_mode` is `MINIMIZE_COST`. |
 
 **Outputs:**
 
@@ -644,7 +659,7 @@ AI.IF(
 - BigQuery optimizes queries to reduce Gemini calls. Place non-AI filters alongside AI.IF -- non-AI filters are evaluated first (e.g., `WHERE AI.IF(...) AND category = 'tech'`).
 - Do not use the global endpoint if you have data processing location requirements.
 
-**Limitations:** Preview status. Returns NULL on error (no detailed error info). No model parameter control (unlike AI.GENERATE_BOOL). At most one video object per input.
+**Limitations:** Preview status. Returns NULL on error (no detailed error info). No model parameter control (temperature, top_p, etc.) unlike AI.GENERATE_BOOL. At most one video object per input. Optimized mode requires ~3,000 rows minimum; only string columns supported for multi-column prompts in optimized mode.
 
 **Locations:** All regions supporting Gemini models, plus US and EU multi-regions.
 
@@ -666,6 +681,7 @@ AI.SCORE(
   [ prompt => ] 'PROMPT'
   [, connection_id => 'CONNECTION' ]
   [, endpoint => 'ENDPOINT' ]
+  [, max_error_ratio => MAX_ERROR_RATIO ]
 )
 ```
 
@@ -676,6 +692,7 @@ AI.SCORE(
 | `PROMPT` | STRING or STRUCT | Required (must be first argument) | The prompt describing the scoring criteria. STRING or STRUCT with STRING/ARRAY\<STRING\>/ObjectRefRuntime/ARRAY\<ObjectRefRuntime\> fields. At most one video object. |
 | `CONNECTION` | STRING | Optional | Connection to use, format: `[PROJECT_ID].LOCATION.CONNECTION_ID`. |
 | `ENDPOINT` | STRING | Optional | Vertex AI endpoint. If not specified, BigQuery dynamically chooses a model. |
+| `MAX_ERROR_RATIO` | FLOAT64 | Optional | Range 0.0–1.0, default 1.0. If the error ratio exceeds this threshold, the query fails with an error. |
 
 **Outputs:**
 
@@ -713,9 +730,13 @@ AI.SCORE(
 AI.CLASSIFY(
   [ input => ] 'INPUT',
   [ categories => ] 'CATEGORIES'
+  [, examples => EXAMPLES ]
   [, connection_id => 'CONNECTION' ]
   [, endpoint => 'ENDPOINT' ]
   [, output_mode => 'OUTPUT_MODE' ]
+  [, embeddings => EMBEDDINGS ]
+  [, optimization_mode => 'OPTIMIZATION_MODE' ]
+  [, max_error_ratio => MAX_ERROR_RATIO ]
 )
 ```
 
@@ -725,9 +746,13 @@ AI.CLASSIFY(
 |-----------|------|----------|-------------|
 | `INPUT` | STRING or STRUCT | Required (must be first argument) | The input to classify. STRING or STRUCT with STRING/ARRAY\<STRING\>/ObjectRefRuntime/ARRAY\<ObjectRefRuntime\> fields. At most one video object. |
 | `CATEGORIES` | ARRAY\<STRING\> or ARRAY\<STRUCT\<STRING, STRING\>\> | Required (must be second argument) | The categories to classify into. Without descriptions: `['positive', 'neutral', 'negative']`. With descriptions: `[('green', 'positive'), ('yellow', 'neutral'), ('red', 'negative')]`. Must be string literals (or use a DECLARE variable from a table column). |
+| `EXAMPLES` | ARRAY\<STRUCT\<STRING, STRING\>\> (single) or ARRAY\<STRUCT\<STRING, ARRAY\<STRING\>\>\> (multi) | Optional | Few-shot examples. For single mode: maps input to expected category. For multi mode: maps input to expected array of categories. Example: `[("This is a great phone", "tech"), ("The match was exciting", "sport")]`. |
 | `CONNECTION` | STRING | Optional | Connection to use, format: `[PROJECT_ID].LOCATION.CONNECTION_ID`. |
 | `ENDPOINT` | STRING | Optional | Vertex AI endpoint. If not specified, BigQuery dynamically chooses a model. |
 | `OUTPUT_MODE` | STRING | Optional | `'single'` or `'multi'`. Changes return type to ARRAY\<STRING\>. |
+| `EMBEDDINGS` | (Preview) | Optional | Embeddings for optimized mode, same as AI.IF. |
+| `OPTIMIZATION_MODE` | STRING | Optional (Preview) | `MINIMIZE_COST` or `MAXIMIZE_QUALITY`. Same as AI.IF. Note: `output_mode => 'multi'` is NOT supported in optimized mode. |
+| `MAX_ERROR_RATIO` | FLOAT64 | Optional | Range 0.0–1.0, default 1.0. Not supported when `optimization_mode` is `MINIMIZE_COST`. |
 
 **Categories from a table column (using DECLARE):**
 ```sql
@@ -754,7 +779,7 @@ FROM `bigquery-public-data.bbc_news.fulltext`;
 - Use categories with descriptions for more nuanced classification.
 - Use `output_mode => 'multi'` when items may belong to multiple categories.
 
-**Limitations:** Preview status. Returns NULL on error. Categories must be string literals in the array (unless using a variable). No model parameter control.
+**Limitations:** Preview status. Returns NULL on error. Categories must be string literals in the array (unless using a variable). No model parameter control. `output_mode => 'multi'` is not supported in optimized mode. Optimized mode requires ~3,000 rows minimum; only string columns supported for multi-column inputs.
 
 **Locations:** All regions supporting Gemini models, plus US and EU multi-regions.
 
@@ -811,6 +836,14 @@ AI.AGG(
 
 **Limitations:** Preview status. Returns NULL on total failure (no detailed error info). No model parameter control (temperature, top_p, etc.). Output capped at 10,000 tokens per group. Recommended limit of 20 million rows per query and 1,000 distinct groups. Cannot use Gemini models that require thinking budget.
 
+**Known issues:**
+- Input rows with 10 or more images in a single row might be skipped.
+- Input rows with arrays of ObjectRefRuntime objects that call `OBJ.GET_ACCESS_URL` might be skipped.
+- Workforce Identity Federation without a specified Cloud resource connection may cause failures on long-running queries.
+- Queries using Gemini 3.0 or 3.1 with connection-based authentication might receive an unauthenticated error.
+
+**Cost caveat:** The actual number of rows processed by the model might differ from expectations, particularly with complex queries (JOIN, ORDER BY ... LIMIT). Materialize data to a separate table first to ensure predictable processing.
+
 **Locations:** All regions supporting Gemini models, plus US and EU multi-regions.
 
 **Provisioned throughput:** Not supported. Uses dynamic shared quota (DSQ) only.
@@ -850,7 +883,7 @@ These functions create vector embeddings from text and multimodal data, compute 
 - [documentation](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-embed)
 - **Type:** Scalar function (returns a STRUCT value per row) -- Preview
 
-**Syntax (text embedding):**
+**Syntax (text embedding with endpoint):**
 ```sql
 AI.EMBED(
   [content =>] 'content',
@@ -859,6 +892,14 @@ AI.EMBED(
   [, title => 'title']
   [, model_params => model_params]
   [, connection_id => 'connection']
+)
+```
+
+**Syntax (text embedding with built-in model — Preview):**
+```sql
+AI.EMBED(
+  [content =>] 'content',
+  model => 'model'
 )
 ```
 
@@ -876,8 +917,9 @@ AI.EMBED(
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `content` | STRING, ObjectRef, or ObjectRefRuntime | Required | The data to embed. For text: string literal, column name, or expression. For images: ObjectRef column, ObjectRef from OBJ.FETCH_METADATA + OBJ.MAKE_REF, or ObjectRefRuntime from OBJ.GET_ACCESS_URL. |
-| `endpoint` | STRING | Required | Vertex AI embedding model endpoint. Must include model version (e.g., `text-embedding-005`, `multimodalembedding@001`). BigQuery auto-resolves full endpoint from model name. |
+| `content` | STRING, ObjectRef, ObjectRefRuntime, or STRUCT | Required | The data to embed. For text: string literal, column name, or expression. For images: ObjectRef/ObjectRefRuntime. For `gemini-embedding-2-preview`: can be a STRUCT containing STRING, ARRAY\<STRING\>, ObjectRef, and ARRAY\<ObjectRef\> (text, images, audio, video, PDFs). |
+| `endpoint` | STRING | Required (unless `model` specified) | Vertex AI embedding model endpoint. Must include model version (e.g., `text-embedding-005`, `multimodalembedding@001`, `gemini-embedding-2-preview`). BigQuery auto-resolves full endpoint from model name. |
+| `model` | STRING | Optional (Preview) | Built-in text embedding model. Only supported value: `embeddinggemma-300m` (768 dims, 2048 tokens). When specified, cannot use `endpoint`, `title`, `model_params`, or `connection_id`. Data stays in BigQuery — no Vertex AI charges, uses BQ slots. |
 | `task_type` | STRING literal | Optional (text only) | Intended downstream application. Values: `RETRIEVAL_QUERY`, `RETRIEVAL_DOCUMENT`, `SEMANTIC_SIMILARITY`, `CLASSIFICATION`, `CLUSTERING`, `QUESTION_ANSWERING`, `FACT_VERIFICATION`, `CODE_RETRIEVAL_QUERY` |
 | `title` | STRING | Optional (text only) | Document title to improve embedding quality. Can only be used when `task_type` is `RETRIEVAL_DOCUMENT`. |
 | `model_params` | JSON literal | Optional | For text: any parameters object fields including `outputDimensionality`. For multimodal: only the `dimension` field is supported. |
@@ -892,7 +934,16 @@ Returns a STRUCT with:
 | `result` | ARRAY\<FLOAT64\> | The generated embedding vector. |
 | `status` | STRING | API response status (empty string if successful). |
 
-**Supported models:** Text: `text-embedding-005` (and other Vertex AI text embedding models; must include model version). Multimodal: `multimodalembedding@001` (default 1408 dimensions; configurable: 128, 256, 512, 1408 via `model_params => JSON '{"dimension": 256}'`).
+**Supported models:**
+
+| Model | Type | Max Dimensions | Max Tokens | Notes |
+|-------|------|----------------|------------|-------|
+| `model => 'embeddinggemma-300m'` (Preview) | Built-in text | 768 | 2048 | No Vertex AI charges, uses BQ slots |
+| `endpoint => 'gemini-embedding-001'` | Text | up to 3072 | 2048 | Multilingual |
+| `endpoint => 'text-embedding-005'` | Text | up to 768 | 2048 | English |
+| `endpoint => 'text-multilingual-embedding-002'` | Text | up to 768 | 2048 | Multilingual |
+| `endpoint => 'gemini-embedding-2-preview'` (Preview) | Multimodal | up to 3072 | 8192 | Text, images, audio, video, PDF. US and us-central1 only. `task_type`/`title` not compatible. |
+| `endpoint => 'multimodalembedding@001'` | Multimodal | 128, 256, 512, 1408 | — | Images only (JPEG, PNG, BMP, GIF — not PDF) |
 
 **Best practices:**
 - If you need to reuse embeddings across many queries, save results to a table.
@@ -985,7 +1036,7 @@ Additional syntaxes exist for PCA, Autoencoder, and Matrix factorization models.
 
 Additional output columns exist for multimodal (video_start_sec, video_end_sec), PCA, autoencoder (trial_id), and matrix factorization (trial_id, processed_input, feature).
 
-> **Note:** The `statistics` column is only returned by text embedding models. Multimodal models (`multimodalembedding@001`) do not include it — queries that SELECT `statistics` from a multimodal embedding will error.
+> **Note:** The `statistics` column is returned by text embedding models and by `gemini-embedding-2-preview` (with per-modality token counts). `multimodalembedding@001` does NOT return it — queries that SELECT `statistics` from `multimodalembedding@001` will error.
 
 **Supported models:**
 
@@ -997,6 +1048,7 @@ Additional output columns exist for multimodal (video_start_sec, video_end_sec),
 | `multilingual-e5-small` (Preview) | up to 384 | 512 tokens | Multilingual |
 | `multilingual-e5-large` (Preview) | up to 1024 | 512 tokens | Multilingual |
 | `multimodalembedding@001` | 128, 256, 512, 1408 | -- | -- |
+| `gemini-embedding-2-preview` (Preview) | up to 3072 | 8192 | Multimodal (text, image, video, audio, PDF). Returns `statistics` with per-modality token counts. US and us-central1 only. |
 
 Also supports PCA, autoencoder, and matrix factorization models.
 
@@ -1040,7 +1092,7 @@ All other inputs are the same as AI.GENERATE_EMBEDDING. Additionally, when using
 | `ml_generate_embedding_start_sec` | INT64 | Video only (NULL for images) |
 | `ml_generate_embedding_end_sec` | INT64 | Video only (NULL for images) |
 
-**Supported models / Limitations / Locations / Provisioned throughput:** Same as AI.GENERATE_EMBEDDING.
+**Supported models / Limitations / Locations / Provisioned throughput:** Same as AI.GENERATE_EMBEDDING. Note: `gemini-embedding-001` has a default output dimensionality of 3072 (vs 768 for `text-embedding-005`). `gemini-embedding-2-preview` (Preview) is also supported for multimodal, same as AI.GENERATE_EMBEDDING.
 
 **BigFrames API:** No direct `ML.GENERATE_EMBEDDING` wrapper. BigFrames routes through `AI.GENERATE_EMBEDDING` instead. Use `bbq.ai.generate_embedding()` or `TextEmbeddingGenerator`/`MultimodalEmbeddingGenerator` classes.
 
@@ -1052,7 +1104,7 @@ All other inputs are the same as AI.GENERATE_EMBEDDING. Additionally, when using
 - [documentation](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-similarity)
 - **Type:** Scalar function (returns FLOAT64) -- Preview
 
-**Syntax (text):**
+**Syntax (text with endpoint):**
 ```sql
 AI.SIMILARITY(
   content1 => 'CONTENT1',
@@ -1060,6 +1112,15 @@ AI.SIMILARITY(
   endpoint => 'ENDPOINT'
   [, model_params => MODEL_PARAMS]
   [, connection_id => 'CONNECTION_ID']
+)
+```
+
+**Syntax (text with built-in model — Preview):**
+```sql
+AI.SIMILARITY(
+  content1 => 'CONTENT1',
+  content2 => 'CONTENT2',
+  model => 'MODEL'
 )
 ```
 
@@ -1078,9 +1139,10 @@ AI.SIMILARITY(
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `content1` | STRING, ObjectRef, or ObjectRefRuntime | Required | First value to compare. |
-| `content2` | STRING, ObjectRef, or ObjectRefRuntime | Required | Second value to compare. |
-| `endpoint` | STRING | Required | Vertex AI embedding model endpoint (e.g., `text-embedding-005`, `multimodalembedding@001`). |
+| `content1` | STRING, ObjectRef, or ObjectRefRuntime | Required | First value to compare. For `gemini-embedding-2-preview`: can be a STRUCT (text, images, audio, video, PDFs). |
+| `content2` | STRING, ObjectRef, or ObjectRefRuntime | Required | Second value to compare. Same types as `content1`. |
+| `endpoint` | STRING | Required (unless `model` specified) | Vertex AI embedding model endpoint (e.g., `text-embedding-005`, `multimodalembedding@001`, `gemini-embedding-2-preview`). |
+| `model` | STRING | Optional (Preview) | Built-in text embedding model. Only supported value: `embeddinggemma-300m`. When specified, cannot use `endpoint`, `model_params`, or `connection_id`. No Vertex AI charges. |
 | `model_params` | JSON literal | Optional | For text: any parameters object fields including `outputDimensionality`. For multimodal: only `dimension`. |
 | `connection_id` | STRING | Optional for text; Required for multimodal | Connection in format `PROJECT_ID.LOCATION.CONNECTION_ID`. |
 
@@ -1096,12 +1158,12 @@ AI.SIMILARITY(
 | Indexing | No vector indexes | Designed to use vector indexes for ANN search |
 | Use case | Small comparisons, prototyping | Large-scale semantic search, RAG |
 
-**Supported models:** Text: `text-embedding-005`. Multimodal: `multimodalembedding@001`.
+**Supported models:** Same models as AI.EMBED: `embeddinggemma-300m` (built-in, Preview), `gemini-embedding-001`, `text-embedding-005`, `text-multilingual-embedding-002`, `gemini-embedding-2-preview` (multimodal, Preview), `multimodalembedding@001`.
 
 **Best practices:**
 - Use for small comparisons and prototyping. Use VECTOR_SEARCH for large-scale searches.
-- Supports **cross-modal** comparisons: `content1` can be text while `content2` is an image (or vice versa) when using `multimodalembedding@001`. Text and image embeddings share the same vector space, so text descriptions can be matched against document images.
-- `multimodalembedding@001` supports images only (JPEG, PNG, BMP, GIF) — **not PDFs**. Render PDFs to images first.
+- Supports **cross-modal** comparisons: `content1` can be text while `content2` is an image (or vice versa) when using `multimodalembedding@001` or `gemini-embedding-2-preview`. Text and image embeddings share the same vector space, so text descriptions can be matched against document images.
+- `multimodalembedding@001` supports images only (JPEG, PNG, BMP, GIF) — **not PDFs**. Use `gemini-embedding-2-preview` for PDF support, or render PDFs to images first.
 
 **Limitations:** Incurs charges for two embedding generations per call. For multimodal, `connection_id` is required and the connection's service account needs `roles/aiplatform.user` and `roles/storage.objectViewer`.
 
@@ -1233,6 +1295,17 @@ AI.SEARCH(
 
 ---
 
+### `HYBRID_SEARCH` *(docs pending)*
+- **Description:** (Preview) Table-valued function that unifies semantic (vector) search and full-text (keyword) search into a single function, combining both retrieval methods for improved precision. Announced at Google Cloud Next 2026.
+- **Use cases:** RAG pipelines requiring both keyword and semantic matching, complex document exploration, search scenarios where neither vector nor text search alone achieves sufficient precision.
+- Reference documentation not yet published. Expected URL: `https://cloud.google.com/bigquery/docs/reference/standard-sql/search_functions#hybrid_search`
+- **Type:** Table-valued function -- Preview
+- **Status:** Announced April 2026. No reference docs available yet. Full syntax, inputs, outputs, and limitations will be added when documentation publishes.
+
+**Relationship to VECTOR_SEARCH and AI.SEARCH:** HYBRID_SEARCH combines the semantic search capability of VECTOR_SEARCH with BigQuery's built-in full-text SEARCH function, returning results ranked by a combination of both signals.
+
+---
+
 ## Forecasting
 
 These functions perform time series forecasting, anomaly detection, and forecast evaluation using BigQuery ML's built-in TimesFM models. They do not require creating or managing separate model objects -- the TimesFM model is built in. All three functions share a common parameter pattern (`data_col`, `timestamp_col`, `id_cols`) and support the same model versions.
@@ -1240,17 +1313,18 @@ These functions perform time series forecasting, anomaly detection, and forecast
 **Key relationships:**
 - `AI.FORECAST` generates future time series values from historical data.
 - `AI.DETECT_ANOMALIES` compares target data against a forecast baseline from historical data to identify anomalous points.
-- `AI.EVALUATE` computes standard forecasting metrics (MAE, MSE, RMSE, MAPE, sMAPE) by comparing a forecast against actual observed values.
+- `AI.EVALUATE` computes standard forecasting metrics (MAE, MSE, RMSE, MAPE, sMAPE, MASE) by comparing a forecast against actual observed values.
 
 | Attribute | AI.FORECAST | AI.DETECT_ANOMALIES | AI.EVALUATE |
 |-----------|-------------|---------------------|-------------|
-| **Status** | GA | Preview | GA |
+| **Status** | GA | GA | GA |
 | **Purpose** | Forecast future values | Detect anomalies | Evaluate forecast accuracy |
 | **Input data sources** | 1 (history) | 2 (history + target) | 2 (history + actuals) |
 | **Supported Models** | TimesFM 2.0 (default), TimesFM 2.5 | TimesFM 2.0 (default), TimesFM 2.5 | TimesFM 2.0 (default), TimesFM 2.5 |
 | **Default Horizon** | 10 | N/A | 1024 |
 | **Min Data Points** | 3 | 3 | 3 |
 | **Max Data Points** | 2,048 (2.0) / 15,360 (2.5) | 1,024 (most recent) | Not specified |
+| **Context Window** | Yes (auto-selected) | Yes (auto-selected) | Yes (auto-selected) |
 
 ---
 
@@ -1269,7 +1343,7 @@ FROM AI.FORECAST(
   timestamp_col => 'TIMESTAMP_COL'
   [, model => 'MODEL']
   [, id_cols => ID_COLS]
-  [, horizon => HORIZON]
+  [, { horizon => HORIZON | forecast_end_timestamp => FORECAST_END_TIMESTAMP }]
   [, confidence_level => CONFIDENCE_LEVEL]
   [, output_historical_time_series => OUTPUT_HISTORICAL_TIME_SERIES]
   [, context_window => CONTEXT_WINDOW]
@@ -1285,7 +1359,8 @@ FROM AI.FORECAST(
 | `timestamp_col` | STRING | Required | -- | -- | Name of the timestamp column. Must be TIMESTAMP, DATE, or DATETIME. |
 | `model` | STRING | Optional | `'TimesFM 2.0'` | -- | `'TimesFM 2.0'` or `'TimesFM 2.5'` |
 | `id_cols` | ARRAY\<STRING\> | Optional | -- | -- | ID columns identifying unique time series. Must be STRING, INT64, ARRAY\<STRING\>, or ARRAY\<INT64\>. |
-| `horizon` | INT64 | Optional | 10 | [1, 10000] | Number of time series data points to forecast |
+| `horizon` | INT64 | Optional | 10 | [1, 10000] | Number of time series data points to forecast. Mutually exclusive with `forecast_end_timestamp`. |
+| `forecast_end_timestamp` | TIMESTAMP | Optional | -- | -- | End timestamp for forecasted values. Horizon is calculated from the end timestamp and input frequency. Mutually exclusive with `horizon`. Valid calculated horizon range: [1, 10000]. |
 | `confidence_level` | FLOAT64 | Optional | 0.95 | [0, 1) | Percentage of future values that fall in the prediction interval |
 | `output_historical_time_series` | BOOL | Optional | FALSE | -- | When TRUE, returns input data along with forecasted data |
 | `context_window` | INT64 | Optional | Auto-selected | See below | Context window length for the TimesFM model |
@@ -1339,10 +1414,10 @@ When not specified, the smallest window covering the input data points is auto-s
 ---
 
 ### `AI.DETECT_ANOMALIES`
-- **Description:** (Preview) Table-valued function that detects anomalies in time series data using BigQuery ML's built-in TimesFM model. Forecasts expected values from historical data, then compares target data against those forecasts to identify anomalous data points.
+- **Description:** Table-valued function that detects anomalies in time series data using BigQuery ML's built-in TimesFM model. Forecasts expected values from historical data, then compares target data against those forecasts to identify anomalous data points.
 - **Use cases:** Detecting anomalous spikes or drops in time series (e.g., sales, bike trips), detecting anomalies across multiple time series simultaneously, computing anomaly probability.
 - [documentation](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-detect-anomalies)
-- **Type:** Table-valued function -- Preview
+- **Type:** Table-valued function -- GA
 
 **Syntax:**
 ```sql
@@ -1355,6 +1430,7 @@ FROM AI.DETECT_ANOMALIES(
   [, model => 'MODEL']
   [, id_cols => ID_COLS]
   [, anomaly_prob_threshold => ANOMALY_PROB_THRESHOLD]
+  [, context_window => CONTEXT_WINDOW]
 )
 ```
 
@@ -1369,6 +1445,7 @@ FROM AI.DETECT_ANOMALIES(
 | `model` | STRING | Optional | `'TimesFM 2.0'` | -- | `'TimesFM 2.0'` or `'TimesFM 2.5'` |
 | `id_cols` | ARRAY\<STRING\> | Optional | -- | -- | ID columns identifying unique time series |
 | `anomaly_prob_threshold` | FLOAT64 | Optional | 0.95 | [0, 1) | Threshold for anomaly detection. A target value is anomalous if its anomaly probability exceeds this threshold. |
+| `context_window` | INT64 | Optional | Auto-selected | See AI.FORECAST | Context window length for the TimesFM model. Same supported values as AI.FORECAST per model version. |
 
 **Outputs:**
 
@@ -1387,7 +1464,7 @@ FROM AI.DETECT_ANOMALIES(
 
 **Best practices:** Historical and target data schemas must match. Use `id_cols` to break anomalies down by dimensions.
 
-**Limitations:** Only the most recent 1,024 time points are evaluated. Minimum 3 data points required. Preview status.
+**Limitations:** Only the most recent 1,024 time points are evaluated (contact bqml-feedback@google.com for more). Minimum 3 data points required.
 
 **Locations:** All supported BigQuery ML locations.
 
@@ -1398,7 +1475,7 @@ FROM AI.DETECT_ANOMALIES(
 ---
 
 ### `AI.EVALUATE`
-- **Description:** Table-valued function that evaluates TimesFM forecasted data against actual observed values. Generates a forecast from historical data and computes evaluation metrics (MAE, MSE, RMSE, MAPE, sMAPE).
+- **Description:** Table-valued function that evaluates TimesFM forecasted data against actual observed values. Generates a forecast from historical data and computes evaluation metrics (MAE, MSE, RMSE, MAPE, sMAPE, MASE).
 - **Use cases:** Evaluating forecast accuracy, benchmarking model configurations, comparing forecast quality across multiple time series.
 - [documentation](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-evaluate)
 - **Type:** Table-valued function
@@ -1414,6 +1491,7 @@ FROM AI.EVALUATE(
   [, model => 'MODEL']
   [, id_cols => ID_COLS]
   [, horizon => HORIZON]
+  [, context_window => CONTEXT_WINDOW]
 )
 ```
 
@@ -1428,6 +1506,7 @@ FROM AI.EVALUATE(
 | `model` | STRING | Optional | `'TimesFM 2.0'` | -- | `'TimesFM 2.0'` or `'TimesFM 2.5'` |
 | `id_cols` | ARRAY\<STRING\> | Optional | -- | -- | ID columns identifying unique time series |
 | `horizon` | INT64 | Optional | 1024 | [1, 10000] | Number of forecasted time points to evaluate |
+| `context_window` | INT64 | Optional | Auto-selected | See AI.FORECAST | Context window length for the TimesFM model. Same supported values as AI.FORECAST per model version. |
 
 **Outputs:**
 
@@ -1439,6 +1518,7 @@ FROM AI.EVALUATE(
 | `root_mean_squared_error` | FLOAT64 | RMSE for the time series |
 | `mean_absolute_percentage_error` | FLOAT64 | MAPE for the time series |
 | `symmetric_mean_absolute_percentage_error` | FLOAT64 | sMAPE for the time series |
+| `mean_absolute_scaled_error` | FLOAT64 | MASE for the time series |
 | `ai_evaluate_status` | STRING | Empty if successful; error string if unsuccessful |
 
 **Supported models:** TimesFM 2.0 (default), TimesFM 2.5.
@@ -1568,9 +1648,11 @@ Note: `individualPageSelector`, `fromStart`, and `fromEnd` are a union field —
 - Minimum 200 dpi for document scans; 300 dpi or higher recommended.
 
 **Limitations:**
-- Maximum **100 pages per document**. Rows with larger documents return an error.
+- Maximum **130 pages per document**. Rows with larger documents return an error.
+- **120-second timeout per request.** Documents that take longer to process will fail.
+- **Requests are processed in batches of 10.**
 - Custom Splitter only supports PDF, TIFF, TIF, and GIF.
-- Quotas: 600 requests/min (for ~50 page docs), 100,000 rows/job, max 5 concurrent jobs/project.
+- See [Cloud AI service functions quotas](https://cloud.google.com/bigquery/quotas#cloud_ai_service_functions) for current rate limits.
 - Some rows may show `RESOURCE EXHAUSTED` errors after job success — BigQuery retries internally, but parallel batch queries can exceed quota limits.
 
 **Locations:** Models can only be created in the **US** and **EU** multi-regions. The dataset, connection, and Document AI processor must all be in the same region.
@@ -1578,6 +1660,17 @@ Note: `individualPageSelector`, `fromStart`, and `fromEnd` are a union field —
 **Provisioned throughput:** Not specified. Subject to Document AI API quotas.
 
 **BigFrames API:** No direct equivalent. Use `%%bigquery` magics or `session.read_gbq_query()` to execute ML.PROCESS_DOCUMENT SQL from BigFrames.
+
+---
+
+### `AI.PARSE_DOCUMENT` *(docs pending)*
+- **Description:** (Preview) Managed function that simplifies document processing by combining OCR, layout parsing, and chunking into a single SQL function call — no separate Document AI processor or remote model setup required. Announced at Google Cloud Next 2026.
+- **Use cases:** Same as ML.PROCESS_DOCUMENT (OCR, document parsing, chunking for RAG pipelines) but with a simplified, managed interface.
+- Reference documentation not yet published. Expected URL: `https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-parse-document`
+- **Type:** Table-valued function -- Preview
+- **Status:** Announced April 2026. No reference docs available yet. Full syntax, inputs, outputs, and limitations will be added when documentation publishes.
+
+**Relationship to ML.PROCESS_DOCUMENT:** AI.PARSE_DOCUMENT is to ML.PROCESS_DOCUMENT what AI.GENERATE is to AI.GENERATE_TEXT — a managed, simplified alternative that doesn't require pre-creating model objects or configuring external processors.
 
 ---
 ## Unstructured Data Infrastructure

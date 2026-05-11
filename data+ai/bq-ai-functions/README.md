@@ -123,6 +123,7 @@ See the [Unstructured Data Infrastructure](RESOURCES.md#unstructured-data-infras
 | `AI.SIMILARITY` | [notebook](functions/ai_similarity/ai_similarity.ipynb) · [sql](functions/ai_similarity/ai_similarity.sql) | Scalar | Preview | No | ObjectRef | Cosine similarity between two inputs. Generates embeddings at runtime. |
 | `VECTOR_SEARCH` | [notebook](functions/vector_search/vector_search.ipynb) · [sql](functions/vector_search/vector_search.sql) | TVF | GA | No | — | Top-K nearest neighbor search on pre-computed embeddings. Supports vector indexes. |
 | `AI.SEARCH` | [notebook](functions/ai_search/ai_search.ipynb) · [sql](functions/ai_search/ai_search.sql) | TVF | Preview | No | — | Semantic search on tables with autonomous embedding generation. |
+| `HYBRID_SEARCH` | *docs pending* | TVF | Preview | No | — | Combined semantic + full-text search in a single function. |
 
 **Embedding task types:** The `task_type` parameter tells the embedding model how the text will be used, which changes the resulting vector.
 
@@ -150,13 +151,14 @@ When unsure, default to `RETRIEVAL_DOCUMENT` / `RETRIEVAL_QUERY`. See the [`AI.E
 | Function | Examples | Type | Status | Requires Model | Multimodal | What It Does |
 |----------|----------|------|--------|----------------|------------|--------------|
 | `ML.PROCESS_DOCUMENT` | [notebook](functions/ml_process_document/ml_process_document.ipynb) · [sql](functions/ml_process_document/ml_process_document.sql) | TVF | GA | Yes | Object table | Extract structured data from documents in Cloud Storage using Document AI processors. |
+| `AI.PARSE_DOCUMENT` | *docs pending* | TVF | Preview | No | — | Managed OCR + layout parsing + chunking in a single function. No processor setup needed. |
 
 ### Forecasting — Time series forecasting, anomaly detection, and evaluation
 
 | Function | Examples | Type | Status | Multimodal | What It Does |
 |----------|----------|------|--------|------------|--------------|
 | `AI.FORECAST` | [notebook](functions/ai_forecast/ai_forecast.ipynb) · [sql](functions/ai_forecast/ai_forecast.sql) | TVF | GA | — | Forecast future values with TimesFM. No model training required. |
-| `AI.DETECT_ANOMALIES` | [notebook](functions/ai_detect_anomalies/ai_detect_anomalies.ipynb) · [sql](functions/ai_detect_anomalies/ai_detect_anomalies.sql) | TVF | Preview | — | Detect anomalous data points by comparing against a forecast baseline. |
+| `AI.DETECT_ANOMALIES` | [notebook](functions/ai_detect_anomalies/ai_detect_anomalies.ipynb) · [sql](functions/ai_detect_anomalies/ai_detect_anomalies.sql) | TVF | GA | — | Detect anomalous data points by comparing against a forecast baseline. |
 | `AI.EVALUATE` | [notebook](functions/ai_evaluate/ai_evaluate.ipynb) · [sql](functions/ai_evaluate/ai_evaluate.sql) | TVF | GA | — | Evaluate forecast accuracy (MAE, MSE, RMSE, MAPE, sMAPE). |
 
 ---
@@ -202,17 +204,23 @@ When unsure, default to `RETRIEVAL_DOCUMENT` / `RETRIEVAL_QUERY`. See the [`AI.E
 └──────────────────────────┘   │                                      │
                                │  AI.SEARCH ◄── simplified search     │
 ┌──────────────────────────┐   │       needs autonomous embedding     │
-│     FORECASTING          │   └──────────────────────────────────────┘
-│                          │
-│  AI.FORECAST             │   ┌──────────────────────────────────────┐
-│       │                  │   │     DOCUMENT PROCESSING              │
-│  AI.DETECT_ANOMALIES     │   │                                      │
-│       │                  │   │  ML.PROCESS_DOCUMENT                 │
-│  AI.EVALUATE             │   │       needs object table +           │
-│                          │   │       Document AI processor           │
-│  All use TimesFM         │   │       + remote model                  │
-│  No model creation needed│   │                                      │
-└──────────────────────────┘   └──────────────────────────────────────┘
+│     FORECASTING          │   │                                      │
+│                          │   │  HYBRID_SEARCH ◄── semantic + text   │
+│  AI.FORECAST             │   │       (Preview, docs pending)         │
+│       │                  │   └──────────────────────────────────────┘
+│  AI.DETECT_ANOMALIES     │
+│       │                  │   ┌──────────────────────────────────────┐
+│  AI.EVALUATE             │   │     DOCUMENT PROCESSING              │
+│                          │   │                                      │
+│  All use TimesFM         │   │  ML.PROCESS_DOCUMENT                 │
+│  No model creation needed│   │       needs object table +           │
+└──────────────────────────┘   │       Document AI processor           │
+                               │       + remote model                  │
+                               │                                      │
+                               │  AI.PARSE_DOCUMENT ◄── managed       │
+                               │       no processor setup needed       │
+                               │       (Preview, docs pending)         │
+                               └──────────────────────────────────────┘
 ```
 
 **Key distinctions:**

@@ -47,6 +47,7 @@ Individual function notebooks include inline setup cells — this page provides 
 ## Table of Contents
 
 - [Python Environment](#python-environment)
+  - [System Dependencies](#system-dependencies)
 - [Which Functions Need What](#which-functions-need-what)
 - [Connections](#connections)
 - [Remote Models (CREATE MODEL)](#remote-models-create-model)
@@ -101,6 +102,24 @@ install('google-cloud-bigquery', 'bigframes', 'pydantic', 'db-dtypes')
 - Uses `uv` when available (faster installs), falls back to `pip`
 - Targets `sys.executable` so packages go into the active kernel's environment
 - If you set up the local environment above, this cell is a fast no-op
+
+### System dependencies
+
+Some notebooks render PDFs to images for multimodal embedding. This requires `poppler-utils` (provides `pdftoppm`), which is a system package — not a Python package.
+
+Notebooks that need it install it inline. If you prefer to install manually:
+
+```bash
+# Debian/Ubuntu (including Colab, Vertex AI Workbench)
+sudo apt-get install -y poppler-utils
+
+# macOS
+brew install poppler
+```
+
+| Package | What it's for | Used by |
+|---------|---------------|---------|
+| `poppler-utils` | `pdftoppm` — renders PDF pages to PNG for multimodal embedding | AI.EMBED, AI.SIMILARITY, AI.GENERATE_EMBEDDING, Multimodal Analysis workflow |
 
 ### Packages used across notebooks
 
