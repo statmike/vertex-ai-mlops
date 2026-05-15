@@ -5,7 +5,6 @@ paginate: true
 style: |
   section {
     font-family: 'Segoe UI', Arial, sans-serif;
-    padding-bottom: 80px;
   }
   section.title {
     text-align: center;
@@ -16,8 +15,7 @@ style: |
   }
   .notebook-ref {
     position: absolute;
-    bottom: 30px;
-    left: 40px;
+    top: 20px;
     right: 40px;
     background: #e8e8e8;
     color: #555;
