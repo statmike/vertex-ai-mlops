@@ -888,7 +888,7 @@ Each notebook is touched exactly once: revise (if needed) → Restart & Run All 
 
 | # | Notebook | Notes |
 |---|----------|-------|
-| 12 | `functions/ai_agg/ai_agg.ipynb` | No doc changes (known issues are runtime, not notebook content) |
+| 12 | `functions/ai_agg/ai_agg.ipynb` | **ON HOLD** — AI.AGG (preview) disabled per [release note (April 13, 2026)](https://cloud.google.com/bigquery/docs/release-notes#April_13_2026). Warning added to overview cell. Needs Restart & Run All when function is re-enabled. |
 | 13 | `functions/ai_generate_text/ai_generate_text.ipynb` | USE_CHAT_MODE is Open-models-only; verify existing examples still run |
 | 14 | `functions/ai_generate_table/ai_generate_table.ipynb` | No doc changes |
 | 15 | `functions/ai_generate_bool/ai_generate_bool.ipynb` | No doc changes |
@@ -906,11 +906,11 @@ All workflows use functions that were updated. Verify they still run clean. If a
 
 | # | Notebook | Functions with changes |
 |---|----------|-----------------------|
-| 23 | `workflows/content_analysis/content_analysis.ipynb` | AI.CLASSIFY, AI.SCORE, AI.AGG |
-| 24 | `workflows/content_moderation/content_moderation.ipynb` | AI.IF, AI.CLASSIFY, AI.SCORE, AI.AGG |
+| 23 | `workflows/content_analysis/content_analysis.ipynb` | **ON HOLD** — uses AI.AGG (disabled). Warning added. Needs Restart & Run All when re-enabled. |
+| 24 | `workflows/content_moderation/content_moderation.ipynb` | **ON HOLD** — uses AI.AGG (disabled). Warning added. Revised with Step 2b (AI.IF few-shot examples). Needs Restart & Run All when re-enabled. |
 | 25 | `workflows/data_enrichment/data_enrichment.ipynb` | AI.GENERATE |
-| 26 | `workflows/document_intelligence/document_intelligence.ipynb` | AI.CLASSIFY, AI.SCORE, AI.AGG |
-| 27 | `workflows/log_analysis/log_analysis.ipynb` | AI.CLASSIFY, AI.SCORE, AI.AGG |
+| 26 | `workflows/document_intelligence/document_intelligence.ipynb` | **ON HOLD** — uses AI.AGG (disabled). Warning added. Needs Restart & Run All when re-enabled. |
+| 27 | `workflows/log_analysis/log_analysis.ipynb` | **ON HOLD** — uses AI.AGG (disabled). Warning added. Needs Restart & Run All when re-enabled. |
 | 28 | `workflows/multimodal_analysis/multimodal_analysis.ipynb` | AI.EMBED, AI.SIMILARITY |
 | 29 | `workflows/rag_pipeline/rag_pipeline.ipynb` | AI.EMBED |
 | 30 | `workflows/semantic_search/semantic_search.ipynb` | AI.EMBED, AI.SEARCH |
