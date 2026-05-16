@@ -48,6 +48,14 @@ Cloud [Bigtable](https://cloud.google.com/bigtable/docs/overview) provides singl
 
 The data uses a compound entity key (`entity_group` + `entity_id`) with 130,000 entities and 200+ features spanning every BigQuery data type, designed to exercise every edge case of the BigQuery-to-Bigtable pipeline.
 
+## Presentation
+
+A 25-slide overview of this series — motivates the topic, walks through the architecture, and shows how all 15 notebooks fit together:
+
+- [Bigtable Feature Store — Overview (PDF)](./Bigtable%20Feature%20Store%20-%20Overview.pdf)
+- [Bigtable Feature Store — Overview (HTML)](./Bigtable%20Feature%20Store%20-%20Overview.html) — to view: click the link, then use the download button (↓) to save locally and open in your browser
+- [Bigtable Feature Store — Overview (source)](./Bigtable%20Feature%20Store%20-%20Overview.md) — Marp markdown source
+
 ## Environment Setup
 
 ### Option 1: Local environment
