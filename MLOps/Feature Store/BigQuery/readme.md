@@ -40,13 +40,21 @@
 
 > You are here: `vertex-ai-mlops/MLOps/Feature Store/BigQuery/readme.md`
 
-The [BigQuery Storage Read API](https://cloud.google.com/bigquery/docs/reference/storage) reads directly from BigQuery's storage layer — bypassing the query engine — streaming [Apache Arrow](https://arrow.apache.org/) record batches over parallel gRPC connections. Combined with session caching and table clustering, this creates a feature serving layer with 20–200ms latency, zero infrastructure, and capabilities that a key-value store can't match.
+The [BigQuery Storage Read API](https://cloud.google.com/bigquery/docs/reference/storage) reads directly from BigQuery's storage layer — bypassing the query engine — streaming [Apache Arrow](https://arrow.apache.org/) record batches over parallel gRPC connections. Combined with session caching and table clustering, this creates a feature serving layer with 20–200ms latency, zero infrastructure, and capabilities that a key-value store can't match. Because features stay in BigQuery, you also inherit its governance and metadata layer — [Dataplex](https://cloud.google.com/dataplex/docs/overview) (BigQuery Knowledge Catalog) for discovery, column-level security, data lineage, and policy tags — without building any of it yourself.
 
 > **Also in this series: [Bigtable Feature Store](../Bigtable/readme.md) and [Vertex AI Feature Store](../vertex/readme.md)**
 >
-> This BigQuery approach eliminates the online store entirely — **no sync pipelines, no infrastructure to manage, no key design constraints**. For sub-10ms point lookups, see [Bigtable Feature Store](../Bigtable/readme.md). For a fully managed solution, see [Vertex AI Feature Store](../vertex/readme.md). All three approaches use BigQuery as the offline store. See the [comparison table](../readme.md#choosing-an-approach) in the parent readme.
+> This BigQuery approach eliminates the online store entirely — **no sync pipelines, no infrastructure to manage, no key design constraints**. For workloads where 20–200ms latency is acceptable, it's the simplest path: features are always fresh, governance is built in, and there's nothing to provision or sync. For sub-10ms point lookups, see [Bigtable Feature Store](../Bigtable/readme.md). For a fully managed solution, see [Vertex AI Feature Store](../vertex/readme.md). All three approaches use BigQuery as the offline store. See the [comparison table](../readme.md#choosing-an-approach) in the parent readme.
 
 The data uses a 130K-entity dataset (26 groups × 5,000 entities, 224 columns) stored in BigQuery dataset `bigquery_feature_store`.
+
+## Presentation
+
+A 13-slide overview of this series — positions the approach on the latency spectrum, walks through the architecture, and shows how all 3 notebooks fit together:
+
+- [BigQuery Feature Store — Overview (PDF)](./BigQuery%20Feature%20Store%20-%20Overview.pdf)
+- [BigQuery Feature Store — Overview (HTML)](./BigQuery%20Feature%20Store%20-%20Overview.html) — to view: click the link, then use the download button (↓) to save locally and open in your browser
+- [BigQuery Feature Store — Overview (source)](./BigQuery%20Feature%20Store%20-%20Overview.md) — Marp markdown source
 
 ## Environment Setup
 
