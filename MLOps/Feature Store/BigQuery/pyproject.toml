@@ -1,0 +1,19 @@
+[project]
+name = "bigquery-feature-store"
+version = "0.1.0"
+description = "BigQuery Feature Store notebook — Storage Read API feature serving"
+requires-python = ">=3.10"
+dependencies = [
+    "google-cloud-bigquery",
+    "google-cloud-bigquery-storage",
+    "db-dtypes",
+    "pyarrow",
+    "pandas",
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "fastapi",
+    "uvicorn",
+    "requests",
+    "ipykernel",
+]
