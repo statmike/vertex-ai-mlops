@@ -1,0 +1,4 @@
+google-cloud-bigquery-storage
+pyarrow
+fastapi
+uvicorn

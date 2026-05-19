@@ -125,6 +125,46 @@ The main notebook — builds the complete architecture, benchmarks everything, a
 | 10. Cost Comparison | Economics | Infrastructure, read cost, sync pipeline, total cost of ownership |
 | 11. When to Use Which | Decision framework | Decision tree, three-way comparison table |
 
+### [BigQuery Feature Store — Cloud Run](./BigQuery%20Feature%20Store%20-%20Cloud%20Run.ipynb)
+
+Deploy the FastAPI feature serving app to [Cloud Run](https://cloud.google.com/run/docs/overview/what-is-cloud-run) — from local notebook demo to managed, autoscaling service with IAM authentication and revision-based traffic splitting.
+
+**What you'll learn:**
+
+*Deployment & auth:*
+- Containerize a Storage Read API serving app for Cloud Run (Dockerfile, Cloud Build, Artifact Registry)
+- Cloud Run authentication: ID tokens vs access tokens
+
+*Serving patterns:*
+- Per-entity batch: N concurrent ReadSessions via `asyncio.gather()`
+- Combined-restriction batch: 1 ReadSession for all entities via `IN (...)` clause
+- When each pattern wins — entity count is the decision variable
+
+*Performance at scale:*
+- Cold start, warm request, and Cloud Run network overhead
+- Concurrency scaling: throughput vs latency tradeoff
+- Sustained load testing: throughput plateau and latency degradation under production-like traffic
+- Spike bursts: autoscaling response and recovery latency
+
+*Operations:*
+- Traffic splitting between feature configurations (revision-based canary)
+- Autoscaling tuning: `max_instance_request_concurrency`, instance count, CPU allocation
+
+| Part | Topic | Key Concepts |
+|------|-------|-------------|
+| 1. Feature Serving App | Container packaging | FastAPI app, `FeatureSessionPool`, per-entity + combined batch endpoints, `%%writefile` |
+| 2. Local Verification | Pre-build testing | Environment variables, uvicorn in-notebook |
+| 3. Build Container | Cloud Build + AR | Artifact Registry, Cloud Build API, Docker image |
+| 4. Deploy to Cloud Run | Service creation | `run_v2`, env var config, scale-to-zero |
+| 5. Authentication | IAM + ID tokens | `roles/run.invoker`, access tokens vs ID tokens |
+| 6. Single-Entity Benchmarks | Cold/warm latency | Cold start, warm p50/p95, local vs Cloud Run |
+| 7. Entity Count Scaling | Batch throughput | Per-entity vs combined batch, 1–100 entities, visualization |
+| 8. Concurrent Scaling | Autoscaling + load | 1–50 workers, throughput saturation, sustained load ramp (1000 req), spike bursts (200 simultaneous) |
+| 9. Sync vs Async | Four patterns | Sequential, concurrent, per-entity batch, combined batch comparison |
+| 10. Serving Summary | All patterns | Comprehensive benchmark table + visualization |
+| 11. Traffic Splitting | Canary deployment | Revision-based split, feature column rollout |
+| 12. Autoscaling Config | Production settings | `min_instance_count`, `max_instance_request_concurrency` |
+
 ## Prerequisites
 
 - A GCP project with billing enabled
@@ -143,3 +183,6 @@ The main notebook — builds the complete architecture, benchmarks everything, a
 | BigQuery time travel | [Historical queries](https://cloud.google.com/bigquery/docs/time-travel) |
 | BigQuery pricing | [Pricing](https://cloud.google.com/bigquery/pricing) |
 | Storage Read API pricing | [Free tier (300 TiB/mo)](https://cloud.google.com/bigquery/pricing#storage-api) |
+| Cloud Run | [Overview](https://cloud.google.com/run/docs/overview/what-is-cloud-run) |
+| Cloud Build | [Overview](https://cloud.google.com/build/docs/overview) |
+| Artifact Registry | [Overview](https://cloud.google.com/artifact-registry/docs/overview) |

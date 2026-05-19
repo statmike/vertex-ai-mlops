@@ -6,6 +6,10 @@ requires-python = ">=3.10"
 dependencies = [
     "google-cloud-bigquery",
     "google-cloud-bigquery-storage",
+    "google-cloud-storage",
+    "google-cloud-artifact-registry",
+    "google-cloud-build",
+    "google-cloud-run",
     "db-dtypes",
     "pyarrow",
     "pandas",
