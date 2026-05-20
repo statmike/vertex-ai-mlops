@@ -11,3 +11,4 @@ build/
 
 # Deployment
 deploy/deployment.json
+deploy/ui/deployment.json
