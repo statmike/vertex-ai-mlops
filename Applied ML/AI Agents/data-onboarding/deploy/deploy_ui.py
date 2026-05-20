@@ -165,17 +165,22 @@ def _enable_apis(project: str) -> None:
     ])
 
 
-def _grant_cloud_build_permissions(project: str, project_number: str) -> None:
-    """Grant Cloud Build SA permissions to the compute service account."""
-    print("\nGranting Cloud Build permissions...")
+def _grant_permissions(project: str, project_number: str) -> None:
+    """Grant required IAM roles to the compute service account."""
+    print("\nGranting IAM permissions...")
     sa = f"{project_number}-compute@developer.gserviceaccount.com"
-    _run([
-        "gcloud", "projects", "add-iam-policy-binding", project,
-        f"--member=serviceAccount:{sa}",
-        "--role=roles/cloudbuild.builds.builder",
-        "--condition=None",
-        "--quiet",
-    ], quiet=True)
+    roles = [
+        "roles/cloudbuild.builds.builder",
+        "roles/aiplatform.user",
+    ]
+    for role in roles:
+        _run([
+            "gcloud", "projects", "add-iam-policy-binding", project,
+            f"--member=serviceAccount:{sa}",
+            f"--role={role}",
+            "--condition=None",
+            "--quiet",
+        ], quiet=True)
 
 
 def _override_org_policy(project: str, project_number: str) -> None:
@@ -230,7 +235,7 @@ def cmd_deploy() -> None:
     print(f"  Env vars: {list(env_vars.keys())}")
 
     _enable_apis(project)
-    _grant_cloud_build_permissions(project, project_number)
+    _grant_permissions(project, project_number)
     _override_org_policy(project, project_number)
 
     staging = _assemble_staging()
