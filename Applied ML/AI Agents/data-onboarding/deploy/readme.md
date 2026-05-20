@@ -341,11 +341,35 @@ When deployed to Agent Engine, the following are automatically available with no
 
 ---
 
+## Deploying the Web UI to Cloud Run
+
+The web UI can also be deployed to Cloud Run as a containerized service. This is separate from the Agent Engine deployment above — the UI connects to the deployed chat agent as a client.
+
+```bash
+# Deploy the UI to Cloud Run
+uv run python deploy/deploy_ui.py
+
+# Manage
+uv run python deploy/deploy_ui.py --info       # show deployment info
+uv run python deploy/deploy_ui.py --test       # health check deployed URL
+uv run python deploy/deploy_ui.py --update     # update existing deployment
+uv run python deploy/deploy_ui.py --delete     # delete deployment
+```
+
+The script reads configuration from `.env` (`GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `AGENT_ENGINE_RESOURCE_ID`, `VOICE_MODEL`, `CHAT_SCOPE`), assembles a staging directory with the UI code and `agent_voice/` package, and deploys via `gcloud run deploy --source` (Cloud Build).
+
+Text chat runs in `agent_engine` mode (proxies to the deployed chat agent). Voice mode runs `agent_voice` locally inside the container via ADK `run_live()`, with data queries bridging to Agent Engine.
+
+For more details on the UI itself, see [`ui/readme.md`](../ui/readme.md).
+
+---
+
 ## File Structure
 
 ```
 deploy/
   deploy.py                      # CLI for deploying agents to Agent Engine
+  deploy_ui.py                   # CLI for deploying the web UI to Cloud Run
   entrypoint_chat.py             # AdkApp wrapper for agent_chat (deployed)
   entrypoint_orchestrator.py     # AdkApp wrapper for agent_orchestrator (optional)
   __init__.py                    # Package marker (needed for entrypoint imports)
@@ -355,6 +379,8 @@ deploy/
     deployment.json              # Tracks chat deployment state
   orchestrator/
     deployment.json              # Tracks orchestrator deployment state (if deployed)
+  ui/
+    deployment.json              # Tracks UI Cloud Run deployment state
 ```
 
 ---
