@@ -67,6 +67,7 @@ Workflows compose multiple AI functions together for end-to-end scenarios. See [
 | [Content Moderation](workflows/content_moderation/) | AI.GENERATE_TABLE, AI.IF, AI.CLASSIFY, AI.SCORE, AI.GENERATE, AI.AGG | Flag, categorize, and score user-generated content for moderation |
 | [Multimodal Analysis](workflows/multimodal_analysis/) | AI.EMBED, AI.SIMILARITY, AI.GENERATE | Embed document images, find similar documents, generate visual descriptions |
 | [Log Analysis](workflows/log_analysis/) | AI.GENERATE_TABLE, AI.CLASSIFY, AI.SCORE, AI.AGG | Classify tickets, score priority, summarize patterns with AI.AGG |
+| [Image Deduplication](workflows/image_deduplication/) | AI.EMBED, VECTOR_SEARCH | Group near-duplicate images using embedding similarity for train/test split integrity |
 
 ---
 
@@ -266,5 +267,6 @@ bq-ai-functions/
     ├── document_intelligence/
     ├── content_moderation/
     ├── multimodal_analysis/
-    └── log_analysis/
+    ├── log_analysis/
+    └── image_deduplication/
 ```
