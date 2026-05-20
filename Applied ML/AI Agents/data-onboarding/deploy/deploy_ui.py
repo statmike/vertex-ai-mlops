@@ -83,6 +83,7 @@ def _get_env_vars() -> dict[str, str]:
         "GOOGLE_CLOUD_PROJECT": project,
         "GOOGLE_CLOUD_LOCATION": region,
         "AGENT_MODE": "agent_engine",
+        "GOOGLE_GENAI_USE_VERTEXAI": "true",
     }
 
     optional = {
