@@ -173,6 +173,7 @@ def _grant_cloud_build_permissions(project: str, project_number: str) -> None:
         "gcloud", "projects", "add-iam-policy-binding", project,
         f"--member=serviceAccount:{sa}",
         "--role=roles/cloudbuild.builds.builder",
+        "--condition=None",
         "--quiet",
     ], quiet=True)
 
