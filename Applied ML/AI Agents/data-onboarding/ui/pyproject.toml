@@ -9,6 +9,7 @@ dependencies = [
     "websockets>=15.0",
     "google-cloud-aiplatform>=1.140",
     "google-adk>=1.28",
+    "google-genai>=1.64",
     "python-dotenv>=1.0",
 ]
 
