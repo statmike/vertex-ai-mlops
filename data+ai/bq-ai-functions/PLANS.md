@@ -858,6 +858,7 @@ Functions announced but without published reference documentation. Check periodi
 | 2026-03-16 | Phase 8 expansion | Added multimodal embedding examples to AI.EMBED, AI.GENERATE_EMBEDDING, AI.SIMILARITY notebooks + SQL files (multimodalembedding@001). Added multimodal note to ML.GENERATE_EMBEDDING. Created Content Moderation workflow (AI.GENERATE_TABLE → AI.IF → AI.CLASSIFY → AI.SCORE → AI.GENERATE). Created Multimodal Analysis workflow (document rendering → AI.EMBED → ML.DISTANCE → AI.SIMILARITY → AI.GENERATE). Updated all cross-references (7 function notebook Featured in lines, README.md workflows table, PLANS.md mapping table). |
 | 2026-03-16 | Docs review post-implementation | README.md: Fixed AI.SCORE and AI.CLASSIFY multimodal labels from "Object table" to "STRUCT prompt" (both accept STRUCT with ObjectRefRuntime). RESOURCES.md: Added multimodal best practices to AI.EMBED (default 1408 dims, PDF not supported, inline ObjectRef preferred), AI.GENERATE_EMBEDDING (statistics not returned by multimodal model, inline ObjectRef avoids reservation requirement), AI.SIMILARITY (cross-modal text↔image capability). Updated Managed Functions table. Added "Object tables vs inline ObjectRef" guidance to Unstructured Data Infrastructure section. |
 | 2026-04-07 | AI.AGG — new function + workflow | Added AI.AGG (Preview aggregate function with auto-batching). Created functions/ai_agg/ with notebook + SQL. Added to RESOURCES.md Managed Functions section with comparison table. Added to README.md function map, relationship diagram, and key distinctions. Added AI.AGG alternative cells to Content Analysis, Content Moderation, and Document Intelligence workflows. Created new Log Analysis workflow (AI.GENERATE_TABLE → AI.CLASSIFY → AI.SCORE → AI.AGG). Updated all cross-references. |
+| 2026-05-22 | AI.AGG re-enablement | AI.AGG (Preview) re-enabled after temporary disable (April 13, 2026). Removed warning banners from 5 notebooks (ai_agg, content_analysis, content_moderation, document_intelligence, log_analysis). Expanded ai_agg.ipynb with 4 new examples: connection_id parameter, quantitative aggregation, AI.AGG vs STRING_AGG+AI.GENERATE comparison, multimodal ObjectRef. Added connection setup and GCS support to ai_agg notebook. |
 | 2026-05-10 | Full audit — all functions | **Managed functions:** AI.IF and AI.CLASSIFY gained `examples`, `embeddings` (Preview), `optimization_mode` (Preview) params for optimized mode (230x cost reduction). AI.IF, AI.SCORE, AI.CLASSIFY gained `max_error_ratio`. AI.AGG added known issues section. **Embeddings:** AI.EMBED and AI.SIMILARITY gained `model` param (`embeddinggemma-300m` built-in). Four new embedding models across AI.EMBED/AI.SIMILARITY/AI.GENERATE_EMBEDDING/ML.GENERATE_EMBEDDING: `embeddinggemma-300m`, `gemini-embedding-001`, `text-multilingual-embedding-002`, `gemini-embedding-2-preview` (multimodal incl. PDFs). **Forecasting:** AI.FORECAST gained `forecast_end_timestamp`. AI.DETECT_ANOMALIES: Preview → GA, gained `context_window`. AI.EVALUATE gained `context_window` and `mean_absolute_scaled_error` output. **Generation:** AI.GENERATE: `thinking_level` for Gemini 3.0+, grounding requires 2.0+. AI.GENERATE_TEXT: `USE_CHAT_MODE` for Open models. **Document Processing:** ML.PROCESS_DOCUMENT max pages 100→130, added 120s timeout and batch size of 10. **New functions tracked:** AI.PARSE_DOCUMENT (Preview, docs pending), HYBRID_SEARCH (Preview, docs pending). Expanded audit procedure in PLANS.md. |
 
 ### Notebook update plan (May 2026 audit)
@@ -888,7 +889,7 @@ Each notebook is touched exactly once: revise (if needed) → Restart & Run All 
 
 | # | Notebook | Notes |
 |---|----------|-------|
-| 12 | `functions/ai_agg/ai_agg.ipynb` | **ON HOLD** — AI.AGG (preview) disabled per [release note (April 13, 2026)](https://cloud.google.com/bigquery/docs/release-notes#April_13_2026). Warning added to overview cell. Needs Restart & Run All when function is re-enabled. |
+| 12 | `functions/ai_agg/ai_agg.ipynb` | AI.AGG re-enabled. Warning removed. Expanded with examples 8-11 (connection_id, quantitative, AI.AGG vs AI.GENERATE, multimodal ObjectRef). Examples 8-10 verified. **Example 11 (multimodal):** AI.AGG returns NULL with PDF input via ObjectRef — commented out. Docs say "images via ObjectRef" so PDFs may not be supported. Future: retry with PNG images or wait for PDF support. |
 | 13 | `functions/ai_generate_text/ai_generate_text.ipynb` | USE_CHAT_MODE is Open-models-only; verify existing examples still run |
 | 14 | `functions/ai_generate_table/ai_generate_table.ipynb` | No doc changes |
 | 15 | `functions/ai_generate_bool/ai_generate_bool.ipynb` | No doc changes |
@@ -906,11 +907,11 @@ All workflows use functions that were updated. Verify they still run clean. If a
 
 | # | Notebook | Functions with changes |
 |---|----------|-----------------------|
-| 23 | `workflows/content_analysis/content_analysis.ipynb` | **ON HOLD** — uses AI.AGG (disabled). Warning added. Needs Restart & Run All when re-enabled. |
-| 24 | `workflows/content_moderation/content_moderation.ipynb` | **ON HOLD** — uses AI.AGG (disabled). Warning added. Revised with Step 2b (AI.IF few-shot examples). Needs Restart & Run All when re-enabled. |
+| 23 | `workflows/content_analysis/content_analysis.ipynb` | AI.AGG re-enabled. Warning removed. Needs Restart & Run All. |
+| 24 | `workflows/content_moderation/content_moderation.ipynb` | AI.AGG re-enabled. Warning removed. Includes Step 2b (AI.IF few-shot examples). Needs Restart & Run All. |
 | 25 | `workflows/data_enrichment/data_enrichment.ipynb` | AI.GENERATE |
-| 26 | `workflows/document_intelligence/document_intelligence.ipynb` | **ON HOLD** — uses AI.AGG (disabled). Warning added. Needs Restart & Run All when re-enabled. |
-| 27 | `workflows/log_analysis/log_analysis.ipynb` | **ON HOLD** — uses AI.AGG (disabled). Warning added. Needs Restart & Run All when re-enabled. |
+| 26 | `workflows/document_intelligence/document_intelligence.ipynb` | AI.AGG re-enabled. Warning removed. Needs Restart & Run All. |
+| 27 | `workflows/log_analysis/log_analysis.ipynb` | AI.AGG re-enabled. Warning removed. Needs Restart & Run All. |
 | 28 | `workflows/multimodal_analysis/multimodal_analysis.ipynb` | AI.EMBED, AI.SIMILARITY |
 | 29 | `workflows/rag_pipeline/rag_pipeline.ipynb` | AI.EMBED |
 | 30 | `workflows/semantic_search/semantic_search.ipynb` | AI.EMBED, AI.SEARCH |
