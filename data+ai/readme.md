@@ -48,6 +48,8 @@ Resources for machine learning and AI across Google Cloud data services — data
 
 - **[BigQuery AI Functions](bq-ai-functions/)** — A learning resource for BigQuery's built-in AI functions: 20 functions, 8 multi-function workflows, 30+ notebooks, and 100 synthetic PDFs for hands-on examples.
 
+- **[BigQuery Solutions](bq-solutions/)** — BigQuery solution patterns: continuous queries with GA4 data for real-time funnel analytics, traffic anomaly detection, and conversion monitoring.
+
 - **[Dataflow](dataflow/)** — Dataflow streaming ML pipelines: GPU inference benchmarks comparing Local GPU vs Vertex AI Endpoint approaches, event-mode and watch-mode model hot-swap examples, and a Python-to-Java translation guide for multi-language RunInference pipelines.
 
 - **[Dataproc (Managed Service for Apache Spark)](dataproc/)** — Spark ML inference on Dataproc: batch inference with Pandas UDFs, Structured Streaming with foreachBatch, calling Vertex AI Endpoints from Spark, and Dataproc Serverless fundamentals.

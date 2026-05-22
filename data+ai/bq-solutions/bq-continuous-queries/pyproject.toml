@@ -1,0 +1,14 @@
+[project]
+name = "bq-continuous-queries"
+version = "0.1.0"
+description = "BigQuery Continuous Queries with GA4 data — real-time analytics demo"
+requires-python = ">=3.13"
+dependencies = [
+    "google-cloud-bigquery",
+    "google-cloud-bigquery-storage",
+    "google-cloud-bigquery-reservation",
+    "db-dtypes",
+    "pandas",
+    "matplotlib",
+    "ipykernel",
+]
