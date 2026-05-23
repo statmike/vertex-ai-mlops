@@ -36,7 +36,6 @@
 </table><br/><br/>
 
 ---
----
 # BigQuery Continuous Queries with GA4 Data
 
 [BigQuery Continuous Queries](https://cloud.google.com/bigquery/docs/continuous-queries-introduction) let you run SQL that processes data continuously as it arrives — no Dataflow, no Spark, just SQL. This project demonstrates that capability using [Google Analytics 4 (GA4)](https://developers.google.com/analytics) e-commerce event data streamed into BigQuery.

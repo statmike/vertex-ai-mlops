@@ -36,7 +36,6 @@
 </table><br/><br/>
 
 ---
----
 # BigQuery Solutions
 
 Solution patterns and demos for BigQuery features beyond standard SQL analytics.
