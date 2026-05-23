@@ -1538,6 +1538,10 @@ FROM AI.EVALUATE(
 
 These functions process unstructured documents (PDFs, images, forms, invoices) using Document AI processors, returning structured extraction results directly as BigQuery columns.
 
+**Key relationships:**
+- `ML.PROCESS_DOCUMENT` requires a Document AI processor **and** a remote model (`CREATE MODEL` with `REMOTE_SERVICE_TYPE = 'CLOUD_AI_DOCUMENT_V1'`). Supports all processor types (invoice, receipt, form, OCR, custom).
+- `AI.PARSE_DOCUMENT` requires a Document AI Layout Parser processor but **no `CREATE MODEL`** — the `endpoint` parameter points directly to the processor. Layout Parser only (OCR + chunking).
+
 ---
 
 ### `ML.PROCESS_DOCUMENT`
@@ -1663,14 +1667,62 @@ Note: `individualPageSelector`, `fromStart`, and `fromEnd` are a union field —
 
 ---
 
-### `AI.PARSE_DOCUMENT` *(docs pending)*
-- **Description:** (Preview) Managed function that simplifies document processing by combining OCR, layout parsing, and chunking into a single SQL function call — no separate Document AI processor or remote model setup required. Announced at Google Cloud Next 2026.
-- **Use cases:** Same as ML.PROCESS_DOCUMENT (OCR, document parsing, chunking for RAG pipelines) but with a simplified, managed interface.
-- Reference documentation not yet published. Expected URL: `https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-parse-document`
-- **Type:** Table-valued function -- Preview
-- **Status:** Announced April 2026. No reference docs available yet. Full syntax, inputs, outputs, and limitations will be added when documentation publishes.
+### `AI.PARSE_DOCUMENT`
+- **Description:** (Preview) Table-valued function that parses documents using the Document AI Layout Parser. Combines OCR, layout parsing, and chunking into a single SQL function call — no `CREATE MODEL` step required. The `endpoint` parameter points directly to a Document AI Layout Parser processor.
+- **Use cases:** Document text extraction, chunking for RAG pipelines, OCR from scanned documents, layout-aware document parsing.
+- [documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-parse-document)
+- **Type:** Table-valued function (returns a table) — Preview
 
-**Relationship to ML.PROCESS_DOCUMENT:** AI.PARSE_DOCUMENT is to ML.PROCESS_DOCUMENT what AI.GENERATE is to AI.GENERATE_TEXT — a managed, simplified alternative that doesn't require pre-creating model objects or configuring external processors.
+**Syntax:**
+```sql
+SELECT *
+FROM AI.PARSE_DOCUMENT(
+  { TABLE `PROJECT_ID.DATASET.OBJECT_TABLE` | (QUERY_STATEMENT) },
+  endpoint => 'projects/PROJECT_NUM/locations/LOCATION/processors/PROCESSOR_ID'
+  [, chunk_size => CHUNK_SIZE ]
+  [, connection_id => 'PROJECT_ID.LOCATION.CONNECTION_ID' ]
+);
+```
+
+**Inputs:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `TABLE` / `(QUERY_STATEMENT)` | Table or subquery | Required | -- | Object table reference or a `SELECT` subquery over the object table. Must include a column named `ref` of type `OBJECTREF`. |
+| `endpoint` | STRING (named parameter) | Required | -- | Document AI Layout Parser processor endpoint. Format: `projects/{project}/locations/{location}/processors/{processor_id}`. |
+| `chunk_size` | INT64 (named parameter) | Optional | ~1000 | Controls the size of text chunks when splitting documents. Smaller values (e.g., 250) produce more granular chunks for RAG pipelines. |
+| `connection_id` | STRING (named parameter) | Optional | End-user credentials | BigQuery Cloud resource connection. Format: `PROJECT_ID.LOCATION.CONNECTION_ID`. Connection service account needs `documentai.apiUser` and `storage.objectViewer` roles. |
+
+**Outputs:**
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `chunk_id` | INT64 | Sequence ID of an extracted document chunk, starting from 1. |
+| `start_page` | INT64 | Page number where the chunk starts. |
+| `end_page` | INT64 | Page number where the chunk ends. |
+| `content` | STRING | Extracted text content of the chunk. |
+| *(object table columns)* | *(varies)* | All columns from the input object table or query are passed through (e.g., `uri`, `content_type`). |
+
+**Supported file types:** Same as ML.PROCESS_DOCUMENT — PDF, JPEG, PNG, BMP, GIF, TIFF, WebP, plus HTML, DOCX, PPTX, XLSX (Layout Parser only).
+
+**Best practices:**
+- Filter documents with `WHERE`/`LIMIT` in a subquery rather than processing the entire object table.
+- Use `CREATE TABLE ... AS SELECT` to persist results and avoid re-processing.
+- For RAG pipelines, use `chunk_size => 250` for more granular retrieval precision.
+- Minimum 200 dpi for document scans; 300 dpi or higher recommended.
+
+**Limitations:**
+- Maximum **130 pages per document**. Rows with larger documents return an error.
+- **Layout Parser only** — does not support other Document AI processor types (use ML.PROCESS_DOCUMENT for invoice, receipt, form, OCR, or custom processors).
+- Requires creating a Document AI Layout Parser processor first (but no `CREATE MODEL` step).
+
+**Locations:** The dataset, connection, and Document AI processor must all be in the **US** or **EU** multi-regions.
+
+**Provisioned throughput:** Not specified. Subject to Document AI API quotas.
+
+**BigFrames API:** No direct equivalent. Use `%%bigquery` magics or `session.read_gbq_query()` to execute AI.PARSE_DOCUMENT SQL from BigFrames.
+
+**Relationship to ML.PROCESS_DOCUMENT:** AI.PARSE_DOCUMENT is to ML.PROCESS_DOCUMENT what AI.GENERATE is to AI.GENERATE_TEXT — a simplified alternative that skips the `CREATE MODEL` step. Use ML.PROCESS_DOCUMENT when you need specialized processors (invoice, form, custom) or full `PROCESS_OPTIONS` control. Use AI.PARSE_DOCUMENT for straightforward OCR + chunking workflows.
 
 ---
 ## Unstructured Data Infrastructure

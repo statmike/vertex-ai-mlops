@@ -62,6 +62,7 @@ Workflows compose multiple AI functions together for end-to-end scenarios. See [
 | [Content Analysis Pipeline](workflows/content_analysis/) | AI.GENERATE_TABLE, AI.CLASSIFY, AI.SCORE, AI.GENERATE, AI.AGG | Generate sample data, classify it, score it, and summarize findings |
 | [Semantic Search System](workflows/semantic_search/) | AI.EMBED, VECTOR_SEARCH, AI.SEARCH | Build and query a semantic search index |
 | [RAG Pipeline](workflows/rag_pipeline/) | AI.GENERATE_TABLE, AI.EMBED, VECTOR_SEARCH, AI.GENERATE | Generate a knowledge base, embed, search, answer questions |
+| [Document RAG](workflows/document_rag/) | AI.PARSE_DOCUMENT, AI.EMBED, VECTOR_SEARCH, AI.GENERATE | Parse real documents, embed chunks, search, answer questions with grounded context |
 | [Time Series Intelligence](workflows/time_series_intelligence/) | AI.FORECAST, AI.DETECT_ANOMALIES, AI.EVALUATE | Forecast, detect anomalies, evaluate accuracy |
 | [Document Intelligence](workflows/document_intelligence/) | AI.CLASSIFY, AI.GENERATE, AI.SCORE, AI.AGG | Classify mixed documents, extract key fields, score quality, summarize findings |
 | [Content Moderation](workflows/content_moderation/) | AI.GENERATE_TABLE, AI.IF, AI.CLASSIFY, AI.SCORE, AI.GENERATE, AI.AGG | Flag, categorize, and score user-generated content for moderation |
@@ -152,7 +153,7 @@ When unsure, default to `RETRIEVAL_DOCUMENT` / `RETRIEVAL_QUERY`. See the [`AI.E
 | Function | Examples | Type | Status | Requires Model | Multimodal | What It Does |
 |----------|----------|------|--------|----------------|------------|--------------|
 | `ML.PROCESS_DOCUMENT` | [notebook](functions/ml_process_document/ml_process_document.ipynb) · [sql](functions/ml_process_document/ml_process_document.sql) | TVF | GA | Yes | Object table | Extract structured data from documents in Cloud Storage using Document AI processors. |
-| `AI.PARSE_DOCUMENT` | *docs pending* | TVF | Preview | No | — | Managed OCR + layout parsing + chunking in a single function. No processor setup needed. |
+| `AI.PARSE_DOCUMENT` | [notebook](functions/ai_parse_document/ai_parse_document.ipynb) · [sql](functions/ai_parse_document/ai_parse_document.sql) | TVF | Preview | No* | Object table | OCR + layout parsing + chunking via Document AI Layout Parser. No `CREATE MODEL` needed. |
 
 ### Forecasting — Time series forecasting, anomaly detection, and evaluation
 
@@ -218,9 +219,9 @@ When unsure, default to `RETRIEVAL_DOCUMENT` / `RETRIEVAL_QUERY`. See the [`AI.E
 └──────────────────────────┘   │       Document AI processor           │
                                │       + remote model                  │
                                │                                      │
-                               │  AI.PARSE_DOCUMENT ◄── managed       │
-                               │       no processor setup needed       │
-                               │       (Preview, docs pending)         │
+                               │  AI.PARSE_DOCUMENT ◄── simplified     │
+                               │       needs Layout Parser processor   │
+                               │       but no CREATE MODEL step        │
                                └──────────────────────────────────────┘
 ```
 
@@ -257,9 +258,11 @@ bq-ai-functions/
 │   ├── ai_detect_anomalies/
 │   ├── ai_evaluate/
 │   ├── ml_process_document/
+│   ├── ai_parse_document/
 │   └── ... (+ legacy/variant functions)
 └── workflows/               ◄ End-to-end composed workflows
     ├── data_enrichment/
+    ├── document_rag/
     ├── content_analysis/
     ├── semantic_search/
     ├── rag_pipeline/

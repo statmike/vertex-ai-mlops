@@ -205,6 +205,7 @@ Each workflow is a notebook that uses multiple AI functions together to accompli
 | **[Document Intelligence](workflows/document_intelligence/)** | AI.CLASSIFY, AI.GENERATE, AI.SCORE | Classify mixed documents, extract key fields, score quality, summarize findings |
 | **[Content Moderation](workflows/content_moderation/)** | AI.GENERATE_TABLE, AI.IF, AI.CLASSIFY, AI.SCORE, AI.GENERATE | Flag, categorize, and score user-generated content for moderation |
 | **[Multimodal Analysis](workflows/multimodal_analysis/)** | AI.EMBED, AI.SIMILARITY, AI.GENERATE | Embed document images, find similar documents, generate visual descriptions |
+| **[Document RAG](workflows/document_rag/)** | AI.PARSE_DOCUMENT, AI.EMBED, VECTOR_SEARCH, AI.GENERATE | Parse real documents, embed chunks, search, answer questions with grounded context |
 
 Each workflow notebook includes:
 - Problem statement and approach
@@ -358,19 +359,20 @@ Every workflow notebook's overview cell (cell-0) includes a **Functions used:** 
 
 | Function | Featured in Workflows |
 |----------|----------------------|
-| AI.GENERATE | Content Analysis, Data Enrichment, RAG Pipeline, Document Intelligence, Content Moderation, Multimodal Analysis |
+| AI.GENERATE | Content Analysis, Data Enrichment, RAG Pipeline, Document Intelligence, Content Moderation, Multimodal Analysis, Document RAG |
 | AI.GENERATE_TABLE | Content Analysis, RAG Pipeline, Content Moderation |
 | AI.IF | Content Moderation |
 | AI.CLASSIFY | Content Analysis, Document Intelligence, Content Moderation |
 | AI.SCORE | Content Analysis, Document Intelligence, Content Moderation |
 | AI.AGG | Content Analysis, Content Moderation, Document Intelligence, Log Analysis |
-| AI.EMBED | Semantic Search, RAG Pipeline, Multimodal Analysis |
+| AI.EMBED | Semantic Search, RAG Pipeline, Multimodal Analysis, Document RAG |
 | AI.SIMILARITY | Multimodal Analysis |
-| VECTOR_SEARCH | Semantic Search, RAG Pipeline |
+| VECTOR_SEARCH | Semantic Search, RAG Pipeline, Document RAG |
 | AI.SEARCH | Semantic Search |
 | AI.FORECAST | Time Series Intelligence |
 | AI.DETECT_ANOMALIES | Time Series Intelligence |
 | AI.EVALUATE | Time Series Intelligence |
+| AI.PARSE_DOCUMENT | Document RAG |
 
 ### Maintenance checklist
 
@@ -838,6 +840,7 @@ Each function's documentation URL is recorded in the table below and mirrored in
 | AI.DETECT_ANOMALIES | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-detect-anomalies |
 | AI.EVALUATE | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-evaluate |
 | ML.PROCESS_DOCUMENT | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-process-document |
+| AI.PARSE_DOCUMENT | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-parse-document |
 
 ### Tracked upcoming functions
 
@@ -845,8 +848,15 @@ Functions announced but without published reference documentation. Check periodi
 
 | Function | Category | Status | Announced | Source | Expected Doc URL |
 |----------|----------|--------|-----------|--------|-----------------|
-| AI.PARSE_DOCUMENT | Document Processing | Preview | Cloud Next 2026 (Apr) | [Blog](https://cloud.google.com/blog/products/data-analytics/unveiling-new-bigquery-capabilities-for-the-agentic-era) | bigqueryml-syntax-ai-parse-document |
 | HYBRID_SEARCH | Embeddings & Search | Preview | Cloud Next 2026 (Apr) | [Blog](https://cloud.google.com/blog/products/data-analytics/unveiling-new-bigquery-capabilities-for-the-agentic-era) | search_functions#hybrid_search |
+
+### Tracked upcoming enhancements
+
+Capabilities observed in training labs or announcements but not yet in published reference docs. When docs publish, add examples to notebooks and move to audit log.
+
+| Function | Enhancement | Status | Source | Notes |
+|----------|------------|--------|--------|-------|
+| AI.PARSE_DOCUMENT | Gemini model endpoint (`endpoint => 'gemini-2.5-flash'`) | Not in public docs | [L400 Lab 1](../../../ds-l400/lab-1/teacher/lab_1_parse_2_extraction.ipynb) | Currently only Layout Parser processor endpoints are documented. Gemini endpoints would eliminate the Document AI processor setup entirely — just `endpoint => 'model-name'` with a connection. When available: add Example 7 to notebook, update RESOURCES.md endpoint description, update README.md ("No" for Requires Model). |
 
 ### Audit log
 
@@ -859,6 +869,8 @@ Functions announced but without published reference documentation. Check periodi
 | 2026-03-16 | Docs review post-implementation | README.md: Fixed AI.SCORE and AI.CLASSIFY multimodal labels from "Object table" to "STRUCT prompt" (both accept STRUCT with ObjectRefRuntime). RESOURCES.md: Added multimodal best practices to AI.EMBED (default 1408 dims, PDF not supported, inline ObjectRef preferred), AI.GENERATE_EMBEDDING (statistics not returned by multimodal model, inline ObjectRef avoids reservation requirement), AI.SIMILARITY (cross-modal text↔image capability). Updated Managed Functions table. Added "Object tables vs inline ObjectRef" guidance to Unstructured Data Infrastructure section. |
 | 2026-04-07 | AI.AGG — new function + workflow | Added AI.AGG (Preview aggregate function with auto-batching). Created functions/ai_agg/ with notebook + SQL. Added to RESOURCES.md Managed Functions section with comparison table. Added to README.md function map, relationship diagram, and key distinctions. Added AI.AGG alternative cells to Content Analysis, Content Moderation, and Document Intelligence workflows. Created new Log Analysis workflow (AI.GENERATE_TABLE → AI.CLASSIFY → AI.SCORE → AI.AGG). Updated all cross-references. |
 | 2026-05-22 | AI.AGG re-enablement | AI.AGG (Preview) re-enabled after temporary disable (April 13, 2026). Removed warning banners from 5 notebooks (ai_agg, content_analysis, content_moderation, document_intelligence, log_analysis). Expanded ai_agg.ipynb with 4 new examples: connection_id parameter, quantitative aggregation, AI.AGG vs STRING_AGG+AI.GENERATE comparison, multimodal ObjectRef. Added connection setup and GCS support to ai_agg notebook. |
+| 2026-05-23 | AI.PARSE_DOCUMENT — new function | Created functions/ai_parse_document/ with notebook (37 cells, 6 SQL examples) and SQL file. AI.PARSE_DOCUMENT (Preview) uses Document AI Layout Parser for OCR + layout parsing + chunking — no CREATE MODEL step needed (endpoint points directly to processor). Updated RESOURCES.md with full documentation (syntax, inputs/outputs, supported file types, best practices, limitations). Updated README.md function table, relationship diagram, and project tree. Moved from tracked upcoming functions to documented. Gemini model endpoints (`endpoint => 'gemini-2.5-flash'`) observed in L400 training lab but not yet in public docs — tracked in upcoming enhancements for future notebook expansion. |
+| 2026-05-23 | Document RAG — new workflow | Created workflows/document_rag/ with notebook (31 cells). End-to-end document RAG pipeline: AI.PARSE_DOCUMENT (parse 20 invoices into chunks) → AI.EMBED (embed chunks with text-embedding-005) → VECTOR_SEARCH (retrieve relevant chunks) → AI.GENERATE (answer questions with grounded context). Includes batch RAG (3 questions) and RAG vs direct generation comparison. Updated cross-references: added Featured in to ai_parse_document, ai_embed, vector_search, ai_generate notebooks. Updated README.md workflows table and project tree. Updated PLANS.md completed workflows table and mapping. |
 | 2026-05-10 | Full audit — all functions | **Managed functions:** AI.IF and AI.CLASSIFY gained `examples`, `embeddings` (Preview), `optimization_mode` (Preview) params for optimized mode (230x cost reduction). AI.IF, AI.SCORE, AI.CLASSIFY gained `max_error_ratio`. AI.AGG added known issues section. **Embeddings:** AI.EMBED and AI.SIMILARITY gained `model` param (`embeddinggemma-300m` built-in). Four new embedding models across AI.EMBED/AI.SIMILARITY/AI.GENERATE_EMBEDDING/ML.GENERATE_EMBEDDING: `embeddinggemma-300m`, `gemini-embedding-001`, `text-multilingual-embedding-002`, `gemini-embedding-2-preview` (multimodal incl. PDFs). **Forecasting:** AI.FORECAST gained `forecast_end_timestamp`. AI.DETECT_ANOMALIES: Preview → GA, gained `context_window`. AI.EVALUATE gained `context_window` and `mean_absolute_scaled_error` output. **Generation:** AI.GENERATE: `thinking_level` for Gemini 3.0+, grounding requires 2.0+. AI.GENERATE_TEXT: `USE_CHAT_MODE` for Open models. **Document Processing:** ML.PROCESS_DOCUMENT max pages 100→130, added 120s timeout and batch size of 10. **New functions tracked:** AI.PARSE_DOCUMENT (Preview, docs pending), HYBRID_SEARCH (Preview, docs pending). Expanded audit procedure in PLANS.md. |
 
 ### Notebook update plan (May 2026 audit)
@@ -890,6 +902,7 @@ Each notebook is touched exactly once: revise (if needed) → Restart & Run All 
 | # | Notebook | Notes |
 |---|----------|-------|
 | 12 | `functions/ai_agg/ai_agg.ipynb` | AI.AGG re-enabled. Warning removed. Expanded with examples 8-11 (connection_id, quantitative, AI.AGG vs AI.GENERATE, multimodal ObjectRef). Examples 8-10 verified. **Example 11 (multimodal):** AI.AGG returns NULL with PDF input via ObjectRef — commented out. Docs say "images via ObjectRef" so PDFs may not be supported. Future: retry with PNG images or wait for PDF support. |
+| 12b | `functions/ai_parse_document/ai_parse_document.ipynb` | New notebook (2026-05-23). Needs initial Restart & Run All to verify all cells run clean. |
 | 13 | `functions/ai_generate_text/ai_generate_text.ipynb` | USE_CHAT_MODE is Open-models-only; verify existing examples still run |
 | 14 | `functions/ai_generate_table/ai_generate_table.ipynb` | No doc changes |
 | 15 | `functions/ai_generate_bool/ai_generate_bool.ipynb` | No doc changes |
