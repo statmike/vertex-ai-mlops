@@ -1,0 +1,12 @@
+[project]
+name = "dev-environments-notebooks"
+version = "0.1.0"
+description = "Programmatic notebook management for Google Cloud development environments"
+requires-python = ">=3.10"
+dependencies = [
+    "google-cloud-storage",
+    "requests",
+]
+
+[dependency-groups]
+dev = ["ipykernel"]

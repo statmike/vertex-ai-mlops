@@ -20,6 +20,26 @@ Jupyter notebooks are a popular development interface for ML practitioners. Whil
 This section demonstrates how to manage notebooks as code — listing, downloading, modifying, and executing them via cloud APIs.
 
 ---
+## Environment Setup
+
+To work with the notebooks locally, set up a virtual environment with [uv](https://docs.astral.sh/uv/):
+
+```bash
+cd "MLOps/Development Environments/Notebooks"
+uv sync --group dev
+```
+
+This installs the project dependencies and `ipykernel` (dev group). To register the environment as a Jupyter kernel:
+
+```bash
+uv run python -m ipykernel install --user --name dev-environments-notebooks --display-name "Python (dev-environments-notebooks)"
+```
+
+Then select the `Python (dev-environments-notebooks)` kernel when opening a notebook.
+
+> **Running on Colab, Colab Enterprise, or Vertex AI Workbench?** Each notebook includes an install cell that handles packages automatically — no local setup needed.
+
+---
 ## Notebooks
 
 | Notebook | Description |
