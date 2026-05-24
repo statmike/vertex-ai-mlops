@@ -41,7 +41,7 @@
 
 Jupyter notebooks are a popular development interface for ML practitioners. While interactive use is common, programmatic management of notebooks enables automation, testing, and integration with MLOps workflows.
 
-This section demonstrates how to manage notebooks as code — listing, downloading, modifying, and executing them via cloud APIs.
+This section demonstrates how to execute notebooks programmatically on Colab Enterprise and retrieve results — using a fun PyMC Bayesian analysis as the example payload.
 
 ---
 ## Environment Setup
@@ -68,7 +68,8 @@ Then select the `Python (dev-environments-notebooks)` kernel when opening a note
 
 | Notebook | Description |
 |---|---|
-| [Colab Enterprise - Notebook Management](./Colab%20Enterprise%20-%20Notebook%20Management.ipynb) | Programmatic notebook management with Colab Enterprise — list and download notebooks via the Dataform API, modify notebook cells as JSON, execute notebooks via the Vertex AI NotebookExecutionJob API, and retrieve results from GCS. Covers authentication, runtime template discovery, execution polling, and cell-level timing analysis. |
+| [Colab Enterprise - Notebook Management](./Colab%20Enterprise%20-%20Notebook%20Management.ipynb) | Execute a notebook programmatically on Colab Enterprise — discover runtime templates, submit a notebook execution job via the Vertex AI NotebookExecutionJob API, poll for completion, and download executed results from GCS. Uses `example.ipynb` as the payload. |
+| [example.ipynb](./example.ipynb) | Bayesian change point detection with [PyMC](https://www.pymc.io/) — generates synthetic daily signup data, fits a change point model, and produces trace plots, posterior distributions, and a model-vs-data overlay. Used as the example payload for the management notebook. |
 
 ---
 ## Documentation
