@@ -1,0 +1,15 @@
+[project]
+name = "retrieval-vertex-ai-vector-search-2"
+version = "0.1.0"
+description = "Vertex AI Vector Search 2 retrieval notebooks"
+requires-python = ">=3.10"
+dependencies = [
+    "google-cloud-vectorsearch",
+    "google-cloud-aiplatform",
+    "google-genai",
+    "google-cloud-storage",
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "ipykernel",
+]

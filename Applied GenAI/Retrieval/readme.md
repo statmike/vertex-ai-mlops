@@ -87,6 +87,9 @@ Key-Value Pairs:
 - [Retrieval - Vertex AI Vector Search](Retrieval%20-%20Vertex%20AI%20Vector%20Search.ipynb)
     - A purpose-built solution for incredible scale vector similarity search with low latency and many features, including hybrid search with sparse vectors.
     - **Ideal for:**  High-performance, large-scale production deployments with advanced search requirements.
+- [Retrieval - Vertex AI Vector Search 2](Vector%20Search%202/readme.md)
+    - The next generation serverless vector database with auto-embedding, semantic search, full-text search, hybrid search with RRF fusion, and VertexRanker reranking — all in a unified Collection model with no infrastructure to manage.
+    - **Ideal for:** Modern RAG applications and search workloads that benefit from auto-embedding, hybrid search, and serverless simplicity.
 - [Retrieval - Spanner](Retrieval%20-%20Spanner.ipynb)
     - The database that is super scale and globally distributed. Now with built-in vector similarity search.
     - **Ideal for:** Applications requiring global scale, high availability, and strong consistency for vector data.
@@ -113,18 +116,18 @@ Key-Value Pairs:
 
 Each workflow sets up an environment,loads the data, and then demonstrates of all vector search capabilities.  For each solution the minimal environment is choosen for the testing/development stage and is suitable for test or POC.  Here is a summary of the workflows choices for environments creation along with an approximate daily running cost when idle.  Each workflow includes code at the bottom for stopping all services and removing on going costs.
 
-| Setting Choice For Test Environment (set as small as possible) | Numpy | BigQuery | Vertex AI Feature Store | Vertex AI Vector Search | Spanner | AlloyDB | Cloud SQL For PostgreSQL | Cloud SQL For MySQL | Memorystore (Redis) | Firestore | Bigtable |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-|Tier||N/A|N/A|N/A|N/A|N/A|N/A|N/A|Basic|N/A|N/A|
-|Edition||On-Demand|N/A|N/A|Enterprise|N/A|Enterprise|Enterprise|N/A|N/A|N/A|
-|Region||`us` multi|`us-central1`|`us-central1`|`regional-us-central1`|`us-central1`|`us-central1`|`us-central1`|`us-central1`|`us-central1`|`us-central1`|
-|Zone||N/A|N/A|N/A|N/A|`a`|N/A|N/A|N/A|N/A|`a`|
-|Cluster||N/A|N/A|N/A|N/A|1|N/A|N/A|N/A|N/A|1|
-|Instance/Node/Database||N/A|N/A|2 (min/max replicas)|1|1|1|1|1|`(default)`|1|
-|Compute||On-Demand|N/A|`e2-standard-2`|Node|2 CPU, 16GB Memory|`db-g1-small`|`db-g1-small`|N/A|N/A|Node|
-|Storage||33MB|N/A|N/A|N/A|N/A|N/A|N/A|1GB (memory)|N/A|HDD|
-|Version Info||On-Demand|Optimized Online Serving|N/A|`GOOGLE_STANDARD_SQL`|N/A|`POSTGRES_15`|`MYSQL_8_0_36`|`REDIS_7_2`|N/A|N/A|
-|Appoximate **Idle** Cost / Day|-|-|\$14.37|\$9.00|\$29.52|\$7.50|\$0.85|\$0.85|\$1.18|Free Tier|\$15.57|
+| Setting Choice For Test Environment (set as small as possible) | Numpy | BigQuery | Vertex AI Feature Store | Vertex AI Vector Search | Vertex AI Vector Search 2 | Spanner | AlloyDB | Cloud SQL For PostgreSQL | Cloud SQL For MySQL | Memorystore (Redis) | Firestore | Bigtable |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|Tier||N/A|N/A|N/A|N/A|N/A|N/A|N/A|N/A|Basic|N/A|N/A|
+|Edition||On-Demand|N/A|N/A|N/A|Enterprise|N/A|Enterprise|Enterprise|N/A|N/A|N/A|
+|Region||`us` multi|`us-central1`|`us-central1`|`us-central1`|`regional-us-central1`|`us-central1`|`us-central1`|`us-central1`|`us-central1`|`us-central1`|`us-central1`|
+|Zone||N/A|N/A|N/A|N/A|N/A|`a`|N/A|N/A|N/A|N/A|`a`|
+|Cluster||N/A|N/A|N/A|N/A|N/A|1|N/A|N/A|N/A|N/A|1|
+|Instance/Node/Database||N/A|N/A|2 (min/max replicas)|N/A (Serverless)|1|1|1|1|1|`(default)`|1|
+|Compute||On-Demand|N/A|`e2-standard-2`|Serverless|Node|2 CPU, 16GB Memory|`db-g1-small`|`db-g1-small`|N/A|N/A|Node|
+|Storage||33MB|N/A|N/A|Pay-per-use|N/A|N/A|N/A|N/A|1GB (memory)|N/A|HDD|
+|Version Info||On-Demand|Optimized Online Serving|N/A|`v1beta` (GA)|`GOOGLE_STANDARD_SQL`|N/A|`POSTGRES_15`|`MYSQL_8_0_36`|`REDIS_7_2`|N/A|N/A|
+|Appoximate **Idle** Cost / Day|-|-|\$14.37|\$9.00|Storage only|\$29.52|\$7.50|\$0.85|\$0.85|\$1.18|Free Tier|\$15.57|
 
 **Production environments will likely need larger scale, replicas, etc.  In the case of fully managed solutions like BigQuery, Vertex AI Feature Store, Vertex AI Vector Search, etc. these are small scale production values.**
 
@@ -134,22 +137,22 @@ Remember to use the provided code at the end of each workflow to shut down envir
 
 ## Comparison Of Vector Database Solutions
 
-| Functionality | Cloud SQL for MySQL | NumPy | Cloud SQL for PostgreSQL | AlloyDB | BigQuery | Vertex AI Feature Store | Vertex AI Vector Search | Spanner | Memorystore (Redis) | Firestore | Bigtable |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| **Database Type** | OLTP |  `ndarray` (in-memory array) | OLTP | HTAP (OLTP + OLAP) | OLAP | AI/ML Feature Store | Vector Database | OLTP | In-Memory Data Store | NoSQL (OLTP-focused) | NoSQL Wide-Column Store |
-| **Data Model** | Relational | In-memory Arrays | Relational | Relational, Columnar | Columnar | Key-Value based | Vector-based | Relational, Key-Value  | Key-Value | Document | Sparse, Key-Value, Wide-Column |
-| **Store Embeddings** | Enable Vector Features, Use `VARBINARY` extension | Stored as NumPy Array Object | Enable Vector Features with `vector` extension | Enable Vector Features with `vector` extension | As `ARRAY<FLOAT64>` | As `ARRAY<FLOAT64>` | Native `Vector` type | As `ARRAY<FLOAT64>`, indexes require `(vector_length => INT)` parameter | Convert to bytes object | Native `Vector` type | Requires conversion to bytes |
-| **Brute Force Search (No Index)** | Yes | Yes | Yes | Yes | Yes, with `VECTOR_SEARCH` function | No, requires `IndexConfig` in Feature View | No, requires index creation and deployment | Yes, with distance functions | No, requires index | No, requires index | Yes, with GoogleSQL and distance functions |
-| **Distance Metrics** | Euclidean (L2 Squared), Cosine Similarity, Dot Product | Any, using math functions | Euclidean (L2), Cosine Similarity, Dot Product | Euclidean (L2), Cosine Similarity, Dot Product | Euclidean, Dot Product, Cosine Similarity | Euclidean, Dot Product, Cosine Similarity | Euclidean, Dot Product, Cosine Similarity | Euclidean, Dot Product (`DESC` for similarity), Cosine Similarity | L2 (Euclidean), IP (Dot Product), Cosine Similarity | Euclidean, Dot Product, Cosine Similarity | Cosine Similarity, Euclidean. Dot Product with limitations. |
-| **Indexing** | Brute Force (In-Memory), Tree_SQ, Tree_AH | None (custom possible) | IVFFlat, HNSW | IVFFlat, HNSW (`pgvector`), IVR, ScaNN (`alloydb_scann`) | IVF, TreeAH (ScaNN) | Brute Force, TreeAH (ScaNN) | Brute Force, TreeAH (ScaNN) | ScaNN-like | FLAT (Brute Force), HNSW | FLAT (Brute Force) only | No indexes (only row keys indexed) |
-| **Distance Metric Tied to Index** | Yes, no query override | N/A | Yes, no query override | Yes, no query override | Can be modified in query | Yes, no query override | Yes, no query override | Yes, no query override (`APPROX_` functions) | Yes, no query override | No, chosen at query time | N/A |
-| **Tune Index During Build** | Choose number of partitions | N/A | Choose number of partitions | Choose number of partitions | Choose number of partitions | Choose size of partitions | Choose size and number of partitions for search | Choose number of partitions | HNSW has configurable partitions | N/A | N/A |
-| **Index Restrictions** | One per table | N/A | No, query optimizer chooses | No, query optimizer chooses | Depends on index type and storage | One per Feature View | Indexes are the source for search | Multiple possible, user choice in query | Multiple possible, automatic selection | N/A | N/A |
-| **Index Config in Query** | Overrides for neighbors and partitions | N/A | Overrides for partitions | Overrides for partitions | Overrides for partitions and distance measure | Overrides for partitions | Overrides for partitions | Required to specify partitions | No | N/A | N/A |
-| **Override Index** | Yes, use distance functions | N/A | Not directly | Not directly | Force brute force in query options | No (or specify many partitions) | No, index is the search source | Yes, use non-`APPROX_` functions | All vector searches require an index | No | N/A |
-| **Pre-filtering** | Not with index, yes with brute force | N/A | Yes | Yes | Yes (IVF), No (TreeAH/ScaNN) | Yes, allow/deny lists on filter column | Yes, allow/deny lists on filter columns | Yes | No (different indexes for subsets) | Requires composite index | Yes, with `WHERE` clause |
-| **Crowding Attribute** | No | N/A | No | No | No | Yes, pre-specified column | Yes, pre-specified attribute | No | No | No | No |
-| **Response Includes Text** | Yes, if in `SELECT` statement | Separate retrieval step | Yes, if in `SELECT` statement | Yes, if in `SELECT` statement | Yes, if in `SELECT` statement | Yes, if in Feature View and `return_full_entity = True` | Separate retrieval step | Yes, if in `SELECT` statement | Yes, if stored with embedding | Yes, if stored with embedding | Yes, if retrieved in SQL query |
+| Functionality | Cloud SQL for MySQL | NumPy | Cloud SQL for PostgreSQL | AlloyDB | BigQuery | Vertex AI Feature Store | Vertex AI Vector Search | Vertex AI Vector Search 2 | Spanner | Memorystore (Redis) | Firestore | Bigtable |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **Database Type** | OLTP |  `ndarray` (in-memory array) | OLTP | HTAP (OLTP + OLAP) | OLAP | AI/ML Feature Store | Vector Database | Serverless Vector Database | OLTP | In-Memory Data Store | NoSQL (OLTP-focused) | NoSQL Wide-Column Store |
+| **Data Model** | Relational | In-memory Arrays | Relational | Relational, Columnar | Columnar | Key-Value based | Vector-based | Collection / DataObject (JSON) | Relational, Key-Value  | Key-Value | Document | Sparse, Key-Value, Wide-Column |
+| **Store Embeddings** | Enable Vector Features, Use `VARBINARY` extension | Stored as NumPy Array Object | Enable Vector Features with `vector` extension | Enable Vector Features with `vector` extension | As `ARRAY<FLOAT64>` | As `ARRAY<FLOAT64>` | Native `Vector` type | Native dense/sparse vectors, or auto-generated via `vertex_embedding_config` | As `ARRAY<FLOAT64>`, indexes require `(vector_length => INT)` parameter | Convert to bytes object | Native `Vector` type | Requires conversion to bytes |
+| **Brute Force Search (No Index)** | Yes | Yes | Yes | Yes | Yes, with `VECTOR_SEARCH` function | No, requires `IndexConfig` in Feature View | No, requires index creation and deployment | Yes, kNN by default (no index needed) | Yes, with distance functions | No, requires index | No, requires index | Yes, with GoogleSQL and distance functions |
+| **Distance Metrics** | Euclidean (L2 Squared), Cosine Similarity, Dot Product | Any, using math functions | Euclidean (L2), Cosine Similarity, Dot Product | Euclidean (L2), Cosine Similarity, Dot Product | Euclidean, Dot Product, Cosine Similarity | Euclidean, Dot Product, Cosine Similarity | Euclidean, Dot Product, Cosine Similarity | Dot Product, Cosine Distance, L2 Distance | Euclidean, Dot Product (`DESC` for similarity), Cosine Similarity | L2 (Euclidean), IP (Dot Product), Cosine Similarity | Euclidean, Dot Product, Cosine Similarity | Cosine Similarity, Euclidean. Dot Product with limitations. |
+| **Indexing** | Brute Force (In-Memory), Tree_SQ, Tree_AH | None (custom possible) | IVFFlat, HNSW | IVFFlat, HNSW (`pgvector`), IVR, ScaNN (`alloydb_scann`) | IVF, TreeAH (ScaNN) | Brute Force, TreeAH (ScaNN) | Brute Force, TreeAH (ScaNN) | Self-tuning ANN (ScaNN), kNN (no index) | ScaNN-like | FLAT (Brute Force), HNSW | FLAT (Brute Force) only | No indexes (only row keys indexed) |
+| **Distance Metric Tied to Index** | Yes, no query override | N/A | Yes, no query override | Yes, no query override | Can be modified in query | Yes, no query override | Yes, no query override | Yes, set at index creation | Yes, no query override (`APPROX_` functions) | Yes, no query override | No, chosen at query time | N/A |
+| **Tune Index During Build** | Choose number of partitions | N/A | Choose number of partitions | Choose number of partitions | Choose number of partitions | Choose size of partitions | Choose size and number of partitions for search | Auto-tuning (no manual config needed) | Choose number of partitions | HNSW has configurable partitions | N/A | N/A |
+| **Index Restrictions** | One per table | N/A | No, query optimizer chooses | No, query optimizer chooses | Depends on index type and storage | One per Feature View | Indexes are the source for search | Multiple per collection, one per vector field | Multiple possible, user choice in query | Multiple possible, automatic selection | N/A | N/A |
+| **Index Config in Query** | Overrides for neighbors and partitions | N/A | Overrides for partitions | Overrides for partitions | Overrides for partitions and distance measure | Overrides for partitions | Overrides for partitions | N/A (auto-tuned) | Required to specify partitions | No | N/A | N/A |
+| **Override Index** | Yes, use distance functions | N/A | Not directly | Not directly | Force brute force in query options | No (or specify many partitions) | No, index is the search source | Yes, works without index (brute force kNN) | Yes, use non-`APPROX_` functions | All vector searches require an index | No | N/A |
+| **Pre-filtering** | Not with index, yes with brute force | N/A | Yes | Yes | Yes (IVF), No (TreeAH/ScaNN) | Yes, allow/deny lists on filter column | Yes, allow/deny lists on filter columns | Yes, MongoDB-style operators (`$eq`, `$in`, `$gt`, `$and`, `$or`, etc.) | Yes | No (different indexes for subsets) | Requires composite index | Yes, with `WHERE` clause |
+| **Crowding Attribute** | No | N/A | No | No | No | Yes, pre-specified column | Yes, pre-specified attribute | No | No | No | No | No |
+| **Response Includes Text** | Yes, if in `SELECT` statement | Separate retrieval step | Yes, if in `SELECT` statement | Yes, if in `SELECT` statement | Yes, if in `SELECT` statement | Yes, if in Feature View and `return_full_entity = True` | Separate retrieval step | Yes, via `output_fields` (data, vectors, metadata) | Yes, if in `SELECT` statement | Yes, if stored with embedding | Yes, if stored with embedding | Yes, if retrieved in SQL query |
 | **Profile: Sequential Retrieval Tries With Test Environment<br>(seconds)**|Min: 0.0142<br>Max: 0.3064<br>Mean: 0.0194<br>Median: 0.0159<br>Std Dev: 0.0288<br>P95: 0.0212<br>P99: 0.0238|Min: 0.0038<br>Max: 0.0129<br>Mean: 0.0042<br>Median: 0.0040<br>Std Dev: 0.0011<br>P95: 0.0054<br>P99: 0.0079|Min: 0.0133<br>Max: 0.8231<br>Mean: 0.0229<br>Median: 0.0147<br>Std Dev: 0.0800<br>P95: 0.0172<br>P99: 0.0198|Min: 0.0053<br>Max: 0.0164<br>Mean: 0.0062<br>Median: 0.0058<br>Std Dev: 0.0015<br>P95: 0.0070<br>P99: 0.0145|Min: 0.7869<br>Max: 1.3211<br>Mean: 0.9671<br>Median: 0.9480<br>Std Dev: 0.1064<br>P95: 1.1408<br>P99: 1.2350|Min: 0.0503<br>Max: 0.1832<br>Mean: 0.0810<br>Median: 0.0629<br>Std Dev: 0.0289<br>P95: 0.1226<br>P99: 0.1423|Min: 0.0144<br>Max: 0.1282<br>Mean: 0.0281<br>Median: 0.0170<br>Std Dev: 0.0222<br>P95: 0.0681<br>P99: 0.0945|Min: 0.0374<br>Max: 2.2023<br>Mean: 0.0728<br>Median: 0.0414<br>Std Dev: 0.2226<br>P95: 0.1064<br>P99: 0.6752|Min: 0.0052<br>Max: 0.0305<br>Mean: 0.0068<br>Median: 0.0067<br>Std Dev: 0.0025<br>P95: 0.0076<br>P99: 0.0108|Min: 0.1388<br>Max: 1.7531<br>Mean: 0.2297<br>Median: 0.2286<br>Std Dev: 0.1299<br>P95: 0.2787<br>P99: 0.5592|Min: 0.1362<br>Max: 0.2672<br>Mean: 0.1697<br>Median: 0.1652<br>Std Dev: 0.0213<br>P95: 0.2101<br>P99: 0.2297|
 
 <p align="center"><center>
