@@ -1,0 +1,21 @@
+[project]
+name = "ml-training-overview"
+version = "0.0.1"
+requires-python = ">=3.10"
+dependencies = [
+    "google-cloud-bigquery",
+    "bigframes",
+    "xgboost",
+    "scikit-learn",
+    "matplotlib",
+    "db-dtypes",
+    "google-cloud-storage",
+    "google-cloud-dataproc",
+    "google-cloud-aiplatform",
+    "google-cloud-pipeline-components",
+    "requests",
+    "kfp",
+]
+
+[dependency-groups]
+dev = ["ipykernel"]

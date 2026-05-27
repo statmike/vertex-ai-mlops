@@ -1,0 +1,745 @@
+# PIPELINE DEFINITION
+# Name: fraud-detection-multi-approach
+# Description: Orchestrate BQML, Dataproc Spark, and Vertex AI Training for fraud detection
+# Inputs:
+#    bq_dataset: str
+#    bq_source: str
+#    bqml_model_name: str [Default: 'kfp_fraud_xgb']
+#    gcs_bucket: str
+#    project_id: str
+#    region: str
+components:
+  comp-bqml-train:
+    executorLabel: exec-bqml-train
+    inputDefinitions:
+      parameters:
+        bq_dataset:
+          parameterType: STRING
+        bq_source:
+          parameterType: STRING
+        model_name:
+          parameterType: STRING
+        project_id:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-condition-1:
+    dag:
+      tasks:
+        log-best-model:
+          cachingOptions:
+            enableCache: true
+          componentRef:
+            name: comp-log-best-model
+          inputs:
+            parameters:
+              best_approach:
+                componentInputParameter: pipelinechannel--evaluate-models-Output
+          taskInfo:
+            name: Log Best Model Summary
+    inputDefinitions:
+      parameters:
+        pipelinechannel--evaluate-models-Output:
+          parameterType: STRING
+  comp-dataproc-pyspark-batch:
+    executorLabel: exec-dataproc-pyspark-batch
+    inputDefinitions:
+      parameters:
+        bq_dataset:
+          parameterType: STRING
+        bq_source:
+          parameterType: STRING
+        gcs_bucket:
+          parameterType: STRING
+        project_id:
+          parameterType: STRING
+        region:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-evaluate-models:
+    executorLabel: exec-evaluate-models
+    inputDefinitions:
+      parameters:
+        bqml_model_name:
+          parameterType: STRING
+        gcs_bucket:
+          parameterType: STRING
+        project_id:
+          parameterType: STRING
+        r_metrics_table:
+          parameterType: STRING
+        sklearn_metrics_table:
+          parameterType: STRING
+        spark_metrics_table:
+          parameterType: STRING
+        vertex_model_gcs_path:
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        metrics:
+          artifactType:
+            schemaTitle: system.Metrics
+            schemaVersion: 0.0.1
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-log-best-model:
+    executorLabel: exec-log-best-model
+    inputDefinitions:
+      parameters:
+        best_approach:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-r-glm-train:
+    executorLabel: exec-r-glm-train
+    inputDefinitions:
+      parameters:
+        bq_dataset:
+          parameterType: STRING
+        bq_source:
+          parameterType: STRING
+        gcs_bucket:
+          parameterType: STRING
+        project_id:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        metrics_table:
+          parameterType: STRING
+  comp-sklearn-train:
+    executorLabel: exec-sklearn-train
+    inputDefinitions:
+      parameters:
+        bq_dataset:
+          parameterType: STRING
+        bq_source:
+          parameterType: STRING
+        project_id:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+  comp-vertex-custom-train:
+    executorLabel: exec-vertex-custom-train
+    inputDefinitions:
+      parameters:
+        bq_source:
+          parameterType: STRING
+        gcs_bucket:
+          parameterType: STRING
+        project_id:
+          parameterType: STRING
+        region:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        Output:
+          parameterType: STRING
+defaultPipelineRoot: gs://statmike-mlops-349915/data-ai-overview/kfp-orchestration/pipeline_root
+deploymentSpec:
+  executors:
+    exec-bqml-train:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - bqml_train
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'google-cloud-bigquery'\
+          \ 'db-dtypes'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.16.1' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef bqml_train(\n    project_id: str,\n    bq_source: str,\n    bq_dataset:\
+          \ str,\n    model_name: str,\n) -> str:\n    \"\"\"Train a BQML BOOSTED_TREE_CLASSIFIER\
+          \ and return the full model reference.\"\"\"\n    from google.cloud import\
+          \ bigquery\n    import time\n\n    bq_client = bigquery.Client(project=project_id)\n\
+          \    full_model_name = f'{project_id}.{bq_dataset}.{model_name}'\n\n   \
+          \ query = f\"\"\"\n    CREATE OR REPLACE MODEL `{full_model_name}`\n   \
+          \ OPTIONS(\n        model_type = 'BOOSTED_TREE_CLASSIFIER',\n        input_label_cols\
+          \ = ['Class'],\n        auto_class_weights = TRUE,\n        num_trials =\
+          \ 5,\n        max_parallel_trials = 5,\n        enable_global_explain =\
+          \ TRUE\n    ) AS\n    SELECT * EXCEPT(Time)\n    FROM `{bq_source}`\n  \
+          \  \"\"\"\n\n    print(f'Training BQML model: {full_model_name}')\n    t0\
+          \ = time.time()\n    bq_client.query(query).result()\n    elapsed = time.time()\
+          \ - t0\n    print(f'BQML model trained in {elapsed:.0f}s ({elapsed/60:.1f}\
+          \ min)')\n\n    return full_model_name\n\n"
+        image: python:3.11
+        resources:
+          cpuLimit: 2.0
+          memoryLimit: 8.0
+          resourceCpuLimit: '2'
+          resourceMemoryLimit: 8G
+    exec-dataproc-pyspark-batch:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - dataproc_pyspark_batch
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'google-cloud-dataproc'\
+          \ 'google-cloud-storage'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.16.1' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef dataproc_pyspark_batch(\n    project_id: str,\n    region: str,\n\
+          \    bq_source: str,\n    bq_dataset: str,\n    gcs_bucket: str,\n) -> str:\n\
+          \    \"\"\"Submit a PySpark fraud detection batch job on Dataproc Serverless.\n\
+          \n    Returns the BigQuery table name where metrics are written.\n    \"\
+          \"\"\n    from google.cloud import dataproc_v1, storage\n    import time\n\
+          \n    # Define the PySpark script inline and upload to GCS\n    spark_script\
+          \ = '''#!/usr/bin/env python3\n\"\"\"PySpark fraud detection \u2014 Logistic\
+          \ Regression on Dataproc Serverless.\"\"\"\nimport sys\nfrom pyspark.sql\
+          \ import SparkSession\nfrom pyspark.sql.functions import when, col\nfrom\
+          \ pyspark.ml.feature import VectorAssembler, StandardScaler\nfrom pyspark.ml.classification\
+          \ import LogisticRegression\nfrom pyspark.ml.evaluation import BinaryClassificationEvaluator\n\
+          from pyspark.ml import Pipeline\n\ndef main():\n    project_id = sys.argv[1]\n\
+          \    bq_dataset = sys.argv[2]\n    bq_source = sys.argv[3]\n\n    spark\
+          \ = SparkSession.builder.appName(\"fraud-detection-kfp\").getOrCreate()\n\
+          \n    df = (spark.read.format(\"bigquery\")\n          .option(\"table\"\
+          , bq_source)\n          .load())\n    print(f\"Loaded {df.count():,} rows\"\
+          )\n    print(f\"Initial partitions: {df.rdd.getNumPartitions()}\")\n\n \
+          \   # Repartition to spread data across all executor cores.\n    # BigQuery\
+          \ Storage API may produce few partitions \u2014 with 16 cores most would\
+          \ sit idle.\n    # Rule of thumb: 2-4 partitions per core \u2192 32-64 for\
+          \ 16 cores.\n    df = df.repartition(48)\n    df.cache()\n    df.count()\n\
+          \    print(f\"Repartitioned to {df.rdd.getNumPartitions()} partitions\"\
+          )\n\n    feature_cols = [f\"V{i}\" for i in range(1, 29)] + [\"Amount\"\
+          ]\n    assembler = VectorAssembler(inputCols=feature_cols, outputCol=\"\
+          raw_features\")\n    scaler = StandardScaler(inputCol=\"raw_features\",\
+          \ outputCol=\"features\",\n                            withStd=True, withMean=False)\n\
+          \n    neg_count = df.filter(\"Class = 0\").count()\n    pos_count = df.filter(\"\
+          Class = 1\").count()\n    weight_ratio = neg_count / pos_count\n    df =\
+          \ df.withColumn(\"weight\", when(col(\"Class\") == 1, weight_ratio).otherwise(1.0))\n\
+          \n    train, test = df.randomSplit([0.8, 0.2], seed=42)\n\n    lr = LogisticRegression(\n\
+          \        featuresCol=\"features\", labelCol=\"Class\", weightCol=\"weight\"\
+          ,\n        maxIter=100, regParam=0.01, elasticNetParam=0.5\n    )\n    pipeline\
+          \ = Pipeline(stages=[assembler, scaler, lr])\n    model = pipeline.fit(train)\n\
+          \n    auc_eval = BinaryClassificationEvaluator(labelCol=\"Class\", metricName=\"\
+          areaUnderROC\")\n    preds = model.transform(test)\n    auc = auc_eval.evaluate(preds)\n\
+          \    print(f\"Logistic Regression AUC-ROC: {auc:.4f}\")\n\n    metrics_df\
+          \ = spark.createDataFrame(\n        [(\"LogisticRegression\", round(auc,\
+          \ 6))],\n        [\"model\", \"auc_roc\"]\n    )\n    metrics_table = f\"\
+          {project_id}.{bq_dataset}.kfp_spark_metrics\"\n    (metrics_df.write.format(\"\
+          bigquery\")\n     .option(\"table\", metrics_table)\n     .option(\"writeMethod\"\
+          , \"direct\")\n     .mode(\"overwrite\")\n     .save())\n    print(f\"Metrics\
+          \ written to {metrics_table}\")\n\n    spark.stop()\n\nif __name__ == \"\
+          __main__\":\n    main()\n'''\n\n    # Upload script to GCS\n    gcs_client\
+          \ = storage.Client(project=project_id)\n    bucket = gcs_client.bucket(gcs_bucket)\n\
+          \    script_blob = bucket.blob('data-ai-overview/kfp-orchestration/spark/fraud_detection_kfp.py')\n\
+          \    script_blob.upload_from_string(spark_script)\n    script_uri = f'gs://{gcs_bucket}/data-ai-overview/kfp-orchestration/spark/fraud_detection_kfp.py'\n\
+          \    print(f'PySpark script uploaded to {script_uri}')\n\n    # Submit Dataproc\
+          \ Serverless batch job\n    batch_client = dataproc_v1.BatchControllerClient(\n\
+          \        client_options={'api_endpoint': f'{region}-dataproc.googleapis.com:443'}\n\
+          \    )\n\n    batch_id = f'kfp-fraud-spark-{int(time.time())}'\n\n    batch\
+          \ = dataproc_v1.Batch()\n    batch.pyspark_batch = dataproc_v1.PySparkBatch(\n\
+          \        main_python_file_uri=script_uri,\n        args=[project_id, bq_dataset,\
+          \ bq_source],\n    )\n    batch.runtime_config = dataproc_v1.RuntimeConfig(version='2.2')\n\
+          \    batch.runtime_config.properties.update({\n        'spark.executor.instances':\
+          \ '4',\n        'spark.executor.cores': '4',\n        'spark.executor.memory':\
+          \ '4g',\n        'spark.driver.memory': '4g',\n    })\n    batch.environment_config\
+          \ = dataproc_v1.EnvironmentConfig(\n        execution_config=dataproc_v1.ExecutionConfig(\n\
+          \            staging_bucket=gcs_bucket,\n        )\n    )\n\n    print(f'Submitting\
+          \ Dataproc batch job: {batch_id}')\n    print(f'  Executors: 4 \xD7 4 cores\
+          \ \xD7 4 GB')\n    t0 = time.time()\n\n    operation = batch_client.create_batch(\n\
+          \        request=dataproc_v1.CreateBatchRequest(\n            parent=f'projects/{project_id}/locations/{region}',\n\
+          \            batch=batch,\n            batch_id=batch_id,\n        )\n \
+          \   )\n\n    result = operation.result()\n    elapsed = time.time() - t0\n\
+          \    print(f'Batch job completed in {elapsed:.0f}s ({elapsed/60:.1f} min)')\n\
+          \    print(f'State: {dataproc_v1.Batch.State(result.state).name}')\n\n \
+          \   metrics_table = f'{project_id}.{bq_dataset}.kfp_spark_metrics'\n   \
+          \ return metrics_table\n\n"
+        image: python:3.11
+        resources:
+          cpuLimit: 2.0
+          memoryLimit: 8.0
+          resourceCpuLimit: '2'
+          resourceMemoryLimit: 8G
+    exec-evaluate-models:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - evaluate_models
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'google-cloud-bigquery'\
+          \ 'google-cloud-storage' 'db-dtypes'  &&  python3 -m pip install --quiet\
+          \ --no-warn-script-location 'kfp==2.16.1' '--no-deps' 'typing-extensions>=3.7.4,<5;\
+          \ python_version<\"3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef evaluate_models(\n    project_id: str,\n    bqml_model_name:\
+          \ str,\n    vertex_model_gcs_path: str,\n    spark_metrics_table: str,\n\
+          \    r_metrics_table: str,\n    sklearn_metrics_table: str,\n    gcs_bucket:\
+          \ str,\n    metrics: Output[Metrics],\n) -> str:\n    \"\"\"Evaluate all\
+          \ models and log metrics. Return the name of the best approach.\"\"\"\n\
+          \    from google.cloud import bigquery, storage\n    import json\n\n   \
+          \ bq_client = bigquery.Client(project=project_id)\n    gcs_client = storage.Client(project=project_id)\n\
+          \n    # --- BQML evaluation ---\n    print(f'Evaluating BQML model: {bqml_model_name}')\n\
+          \    eval_query = f\"\"\"\n    SELECT *\n    FROM ML.EVALUATE(MODEL `{bqml_model_name}`)\n\
+          \    \"\"\"\n    eval_df = bq_client.query(eval_query).to_dataframe()\n\n\
+          \    bqml_roc_auc = float(eval_df['roc_auc'].iloc[0]) if 'roc_auc' in eval_df.columns\
+          \ else 0.0\n    bqml_precision = float(eval_df['precision'].iloc[0]) if\
+          \ 'precision' in eval_df.columns else 0.0\n    bqml_recall = float(eval_df['recall'].iloc[0])\
+          \ if 'recall' in eval_df.columns else 0.0\n    print(f'  BQML ROC-AUC: {bqml_roc_auc:.4f},\
+          \ Precision: {bqml_precision:.4f}, Recall: {bqml_recall:.4f}')\n\n    #\
+          \ --- Vertex AI XGBoost evaluation ---\n    print(f'Loading Vertex Training\
+          \ metrics from {vertex_model_gcs_path}')\n    gcs_path = vertex_model_gcs_path.replace('gs://',\
+          \ '')\n    bucket_name = gcs_path.split('/')[0]\n    blob_path = '/'.join(gcs_path.split('/')[1:])\
+          \ + '/metrics.json'\n\n    bucket = gcs_client.bucket(bucket_name)\n   \
+          \ blob = bucket.blob(blob_path)\n    metrics_json = json.loads(blob.download_as_string())\n\
+          \    vertex_roc_auc = float(metrics_json.get('roc_auc', 0.0))\n    print(f'\
+          \  Vertex XGBoost ROC-AUC: {vertex_roc_auc:.4f}')\n\n    # --- Spark evaluation\
+          \ ---\n    print(f'Loading Spark metrics from {spark_metrics_table}')\n\
+          \    spark_query = f\"\"\"\n    SELECT model, auc_roc\n    FROM `{spark_metrics_table}`\n\
+          \    ORDER BY auc_roc DESC\n    LIMIT 1\n    \"\"\"\n    spark_df = bq_client.query(spark_query).to_dataframe()\n\
+          \    spark_roc_auc = float(spark_df['auc_roc'].iloc[0]) if len(spark_df)\
+          \ > 0 else 0.0\n    print(f'  Spark LogReg ROC-AUC: {spark_roc_auc:.4f}')\n\
+          \n    # --- Scikit-learn evaluation ---\n    print(f'Loading sklearn metrics\
+          \ from {sklearn_metrics_table}')\n    sklearn_query = f\"\"\"\n    SELECT\
+          \ model, roc_auc\n    FROM `{sklearn_metrics_table}`\n    LIMIT 1\n    \"\
+          \"\"\n    sklearn_df = bq_client.query(sklearn_query).to_dataframe()\n \
+          \   sklearn_roc_auc = float(sklearn_df['roc_auc'].iloc[0]) if len(sklearn_df)\
+          \ > 0 else 0.0\n    print(f'  Sklearn LogReg ROC-AUC: {sklearn_roc_auc:.4f}')\n\
+          \n    # --- R GLM evaluation ---\n    print(f'Loading R GLM metrics from\
+          \ {r_metrics_table}')\n    r_query = f\"\"\"\n    SELECT model, roc_auc\n\
+          \    FROM `{r_metrics_table}`\n    LIMIT 1\n    \"\"\"\n    r_df = bq_client.query(r_query).to_dataframe()\n\
+          \    r_roc_auc = float(r_df['roc_auc'].iloc[0]) if len(r_df) > 0 else 0.0\n\
+          \    print(f'  R GLM ROC-AUC: {r_roc_auc:.4f}')\n\n    # --- Compare and\
+          \ determine best ---\n    results = {\n        'bqml': bqml_roc_auc,\n \
+          \       'vertex_xgboost': vertex_roc_auc,\n        'spark_logreg': spark_roc_auc,\n\
+          \        'r_glm': r_roc_auc,\n        'sklearn_logreg': sklearn_roc_auc,\n\
+          \    }\n    best_approach = max(results, key=results.get)\n    best_auc\
+          \ = results[best_approach]\n\n    print(f'\\nComparison:')\n    for name,\
+          \ auc in sorted(results.items(), key=lambda x: x[1], reverse=True):\n  \
+          \      marker = ' <-- best' if name == best_approach else ''\n        print(f'\
+          \  {name}: {auc:.4f}{marker}')\n\n    # Log metrics to the KFP Metrics artifact\n\
+          \    metrics.log_metric('bqml_roc_auc', bqml_roc_auc)\n    metrics.log_metric('bqml_precision',\
+          \ bqml_precision)\n    metrics.log_metric('bqml_recall', bqml_recall)\n\
+          \    metrics.log_metric('vertex_xgboost_roc_auc', vertex_roc_auc)\n    metrics.log_metric('spark_logreg_roc_auc',\
+          \ spark_roc_auc)\n    metrics.log_metric('r_glm_roc_auc', r_roc_auc)\n \
+          \   metrics.log_metric('sklearn_logreg_roc_auc', sklearn_roc_auc)\n    metrics.log_metric('best_approach',\
+          \ best_approach)\n    metrics.log_metric('best_auc', best_auc)\n\n    return\
+          \ best_approach\n\n"
+        image: python:3.11
+        resources:
+          cpuLimit: 2.0
+          memoryLimit: 8.0
+          resourceCpuLimit: '2'
+          resourceMemoryLimit: 8G
+    exec-log-best-model:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - log_best_model
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.16.1'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"\
+          $0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef log_best_model(\n    best_approach: str,\n) -> str:\n    \"\"\
+          \"Log a summary of the best model. In production, this would register it.\"\
+          \"\"\n    print(f'Best model approach: {best_approach}')\n    print(f'In\
+          \ production, this component would:')\n    print(f'  1. Export the best\
+          \ model artifact')\n    print(f'  2. Register it in the Vertex AI Model\
+          \ Registry')\n    print(f'  3. Optionally deploy to an endpoint')\n    print(f'See\
+          \ model-registry.ipynb for the registration pattern.')\n    return f'Best\
+          \ model: {best_approach}'\n\n"
+        image: python:3.11
+    exec-r-glm-train:
+      container:
+        args:
+        - '{"Concat": ["Rscript /gcs/", "{{$.inputs.parameters[''gcs_bucket'']}}",
+          "/data-ai-overview/kfp-orchestration/r_training/train.R ", "{{$.inputs.parameters[''project_id'']}}",
+          " ", "{{$.inputs.parameters[''bq_source'']}}", " ", "{{$.inputs.parameters[''bq_dataset'']}}",
+          " ", "{{$.outputs.parameters[''metrics_table''].output_file}}"]}'
+        command:
+        - bash
+        - -c
+        image: gcr.io/deeplearning-platform-release/r-cpu.4-2:latest
+    exec-sklearn-train:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - sklearn_train
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'google-cloud-bigquery'\
+          \ 'db-dtypes' 'scikit-learn'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.16.1' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef sklearn_train(\n    project_id: str,\n    bq_source: str,\n \
+          \   bq_dataset: str,\n) -> str:\n    \"\"\"Train a scikit-learn LogisticRegression\
+          \ directly in the component container.\"\"\"\n    from google.cloud import\
+          \ bigquery\n    from sklearn.linear_model import LogisticRegression\n  \
+          \  from sklearn.model_selection import train_test_split\n    from sklearn.metrics\
+          \ import roc_auc_score\n    from sklearn.preprocessing import StandardScaler\n\
+          \    import time\n\n    bq_client = bigquery.Client(project=project_id)\n\
+          \n    print(f'Reading data from {bq_source}...')\n    t0 = time.time()\n\
+          \    df = bq_client.query(f'SELECT * FROM `{bq_source}`').to_dataframe()\n\
+          \    print(f'Loaded {len(df):,} rows in {time.time() - t0:.0f}s')\n\n  \
+          \  X = df.drop(columns=['Class'])\n    y = df['Class']\n    X_train, X_test,\
+          \ y_train, y_test = train_test_split(\n        X, y, test_size=0.2, random_state=42,\
+          \ stratify=y\n    )\n    print(f'Train: {len(X_train):,}, Test: {len(X_test):,}')\n\
+          \n    scaler = StandardScaler()\n    X_train_scaled = scaler.fit_transform(X_train)\n\
+          \    X_test_scaled = scaler.transform(X_test)\n\n    print('Training LogisticRegression...')\n\
+          \    t0 = time.time()\n    model = LogisticRegression(\n        class_weight='balanced',\n\
+          \        max_iter=1000,\n        random_state=42,\n    )\n    model.fit(X_train_scaled,\
+          \ y_train)\n    elapsed = time.time() - t0\n\n    y_prob = model.predict_proba(X_test_scaled)[:,\
+          \ 1]\n    roc_auc = roc_auc_score(y_test, y_prob)\n    print(f'Trained in\
+          \ {elapsed:.0f}s \u2014 ROC-AUC: {roc_auc:.4f}')\n\n    metrics_table =\
+          \ f'{project_id}.{bq_dataset}.kfp_sklearn_metrics'\n    metrics_row = [{'model':\
+          \ 'LogisticRegression', 'roc_auc': round(roc_auc, 6)}]\n    job_config =\
+          \ bigquery.LoadJobConfig(\n        schema=[\n            bigquery.SchemaField('model',\
+          \ 'STRING'),\n            bigquery.SchemaField('roc_auc', 'FLOAT64'),\n\
+          \        ],\n        write_disposition='WRITE_TRUNCATE',\n    )\n    bq_client.load_table_from_json(\n\
+          \        metrics_row, metrics_table, job_config=job_config\n    ).result()\n\
+          \    print(f'Metrics written to {metrics_table}')\n\n    return metrics_table\n\
+          \n"
+        image: python:3.11
+        resources:
+          cpuLimit: 2.0
+          memoryLimit: 8.0
+          resourceCpuLimit: '2'
+          resourceMemoryLimit: 8G
+    exec-vertex-custom-train:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - vertex_custom_train
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'google-cloud-aiplatform'\
+          \ 'google-cloud-storage'  &&  python3 -m pip install --quiet --no-warn-script-location\
+          \ 'kfp==2.16.1' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"\
+          3.9\"' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef vertex_custom_train(\n    project_id: str,\n    region: str,\n\
+          \    bq_source: str,\n    gcs_bucket: str,\n) -> str:\n    \"\"\"Submit\
+          \ an XGBoost CustomJob on Vertex AI Training.\n\n    Returns the GCS path\
+          \ where the model artifact is saved.\n    \"\"\"\n    from google.cloud\
+          \ import aiplatform, storage\n    import time\n\n    # Define the training\
+          \ script\n    training_script = '''#!/usr/bin/env python3\n\"\"\"XGBoost\
+          \ fraud detection \u2014 Vertex AI Custom Training Job.\"\"\"\nimport subprocess,\
+          \ sys\nsubprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q',\n\
+          \                       'google-cloud-bigquery', 'db-dtypes'])\n\nimport\
+          \ argparse\nimport pickle\nimport json\nfrom google.cloud import bigquery,\
+          \ storage\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.metrics\
+          \ import classification_report, roc_auc_score\nimport xgboost as xgb\n\n\
+          def main():\n    parser = argparse.ArgumentParser()\n    parser.add_argument('--project-id',\
+          \ required=True)\n    parser.add_argument('--bq-source', required=True)\n\
+          \    parser.add_argument('--gcs-output', required=True)\n    args = parser.parse_args()\n\
+          \n    bq_client = bigquery.Client(project=args.project_id)\n    print(f'Reading\
+          \ data from {args.bq_source}...')\n    df = bq_client.query(f'SELECT * FROM\
+          \ `{args.bq_source}`').to_dataframe()\n    print(f'Loaded {len(df):,} rows')\n\
+          \n    X = df.drop(columns=['Class'])\n    y = df['Class']\n    X_train,\
+          \ X_test, y_train, y_test = train_test_split(\n        X, y, test_size=0.2,\
+          \ random_state=42, stratify=y\n    )\n\n    scale = (y_train == 0).sum()\
+          \ / (y_train == 1).sum()\n    model = xgb.XGBClassifier(\n        n_estimators=100,\
+          \ max_depth=6, learning_rate=0.1,\n        scale_pos_weight=scale, eval_metric='aucpr',\
+          \ random_state=42,\n    )\n    model.fit(X_train, y_train)\n\n    y_pred\
+          \ = model.predict(X_test)\n    y_prob = model.predict_proba(X_test)[:, 1]\n\
+          \    auc = roc_auc_score(y_test, y_prob)\n    print(f'ROC-AUC: {auc:.4f}')\n\
+          \    print(classification_report(y_test, y_pred,\n                     \
+          \           target_names=['Legitimate', 'Fraud']))\n\n    # Save model\n\
+          \    model_path = '/tmp/model.pkl'\n    with open(model_path, 'wb') as f:\n\
+          \        pickle.dump(model, f)\n\n    # Save metrics\n    metrics_path =\
+          \ '/tmp/metrics.json'\n    with open(metrics_path, 'w') as f:\n        json.dump({'roc_auc':\
+          \ float(auc)}, f)\n\n    gcs_path = args.gcs_output.replace('gs://', '')\n\
+          \    bucket_name = gcs_path.split('/')[0]\n    blob_prefix = '/'.join(gcs_path.split('/')[1:])\n\
+          \    gcs_client = storage.Client(project=args.project_id)\n    bucket =\
+          \ gcs_client.bucket(bucket_name)\n    bucket.blob(f'{blob_prefix}/model.pkl').upload_from_filename(model_path)\n\
+          \    bucket.blob(f'{blob_prefix}/metrics.json').upload_from_filename(metrics_path)\n\
+          \    print(f'Artifacts saved to {args.gcs_output}')\n\nif __name__ == '__main__':\n\
+          \    main()\n'''\n\n    # Upload training script to GCS\n    gcs_client\
+          \ = storage.Client(project=project_id)\n    bucket = gcs_client.bucket(gcs_bucket)\n\
+          \    gcs_prefix = 'data-ai-overview/kfp-orchestration/vertex-training'\n\
+          \    blob = bucket.blob(f'{gcs_prefix}/train.py')\n    blob.upload_from_string(training_script)\n\
+          \    print(f'Training script uploaded to gs://{gcs_bucket}/{gcs_prefix}/train.py')\n\
+          \n    gcs_output = f'gs://{gcs_bucket}/{gcs_prefix}/models'\n\n    # Submit\
+          \ the CustomJob\n    aiplatform.init(project=project_id, location=region)\n\
+          \n    job_display_name = f'kfp-fraud-xgb-{int(time.time())}'\n    worker_pool_specs\
+          \ = [{\n        'machine_spec': {'machine_type': 'e2-standard-4'},\n   \
+          \     'replica_count': 1,\n        'container_spec': {\n            'image_uri':\
+          \ 'us-docker.pkg.dev/vertex-ai/training/xgboost-cpu.2-1:latest',\n     \
+          \       'command': ['python3', f'/gcs/{gcs_bucket}/{gcs_prefix}/train.py'],\n\
+          \            'args': [\n                '--project-id', project_id,\n  \
+          \              '--bq-source', bq_source,\n                '--gcs-output',\
+          \ gcs_output,\n            ],\n        },\n    }]\n\n    print(f'Submitting\
+          \ CustomJob: {job_display_name}')\n    t0 = time.time()\n\n    job = aiplatform.CustomJob(\n\
+          \        display_name=job_display_name,\n        worker_pool_specs=worker_pool_specs,\n\
+          \        project=project_id,\n        location=region,\n        staging_bucket=f'gs://{gcs_bucket}/{gcs_prefix}/staging',\n\
+          \    )\n    job.run(sync=True)\n\n    elapsed = time.time() - t0\n    print(f'CustomJob\
+          \ completed in {elapsed:.0f}s ({elapsed/60:.1f} min)')\n    print(f'Job\
+          \ state: {job.state}')\n\n    return gcs_output\n\n"
+        image: python:3.11
+        resources:
+          cpuLimit: 2.0
+          memoryLimit: 8.0
+          resourceCpuLimit: '2'
+          resourceMemoryLimit: 8G
+pipelineInfo:
+  description: Orchestrate BQML, Dataproc Spark, and Vertex AI Training for fraud
+    detection
+  name: fraud-detection-multi-approach
+root:
+  dag:
+    tasks:
+      bqml-train:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-bqml-train
+        inputs:
+          parameters:
+            bq_dataset:
+              componentInputParameter: bq_dataset
+            bq_source:
+              componentInputParameter: bq_source
+            model_name:
+              componentInputParameter: bqml_model_name
+            project_id:
+              componentInputParameter: project_id
+        taskInfo:
+          name: BQML Training
+      condition-1:
+        componentRef:
+          name: comp-condition-1
+        dependentTasks:
+        - evaluate-models
+        inputs:
+          parameters:
+            pipelinechannel--evaluate-models-Output:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: evaluate-models
+        taskInfo:
+          name: Log Best Model
+        triggerPolicy:
+          condition: inputs.parameter_values['pipelinechannel--evaluate-models-Output']
+            != ''
+      dataproc-pyspark-batch:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-dataproc-pyspark-batch
+        inputs:
+          parameters:
+            bq_dataset:
+              componentInputParameter: bq_dataset
+            bq_source:
+              componentInputParameter: bq_source
+            gcs_bucket:
+              componentInputParameter: gcs_bucket
+            project_id:
+              componentInputParameter: project_id
+            region:
+              componentInputParameter: region
+        taskInfo:
+          name: Dataproc Spark Training
+      evaluate-models:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-evaluate-models
+        dependentTasks:
+        - bqml-train
+        - dataproc-pyspark-batch
+        - r-glm-train
+        - sklearn-train
+        - vertex-custom-train
+        inputs:
+          parameters:
+            bqml_model_name:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: bqml-train
+            gcs_bucket:
+              componentInputParameter: gcs_bucket
+            project_id:
+              componentInputParameter: project_id
+            r_metrics_table:
+              taskOutputParameter:
+                outputParameterKey: metrics_table
+                producerTask: r-glm-train
+            sklearn_metrics_table:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: sklearn-train
+            spark_metrics_table:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: dataproc-pyspark-batch
+            vertex_model_gcs_path:
+              taskOutputParameter:
+                outputParameterKey: Output
+                producerTask: vertex-custom-train
+        taskInfo:
+          name: Evaluate All Models
+      r-glm-train:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-r-glm-train
+        inputs:
+          parameters:
+            bq_dataset:
+              componentInputParameter: bq_dataset
+            bq_source:
+              componentInputParameter: bq_source
+            gcs_bucket:
+              componentInputParameter: gcs_bucket
+            project_id:
+              componentInputParameter: project_id
+        taskInfo:
+          name: R GLM Training
+      sklearn-train:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-sklearn-train
+        inputs:
+          parameters:
+            bq_dataset:
+              componentInputParameter: bq_dataset
+            bq_source:
+              componentInputParameter: bq_source
+            project_id:
+              componentInputParameter: project_id
+        taskInfo:
+          name: Sklearn LogReg (Direct)
+      vertex-custom-train:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-vertex-custom-train
+        inputs:
+          parameters:
+            bq_source:
+              componentInputParameter: bq_source
+            gcs_bucket:
+              componentInputParameter: gcs_bucket
+            project_id:
+              componentInputParameter: project_id
+            region:
+              componentInputParameter: region
+        taskInfo:
+          name: Vertex AI XGBoost Training
+  inputDefinitions:
+    parameters:
+      bq_dataset:
+        parameterType: STRING
+      bq_source:
+        parameterType: STRING
+      bqml_model_name:
+        defaultValue: kfp_fraud_xgb
+        isOptional: true
+        parameterType: STRING
+      gcs_bucket:
+        parameterType: STRING
+      project_id:
+        parameterType: STRING
+      region:
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.16.1

@@ -1,0 +1,84 @@
+# PIPELINE DEFINITION
+# Name: r-glm-train
+# Description: Train a GLM (logistic regression) in R and write metrics to BigQuery.
+# Inputs:
+#    bq_dataset: str
+#    bq_source: str
+#    gcs_bucket: str
+#    project_id: str
+# Outputs:
+#    metrics_table: str
+components:
+  comp-r-glm-train:
+    executorLabel: exec-r-glm-train
+    inputDefinitions:
+      parameters:
+        bq_dataset:
+          parameterType: STRING
+        bq_source:
+          parameterType: STRING
+        gcs_bucket:
+          parameterType: STRING
+        project_id:
+          parameterType: STRING
+    outputDefinitions:
+      parameters:
+        metrics_table:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-r-glm-train:
+      container:
+        args:
+        - '{"Concat": ["Rscript /gcs/", "{{$.inputs.parameters[''gcs_bucket'']}}",
+          "/data-ai-overview/kfp-orchestration/r_training/train.R ", "{{$.inputs.parameters[''project_id'']}}",
+          " ", "{{$.inputs.parameters[''bq_source'']}}", " ", "{{$.inputs.parameters[''bq_dataset'']}}",
+          " ", "{{$.outputs.parameters[''metrics_table''].output_file}}"]}'
+        command:
+        - bash
+        - -c
+        image: gcr.io/deeplearning-platform-release/r-cpu.4-2:latest
+pipelineInfo:
+  name: r-glm-train
+root:
+  dag:
+    outputs:
+      parameters:
+        metrics_table:
+          valueFromParameter:
+            outputParameterKey: metrics_table
+            producerSubtask: r-glm-train
+    tasks:
+      r-glm-train:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-r-glm-train
+        inputs:
+          parameters:
+            bq_dataset:
+              componentInputParameter: bq_dataset
+            bq_source:
+              componentInputParameter: bq_source
+            gcs_bucket:
+              componentInputParameter: gcs_bucket
+            project_id:
+              componentInputParameter: project_id
+        taskInfo:
+          name: r-glm-train
+  inputDefinitions:
+    parameters:
+      bq_dataset:
+        parameterType: STRING
+      bq_source:
+        parameterType: STRING
+      gcs_bucket:
+        parameterType: STRING
+      project_id:
+        parameterType: STRING
+  outputDefinitions:
+    parameters:
+      metrics_table:
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.16.1

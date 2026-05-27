@@ -42,6 +42,8 @@ Resources for machine learning and AI across Google Cloud data services — data
 
 ## Contents
 
+- **[Overview](overview/)** — Broad, cross-service overviews of Google Cloud's data and AI capabilities. Starts with [ML Training & Batch Inference](overview/ml-training/) — standalone notebooks comparing BigQuery ML, BigFrames, Dataproc Serverless, Vertex AI Training, Colab Enterprise, Model Registry, and KFP orchestration on a shared dataset.
+
 - **[Tabular Data](tabular-data/)** — Reading tabular data efficiently for ML workflows. Compares BigQuery read approaches (query, Storage Read API, BigFrames, pandas-gbq) by cost and speed, with multi-threaded benchmarks.
 
 - **[Model Serving / Inference](model-serving.md)** — Training and deploying custom ML models across Google Cloud: PyTorch serving on Vertex AI endpoints, BigQuery ML, AlloyDB, Spanner, Dataflow RunInference, TorchServe, and GPU inference benchmarks.
