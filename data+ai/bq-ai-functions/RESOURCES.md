@@ -1688,7 +1688,7 @@ FROM AI.PARSE_DOCUMENT(
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `TABLE` / `(QUERY_STATEMENT)` | Table or subquery | Required | -- | Object table reference or a `SELECT` subquery over the object table. Must include a column named `ref` of type `OBJECTREF`. |
+| `TABLE` / `(QUERY_STATEMENT)` | Table or subquery | Required | -- | Object table reference or a `SELECT` subquery. Must include a column named `ref` of type `OBJECTREF`. Can be an object table (which has `ref` built-in) or a subquery that constructs `ref` using `OBJ.MAKE_REF(uri, connection) AS ref`. |
 | `endpoint` | STRING (named parameter) | Required | -- | Document AI Layout Parser processor endpoint. Format: `projects/{project}/locations/{location}/processors/{processor_id}`. |
 | `chunk_size` | INT64 (named parameter) | Optional | ~1000 | Controls the size of text chunks when splitting documents. Smaller values (e.g., 250) produce more granular chunks for RAG pipelines. |
 | `connection_id` | STRING (named parameter) | Optional | End-user credentials | BigQuery Cloud resource connection. Format: `PROJECT_ID.LOCATION.CONNECTION_ID`. Connection service account needs `documentai.apiUser` and `storage.objectViewer` roles. |
@@ -1704,6 +1704,34 @@ FROM AI.PARSE_DOCUMENT(
 | *(object table columns)* | *(varies)* | All columns from the input object table or query are passed through (e.g., `uri`, `content_type`). |
 
 **Supported file types:** Same as ML.PROCESS_DOCUMENT — PDF, JPEG, PNG, BMP, GIF, TIFF, WebP, plus HTML, DOCX, PPTX, XLSX (Layout Parser only).
+
+**ObjectRef alternative (no object table required):**
+
+AI.PARSE_DOCUMENT requires a `ref` column in its input. Object tables provide this automatically, but you can also construct it inline using `OBJ.MAKE_REF`:
+
+```sql
+-- Single document — no object table needed
+SELECT *
+FROM AI.PARSE_DOCUMENT(
+  (SELECT
+    'gs://BUCKET/document.pdf' AS uri,
+    OBJ.MAKE_REF('gs://BUCKET/document.pdf', 'PROJECT_ID.LOCATION.CONNECTION_ID') AS ref
+  ),
+  endpoint => 'projects/PROJECT_NUM/locations/LOCATION/processors/PROCESSOR_ID'
+);
+
+-- Multiple documents — use UNNEST
+SELECT *
+FROM AI.PARSE_DOCUMENT(
+  (SELECT
+    uri,
+    OBJ.MAKE_REF(uri, 'PROJECT_ID.LOCATION.CONNECTION_ID') AS ref
+  FROM UNNEST(['gs://BUCKET/doc1.pdf', 'gs://BUCKET/doc2.pdf']) AS uri),
+  endpoint => 'projects/PROJECT_NUM/locations/LOCATION/processors/PROCESSOR_ID'
+);
+```
+
+This is useful for ad-hoc parsing of specific documents without creating an object table first.
 
 **Best practices:**
 - Filter documents with `WHERE`/`LIMIT` in a subquery rather than processing the entire object table.
@@ -1734,7 +1762,9 @@ These are not AI functions themselves, but the infrastructure that enables AI fu
 - `OBJ.MAKE_REF` creates `ObjectRef` values from URI strings — the entry point for referencing Cloud Storage objects.
 - `OBJ.FETCH_METADATA` enriches partial `ObjectRef` values with Cloud Storage metadata (content type, size, MD5 hash).
 - `OBJ.GET_ACCESS_URL` converts `ObjectRef` into `ObjectRefRuntime` with signed URLs — the format accepted by AI functions like `AI.GENERATE`.
-- **Typical pipeline:** URI → `OBJ.MAKE_REF` → `OBJ.FETCH_METADATA` → `OBJ.GET_ACCESS_URL` → `AI.GENERATE`/`AI.GENERATE_TEXT`/etc.
+- **For AI.PARSE_DOCUMENT:** Only `OBJ.MAKE_REF` is needed — alias it as `ref` in the subquery. No `OBJ.FETCH_METADATA` or `OBJ.GET_ACCESS_URL` required.
+- **Typical pipeline (Gemini functions):** URI → `OBJ.MAKE_REF` → `OBJ.FETCH_METADATA` → `OBJ.GET_ACCESS_URL` → `AI.GENERATE`/`AI.GENERATE_TEXT`/etc.
+- **Typical pipeline (AI.PARSE_DOCUMENT):** URI → `OBJ.MAKE_REF` (as `ref` column) → `AI.PARSE_DOCUMENT`.
 
 **Object tables vs inline ObjectRef:**
 - **Object tables** with remote models (e.g., `AI.GENERATE_EMBEDDING` reading from an object table) require a BigQuery reservation. Best for large-scale processing where you have reservations configured.
