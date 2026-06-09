@@ -82,6 +82,30 @@ Then select the **Bigtable Feature Store** kernel in your notebook.
 
 Each notebook includes an environment setup cell that installs required packages into your current kernel.
 
+## Teardown / Cleanup
+
+The Bigtable instance bills continuously — **delete it when you're done.** Teardown is automated by `cleanup.py`, parameterized by a `cleanup.json` that the Environment notebook writes with this run's resource names (`cleanup.json` is gitignored).
+
+From this directory (`MLOps/Feature Store/Bigtable/`):
+
+```bash
+# Dry run — show what would be deleted (default, safe)
+uv run python cleanup.py
+
+# Delete the Bigtable instance (clears the NB5 change stream first, then deletes clusters + tables)
+uv run python cleanup.py --yes
+
+# Also delete the BigQuery dataset (kept by default — it's cheap and reusable)
+uv run python cleanup.py --yes --include-dataset
+
+# Verify no continuous queries are still running (lists running BQ jobs; deletes nothing)
+uv run python cleanup.py --check-jobs
+```
+
+`cleanup.py` defaults to a dry run and is idempotent (already-deleted resources are reported, not errored). The **Bigtable instance is the main cost**; the BigQuery dataset is kept by default. Pub/Sub topics/subscriptions from notebooks 3, 5, and 9 clean up after themselves. Run the Environment notebook at least once first so `cleanup.json` exists.
+
+Several notebooks demonstrate **`EXPORT DATA` reservations** and **continuous queries** that are designed to be created and torn down within the notebook run — so the teardown script doesn't manage them. `--check-jobs` lists any BigQuery jobs still in the `RUNNING` state so you can confirm none leaked; if one did, stop it with `bq cancel <job_id>`.
+
 ## Key Concepts
 
 - **[EXPORT DATA](https://cloud.google.com/bigquery/docs/export-to-bigtable)** — BigQuery's native mechanism for writing query results directly to Bigtable. This is the primary bridge between the offline analytical layer and the online serving layer.
