@@ -1,0 +1,20 @@
+[project]
+name = "valkey-feature-store"
+version = "0.1.0"
+description = "Valkey Feature Store notebook series"
+requires-python = ">=3.10"
+dependencies = [
+    "google-cloud-bigquery",
+    "google-cloud-pubsub",
+    "google-cloud-monitoring",
+    "redis",
+    "db-dtypes",
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "scikit-learn",
+    "fastapi",
+    "uvicorn",
+    "requests",
+    "ipykernel",
+]
