@@ -42,9 +42,9 @@
 
 Cloud [Bigtable](https://cloud.google.com/bigtable/docs/overview) provides single-digit millisecond reads by row key, making it an ideal online serving layer for pre-computed ML features. This series builds a complete feature store on Bigtable, using BigQuery as the offline analytical engine — covering everything from first export to production operations.
 
-> **Also in this series: [Vertex AI Feature Store](../vertex/readme.md)**
+> **Also in this series: [BigQuery Feature Store](../BigQuery/readme.md), [Spanner Feature Store](../Spanner/readme.md), [Valkey Feature Store](../Valkey/readme.md), and [Vertex AI Feature Store](../vertex/readme.md)**
 >
-> This Bigtable approach gives you **full control** over the online serving layer — direct writes, streaming ingestion, multi-region replication, custom serialization, and fine-grained tuning. For a **managed** alternative where Google handles the online store infrastructure, sync, and feature registry, see [Vertex AI Feature Store](../vertex/readme.md). Both approaches use BigQuery as the offline store. See the [comparison table](../readme.md#choosing-an-approach) in the parent readme.
+> This Bigtable approach gives you **full control** over the online serving layer — direct writes, streaming ingestion, multi-region replication, custom serialization, and fine-grained tuning. For a **managed** alternative where Google handles the online store, sync, and feature registry, see [Vertex AI Feature Store](../vertex/readme.md). For **zero infrastructure** (serve straight from BigQuery at 20–200ms), see [BigQuery Feature Store](../BigQuery/readme.md). For **SQL + ACID transactions** at the serving layer, see [Spanner Feature Store](../Spanner/readme.md). For **sub-millisecond in-memory** serving with HNSW vector search, see [Valkey Feature Store](../Valkey/readme.md). All approaches use BigQuery as the offline store. See the [comparison table](../readme.md#choosing-an-approach) in the parent readme.
 
 The data uses a compound entity key (`entity_group` + `entity_id`) with 130,000 entities and 200+ features spanning every BigQuery data type, designed to exercise every edge case of the BigQuery-to-Bigtable pipeline.
 

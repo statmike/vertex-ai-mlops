@@ -41,9 +41,9 @@
 
 A core part of MLOps, for going from model to MODELS, is feature management.  [Vertex AI Feature Store](https://cloud.google.com/vertex-ai/docs/featurestore/latest/overview) is an excellent way manage features and short-cut the process of deploying models into production systems.
 
-> **Also in this series: [Bigtable Feature Store](../Bigtable/readme.md)**
+> **Also in this series: [Bigtable Feature Store](../Bigtable/readme.md), [BigQuery Feature Store](../BigQuery/readme.md), [Spanner Feature Store](../Spanner/readme.md), and [Valkey Feature Store](../Valkey/readme.md)**
 >
-> Vertex AI Feature Store is a **managed** feature store — Google handles the online serving infrastructure, sync, and feature registry. For teams that need **full control** over the serving layer — direct writes from applications, streaming ingestion via Pub/Sub and Dataflow, multi-region replication, custom serialization, or fine-grained read/write priority isolation — see the [Bigtable Feature Store](../Bigtable/readme.md) series. Both approaches use BigQuery as the offline store. See the [comparison table](../readme.md#choosing-an-approach) in the parent readme.
+> Vertex AI Feature Store is a **managed** feature store — Google handles the online serving infrastructure, sync, and feature registry. The other approaches build the serving layer yourself for more control: [Bigtable](../Bigtable/readme.md) for sub-10ms key-based serving with direct writes, streaming, and multi-region replication; [BigQuery](../BigQuery/readme.md) for zero-infrastructure serving straight from the offline store (20–200ms); [Spanner](../Spanner/readme.md) for SQL + ACID transactions at the serving layer; and [Valkey](../Valkey/readme.md) for sub-millisecond in-memory serving with HNSW vector search. All approaches use BigQuery as the offline store. See the [comparison table](../readme.md#choosing-an-approach) in the parent readme.
 
 >**Versions**
 >
