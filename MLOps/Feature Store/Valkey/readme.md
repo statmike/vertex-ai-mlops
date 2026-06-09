@@ -119,6 +119,30 @@ docker run -p 6379:6379 redis/redis-stack:latest
 
 > The notebooks auto-detect a missing Memorystore instance and fall back to printing a local-dev hint. To point at a local instance, set the host/port in the connection cell to `localhost:6379` (no TLS).
 
+## Teardown / Cleanup
+
+The Memorystore for Valkey instance bills continuously — **delete it when you're done.** Teardown is automated by `cleanup.py`, parameterized by a `cleanup.json` that the Environment notebook writes with this run's resource names (`cleanup.json` is gitignored).
+
+From this directory (`MLOps/Feature Store/Valkey/`):
+
+```bash
+# Dry run — show what would be deleted (default, safe)
+uv run python cleanup.py
+
+# Delete the Valkey instance, PSC service connection policy, and Pub/Sub resources
+uv run python cleanup.py --yes
+
+# Also delete the BigQuery dataset (kept by default — it's cheap and reusable)
+uv run python cleanup.py --yes --include-dataset
+
+# Verify no continuous queries are still running (lists running BQ jobs; deletes nothing)
+uv run python cleanup.py --check-jobs
+```
+
+`cleanup.py` defaults to a dry run and is idempotent (already-deleted resources are reported, not errored). The **Valkey instance is the main cost**; the BigQuery dataset is kept by default. Run the Environment notebook at least once first so `cleanup.json` exists.
+
+The sync notebooks demonstrate **continuous queries** (BigQuery → Pub/Sub) that are designed to stop within the notebook run — so the teardown script doesn't manage them. `--check-jobs` lists any BigQuery jobs still in the `RUNNING` state so you can confirm none leaked; if one did, stop it with `bq cancel <job_id>`.
+
 ## Notebooks — Run in This Order
 
 Run the Environment notebook first. Notebooks 1–5 build core concepts sequentially. Notebooks 6–8 build on those foundations.

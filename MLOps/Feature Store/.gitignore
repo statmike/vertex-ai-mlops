@@ -1,0 +1,3 @@
+# Per-series cleanup parameters written by each Environment notebook.
+# Holds project-specific resource names for cleanup.py — not committed.
+*/cleanup.json
