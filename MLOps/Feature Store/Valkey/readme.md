@@ -40,13 +40,35 @@
 
 > You are here: `vertex-ai-mlops/MLOps/Feature Store/Valkey/readme.md`
 
-An ultra-low-latency in-memory feature store on [Memorystore for Redis](https://cloud.google.com/memorystore/docs/redis/redis-overview) (Valkey-compatible). Sub-millisecond reads, native HNSW vector search via `FT.SEARCH`, atomic operations for real-time counters, and TTL-based feature expiration — for workloads where microseconds matter: real-time trading, gaming, ad bidding.
+An ultra-low-latency in-memory feature store on [Memorystore for Valkey](https://cloud.google.com/memorystore/docs/valkey/valkey-overview). Sub-millisecond reads, native HNSW vector search via `FT.SEARCH`, atomic operations for real-time counters, and TTL-based feature expiration — for workloads where microseconds matter: real-time trading, gaming, ad bidding.
 
-> **Also in this series: [Bigtable Feature Store](../Bigtable/readme.md), [BigQuery Feature Store](../BigQuery/readme.md), and [Spanner Feature Store](../Spanner/readme.md)**
+> **Also in this series: [Bigtable Feature Store](../Bigtable/readme.md), [BigQuery Feature Store](../BigQuery/readme.md), [Spanner Feature Store](../Spanner/readme.md), and [Vertex AI Feature Store](../vertex/readme.md)**
 >
-> This Valkey approach gives you the **fastest reads in the series** (<1ms) with native approximate nearest neighbor search. The trade-off: data must fit in memory (max 300GB), there's no native BigQuery export (sync via Pub/Sub bridge), and data is volatile unless persistence is configured. For sub-5ms disk-backed serving, see [Bigtable Feature Store](../Bigtable/readme.md). For SQL at the serving layer with ACID transactions, see [Spanner Feature Store](../Spanner/readme.md). For zero-infrastructure serving, see [BigQuery Feature Store](../BigQuery/readme.md). All approaches use BigQuery as the offline store. See the [comparison table](../readme.md#choosing-an-approach) in the parent readme.
+> This Valkey approach gives you the **fastest reads in the series** (<1ms) with native approximate nearest neighbor search. The trade-off: data must fit in memory, there's no native BigQuery export (sync via Pub/Sub bridge), and data is volatile unless persistence is configured. For sub-5ms disk-backed serving, see [Bigtable Feature Store](../Bigtable/readme.md). For SQL at the serving layer with ACID transactions, see [Spanner Feature Store](../Spanner/readme.md). For zero-infrastructure serving, see [BigQuery Feature Store](../BigQuery/readme.md). For a fully managed solution, see [Vertex AI Feature Store](../vertex/readme.md). All approaches use BigQuery as the offline store. See the [comparison table](../readme.md#choosing-an-approach) in the parent readme.
 
-The data uses a 130K-entity dataset in BigQuery dataset `valkey_feature_store` — 26 entity groups (A–Z) × 5,000 entities. Each feature store series has its own independent BigQuery dataset with the same schema. Features are stored as Redis hashes with key pattern `features:{entity_group}:{entity_id}`.
+The data uses a 130K-entity dataset in BigQuery dataset `valkey_feature_store` — 26 entity groups (A–Z) × 5,000 entities. Each feature store series has its own independent BigQuery dataset with the same schema. Features are stored as hashes with key pattern `features:{entity_group}:{entity_id}`.
+
+## Memorystore for Redis vs Memorystore for Valkey
+
+Google Cloud offers **two** managed in-memory stores. This series uses **Memorystore for Valkey**, but every pattern works on either — Valkey is Redis-protocol compatible, so the same `redis-py` client and commands apply.
+
+| | **Memorystore for Redis** | **Memorystore for Valkey** *(this series)* |
+|---|---|---|
+| **Engine** | Redis, up to 7.2 | Valkey 7.2 / 8.0 / 9.0 |
+| **Governance** | Redis Inc. (source-available SSPL/RSAL since 2024) | **Open source, Linux Foundation** (BSD) |
+| **Architecture** | Single primary + optional replica | **Cluster-native** (shards × nodes); also a Cluster-Mode-Disabled option |
+| **Scale-out** | Vertical (bigger instance, max 300 GB) | **Horizontal** — add shards to scale capacity and throughput |
+| **Newer features** | Capped at 7.2 | Hash-field TTL (`HEXPIRE`, 8.0+), newer commands, ongoing OSS development |
+| **Provisioning** | `gcloud redis` (VPC peering, host/port) | `gcloud memorystore` (Private Service Connect automation) |
+| **Client** | `redis.Redis` | `redis.Redis` (Cluster Disabled) or `redis.cluster.RedisCluster` (Cluster Enabled) |
+
+**Why this series chooses Valkey:**
+1. **Open governance** — Valkey is the Linux Foundation fork created after Redis's 2024 license change: BSD-licensed, community-governed, no vendor lock-in.
+2. **Horizontal scale** — cluster mode shards data across nodes, past a single machine's memory/throughput ceiling.
+3. **Newer capabilities** — e.g. per-field hash TTL (`HEXPIRE`, Valkey 8.0+) that Memorystore for Redis (7.2) lacks.
+4. **Drop-in compatibility** — Redis-protocol compatible, so migration is mostly a provisioning change.
+
+**Setup used here — Cluster Mode Disabled:** a single-shard instance so the notebooks connect with the standard `redis.Redis` client and all multi-key operations (MULTI/EXEC, multi-key Lua, pipelining) work without hash-tag/slot constraints. Throughout the notebooks, **🔄 Redis vs Valkey** callouts mark every place the Valkey approach differs from Memorystore for Redis.
 
 ## Environment Setup
 
@@ -74,17 +96,20 @@ Then select the **Valkey Feature Store** kernel in your notebook.
 
 Each notebook includes an environment setup cell that installs required packages into your current kernel.
 
-### Local Redis for Development
+### Local Valkey for Development
 
-If you don't have a Memorystore instance, run Redis locally with Docker:
+If you don't have a Memorystore instance, run Valkey locally with Docker:
 
 ```bash
-# Basic Redis 7.2
-docker run -p 6379:6379 redis:7.2
+# Valkey 8 (includes hash-field TTL / HEXPIRE)
+docker run -p 6379:6379 valkey/valkey:8
 
-# Redis Stack (includes RediSearch for FT.CREATE / FT.SEARCH vector search)
+# For vector search (FT.CREATE / FT.SEARCH), use an image with the search module,
+# e.g. Redis Stack (Redis-protocol compatible with the notebook code):
 docker run -p 6379:6379 redis/redis-stack:latest
 ```
+
+> The notebooks auto-detect a missing Memorystore instance and fall back to printing a local-dev hint. To point at a local instance, set the host/port in the connection cell to `localhost:6379` (no TLS).
 
 ## Notebooks — Run in This Order
 
@@ -92,7 +117,7 @@ Run the Environment notebook first. Notebooks 1–5 build core concepts sequenti
 
 | # | Notebook | Prerequisites | What It Covers |
 |---|----------|---------------|----------------|
-| **0** | [Environment](./Valkey%20Feature%20Store%20-%20Environment.ipynb) | None | BigQuery dataset (creates if needed), Memorystore for Redis instance (Standard HA, 5GB, Redis 7.2), TLS certificate setup, Pub/Sub topic and subscription for sync bridge, two-client pattern (decode + bytes), memory sizing |
+| **0** | [Environment](./Valkey%20Feature%20Store%20-%20Environment.ipynb) | None | Redis-vs-Valkey comparison, BigQuery dataset (creates if needed), PSC service connection policy, Memorystore for Valkey instance (Cluster Mode Disabled, Valkey 8.0, 1 shard + 1 replica), TLS certificate, Pub/Sub topic + subscription, two-client pattern (decode + bytes) |
 | **1** | [Fundamentals](./Valkey%20Feature%20Store%20-%20Fundamentals.ipynb) | NB0 | Bulk load 130K entities from BigQuery via pipelined HSET, hash data structure (HSET/HGET/HMGET/HGETALL), key naming convention, sub-ms point read latency, pipelined batch reads, comparison to Bigtable and Spanner |
 | **2** | [Serialization](./Valkey%20Feature%20Store%20-%20Serialization.ipynb) | NB0, NB1 | Encoding BQ types to Redis strings/bytes, struct.pack for float32 embeddings (required for FT.SEARCH), JSON for complex types, NULL handling via field absence, storage size comparison, read latency by encoding |
 | **3** | [Synchronization](./Valkey%20Feature%20Store%20-%20Synchronization.ipynb) | NB0 | Full Pub/Sub bridge: BigQuery Continuous Query → Pub/Sub → subscriber → HSET, idempotency via timestamp checks, error handling with dead-letter topics, backpressure control, batch writes via pipelining, propagation latency measurement |
@@ -116,21 +141,23 @@ Run the Environment notebook first. Notebooks 1–5 build core concepts sequenti
 ## Prerequisites
 
 - A GCP project with billing enabled
-- APIs enabled: Memorystore for Redis, BigQuery, Pub/Sub
+- APIs enabled: Memorystore (`memorystore.googleapis.com`), Network Connectivity (`networkconnectivity.googleapis.com`), BigQuery, Pub/Sub
+- A PSC service connection policy for the `gcp-memorystore` service class (NB0 creates it)
 - Python >= 3.10
-- For vector search (NB7, NB8): Redis 7.2+ with RediSearch module (included in Memorystore and `redis-stack`)
+- For vector search (NB7, NB8): vector search is built into Memorystore for Valkey (instances created after 2024-09-13); locally, use a search-enabled image such as `redis-stack`
+- For hash-field TTL (NB4 §8): Valkey 8.0+ (Memorystore for Valkey default)
 
 ## Documentation
 
 | Topic | Link |
 |-------|------|
-| Memorystore for Redis overview | [Overview](https://cloud.google.com/memorystore/docs/redis/redis-overview) |
-| Redis data types | [Hashes](https://redis.io/docs/data-types/hashes/) |
+| Memorystore for Valkey overview | [Overview](https://cloud.google.com/memorystore/docs/valkey/valkey-overview) |
+| Memorystore for Valkey networking (PSC) | [Networking](https://cloud.google.com/memorystore/docs/valkey/networking) |
+| Memorystore for Valkey vector search | [Vector search](https://cloud.google.com/memorystore/docs/valkey/about-vector-search) |
+| Valkey commands | [Valkey docs](https://valkey.io/commands/) |
 | Pipelining | [Pipelining](https://redis.io/docs/manual/pipelining/) |
 | TTL and eviction | [Eviction](https://redis.io/docs/reference/eviction/) |
-| Vector search (RediSearch) | [Search and query](https://redis.io/docs/interact/search-and-query/) |
-| HNSW vector index | [Vector similarity](https://redis.io/docs/interact/search-and-query/search/vectors/) |
 | redis-py Python client | [redis-py](https://redis-py.readthedocs.io/) |
-| Memorystore pricing | [Pricing](https://cloud.google.com/memorystore/docs/redis/pricing) |
+| Memorystore for Valkey pricing | [Pricing](https://cloud.google.com/memorystore/docs/valkey/pricing) |
 | Pub/Sub overview | [Overview](https://cloud.google.com/pubsub/docs/overview) |
 | BigQuery continuous queries | [Continuous queries](https://cloud.google.com/bigquery/docs/continuous-queries-introduction) |
