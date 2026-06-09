@@ -70,6 +70,14 @@ Google Cloud offers **two** managed in-memory stores. This series uses **Memorys
 
 **Setup used here — Cluster Mode Disabled:** a single-shard instance so the notebooks connect with the standard `redis.Redis` client and all multi-key operations (MULTI/EXEC, multi-key Lua, pipelining) work without hash-tag/slot constraints. Throughout the notebooks, **🔄 Redis vs Valkey** callouts mark every place the Valkey approach differs from Memorystore for Redis.
 
+## Presentation
+
+An 18-slide overview of this series — positions Valkey on the latency spectrum, walks through the architecture, and shows how all 9 notebooks fit together:
+
+- [Valkey Feature Store — Overview (PDF)](./Valkey%20Feature%20Store%20-%20Overview.pdf)
+- [Valkey Feature Store — Overview (HTML)](./Valkey%20Feature%20Store%20-%20Overview.html) — to view: click the link, then use the download button (↓) to save locally and open in your browser
+- [Valkey Feature Store — Overview (source)](./Valkey%20Feature%20Store%20-%20Overview.md) — Marp markdown source
+
 ## Environment Setup
 
 ### Option 1: Local environment
