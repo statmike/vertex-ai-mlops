@@ -82,6 +82,27 @@ Then select the **BigQuery Feature Store** kernel in your notebook.
 
 Each notebook includes an environment setup cell that installs required packages into your current kernel.
 
+## Teardown / Cleanup
+
+This series has **no separate serving instance** — the serving layer is the BigQuery dataset itself (Storage Read API straight from the offline tables). So the only resource to remove is the dataset, which holds storage cost. Teardown is automated by `cleanup.py`, parameterized by a `cleanup.json` that the Environment notebook writes (`cleanup.json` is gitignored).
+
+From this directory (`MLOps/Feature Store/BigQuery/`):
+
+```bash
+# Dry run — show what would be deleted (default, safe)
+uv run python cleanup.py
+
+# Delete the BigQuery dataset and all tables within it
+uv run python cleanup.py --yes
+
+# Verify no continuous queries are still running (lists running BQ jobs; deletes nothing)
+uv run python cleanup.py --check-jobs
+```
+
+`cleanup.py` defaults to a dry run and is idempotent (an already-deleted dataset is reported, not errored). Run the Environment notebook at least once first so `cleanup.json` exists.
+
+If any notebook demonstrates **continuous queries**, they're designed to stop within the notebook run — so the teardown script doesn't manage them. `--check-jobs` lists any BigQuery jobs still in the `RUNNING` state so you can confirm none leaked; if one did, stop it with `bq cancel <job_id>`.
+
 ## Key Concepts
 
 - **[BigQuery Storage Read API](https://cloud.google.com/bigquery/docs/reference/storage)** — Reads directly from BigQuery's Colossus storage layer via gRPC, bypassing the query engine. Returns data as Apache Arrow record batches for zero-copy deserialization.
