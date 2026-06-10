@@ -1,0 +1,23 @@
+[project]
+name = "spanner-feature-store"
+version = "0.1.0"
+description = "Spanner Feature Store notebook series"
+requires-python = ">=3.10"
+dependencies = [
+    "google-cloud-spanner",
+    "google-cloud-bigquery",
+    "google-cloud-bigquery-reservation",
+    "google-cloud-bigquery-datatransfer",
+    "google-cloud-pubsub",
+    "google-cloud-monitoring",
+    "db-dtypes",
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "scikit-learn",
+    "fastapi",
+    "uvicorn",
+    "httpx",
+    "requests",
+    "ipykernel",
+]
