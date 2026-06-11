@@ -82,7 +82,11 @@ No single approach is universally better — they solve different problems:
 
 ## Presentations
 
-Each self-built series ships an overview slide deck (PDF):
+Start with the cross-cutting overview, then dive into any series:
+
+- **[Feature Stores on Google Cloud — Overview (PDF)](./Feature%20Store%20Overview.pdf)** — all five approaches, the latency spectrum, and how to choose ([HTML](./Feature%20Store%20Overview.html) · [source](./Feature%20Store%20Overview.md))
+
+Per-series overview decks (PDF):
 
 - [BigQuery Feature Store — Overview](./BigQuery/BigQuery%20Feature%20Store%20-%20Overview.pdf)
 - [Spanner Feature Store — Overview](./Spanner/Spanner%20Feature%20Store%20-%20Overview.pdf)
