@@ -67,7 +67,7 @@ Ordered along the latency spectrum (fastest reads on the right), with the manage
 | **Sync from BigQuery** | none (always fresh) | `EXPORT DATA` (CLOUD_SPANNER) + change streams | [`EXPORT DATA`](https://cloud.google.com/bigquery/docs/export-to-bigtable) (CLOUD_BIGTABLE) | Pub/Sub bridge | managed |
 | **Write path** | through BigQuery | DML + ACID transactions | direct writes, atomic RMW | `HSET`/`HINCRBY`, atomic | through BigQuery |
 | **Transactions** | n/a (read serving) | **multi-row / multi-table ACID** | single-row atomic | single-key atomic | n/a |
-| **Vector search** | IVF / TreeAH (native SQL) | **ScaNN ANN + exact, SQL-filtered** | brute-force `COSINE_DISTANCE` | **HNSW (native ANN)** | aNN / brute-force (built in) |
+| **Vector search** | IVF / TreeAH (native SQL) | **ScaNN ANN + exact, SQL-filtered** | brute-force `COSINE_DISTANCE` | **HNSW (native ANN)** | aNN / brute-force (**Optimized store only**) |
 | **Availability** | BigQuery SLA (serverless) | regional 99.99% / multi-region **99.999%** | multi-cluster replication | HA tier (primary + replica) | managed SLA |
 | **Infrastructure** | none (serverless) | provisioned PUs (autoscaling) | provisioned nodes ($500+/mo) | provisioned memory | managed |
 | **Best for** | Simplest path; 20–200 ms OK; bulk reads + governance | SQL filtering/JOINs + ACID at serve time; multi-region | Sub-5 ms key lookups, atomic writes, full control | Microsecond reads; real-time counters; HNSW retrieval | Managed infra + feature registry out of the box |
@@ -78,7 +78,7 @@ No single approach is universally better — they solve different problems:
 - **Spanner** makes the serving layer a real SQL database: secondary-index lookups on any column, serving-time JOINs, multi-row/multi-table ACID transactions, native vector search you can combine with a SQL `WHERE`, and automatic multi-region with strong consistency (99.999%).
 - **Bigtable** gives direct access to the serving layer for sub-5 ms key lookups, atomic real-time writes (counters, state) without round-tripping through BigQuery, custom Pub/Sub + Dataflow pipelines, and multi-region replication.
 - **Valkey** is the fastest reads in the set (&lt;2 ms in-memory) with native HNSW vector search and atomic counters — for trading, gaming, ad bidding where microseconds matter. Data must fit in memory and BigQuery remains the durable source of truth.
-- **Vertex AI Feature Store** minimizes operational overhead with a managed feature registry, automatic sync, and built-in vector search.
+- **Vertex AI Feature Store** minimizes operational overhead with a managed feature registry and automatic sync. Built-in vector search is available on the **Optimized** online store (not the Bigtable-backed serving backend).
 
 ## Presentations
 

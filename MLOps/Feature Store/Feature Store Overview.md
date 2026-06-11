@@ -318,7 +318,7 @@ Google runs the serving infra, the sync, and a formal feature registry.
 </div>
 <div class="col">
 
-**Vector search** — ANN or brute-force, with filter columns + crowding, built in.
+**Vector search** — ANN or brute-force with filter columns + crowding, but **only on the Optimized online store** (not the Bigtable-backed backend).
 
 **Note** — defines its own source-table shapes (entity rows or history tables); **not** built on the shared 130K dataset like the other four.
 
@@ -377,7 +377,7 @@ All four self-built stores now have **native** vector search — they differ on 
 | **Spanner** | **ScaNN ANN** + exact | `APPROX_COSINE_DISTANCE` | **full SQL `WHERE`** | ~10–50 ms (filter+KNN, one query) |
 | **Bigtable** | brute-force | `COSINE_DISTANCE` | row key only | scales with table size |
 | **Valkey** | **HNSW** / FLAT | `FT.SEARCH` KNN | TAG + NUMERIC | **~2 ms @ ~89% recall** |
-| **Vertex AI** | ANN / brute-force | managed | filter cols + crowding | managed |
+| **Vertex AI** | ANN / brute-force (**Optimized store only**) | managed | filter cols + crowding | managed |
 
 **Spanner** for vector search inside a SQL query; **Valkey** for fastest standalone ANN; **BigQuery** for offline scale.
 
