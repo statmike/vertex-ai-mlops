@@ -48,6 +48,14 @@ A SQL-powered online feature store on [Cloud Spanner](https://cloud.google.com/s
 
 The data uses a 130K-entity dataset in BigQuery dataset `spanner_feature_store` — 26 entity groups (A–Z) × 5,000 entities, 224 columns spanning every BigQuery data type. Each feature store series has its own independent BigQuery dataset with the same schema.
 
+## Presentation
+
+A 20-slide overview of this series — positions Spanner on the latency spectrum, walks through the architecture, and shows how all 12 notebooks fit together (with measured results from a live 100 PU Enterprise instance):
+
+- [Spanner Feature Store — Overview (PDF)](./Spanner%20Feature%20Store%20-%20Overview.pdf)
+- [Spanner Feature Store — Overview (HTML)](./Spanner%20Feature%20Store%20-%20Overview.html) — to view: click the link, then use the download button (↓) to save locally and open in your browser
+- [Spanner Feature Store — Overview (source)](./Spanner%20Feature%20Store%20-%20Overview.md) — Marp markdown source
+
 ## Environment Setup
 
 ### Option 1: Local environment
