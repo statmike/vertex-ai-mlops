@@ -53,12 +53,12 @@ Information is shared between frameworks:
 **Frameworks:**
 - [CatBoost](./CatBoost/readme.md)
 - [Keras](./Keras/readme.md)
+- [R](./R/readme.md) — running R on Google Cloud: one shared workflow across runtimes (interactive, Vertex AI Custom Training, Dataproc Serverless Spark-R, Vertex AI Pipelines), plus BigQuery→R data access (Iceberg/`arrow`) and R model serving
 
 In-Progress
 - [Flax](./Flax/readme.md)
 - [Vertex AI AutoML](./Vertex%20AI%20AutoML/readme.md)
 - [BigQuery ML](./BQML/readme.md)
-- [R](./R/readme.md)
 - [PyTorch](./PyTorch/readme.md)
 
 Planning:

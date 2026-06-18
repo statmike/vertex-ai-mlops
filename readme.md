@@ -114,7 +114,7 @@ End-to-end ML workflows for specific frameworks, all training on the same BigQue
 - **[CatBoost](./Framework%20Workflows/CatBoost/readme.md)** (3 notebooks) — Gradient boosted trees with custom FastAPI containers and Feature Store integration
 - **[Vertex AI AutoML](./Framework%20Workflows/Vertex%20AI%20AutoML/readme.md)** (6 notebooks) — Tabular classification, architecture review, TabNet, Wide and Deep, and feature engineering
 - **[Flax](./Framework%20Workflows/Flax/readme.md)** (1 notebook) — Neural networks with JAX using Flax
-- **[R](./Framework%20Workflows/R/readme.md)** (1 notebook) — R on Vertex AI Pipelines with KFP container components
+- **[R](./Framework%20Workflows/R/readme.md)** (6 notebooks) — running R on Google Cloud: one shared GLM workflow across runtimes (interactive, Vertex AI Custom Training, Dataproc Serverless Spark-R, Vertex AI Pipelines), plus BigQuery→R data access via Iceberg/arrow and R model serving
 
 ---
 
@@ -131,7 +131,7 @@ Applied machine learning patterns for real-world problems: agents, solution prot
 
 ## Additional Content
 
-This repository also contains framework-specific workflow series for [TensorFlow](./05%20-%20TensorFlow/readme.md) (28 notebooks), [BigQuery ML](./03%20-%20BigQuery%20ML%20(BQML)/readme.md) (26 notebooks), [scikit-learn](./04%20-%20scikit-learn/readme.md) (12 notebooks), [R](./08%20-%20R/readme.md) (12 notebooks), and [AutoML](./02%20-%20Vertex%20AI%20AutoML/readme.md) (6 notebooks), along with topics like [Tips](./Tips/readme.md), [Working With Document AI](./Working%20With/readme.md), and several other Applied topics. For a full description of all content, see [readme-legacy.md](./readme-legacy.md).
+This repository also contains framework-specific workflow series for [TensorFlow](./05%20-%20TensorFlow/readme.md) (28 notebooks), [BigQuery ML](./03%20-%20BigQuery%20ML%20(BQML)/readme.md) (26 notebooks), [scikit-learn](./04%20-%20scikit-learn/readme.md) (12 notebooks), [R](./Framework%20Workflows/R/readme.md) (6 notebooks), and [AutoML](./02%20-%20Vertex%20AI%20AutoML/readme.md) (6 notebooks), along with topics like [Tips](./Tips/readme.md), [Working With Document AI](./Working%20With/readme.md), and several other Applied topics. For a full description of all content, see [readme-legacy.md](./readme-legacy.md).
 
 ---
 

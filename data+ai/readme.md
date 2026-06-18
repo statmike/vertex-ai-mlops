@@ -46,6 +46,8 @@ Resources for machine learning and AI across Google Cloud data services — data
 
 - **[Tabular Data](tabular-data/)** — Reading tabular data efficiently for ML workflows. Compares BigQuery read approaches (query, Storage Read API, BigFrames, pandas-gbq) by cost and speed, with multi-threaded benchmarks.
 
+- **[BigQuery Iceberg](bq-iceberg/)** — Set up a large Apache Iceberg managed table (Parquet shards in your own GCS bucket) from the Chicago Taxi public dataset, read it from Python (BigFrames + Storage Read API). Prerequisite for the R reads notebook, which reads it at scale — including multithreaded `arrow` reads parallelized across the many Parquet files.
+
 - **[Model Serving / Inference](model-serving.md)** — Training and deploying custom ML models across Google Cloud: PyTorch serving on Vertex AI endpoints, BigQuery ML, AlloyDB, Spanner, Dataflow RunInference, TorchServe, and GPU inference benchmarks.
 
 - **[BigQuery AI Functions](bq-ai-functions/)** — A learning resource for BigQuery's built-in AI functions: 20 functions, 8 multi-function workflows, 30+ notebooks, and 100 synthetic PDFs for hands-on examples.

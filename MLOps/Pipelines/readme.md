@@ -383,7 +383,7 @@ A series of notebook based workflows that show how to put all the concepts from 
     - Example 1: Store a pipeline in artifact registry and directly run it on Vertex AI Pipelines without a local download.
     - Example 2: Store and retrieve components for reusability: as files (at url, file directory, or text string) and as artifact in artifact registry
     - Example 3: Store pipelines in artifact registry and retrieve (download, and import) to use as components in new pipelines
-- Run [R on Vertex AI Pipelines](../../Framework%20Workflows/R/R%20on%20Vertex%20AI%20Pipelines.ipynb)
+- Run [R - Vertex AI Pipelines](../../Framework%20Workflows/R/R%20-%20Vertex%20AI%20Pipelines.ipynb)
     - Use a prebuilt container to easily run an R script with inputs for the required libraries and command line arguments
 - Automate model rollout on a PSC private endpoint: [Vertex AI PSC Endpoint - Pipeline Model Swap](../Serving/Online/Vertex%20AI%20PSC%20Endpoint%20-%20Pipeline%20Model%20Swap.ipynb)
     - Real-world pipeline that deploys a model, shifts traffic, verifies deployment health, undeploys old models, and sends notifications — with automatic rollback on failure and independent PSC prediction testing from a GCE VM

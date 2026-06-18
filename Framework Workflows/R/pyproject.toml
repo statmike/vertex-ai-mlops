@@ -1,0 +1,15 @@
+[project]
+name = "r-on-gcp"
+version = "0.0.1"
+description = "Python driver environment for the R-on-Google-Cloud series (Vertex AI / Dataproc / KFP SDKs)."
+requires-python = ">=3.10"
+dependencies = [
+    "google-cloud-aiplatform",
+    "google-cloud-storage",
+    "google-cloud-build",
+    "google-cloud-dataproc",
+    "kfp",
+]
+
+[dependency-groups]
+dev = ["ipykernel"]

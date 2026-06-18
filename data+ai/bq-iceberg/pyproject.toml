@@ -1,0 +1,18 @@
+[project]
+name = "bq-iceberg"
+version = "0.1.0"
+description = "Set up BigQuery native and Apache Iceberg managed tables, and read them from Python"
+requires-python = ">=3.10"
+dependencies = [
+    "google-cloud-bigquery",
+    "google-cloud-bigquery-storage",
+    "google-cloud-bigquery-connection",
+    "google-cloud-storage",
+    "bigframes",
+    "db-dtypes",
+    "pandas",
+    "pyarrow",
+]
+
+[dependency-groups]
+dev = ["ipykernel"]

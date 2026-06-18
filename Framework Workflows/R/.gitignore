@@ -1,0 +1,11 @@
+# Local Python environment (uv)
+.venv/
+
+# Large binary model fetched from GCS and trimmed at build time — not source.
+# Regenerated whenever the serving notebook builds its container.
+model.rds
+
+# Note: plumber.R, serve.R, Dockerfile, and the compiled pipeline YAMLs
+# (r-baked.yaml, r-injected.yaml, r-both.yaml) are intentionally kept committed
+# so GitHub reviewers can see the served code and pipeline specs without running
+# the notebooks (matching the ml-training series convention).

@@ -1,0 +1,92 @@
+# PIPELINE DEFINITION
+# Name: r-glm-injected
+# Description: Approach A: decode the R script from a parameter and run it on a stock image.
+# Inputs:
+#    bq_dataset: str
+#    bq_table: str
+#    model_dir: str
+#    project_id: str
+#    r_script_b64: str
+#    var_omit: str
+#    var_target: str
+components:
+  comp-r-glm-injected:
+    executorLabel: exec-r-glm-injected
+    inputDefinitions:
+      parameters:
+        bq_dataset:
+          parameterType: STRING
+        bq_table:
+          parameterType: STRING
+        model_dir:
+          parameterType: STRING
+        project_id:
+          parameterType: STRING
+        r_script_b64:
+          parameterType: STRING
+        var_omit:
+          parameterType: STRING
+        var_target:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-r-glm-injected:
+      container:
+        args:
+        - '{"Concat": ["apt-get update -qq && apt-get install -y -qq libcurl4-openssl-dev
+          libssl-dev libxml2-dev libuv1-dev && ", "Rscript -e ''install.packages(\"bigrquery\",
+          repos=\"https://cloud.r-project.org\")'' && ", "echo ", "{{$.inputs.parameters[''r_script_b64'']}}",
+          " | base64 -d > train.R && ", "export AIP_MODEL_DIR=", "{{$.inputs.parameters[''model_dir'']}}",
+          " && ", "Rscript train.R ", "{{$.inputs.parameters[''project_id'']}}", "
+          ", "{{$.inputs.parameters[''bq_dataset'']}}", " ", "{{$.inputs.parameters[''bq_table'']}}",
+          " ", "{{$.inputs.parameters[''var_target'']}}", " ", "{{$.inputs.parameters[''var_omit'']}}"]}'
+        command:
+        - bash
+        - -c
+        image: rocker/r-ver:4.4.1
+pipelineInfo:
+  name: r-glm-injected
+root:
+  dag:
+    tasks:
+      r-glm-injected:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-r-glm-injected
+        inputs:
+          parameters:
+            bq_dataset:
+              componentInputParameter: bq_dataset
+            bq_table:
+              componentInputParameter: bq_table
+            model_dir:
+              componentInputParameter: model_dir
+            project_id:
+              componentInputParameter: project_id
+            r_script_b64:
+              componentInputParameter: r_script_b64
+            var_omit:
+              componentInputParameter: var_omit
+            var_target:
+              componentInputParameter: var_target
+        taskInfo:
+          name: r-glm-injected
+  inputDefinitions:
+    parameters:
+      bq_dataset:
+        parameterType: STRING
+      bq_table:
+        parameterType: STRING
+      model_dir:
+        parameterType: STRING
+      project_id:
+        parameterType: STRING
+      r_script_b64:
+        parameterType: STRING
+      var_omit:
+        parameterType: STRING
+      var_target:
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.16.1

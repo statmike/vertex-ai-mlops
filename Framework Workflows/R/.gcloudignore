@@ -1,0 +1,15 @@
+# Build context for `gcloud builds submit` (serving container).
+#
+# gcloud uses .gitignore when no .gcloudignore exists — and .gitignore excludes
+# model.rds, which the serving Dockerfile needs (COPY model.rds). This file
+# overrides that: keep model.rds in the build context while still excluding the
+# things the build does not need.
+
+.venv/
+__pycache__/
+*.ipynb
+*.ipynb_checkpoints/
+readme.md
+uv.lock
+pyproject.toml
+*.yaml

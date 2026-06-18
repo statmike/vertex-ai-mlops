@@ -1,0 +1,82 @@
+# PIPELINE DEFINITION
+# Name: r-glm-baked
+# Description: Approach B: run code/train.R baked into the trainer image.
+# Inputs:
+#    bq_dataset: str
+#    bq_table: str
+#    model_dir: str
+#    project_id: str
+#    var_omit: str
+#    var_target: str
+components:
+  comp-r-glm-baked:
+    executorLabel: exec-r-glm-baked
+    inputDefinitions:
+      parameters:
+        bq_dataset:
+          parameterType: STRING
+        bq_table:
+          parameterType: STRING
+        model_dir:
+          parameterType: STRING
+        project_id:
+          parameterType: STRING
+        var_omit:
+          parameterType: STRING
+        var_target:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-r-glm-baked:
+      container:
+        args:
+        - '{"Concat": ["export AIP_MODEL_DIR=", "{{$.inputs.parameters[''model_dir'']}}",
+          " && ", "Rscript ./code/train.R ", "{{$.inputs.parameters[''project_id'']}}",
+          " ", "{{$.inputs.parameters[''bq_dataset'']}}", " ", "{{$.inputs.parameters[''bq_table'']}}",
+          " ", "{{$.inputs.parameters[''var_target'']}}", " ", "{{$.inputs.parameters[''var_omit'']}}"]}'
+        command:
+        - bash
+        - -c
+        image: us-central1-docker.pkg.dev/statmike-mlops-349915/statmike-mlops-349915/r_bigquery-data_trainer
+pipelineInfo:
+  name: r-glm-baked
+root:
+  dag:
+    tasks:
+      r-glm-baked:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-r-glm-baked
+        inputs:
+          parameters:
+            bq_dataset:
+              componentInputParameter: bq_dataset
+            bq_table:
+              componentInputParameter: bq_table
+            model_dir:
+              componentInputParameter: model_dir
+            project_id:
+              componentInputParameter: project_id
+            var_omit:
+              componentInputParameter: var_omit
+            var_target:
+              componentInputParameter: var_target
+        taskInfo:
+          name: r-glm-baked
+  inputDefinitions:
+    parameters:
+      bq_dataset:
+        parameterType: STRING
+      bq_table:
+        parameterType: STRING
+      model_dir:
+        parameterType: STRING
+      project_id:
+        parameterType: STRING
+      var_omit:
+        parameterType: STRING
+      var_target:
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.16.1
