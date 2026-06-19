@@ -63,7 +63,8 @@ Workflows compose multiple AI functions together for end-to-end scenarios. See [
 | [Semantic Search System](workflows/semantic_search/) | AI.EMBED, VECTOR_SEARCH, AI.SEARCH | Build and query a semantic search index |
 | [RAG Pipeline](workflows/rag_pipeline/) | AI.GENERATE_TABLE, AI.EMBED, VECTOR_SEARCH, AI.GENERATE | Generate a knowledge base, embed, search, answer questions |
 | [Document RAG](workflows/document_rag/) | AI.PARSE_DOCUMENT, AI.EMBED, VECTOR_SEARCH, AI.GENERATE | Parse real documents, embed chunks, search, answer questions with grounded context |
-| [Time Series Intelligence](workflows/time_series_intelligence/) | AI.FORECAST, AI.DETECT_ANOMALIES, AI.EVALUATE | Forecast, detect anomalies, evaluate accuracy |
+| [Time Series Intelligence](workflows/time_series_intelligence/) | AI.FORECAST, AI.DETECT_ANOMALIES, AI.EVALUATE, AI.KEY_DRIVERS | Forecast, detect anomalies, evaluate accuracy, explain changes by segment |
+| [Metric Diagnostics](workflows/metric_diagnostics/) | AI.KEY_DRIVERS, AI.GENERATE | Explain why a metric moved between two periods, then narrate the drivers in plain language |
 | [Document Intelligence](workflows/document_intelligence/) | AI.CLASSIFY, AI.GENERATE, AI.SCORE, AI.AGG | Classify mixed documents, extract key fields, score quality, summarize findings |
 | [Content Moderation](workflows/content_moderation/) | AI.GENERATE_TABLE, AI.IF, AI.CLASSIFY, AI.SCORE, AI.GENERATE, AI.AGG | Flag, categorize, and score user-generated content for moderation |
 | [Multimodal Analysis](workflows/multimodal_analysis/) | AI.EMBED, AI.SIMILARITY, AI.GENERATE | Embed document images, find similar documents, generate visual descriptions |
@@ -163,6 +164,12 @@ When unsure, default to `RETRIEVAL_DOCUMENT` / `RETRIEVAL_QUERY`. See the [`AI.E
 | `AI.DETECT_ANOMALIES` | [notebook](functions/ai_detect_anomalies/ai_detect_anomalies.ipynb) · [sql](functions/ai_detect_anomalies/ai_detect_anomalies.sql) | TVF | GA | — | Detect anomalous data points by comparing against a forecast baseline. |
 | `AI.EVALUATE` | [notebook](functions/ai_evaluate/ai_evaluate.ipynb) · [sql](functions/ai_evaluate/ai_evaluate.sql) | TVF | GA | — | Evaluate forecast accuracy (MAE, MSE, RMSE, MAPE, sMAPE). |
 
+### Augmented Analytics — Find what drives metric changes
+
+| Function | Examples | Type | Status | Multimodal | What It Does |
+|----------|----------|------|--------|------------|--------------|
+| `AI.KEY_DRIVERS` | [notebook](functions/ai_key_drivers/ai_key_drivers.ipynb) · [sql](functions/ai_key_drivers/ai_key_drivers.sql) | TVF | Preview | — | Key driver / contribution analysis — find the segments that drive a metric change between an interest and reference set. No model or connection. |
+
 ---
 
 ## How Functions Relate
@@ -218,11 +225,14 @@ When unsure, default to `RETRIEVAL_DOCUMENT` / `RETRIEVAL_QUERY`. See the [`AI.E
 │  No model creation needed│   │       needs object table +           │
 └──────────────────────────┘   │       Document AI processor           │
                                │       + remote model                  │
-                               │                                      │
-                               │  AI.PARSE_DOCUMENT ◄── simplified     │
-                               │       needs Layout Parser processor   │
-                               │       but no CREATE MODEL step        │
-                               └──────────────────────────────────────┘
+┌──────────────────────────┐   │                                      │
+│   AUGMENTED ANALYTICS    │   │  AI.PARSE_DOCUMENT ◄── simplified     │
+│                          │   │       needs Layout Parser processor   │
+│  AI.KEY_DRIVERS          │   │       but no CREATE MODEL step        │
+│       contribution /     │   └──────────────────────────────────────┘
+│       key driver analysis│
+│  No model / no connection│
+└──────────────────────────┘
 ```
 
 **Key distinctions:**
@@ -257,6 +267,7 @@ bq-ai-functions/
 │   ├── ai_forecast/
 │   ├── ai_detect_anomalies/
 │   ├── ai_evaluate/
+│   ├── ai_key_drivers/
 │   ├── ml_process_document/
 │   ├── ai_parse_document/
 │   └── ... (+ legacy/variant functions)
@@ -266,6 +277,7 @@ bq-ai-functions/
     ├── content_analysis/
     ├── semantic_search/
     ├── rag_pipeline/
+    ├── metric_diagnostics/
     ├── time_series_intelligence/
     ├── document_intelligence/
     ├── content_moderation/

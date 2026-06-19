@@ -201,7 +201,8 @@ Each workflow is a notebook that uses multiple AI functions together to accompli
 | **[Content Analysis Pipeline](workflows/content_analysis/)** | AI.GENERATE_TABLE, AI.CLASSIFY, AI.SCORE, AI.GENERATE | Generate sample data, classify by topic, score urgency, generate executive summary |
 | **[Semantic Search System](workflows/semantic_search/)** | AI.EMBED, VECTOR_SEARCH, AI.SEARCH | Build a semantic search index, compare manual (VECTOR_SEARCH) vs simplified (AI.SEARCH) approaches |
 | **[RAG Pipeline](workflows/rag_pipeline/)** | AI.GENERATE_TABLE, AI.EMBED, VECTOR_SEARCH, AI.GENERATE | Generate a knowledge base, embed it, search it, answer questions with retrieved context |
-| **[Time Series Intelligence](workflows/time_series_intelligence/)** | AI.FORECAST, AI.DETECT_ANOMALIES, AI.EVALUATE | Forecast sales, detect anomalies, evaluate accuracy, compare TimesFM model versions |
+| **[Time Series Intelligence](workflows/time_series_intelligence/)** | AI.FORECAST, AI.DETECT_ANOMALIES, AI.EVALUATE, AI.KEY_DRIVERS | Forecast sales, detect anomalies, evaluate accuracy, compare TimesFM model versions, explain a change by segment |
+| **[Metric Diagnostics](workflows/metric_diagnostics/)** | AI.KEY_DRIVERS, AI.GENERATE | Explain why a metric moved between two periods, then narrate the key drivers in plain language |
 | **[Document Intelligence](workflows/document_intelligence/)** | AI.CLASSIFY, AI.GENERATE, AI.SCORE | Classify mixed documents, extract key fields, score quality, summarize findings |
 | **[Content Moderation](workflows/content_moderation/)** | AI.GENERATE_TABLE, AI.IF, AI.CLASSIFY, AI.SCORE, AI.GENERATE | Flag, categorize, and score user-generated content for moderation |
 | **[Multimodal Analysis](workflows/multimodal_analysis/)** | AI.EMBED, AI.SIMILARITY, AI.GENERATE | Embed document images, find similar documents, generate visual descriptions |
@@ -359,7 +360,7 @@ Every workflow notebook's overview cell (cell-0) includes a **Functions used:** 
 
 | Function | Featured in Workflows |
 |----------|----------------------|
-| AI.GENERATE | Content Analysis, Data Enrichment, RAG Pipeline, Document Intelligence, Content Moderation, Multimodal Analysis, Document RAG |
+| AI.GENERATE | Content Analysis, Data Enrichment, RAG Pipeline, Document Intelligence, Content Moderation, Multimodal Analysis, Document RAG, Metric Diagnostics |
 | AI.GENERATE_TABLE | Content Analysis, RAG Pipeline, Content Moderation |
 | AI.IF | Content Moderation |
 | AI.CLASSIFY | Content Analysis, Document Intelligence, Content Moderation |
@@ -372,6 +373,7 @@ Every workflow notebook's overview cell (cell-0) includes a **Functions used:** 
 | AI.FORECAST | Time Series Intelligence |
 | AI.DETECT_ANOMALIES | Time Series Intelligence |
 | AI.EVALUATE | Time Series Intelligence |
+| AI.KEY_DRIVERS | Metric Diagnostics, Time Series Intelligence |
 | AI.PARSE_DOCUMENT | Document RAG |
 
 ### Maintenance checklist
@@ -841,6 +843,7 @@ Each function's documentation URL is recorded in the table below and mirrored in
 | AI.EVALUATE | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-evaluate |
 | ML.PROCESS_DOCUMENT | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-process-document |
 | AI.PARSE_DOCUMENT | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-parse-document |
+| AI.KEY_DRIVERS | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-key-drivers |
 
 ### Tracked upcoming functions
 
@@ -872,6 +875,8 @@ Capabilities observed in training labs or announcements but not yet in published
 | 2026-05-23 | AI.PARSE_DOCUMENT — new function | Created functions/ai_parse_document/ with notebook (37 cells, 6 SQL examples) and SQL file. AI.PARSE_DOCUMENT (Preview) uses Document AI Layout Parser for OCR + layout parsing + chunking — no CREATE MODEL step needed (endpoint points directly to processor). Updated RESOURCES.md with full documentation (syntax, inputs/outputs, supported file types, best practices, limitations). Updated README.md function table, relationship diagram, and project tree. Moved from tracked upcoming functions to documented. Gemini model endpoints (`endpoint => 'gemini-2.5-flash'`) observed in L400 training lab but not yet in public docs — tracked in upcoming enhancements for future notebook expansion. |
 | 2026-05-23 | Document RAG — new workflow | Created workflows/document_rag/ with notebook (31 cells). End-to-end document RAG pipeline: AI.PARSE_DOCUMENT (parse 20 invoices into chunks) → AI.EMBED (embed chunks with text-embedding-005) → VECTOR_SEARCH (retrieve relevant chunks) → AI.GENERATE (answer questions with grounded context). Includes batch RAG (3 questions) and RAG vs direct generation comparison. Updated cross-references: added Featured in to ai_parse_document, ai_embed, vector_search, ai_generate notebooks. Updated README.md workflows table and project tree. Updated PLANS.md completed workflows table and mapping. |
 | 2026-05-10 | Full audit — all functions | **Managed functions:** AI.IF and AI.CLASSIFY gained `examples`, `embeddings` (Preview), `optimization_mode` (Preview) params for optimized mode (230x cost reduction). AI.IF, AI.SCORE, AI.CLASSIFY gained `max_error_ratio`. AI.AGG added known issues section. **Embeddings:** AI.EMBED and AI.SIMILARITY gained `model` param (`embeddinggemma-300m` built-in). Four new embedding models across AI.EMBED/AI.SIMILARITY/AI.GENERATE_EMBEDDING/ML.GENERATE_EMBEDDING: `embeddinggemma-300m`, `gemini-embedding-001`, `text-multilingual-embedding-002`, `gemini-embedding-2-preview` (multimodal incl. PDFs). **Forecasting:** AI.FORECAST gained `forecast_end_timestamp`. AI.DETECT_ANOMALIES: Preview → GA, gained `context_window`. AI.EVALUATE gained `context_window` and `mean_absolute_scaled_error` output. **Generation:** AI.GENERATE: `thinking_level` for Gemini 3.0+, grounding requires 2.0+. AI.GENERATE_TEXT: `USE_CHAT_MODE` for Open models. **Document Processing:** ML.PROCESS_DOCUMENT max pages 100→130, added 120s timeout and batch size of 10. **New functions tracked:** AI.PARSE_DOCUMENT (Preview, docs pending), HYBRID_SEARCH (Preview, docs pending). Expanded audit procedure in PLANS.md. |
+| 2026-06-19 | AI.KEY_DRIVERS — new function | Created functions/ai_key_drivers/ with notebook (36 cells, 7 SQL examples) and SQL file. AI.KEY_DRIVERS (Preview) is an augmented analytics TVF for key driver / contribution analysis — finds the segments driving a metric change between an interest and reference set. No CREATE MODEL, no connection, no endpoint (structured tables only; no ObjectRef). Added new "Augmented Analytics" section to RESOURCES.md with full documentation (syntax, inputs/outputs, best practices, limitations, and a comparison to contribution analysis models + ML.GET_INSIGHTS). Added README.md function-map subsection, relationship diagram box, and project tree entry. Examples use the public NYC Citi Bike dataset (April 2017 interest vs April 2016 reference; metric SUM(tripduration); dimensions usertype/gender/start_station_name). |
+| 2026-06-19 | Metric Diagnostics — new workflow + TSI integration | Created workflows/metric_diagnostics/ with notebook (25 cells): build interest/reference dataset → confirm headline shift with SQL → AI.KEY_DRIVERS surfaces drivers → AI.GENERATE narrates an executive summary. Integrated AI.KEY_DRIVERS into time_series_intelligence as Step 5 (companion segmented region × product_line table with an injected H2 surge; explains which segments drove the H1→H2 change). Updated cross-references: Featured in lines (ai_key_drivers → both workflows; ai_generate → Metric Diagnostics), README.md workflows table + project tree, PLANS.md completed workflows + mapping table. |
 
 ### Notebook update plan (May 2026 audit)
 
