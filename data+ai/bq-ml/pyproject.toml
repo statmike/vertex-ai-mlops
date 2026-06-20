@@ -1,0 +1,15 @@
+[project]
+name = "bq-ml"
+version = "0.1.0"
+description = "BigQuery ML — CREATE MODEL, ML.* functions, workflows, and pipelines"
+requires-python = ">=3.10"
+dependencies = [
+    "google-cloud-bigquery",
+    "db-dtypes",
+    "bigquery-magics",
+    "bigframes",
+    "matplotlib",
+]
+
+[dependency-groups]
+dev = ["ipykernel"]
