@@ -36,11 +36,6 @@
 </table><br/><br/>
 
 ---
-<!--
-One-stop setup reference for the bq-ml project. Retargeted from the bq-ai-functions
-setup guide to BigQuery ML concerns. Keep in sync with PLANS.md conventions.
--->
-
 # Setup Reference
 
 Everything you need to run the BigQuery ML notebooks. Most model types need only a project, a dataset, and your own credentials — connections are the exception, not the rule.

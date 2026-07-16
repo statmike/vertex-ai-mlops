@@ -36,12 +36,6 @@
 </table><br/><br/>
 
 ---
-<!--
-Landing-page map for the bq-ml project. Tables of models/functions/workflows/pipelines,
-a "how it fits together" diagram, and the project structure tree. Keep tables in sync
-with the content folders and with RESOURCES.md / PLANS.md (see the audit procedure in PLANS.md).
--->
-
 # BigQuery ML
 
 Train and run machine learning models entirely in SQL with BigQuery ML — `CREATE MODEL` plus the `ML.*` functions. No data movement, no separate training infrastructure: the model lives in your dataset and you evaluate, predict, and explain it with SQL.
@@ -66,8 +60,13 @@ Per-model-type deep dives covering the full lifecycle (create → evaluate → p
 | Model | Type | Lifecycle entry | Status | What it does |
 |-------|------|-----------------|--------|--------------|
 | [Logistic Regression](models/logistic_regression/) | `LOGISTIC_REG` | ML.PREDICT | GA | Binary classification with feature attributions and hyperparameter tuning |
+| [Linear Regression](models/linear_regression/) | `LINEAR_REG` | ML.PREDICT | GA | Continuous-value regression with interpretable coefficients (`ML.WEIGHTS`) and hyperparameter tuning |
+| [Boosted Tree Classifier](models/boosted_tree_classifier/) | `BOOSTED_TREE_CLASSIFIER` | ML.PREDICT | GA | XGBoost binary classification with split-based feature importance (`ML.FEATURE_IMPORTANCE`); same data as Logistic Regression for direct comparison |
+| [Boosted Tree Regressor](models/boosted_tree_regressor/) | `BOOSTED_TREE_REGRESSOR` | ML.PREDICT | GA | XGBoost regression with tree visualization (`EXPORT MODEL` + `xgboost.plot_tree`); same data as Linear Regression for direct comparison |
+| [Random Forest Classifier](models/random_forest_classifier/) | `RANDOM_FOREST_CLASSIFIER` | ML.PREDICT | GA | Bagged tree ensemble, single-pass training; same data as Logistic/Boosted Tree Classifier for a three-way comparison |
+| [Random Forest Regressor](models/random_forest_regressor/) | `RANDOM_FOREST_REGRESSOR` | ML.PREDICT | GA | Bagged tree ensemble; same data as Linear/Boosted Tree Regressor — genuinely underperforms boosting on this small dataset, discussed honestly |
 
-*More model types are planned — see the backlog in [PLANS.md](PLANS.md) (linear regression, boosted trees, random forest, DNN, K-means, PCA, matrix factorization, ARIMA_PLUS, autoencoder, plus imported / remote / exported model categories).*
+*More model types are planned — see the backlog in [PLANS.md](PLANS.md) (DNN, K-means, PCA, matrix factorization, ARIMA_PLUS, autoencoder, plus imported / remote / exported model categories).*
 
 ## Functions
 

@@ -228,7 +228,7 @@ FROM `PROJECT_ID.DATASET.training_table`;
 | `class_weights` | ARRAY\<STRUCT\> | No | — | (label, weight) | `LOGISTIC_REG` only — manual per-class weights (mutually exclusive with `auto_class_weights`). |
 | `calculate_p_values` | BOOL | No | `FALSE` | TRUE/FALSE | Compute standard errors + p-values (read via `ML.ADVANCED_WEIGHTS`). See gotchas. |
 | `fit_intercept` | BOOL | No | `TRUE` | TRUE/FALSE | Include the `__INTERCEPT__` term. |
-| `category_encoding_method` | STRING | No | `ONE_HOT_ENCODING` | `ONE_HOT_ENCODING`, `DUMMY_ENCODING` | Categorical encoding. `DUMMY_ENCODING` required for p-values. |
+| `category_encoding_method` | STRING | No | `ONE_HOT_ENCODING` | `ONE_HOT_ENCODING`, `DUMMY_ENCODING` | Categorical encoding. `DUMMY_ENCODING` required for p-values; also recommended whenever reading `ML.WEIGHTS` (see best practices below). With `DUMMY_ENCODING`, the dropped baseline category (pinned `weight: 0.0`) is not user-configurable — **observed** (2 runs, `models/linear_regression/`, different random `AUTO_SPLIT`s each time) to be deterministic per dataset and to consistently pick the most-frequent category, not the alphabetically-first one (e.g. `sex`: `MALE` (168 rows) was the baseline both times, not `FEMALE` (165 rows), despite `FEMALE` < `MALE` alphabetically). |
 | `enable_global_explain` | BOOL | No | `FALSE` | TRUE/FALSE | Must be TRUE to later call `ML.GLOBAL_EXPLAIN`. |
 | `warm_start` | BOOL | No | `FALSE` | TRUE/FALSE | Continue training an existing model with new data/options. |
 | `num_trials` / `max_parallel_trials` / `hparam_tuning_objectives` | — | No | — | — | Enable hyperparameter tuning (see below). |
@@ -253,12 +253,14 @@ FROM `PROJECT_ID.DATASET.training_table`;
 - Set `enable_global_explain = TRUE` at train time if you'll want global attributions — it cannot be added afterward.
 - For imbalanced classification (e.g. fraud), use `auto_class_weights = TRUE`.
 - Use `data_split_method = 'CUSTOM'` with a BOOL split column to reproduce TRAIN/VALIDATE/TEST exactly.
-- `NORMAL_EQUATION` (auto-selected for small unregularized problems) trains in one pass — no iterations to tune.
+- `NORMAL_EQUATION` (auto-selected for small unregularized problems) trains in one pass — no iterations to tune; `ML.TRAINING_INFO` returns a single row with `eval_loss = NULL` (no per-iteration eval curve like gradient descent produces).
+- **Use `category_encoding_method = 'DUMMY_ENCODING'` whenever you plan to read `ML.WEIGHTS`.** With the default `ONE_HOT_ENCODING`, every category is one-hot encoded *and* the model keeps an intercept, so the design matrix is collinear (rank-deficient) for any categorical feature — the individual `category_weights` are not uniquely identified. **Verified by training the same model twice** (`models/linear_regression/`, `penguins`/`body_mass_g`, identical `SELECT`, only `AUTO_SPLIT`'s random draw differing): an `island` category's weight swung from **+305 / +353 / +340 in one run to −39 / −4 / +8.6 in another** — different scale, different sign — while `ML.PREDICT` and `ML.EVALUATE` stayed effectively unchanged. `DUMMY_ENCODING` drops one baseline category per feature (pinned to `weight: 0.0`) and makes every other category's weight a stable, well-defined delta from it.
 
 **Limitations:**
 - `ML.ADVANCED_WEIGHTS` p-values require **all** of: `calculate_p_values = TRUE`, `category_encoding_method = 'DUMMY_ENCODING'`, `l1_reg = 0`, **and** total feature cardinality \< 1,000. Only linear and **binary** logistic regression are supported (not multiclass).
 - `ML.ROC_CURVE` is binary-only; `ML.CONFUSION_MATRIX` is classification-only.
 - Linear models capture only linear relationships — engineer interaction/polynomial features (via `TRANSFORM`) for nonlinearity, or use boosted trees.
+- `ML.WEIGHTS`/`ML.GLOBAL_EXPLAIN` attributions for a given category can shift materially between training runs when using `ONE_HOT_ENCODING` (see the `DUMMY_ENCODING` best practice above) — don't treat one run's per-category numbers as ground truth unless trained with `DUMMY_ENCODING`.
 
 **Locations:** Available in all BigQuery ML regions/multi-regions. `EXPORT MODEL` (to GCS, TensorFlow SavedModel format) and Vertex AI Model Registry registration are supported.
 
@@ -266,6 +268,7 @@ FROM `PROJECT_ID.DATASET.training_table`;
 
 **Repo example (tested):**
 - `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` — progressive LOGISTIC_REG lifecycle on `census_adult_income`: create → ML.EVALUATE → ML.CONFUSION_MATRIX → ML.ROC_CURVE → ML.PREDICT → ML.EXPLAIN_PREDICT → ML.GLOBAL_EXPLAIN → ML.FEATURE_INFO/TRAINING_INFO → TRANSFORM → HP tuning.
+- `data+ai/bq-ml/models/linear_regression/linear_regression.sql` — progressive LINEAR_REG lifecycle on `penguins`/`body_mass_g`: create (with `DUMMY_ENCODING`) → ML.EVALUATE → ML.PREDICT → ML.EXPLAIN_PREDICT → ML.GLOBAL_EXPLAIN → **ML.WEIGHTS** → ML.FEATURE_INFO/TRAINING_INFO → TRANSFORM → HP tuning. Confirmed the `NORMAL_EQUATION` single-pass behavior and the `ONE_HOT_ENCODING` category-weight instability documented above.
 - `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` — binary fraud classifier with `auto_class_weights`, `calculate_p_values`, `CUSTOM` split, `ML.ADVANCED_WEIGHTS` (standard errors + p-values), Vertex AI Model Registry registration, endpoint serving, `EXPORT MODEL`.
 - `Applied Forecasting/BQML Regression Based Forecasting.ipynb` — LINEAR_REG used for forecasting via lagged-feature design matrix; shows regression `ML.EVALUATE` columns and recursive vs. direct multi-step prediction.
 
@@ -371,9 +374,11 @@ SELECT * EXCEPT(id_col) FROM `PROJECT_ID.DATASET.TABLE`;
 
 **Locations:** Boosted-tree training is not supported in all BigQuery ML regions/multi-regions; check the [BigQuery ML locations](https://cloud.google.com/bigquery/docs/locations) list. Vertex AI registration defaults to the region matching the BQ location (e.g. `EU` multi-region maps to `europe-west4`).
 
-**BigFrames API:** `bigframes.ml.ensemble.XGBClassifier` / `bigframes.ml.ensemble.XGBRegressor` — `model = XGBClassifier(); model.fit(X, y); model.predict(X)`.
+**BigFrames API:** `bigframes.ml.ensemble.XGBClassifier` / `bigframes.ml.ensemble.XGBRegressor` — `model = XGBClassifier(); model.fit(X, y); model.predict(X)`. **Verified: the constructor has no `class_weight`/`auto_class_weights` parameter** (checked the installed signature directly — `n_estimators`, `booster`, `max_depth`, `learning_rate`, `reg_alpha`/`reg_lambda`, etc., but no class-weighting option), unlike `bigframes.ml.linear_model.LogisticRegression` which exposes sklearn-style `class_weight`. A BigFrames `XGBClassifier` trained on an imbalanced label with no manual reweighting will not match a SQL `BOOSTED_TREE_CLASSIFIER` trained with `auto_class_weights = TRUE` — expect higher precision / lower recall from the unweighted BigFrames model, not a bug.
 
 **Repo example (tested):**
+- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` + notebook — `BOOSTED_TREE_CLASSIFIER` on `census_adult_income` (same data/label as `models/logistic_regression/`, for direct technique comparison), with the full lifecycle incl. the tree-visualization step (`EXPORT MODEL` → `xgboost.plot_tree()`).
+- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/boosted_tree_regressor/boosted_tree_regressor.sql` + notebook — `BOOSTED_TREE_REGRESSOR` on `penguins`/`body_mass_g` (same data/label as `models/linear_regression/`); `r2_score` 0.968 vs. linear regression's 0.875 on identical data. `TRANSFORM` uses `ML.LABEL_ENCODER`. Same tree-visualization step; confirmed the extra `reg:linear` deprecation warning on load (regressor-specific, see gotcha above).
 - `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — `BOOSTED_TREE_CLASSIFIER` on imbalanced fraud data with `auto_class_weights`, `data_split_method='CUSTOM'`, `enable_global_explain`, Vertex AI registration; then `ML.EVALUATE`, `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, `ML.FEATURE_IMPORTANCE`, `EXPORT MODEL` (produces `model.bst` XGBoost artifact), and Vertex AI Endpoint serving.
 - `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - Create Model With Transpose.ipynb` — `BOOSTED_TREE_REGRESSOR` with an inline `TRANSFORM` clause (`ML.LABEL_ENCODER`, scalers, date `EXTRACT`), `num_parallel_tree=25`, `l1_reg`/`l2_reg`; shows `TRANSFORM` traveling into the exported `/model` + `/model/transform` artifacts and Vertex AI serving.
 
@@ -466,18 +471,26 @@ FROM `PROJECT_ID.DATASET.TRAINING_TABLE`;
 - For imbalanced classification (e.g. fraud), set `auto_class_weights = TRUE`.
 - Use `subsample` + `colsample_*` < 1.0 to strengthen bagging and generalization.
 - Bake preprocessing into `TRANSFORM` so serving and monitoring reuse identical logic.
+- **For tree visualization (`EXPORT MODEL` → `xgboost.plot_tree()`), train a small, separate illustrative forest** (e.g. `num_parallel_tree=10`, `max_tree_depth=3`) rather than trying to render a tree from your full-power model — see the limitation below.
+- On a small dataset, random forest can genuinely underperform boosted trees (or even a GLM) — **verified**: `RANDOM_FOREST_REGRESSOR` on `penguins`/`body_mass_g` (333 rows) reached only `r2_score ≈ 0.74` (≈ 0.76 best-tuned) vs. `BOOSTED_TREE_REGRESSOR`'s ≈ 0.97 and `LINEAR_REG`'s ≈ 0.88 on identical data. Don't assume random forest is always the stronger tree ensemble — bagging's variance reduction needs enough data to pay off.
 
 **Limitations:**
 - Random forest training is **not available in all regions** — check BigQuery ML locations before choosing a dataset region.
 - `ML.WEIGHTS` does not apply (no linear coefficients).
 - Explainability functions require `enable_global_explain = TRUE` set at training; cannot be added afterward without retraining.
 - `ML.ROC_CURVE` is binary-classification only.
+- **Verified: `max_iterations` is not a valid option for `RANDOM_FOREST_CLASSIFIER`/`RANDOM_FOREST_REGRESSOR` at all** — `CREATE MODEL` errors immediately with `Option(s) MAX_ITERATIONS are not supported for RANDOM_FOREST_* model training` if you set it (unlike `BOOSTED_TREE_*`, where `max_iterations` is a central hyperparameter). This is a hard API-level guarantee that random forest training is single-pass, not just a documented convention — there is no way to accidentally train a "boosted random forest" via this option; `num_parallel_tree` alone defines the forest. Confirmed by `ML.TRAINING_INFO`: always exactly one row (`iteration = 1`), `learning_rate = 1.0`.
+- **Verified gotcha — trees are too dense to visualize at default settings.** Unlike a `BOOSTED_TREE_*` tree (a shallow stage fit on residuals), *every* `RANDOM_FOREST_*` tree is a complete, independently-trained tree. A default-settings forest's tree 0 (`num_parallel_tree=50`, `max_tree_depth=6`) had 2,435 dump lines and depth 15 — `xgboost.plot_tree()` triggers `graph is too large for cairo-renderer bitmaps` and produces an illegible image (confirmed even with SVG output, which sidesteps the bitmap-size limit but is still too dense to read at a glance). Fix: train a dedicated shallow illustrative forest for the diagram only (see best practices above).
+- With heavy default column subsampling (`colsample_bynode = 0.8`) over a small feature set, some features can end up with **zero** `ML.FEATURE_IMPORTANCE`/`ML.GLOBAL_EXPLAIN` — verified on the 6-feature `penguins` regressor (`island`, `culmen_length_mm` both zero, reproduced identically across two independent runs). Not a bug; a real effect of bagging variance when there are few features relative to `colsample_bynode`.
+- **Verified: retraining an identical `RANDOM_FOREST_*` model (same query, same options) is genuinely non-deterministic** — unlike `BOOSTED_TREE_*` (which reproduced predictions/loss curves essentially bit-for-bit across separate runs in testing, since it doesn't subsample by default), random forest always bags row/column subsamples (`subsample`/`colsample_bynode` default to 0.8, not 1.0), and there is no exposed random seed. Observed on `penguins`: two separate trainings of the same `RANDOM_FOREST_REGRESSOR` config produced visibly different tree structures, predictions, and `ML.GLOBAL_EXPLAIN` rankings (though `r2_score` stayed in a similar range, ~0.74–0.75). Don't expect exact reproducibility run-to-run the way GLMs or boosted trees (mostly) provide.
 
 **Locations:** Subject to region restrictions (random forest not supported in every BQML region/multi-region); see [BigQuery ML locations](https://cloud.google.com/bigquery/docs/locations).
 
-**BigFrames API:** `bigframes.ml.ensemble.RandomForestClassifier` / `bigframes.ml.ensemble.RandomForestRegressor` — `.fit(X, y)` / `.predict()` / `.score()`; integrates with `bigframes.ml.pipeline` for TRANSFORM-equivalent preprocessing.
+**BigFrames API:** `bigframes.ml.ensemble.RandomForestClassifier` / `bigframes.ml.ensemble.RandomForestRegressor` — `.fit(X, y)` / `.predict()` / `.score()`; integrates with `bigframes.ml.pipeline` for TRANSFORM-equivalent preprocessing. **Verified: `RandomForestClassifier` has no `class_weight`/`auto_class_weights` parameter** (checked the installed signature directly — same gap as `XGBClassifier`), unlike `LogisticRegression`. A BigFrames comparison against a SQL model trained with `auto_class_weights = TRUE` is not apples-to-apples.
 
 **Repo example (tested):**
+- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/random_forest_classifier/random_forest_classifier.sql` + notebook — `RANDOM_FOREST_CLASSIFIER` on `census_adult_income` (same data/label as `logistic_regression`/`boosted_tree_classifier`, for a three-way technique comparison), incl. a dedicated shallow illustrative forest for tree visualization.
+- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/random_forest_regressor/random_forest_regressor.sql` + notebook — `RANDOM_FOREST_REGRESSOR` on `penguins`/`body_mass_g` (same data/label as `linear_regression`/`boosted_tree_regressor`); the `r2_score ≈ 0.74` underperformance vs. boosting is discussed directly in the notebook as a genuine finding.
 - `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03c - BQML Random Forest.ipynb` — full `RANDOM_FOREST_CLASSIFIER` workflow on the credit-card fraud table: `CREATE MODEL` with `num_parallel_tree=200`, `tree_method='HIST'`, `subsample=0.85`, `colsample_bytree=0.9`, `auto_class_weights=TRUE`, `enable_global_explain=TRUE`, `CUSTOM` split via a derived BOOL column; then `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE`, `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, `ML.FEATURE_IMPORTANCE`, Vertex AI registration + endpoint serving, and `EXPORT MODEL` (exports an XGBoost `model.bst`).
 - `/home/user/git/vertex-ai-mlops/MLOps/Model Monitoring/model_monitoring_job.sql` — `RANDOM_FOREST_CLASSIFIER` with `TRANSFORM(...)` preprocessing, `AUTO_CLASS_WEIGHTS=FALSE`, `NUM_PARALLEL_TREE=150`, used as the monitored/retrained model with `ML.VALIDATE_DATA_SKEW`, `ML.VALIDATE_DATA_DRIFT`, and `ML.EVALUATE` (reads `accuracy`).
 
@@ -2325,16 +2338,18 @@ FROM UNNEST((
 **Best practices:**
 - Use `STRUCT(TRUE AS standardize)` to rank feature importance by absolute weight magnitude.
 - With a `TRANSFORM` clause, weights are reported on the TRANSFORM output features (denormalized by default).
+- **Train with `category_encoding_method = 'DUMMY_ENCODING'` if you intend to read `category_weights`.** The default `ONE_HOT_ENCODING` makes every categorical feature's dummies collinear with the intercept, so individual category weights are not uniquely identified — **verified**: retraining an identical `LINEAR_REG` model twice (same query, different `AUTO_SPLIT` draw) swung one category's weight from +305/+353/+340 to −39/−4/+8.6 between runs. `DUMMY_ENCODING` pins one category per feature to `weight: 0.0` and makes the rest stable, well-defined deltas. See `models/linear_regression/`.
 
 **Limitations:**
 - Tree/DNN/clustering/forecast/AutoML models are not supported (use type-specific functions or export).
 - Categorical columns split their weights into the nested `category_weights` array, so a flat `SELECT *` shows NULL in `weight` for those rows.
+- With `ONE_HOT_ENCODING` (the default), per-category weights are not uniquely identified and can vary substantially run-to-run (see best practice above) — this does not affect `ML.PREDICT`/`ML.EVALUATE`, only the individual weight breakdown.
 
 **BigFrames API:** `model.global_explain()` covers attribution; raw coefficients via the underlying model are exposed through the BigQuery SQL function. No dedicated `ml_weights()` wrapper — call `ML.WEIGHTS` via `bigframes.pandas.read_gbq(...)` over the TVF.
 
 **Repo example (tested):**
 - `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` — `SELECT * FROM ML.WEIGHTS(MODEL ...)` on a `LOGISTIC_REG` model trained with `CATEGORY_ENCODING_METHOD='DUMMY_ENCODING'`.
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` — full logistic regression lifecycle (weights inspection alongside ML.GLOBAL_EXPLAIN / ML.EXPLAIN_PREDICT).
+- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/linear_regression/linear_regression.sql` — `LINEAR_REG` on `penguins`/`body_mass_g`, trained with `DUMMY_ENCODING` specifically to keep `ML.WEIGHTS` stable and interpretable; SQL comments explain why. (Note: `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` does NOT demonstrate `ML.WEIGHTS` — that citation was a research-pass error, corrected here.)
 
 ---
 
@@ -2534,7 +2549,7 @@ ORDER BY trial_id;
 | `hparam_tuning_evaluation_metrics` | STRUCT | Eval metrics matching the `hparam_tuning_objectives`; computed on eval data. |
 | `training_loss` | FLOAT64 | Final training loss for the trial. |
 | `eval_loss` | FLOAT64 | Final eval loss for the trial. |
-| `status` | STRING | Trial state — e.g. `SUCCEEDED`, `INFEASIBLE` (invalid hyperparameter combo). |
+| `status` | STRING | Trial state — e.g. `SUCCEEDED`, `INFEASIBLE` (invalid hyperparameter combo), `FAILED` (see gotcha below). |
 | `error_message` | STRING | Error message if the trial did not succeed. |
 | `is_optimal` | BOOL | TRUE for the best-objective trial; used by default at serving (override with `TRIAL_ID` arg). |
 
@@ -2544,10 +2559,11 @@ ORDER BY trial_id;
 
 **Limitations:**
 - Returns nothing meaningful (errors) on models trained without `NUM_TRIALS`.
-- If multiple trials tie as optimal, the smallest `trial_id` wins at serving.
+- **Corrected (was unverified speculation, now disproven by direct observation): `is_optimal = TRUE` is NOT guaranteed to mark exactly one row.** Verified on `models/random_forest_regressor/`: 2 of 6 trials (different `num_parallel_tree`/`max_tree_depth` combos) tied on `r2_score` and **both** showed `is_optimal = TRUE` simultaneously. Don't assume `WHERE is_optimal` returns a single row — `LIMIT 1` or an explicit tiebreak (e.g. smallest `trial_id`) if you need exactly one.
+- **Verified**: a trial can transiently `FAILED` with `error_message = "An internal error happened during trial training."` — its objective metric column is `NULL` in `ML.TRIAL_INFO`, but this does **not** fail the overall `CREATE MODEL` job; BigQuery still selects `is_optimal` from among the successful trials (`models/boosted_tree_classifier/`, 1 of 6 trials failed this way; `models/random_forest_classifier/`, 2 of 6 failed under concurrent notebook execution — job completed normally both times). Check `status`/`error_message` before assuming a `NULL` metric means a bad hyperparameter combination.
 
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 10 — `NUM_TRIALS=10` + `HPARAM_RANGE`, then sorts trials by `hparam_tuning_evaluation_metrics.roc_auc` and `is_optimal`). Also `03 - BigQuery ML (BQML)/03h - BQML k-means with Anomaly Detection.ipynb` and `03i - BQML Autoencoder with Anomaly Detection.ipynb`.
+**Repo example (tested):** `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 10 — `NUM_TRIALS=10` + `HPARAM_RANGE`, then sorts trials by `hparam_tuning_evaluation_metrics.roc_auc` and `is_optimal`). `data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` (Example 10 — tunes `learn_rate`/`max_tree_depth`; observed a transient trial `FAILED`, see gotcha above). `data+ai/bq-ml/models/random_forest_regressor/random_forest_regressor.sql` (Example 9 — observed the `is_optimal` tie, see limitation above). Also `03 - BigQuery ML (BQML)/03h - BQML k-means with Anomaly Detection.ipynb` and `03i - BQML Autoencoder with Anomaly Detection.ipynb`.
 
 > Related hyperparameter-tuning option reference (`NUM_TRIALS`, `HPARAM_RANGE`, `HPARAM_CANDIDATES`, `HPARAM_TUNING_OBJECTIVES`) lives with the per-model-type entries and the capability matrix.
 
@@ -4110,7 +4126,8 @@ bq extract --model --destination_format ML_XGBOOST_BOOSTER 'DATASET.MODEL_NAME' 
 **Best practices:**
 - Version exports by writing to a timestamped folder (e.g. `.../models/{TIMESTAMP}/model`) so each export is immutable and reproducible.
 - For HP-tuning models, export the chosen `TRIAL_ID` explicitly rather than relying on the implicit optimal trial when you need a pinned, auditable artifact.
-- Keep dataset and bucket co-located to avoid the cross-location error.
+- Keep dataset and bucket co-located to avoid the cross-location error — in practice a `US` multi-region dataset **is** compatible with a `US-CENTRAL1` (or other US-region) bucket (verified: export succeeded across that pairing).
+- **To visualize a boosted-tree/random-forest ensemble** (`EXPORT MODEL` → XGBoost Booster `model.bst`): download it and load with `xgboost.Booster().load_model(...)`, then `xgboost.plot_tree(booster, num_trees=0)`. See the two gotchas below — both are load-bearing, not optional.
 
 **Limitations:**
 - Dataset and destination bucket must be in the **same location**.
@@ -4119,12 +4136,16 @@ bq extract --model --destination_format ML_XGBOOST_BOOSTER 'DATASET.MODEL_NAME' 
 - AutoML model exports do not support Agent Platform online prediction.
 - Models trained with `TRANSFORM` before 2023-09-18 must be retrained for Model Registry online prediction.
 - Remote models and ARIMA_PLUS/time-series models cannot be exported.
+- **Verified gotcha — XGBoost version compatibility:** `BOOSTED_TREE_*`/`RANDOM_FOREST_*` exports use **XGBoost 0.82's legacy binary format**. Modern `xgboost` (2.0+, the current `pip install xgboost` default) **cannot load `model.bst`** — `xgb.Booster().load_model(...)` raises `Check failed: str[0] == '{'`. Pin an older release to load/visualize it locally (verified working: `xgboost==1.7.6`, which emits only a compatibility warning).
+- **Verified gotcha — feature names are not preserved:** the loaded booster's `feature_names` comes back `None` (generic `f0`, `f1`, ... in `get_dump()`/plots). Set `booster.feature_names` manually to the training query's non-label `SELECT` column order — this 1:1 mapping held up when checked against a model's actual split thresholds (`num_features()` matched the raw column count exactly, with no expansion for categoricals). Verified for both `BOOSTED_TREE_CLASSIFIER` and `BOOSTED_TREE_REGRESSOR`.
+- **`BOOSTED_TREE_REGRESSOR`-specific:** loading the exported booster also prints `reg:linear is now deprecated in favor of reg:squarederror` — a harmless legacy-objective-name warning (in addition to the `XGBoost < 1.0.0` compatibility warning above), not an error.
 
 **Locations:** Dataset region must equal the GCS bucket region/multi-region.
 
 **BigFrames API:** `bigframes.ml` estimators expose `model.to_gbq(...)` for persistence in BigQuery; GCS export is performed via the SQL `EXPORT MODEL` statement or `bq extract --model`. No dedicated one-call BigFrames GCS-export helper.
 
 **Repo example (tested):**
+- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` (Example 9) and the companion notebook (Step 7) — `EXPORT MODEL` → download `model.bst` → `xgboost==1.7.6` (pinned) → `booster.feature_names` reassigned manually → `xgboost.plot_tree()`. Both gotchas above were caught and verified here.
 - `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — exports a `BOOSTED_TREE` model to a timestamped GCS folder (`EXPORT MODEL ... OPTIONS(URI = 'gs://.../models/{TIMESTAMP}/model')`), i.e. XGBoost Booster format.
 - `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` and `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` — export `PCA` and `AUTOENCODER` models (TensorFlow SavedModel) with the same `EXPORT MODEL ... OPTIONS(URI=...)` pattern.
 - Inverse direction (importing a TF SavedModel back into BQML for serving): `/home/user/git/vertex-ai-mlops/MLOps/Serving/SQL Inference/Serve TensorFlow SavedModel Format With BigQuery.ipynb` — useful context for the round-trip, but it demonstrates `CREATE MODEL ... MODEL_TYPE='TENSORFLOW'` (import), not EXPORT MODEL.
