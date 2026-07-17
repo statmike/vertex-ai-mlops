@@ -1799,6 +1799,7 @@ Note: `individualPageSelector`, `fromStart`, and `fromEnd` are a union field —
 ---
 
 ### `AI.PARSE_DOCUMENT`
+- **⚠️ Status (as of 2026-06-01): temporarily OFFLINE for revision.** The function (Preview) has been taken offline by Google for revision and does not currently execute. The notebook (`functions/ai_parse_document/`) and the Document RAG workflow (`workflows/document_rag/`) that depends on it carry warning banners. **Re-check the [BigQuery release notes](https://cloud.google.com/bigquery/docs/release-notes); when it returns, reverse this note, remove the notebook banners, and re-run/verify** (precedent: AI.AGG disable Apr 2026 → re-enable May 2026). Documentation below is retained as-is for when it is re-enabled.
 - **Description:** (Preview) Table-valued function that parses documents using the Document AI Layout Parser. Combines OCR, layout parsing, and chunking into a single SQL function call — no `CREATE MODEL` step required. The `endpoint` parameter points directly to a Document AI Layout Parser processor.
 - **Use cases:** Document text extraction, chunking for RAG pipelines, OCR from scanned documents, layout-aware document parsing.
 - [documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-parse-document)
