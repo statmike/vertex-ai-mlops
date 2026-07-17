@@ -66,6 +66,7 @@ These functions send prompts to generative AI models and return generated text o
 - `AI.GENERATE_TABLE` is like `AI.GENERATE_TEXT` but requires an `output_schema` for structured output columns (Gemini only).
 - `AI.GENERATE_BOOL`, `AI.GENERATE_DOUBLE`, `AI.GENERATE_INT` are typed scalar variants of `AI.GENERATE` that return `BOOL`, `FLOAT64`, and `INT64` respectively (all Preview).
 - `ML.GENERATE_TEXT` is the predecessor to `AI.GENERATE_TEXT` with `ml_generate_text_*` prefixed column names. Google recommends using `AI.GENERATE_TEXT` for new queries.
+- `AI.COUNT_TOKENS` is a **utility** companion (not a generator): it estimates a prompt's input token count for free (no Vertex AI charge), so you can size and cost prompts before calling the functions above.
 
 | Feature | AI.GENERATE | AI.GENERATE_TEXT | AI.GENERATE_TABLE | AI.GENERATE_BOOL | AI.GENERATE_DOUBLE | AI.GENERATE_INT | ML.GENERATE_TEXT |
 |---------|-------------|------------------|-------------------|------------------|-------------------|-----------------|------------------|
@@ -572,6 +573,52 @@ When `flatten_json_output` is TRUE:
 **Best practices / Limitations / Locations / Provisioned throughput:** Same as AI.GENERATE_TEXT.
 
 **BigFrames API:** No direct `ML.GENERATE_TEXT` wrapper. BigFrames routes through `AI.GENERATE_TEXT` instead. Use `bbq.ai.generate_text()` or `GeminiTextGenerator`/`Claude3TextGenerator` classes (which generate `AI.GENERATE_TEXT` SQL under the hood).
+
+---
+
+### `AI.COUNT_TOKENS`
+- **Description:** (Preview) Utility scalar function that estimates the **input** token count of a text prompt. Token counting happens inside BigQuery and **incurs no Vertex AI charges** — unlike the generative functions, it does not send a generation request. Use it to estimate the cost or size of prompts before calling the paid AI functions.
+- **Use cases:** Estimating the cost of an `AI.GENERATE` / `AI.GENERATE_TABLE` job before running it, checking prompts against a model's input token limit, comparing prompt sizes across rows/templates/models.
+- [documentation](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-count-tokens)
+- **Type:** Scalar function (returns a STRUCT value per row) — Preview
+
+**Syntax:**
+```sql
+AI.COUNT_TOKENS(
+  INPUT
+  [, endpoint => ENDPOINT]
+)
+```
+
+**Inputs:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `INPUT` | STRING | Required | -- | The input text prompt for which to count tokens. |
+| `endpoint` | STRING literal (named parameter) | Optional | The default model used by `AI.GENERATE` | Name of the generative AI model whose tokenization rules to use (e.g. `'gemini-2.5-pro'`). |
+
+**Outputs:** Returns a `STRUCT` with:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `result` | INT64 | Total **input** token count. `NULL` if the input is `NULL` or an API error occurred. |
+| `full_response` | JSON | Per-modality token detail, e.g. `{"promptTokensDetails":[{"modality":"TEXT","tokenCount":180}],"totalTokens":180}`. `NULL` on `NULL` input or API error. |
+
+**Best practices:**
+- Because counting is free, aggregate `AI.COUNT_TOKENS(col).result` across a column (`SUM`/`AVG`/`MAX`) to size a batch workload before running the paid generation functions over it.
+- Match the `endpoint` to the model you plan to generate with, so the token estimate reflects that model's tokenizer.
+
+**Limitations:**
+- Counts **input** tokens only — **thinking and output tokens are not included**. To see actual token counts (input + thinking + output) for a query, view the **Job information** tab of the Query results pane.
+- **Text input only (verified 2026-07-17, Preview).** The `INPUT` argument coerces to `STRING` only — multimodal/ObjectRef prompts are rejected: both a STRUCT prompt (`STRUCT(text AS prompt, [...] AS object_ref_runtime)`, the AI.GENERATE pattern) and a bare `ObjectRefRuntime` fail with "Unable to coerce type ... to expected type STRING." Accordingly, `full_response.promptTokensDetails[].modality` is always `TEXT`. **This is a Preview function — re-evaluate multimodal support when it reaches GA, and re-test ObjectRef at that time** (AI.PARSE_DOCUMENT is precedent for multimodal input arriving without an obvious signature change).
+
+**Undocumented parameters (verified 2026-07-17):** the function's actual signature is `AI.COUNT_TOKENS(STRING, [endpoint => STRING], [title => STRING], [model => STRING])` — but only `endpoint` is documented and usable. `model` is mutually exclusive with `endpoint` and rejected every tested value (bare Gemini strings and a remote MODEL reference: "Unsupported model"); `title` errors with "Title argument is not supported for gemini-2.5-flash." Both appear reserved (likely for non-Gemini/open models or a future capability). Do not teach these until they are documented and functional — re-check at GA.
+
+**Locations:** All BigQuery regions supporting the generative AI functions (US and EU multi-regions, plus supported Gemini regions).
+
+**Provisioned throughput:** Not applicable — no Vertex AI request is made.
+
+**BigFrames API:** No native wrapper. Use `%%bigquery` magics or `session.read_gbq_query()` to run `AI.COUNT_TOKENS` SQL from BigFrames.
 
 ---
 ## Managed Functions

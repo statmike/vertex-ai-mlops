@@ -106,6 +106,7 @@ See the [Unstructured Data Infrastructure](RESOURCES.md#unstructured-data-infras
 | `AI.GENERATE_DOUBLE` | [notebook](functions/ai_generate_double/ai_generate_double.ipynb) · [sql](functions/ai_generate_double/ai_generate_double.sql) | Scalar | Preview | No | STRUCT prompt | Return a FLOAT64 per row from a Gemini prompt. |
 | `AI.GENERATE_INT` | [notebook](functions/ai_generate_int/ai_generate_int.ipynb) · [sql](functions/ai_generate_int/ai_generate_int.sql) | Scalar | Preview | No | STRUCT prompt | Return an INT64 per row from a Gemini prompt. |
 | `ML.GENERATE_TEXT` | [notebook](functions/ml_generate_text/ml_generate_text.ipynb) · [sql](functions/ml_generate_text/ml_generate_text.sql) | TVF | GA | Yes | STRUCT prompt | Legacy predecessor to AI.GENERATE_TEXT. Use AI.GENERATE_TEXT for new work. |
+| `AI.COUNT_TOKENS` | [notebook](functions/ai_count_tokens/ai_count_tokens.ipynb) · [sql](functions/ai_count_tokens/ai_count_tokens.sql) | Scalar | Preview | No | — | Utility: estimate a prompt's input token count for free (no Vertex AI charge) to size/cost prompts before generating. |
 
 ### Managed — Simplified interfaces with automatic prompt optimization
 
@@ -188,6 +189,9 @@ When unsure, default to `RETRIEVAL_DOCUMENT` / `RETRIEVAL_QUERY`. See the [`AI.E
                         │       │                multi-provider       │
                         │       └── ML.GENERATE_TEXT (legacy naming)  │
                         │                                             │
+                        │  AI.COUNT_TOKENS ◄── utility: free input    │
+                        │       token count to size/cost prompts      │
+                        │                                             │
                         │  AI.GENERATE_TABLE ◄── structured output   │
                         │       (also used to generate sample data)   │
                         └─────────────────────────────────────────────┘
@@ -256,6 +260,7 @@ bq-ai-functions/
 │   ├── ai_generate/
 │   ├── ai_generate_text/
 │   ├── ai_generate_table/
+│   ├── ai_count_tokens/
 │   ├── ai_if/
 │   ├── ai_score/
 │   ├── ai_classify/
