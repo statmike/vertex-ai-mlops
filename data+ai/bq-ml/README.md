@@ -65,8 +65,10 @@ Per-model-type deep dives covering the full lifecycle (create → evaluate → p
 | [Boosted Tree Regressor](models/boosted_tree_regressor/) | `BOOSTED_TREE_REGRESSOR` | ML.PREDICT | GA | XGBoost regression with tree visualization (`EXPORT MODEL` + `xgboost.plot_tree`); same data as Linear Regression for direct comparison |
 | [Random Forest Classifier](models/random_forest_classifier/) | `RANDOM_FOREST_CLASSIFIER` | ML.PREDICT | GA | Bagged tree ensemble, single-pass training; same data as Logistic/Boosted Tree Classifier for a three-way comparison |
 | [Random Forest Regressor](models/random_forest_regressor/) | `RANDOM_FOREST_REGRESSOR` | ML.PREDICT | GA | Bagged tree ensemble; same data as Linear/Boosted Tree Regressor — genuinely underperforms boosting on this small dataset, discussed honestly |
+| [DNN Classifier](models/dnn_classifier/) | `DNN_CLASSIFIER` | ML.PREDICT | GA | Feed-forward neural network classification; same data as the other classifiers — training is verified much slower than tree models |
+| [DNN Regressor](models/dnn_regressor/) | `DNN_REGRESSOR` | ML.PREDICT | GA | Feed-forward neural network regression; same data as the other regressors — an honest debugging story from a badly broken baseline to a working fix |
 
-*More model types are planned — see the backlog in [PLANS.md](PLANS.md) (DNN, K-means, PCA, matrix factorization, ARIMA_PLUS, autoencoder, plus imported / remote / exported model categories).*
+*More model types are planned — see the backlog in [PLANS.md](PLANS.md) (wide-and-deep, K-means, PCA, matrix factorization, ARIMA_PLUS, autoencoder, plus imported / remote / exported model categories).*
 
 ## Functions
 
