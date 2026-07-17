@@ -646,8 +646,8 @@ SELECT * FROM `PROJECT_ID.DATASET.TABLE`;
 | `activation_fn` | string | No | `RELU` | `RELU`,`RELU6`,`CRELU`,`ELU`,`SELU`,`SIGMOID`,`TANH` | Deep-side activation. |
 | `batch_size` | int64 | No | auto (\<=1024) | \>0 | Mini-batch size. Tunable. |
 | `dropout` | float64 | No | auto | `[0,1)` | Dropout probability on deep units. Tunable. |
-| `optimizer` | array\<struct\> or string | No | `[STRUCT('dnn','ADAM'), STRUCT('linear','FTRL')]` | `ADAGRAD`,`ADAM`,`FTRL`,`RMSPROP`,`SGD` | Training optimizer. Can be set per model part, e.g. `[STRUCT('dnn','ADAGRAD'), STRUCT('linear','SGD')]`. Tunable. |
-| `learn_rate` | array\<struct\> or float64 | No | `0.001` (both parts) | \>0 | Learning rate. Settable per part, e.g. `[STRUCT('dnn',0.001), STRUCT('linear',0.01)]`. Tunable via `HPARAM_RANGE`. |
+| `optimizer` | array\<struct\> or string | No | `[STRUCT('dnn','ADAM'), STRUCT('linear','FTRL')]` | `ADAGRAD`,`ADAM`,`FTRL`,`RMSPROP`,`SGD` | Training optimizer. Can be set per model part, e.g. `[STRUCT('dnn','ADAGRAD'), STRUCT('linear','SGD')]`. **NOT tunable** (verified — see gotcha below; the generic "Tunable" claim that applies to plain `DNN_*` does not hold here). |
+| `learn_rate` | array\<struct\> or float64 | No | `0.001` (both parts) | \>0 | Learning rate. Settable per part, e.g. `[STRUCT('dnn',0.001), STRUCT('linear',0.01)]`. **NOT tunable** (verified — `CREATE MODEL` errors immediately with `"Unsupported hyperparameter learn_rate for model_type DNN_LINEAR_COMBINED_CLASSIFIER"` when passed `HPARAM_RANGE`; see gotcha below). |
 | `l1_reg` / `l2_reg` | float64 | No | `0` | \>=0 | L1 / L2 regularization. Tunable. |
 | `max_iterations` | int64 | No | `20` | \>=1 | Max training iterations (epochs). |
 | `early_stop` | bool | No | `TRUE` | — | Stop when relative loss gain \< `min_rel_progress`. |
@@ -673,7 +673,7 @@ SELECT * FROM `PROJECT_ID.DATASET.TABLE`;
 
 **Preprocessing support:** automatic (BQML auto-encodes numeric standardization and categorical encoding) | manual feature engineering | `TRANSFORM` clause supported (preprocessing is saved with the model and reapplied at predict time).
 
-**Hyperparameter tuning:** Supported. Set `num_trials` (rule of thumb \>= 10 * num_hyperparameters). Tunable options include `hidden_units`, `batch_size`, `dropout`, `learn_rate`, `optimizer`, `l1_reg`, `l2_reg` via `HPARAM_RANGE(...)` / `HPARAM_CANDIDATES([...])`. Default objective: classifier `ROC_AUC`, regressor `R2_SCORE`.
+**Hyperparameter tuning:** Supported. Set `num_trials` (rule of thumb \>= 10 * num_hyperparameters). **Verified tunable:** `hidden_units` (via `HPARAM_CANDIDATES([STRUCT([64,32]), STRUCT([32,16])])` — same nested-STRUCT syntax as plain `DNN_*`), `dropout`, `batch_size`, `l1_reg`, `l2_reg` via `HPARAM_RANGE(...)`. **Verified NOT tunable (gotcha, contradicts a naive reading of the per-option "Tunable" docs, which describe plain `DNN_*` behavior):** `learn_rate` and `optimizer` both fail immediately with `"Unsupported hyperparameter <name> for model_type DNN_LINEAR_COMBINED_CLASSIFIER"` when given `HPARAM_RANGE`/`HPARAM_CANDIDATES`. If you need a specific learn rate, set it as a fixed literal (`learn_rate = 0.05`) alongside tuning the options that ARE tunable. Default objective: classifier `ROC_AUC`, regressor `R2_SCORE`.
 
 **Explainability / weights:** Use `ML.EXPLAIN_PREDICT` (per-row integrated-gradients attributions, `STRUCT(k AS top_k_features)`) and `ML.GLOBAL_EXPLAIN` (aggregate feature influence). Both require `enable_global_explain=TRUE` at CREATE time. `ML.WEIGHTS`, `ML.ADVANCED_WEIGHTS`, and `ML.FEATURE_IMPORTANCE` do **not** apply.
 
@@ -687,12 +687,14 @@ SELECT * FROM `PROJECT_ID.DATASET.TABLE`;
 - No coefficient/weights extraction (`ML.WEIGHTS` unsupported) — explainability is attribution-based only.
 - Slower and costlier to train than `LINEAR_REG`/`LOGISTIC_REG` or boosted trees for similar tabular tasks.
 - `auto_class_weights` and `class_weights` are mutually exclusive and classifier-only.
+- **Same small-dataset convergence failure as `DNN_REGRESSOR` (verified, `models/wide_and_deep_regressor/`):** on a 333-row regression dataset, unscaled numeric features + the default `learn_rate=0.001` + `early_stop=TRUE` produced a badly broken model (`r2_score≈-27.4`, 2 iterations) — same fix works (scale + raise `learn_rate` to 0.05): `r2_score≈0.79` untuned with `hidden_units=[64,32]`, notably lower than `DNN_REGRESSOR`'s ~0.86 with the equivalent fix on the identical data — hyperparameter tuning (below) closes most of the gap, finding `hidden_units=[32,16]` reaches `r2_score≈0.87`. Unlike `DNN_REGRESSOR`, `learn_rate` cannot be tuned here (see the tuning gotcha above), so if the default doesn't converge on your data you must set a higher `learn_rate` as a fixed literal — you can't discover a better one via `HPARAM_RANGE`.
+- `learn_rate` and `optimizer` are not tunable (see Hyperparameter tuning above) — a real gap relative to plain `DNN_CLASSIFIER`/`DNN_REGRESSOR`, where both are tunable.
 
 **Locations:** Available in all BigQuery ML regions/multi-regions; for Vertex AI registration / endpoint serving keep model and Vertex resources co-located (repo uses `us-central1`).
 
-**BigFrames API:** `bigframes.ml.linear_model` has no wide-and-deep class; closest neural option is via `CREATE MODEL` SQL. Use `bigframes.ml.imported`/raw SQL for this type — no direct first-class `DNN_LINEAR_COMBINED` wrapper.
+**BigFrames API:** Verified (checked the live BigFrames API reference across every `bigframes.ml` module) — **no first-class wide-and-deep class exists anywhere in `bigframes.ml`**, same permanent gap as `DNN_CLASSIFIER`/`DNN_REGRESSOR`. Use the SQL `CREATE MODEL` interface directly.
 
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03e - BQML Wide-And-Deep Networks.ipynb` — trains `DNN_LINEAR_COMBINED_CLASSIFIER` on the credit-card fraud table with `hidden_units=[64,32]`, `optimizer='SGD'`, `dropout=0.05`, `CUSTOM` split, `enable_global_explain=TRUE`; then runs `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (precision/recall/accuracy/f1_score/log_loss/roc_auc), `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, Vertex AI Model Registry registration + endpoint deploy, and `EXPORT MODEL` (TensorFlow SavedModel).
+**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03e - BQML Wide-And-Deep Networks.ipynb` — trains `DNN_LINEAR_COMBINED_CLASSIFIER` on the credit-card fraud table with `hidden_units=[64,32]`, `optimizer='SGD'`, `dropout=0.05`, `CUSTOM` split, `enable_global_explain=TRUE`; then runs `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (precision/recall/accuracy/f1_score/log_loss/roc_auc), `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, Vertex AI Model Registry registration + endpoint deploy, and `EXPORT MODEL` (TensorFlow SavedModel). Also see this project's own `models/wide_and_deep_classifier/` and `models/wide_and_deep_regressor/` for a from-scratch, fully pre-validated build on the same comparison datasets used by every other model type in this project.
 
 
 ---

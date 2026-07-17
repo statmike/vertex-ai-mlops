@@ -67,8 +67,10 @@ Per-model-type deep dives covering the full lifecycle (create → evaluate → p
 | [Random Forest Regressor](models/random_forest_regressor/) | `RANDOM_FOREST_REGRESSOR` | ML.PREDICT | GA | Bagged tree ensemble; same data as Linear/Boosted Tree Regressor — genuinely underperforms boosting on this small dataset, discussed honestly |
 | [DNN Classifier](models/dnn_classifier/) | `DNN_CLASSIFIER` | ML.PREDICT | GA | Feed-forward neural network classification; same data as the other classifiers — training is verified much slower than tree models |
 | [DNN Regressor](models/dnn_regressor/) | `DNN_REGRESSOR` | ML.PREDICT | GA | Feed-forward neural network regression; same data as the other regressors — an honest debugging story from a badly broken baseline to a working fix |
+| [Wide & Deep Classifier](models/wide_and_deep_classifier/) | `DNN_LINEAR_COMBINED_CLASSIFIER` | ML.PREDICT | GA | Joint wide (linear) + deep (DNN) classification; same data as the other classifiers |
+| [Wide & Deep Regressor](models/wide_and_deep_regressor/) | `DNN_LINEAR_COMBINED_REGRESSOR` | ML.PREDICT | GA | Joint wide (linear) + deep (DNN) regression; same data as the other regressors — `learn_rate`/`optimizer` are verified not tunable for this type, unlike plain DNN |
 
-*More model types are planned — see the backlog in [PLANS.md](PLANS.md) (wide-and-deep, K-means, PCA, matrix factorization, ARIMA_PLUS, autoencoder, plus imported / remote / exported model categories).*
+*More model types are planned — see the backlog in [PLANS.md](PLANS.md) (K-means, PCA, matrix factorization, ARIMA_PLUS, autoencoder, plus imported / remote / exported model categories) — comprehensive coverage, not optional stretch goals.*
 
 ## Functions
 
