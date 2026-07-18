@@ -838,14 +838,17 @@ HP-tuning-eligible option: `num_clusters` (use `HPARAM_RANGE`/`HPARAM_CANDIDATES
 **Best practices:**
 - Keep `standardize_features = TRUE` (default) — k-means is scale-sensitive.
 - Prefer `kmeans_init_method = 'KMEANS++'` for stable, better-converging results.
-- Tune `num_clusters` with `HPARAM_RANGE` + `davies_bouldin_index` objective rather than guessing `k`.
+- Tune `num_clusters` with `HPARAM_RANGE` + `davies_bouldin_index` objective rather than guessing `k` — but verified (`models/kmeans/`) that this is itself subject to the non-determinism below: one run of `HPARAM_RANGE(2, 10)` selected the domain-correct answer (3, matching the 3 real penguin species in the training data) as optimal; a separate run of the identical tuning config selected 2 instead. Don't treat a single tuning run's chosen `num_clusters` as definitive — if the choice matters, tune more than once (or with more trials) and look for a value that wins consistently.
 - HP tuning can be expensive/slow (e.g. tens of trials over hundreds of thousands of rows ran ~46 min in the repo example) — bound `num_trials` and use `max_parallel_trials`.
 - Exclude id/label columns from the feature set (`SELECT * EXCEPT(...)`).
+- **Verified: K-means retraining is genuinely non-deterministic, even with `kmeans_init_method = 'KMEANS++'` (`models/kmeans/`).** Retraining the identical `CREATE OR REPLACE MODEL` statement (same SQL, same options, no seed exposed) multiple times produced meaningfully different `davies_bouldin_index` values each time (observed range ~0.87–1.02 on a 342-row dataset) and different specific cluster-to-external-label alignment (which cluster cleanly separates a given group shifted between runs) — a third independent training via `bigframes.ml.cluster.KMeans` on the same config reproduced yet a different value again. **Practical implication: a single before/after comparison (e.g. "does adding this feature improve clustering?") is not reliable evidence of a causal effect** — the same magnitude of change can come from ordinary retraining variance. Retrain each configuration multiple times and look at the range before drawing a conclusion.
+- **Verified, still true independent of the point above: a lower `davies_bouldin_index` does NOT by itself mean more meaningful clusters.** It only measures internal cluster separation/compactness in whatever feature space you give it — it says nothing about whether clusters line up with any domain-meaningful grouping. When you have any external signal to check against (even one not used in training), use it — don't rely on the intrinsic metric alone to judge whether a clustering is useful, and combine it with the non-determinism point above (check the metric's range across retrains, not a single value) before trusting any comparison.
 
 **Limitations:**
 - No supervised metrics or feature attributions (unsupervised).
 - `kmeans_init_col` (CUSTOM) requires exactly `num_clusters` TRUE rows.
 - `COSINE` distance changes geometry — choose deliberately.
+- **Verified gotcha: `ML.DETECT_ANOMALIES`'s input-data argument is REQUIRED for `KMEANS`, not optional.** Calling it with only `(MODEL, STRUCT(contamination))` (2 arguments) errors immediately: `"DETECT_ANOMALIES expects 3 arguments for KMEANS models but 2 were passed."` Always pass the scoring data as the 3rd argument — see the general `ML.DETECT_ANOMALIES` entry, whose syntax block already shows the 3-argument form but doesn't call out that it's mandatory for this model type specifically.
 - HP-tuned models return per-trial rows in `ML.EVALUATE`/`ML.PREDICT`; downstream queries must handle/filter `trial_id`.
 
 **Locations:** Available in all BigQuery ML regions/multi-regions; no special location constraint (no connection required).
@@ -926,7 +929,13 @@ You must specify **exactly one** of `num_principal_components` / `pca_explained_
 
 **Locations:** Available in all BigQuery ML regions/multi-regions. `MODEL_REGISTRY = 'VERTEX_AI'` registration and online serving require a Vertex AI-supported region (repo example uses `us-central1`).
 
-**BigFrames API:** `bigframes.ml.decomposition.PCA` (`fit` / `transform`; `n_components` maps to `num_principal_components`; `.predict()` corresponds to projection).
+**BigFrames API:** `bigframes.ml.decomposition.PCA` (`n_components` maps to `num_principal_components`, `svd_solver` maps to `pca_solver`). **Verified: `.fit(X)` then `.predict(X)`** — unlike scikit-learn, there is no `.transform()`/`.fit_transform()`; `.predict()` returns the projected components, matching `ML.PREDICT`'s convention. `.score(X)` returns `total_explained_variance_ratio`, matching `ML.EVALUATE` (`models/pca/`).
+
+**Verified (`models/pca/`):**
+- **PCA is fully deterministic** — retraining the identical `CREATE OR REPLACE MODEL` statement (same SQL, same options) reproduces `total_explained_variance_ratio` bit-for-bit every time. Unlike `KMEANS` (see its entry above), PCA is a closed-form eigendecomposition with no random initialization, so there's no retraining variance to guard against. A third independent confirmation: training via `bigframes.ml.decomposition.PCA` — a completely different, independently-named model — reproduces the exact same value again, a contrast to `KMEANS`, where BigFrames' independently-trained model produces yet a different value each time.
+- **`principal_component_id` (in `ML.PRINCIPAL_COMPONENTS`/`ML.PRINCIPAL_COMPONENT_INFO`) is 0-indexed** (0, 1, 2, ...) — unlike `KMEANS`' `centroid_id`, which is 1-indexed, and unlike `ML.PREDICT`'s own output columns (`principal_component_1`, `principal_component_2`, ...), which are 1-indexed. Don't assume a consistent indexing convention across unsupervised model types or even within the same model type's own functions.
+- **`ML.DETECT_ANOMALIES` requires the 3rd (input-data) argument for PCA**, same as `KMEANS` — see the general `ML.DETECT_ANOMALIES` entry.
+- **`ML.GENERATE_EMBEDDING` on a PCA model** wraps `ML.PREDICT`'s projection into a single `ml_generate_embedding_result` ARRAY<FLOAT> column; the array values match `ML.PREDICT`'s `principal_component_1`/`principal_component_2` columns exactly, in order.
 
 **Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` — trains `model_type='PCA'` with `pca_explained_variance_ratio=0.90, scale_features=TRUE, pca_solver='AUTO'` on the credit-card `fraud_prepped` table; shows `ML.EVALUATE` (`total_explained_variance_ratio` ≈ 0.923), `ML.PRINCIPAL_COMPONENT_INFO`, `ML.PRINCIPAL_COMPONENTS`, `ML.PREDICT` (per-row component projections), `ML.DETECT_ANOMALIES` with `STRUCT(<train_fraud_rate> AS contamination)` for fraud detection, plus Vertex AI registry registration, endpoint deployment, and `EXPORT MODEL` (exports as a TensorFlow SavedModel).
 
@@ -3124,7 +3133,7 @@ FROM ML.DETECT_ANOMALIES(
 | `anomaly_prob_threshold` | FLOAT64 | No (time-series only) | `0.95` | Probability cutoff in range `[0, 1)`. A point is anomalous if its `anomaly_probability` exceeds this; also sets the width of `lower_bound`/`upper_bound`. |
 | `new_data` (query/TABLE) | table | No\* | — | Data to score. If omitted for time-series, the training data is scored. For IID models the data expression is supplied as the 3rd argument. |
 
-\* For ARIMA_PLUS, scoring historical (training) data requires `decompose_time_series = TRUE` (the default) at CREATE MODEL time; scoring new data requires `anomaly_prob_threshold`.
+\* For ARIMA_PLUS, scoring historical (training) data requires `decompose_time_series = TRUE` (the default) at CREATE MODEL time; scoring new data requires `anomaly_prob_threshold`. **Verified: for both `KMEANS` and `PCA`, this 3rd argument is REQUIRED, not optional** — omitting it errors immediately with `"DETECT_ANOMALIES expects 3 arguments for <model_type> models but 2 were passed"` (`models/kmeans/`, `models/pca/`). Not yet verified whether `AUTOENCODER` shares this requirement — test before assuming.
 
 **Outputs (IID — PCA / AUTOENCODER / KMEANS):**
 

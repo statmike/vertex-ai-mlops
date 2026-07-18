@@ -69,8 +69,10 @@ Per-model-type deep dives covering the full lifecycle (create → evaluate → p
 | [DNN Regressor](models/dnn_regressor/) | `DNN_REGRESSOR` | ML.PREDICT | GA | Feed-forward neural network regression; same data as the other regressors — an honest debugging story from a badly broken baseline to a working fix |
 | [Wide & Deep Classifier](models/wide_and_deep_classifier/) | `DNN_LINEAR_COMBINED_CLASSIFIER` | ML.PREDICT | GA | Joint wide (linear) + deep (DNN) classification; same data as the other classifiers |
 | [Wide & Deep Regressor](models/wide_and_deep_regressor/) | `DNN_LINEAR_COMBINED_REGRESSOR` | ML.PREDICT | GA | Joint wide (linear) + deep (DNN) regression; same data as the other regressors — `learn_rate`/`optimizer` are verified not tunable for this type, unlike plain DNN |
+| [K-Means](models/kmeans/) | `KMEANS` | ML.PREDICT | GA | Unsupervised clustering — no label; verified genuinely non-deterministic across retrains (even with `KMEANS++`), so a single before/after comparison isn't reliable evidence of a feature's effect |
+| [PCA](models/pca/) | `PCA` | ML.PREDICT | GA | Unsupervised dimensionality reduction — no label; verified fully deterministic (closed-form eigendecomposition, unlike K-Means), plus `ML.GENERATE_EMBEDDING` and reconstruction-based `ML.DETECT_ANOMALIES` |
 
-*More model types are planned — see the backlog in [PLANS.md](PLANS.md) (K-means, PCA, matrix factorization, ARIMA_PLUS, autoencoder, plus imported / remote / exported model categories) — comprehensive coverage, not optional stretch goals.*
+*More model types are planned — see the backlog in [PLANS.md](PLANS.md) (matrix factorization, AutoML, contribution analysis, ARIMA_PLUS, autoencoder, plus imported / remote / exported model categories) — comprehensive coverage, not optional stretch goals.*
 
 ## Functions
 
