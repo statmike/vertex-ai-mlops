@@ -74,8 +74,10 @@ Per-model-type deep dives covering the full lifecycle (create → evaluate → p
 | [Autoencoder](models/autoencoder/) | `AUTOENCODER` | ML.PREDICT | GA | Unsupervised nonlinear dimensionality reduction — no label; the default RELU activation genuinely collapses to dead latent units on a small network, fixed by switching to TANH; embeddings pair with `VECTOR_SEARCH` for similarity |
 | [Matrix Factorization](models/matrix_factorization/) | `MATRIX_FACTORIZATION` | ML.RECOMMEND | GA | Collaborative-filtering recommender — the only model type here that can't train on-demand; the notebook sets up and tears down a temporary BigQuery Editions reservation to enable it |
 | [Contribution Analysis](models/contribution_analysis/) | `CONTRIBUTION_ANALYSIS` | ML.GET_INSIGHTS | GA | Key-driver / segment analysis — cross-links to `bq-ai-functions`' `AI.KEY_DRIVERS`; verified `ML.GET_INSIGHTS` has three different output schemas depending on the metric type (summable/ratio/category) |
+| [AutoML Classifier](models/automl_classifier/) | `AUTOML_CLASSIFIER` | ML.PREDICT | GA | Vertex AI AutoML Tables binary classification via `CREATE MODEL`; same data as the other classifiers. The first model type in this project with real, substantial dollar cost (~$21–32/run) and multi-hour wall-clock time |
+| [AutoML Regressor](models/automl_regressor/) | `AUTOML_REGRESSOR` | ML.PREDICT | GA | Vertex AI AutoML Tables regression via `CREATE MODEL`; uses `bigquery-public-data.samples.natality` (not `penguins`, which fails — AutoML requires 1,000+ training rows) |
 
-*More model types are planned — see the backlog in [PLANS.md](PLANS.md) (AutoML, ARIMA_PLUS, plus imported / remote / exported model categories) — comprehensive coverage, not optional stretch goals.*
+*More model types are planned — see the backlog in [PLANS.md](PLANS.md) (ARIMA_PLUS, plus imported / remote / exported model categories) — comprehensive coverage, not optional stretch goals.*
 
 ## Functions
 
