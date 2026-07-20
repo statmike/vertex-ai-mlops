@@ -1654,7 +1654,7 @@ AI.KEY_DRIVERS(
 
 **BigFrames API:** No direct equivalent. Use `%%bigquery` magics or `session.read_gbq_query()` to execute AI.KEY_DRIVERS SQL from BigFrames.
 
-**Relationship to contribution analysis models / ML.GET_INSIGHTS:** Calling `AI.KEY_DRIVERS` is similar to first creating a contribution analysis model and then calling `ML.GET_INSIGHTS` on it. For most applications, `AI.KEY_DRIVERS` is recommended — simpler syntax, faster results, and automatic pruning. Use a contribution analysis model when you need more than 12 dimensions or non-summable metrics.
+**Relationship to contribution analysis models / ML.GET_INSIGHTS:** Calling `AI.KEY_DRIVERS` is similar to first creating a contribution analysis model and then calling `ML.GET_INSIGHTS` on it. For most applications, `AI.KEY_DRIVERS` is recommended — simpler syntax, faster results, and automatic pruning. Use a contribution analysis model when you need more than 12 dimensions or non-summable metrics — see [`../bq-ml/RESOURCES.md`](../bq-ml/RESOURCES.md)'s `CONTRIBUTION_ANALYSIS` entry and [`../bq-ml/models/contribution_analysis/`](../bq-ml/models/contribution_analysis/), which uses this exact dataset and interest/reference split for a direct side-by-side comparison, and verifies both differentiators (ratio/category metrics, >12 dimensions) live, plus a finding not covered here: `ML.GET_INSIGHTS`'s output schema differs by metric type (summable vs. ratio vs. category each return different derived-statistic columns).
 
 | | AI.KEY_DRIVERS | Contribution analysis model + ML.GET_INSIGHTS |
 |---|----------------|------------------------------------------------|

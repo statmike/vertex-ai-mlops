@@ -15,6 +15,11 @@
 --
 -- Full reference: ../../RESOURCES.md
 -- Official docs: https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-key-drivers
+--
+-- Need more than 12 dimensions, or a summable-ratio / summable-by-category
+-- metric? See ../../../bq-ml/models/contribution_analysis/ (the
+-- CONTRIBUTION_ANALYSIS model + ML.GET_INSIGHTS) -- it uses this exact
+-- dataset and interest/reference split for a direct comparison.
 
 
 -- =============================================================================

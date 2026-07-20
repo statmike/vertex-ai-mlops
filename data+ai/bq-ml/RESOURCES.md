@@ -1442,6 +1442,10 @@ The input query must contain **exactly** the columns referenced in `contribution
 
 **ML.GET_INSIGHTS output metrics (this type):**
 
+**Verified: the output schema is NOT fixed — it differs by `contribution_metric` type.** This is not called out in the official reference at the time this was tested; confirmed directly by training all three metric forms on identical data/dimensions.
+
+*Summable metric* (`SUM(x)`):
+
 | Column | Description |
 |--------|-------------|
 | `contributors` | The dimension segment, e.g. `vendor_name=SAZERAC COMPANY INC`; `all` for the overall row. |
@@ -1454,7 +1458,28 @@ The input query must contain **exactly** the columns referenced in `contribution
 | `apriori_support` | Segment-size support (`1.0` for the `all` row). |
 | `contribution` | `ABS(difference)`; output is sorted by this descending. |
 
-**Preprocessing support:** N/A — no `TRANSFORM` clause; the input query columns are consumed directly.
+*Summable-ratio metric* (`SUM(a)/SUM(b)`) — verified DIFFERENT columns:
+
+| Column | Description |
+|--------|-------------|
+| `metric_test_over_metric_control` | Ratio of test to control metric for the segment. |
+| `metric_test_over_complement` | Segment's test metric relative to the rest of the test set. |
+| `metric_control_over_complement` | Segment's control metric relative to the rest of the control set. |
+| `aumann_shapley_attribution` | Shapley-value-based attribution of the overall ratio change to this segment. |
+| `contribution` | **Equals `ABS(aumann_shapley_attribution)`** here, NOT `ABS(difference)` — `difference`/`relative_difference`/`unexpected_difference`/`relative_unexpected_difference` don't appear at all for this metric type. |
+
+*Summable-by-category metric* (`SUM(a)/COUNT(DISTINCT b)`) — verified a THIRD schema:
+
+| Column | Description |
+|--------|-------------|
+| `difference`, `relative_difference` | Same meaning as the summable case. |
+| `metric_test_over_population` | Segment's test metric as a share of the full test population's metric. |
+| `metric_control_over_population` | Segment's control metric as a share of the full control population's metric. |
+| `contribution` | `ABS(difference)` again (like summable) — but `unexpected_difference`/`relative_unexpected_difference` are absent, replaced by the `_over_population` columns. |
+
+All three forms also return each dimension broken out into its own column (e.g. `usertype`, `gender`), and `apriori_support`.
+
+**Preprocessing support:** N/A — no `TRANSFORM` clause (verified: errors immediately with `"Transform clause is not supported for the model type CONTRIBUTION_ANALYSIS"`); the input query columns are consumed directly.
 
 **Hyperparameter tuning:** Not supported.
 
@@ -1462,21 +1487,24 @@ The input query must contain **exactly** the columns referenced in `contribution
 
 **Best practices:**
 - Prefer `top_k_insights_by_apriori_support` for predictable runtime/output size; it lets the model auto-tune the apriori threshold.
-- Use `PRUNE_REDUNDANT_INSIGHTS` to remove subset-redundant segments and keep the most descriptive rows.
-- Sort/filter insights by `contribution` (biggest movers) or `unexpected_difference` (segments defying the overall trend).
+- Use `PRUNE_REDUNDANT_INSIGHTS` to remove subset-redundant segments and keep the most descriptive rows — **verified dramatic effect**: `NO_PRUNING` + `min_apriori_support=0.001` on a 3-dimension model returned 1,559 insight rows; `PRUNE_REDUNDANT_INSIGHTS` + `top_k=15` on the identical data returned exactly 15.
+- Sort/filter insights by `contribution` (biggest movers) or `unexpected_difference` (segments defying the overall trend, summable/category metrics only — ratio metrics have no such column, see above).
 - For straightforward summable-metric key-driver questions, evaluate `AI.KEY_DRIVERS` first (see cross-link) — it skips the `CREATE MODEL` step.
+- **Verified: more than 12 dimensions works** (beyond `AI.KEY_DRIVERS`' cap) — 13 low-cardinality dimensions trained successfully, though it took ~13 minutes vs. ~5 seconds for a 3-dimension model on the same data. Keep per-dimension cardinality low when using many dimensions: a separate attempt with 13 dimensions where several were high-cardinality (raw station IDs, individual bike/user IDs) ran over 18 minutes and then failed with a generic internal-error message (framed by BigQuery as "usually a transient issue") rather than a clean validation error.
 
 **Limitations:**
 - Metric column values must be non-negative unless `min_apriori_support = 0`.
-- `min_apriori_support` and `top_k_insights_by_apriori_support` are mutually exclusive.
+- `min_apriori_support` and `top_k_insights_by_apriori_support` are mutually exclusive — verified: specifying both errors immediately (`"Please specify only one of the MIN_APRIORI_SUPPORT or TOP_K_INSIGHTS_BY_APRIORI_SUPPORT options."`).
 - Dimension columns must be INT64, BOOL, or STRING; NULL-dimension rows are removed.
-- No `ML.PREDICT` / `ML.EVALUATE`; produces insights only.
+- No `ML.PREDICT` / `ML.EVALUATE`; produces insights only. **Verified: the actual error messages don't clearly say "not supported for this model type"** — `ML.PREDICT` complains a `contributors` column is missing from the input; `ML.EVALUATE` progressively asks for input data, then a `label` column, neither of which this model type has.
+- **Verified: the training query may contain ONLY the columns referenced by `contribution_metric`, `dimension_id_cols`, and `is_test_col`** — any extra column errors immediately (`"Only is_test, dimension id, and contribution metric columns are allowed as input columns for CONTRIBUTION_ANALYSIS models"`), unlike most other model types which tolerate extra passthrough columns.
+- Ratio/category `contribution_metric` syntax is strict: `"aliases in the query statement are not supported, please use column names directly"` — reference real columns, not `SELECT ... AS alias` names.
 
 **Locations:** Standard BigQuery ML region/multi-region support; no external connection or endpoint involved.
 
-**BigFrames API:** No dedicated class; run the `CREATE MODEL` / `ML.GET_INSIGHTS` SQL via `session.read_gbq_query()` or `%%bigquery` magics.
+**BigFrames API:** No dedicated class — verified by listing every submodule of the live installed `bigframes.ml` package (`cluster`, `decomposition`, `ensemble`, `forecasting`, `linear_model`, `remote`, etc. — no contribution-analysis module). Run the `CREATE MODEL` / `ML.GET_INSIGHTS` SQL via `session.read_gbq_query()` or `%%bigquery` magics.
 
-**Repo example (tested):** None yet — no tested `CONTRIBUTION_ANALYSIS` example found in the bq-ml repo scout. (Add a notebook/SQL path here once built.)
+**Repo example (tested):** `models/contribution_analysis/` (this project) — full lifecycle on `bigquery-public-data.new_york_citibike.citibike_trips`, using the same test/control split as the `AI.KEY_DRIVERS` sibling notebook (`../bq-ai-functions/functions/ai_key_drivers/`) for direct comparison, plus all three metric-type schemas, the >12-dimension test, and the pruning/mutual-exclusivity options.
 
 
 ---
