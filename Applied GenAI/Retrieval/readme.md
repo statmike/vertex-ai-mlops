@@ -51,7 +51,7 @@ This retrieval process is what is usually referred to as retrieval augmented gen
 
 Each of these workflows sets up the solution and inserts the same 9040 embeddings with metadata:
 - Document processing done in this workflow: [Large Document Processing - Document AI Layout Parser](../Chunking/Large%20Document%20Processing%20-%20Document%20AI%20Layout%20Parser.ipynb)
-- Embedding calls done in batch in this workflow: [Vertex AI Text Embeddings API](../Embeddings/Vertex%20AI%20Text%20Embeddings%20API.ipynb)
+- Embedding calls done in batch in this workflow: [Embeddings API](../Embeddings/Embeddings%20API.ipynb)
 
 The workflows import the resulting data and create the same starting point which is a Python list of dictionaries like:
 
