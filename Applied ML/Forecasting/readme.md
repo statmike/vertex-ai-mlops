@@ -43,7 +43,4 @@ This series explores forecasting with Vertex AI, BigQuery ML, and additional ope
 
 **Workflows:**
 - This repository contains many applied forecasting examples that will be migrated here soon. Please visit [Applied Forecasting](../../Applied%20Forecasting/readme.md) to review these examples!
-- [BigQuery ML For Hierarchical Forecasting](./BigQuery%20ML%20For%20Hierarchical%20Forecasting.ipynb)
-    - Use BigQuery ML to create hierarchical forecasting models.
-    - Detailed review of the default bottom-up approach.
-    - Examples of creating a top-down forecast by disaggregating the top-level forecast down the hierarchy using forecast proportions.
+- Hierarchical forecasting with BigQuery ML has moved and been modernized — see [`data+ai/bq-ml/models/arima_plus/`](../../data+ai/bq-ml/models/arima_plus/) for the built-in bottom-up `hierarchical_time_series_cols` option, and [`data+ai/bq-ml/workflows/hierarchical_forecasting/`](../../data+ai/bq-ml/workflows/hierarchical_forecasting/) for a from-scratch top-down disaggregation (forecast proportions) compared head-to-head against it, including a generalized function for any hierarchy depth.
