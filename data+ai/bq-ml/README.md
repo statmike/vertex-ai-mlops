@@ -97,7 +97,8 @@ End-to-end SQL logic composing preprocessing + a model lifecycle into a real tas
 
 | Workflow | Models / Functions used | What it does |
 |----------|-------------------------|--------------|
-| *(planned)* | — | See [PLANS.md](PLANS.md) Phase 7 (classification, segmentation, forecasting, recommendation) |
+| [Regression-Based Forecasting](workflows/regression_based_forecasting/) | `LINEAR_REG`, `BOOSTED_TREE_REGRESSOR` · `ML.EVALUATE`, `ML.PREDICT` | Forecasts Citi Bike demand via time/lag/lead feature engineering instead of a native time-series model — time features only, + lags (leaked/truncated/recursive evaluation), and direct multi-step (one model per horizon day). Compares accuracy against `models/arima_plus/` on the identical station/TEST window. |
+| *(planned)* | — | See [PLANS.md](PLANS.md) Phase 7 (classification, segmentation, recommendation) |
 
 ## Pipelines
 
