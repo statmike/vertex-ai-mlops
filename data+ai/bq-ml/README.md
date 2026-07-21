@@ -98,6 +98,7 @@ End-to-end SQL logic composing preprocessing + a model lifecycle into a real tas
 | Workflow | Models / Functions used | What it does |
 |----------|-------------------------|--------------|
 | [Regression-Based Forecasting](workflows/regression_based_forecasting/) | `LINEAR_REG`, `BOOSTED_TREE_REGRESSOR` · `ML.EVALUATE`, `ML.PREDICT` | Forecasts Citi Bike demand via time/lag/lead feature engineering instead of a native time-series model — time features only, + lags (leaked/truncated/recursive evaluation), and direct multi-step (one model per horizon day). Compares accuracy against `models/arima_plus/` on the identical station/TEST window. |
+| [Hierarchical Forecasting](workflows/hierarchical_forecasting/) | `ARIMA_PLUS` · `ML.FORECAST`, `ML.EVALUATE` | Compares BQML's built-in bottom-up hierarchical reconciliation (`hierarchical_time_series_cols`) against a from-scratch top-down disaggregation (forecast proportions) on a real `State → County → City → Store` hierarchy (Iowa liquor sales). Includes a generalized Python function that automates the top-down cascade for any hierarchy depth. |
 | *(planned)* | — | See [PLANS.md](PLANS.md) Phase 7 (classification, segmentation, recommendation) |
 
 ## Pipelines

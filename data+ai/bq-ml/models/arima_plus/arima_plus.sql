@@ -236,6 +236,73 @@ ORDER BY forecast_timestamp;
 -- is not supported."
 SELECT * FROM ML.EXPLAIN_FORECAST(MODEL `PROJECT_ID.DATASET.arima_plus_bounded`);
 
+-- Hierarchical forecasting with hierarchical_time_series_cols. Uses a separate
+-- 6-station table (3 stations each in 2 real Manhattan neighborhoods -- Midtown,
+-- Downtown) since the main 5-station table has no real hierarchy. Given an
+-- ordered list of grouping columns, BigQuery ML trains base-level series as
+-- usual, then automatically reconciles forecasts at every rollup level plus an
+-- overall total -- one CREATE MODEL, no manual aggregation needed.
+CREATE OR REPLACE TABLE `PROJECT_ID.DATASET.arima_plus_hierarchy_trips` AS
+SELECT
+  CASE start_station_name
+    WHEN 'Pershing Square North' THEN 'Midtown'
+    WHEN '8 Ave & W 31 St' THEN 'Midtown'
+    WHEN 'W 41 St & 8 Ave' THEN 'Midtown'
+    WHEN 'Lafayette St & E 8 St' THEN 'Downtown'
+    WHEN 'West St & Chambers St' THEN 'Downtown'
+    WHEN 'Christopher St & Greenwich St' THEN 'Downtown'
+  END AS neighborhood,
+  start_station_name,
+  DATE(starttime) AS date,
+  COUNT(*) AS num_trips
+FROM `bigquery-public-data.new_york_citibike.citibike_trips`
+WHERE start_station_name IN (
+  'Pershing Square North', '8 Ave & W 31 St', 'W 41 St & 8 Ave',
+  'Lafayette St & E 8 St', 'West St & Chambers St', 'Christopher St & Greenwich St'
+)
+GROUP BY neighborhood, start_station_name, date;
+
+CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.arima_plus_hierarchy`
+OPTIONS(
+  model_type = 'ARIMA_PLUS',
+  time_series_timestamp_col = 'date',
+  time_series_data_col = 'num_trips',
+  time_series_id_col = ['neighborhood', 'start_station_name'],
+  hierarchical_time_series_cols = ['neighborhood', 'start_station_name'],
+  holiday_region = ['GLOBAL', 'US'],
+  horizon = 7
+) AS
+SELECT neighborhood, start_station_name, date, num_trips
+FROM `PROJECT_ID.DATASET.arima_plus_hierarchy_trips`
+WHERE date <= DATE('2018-05-03');
+
+-- Three levels of forecasts come back: station rows (both id columns set),
+-- neighborhood rows (start_station_name NULL), and one overall-total row (both NULL).
+SELECT DISTINCT neighborhood, start_station_name
+FROM ML.FORECAST(MODEL `PROJECT_ID.DATASET.arima_plus_hierarchy`, STRUCT(7 AS horizon))
+ORDER BY neighborhood, start_station_name;
+
+-- Verified (matches exactly, every forecast day): reconciliation is BOTTOM-UP --
+-- neighborhood forecast == sum of its stations' forecasts, overall == sum of
+-- neighborhoods. BigQuery ML has no built-in TOP-DOWN alternative (disaggregating
+-- a higher-level forecast down) -- see workflows/hierarchical_forecasting/.
+WITH f AS (
+  SELECT neighborhood, start_station_name, forecast_timestamp, forecast_value
+  FROM ML.FORECAST(MODEL `PROJECT_ID.DATASET.arima_plus_hierarchy`, STRUCT(7 AS horizon))
+)
+SELECT
+  forecast_timestamp,
+  (SELECT forecast_value FROM f WHERE neighborhood = 'Midtown' AND start_station_name IS NULL
+     AND forecast_timestamp = t.forecast_timestamp) AS midtown_direct,
+  (SELECT SUM(forecast_value) FROM f WHERE neighborhood = 'Midtown' AND start_station_name IS NOT NULL
+     AND forecast_timestamp = t.forecast_timestamp) AS midtown_summed_from_stations,
+  (SELECT forecast_value FROM f WHERE neighborhood IS NULL AND start_station_name IS NULL
+     AND forecast_timestamp = t.forecast_timestamp) AS overall_direct,
+  (SELECT SUM(forecast_value) FROM f WHERE neighborhood IS NOT NULL AND start_station_name IS NULL
+     AND forecast_timestamp = t.forecast_timestamp) AS overall_summed_from_neighborhoods
+FROM (SELECT DISTINCT forecast_timestamp FROM f) t
+ORDER BY forecast_timestamp;
+
 
 -- =============================================================================
 -- Example 11: ML.DETECT_ANOMALIES
