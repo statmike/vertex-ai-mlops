@@ -1272,9 +1272,11 @@ WHERE splits IN ('TRAIN','VALIDATE');   -- ARIMA+ is univariate; fold VALIDATE i
 HP-tuning note: ARIMA_PLUS does **not** use the `num_trials` HP-tuning framework; `auto_arima` is its built-in hyperparameter search over (p,d,q). `auto_arima_max_order` / `auto_arima_min_order` control the search space.
 
 **Supported lifecycle functions:**
-`ML.FORECAST` (forecast + intervals), `ML.EXPLAIN_FORECAST` (forecast + decomposition; needs `decompose_time_series=TRUE`), `ML.EVALUATE` (forecast accuracy metrics, optional eval data), `ML.ARIMA_EVALUATE` (per-series model selection diagnostics), `ML.ARIMA_COEFFICIENTS` (AR/MA coefficients + drift), `ML.DETECT_ANOMALIES` (anomaly probability per point), `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.HOLIDAY_INFO` (modeled holidays when `holiday_region` set). Not applicable: `ML.PREDICT`, `ML.GLOBAL_EXPLAIN`, `ML.WEIGHTS`, `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.CENTROIDS`.
+`ML.FORECAST` (forecast + intervals), `ML.EXPLAIN_FORECAST` (forecast + decomposition; needs `decompose_time_series=TRUE`; **verified incompatible with `forecast_limit_lower_bound`/`forecast_limit_upper_bound`** — see GOTCHA below), `ML.EVALUATE` (forecast accuracy metrics, optional eval data), `ML.ARIMA_EVALUATE` (per-series model selection diagnostics), `ML.ARIMA_COEFFICIENTS` (AR/MA coefficients + drift), `ML.DETECT_ANOMALIES` (anomaly probability per point), `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.HOLIDAY_INFO` (modeled holidays when `holiday_region` set). Not applicable: `ML.PREDICT`, `ML.GLOBAL_EXPLAIN`, `ML.WEIGHTS`, `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.CENTROIDS`.
 
-**ML.EVALUATE output metrics (this type):** `mean_absolute_error`, `mean_squared_error`, `root_mean_squared_error`, `mean_absolute_percentage_error`, `symmetric_mean_absolute_percentage_error`. Metric granularity depends on inputs: with eval data and `perform_aggregation = TRUE` (default), metrics are per `time_series_id_col`; with `FALSE`, per timestamp. Without eval data, ARIMA-fit metrics (e.g. AIC, variance, log_likelihood) are returned per series instead.
+**GOTCHA (verified): `forecast_limit_lower_bound`/`forecast_limit_upper_bound` are incompatible with `ML.EXPLAIN_FORECAST`.** A model trained with either bound set fails `ML.EXPLAIN_FORECAST` with `"This model was trained with either 'forecast_limit_lower_bound' or 'forecast_limit_upper_bound' being specified. In this case, EXPLAIN_FORECAST is not supported."` `ML.FORECAST` and every other lifecycle function are unaffected — only `ML.EXPLAIN_FORECAST` is blocked. Not documented in the official options reference. If a notebook/pipeline needs both a forecast floor/ceiling and decomposition, they require two separate models.
+
+**ML.EVALUATE output metrics (this type):** `mean_absolute_error`, `mean_squared_error`, `root_mean_squared_error`, `mean_absolute_percentage_error`, `symmetric_mean_absolute_percentage_error`, and **`mean_absolute_scaled_error`** (verified present in a real call with explicit eval data + `perform_aggregation=TRUE` — not previously listed here). Metric granularity depends on inputs: with eval data and `perform_aggregation = TRUE` (default), metrics are per `time_series_id_col`; with `FALSE`, per timestamp. Without eval data, ARIMA-fit metrics (e.g. AIC, variance, log_likelihood) are returned per series instead — same shape as `ML.ARIMA_EVALUATE`, confirmed identical.
 
 **ML.ARIMA_EVALUATE output columns:** `non_seasonal_p`, `non_seasonal_d`, `non_seasonal_q`, `has_drift`, `log_likelihood`, `AIC`, `variance`, `seasonal_periods` (e.g. `[WEEKLY, YEARLY]` or `[NO_SEASONALITY]`), `has_holiday_effect`, `has_spikes_and_dips`, `has_step_changes`, `error_message` (+ the id column). `show_all_candidate_models` (BOOL, default FALSE) returns every candidate instead of only the selected model.
 
@@ -1288,12 +1290,30 @@ HP-tuning note: ARIMA_PLUS does **not** use the `num_trials` HP-tuning framework
 
 **Explainability / weights:** No `ML.WEIGHTS`/`ML.GLOBAL_EXPLAIN`/`ML.FEATURE_IMPORTANCE`. Explainability is via `ML.EXPLAIN_FORECAST` (time series decomposition) and `ML.ARIMA_COEFFICIENTS` (`ar_coefficients`, `ma_coefficients`, `intercept_or_drift`).
 
+**Custom holiday modeling (verified, exact syntax):** `holiday_region` only covers built-in regional holidays. To model an event that matters for a specific series but isn't a public holiday, `CREATE MODEL`'s `AS` clause takes a special two-block form — **no `WITH` keyword**, and `training_data`/`custom_holiday` are required block names (not ordinary CTEs you can rename):
+```sql
+CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.MODEL_NAME`
+OPTIONS(model_type = 'ARIMA_PLUS', holiday_region = 'US', time_series_timestamp_col = 'date', time_series_data_col = 'value', horizon = 7)
+AS (
+  training_data AS (
+    SELECT date, value FROM `PROJECT_ID.DATASET.SOURCE_TABLE`
+  ),
+  custom_holiday AS (
+    SELECT 'US' AS region, 'MyEvent' AS holiday_name, primary_date, 1 AS preholiday_days, 1 AS postholiday_days
+    FROM UNNEST([DATE('2016-11-06'), DATE('2017-11-05')]) AS primary_date
+  )
+);
+```
+`custom_holiday` columns: `region` (existing region code to supplement, or an arbitrary custom region name), `holiday_name` (must be a valid column-name string — no spaces, since it becomes `holiday_effect_<holiday_name>` in `ML.EXPLAIN_FORECAST`), `primary_date`, `preholiday_days`/`postholiday_days` (window size, ≥1). Verified: `ML.HOLIDAY_INFO` lists the custom holiday alongside built-ins, and `ML.EXPLAIN_FORECAST` gains a `holiday_effect_<holiday_name>` column. Can combine with `time_series_id_col` for multi-series. Max 50,000 rows in the `custom_holiday` query.
+
+**Manual ARIMA order (verified):** `auto_arima = FALSE` with `non_seasonal_order = STRUCT(<p> AS p, <d> AS d, <q> AS q)` pins an exact order instead of searching — confirmed `ML.ARIMA_EVALUATE` reports back exactly the specified `(p,d,q)`. Single-series only (fails with `time_series_id_col`).
+
 **Best practices:**
 - ARIMA+ is univariate and ignores a validation split — fold `VALIDATE` rows into the training data (repo notebook trains on `TRAIN`+`VALIDATE`).
 - Set `horizon` at training to cover test + future; remember `ML.FORECAST`/`ML.EXPLAIN_FORECAST` default `horizon` is 3.
 - For 10k+ series, first time a 1k-series query to estimate cost/runtime; lower `auto_arima_max_order` to cut runtime (1 vs 2 cuts runtime >50%); use `time_series_length_fraction`/`max_time_series_length` to trim trend-modeling points; wrap in multi-statement queries.
 - Cost scales with the number of candidate models (`auto_arima_max_order`/`min_order`) since input bytes are multiplied per candidate.
-- Use `forecast_limit_lower_bound = 0` for non-negative demand.
+- Use `forecast_limit_lower_bound = 0` for non-negative demand — but only on a model where `ML.EXPLAIN_FORECAST` isn't needed (see the `ML.EXPLAIN_FORECAST` incompatibility GOTCHA above); `ML.FORECAST` still works fine with a bound set.
 
 **Limitations:**
 - Min series length 3 time points. Max length 500,000 points when `decompose_time_series=TRUE`, 1,000,000 when FALSE (per series). Max series simultaneously: 100,000,000. Max forecast points: 10,000.
@@ -1309,6 +1329,7 @@ HP-tuning note: ARIMA_PLUS does **not** use the `num_trials` HP-tuning framework
 **Repo example (tested):**
 - `/home/user/git/vertex-ai-mlops/Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` — end-to-end: multi-series CREATE MODEL with `time_series_id_col`, `holiday_region=['GLOBAL','US']`, `horizon = HORIZON + TEST`; then `ML.ARIMA_COEFFICIENTS`, `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (`perform_aggregation=TRUE`), `ML.ARIMA_EVALUATE`, `ML.HOLIDAY_INFO`, `ML.FORECAST`, `ML.EXPLAIN_FORECAST`, custom SQL MAPE/MAE/RMSE, and `ML.DETECT_ANOMALIES`.
 - `/home/user/git/vertex-ai-mlops/Applied Forecasting/Notes - BQML ARIMA+ Handling of Granularity and Missing Data.ipynb` — demonstrates missing/absent-point interpolation and the granularity rules (WEEKLY-on-daily error; HOURLY-on-daily interpolation).
+- This project's own `models/arima_plus/` — from-scratch build on 5 real `bigquery-public-data.new_york_citibike.citibike_trips` stations (daily trip counts), single-series then multi-series via `time_series_id_col`; folds the granularity/missing-data gotchas above into the main notebook (verified a real gap day's linearly-interpolated value exactly: `(141+363)/2=252`) rather than keeping them in a separate notes file; adds a dedicated step verifying the custom-holiday syntax, manual `non_seasonal_order`, and `forecast_limit_lower_bound` (as small standalone single-station models, kept separate from the main model specifically because of the `ML.EXPLAIN_FORECAST` incompatibility above — discovered when the main model was first built with the bound set and `ML.EXPLAIN_FORECAST` broke).
 
 
 ---
@@ -1372,7 +1393,15 @@ The covariates are defined implicitly by the `SELECT` list: any column other tha
 
 **Supported lifecycle functions:** `ML.FORECAST`, `ML.EXPLAIN_FORECAST` (forecast + trend/seasonal/holiday components + **per-regressor attributions**), `ML.EVALUATE`, `ML.ARIMA_EVALUATE` (per-series ARIMA stats), `ML.ARIMA_COEFFICIENTS` (AR/MA coefficients **plus the external-regressor weights**), `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.HOLIDAY_INFO`, `ML.DETECT_ANOMALIES` (anomaly detection; added post-2023). No `ML.PREDICT`, no `ML.WEIGHTS`/`ML.GLOBAL_EXPLAIN`/`ML.FEATURE_IMPORTANCE`.
 
-**ML.EVALUATE output metrics (this type):** `mean_absolute_error`, `mean_squared_error`, `root_mean_squared_error`, `mean_absolute_percentage_error`, `symmetric_mean_absolute_percentage_error`. With `time_series_id_col`, `ML.EVALUATE` evaluates each series independently. Behavior depends on inputs: if eval (test) data is supplied, forecast-accuracy metrics are returned; `perform_aggregation = TRUE` gives metrics per series, `FALSE` gives per-timestamp. (For ARIMA model-fit stats — `AIC`, `log_likelihood`, `variance`, `p/d/q`, `seasonal_periods`, `has_holiday_effect`, `has_spikes_and_dips`, `has_step_changes` — use `ML.ARIMA_EVALUATE`.)
+**ML.EVALUATE output metrics (this type):** `mean_absolute_error`, `mean_squared_error`, `root_mean_squared_error`, `mean_absolute_percentage_error`, `symmetric_mean_absolute_percentage_error`. **Verified: unlike plain `ARIMA_PLUS`, this does NOT include `mean_absolute_scaled_error`** — confirmed by comparing the actual output columns of both types side by side on the same underlying data. With `time_series_id_col`, `ML.EVALUATE` evaluates each series independently. Behavior depends on inputs: if eval (test) data is supplied, forecast-accuracy metrics are returned; `perform_aggregation = TRUE` gives metrics per series, `FALSE` gives per-timestamp. (For ARIMA model-fit stats — `AIC`, `log_likelihood`, `variance`, `p/d/q`, `seasonal_periods`, `has_holiday_effect`, `has_spikes_and_dips`, `has_step_changes` — use `ML.ARIMA_EVALUATE`.)
+
+**GOTCHA (verified): `ML.FORECAST`'s 2-argument form (`MODEL`, `STRUCT`) fails immediately** with `"Model type ARIMA_PLUS_XREG requires three parameters in ML.FORECAST."` — the third argument (a table/query supplying covariate values for the forecast horizon) is mandatory, not merely recommended. `ML.EXPLAIN_FORECAST` has the same 3-argument requirement.
+
+**GOTCHA (verified): `forecast_limit_lower_bound`/`forecast_limit_upper_bound` are not a supported option AT ALL for this model type** — `CREATE MODEL` rejects it outright at training time: `"Option(s) FORECAST_LIMIT_LOWER_BOUND are not supported for ARIMA_PLUS_XREG model training."` This is a **different** limitation from plain `ARIMA_PLUS`, where the option is accepted but breaks `ML.EXPLAIN_FORECAST` (see that entry) — do not assume the two model types share identical option compatibility.
+
+**GOTCHA (verified): custom holiday modeling and manual `non_seasonal_order` both work identically to `ARIMA_PLUS`** (same two-block `AS (training_data AS (...), custom_holiday AS (...))` syntax; same `auto_arima = FALSE` + `non_seasonal_order = STRUCT(p,d,q)`) — see that entry for the full syntax.
+
+**GOTCHA (verified): a covariate with a few NULL values (not an entire series) does not block training.** A partial-NULL covariate (e.g. a handful of days with an undefined ratio due to `0/0`) triggers a warning — `"The input data has NULL values in one or more columns: <col>. ... For NULLs in the time_series_data column, BQML replaces them with meaningful values using local linear interpolation."` — but `CREATE MODEL` still succeeds and produces a real (non-NULL) regression weight for that covariate. This is a different situation from the existing "all-NULL for some series" limitation below, which does block training and requires dropping the covariate.
 
 **Preprocessing support:** automatic (ARIMA+ pipeline: missing-value handling, spike/dip cleaning, step-change adjustment, holiday & seasonal decomposition). Covariates are consumed directly from the `SELECT` list. TRANSFORM is **not** supported for this model type.
 
@@ -1398,7 +1427,7 @@ The covariates are defined implicitly by the `SELECT` list: any column other tha
 
 **BigFrames API:** `bigframes.ml.forecasting.ARIMAPlus` covers univariate ARIMA_PLUS; external-regressor (XREG) multivariate forecasting is best driven via SQL `CREATE MODEL`. (No dedicated `ARIMAPlusXReg` class — treat as "use SQL.")
 
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/Applied Forecasting/BQML Multivariate Forecasting with ARIMA+ XREG.ipynb` — Citibike daily trips near Central Park with covariates (`avg_tripduration`, `pct_subscriber`, `ratio_gender`, `capacity`). Shows full lifecycle: CREATE MODEL with `holiday_region=['GLOBAL','US']` + `auto_arima_max_order=5`; `ML.ARIMA_COEFFICIENTS` (regressor weights), `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (the 5 forecast metrics), `ML.ARIMA_EVALUATE`, `ML.HOLIDAY_INFO`, `ML.FORECAST` (covariates supplied for horizon), `ML.EXPLAIN_FORECAST` (61 cols incl. `attribution_*`), and custom SQL metrics (MAPE/MAE/pMAE/MSE/RMSE/pRMSE). NOTE: notebook predates GA `time_series_id_col` for XREG — it forecasts one series via `WHERE` and demonstrates two multi-series workarounds (`EXECUTE IMMEDIATE FOR..IN` loop; async Python client jobs). Today a single model with `time_series_id_col=['...']` replaces the workaround.
+**Repo example (tested):** `/home/user/git/vertex-ai-mlops/Applied Forecasting/BQML Multivariate Forecasting with ARIMA+ XREG.ipynb` — Citibike daily trips near Central Park with covariates (`avg_tripduration`, `pct_subscriber`, `ratio_gender`, `capacity`). Shows full lifecycle: CREATE MODEL with `holiday_region=['GLOBAL','US']` + `auto_arima_max_order=5`; `ML.ARIMA_COEFFICIENTS` (regressor weights), `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (the 5 forecast metrics), `ML.ARIMA_EVALUATE`, `ML.HOLIDAY_INFO`, `ML.FORECAST` (covariates supplied for horizon), `ML.EXPLAIN_FORECAST` (61 cols incl. `attribution_*`), and custom SQL metrics (MAPE/MAE/pMAE/MSE/RMSE/pRMSE). NOTE: notebook predates GA `time_series_id_col` for XREG — it forecasts one series via `WHERE` and demonstrates two multi-series workarounds (`EXECUTE IMMEDIATE FOR..IN` loop; async Python client jobs). Today a single model with `time_series_id_col=['...']` replaces the workaround. Also see this project's own `models/arima_plus_xreg/` — from-scratch build using native `time_series_id_col` from the start (replacing the workaround directly), same 5 Citi Bike stations and TEST window as `models/arima_plus/` for direct forecast-accuracy comparison, 3 covariates (`capacity` dropped — needed a join, NULL for some stations), and several newly-verified cross-model-type differences from plain `ARIMA_PLUS` (no `mean_absolute_scaled_error`, `forecast_limit_lower_bound` rejected outright rather than merely breaking `ML.EXPLAIN_FORECAST`, `ML.FORECAST`/`ML.EXPLAIN_FORECAST` both strictly require the 3-argument covariate form).
 
 
 ---
