@@ -45,6 +45,64 @@
 
 Embeddings are condensed representations of data that retain the essential information from the original data. They are represented by a vector of numbers, usually floats, like `[0, 1, 0, 1]` or `[0.63475, 0.234, ..., 0.2646]`. They are a trained/learned representation for data like text, images, and tables and serve as predictions from these models. Based on the type of model used in training, they can be very good at retaining latent information like semantic meaning in text, objects in images, and correlations in tables. This series shows ways of getting predicted embeddings and example uses of embeddings. For storing and retrieval based on embeddings, check out the next section on [index & retrieval](../Retrieval/readme.md).
 
+## Python Environment
+
+You can run these notebooks two ways, and they work together:
+
+1. **Let the notebook install its own dependencies** — every notebook has an install cell near the top, so it runs standalone in Colab, Colab Enterprise, or Vertex AI Workbench with no prior setup.
+2. **Set up a shared environment once** — for local work (VS Code, JupyterLab) use the folder's [`pyproject.toml`](./pyproject.toml) to create one environment and register it as a Jupyter kernel. The notebooks' install cells then become fast no-ops.
+
+### Option A — set up a kernel once (recommended for local work)
+
+Pick the tool you use. All three read the same [`pyproject.toml`](./pyproject.toml).
+
+**`uv`** (fast; matches the rest of this repo):
+
+```bash
+# From this folder (Applied GenAI/Embeddings/)
+uv sync --group dev                       # creates .venv with all packages + ipykernel
+uv run python -m ipykernel install --user --name embeddings --display-name "Embeddings"
+```
+
+**`pip`** (standard library tooling):
+
+```bash
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -e . ipykernel                          # installs deps from pyproject.toml
+python -m ipykernel install --user --name embeddings --display-name "Embeddings"
+```
+
+**`poetry`**:
+
+```bash
+poetry install                            # reads pyproject.toml
+poetry run python -m ipykernel install --user --name embeddings --display-name "Embeddings"
+```
+
+Then select the **Embeddings** kernel in your notebook editor. To remove the kernel later: `jupyter kernelspec uninstall embeddings`.
+
+### Option B — let the notebook install packages inline
+
+Each notebook includes an install cell near the top with a `uv` fast-path and a `pip` fallback:
+
+```python
+import subprocess, sys, shutil
+def install(*packages):
+    """Install packages using uv (fast) with a pip fallback."""
+    uv = shutil.which('uv')
+    if uv:
+        subprocess.check_call([uv, 'pip', 'install', '-q', '--python', sys.executable, *packages])
+    else:
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q', '--upgrade', *packages])
+install('google-genai', 'google-cloud-storage', 'google-cloud-bigquery', 'google-cloud-bigquery-storage', 'db-dtypes', 'numpy', 'matplotlib', 'pillow')
+```
+
+It targets `sys.executable`, so packages land in the active kernel's environment. If you set up Option A, this cell is a fast no-op; in a managed environment (Colab, Colab Enterprise, Vertex AI Workbench) most packages are already present.
+
+**Packages used across notebooks:** `google-genai` (the forward-path GenAI client), `google-cloud-storage` and `google-cloud-bigquery` + `google-cloud-bigquery-storage` + `db-dtypes` (batch input/output and fast BigQuery reads), `numpy` (vector math / matching), `matplotlib` and `pillow` (visualizing matches), `requests` (the raw REST examples).
+
+**Credentials:** in Colab, `google.colab.auth.authenticate_user()`; elsewhere, Application Default Credentials (`gcloud auth application-default login`).
+
 ## Vertex AI Text Embeddings API
 
 Get to know the [Vertex AI Text Embeddings API](https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings) through examples, including how to scale requests and make batch requests for many embeddings predictions.

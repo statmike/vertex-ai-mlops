@@ -1,0 +1,20 @@
+[project]
+name = "embeddings"
+version = "0.1.0"
+description = "Applied GenAI — Embeddings: text, multimodal, and gemini-embedding-2 via google-genai"
+requires-python = ">=3.10"
+dependencies = [
+    "google-genai",
+    "google-auth",
+    "google-cloud-storage",
+    "google-cloud-bigquery",
+    "google-cloud-bigquery-storage",
+    "db-dtypes",
+    "numpy",
+    "matplotlib",
+    "pillow",
+    "requests",
+]
+
+[dependency-groups]
+dev = ["ipykernel"]
