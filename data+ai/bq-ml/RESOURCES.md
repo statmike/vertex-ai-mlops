@@ -1319,7 +1319,7 @@ AS (
 - Min series length 3 time points. Max length 500,000 points when `decompose_time_series=TRUE`, 1,000,000 when FALSE (per series). Max series simultaneously: 100,000,000. Max forecast points: 10,000.
 - Holiday effect modeling only for DAILY/WEEKLY series longer than ~1 year; effective for ~5 years. Custom holidays only for `DAILY`/`AUTO_FREQUENCY`(daily) and not with `TRANSFORM`.
 - Will **not** aggregate to a coarser granularity: requesting `data_frequency='WEEKLY'` on daily data errors `400 Invalid time series: All input time intervals must be no less than the interval unit specified by data_frequency (WEEKLY)`. Requesting a *finer* granularity (e.g. `HOURLY` on daily data) is allowed and interpolates the gaps.
-- Missing/absent time points (null values or absent rows) are linearly interpolated between observed values based on the detected/declared frequency.
+- Missing/absent time points (null values or absent rows) are linearly interpolated between observed values based on the detected/declared frequency. **Verified: this has no special-case handling for very long gaps** — a real ~6-month gap (confirmed in `bigquery-public-data.new_york_citibike.citibike_trips`, October 2016 – March 2017) is linearly interpolated across its *entire* span with no different treatment than a 1-2 day gap (confirmed: a station's value declined by a constant per-day amount for all ~183 missing days, in `ML.DETECT_ANOMALIES`'s and `ML.EXPLAIN_FORECAST`'s output `time_series_data`) — a straight 6-month line necessarily discards all the weekly/seasonal structure that would have occurred in between. Treat any value inside a long gap as a crude placeholder, not a real observation.
 - Invalid series (e.g. single point) are silently skipped from forecasts; retrieve their `error_message` via `ML.ARIMA_EVALUATE`.
 
 **Locations:** Available in BigQuery ML non-remote-model locations (regions and multi-regions). See "Locations for non-remote models."
@@ -1422,6 +1422,7 @@ The covariates are defined implicitly by the `SELECT` list: any column other tha
 - No TRANSFORM, no HP tuning, no `ML.PREDICT`.
 - Multi-series cost scales with series count and `horizon` (notebook: ~34 s single series; ~5 min for 12 series via `EXECUTE IMMEDIATE` loop).
 - Regressors are **linear**; non-linear effects must be feature-engineered into covariates.
+- **GOTCHA (verified): gap handling differs from plain `ARIMA_PLUS`.** Plain `ARIMA_PLUS` linearly interpolates a real numeric value across an entire missing-data gap, however long (see that entry's Limitations). `ARIMA_PLUS_XREG` does not — confirmed directly against a real ~6-month gap (`bigquery-public-data.new_york_citibike.citibike_trips`, October 2016 – March 2017): `ML.DETECT_ANOMALIES` returns `NULL` for the target/anomaly columns on every day inside the gap, rather than an interpolated value. Don't assume identical gap-handling behavior between the two model types just because they share most lifecycle functions and options.
 
 **Locations:** Available in BigQuery ML regions/multi-regions; no external connection needed. CMEK via `kms_key_name`.
 
