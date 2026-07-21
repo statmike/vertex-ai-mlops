@@ -45,20 +45,78 @@
 
 Embeddings are condensed representations of data that retain the essential information from the original data. They are represented by a vector of numbers, usually floats, like `[0, 1, 0, 1]` or `[0.63475, 0.234, ..., 0.2646]`. They are a trained/learned representation for data like text, images, and tables and serve as predictions from these models. Based on the type of model used in training, they can be very good at retaining latent information like semantic meaning in text, objects in images, and correlations in tables. This series shows ways of getting predicted embeddings and example uses of embeddings. For storing and retrieval based on embeddings, check out the next section on [index & retrieval](../Retrieval/readme.md).
 
-## Vertex AI Text Embeddings API
+## Python Environment
 
-Get to know the [Vertex AI Text Embeddings API](https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings) through examples, including how to scale requests and make batch requests for many embeddings predictions.
-- [Vertex AI Text Embeddings API](./Vertex%20AI%20Text%20Embeddings%20API.ipynb)
+You can run these notebooks two ways, and they work together:
 
-## Multimodal Embeddings of Text, Images, Video, and Combinations
+1. **Let the notebook install its own dependencies** — every notebook has an install cell near the top, so it runs standalone in Colab, Colab Enterprise, or Vertex AI Workbench with no prior setup.
+2. **Set up a shared environment once** — for local work (VS Code, JupyterLab) use the folder's [`pyproject.toml`](./pyproject.toml) to create one environment and register it as a Jupyter kernel. The notebooks' install cells then become fast no-ops.
 
-Expand from predicted embedding of text (above) to images and video, as well as text. This includes combinations where the embeddings are from the same semantic space, so the embeddings can be used together for searching images, text, and video.
-- [Vertex AI Multimodal Embeddings](./Vertex%20AI%20Multimodal%20Embeddings.ipynb)
+### Option A — set up a kernel once (recommended for local work)
+
+Pick the tool you use. All three read the same [`pyproject.toml`](./pyproject.toml).
+
+**`uv`** (fast; matches the rest of this repo):
+
+```bash
+# From this folder (Applied GenAI/Embeddings/)
+uv sync --group dev                       # creates .venv with all packages + ipykernel
+uv run python -m ipykernel install --user --name embeddings --display-name "Embeddings"
+```
+
+**`pip`** (standard library tooling):
+
+```bash
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -e . ipykernel                          # installs deps from pyproject.toml
+python -m ipykernel install --user --name embeddings --display-name "Embeddings"
+```
+
+**`poetry`**:
+
+```bash
+poetry install                            # reads pyproject.toml
+poetry run python -m ipykernel install --user --name embeddings --display-name "Embeddings"
+```
+
+Then select the **Embeddings** kernel in your notebook editor. To remove the kernel later: `jupyter kernelspec uninstall embeddings`.
+
+### Option B — let the notebook install packages inline
+
+Each notebook includes an install cell near the top with a `uv` fast-path and a `pip` fallback:
+
+```python
+import subprocess, sys, shutil
+def install(*packages):
+    """Install packages using uv (fast) with a pip fallback."""
+    uv = shutil.which('uv')
+    if uv:
+        subprocess.check_call([uv, 'pip', 'install', '-q', '--python', sys.executable, *packages])
+    else:
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q', '--upgrade', *packages])
+install('google-genai', 'google-cloud-storage', 'google-cloud-bigquery', 'google-cloud-bigquery-storage', 'db-dtypes', 'numpy', 'matplotlib', 'pillow')
+```
+
+It targets `sys.executable`, so packages land in the active kernel's environment. If you set up Option A, this cell is a fast no-op; in a managed environment (Colab, Colab Enterprise, Vertex AI Workbench) most packages are already present.
+
+**Packages used across notebooks:** `google-genai` (the forward-path GenAI client), `google-cloud-storage` and `google-cloud-bigquery` + `google-cloud-bigquery-storage` + `db-dtypes` (batch input/output and fast BigQuery reads), `numpy` (vector math / matching), `matplotlib` and `pillow` (visualizing matches), `requests` (the raw REST examples).
+
+**Credentials:** in Colab, `google.colab.auth.authenticate_user()`; elsewhere, Application Default Credentials (`gcloud auth application-default login`).
+
+## Embeddings API
+
+The single applied reference for generating embeddings on Google Cloud with the [`google-genai`](https://googleapis.github.io/python-genai/) SDK. It covers text embeddings (`text-embedding-005`, `gemini-embedding-001`, and the natively multimodal `gemini-embedding-2`), multimodal embeddings (image, video, audio, and interleaved inputs), the underlying REST calls via `requests`, cross-modal matching, and batch embedding (Cloud Storage and BigQuery).
+- [Embeddings API](./Embeddings%20API.ipynb)
 
 ## The Math of Similarity
 
 A key use case for embeddings is representing the semantic meaning of content, like chunks of text from a document. Retrieving context for a prompt to an LLM can include using the predicted embedding of the prompt to find matching chunks of text using distance measures like dot product, Euclidean distance, and cosine similarity. In the following notebook, the math of these methods is explored and visualized to provide intuition for which distance measure should be used for retrieval:
 - [The Math of Similarity](./The%20Math%20of%20Similarity.ipynb)
+
+## The Math of Cross-Modal Similarity
+
+A companion to *The Math of Similarity* that extends the same distance-measure math to **multiple modalities** in one shared space. Using real `gemini-embedding-2` vectors, it explores semantic structure in text (attribute directions, semantic arithmetic), the "similar but not identical" relationship between a word, a photo, and an image of that word, the **modality gap** (and why cross-modal ranking usually works despite it), and a toolkit for aligning modalities for mixed-media matching (mean-centering, whitening, threshold calibration, and a learned projection).
+- [The Math of Cross-Modal Similarity](./The%20Math%20of%20Cross-Modal%20Similarity.ipynb)
 
 ## Visualizing Embeddings And Embeddings Spaces
 
@@ -74,8 +132,11 @@ The notebook workflow in "[BQML Autoencoder As Table Embedding](./BQML%20Autoenc
 ## Deeper Examples
 
 These deeper examples illustrate use cases for embeddings:
-- [Vertex AI GenAI Embeddings](./Vertex%20AI%20GenAI%20Embeddings.ipynb)
-    - Work with embeddings for text, images, and combinations to visualize embeddings spaces using the [TensorBoard](https://www.tensorflow.org/tensorboard) built-in [Embedding Projector](https://www.tensorflow.org/tensorboard/tensorboard_projector_plugin#saving_data_for_tensorboard)
 - [Vertex AI GenAI Embeddings - As Features For Hierarchical Classification](Vertex%20AI%20GenAI%20Embeddings%20-%20As%20Features%20For%20Hierarchical%20Classification.ipynb)
     - Categorize content from a store catalog using embeddings of text and images by using the embeddings of product information to train a classifer.  The catalog includes a hierarchy of products and the workflow examines using the classifier to identify mis-classified items and predict the best placement for new items.
+
+## Legacy
+
+Earlier notebooks built on the deprecating `vertexai` SDK have been moved to [`legacy/`](./legacy/readme.md) to preserve them. For current work use [Embeddings API](./Embeddings%20API.ipynb) instead.
+- [Vertex AI Text Embeddings API](./legacy/Vertex%20AI%20Text%20Embeddings%20API.ipynb), [Vertex AI Multimodal Embeddings](./legacy/Vertex%20AI%20Multimodal%20Embeddings.ipynb), [Vertex AI GenAI Embeddings](./legacy/Vertex%20AI%20GenAI%20Embeddings.ipynb)
 

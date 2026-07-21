@@ -82,7 +82,7 @@ Practical generative AI workflows that go beyond simple prompting — grounding 
 
 - **[Generate](./Applied%20GenAI/Generate/readme.md)** (10 notebooks) — Google Gen AI SDK, Gemini API, Imagen, Veo, token management, long context retrieval, and multimodal prompting
 - **[Retrieval](./Applied%20GenAI/Retrieval/readme.md)** (11 notebooks) — Vector search across 11 Google Cloud databases (BigQuery, Vertex AI Vector Search, Feature Store, Spanner, AlloyDB, Cloud SQL, Memorystore, Firestore, Bigtable, and more) with cost and latency comparisons
-- **[Embeddings](./Applied%20GenAI/Embeddings/readme.md)** (7 notebooks) — Text, image, and multimodal embeddings with visualization, similarity math, and hierarchical classification
+- **[Embeddings](./Applied%20GenAI/Embeddings/readme.md)** (6 notebooks) — Text and multimodal embeddings on the `google-genai` SDK (`gemini-embedding-2`), the math of similarity and cross-modal similarity, embedding visualization, and hierarchical classification
 - **[Chunking](./Applied%20GenAI/Chunking/readme.md)** (3 notebooks) — Document processing with Document AI Layout Parser and PyMuPDF for structure-aware chunking
 - **[Ranking](./Applied%20GenAI/Ranking/readme.md)** (1 notebook) — Cross-encoder re-ranking with the Vertex AI Ranking API
 - **[Evaluation](./Applied%20GenAI/Evaluation/readme.md)** (2 notebooks) — GenAI evaluation metrics and prompt optimization using LLM-as-judge approaches
