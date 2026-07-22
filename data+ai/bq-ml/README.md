@@ -99,7 +99,8 @@ End-to-end SQL logic composing preprocessing + a model lifecycle into a real tas
 |----------|-------------------------|--------------|
 | [Regression-Based Forecasting](workflows/regression_based_forecasting/) | `LINEAR_REG`, `BOOSTED_TREE_REGRESSOR` · `ML.EVALUATE`, `ML.PREDICT` | Forecasts Citi Bike demand via time/lag/lead feature engineering instead of a native time-series model — time features only, + lags (leaked/truncated/recursive evaluation), and direct multi-step (one model per horizon day). Compares accuracy against `models/arima_plus/` on the identical station/TEST window. |
 | [Hierarchical Forecasting](workflows/hierarchical_forecasting/) | `ARIMA_PLUS` · `ML.FORECAST`, `ML.EVALUATE` | Compares BQML's built-in bottom-up hierarchical reconciliation (`hierarchical_time_series_cols`) against a from-scratch top-down disaggregation (forecast proportions) on a real `State → County → City → Store` hierarchy (Iowa liquor sales). Includes a generalized Python function that automates the top-down cascade for any hierarchy depth. |
-| *(planned)* | — | See [PLANS.md](PLANS.md) Phase 7 (classification, segmentation, recommendation) |
+| [Embeddings As Features For Hierarchical Classification](workflows/embeddings_classification/) | `BOOSTED_TREE_CLASSIFIER` · `AI.EMBED`, `ML.EVALUATE`, `ML.PREDICT` | Places retail products into a `department → category` hierarchy by embedding product/hierarchy-node text and training a binary "does this belong here?" classifier, resolved top-down via `ML.PREDICT` + `UNNEST`/`QUALIFY`. Compares 3 embedding feature constructions (absolute difference, concatenated, + metadata). |
+| *(planned)* | — | See [PLANS.md](PLANS.md) Phase 7 (segmentation, recommendation) |
 
 ## Pipelines
 

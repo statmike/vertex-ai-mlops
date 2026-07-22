@@ -131,12 +131,10 @@ The notebook workflow in "[BQML Autoencoder As Table Embedding](./BQML%20Autoenc
 
 ## Deeper Examples
 
-These deeper examples illustrate use cases for embeddings:
-- [Vertex AI GenAI Embeddings - As Features For Hierarchical Classification](Vertex%20AI%20GenAI%20Embeddings%20-%20As%20Features%20For%20Hierarchical%20Classification.ipynb)
-    - Categorize content from a store catalog using embeddings of text and images by using the embeddings of product information to train a classifer.  The catalog includes a hierarchy of products and the workflow examines using the classifier to identify mis-classified items and predict the best placement for new items.
+Embeddings-as-features hierarchical classification (categorize a store catalog by training a classifier on product/hierarchy-node embeddings) has moved and been modernized — it was actually a BigQuery ML workflow, not a `google-genai` SDK topic. See [`data+ai/bq-ml/workflows/embeddings_classification/`](../../data+ai/bq-ml/workflows/embeddings_classification/) for the current version (`AI.EMBED` + native SQL `BOOSTED_TREE_CLASSIFIER`).
 
 ## Legacy
 
 Earlier notebooks built on the deprecating `vertexai` SDK have been moved to [`legacy/`](./legacy/readme.md) to preserve them. For current work use [Embeddings API](./Embeddings%20API.ipynb) instead.
-- [Vertex AI Text Embeddings API](./legacy/Vertex%20AI%20Text%20Embeddings%20API.ipynb), [Vertex AI Multimodal Embeddings](./legacy/Vertex%20AI%20Multimodal%20Embeddings.ipynb), [Vertex AI GenAI Embeddings](./legacy/Vertex%20AI%20GenAI%20Embeddings.ipynb)
+- [Vertex AI Text Embeddings API](./legacy/Vertex%20AI%20Text%20Embeddings%20API.ipynb), [Vertex AI Multimodal Embeddings](./legacy/Vertex%20AI%20Multimodal%20Embeddings.ipynb), [Vertex AI GenAI Embeddings](./legacy/Vertex%20AI%20GenAI%20Embeddings.ipynb), [Vertex AI GenAI Embeddings - As Features For Hierarchical Classification](./legacy/Vertex%20AI%20GenAI%20Embeddings%20-%20As%20Features%20For%20Hierarchical%20Classification.ipynb)
 

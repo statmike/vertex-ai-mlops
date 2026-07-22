@@ -475,6 +475,6 @@ Embeddings can be used:
 - Classification models - use embeddings as features to predict classes
 
 Embeddings as features is a lot like a compact, lower dimension representation of content.  One idea for using embeddings as features is to categorize content.  Stores have catalogs.  Products in the catelog have descriptions (text) and maybe even images.  Using embeddings of the product information make it possible to train a classifier for complex product catalogs - even with hierarchys.  Check out this notebook to see an example of this:
-- [Vertex AI GenAI Embeddings - As Features For Hierarchical Classification](../Embeddings/Vertex%20AI%20GenAI%20Embeddings%20-%20As%20Features%20For%20Hierarchical%20Classification.ipynb)
+- [Embeddings As Features For Hierarchical Classification](../../data+ai/bq-ml/workflows/embeddings_classification/) — modernized as a BigQuery ML workflow (`AI.EMBED` + native SQL `BOOSTED_TREE_CLASSIFIER`); the original notebook is preserved at [`Applied GenAI/Embeddings/legacy/`](../Embeddings/legacy/Vertex%20AI%20GenAI%20Embeddings%20-%20As%20Features%20For%20Hierarchical%20Classification.ipynb).
 
 ---

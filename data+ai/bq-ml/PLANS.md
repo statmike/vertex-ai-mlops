@@ -161,8 +161,10 @@ Bidirectional links help users navigate. Maintain these whenever adding/updating
 | random_forest_classifier | model | — |
 | random_forest_regressor | model | — |
 | arima_plus | model | `workflows/hierarchical_forecasting/` (top-down comparison; the bottom-up option itself is covered in `arima_plus` Step 10) |
+| boosted_tree_classifier | model | `workflows/embeddings_classification/` |
 | regression_based_forecasting | workflow | — (uses `linear_regression`, `boosted_tree_regressor`; compares against `arima_plus`) |
 | hierarchical_forecasting | workflow | — (uses `arima_plus`; compares built-in bottom-up vs. custom top-down) |
+| embeddings_classification | workflow | — (uses `boosted_tree_classifier`) |
 
 (Update this table on every add.)
 
@@ -223,7 +225,7 @@ This is the **backlog** — a fresh session can pick the next unchecked item and
 - [ ] Model-agnostic introspection: `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.TRIAL_INFO` (also shown inline in model notebooks)
 
 ### Phase 7: Workflows
-- [ ] End-to-end classification (preprocess → train → evaluate → predict → explain)
+- [x] `workflows/embeddings_classification/` — embeddings-as-features hierarchical classification, realizing "End-to-end classification (preprocess → train → evaluate → predict → explain)". Modernizes `Applied GenAI/Embeddings/Vertex AI GenAI Embeddings - As Features For Hierarchical Classification.ipynb`. Retail product-catalog use case (`bigquery-public-data.thelook_ecommerce.products`, 29,118 products, 2 departments, 36 `department: category` combinations): embeds product names and hierarchy nodes with `AI.EMBED` (`gemini-embedding-001`, `output_dimensionality=256` — no connection needed, superseding the original scope note's assumption that `AI.GENERATE_EMBEDDING` + a connection would be required), trains 3 `BOOSTED_TREE_CLASSIFIER` binary classifiers (absolute-difference / concatenated+abs-diff / +metadata) with embeddings passed as `ARRAY<FLOAT64>` feature columns directly (verified live — no need to unnest into individual columns), and resolves the hierarchy top-down per product via `ML.PREDICT` + `UNNEST`/`QUALIFY`. Built and fully verified 2026-07-22.
 - [ ] Customer segmentation (kmeans + feature prep)
 - [x] `workflows/regression_based_forecasting/` — regression-based demand forecasting. Modernizes `Applied Forecasting/BQML Regression Based Forecasting.ipynb`: `LINEAR_REG`/`BOOSTED_TREE_REGRESSOR` (already built in Phase 2) applied to forecasting via time features, lags, and direct multi-step (`LEAD`) models on the same Citi Bike station/TEST window as `models/arima_plus/`, with a cross-technique comparison back to ARIMA_PLUS's own accuracy on that window. Built and fully pre-validated 2026-07-21 (first workflow in the project).
 - [x] `workflows/hierarchical_forecasting/` — hierarchical forecasting comparison, modernizing `Applied ML/Forecasting/BigQuery ML For Hierarchical Forecasting.ipynb`. Uses `bigquery-public-data.iowa_liquor_sales.sales` (real State → County → City → Store hierarchy, 2 counties × 2 cities × 2 stores, weekly granularity). Verifies BQML's built-in `hierarchical_time_series_cols` (`models/arima_plus/` Step 10) is bottom-up reconciliation, builds a from-scratch custom top-down disaggregation (forecast-proportions method), and compares accuracy between the two at every hierarchy level — plus a generalized Python function automating the top-down approach for any hierarchy depth. Built and fully pre-validated (including a full end-to-end `nbclient` run) 2026-07-21.
