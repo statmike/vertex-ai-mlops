@@ -78,19 +78,22 @@ Open `http://localhost:8080`.
 
 ### Deploy to Cloud Run
 
-Runs the UI on Cloud Run with agent_chat on Agent Engine. Voice mode requires the main project venv for `agent_voice` and the Live API — Cloud Run deployment currently supports text mode only.
+Runs the UI on Cloud Run with text chat proxying to Agent Engine and voice mode running `agent_voice` locally inside the container via ADK `run_live()`. A deploy script at [`deploy/deploy_ui.py`](../deploy/deploy_ui.py) handles API enablement, IAM grants, container building (via Cloud Build), and deployment.
+
+**Prerequisites:** The chat agent must be deployed to Agent Engine first — see [`deploy/readme.md`](../deploy/readme.md).
 
 ```bash
-cd ui
+# Deploy
+uv run python deploy/deploy_ui.py
 
-gcloud run deploy data-onboarding-ui \
-  --source . \
-  --region us-central1 \
-  --set-env-vars "GOOGLE_CLOUD_PROJECT=your-project,GOOGLE_CLOUD_LOCATION=us-central1,AGENT_ENGINE_RESOURCE_ID=your-resource-id,AGENT_MODE=agent_engine" \
-  --allow-unauthenticated
+# Manage
+uv run python deploy/deploy_ui.py --info       # show deployment info
+uv run python deploy/deploy_ui.py --test       # health check deployed URL
+uv run python deploy/deploy_ui.py --update     # update existing deployment
+uv run python deploy/deploy_ui.py --delete     # delete deployment
 ```
 
-For internal-only access, replace `--allow-unauthenticated` with IAP or IAM-based access control.
+The deploy script reads `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, `AGENT_ENGINE_RESOURCE_ID`, `VOICE_MODEL`, and `CHAT_SCOPE` from `.env`. It assembles a staging directory with `ui/` files and `agent_voice/`, then runs `gcloud run deploy --source=<staging>` to build and deploy via Cloud Build. See [`deploy/readme.md`](../deploy/readme.md) for details.
 
 ---
 
