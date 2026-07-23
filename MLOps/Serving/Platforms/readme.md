@@ -118,3 +118,9 @@ Platforms/
 - APIs enabled: Cloud Build, Artifact Registry, Cloud Run, GKE, Cloud Functions (as needed)
 - Python >= 3.10 with the packages listed in the parent [`pyproject.toml`](../pyproject.toml)
 - Each notebook includes its own setup cells — no pre-configuration needed beyond a GCP project
+
+## Related: BQML mechanics in isolation
+
+For the `EXPORT MODEL` mechanics feeding into this pre-built-container pattern — training a model in BigQuery ML, exporting it, and proving it loads/predicts entirely outside BigQuery before ever touching Vertex AI — see the sibling `bq-ml` project:
+- [`data+ai/bq-ml/models/export/`](../../../data+ai/bq-ml/models/export/) — `EXPORT MODEL` to TensorFlow SavedModel and XGBoost Booster, `model_registry='VERTEX_AI'`, and the `bq extract --model` CLI equivalent.
+- [`data+ai/bq-ml/models/remote/`](../../../data+ai/bq-ml/models/remote/) — takes an export from `models/export/` the rest of the way: upload with the pre-built TensorFlow container shown here, deploy to an Endpoint, then call it back from BigQuery with `REMOTE WITH CONNECTION`.

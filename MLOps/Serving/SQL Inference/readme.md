@@ -121,3 +121,9 @@ Import a TensorFlow SavedModel into BigQuery — the serverless advantage of Big
 - APIs enabled: Vertex AI, Cloud Build, Artifact Registry, plus database-specific APIs
 - Python >= 3.10 with the packages listed in the parent [`pyproject.toml`](../pyproject.toml)
 - Each notebook includes its own setup cells — no pre-configuration needed beyond a GCP project
+
+## Related: BQML mechanics in isolation
+
+These notebooks focus on production concerns (real model sizes, container builds, multi-database comparison). For the BQML `CREATE MODEL`/`REMOTE WITH CONNECTION` syntax and lifecycle mechanics on their own — no custom containers, no HuggingFace models — see the sibling `bq-ml` project:
+- [`data+ai/bq-ml/models/imported/`](../../../data+ai/bq-ml/models/imported/) — all four import formats (`TENSORFLOW`, `TENSORFLOW_LITE`, `ONNX`, `XGBOOST`) in one notebook, including a verified XGBoost-version import cap (≤ 1.5.1) not covered here.
+- [`data+ai/bq-ml/models/remote/`](../../../data+ai/bq-ml/models/remote/) — the full round trip from a BQML-trained model: train → `EXPORT MODEL` → deploy to a Vertex AI Endpoint with a pre-built container → `REMOTE WITH CONNECTION` → `ML.PREDICT`.
