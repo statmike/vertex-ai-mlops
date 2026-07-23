@@ -78,8 +78,10 @@ Per-model-type deep dives covering the full lifecycle (create → evaluate → p
 | [AutoML Regressor](models/automl_regressor/) | `AUTOML_REGRESSOR` | ML.PREDICT | GA | Vertex AI AutoML Tables regression via `CREATE MODEL`; uses `bigquery-public-data.samples.natality` (not `penguins`, which fails — AutoML requires 1,000+ training rows) |
 | [ARIMA_PLUS](models/arima_plus/) | `ARIMA_PLUS` | ML.FORECAST | GA | Univariate time series forecasting — 5 real Citi Bike stations, single-series then multi-series via `time_series_id_col`; folds in granularity/missing-data handling as a verified GOTCHA (a real gap day interpolates to exactly the neighbor average) |
 | [ARIMA_PLUS_XREG](models/arima_plus_xreg/) | `ARIMA_PLUS_XREG` | ML.FORECAST | GA | Multivariate forecasting with external regressors — same stations/TEST window as ARIMA_PLUS for direct comparison; verified several real option-compatibility differences from plain ARIMA_PLUS (forecast bounds rejected outright, no `mean_absolute_scaled_error`, strict 3-argument `ML.FORECAST`) |
-
-*More model types are planned — see the backlog in [PLANS.md](PLANS.md) (imported / remote / exported model categories) — comprehensive coverage, not optional stretch goals.*
+| [Transform-Only](models/transform_only/) | `TRANSFORM_ONLY` | ML.TRANSFORM | GA | A model with no estimator — packages preprocessing (`ML.IMPUTER` + scalers + `ML.ONE_HOT_ENCODER`) as a reusable, exportable pipeline; verified a downstream model with no embedded `TRANSFORM` silently mispredicts on raw data until `ML.TRANSFORM` is re-applied |
+| [Imported](models/imported/) | `TENSORFLOW` / `TENSORFLOW_LITE` / `ONNX` / `XGBOOST` | ML.PREDICT | GA | Bring a model trained outside BigQuery (scikit-learn, XGBoost, Keras) in from GCS and run `ML.PREDICT` natively — no connection, no serving endpoint; verified BQML's `XGBOOST` importer caps at XGBoost ≤ 1.5.1 |
+| [Export](models/export/) | `EXPORT MODEL` | — | GA | Write a trained model to GCS as a TensorFlow SavedModel or XGBoost Booster and prove it runs entirely outside BigQuery; also covers `model_registry='VERTEX_AI'` and the `bq extract --model` CLI equivalent |
+| [Remote](models/remote/) | `REMOTE` (custom Vertex AI endpoint) | ML.PREDICT | GA | The full round trip: train → export → deploy to a Vertex AI Endpoint → call it back from BigQuery with `REMOTE WITH CONNECTION`. The one model type in this project with a live, billable Endpoint — kept to a few minutes and torn down immediately. Also documents a confirmed, currently-broken Google shortcut (`model_registry='VERTEX_AI'` deploy fails on an unconditional explanation spec) and proves `REMOTE` works with a model that never touched BigQuery ML at all (an externally-trained XGBoost model, registered but not deployed) |
 
 ## Functions
 
@@ -134,8 +136,9 @@ ML.EVALUATE  ML.PREDICT    ML.EXPLAIN_PREDICT  ML.GLOBAL_EXPLAIN   ML.TRIAL_INFO
 ML.CONFUSION ML.RECOMMEND   attributions)       importance)
 ML.ROC_CURVE                                   ML.FEATURE_INFO / ML.TRAINING_INFO
 
-   Model management: EXPORT MODEL (→ GCS) · imported models (TF/ONNX/XGBoost)
+   Model management: EXPORT MODEL (→ GCS) · imported models (TF/TFLite/ONNX/XGBoost)
                      · remote models (REMOTE WITH CONNECTION → Vertex AI)
+                     · TRANSFORM_ONLY (preprocessing pipeline, no estimator)
 
    Pipelines wrap all of the above for scheduled retrain + scoring
    (SQL scripting · scheduled queries · Composer/Airflow · Vertex KFP)
@@ -145,7 +148,7 @@ ML.ROC_CURVE                                   ML.FEATURE_INFO / ML.TRAINING_INF
 - **`CREATE MODEL`** trains a model object stored in your dataset; `model_type` picks the algorithm.
 - **Lifecycle `ML.*` functions** are table-valued — use them in `FROM`, passing `MODEL \`...\`` and (optionally) input data.
 - **Model-free `ML.*` functions** transform data with no model — use standalone or inside `TRANSFORM`.
-- **Most model types need no connection.** Only remote (Vertex endpoints), imported (GCS artifacts), and `EXPORT MODEL` require one. See [Setup](setup/).
+- **Most model types need no connection — including imported models and `EXPORT MODEL`.** Verified live: only `REMOTE WITH CONNECTION` (Vertex endpoints) genuinely requires one; imported/export just need ordinary GCS IAM on your own credentials. See [Setup](setup/).
 - **`enable_global_explain = TRUE`** must be set at training time to use `ML.GLOBAL_EXPLAIN` later.
 
 ---

@@ -1614,10 +1614,12 @@ OPTIONS(
 | `MODEL_PATH` | STRING | Yes | — | `gs://...` URI (often ends `/*`) | GCS URI of the SavedModel to import. |
 | `KMS_KEY_NAME` | STRING | No | — | CMEK resource name | Customer-managed encryption key for the model. |
 
-**Supported lifecycle functions:** `ML.PREDICT`, `ML.EXPLAIN_PREDICT`. Inputs may be dense Tensors,
+**Supported lifecycle functions:** `ML.PREDICT`, `ML.EXPLAIN_PREDICT` (per official docs — **not reproduced live**, see the correction below). Inputs may be dense Tensors,
 SparseTensors (pass as dense arrays — BQ converts), or `tf.train.Example` (BQ auto-maps columns).
 RaggedTensors are not supported.
 **Not supported:** `ML.CONFUSION_MATRIX`, `ML.EVALUATE`, `ML.FEATURE_INFO`, `ML.ROC_CURVE`, `ML.TRAINING_INFO`, `ML.WEIGHTS`.
+
+**Correction (verified live, `models/imported/`, 2026-07-22):** calling `ML.EXPLAIN_PREDICT` on a live imported `TENSORFLOW` model (a small Keras classifier with a baked-in `Normalization` layer) returns `"TENSORFLOW model is unsupported in ml.explain_predict."` — an outright rejection, not the documented (if memory-heavy) support. Treat the official docs' claim as unverified/stale until reproduced against a model that actually supports it.
 
 **Data types:** `tf.int*`/`tf.uint*` → `INT64`; `tf.float16/32/64`, `tf.bfloat16` → `FLOAT64`;
 `tf.bool` → `BOOL`; `tf.string` → `STRING`. Complex, quantized (`qint`/`quint`), `tf.resource`, `tf.variant` unsupported.
@@ -1627,7 +1629,7 @@ limit. In-RAM prediction memory limit ~250 MB (`ML.EXPLAIN_PREDICT` can trigger 
 of memory*). GraphDef \< v20, unreleased TF versions, custom/`tf.contrib` ops, and RaggedTensors are
 unsupported. Object-table use is reservation-only.
 **BigFrames API:** `bigframes.ml.imported.TensorFlowModel(model_path=...)`.
-**Repo example (tested):** No TensorFlow-import notebook in repo; the ONNX path below is the repo's tested import workflow.
+**Repo example (tested):** `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/imported/imported.ipynb` (Step 4) — a small Keras `Sequential` classifier with a `tf.keras.layers.Normalization` layer baked in (so raw feature values work directly, since imported models support no `TRANSFORM`), exported via `model.export(...)`, imported with `MODEL_TYPE='TENSORFLOW'`, scored with `ML.PREDICT` (`ARRAY<FLOAT64>` input named `"input"`, auto-named `output_0` output). Also see `/home/user/git/vertex-ai-mlops/MLOps/Serving/SQL Inference/Serve TensorFlow SavedModel Format With BigQuery.ipynb` for the production-scale version.
 
 ---
 
@@ -1654,7 +1656,7 @@ OPTIONS(
 Only TensorFlow core ops + TensorFlow Text ops supported; **SentencePiece operators not supported**;
 sparse tensors not supported. Object-table use is reservation-only (no on-demand).
 **BigFrames API:** No direct equivalent class (use TensorFlow/ONNX imported-model classes for the TF/ONNX paths).
-**Repo example (tested):** None in repo.
+**Repo example (tested):** `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/imported/imported.ipynb` (Step 5) — `tf.lite.TFLiteConverter.from_saved_model(...)` on the exact SavedModel used for the `TENSORFLOW` example, then imported with `MODEL_TYPE='TENSORFLOW_LITE'`. Verified predictions match the `TENSORFLOW` import to ~7 significant figures (not bit-for-bit — ordinary float32 kernel differences between the TF runtime and the TFLite interpreter, since no quantization was applied) — same `ARRAY<FLOAT64>` input contract, same auto-named `output_0` output.
 
 ---
 
@@ -1701,6 +1703,11 @@ default → import error `unsupported ONNX type: ONNX_TYPE_SEQUENCE`. Fix at con
   250 MB practical/450 MB hard limit and ONNX Runtime 1.12; pre-tokenized ARRAY inputs
   (`input_ids`, `attention_mask`); `ML.PREDICT` returns `logits` (softmax/argmax done in SQL). Shows
   the import-vs-remote tradeoff: ONNX import needs the caller to tokenize and fits small numeric models.
+- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/imported/imported.ipynb` (Step 2) —
+  scikit-learn `LogisticRegression` → ONNX via `skl2onnx.convert_sklearn(..., target_opset=13)`, then
+  `onnx_model.ir_version = 8` set explicitly (both needed: a modern skl2onnx defaults to IR version 10
+  and opset 22, both too new for ONNX Runtime 1.12). `zipmap=False` avoids the sequence-of-map gotcha.
+  Single `ARRAY<FLOAT64>` input named `"input"`, `ML.PREDICT` returns `label` + `probabilities`.
 
 ---
 
@@ -1738,8 +1745,22 @@ that supports a feature-attribution function).
 **Limitations:** `.bst` or `.json` (Booster) format only; model must exist in GCS before import.
 **250 MB** size limit; **840 MB** memory limit to load+run (reduce trees / depth, or save via XGBoost's
 default `save_model` to shrink). Object-table use is reservation-only.
+
+**GOTCHA (verified live, undocumented as of this writing):** the importer only accepts Booster files
+saved by **XGBoost ≤ 1.5.1** — a booster saved with a modern xgboost (2.x/3.x, whatever `pip install
+xgboost` gives you today) fails to import: `"XGBoost model version newer than 1.5.1 is not
+supported."` Train with `xgboost==1.5.1` specifically for this path — that release in turn needs
+`numpy<2` in the same environment (`np.array(data, copy=False)` errors under numpy 2.x). This is the
+mirror-image of the already-known `boosted_tree_classifier`/`EXPORT MODEL` gotcha (needing
+`xgboost<2.0` to *load* a BQML-exported booster) — here it's the opposite direction: BQML's *importer*
+rejects boosters from a too-new xgboost.
+
 **BigFrames API:** `bigframes.ml.imported.XGBoostModel(model_path=..., input=..., output=...)`.
-**Repo example (tested):** None in repo (scikit-learn/PyTorch are imported via the ONNX path above).
+**Repo example (tested):** `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/imported/imported.ipynb`
+(Step 3) — a binary classifier (`objective='binary:logistic'`) trained natively with `xgboost.train()`
+on `xgboost==1.5.1`, saved as `.json`, imported with explicit `INPUT`/`OUTPUT` (a `multi:softprob`
+objective also predicts fine but silently returns an ARRAY despite a scalar `OUTPUT` declaration — a
+binary objective keeps the declared type honest). `ML.FEATURE_IMPORTANCE` verified working here.
 
 ---
 
@@ -1809,7 +1830,7 @@ BigQuery wraps each row's `INPUT` columns into one element of the `instances` ar
 **Explainability / weights:** N/A in BigQuery (no `enable_global_explain`, no weights). Explanations, if any, must be produced by the Vertex AI endpoint and surfaced as `OUTPUT` fields.
 
 **Best practices:**
-- Two-step setup: (1) create a `CLOUD_RESOURCE` connection, (2) grant its auto-provisioned service account `roles/aiplatform.user`, then create the model. IAM propagation can take up to ~60s — retry `CREATE MODEL` if it fails with a permission error.
+- Two-step setup: (1) create a `CLOUD_RESOURCE` connection, (2) grant its auto-provisioned service account `roles/aiplatform.user`, then create the model. IAM propagation is variable and **verified live to exceed two minutes** in one case despite the grant itself succeeding immediately — retry `CREATE MODEL` on a permission error with a loop (several attempts, ~20s apart), not a single fixed sleep.
 - Keep the connection in the **same location/region as the dataset** holding the model (location requirement).
 - Reuse one connection across multiple remote models.
 - Make `OUTPUT` names/types exactly mirror the endpoint response to avoid silent NULLs.
@@ -1820,6 +1841,7 @@ BigQuery wraps each row's `INPUT` columns into one element of the `instances` ar
 - Only **shared public** Vertex AI endpoints — dedicated public, PSC, and private endpoints are unsupported.
 - Only `ML.PREDICT` is supported; no evaluation/explainability/weights lifecycle functions.
 - Cost has two parts: Vertex AI endpoint compute + the BigQuery query; latency includes a network round-trip per batch.
+- **The `model_registry='VERTEX_AI'` shortcut (see `CREATE MODEL` general options) is NOT currently a working alternative to the manual export+upload path above, for at least `LOGISTIC_REG`.** Verified live: a model registered this way carries an unconditional Sampled-Shapley `explanationSpec` (confirmed via `gcloud ai models describe` — present even with no explainability options set), and deploying it to an Endpoint fails with `InvalidArgument: 400 Error occurred in Explanation preprocessing. ValueError: NodeDef mentions attr 'debug_name' not in Op<name=VarHandleOp...>`. This is a confirmed, currently-open Google issue — [vertex-ai-samples#2723](https://github.com/GoogleCloudPlatform/vertex-ai-samples/issues/2723), filed against Google's own official BQML-online-prediction sample notebook, closed "not planned." The manually-exported-and-uploaded model (no baked-in explanation spec) is the reliable path until this is fixed. `REMOTE` itself is not limited to models that ever touched BigQuery ML — any model registered to Vertex AI Model Registry (any framework, any training origin) can back a `REMOTE WITH CONNECTION` model once deployed to an endpoint.
 
 **Locations:** Connection must match the dataset's BigQuery location (e.g., dataset in `US` → connection in `US`). Endpoint region is encoded in the `ENDPOINT` URL.
 
@@ -1828,6 +1850,7 @@ BigQuery wraps each row's `INPUT` columns into one element of the `instances` ar
 **Repo example (tested):**
 - `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Remote Model on Vertex AI Endpoint.ipynb` — registers an existing autoencoder endpoint as a remote model: derives `INPUT`/`OUTPUT` from the TF SavedModel signature, creates a `CLOUD_RESOURCE` connection with `bq mk --connection`, grants `roles/aiplatform.user`, then `CREATE OR REPLACE MODEL ... INPUT(...) OUTPUT(...) REMOTE WITH CONNECTION ... OPTIONS(endpoint=...)` and scores via `ML.PREDICT`.
 - `/home/user/git/vertex-ai-mlops/MLOps/Serving/SQL Inference/BQML Remote Model on Vertex AI Endpoint.ipynb` — end-to-end: deploys a HuggingFace sentiment container to a Vertex AI endpoint, creates the connection via `ConnectionServiceClient`, then `INPUT (text STRING) OUTPUT (label STRING, score FLOAT64) REMOTE WITH CONNECTION ... OPTIONS(endpoint=...)`. Shows single-row, multi-row (`UNNEST`), and table batch scoring with business logic; output includes the `remote_model_status` column. Also contrasts remote model vs ONNX import.
+- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/remote/remote.ipynb` — the full round trip from a BQML model: trains a `LOGISTIC_REG` → `EXPORT MODEL` (TF SavedModel) → `aiplatform.Model.upload()` with the pre-built `tf2-cpu.2-15` serving container (no Dockerfile) → deploys to a minimal `n1-standard-2` Endpoint → creates a `CLOUD_RESOURCE` connection + grants `roles/aiplatform.user` → `CREATE MODEL ... INPUT(...) OUTPUT(...) REMOTE WITH CONNECTION ... OPTIONS(endpoint=...)` → `ML.PREDICT` (single-row + 200-row batch, verified 0 `remote_model_status` errors). Verified the TF-serving container's response uses the exact field names the SavedModel signature itself exposes (`{label}_probs`/`{label}_values`/`predicted_{label}`), so `OUTPUT` can mirror them directly. Endpoint torn down within a few minutes of deployment — cross-link this entry with [`models/export/`](../../models/export/), which this notebook picks up from. Also demonstrates, as a documented live failure, the `model_registry='VERTEX_AI'` shortcut's Explanation-preprocessing bug described above (Step 4), and proves the mechanism is framework-agnostic by registering (not deploying) an XGBoost model trained entirely outside BigQuery with the `xgboost-cpu.2-1` container (Step 5).
 
 
 ---
@@ -1914,7 +1937,9 @@ Input column names must match the names in the model's `TRANSFORM` clause, with 
 
 **BigFrames API:** No single direct `TRANSFORM_ONLY` class. Equivalent functionality is the `bigframes.ml.preprocessing` transformers (e.g. `StandardScaler`, `MaxAbsScaler`, `OneHotEncoder`, `LabelEncoder`) and `bigframes.ml.pipeline.Pipeline`/`ColumnTransformer`, which compile to BQML preprocessing under the hood. A persisted transform-only model can be read with `bigframes.pandas.read_gbq_model`.
 
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - reusable and modular.ipynb` — full tested walkthrough on `bigquery-public-data.ml_datasets.penguins`: (1) embedded `TRANSFORM` on a `BOOSTED_TREE_CLASSIFIER`; (2) reuse of any model's transform via `ML.TRANSFORM`; (3) separate `TRANSFORM_ONLY` models for imputation and for scaling, chained with CTEs and exposed as a view; (4) per‑feature `TRANSFORM_ONLY` models (feature‑store style); (5) feeding the pipeline output into a `CREATE MODEL`; (6) `ML.FEATURE_INFO`; (7) `EXPORT MODEL` to GCS (transform‑only exports a `transform/saved_model.pb`); (8) Vertex AI registration + endpoint serving; (9) consuming via BigFrames `read_gbq_model().predict()`.
+**Repo example (tested):**
+- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/transform_only/transform_only.ipynb` — dedicated `TRANSFORM_ONLY` notebook on `penguins`: one pipeline chaining `ML.IMPUTER` + `ML.STANDARD_SCALER`/`ML.ROBUST_SCALER`/`ML.ONE_HOT_ENCODER`, applied via `ML.TRANSFORM`, feeding a downstream `LOGISTIC_REG` with no embedded `TRANSFORM` of its own. **Two verified findings:** (1) `ML.TRANSFORM` silently passes through any input column not referenced by the `TRANSFORM` clause, appended after the transform outputs — useful (carry an id/label through) but easy to mistake for pipeline output; (2) calling `ML.PREDICT` on the downstream model with *raw* (untransformed) data does **not** error — it silently predicts using values on the wrong scale, reproduced live: every row predicted the same class ("Gentoo penguin") regardless of true label until the input was re-wrapped in `ML.TRANSFORM`. Also confirms `EXPORT MODEL` on a transform-only model (`transform/saved_model.pb`, no predictive weights since there's no estimator).
+- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - reusable and modular.ipynb` — full tested walkthrough on `bigquery-public-data.ml_datasets.penguins`: (1) embedded `TRANSFORM` on a `BOOSTED_TREE_CLASSIFIER`; (2) reuse of any model's transform via `ML.TRANSFORM`; (3) separate `TRANSFORM_ONLY` models for imputation and for scaling, chained with CTEs and exposed as a view; (4) per‑feature `TRANSFORM_ONLY` models (feature‑store style); (5) feeding the pipeline output into a `CREATE MODEL`; (6) `ML.FEATURE_INFO`; (7) `EXPORT MODEL` to GCS (transform‑only exports a `transform/saved_model.pb`); (8) Vertex AI registration + endpoint serving; (9) consuming via BigFrames `read_gbq_model().predict()`.
 
 
 ---
@@ -2607,6 +2632,7 @@ ORDER BY iteration;
 |---|---|
 | K-means | No `eval_loss`; adds `cluster_info` ARRAY\<STRUCT\> with `centroid_id`, `cluster_radius`, `cluster_size` (computed on standardized features). |
 | Time-series (ARIMA_PLUS) | Returns only `training_run`, `iteration`, `duration_ms`; no per-iteration metrics, and not broken out per time series; `duration_ms` is total cost. |
+| Boosted tree / random forest (XGBoost-based) | `iteration` numbering starts at **1**, not 0 (unlike GLM/DNN gradient descent) — verified in `models/boosted_tree_classifier/`. The first iteration's `duration_ms` includes a one-time data-loading/indexing overhead (observed ~14 min on one run), so it is not representative of steady-state per-iteration cost; later iterations run in milliseconds. |
 
 **Best practices:**
 - `ORDER BY iteration` and chart `loss` vs `eval_loss` — divergence signals overfitting.
@@ -2899,7 +2925,7 @@ FROM ML.RECOMMEND(
 
 > **Scope note:** This entry covers ONLY the in-house BQML-model use of `ML.GENERATE_EMBEDDING` — extracting embeddings from a trained `PCA`, `AUTOENCODER`, or `MATRIX_FACTORIZATION` model. The **foundation/remote-model (text & multimodal) use** of `ML.GENERATE_EMBEDDING` / `AI.GENERATE_EMBEDDING` is owned by `../bq-ai-functions/` — see that doc; do not duplicate here.
 
-- **Description:** Produces a single `ARRAY<FLOAT>` embedding column from a trained BQML model so the result can be consumed directly by `VECTOR_SEARCH`. The function delegates internally: PCA/autoencoder route through `ML.PREDICT`; matrix factorization routes through `ML.WEIGHTS`.
+- **Description:** Produces a single `ARRAY<FLOAT>` embedding column from a trained BQML model, meant for use with `VECTOR_SEARCH`. The function delegates internally: PCA/autoencoder route through `ML.PREDICT`; matrix factorization routes through `ML.WEIGHTS`.
 - **Use cases:**
   - Turn PCA principal-component projections into a single vector column for similarity search.
   - Extract autoencoder latent-space (bottleneck) representations as embeddings.
@@ -2942,6 +2968,7 @@ FROM ML.GENERATE_EMBEDDING(
 
 **Limitations:**
 - Embeddings reflect only what the underlying model learned (linear components for PCA; reconstruction-driven latents for autoencoders; collaborative factors for matrix factorization) — not semantic text/image meaning (use the foundation-model path for that).
+- **Verified: `VECTOR_SEARCH` does NOT accept `ML.GENERATE_EMBEDDING`'s output passed directly as its base-table argument** — `VECTOR_SEARCH(ML.GENERATE_EMBEDDING(...), ...)` errors with `"Unsupported query pattern"` (`models/autoencoder/`). Materialize the embeddings into a real table (or view) first, then run `VECTOR_SEARCH` against that table. Also verified: `ML.GENERATE_EMBEDDING` does NOT normalize its output — the raw result is bit-for-bit identical to hand-computing the same values via `ML.PREDICT`'s latent/projection columns; if `VECTOR_SEARCH` uses `COSINE` distance, no separate `ML.NORMALIZER` step is needed (`COSINE` and manual-normalize+`DOT_PRODUCT` give mathematically identical rankings).
 - Matrix-factorization embeddings are per-entity (user/item), not per-row feature embeddings.
 
 **BigFrames API:** No direct single-call `generate_embedding` wrapper for these in-house model types; equivalent results come from `PCA.transform()`, the autoencoder `predict()` latent output, and `MatrixFactorization` weights via the respective `bigframes.ml` classes. (Foundation embeddings: `bigframes.ml.llm.TextEmbeddingGenerator` — cross-link out.)
@@ -3227,7 +3254,7 @@ FROM ML.DETECT_ANOMALIES(
 | `anomaly_prob_threshold` | FLOAT64 | No (time-series only) | `0.95` | Probability cutoff in range `[0, 1)`. A point is anomalous if its `anomaly_probability` exceeds this; also sets the width of `lower_bound`/`upper_bound`. |
 | `new_data` (query/TABLE) | table | No\* | — | Data to score. If omitted for time-series, the training data is scored. For IID models the data expression is supplied as the 3rd argument. |
 
-\* For ARIMA_PLUS, scoring historical (training) data requires `decompose_time_series = TRUE` (the default) at CREATE MODEL time; scoring new data requires `anomaly_prob_threshold`. **Verified: for both `KMEANS` and `PCA`, this 3rd argument is REQUIRED, not optional** — omitting it errors immediately with `"DETECT_ANOMALIES expects 3 arguments for <model_type> models but 2 were passed"` (`models/kmeans/`, `models/pca/`). Not yet verified whether `AUTOENCODER` shares this requirement — test before assuming.
+\* For ARIMA_PLUS, scoring historical (training) data requires `decompose_time_series = TRUE` (the default) at CREATE MODEL time; scoring new data requires `anomaly_prob_threshold`. **Verified: all three IID model types (`KMEANS`, `PCA`, `AUTOENCODER`) require this 3rd argument** — omitting it errors immediately with `"DETECT_ANOMALIES expects 3 arguments for <model_type> models but 2 were passed"` (`models/kmeans/`, `models/pca/`, `models/autoencoder/`).
 
 **Outputs (IID — PCA / AUTOENCODER / KMEANS):**
 
@@ -3309,10 +3336,14 @@ FROM ML.TRANSFORM(
 **Limitations:**
 - Fails if the model has no `TRANSFORM` clause.
 - Input column names must match the `TRANSFORM` clause inputs.
+- **GOTCHA (verified live, `models/transform_only/`):** any column present in the input query but **not** referenced anywhere in the `TRANSFORM` clause passes straight through untouched, appended after the transform outputs — the "exactly the columns produced by TRANSFORM" description above is true for referenced columns, but unreferenced extras ride along too. Useful for carrying an id/label column through without re-listing it in the pipeline, but easy to mistake for the pipeline itself re-emitting a raw column.
+- **GOTCHA (verified live, `models/transform_only/`):** a downstream model trained on `ML.TRANSFORM` output but with no *embedded* `TRANSFORM` of its own does not know to re-apply the pipeline at predict time. Calling `ML.PREDICT` on it with raw (untransformed) data does **not** error — it silently predicts using values on the wrong scale. Reproduced live: every row predicted the same class regardless of true label until the raw input was re-wrapped in `ML.TRANSFORM` first.
 
 **BigFrames API:** Transform reuse is handled implicitly by pipeline/estimator objects; no standalone one-to-one `ML.TRANSFORM` call needed in typical BigFrames pipelines.
 
-**Repo example (tested):** `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 9) — `CREATE MODEL ... TRANSFORM(ML.STANDARD_SCALER(age) OVER() AS age, ...)`; the scaler is saved with the model and reapplied automatically at predict time (the SQL comments note no need to repeat it in `ML.PREDICT`).
+**Repo example (tested):**
+- `data+ai/bq-ml/models/transform_only/transform_only.ipynb` — both gotchas above reproduced live; a `TRANSFORM_ONLY` pipeline (`ML.IMPUTER` + scalers + `ML.ONE_HOT_ENCODER`) feeding a downstream `LOGISTIC_REG` with no embedded `TRANSFORM`.
+- `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 9) — `CREATE MODEL ... TRANSFORM(ML.STANDARD_SCALER(age) OVER() AS age, ...)`; the scaler is saved with the model and reapplied automatically at predict time (the SQL comments note no need to repeat it in `ML.PREDICT`) — this is the embedded-`TRANSFORM` case, which does NOT need the re-application `ML.TRANSFORM` gotcha above applies to.
 
 
 ## Model-Free Functions
@@ -4254,10 +4285,11 @@ bq extract --model --destination_format ML_XGBOOST_BOOSTER 'DATASET.MODEL_NAME' 
 **BigFrames API:** `bigframes.ml` estimators expose `model.to_gbq(...)` for persistence in BigQuery; GCS export is performed via the SQL `EXPORT MODEL` statement or `bq extract --model`. No dedicated one-call BigFrames GCS-export helper.
 
 **Repo example (tested):**
+- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/export/export.ipynb` — the dedicated general-purpose `EXPORT MODEL` notebook: a `LOGISTIC_REG` (→ TF SavedModel, downloaded and run with `tf.saved_model.load()` + `infer(...)` entirely outside BigQuery) and a small `BOOSTED_TREE_CLASSIFIER` (→ XGBoost Booster, downloaded and scored locally with `booster.get_score(importance_type='gain')` — the same `xgboost==1.7.6`/`feature_names` gotchas as below, reproduced here independently). Also demonstrates `model_registry='VERTEX_AI'` as a `CREATE MODEL`-time alternative to export (registry storage only, no live serving cost) and the `bq extract --model --destination_format=...` CLI equivalent. **Verified finding:** dropping a model registered via `model_registry='VERTEX_AI'` also cascade-deletes its Vertex AI Model Registry entry — no separate `aiplatform`/`gcloud` deletion step needed.
 - `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` (Example 9) and the companion notebook (Step 7) — `EXPORT MODEL` → download `model.bst` → `xgboost==1.7.6` (pinned) → `booster.feature_names` reassigned manually → `xgboost.plot_tree()`. Both gotchas above were caught and verified here.
 - `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — exports a `BOOSTED_TREE` model to a timestamped GCS folder (`EXPORT MODEL ... OPTIONS(URI = 'gs://.../models/{TIMESTAMP}/model')`), i.e. XGBoost Booster format.
 - `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` and `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` — export `PCA` and `AUTOENCODER` models (TensorFlow SavedModel) with the same `EXPORT MODEL ... OPTIONS(URI=...)` pattern.
-- Inverse direction (importing a TF SavedModel back into BQML for serving): `/home/user/git/vertex-ai-mlops/MLOps/Serving/SQL Inference/Serve TensorFlow SavedModel Format With BigQuery.ipynb` — useful context for the round-trip, but it demonstrates `CREATE MODEL ... MODEL_TYPE='TENSORFLOW'` (import), not EXPORT MODEL.
+- Inverse direction (importing a TF SavedModel back into BQML for serving): `/home/user/git/vertex-ai-mlops/MLOps/Serving/SQL Inference/Serve TensorFlow SavedModel Format With BigQuery.ipynb` — useful context for the round-trip, but it demonstrates `CREATE MODEL ... MODEL_TYPE='TENSORFLOW'` (import), not EXPORT MODEL. Also see this project's own [`models/imported/`](../../models/imported/) for the same import direction.
 
 
 ---

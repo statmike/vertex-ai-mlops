@@ -160,16 +160,15 @@ Inspect trials with `ML.TRIAL_INFO` (`trial_id`, `hyperparameters`, `hparam_tuni
 
 ---
 
-## Connections (remote / imported / export only)
+## Connections (remote models only)
 
-A **Cloud resource connection** is only needed for:
-- **Remote models** — `CREATE MODEL ... REMOTE WITH CONNECTION ...` calling a Vertex AI endpoint.
-- **Imported models** — reading TF/ONNX/XGBoost artifacts from `gs://...`.
-- **`EXPORT MODEL`** — writing a model to GCS.
+A **Cloud resource connection** is only needed for **remote models** — `CREATE MODEL ... REMOTE WITH CONNECTION ...` calling a Vertex AI endpoint (see `models/remote/`). BigQuery calls out to the endpoint through this connection's service account.
 
-Standard in-BigQuery training (logistic regression, k-means, ARIMA_PLUS, etc.) needs **none** of this.
+**Correction (verified live, 2026-07-22 — `models/imported/` and `models/export/`):** imported models (`TENSORFLOW`/`TENSORFLOW_LITE`/`ONNX`/`XGBOOST`) and `EXPORT MODEL` do **NOT** need a connection, contrary to what this section previously said. Both read/write GCS using the credentials of whoever runs the `CREATE MODEL`/`EXPORT MODEL` statement — ordinary GCS IAM (`roles/storage.objectViewer` to import, `roles/storage.objectAdmin` to export) on your own account, not a Cloud Resource connection. A connection is relevant for imported models only in the unrelated case of serving against an *object table* under reservation pricing.
 
-Create one idempotently via the `bq` CLI and grant its service account the needed role(s):
+Standard in-BigQuery training (logistic regression, k-means, ARIMA_PLUS, etc.) needs **none** of this either.
+
+Create the connection idempotently via the `bq` CLI and grant its service account the role remote models need:
 
 ```python
 import subprocess, json
@@ -181,13 +180,12 @@ r = subprocess.run(['bq', 'show', '--connection', '--format=json',
                     '--project_id', PROJECT_ID, '--location', LOCATION, CONNECTION_ID],
                    capture_output=True, text=True, check=True)
 sa = json.loads(r.stdout)['cloudResource']['serviceAccountId']
-# Remote models: roles/aiplatform.user ; GCS import/export: roles/storage.objectAdmin (or objectViewer)
 subprocess.run(['gcloud', 'projects', 'add-iam-policy-binding', PROJECT_ID,
                 f'--member=serviceAccount:{sa}', '--role=roles/aiplatform.user', '--quiet'],
                capture_output=True, text=True)
 ```
 
-In SQL the connection is referenced as `PROJECT_ID.LOCATION.CONNECTION_ID`.
+In SQL the connection is referenced as `PROJECT_ID.LOCATION.CONNECTION_ID`. **Verified:** dropping a BQML model also cascade-deletes its Vertex AI Model Registry entry if it was registered via `model_registry='VERTEX_AI'` — no separate deletion needed for that case (deleting the *connection* itself, however, does need its own explicit `bq rm --connection`).
 
 ---
 
@@ -195,7 +193,7 @@ In SQL the connection is referenced as `PROJECT_ID.LOCATION.CONNECTION_ID`.
 
 - **Standard training + ML.* calls (your credentials):** `roles/bigquery.user` (run jobs) + `roles/bigquery.dataEditor` on the dataset (create models/tables) + read access to the source data (public datasets are world-readable).
 - **Remote models:** the *connection's* service account needs `roles/aiplatform.user`.
-- **Imported / exported models:** the connection's SA needs GCS access (`roles/storage.objectViewer` to import, `roles/storage.objectAdmin` to export).
+- **Imported models / `EXPORT MODEL`:** no connection — GCS access (`roles/storage.objectViewer` to import, `roles/storage.objectAdmin` to export) on **your own credentials** is sufficient.
 
 ---
 
