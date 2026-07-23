@@ -3370,7 +3370,7 @@ FROM ML.TRANSFORM(
 
 | Function | Output range | Formula (per value `x`) | Centers data? | Notes |
 |----------|--------------|--------------------------|---------------|-------|
-| `ML.STANDARD_SCALER` | unbounded (~mean 0, std 1) | `(x - AVG(x)) / STDDEV(x)` (z-score) | Yes (mean) | Stores AVG/STDDEV for `ML.PREDICT`. |
+| `ML.STANDARD_SCALER` | unbounded (~mean 0, std 1) | `(x - AVG(x)) / STDDEV_POP(x)` (z-score) | Yes (mean) | Stores AVG/STDDEV for `ML.PREDICT`. **Verified live: uses population stddev (`STDDEV_POP`, ÷N), NOT the sample stddev (`STDDEV`/`STDDEV_SAMP`, ÷N-1) BigQuery's plain `STDDEV()` computes by default** — a manual "sanity check" using `STDDEV(x)` will NOT match. |
 | `ML.MIN_MAX_SCALER` | `[0, 1]` | `(x - MIN) / (MAX - MIN)` | No | Caps prediction inputs to 0 or 1 when outside the training range. |
 | `ML.MAX_ABS_SCALER` | `[-1, 1]` | `x / MAX(ABS(x))` | No | Preserves sign and sparsity; no shift. |
 | `ML.ROBUST_SCALER` | unbounded | `(x - median) / (q_hi - q_lo)` | Optional (median) | Outlier-robust; quantile range default `[25, 75]`. |
@@ -3409,7 +3409,7 @@ ML.NORMALIZER(array_expression [, p])
 **Best practices:**
 - Prefer the `TRANSFORM` clause over preprocessing in the source query so the learned statistics travel with the model and are reapplied at prediction (avoids training/serving skew). Tested example in [`BQML Feature Engineering.ipynb`](../../03%20-%20BigQuery%20ML%20(BQML)/BQML%20Feature%20Engineering.ipynb) scales ~16 columns inside one `TRANSFORM` and aliases each (`... OVER() as scale_flourAmt`).
 - Choose the scaler to match the data: `ROBUST` for outliers, `MAX_ABS` for sparse/sign-bearing data, `STANDARD` for roughly Gaussian features, `MIN_MAX` when a bounded `[0,1]` range is needed.
-- Validate `ML.STANDARD_SCALER` equals `(x - AVG) / STDDEV` and `ML.NORMALIZER` against `np.linalg.norm` — both verified in the preprocessing-functions notebook.
+- Validate `ML.STANDARD_SCALER` equals `(x - AVG) / STDDEV_POP` (not the default `STDDEV`/`STDDEV_SAMP`) and `ML.NORMALIZER` against `np.linalg.norm` — both verified in the preprocessing-functions notebook and re-confirmed in `functions/scalers/`.
 
 **Limitations / gotchas:**
 - The four analytic scalers MUST use an empty `OVER()`; omitting it errors. `ML.NORMALIZER` must NOT use `OVER()`.
@@ -3424,6 +3424,7 @@ ML.NORMALIZER(array_expression [, p])
 - [`03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb`](../../03%20-%20BigQuery%20ML%20(BQML)/BQML%20Feature%20Engineering%20-%20preprocessing%20functions.ipynb) — standalone demos of all five with verified outputs (e.g. `ML.STANDARD_SCALER([0..10]) OVER()` matches manual z-score; `ML.ROBUST_SCALER` with `[25,75]`, `with_median`, `with_quantile_range` toggles; `ML.NORMALIZER` p ∈ {0, 1, 2, +inf}).
 - [`03 - BigQuery ML (BQML)/BQML Feature Engineering.ipynb`](../../03%20-%20BigQuery%20ML%20(BQML)/BQML%20Feature%20Engineering.ipynb) — all four scalers inside a `TRANSFORM` of `LINEAR_REG` and `BOOSTED_TREE_REGRESSOR` models (registered to Vertex AI Model Registry).
 - [`03 - BigQuery ML (BQML)/BQML Feature Engineering - reusable and modular.ipynb`](../../03%20-%20BigQuery%20ML%20(BQML)/BQML%20Feature%20Engineering%20-%20reusable%20and%20modular.ipynb) — `ML.ROBUST_SCALER` (outlier column) + `ML.STANDARD_SCALER` (other numerics) embedded in a `TRANSFORM` with `ML.IMPUTER` done in the input query.
+- [`data+ai/bq-ml/functions/scalers/scalers.ipynb`](../../functions/scalers/) — all five scalers on `penguins`, standalone and side-by-side; verifies the `STDDEV_POP` gotcha above, `ML.MIN_MAX_SCALER`'s prediction-time capping via a live `CREATE MODEL`+`ML.TRANSFORM` test, and `ML.ROBUST_SCALER`'s outlier-robustness contrasted directly against `ML.STANDARD_SCALER` on an injected outlier. Ends with a `LOGISTIC_REG` embedding the `TRANSFORM` directly (contrast with `models/transform_only/`'s standalone pipeline, which needs explicit re-application).
 
 
 ---
@@ -3466,9 +3467,10 @@ ML.BUCKETIZE(numerical_expression, array_split_points[, exclude_boundaries[, out
 **Limitations:**
 - Split points must be numeric and sorted; behavior with NULL `numerical_expression` returns NULL.
 - Boundaries are fixed (no data-driven balancing) — for equal-frequency bins use `ML.QUANTILE_BUCKETIZE`.
+- **GOTCHA, verified live — `exclude_boundaries=TRUE` does NOT null out-of-range values.** It's easy to misread "drops the implicit lower/upper overflow buckets" as "values outside the split-point range become NULL." What actually happens: the **outermost split points are dropped entirely**, merging the overflow bucket into its nearest interior neighbor. With split points `[10, 20, 30]`: default gives 4 bins `(-inf,10)` `[10,20)` `[20,30)` `[30,+inf)`; with `exclude_boundaries=TRUE` this becomes just 2 bins `(-inf,20)` `[20,+inf)` — the `10` and `30` split points disappear, leaving only `20` as the sole effective boundary. No value ever becomes NULL from this option alone.
 
 **BigFrames API:** `bigframes.ml.preprocessing.KBinsDiscretizer` (strategy-dependent; not a 1:1 of explicit split points).
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — `ML.BUCKETIZE(input_column, [2, 5, 7])` and with `exclude_boundaries = TRUE`. Also `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering.ipynb`.
+**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — `ML.BUCKETIZE(input_column, [2, 5, 7])` and with `exclude_boundaries = TRUE`. Also `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering.ipynb`. `data+ai/bq-ml/functions/bucketizing/bucketizing.ipynb` — all 3 output formats on `penguins`, plus the `exclude_boundaries` clarification above with a concrete `[10,20,30]` proof, and `ML.QUANTILE_BUCKETIZE`/`ML.HASH_BUCKETIZE` embedded together in a real `LOGISTIC_REG` `TRANSFORM`.
 
 ---
 
@@ -3509,7 +3511,7 @@ ML.QUANTILE_BUCKETIZE(numerical_expression, num_buckets[, output_format]) OVER()
 - Quantile estimates are approximate on very large inputs.
 
 **BigFrames API:** `bigframes.ml.preprocessing.KBinsDiscretizer(strategy="quantile")`.
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — `ML.QUANTILE_BUCKETIZE(input_column, 2) OVER() AS feature_column`. Also in `BQML Feature Engineering.ipynb`.
+**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — `ML.QUANTILE_BUCKETIZE(input_column, 2) OVER() AS feature_column`. Also in `BQML Feature Engineering.ipynb`. Also `data+ai/bq-ml/functions/bucketizing/bucketizing.ipynb` — on `penguins`' `culmen_length_mm`.
 
 ---
 
@@ -3549,7 +3551,7 @@ ML.HASH_BUCKETIZE(string_expression, hash_bucket_size)
 - Returns INT64 (unlike `ML.BUCKETIZE`/`ML.QUANTILE_BUCKETIZE` which return STRING bin labels); operates on strings, not numerics.
 
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — `ML.HASH_BUCKETIZE(input_column, 0)` (hash only) and `ML.HASH_BUCKETIZE(input_column, 3)`. Also in `BQML Feature Engineering.ipynb`.
+**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — `ML.HASH_BUCKETIZE(input_column, 0)` (hash only) and `ML.HASH_BUCKETIZE(input_column, 3)`. Also in `BQML Feature Engineering.ipynb`. Also `data+ai/bq-ml/functions/bucketizing/bucketizing.ipynb` — on `penguins`' `island`, plus embedded alongside `ML.QUANTILE_BUCKETIZE` in a real `LOGISTIC_REG` `TRANSFORM`.
 
 ---
 
@@ -3612,13 +3614,14 @@ ML.LABEL_ENCODER(string_expression [, top_k] [, frequency_threshold]) OVER()
 - `top_k` must be less than 1,000,000 to avoid high-dimensionality issues.
 - Bucket `0` is overloaded (NULL + below-`top_k` + below-`frequency_threshold` + unseen-at-predict), so you cannot distinguish those cases downstream.
 - `drop` is unique to `ML.ONE_HOT_ENCODER`; `ML.LABEL_ENCODER` and `ML.MULTI_HOT_ENCODER` have no `drop` argument.
-- Note: older repo notebooks cite default `top_k = 1,000,000` / `frequency_threshold = 0`; current docs specify `top_k = 32,000` / `frequency_threshold = 5`.
+- **MAJOR GOTCHA, verified live — the default discrepancy is not just a docs footnote, it changes real output:** older repo notebooks cite default `top_k = 1,000,000` / `frequency_threshold = 0`; current docs (and current live behavior) specify `top_k = 32,000` / `frequency_threshold = 5`. Tested with categories occurring 6x/7x/3x: under the **current** default, the category with only 3 occurrences (below the frequency-5 threshold) silently collapses into bucket `0` — indistinguishable from `NULL`/unseen-at-predict, no error or warning. Under `frequency_threshold=0` (the old default), that same category keeps its own index. **Any real dataset with a rare-but-meaningful category (fewer than 5 total occurrences) will silently lose it under current defaults** unless `frequency_threshold` is explicitly lowered.
 
 **BigFrames API:** `bigframes.ml.preprocessing.OneHotEncoder`, `bigframes.ml.preprocessing.LabelEncoder` (and the broader `bigframes.ml.preprocessing` module); these compile to the corresponding `ML.*` encoders.
 
 **Repo example (tested):**
 - `03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — standalone examples of all three over `UNNEST([...])` literals, e.g. `ML.LABEL_ENCODER(input_column, 3, 3) OVER()`, `ML.MULTI_HOT_ENCODER(input_column, 1, 2) OVER()`, and `ML.ONE_HOT_ENCODER(input_column, 'most_frequent', 3, 3) OVER()`.
 - `03 - BigQuery ML (BQML)/BQML Feature Engineering.ipynb` — `ML.ONE_HOT_ENCODER` and `ML.LABEL_ENCODER` worked examples with `top_k`/`frequency_threshold` positional args.
+- `data+ai/bq-ml/functions/encoding/encoding.ipynb` — all three encoders on `penguins`; live-proves the `frequency_threshold=5` default-vs-legacy discrepancy above with a concrete before/after (a 3-occurrence category dropping to bucket 0 under current defaults, keeping its own index under `frequency_threshold=0`); ends with `ML.ONE_HOT_ENCODER`+`ML.LABEL_ENCODER` embedded in a real `LOGISTIC_REG` `TRANSFORM`.
 
 
 ---
@@ -3679,6 +3682,7 @@ FROM UNNEST([1,1,2,3,4,5,NULL]) AS num_column WITH OFFSET p1,
      UNNEST(['a','a','b','c','d','e',NULL]) AS string_column WITH OFFSET p2
 WHERE p1 = p2;
 ```
+Also: `data+ai/bq-ml/functions/feature_engineering/feature_engineering.ipynb` — standalone on `penguins`' `body_mass_g`/`sex`, plus embedded in a real `LOGISTIC_REG` `TRANSFORM` (unlike `ML.FEATURE_CROSS`/`ML.POLYNOMIAL_EXPAND`, `ML.IMPUTER` **is** exportable) — verified predicting with an artificially-`NULL` input at predict time still auto-imputes correctly using the training-time statistic.
 
 ---
 
@@ -3711,7 +3715,7 @@ ML.FEATURE_CROSS(struct_categorical_features [, degree])
 | (result) | `STRUCT<STRING>` | One field per crossed combination, named `\<col_a\>_\<col_b\>`, valued `\<val_a\>_\<val_b\>`. |
 
 **Best practices:** Keep `degree` low (2) — combinations grow combinatorially and can explode cardinality. Pre-bucketize numeric columns to strings before crossing.
-**Limitations:** Categorical (string) inputs only; `degree` capped at 4. **Not exportable** in `TRANSFORM`, so a model that needs portability/serving outside BQ must compute crosses in the input query instead.
+**Limitations:** Categorical (string) inputs only; `degree` capped at 4. **Not exportable** in `TRANSFORM`. **Verified live:** a `CREATE MODEL ... TRANSFORM(ML.FEATURE_CROSS(...))` trains and predicts (`ML.PREDICT`) completely normally — the limitation only bites at `EXPORT MODEL` time, which fails with `"400 Model TRANSFORM contains unsupported function for exporting."` A model needing portability/serving outside BQ (`EXPORT MODEL`, `model_registry='VERTEX_AI'`, remote-model deployment) must compute crosses in the input query instead.
 **BigFrames API:** No direct equivalent (build via DataFrame ops).
 **Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb`:
 ```sql
@@ -3724,6 +3728,7 @@ FROM UNNEST(['a','b','c']) AS input_column_1 WITH OFFSET p1,
 WHERE p1 = p2 AND p2 = p3;
 -- e.g. {'input_column_1_input_column_2':'c_C','input_column_1_input_column_3':'c_3','input_column_2_input_column_3':'C_3'}
 ```
+- `data+ai/bq-ml/functions/feature_engineering/feature_engineering.ipynb` — `penguins` `island`×`sex` cross, plus the live export-failure proof above (`try/except` around `EXPORT MODEL`, exact error captured).
 
 ---
 
@@ -3756,7 +3761,7 @@ ML.POLYNOMIAL_EXPAND(struct_numerical_features [, degree])
 | (result) | `STRUCT<FLOAT64>` | All polynomial combinations up to `degree`, including the original terms. |
 
 **Best practices:** Combine with `ML.IMPUTER`/scaling first; wrap an imputed (analytic) column inside the `STRUCT` since `ML.POLYNOMIAL_EXPAND` is scalar and can take an analytic argument.
-**Limitations:** ≤ 10 input features, no unnamed/duplicate features; `degree` ≤ 4. **Not exportable** in `TRANSFORM`.
+**Limitations:** ≤ 10 input features, no unnamed/duplicate features; `degree` ≤ 4. **Not exportable** in `TRANSFORM`, same verified failure mode as `ML.FEATURE_CROSS` above (`EXPORT MODEL` rejects it with "Model TRANSFORM contains unsupported function for exporting" — training/`ML.PREDICT` are unaffected).
 **BigFrames API:** `bigframes.ml.preprocessing.PolynomialFeatures`.
 **Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — also shows the **compounded** pattern (impute → expand):
 ```sql
@@ -3769,6 +3774,7 @@ SELECT
 FROM UNNEST(['1','1','2','3','4','5',NULL]) AS input_column;
 -- e.g. {'num_imputed_mean':2.6667,'num_imputed_mean_num_imputed_mean':7.111}
 ```
+- `data+ai/bq-ml/functions/feature_engineering/feature_engineering.ipynb` — `penguins` `culmen_length_mm`/`culmen_depth_mm` expansion plus the impute→expand compounding pattern.
 
 ---
 
@@ -3838,7 +3844,7 @@ ML.NGRAMS(array_input, range [, separator])
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `array_input` | `ARRAY<STRING>` | Yes | — | Tokens to merge into n-grams. |
-| `range` | `ARRAY<INT64>` | Yes | — | `[min, max]` n-gram sizes. A single int `x` means `[x, x]`. |
+| `range` | `ARRAY<INT64>` | Yes | — | `[min, max]` n-gram sizes. **Correction, verified live: `range` must always be an `ARRAY<INT64>` — a bare `INT64` (the docs' claimed "single int `x` means `[x, x]`" shorthand) errors outright** (`"Unable to coerce type INT64 to expected type ARRAY<INT64>"`). Use `[x, x]` explicitly for a single size. |
 | `separator` | `STRING` | No | `' '` (space) | Joins adjacent tokens in each output n-gram. |
 
 **Outputs:**
@@ -3850,7 +3856,7 @@ ML.NGRAMS(array_input, range [, separator])
 **Best practices:** Keep `range` tight (e.g. `[1, 2]`) — wide ranges explode feature cardinality. Tokenize and lowercase upstream for consistency.
 **Limitations:** Scalar over one array per row; does not aggregate across rows. Order is preserved from the input array.
 **BigFrames API:** No direct equivalent (use SQL / `bigframes.bigquery` passthrough).
-**Repo example (tested):** `03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` (cell `ML.NGRAMS`) and `03 - BigQuery ML (BQML)/BQML Feature Engineering.ipynb` — `ML.NGRAMS(input_column, [2, 4])` on `['a','b','c','d']` returns `[a b, a b c, a b c d, b c, b c d, c d]`.
+**Repo example (tested):** `03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` (cell `ML.NGRAMS`) and `03 - BigQuery ML (BQML)/BQML Feature Engineering.ipynb` — `ML.NGRAMS(input_column, [2, 4])` on `['a','b','c','d']` returns `[a b, a b c, a b c d, b c, b c d, c d]`. Also `data+ai/bq-ml/functions/text/text.ipynb` — on real `thelook_ecommerce.products` name tokens.
 
 ---
 
@@ -3883,9 +3889,9 @@ ML.TF_IDF(tokenized_document [, top_k] [, frequency_threshold]) OVER ()
 | (result) | `ARRAY<STRUCT<index INT64, value FLOAT64>>` | TF-IDF score per dictionary term for the document. `index 0` = unknown term (tokens not in dictionary); remaining indices map to the dictionary ordered alphabetically. |
 
 **Best practices:** Same `top_k` / `frequency_threshold` across train and serve (use inside `TRANSFORM` so the dictionary is fixed in the model). Drop rare/noise terms via `frequency_threshold`.
-**Limitations:** Must use empty `OVER ()`; the dictionary is built over the analytic window, so apply over the full training corpus. Index `0` always reserved for unknown.
+**Limitations:** Must use empty `OVER ()`; the dictionary is built over the analytic window, so apply over the full training corpus. Index `0` always reserved for unknown. **MAJOR GOTCHA, verified live — shares the exact same `frequency_threshold=5` default trap as `ML.ONE_HOT_ENCODER`/`ML.LABEL_ENCODER` (see that entry):** on a small corpus, any term appearing in fewer than 5 documents collapses into the unknown bucket (index `0`), indistinguishable from a truly unseen term — tested with 6 tiny documents where a word appearing in 2 different documents was still indistinguishable from a word appearing in only 1.
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** Not yet demonstrated in repo notebooks (the preprocessing notebook covers `ML.NGRAMS` but not `ML.TF_IDF`). Doc example: `ML.TF_IDF(f, 3, 1) OVER ()` over four short documents returns per-doc arrays of `{index, value}` scores.
+**Repo example (tested):** `data+ai/bq-ml/functions/text/text.ipynb` — real product-name tokens from `thelook_ecommerce.products`, the `frequency_threshold=5` gotcha proof above (tested directly for `ML.TF_IDF` itself, not just asserted by analogy to `ML.BAG_OF_WORDS`), and a concrete `ML.BAG_OF_WORDS`-vs-`ML.TF_IDF` contrast showing a term appearing in every document gets a *lower* TF-IDF weight than rarer terms, while BOW gives them identical raw counts.
 
 ---
 
@@ -3918,9 +3924,9 @@ ML.BAG_OF_WORDS(tokenized_document [, top_k] [, frequency_threshold]) OVER ()
 | (result) | `ARRAY<STRUCT<index INT64, value INT64>>` | Per-document term counts. `index 0` = unknown term; remaining indices map to the alphabetically ordered dictionary; `value` is the count of that term in the document. |
 
 **Best practices:** Use inside `TRANSFORM` so the dictionary is frozen with the model and re-applied at predict time. Combine with `ML.NGRAMS` upstream for n-gram bags. Use `top_k` to cap dimensionality.
-**Limitations:** Empty `OVER ()` required; counts depend on the analytic window — apply over the full corpus. Index `0` reserved for unknown.
+**Limitations:** Empty `OVER ()` required; counts depend on the analytic window — apply over the full corpus. Index `0` reserved for unknown. Shares the same `frequency_threshold=5` default gotcha as `ML.TF_IDF` above — verified live (see that entry).
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** Not yet demonstrated in repo notebooks. Doc example: `ML.BAG_OF_WORDS(f, 2, 1) OVER ()` over two short token arrays returns per-doc `{index, value}` count arrays.
+**Repo example (tested):** `data+ai/bq-ml/functions/text/text.ipynb` — real product-name tokens, the `frequency_threshold=5` gotcha proof, and `ML.BAG_OF_WORDS` embedded in a real `LOGISTIC_REG` `TRANSFORM` classifying product category from the product name alone (~0.95 accuracy).
 
 ---
 
@@ -3976,7 +3982,7 @@ ML.DISTANCE(vector1, vector2 [, type])
 
 **BigFrames API:** No direct equivalent (use array math or `VECTOR_SEARCH`).
 
-**Repo example (tested):** Not used in the bq-ml feature-engineering notebooks (`/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering*.ipynb` cover preprocessing, not distance). Real tested usage of the cosine pattern lives in the sibling project: `/home/user/git/vertex-ai-mlops/data+ai/bq-ai-functions/functions/ai_embed/ai_embed.sql` (lines 67, 136) — `1 - ML.DISTANCE(a.vec, b.vec, 'COSINE') AS cosine_similarity`.
+**Repo example (tested):** `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/functions/distance/distance.ipynb` — all three metrics standalone, the cosine distance-vs-similarity pattern (same one used in `data+ai/bq-ai-functions/functions/ai_embed/ai_embed.sql`, lines 67/136), and real embedding similarity: trains a scratch `PCA` model on `penguins` and computes `ML.DISTANCE` between two penguins' projections from different species.
 
 ---
 
@@ -4010,7 +4016,7 @@ ML.LP_NORM(vector, degree)
 
 **Best practices:**
 - Use `degree = 2.0` for standard L2 normalization; `degree = 1.0` for L1.
-- Combine with `ML.DISTANCE` only when you need a metric not directly supported (e.g., Jaccard).
+- Combine with `ML.DISTANCE` only when you need a metric not directly supported (e.g., Jaccard — verified live: derivable via a dot product for the intersection count and `ML.LP_NORM(v, 1.0)` for each vector's set size, `jaccard = intersection / (norm_a + norm_b - intersection)`).
 
 **Limitations:**
 - Operates on a single vector (a norm), not a pair — use `ML.DISTANCE` for pairwise distance.
@@ -4018,6 +4024,7 @@ ML.LP_NORM(vector, degree)
 - Brute-force scalar computation; not an index.
 
 **BigFrames API:** No direct equivalent.
+**Repo example (tested):** `data+ai/bq-ml/functions/distance/distance.ipynb` — L0/L1/L2 norms; **verified live that `ML.NORMALIZER(v, p)` (see `functions/scalers/`) equals `v / ML.LP_NORM(v, p)` element-wise** — `ML.LP_NORM` computes exactly the denominator `ML.NORMALIZER` uses internally; also the Jaccard-derivation example above.
 
 **Repo example (tested):** Not present in the bq-ml feature-engineering notebooks or elsewhere in this repo (no `ML.LP_NORM` occurrences found). Documentation example pattern: `SELECT ML.LP_NORM([1.0, 2.0, 3.0], 2.0)`.
 

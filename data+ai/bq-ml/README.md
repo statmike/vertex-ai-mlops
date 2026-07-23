@@ -89,9 +89,14 @@ Model-free `ML.*` utilities that transform data directly (no model required).
 
 | Function | Category | Status | What it does |
 |----------|----------|--------|--------------|
-| *(planned)* | Preprocessing / transforms / distance / text | — | See [PLANS.md](PLANS.md) Phase 6 (ML.STANDARD_SCALER, ML.BUCKETIZE, ML.FEATURE_CROSS, ML.DISTANCE, ML.NGRAMS, ML.TF_IDF, …) |
+| [Scalers](functions/scalers/) | `ML.STANDARD_SCALER` / `ML.MIN_MAX_SCALER` / `ML.MAX_ABS_SCALER` / `ML.ROBUST_SCALER` / `ML.NORMALIZER` | GA | Rescale numerical inputs; verified `ML.STANDARD_SCALER` uses population (not sample) stddev, `ML.MIN_MAX_SCALER` caps out-of-range predictions to `[0,1]`, and `ML.ROBUST_SCALER` is provably immune to an injected outlier that distorts `ML.STANDARD_SCALER` |
+| [Feature Engineering](functions/feature_engineering/) | `ML.IMPUTER` / `ML.FEATURE_CROSS` / `ML.POLYNOMIAL_EXPAND` | GA | Fill `NULL`s and build interaction/power terms; verified live that `ML.FEATURE_CROSS`/`ML.POLYNOMIAL_EXPAND` train and predict fine inside a `TRANSFORM` but the model can't be exported (exact error captured) |
+| [Encoding](functions/encoding/) | `ML.ONE_HOT_ENCODER` / `ML.LABEL_ENCODER` / `ML.MULTI_HOT_ENCODER` | GA | Categorical encoding; verified live that the current default `frequency_threshold=5` silently drops any category with fewer than 5 occurrences into the unknown bucket — a real behavior change from older `frequency_threshold=0` documentation |
+| [Bucketizing](functions/bucketizing/) | `ML.BUCKETIZE` / `ML.QUANTILE_BUCKETIZE` / `ML.HASH_BUCKETIZE` | GA | Discretize continuous/string values; clarifies live what `exclude_boundaries=TRUE` actually does (merges outer bins, doesn't null out-of-range values) |
+| [Distance / Vectors](functions/distance/) | `ML.DISTANCE` / `ML.LP_NORM` | GA | Pairwise vector distance and vector magnitude — no prior repo example; verified `ML.NORMALIZER` equals `v / ML.LP_NORM(v, p)`, plus a real embedding-similarity worked example using a scratch PCA model |
+| [Text](functions/text/) | `ML.NGRAMS` / `ML.TF_IDF` / `ML.BAG_OF_WORDS` | GA | Turn tokenized text into features; `ML.TF_IDF`/`ML.BAG_OF_WORDS` had no prior repo example — verified they share the same `frequency_threshold=5` default gotcha as the encoders |
 
-`ML.STANDARD_SCALER` is demonstrated inline in the [Logistic Regression](models/logistic_regression/) notebook (the `TRANSFORM` clause).
+`ML.STANDARD_SCALER` is also demonstrated inline in the [Logistic Regression](models/logistic_regression/) notebook (the `TRANSFORM` clause), and `ML.IMPUTER`/scalers/`ML.ONE_HOT_ENCODER` are composed together in [Transform-Only](models/transform_only/).
 
 ## Workflows
 
