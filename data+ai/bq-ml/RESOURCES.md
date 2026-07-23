@@ -943,11 +943,14 @@ You must specify **exactly one** of `num_principal_components` / `pca_explained_
 
 **Verified (`models/pca/`):**
 - **PCA is fully deterministic** — retraining the identical `CREATE OR REPLACE MODEL` statement (same SQL, same options) reproduces `total_explained_variance_ratio` bit-for-bit every time. Unlike `KMEANS` (see its entry above), PCA is a closed-form eigendecomposition with no random initialization, so there's no retraining variance to guard against. A third independent confirmation: training via `bigframes.ml.decomposition.PCA` — a completely different, independently-named model — reproduces the exact same value again, a contrast to `KMEANS`, where BigFrames' independently-trained model produces yet a different value each time.
+- **MAJOR NUANCE (verified live, `workflows/anomaly_fraud_detection/`):** the determinism above covers `ML.EVALUATE`'s own metric — it does **not** guarantee stable *downstream* `ML.DETECT_ANOMALIES` results when using `pca_explained_variance_ratio` (a variable component **count**, chosen to hit a variance target) instead of a fixed `num_principal_components`. On a 30-feature, 284K-row real dataset, three otherwise-identical retrainings with `pca_explained_variance_ratio = 0.95` produced true-positive counts of 3, 235, and 279 (out of 492 known anomalies) — even though `total_explained_variance_ratio` stayed bit-for-bit stable (~0.95473) across all three. Near-threshold eigenvalues can flip exactly which components get retained between runs, which swings per-row reconstruction error dramatically despite the aggregate captured variance looking identical. **Mitigation:** use a fixed `num_principal_components` instead — substantially more stable across retrainings (two independent runs both landed in a TP=114-132 range, versus the 3-279 swing above).
 - **`principal_component_id` (in `ML.PRINCIPAL_COMPONENTS`/`ML.PRINCIPAL_COMPONENT_INFO`) is 0-indexed** (0, 1, 2, ...) — unlike `KMEANS`' `centroid_id`, which is 1-indexed, and unlike `ML.PREDICT`'s own output columns (`principal_component_1`, `principal_component_2`, ...), which are 1-indexed. Don't assume a consistent indexing convention across unsupervised model types or even within the same model type's own functions.
 - **`ML.DETECT_ANOMALIES` requires the 3rd (input-data) argument for PCA**, same as `KMEANS` — see the general `ML.DETECT_ANOMALIES` entry.
 - **`ML.GENERATE_EMBEDDING` on a PCA model** wraps `ML.PREDICT`'s projection into a single `ml_generate_embedding_result` ARRAY<FLOAT> column; the array values match `ML.PREDICT`'s `principal_component_1`/`principal_component_2` columns exactly, in order.
 
 **Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` — trains `model_type='PCA'` with `pca_explained_variance_ratio=0.90, scale_features=TRUE, pca_solver='AUTO'` on the credit-card `fraud_prepped` table; shows `ML.EVALUATE` (`total_explained_variance_ratio` ≈ 0.923), `ML.PRINCIPAL_COMPONENT_INFO`, `ML.PRINCIPAL_COMPONENTS`, `ML.PREDICT` (per-row component projections), `ML.DETECT_ANOMALIES` with `STRUCT(<train_fraud_rate> AS contamination)` for fraud detection, plus Vertex AI registry registration, endpoint deployment, and `EXPORT MODEL` (exports as a TensorFlow SavedModel).
+
+**Repo example (tested):** `data+ai/bq-ml/workflows/anomaly_fraud_detection/anomaly_fraud_detection.ipynb` — trains `PCA` with `num_principal_components=10` on `bigquery-public-data.ml_datasets.ulb_fraud_detection` (the real ULB/Kaggle fraud dataset, 492 genuine fraud cases) and measures real precision/recall against the true `Class` label — the source of the `pca_explained_variance_ratio` non-determinism finding above; contrasts with `AUTOENCODER` and a supervised `BOOSTED_TREE_CLASSIFIER`.
 
 
 ---
@@ -1047,6 +1050,7 @@ HP-tuning options (used when `num_trials` set): `num_trials`, `max_parallel_tria
 **Repo example (tested):**
 - `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` — full lifecycle: HP-tuned `AUTOENCODER` (`HPARAM_CANDIDATES`/`HPARAM_RANGE`, `num_trials=40`), `ML.FEATURE_INFO`, `ML.TRIAL_INFO`, `ML.EVALUATE`, `ML.RECONSTRUCTION_LOSS`, `ML.PREDICT` (latent_col_*), `ML.DETECT_ANOMALIES` for fraud, Vertex AI registry/endpoint serving, `EXPORT MODEL`.
 - `/home/user/git/vertex-ai-mlops/Applied GenAI/Embeddings/BQML Autoencoder As Table Embedding.ipynb` — single-config train, `ML.EVALUATE` per split, latent space as embeddings via `ML.PREDICT` and `ML.GENERATE_EMBEDDING`, `ML.NORMALIZER`, and `VECTOR_SEARCH` (IVF/TREE_AH index) for row similarity.
+- `data+ai/bq-ml/workflows/anomaly_fraud_detection/anomaly_fraud_detection.ipynb` — trains on the real ULB/Kaggle fraud dataset (`bigquery-public-data.ml_datasets.ulb_fraud_detection`, 492 genuine fraud cases) and measures real precision/recall against the true label — contrasts with `PCA` (comparable performance here, not dramatically different) and a supervised `BOOSTED_TREE_CLASSIFIER` (far higher recall).
 
 
 ---
@@ -4369,7 +4373,7 @@ FROM ML.DESCRIBE_DATA(
 **Best practices:** Run on a representative slice (filter by date) rather than the full table to control cost.
 **Limitations:** ARRAY columns are unnested before stats; `ARRAY<STRUCT<INT64, numerical>>` treated as sparse `ARRAY<numerical>`.
 **BigFrames API:** Use `bigframes.pandas.DataFrame.describe()` for comparable profiling; no 1:1 wrapper.
-**Repo example (tested):** `MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb` — `ML.DESCRIBE_DATA(TABLE ...)` and with `STRUCT(3 AS top_k, 4 AS num_quantiles)` on a TRAIN split.
+**Repo example (tested):** `MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb` — `ML.DESCRIBE_DATA(TABLE ...)` and with `STRUCT(3 AS top_k, 4 AS num_quantiles)` on a TRAIN split. Also `data+ai/bq-ml/functions/data_quality/data_quality.ipynb` — on `census_adult_income`, numeric (`age`/`capital_gain`) and categorical (`workclass`/`income_bracket`) columns side by side.
 
 ---
 
@@ -4414,10 +4418,10 @@ FROM ML.VALIDATE_DATA_SKEW(
 
 **Outputs:** see shared output schema under `ML.VALIDATE_DATA_DRIFT`.
 
-**Best practices:** Register the model in Vertex AI (`MODEL_REGISTRY='VERTEX_AI'`) to get clickable distribution visualizations.
+**Best practices:** Register the model in Vertex AI (`MODEL_REGISTRY='VERTEX_AI'`) to get clickable distribution visualizations. **MAJOR GOTCHA, verified live: how you sample the comparison data matters as much as the function call itself.** `SELECT ... LIMIT N` (no `ORDER BY`) on a non-randomly-ordered table returns a non-representative slice — tested on `bigquery-public-data.ml_datasets.census_adult_income`, a `LIMIT 5000` grab flagged `education_num` as `is_anomaly=TRUE` (Jensen-Shannon divergence ~0.65 vs. a 0.3 threshold) even though it came from the exact same table the model trained on. Switching to `WHERE RAND() < p` for a true random sample dropped every column's divergence to near-zero, correctly reporting no skew. A naive `LIMIT` can manufacture a false skew alarm.
 **Limitations:** Numerical metric is always Jensen-Shannon divergence (not configurable); needs a model that stored training stats.
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb` and `model_monitoring_job.sql` — `ML.VALIDATE_DATA_SKEW(MODEL ..., (serving query), STRUCT(TRUE AS enable_visualization_link))`.
+**Repo example (tested):** `MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb` and `model_monitoring_job.sql` — `ML.VALIDATE_DATA_SKEW(MODEL ..., (serving query), STRUCT(TRUE AS enable_visualization_link))`. Also `data+ai/bq-ml/functions/data_quality/data_quality.ipynb` — the `LIMIT`-vs-`RAND()` sampling gotcha above, plus a self-contained scratch `LOGISTIC_REG` model (no dependency on the separate `MLOps/Model Monitoring` pipeline/dataset).
 
 ---
 
@@ -4466,7 +4470,7 @@ The two positional args are both `(query_statement)` (base, compare).
 **Best practices:** Filter `WHERE is_anomaly = True` to drive alerts/retraining (see job SQL). Use `ML.TRANSFORM(MODEL, data)` as the inputs to monitor drift on engineered features rather than raw columns.
 **Limitations:** No schema validation between the two inputs (mismatched columns are ignored). For categorical, choosing `JENSEN_SHANNON_DIVERGENCE` changes which features appear in the report vs. `L_INFTY`.
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb` — drift on two serving windows with `STRUCT(0.03 AS categorical_default_threshold, 0.03 AS numerical_default_threshold)` and `MODEL ...`; also `STRUCT('JENSEN_SHANNON_DIVERGENCE' AS categorical_metric_type)`, and drift over `ML.TRANSFORM` outputs. `model_monitoring_job.sql` wraps it in a scheduled-query retrain/alert loop.
+**Repo example (tested):** `MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb` — drift on two serving windows with `STRUCT(0.03 AS categorical_default_threshold, 0.03 AS numerical_default_threshold)` and `MODEL ...`; also `STRUCT('JENSEN_SHANNON_DIVERGENCE' AS categorical_metric_type)`, and drift over `ML.TRANSFORM` outputs. `model_monitoring_job.sql` wraps it in a scheduled-query retrain/alert loop. Also `data+ai/bq-ml/functions/data_quality/data_quality.ipynb` — real (non-sampling-artifact) drift on `census_adult_income`: incorporated self-employed workers (`workclass = 'Self-emp-inc'`) skew toward more education than a random population sample, correctly flagged; plus a live `categorical_metric_type` comparison showing `L_INFTY` and `JENSEN_SHANNON_DIVERGENCE` flag genuinely different columns at the same threshold (`race`/`sex` drop out under JS while `L_INFTY` flags all three), and a `thresholds` per-column override demo.
 
 ---
 
@@ -4498,7 +4502,7 @@ FROM ML.TFDV_DESCRIBE(
 **Best practices:** Store the output column into a snapshot table (`t TIMESTAMP, dataset_feature_statistics_list ...`) to enable historical drift.
 **Limitations:** Output is a proto blob, not tabular per-feature rows; needs the `tensorflow-data-validation` / `tensorflow-metadata` Python libs to render.
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb` — `ML.TFDV_DESCRIBE((SELECT ... TRAIN))`, JSON-parsed and passed to `tfdv.visualize_statistics`.
+**Repo example (tested):** `MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb` — `ML.TFDV_DESCRIBE((SELECT ... TRAIN))`, JSON-parsed and passed to `tfdv.visualize_statistics`. Also `data+ai/bq-ml/functions/data_quality/data_quality.ipynb` — on `census_adult_income`, without the `tensorflow-data-validation` Python dependency (cross-links to the tutorial notebook above for the full rendered visualization).
 
 ---
 
@@ -4546,7 +4550,7 @@ SELECT ML.TFDV_VALIDATE(
 **Best practices:** Reuse stored `ML.TFDV_DESCRIBE` snapshots as one input to avoid recomputing baseline stats.
 **Limitations:** No schema validation; choosing `JENSEN_SHANNON_DIVERGENCE` as the default threshold metric can exclude a feature from the report. Requires TFDV Python libs to visualize.
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb` — `ML.TFDV_VALIDATE((SELECT * FROM ML.TFDV_DESCRIBE(TABLE TRAIN)), (SELECT * FROM ML.TFDV_DESCRIBE(TABLE SERVE)), 'SKEW')`, parsed and rendered with `tfdv.display_anomalies`.
+**Repo example (tested):** `MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb` — `ML.TFDV_VALIDATE((SELECT * FROM ML.TFDV_DESCRIBE(TABLE TRAIN)), (SELECT * FROM ML.TFDV_DESCRIBE(TABLE SERVE)), 'SKEW')`, parsed and rendered with `tfdv.display_anomalies`. Also `data+ai/bq-ml/functions/data_quality/data_quality.ipynb` — both `'DRIFT'` mode (reproducing the same `education_num` signal as `ML.VALIDATE_DATA_DRIFT` above, JSON-parsed to show the actual `drift_skew_info` measurement rather than a truncated raw string) and `'SKEW'` mode (same divergence value, confirming `'SKEW'`/`'DRIFT'` differ only in the baseline schema's comparator type and semantic framing, not the underlying computation).
 
 
 ---
