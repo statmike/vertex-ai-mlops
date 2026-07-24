@@ -2030,6 +2030,7 @@ ML.EVALUATE(
 - Run with no input data first to get the training eval-split metrics for free, then pass TEST/VALIDATE data to confirm generalization.
 - Stack splits with `SELECT 'TEST' AS SPLIT, * FROM ML.EVALUATE(...) UNION ALL ...` to compare TRAIN/VALIDATE/TEST side by side (see repo example).
 - Tune the `threshold` to your precision/recall trade-off rather than relying on 0.5; inspect the full curve with `ML.ROC_CURVE` (binary) first.
+- **BigQuery ML has no native k-fold cross-validation** — `CREATE MODEL`'s `data_split_method` only supports single-split holdout (`AUTO_SPLIT`/`RANDOM`/`CUSTOM`/`SEQ`/`NO_SPLIT`). Hand-roll it: assign folds with a deterministic hash (`MOD(ABS(FARM_FINGERPRINT(TO_JSON_STRING(t))), K)` when there's no natural row-id column), train K models with `data_split_method='NO_SPLIT'` each excluding its own fold (submit concurrently — see `ML.PREDICT`'s "join needs a stable key" note below for a related gotcha when combining per-row results across models), then `ML.EVALUATE` each fold model against its own held-out fold and `UNION ALL` to see the real spread, not just one number.
 
 **Limitations:**
 - `precision`/`recall` of 0 means the threshold yielded no true positives; `NaN` precision means no positive predictions at all.
@@ -2044,6 +2045,7 @@ ML.EVALUATE(
 - `03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` and `03i - BQML Autoencoder with Anomaly Detection.ipynb` — no-input `ML.EVALUATE` for unsupervised reconstruction models.
 - `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` — `ML.EVALUATE` with input data for `model_type = 'ARIMA_PLUS'` forecast-accuracy metrics.
 - `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 2) — minimal no-input `ML.EVALUATE`.
+- `data+ai/bq-ml/workflows/cross_validation/cross_validation.ipynb` — hand-rolled 5-fold cross-validation on `ulb_fraud_detection` (BQML has no native k-fold support): deterministic hash-based fold assignment, 5 `LOGISTIC_REG` models submitted concurrently, per-fold `ML.EVALUATE` `UNION ALL`'d to show real fold-to-fold variance (roc_auc 0.968-0.985), then compared against a same-model-type single holdout to check whether it's representative of the fold distribution.
 
 ---
 
@@ -2097,6 +2099,7 @@ ML.PREDICT(
 - Not for time-series (`ML.FORECAST`) or matrix-factorization (`ML.RECOMMEND`) models.
 - Object-table / image inputs must be decoded with `ML.DECODE_IMAGE`; imported-model inputs must coerce to the model's expected types.
 - `keep_original_columns` applies to k-means only.
+- **GOTCHA, verified live: joining multiple models' `ML.PREDICT` outputs back together on raw feature columns (instead of a stable row ID) can silently fan out.** When stacking several models' predictions into one meta-feature table (see `workflows/ensembling/`), joining on the full feature-column set duplicated rows — a 6,587-row split fanned out to 11,027 rows, because different source rows shared identical values across every feature column. Add a synthetic `ROW_NUMBER()` row ID when the source table first materializes (before training any model) and join every downstream `ML.PREDICT` output on that instead — then sanity-check the joined row count against the expected pre-join count rather than assuming a 1:1 join.
 
 **BigFrames API:** `model.predict(X)` on a `bigframes.ml` estimator returns a DataFrame with the predicted columns.
 
@@ -2106,6 +2109,7 @@ ML.PREDICT(
 - `03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` — `ML.PREDICT` projecting onto principal components.
 - `03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` — `ML.PREDICT` for the autoencoder (paired with `ML.RECONSTRUCTION_LOSS`).
 - `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 5) — `predicted_income_bracket` + `predicted_income_bracket_probs`.
+- `data+ai/bq-ml/workflows/ensembling/ensembling.ipynb` — `ML.PREDICT` from 3 heterogeneous model types (`LOGISTIC_REG`/`BOOSTED_TREE_CLASSIFIER`/`RANDOM_FOREST_CLASSIFIER`) joined into one meta-feature table for a stacked ensemble; the source of the row-ID join-fanout gotcha above.
 
 
 ---
