@@ -1,0 +1,125 @@
+-- dbt — BigQuery ML Pipeline
+-- =============================================================
+-- This pipeline works end-to-end: a real BQML model trained under dbt, two
+-- quality-gate tests (one passes, one deliberately fails), and a downstream
+-- table dbt correctly refuses to build when a gate fails. The one thing dbt
+-- doesn't ship out of the box is a *built-in* materialization for
+-- `CREATE MODEL` (unlike Dataform's officially-supported
+-- `type: "operations", hasOutput: true`) -- closed with a small, one-time
+-- custom materialization macro (~15 lines), not a per-model workaround.
+-- dbt tests provide the same "assertion" idea as Dataform (a query that must
+-- return zero rows to pass), and `dbt build` (not separate `dbt run` +
+-- `dbt test`) turns out to natively skip downstream models when an upstream
+-- test fails -- a real, comparable capability to Dataform's
+-- `dependOnDependencyAssertions`, confirmed live rather than assumed.
+--
+-- Workflow operationalized: ../../workflows/ga4_churn_prediction/
+-- Data: bigquery-public-data.ga4_obfuscated_sample_ecommerce
+--
+-- Full reference: ../../RESOURCES.md
+-- Official docs:
+--   dbt-bigquery adapter: https://docs.getdbt.com/reference/warehouse-setups/bigquery-setup
+--   Custom materializations: https://docs.getdbt.com/guides/create-new-materializations
+--   dbt tests: https://docs.getdbt.com/docs/build/data-tests
+--   dbt Python models (BigFrames route): https://docs.getdbt.com/docs/build/python-models
+
+
+-- =============================================================================
+-- macros/materialization_bqml_model.sql -- the custom materialization
+-- =============================================================================
+-- {% materialization bqml_model, adapter='bigquery' %}
+--   {%- set target_relation = this -%}
+--   {%- set model_options = config.get('meta', {}).get('model_options', '') -%}
+--   {%- set model_ref = target_relation.database ~ '.' ~ target_relation.schema ~ '.' ~ target_relation.identifier -%}
+--   {{ run_hooks(pre_hooks) }}
+--   {% call statement('main') -%}
+--     CREATE OR REPLACE MODEL `{{ model_ref }}`
+--     OPTIONS( {{ model_options }} ) AS
+--     {{ sql }}
+--   {%- endcall %}
+--   {{ run_hooks(post_hooks) }}
+--   {{ return({'relations': [target_relation]}) }}
+-- {% endmaterialization %}
+--
+-- GOTCHA (verified live): passing options as a bare `model_options` config
+-- key (config.get('model_options', '')) triggers a CustomKeyInConfigDeprecation
+-- warning in dbt 1.12 -- "Custom key `model_options` found in `config`...
+-- Custom config keys should move into `config.meta`." Fixed by nesting it
+-- under `meta` in both the model's config() call and the macro's lookup.
+
+
+-- =============================================================================
+-- models/ga4_churn_pipeline_model.sql -- using the custom materialization
+-- =============================================================================
+-- {{ config(
+--     materialized='bqml_model',
+--     meta={'model_options': "model_type = 'BOOSTED_TREE_CLASSIFIER', input_label_cols = ['churned'], auto_class_weights = TRUE, data_split_method = 'AUTO_SPLIT', enable_global_explain = TRUE"}
+-- ) }}
+--
+-- SELECT n_events, n_active_days, n_page_view, n_view_item, n_add_to_cart,
+--        n_begin_checkout, n_sessions, did_purchase, device_category, country,
+--        traffic_medium, total_engagement_time_msec, churned
+-- FROM {{ ref('ga4_churn_pipeline_features') }}
+-- WHERE first_date <= '2020-11-20'
+--
+-- Contrast with Dataform (pipelines/dataform/): there, `CREATE MODEL` support
+-- is OFFICIAL, documented syntax (`type: "operations", hasOutput: true`,
+-- `${self()}`). Here, it took a one-time custom Jinja materialization macro
+-- -- a real difference in how much is built in vs. hand-written, but the
+-- result is the same real, working, version-controlled BQML model either way.
+
+
+-- =============================================================================
+-- tests/ga4_churn_pipeline_quality_reasonable.sql & _strict.sql -- dbt's
+-- assertion mechanism, same zero-rows-means-pass convention as Dataform
+-- =============================================================================
+-- SELECT * FROM ML.EVALUATE(MODEL {{ ref('ga4_churn_pipeline_model') }})
+-- WHERE roc_auc < 0.6   -- (quality_reasonable: passes)
+--
+-- SELECT * FROM ML.EVALUATE(MODEL {{ ref('ga4_churn_pipeline_model') }})
+-- WHERE roc_auc < 0.99  -- (quality_strict: deliberately fails, same as Dataform)
+
+
+-- =============================================================================
+-- Verified live: `dbt build` (models + tests together, DAG-aware) vs.
+-- separate `dbt run` + `dbt test`
+-- =============================================================================
+-- `dbt build` output (real run):
+--   1 of 5 features            OK
+--   2 of 5 model               OK   (bqml_model materialization)
+--   3 of 5 quality_reasonable  PASS
+--   4 of 5 quality_strict      FAIL  (Got 1 result, configured to fail if != 0)
+--   5 of 5 scoring             SKIP  <-- genuinely blocked, not just reported
+--
+-- Initial assumption going in was that dbt tests run strictly AFTER models
+-- with no cross-node blocking, unlike Dataform's dependOnDependencyAssertions
+-- -- WRONG, corrected by testing live: `dbt build` really does skip a
+-- downstream model when a test on its upstream dependency fails, no extra
+-- config needed. This only holds for `dbt build`, though -- running `dbt run`
+-- then `dbt test` as two separate invocations (common in some CI setups)
+-- does NOT get this protection, since by the time `dbt test` runs, `dbt run`
+-- has already built everything regardless of what the tests will find.
+
+
+-- =============================================================================
+-- Also worth knowing about (not a shortcoming of what's above): BigFrames
+-- Python models
+-- =============================================================================
+-- dbt's own newer, more "native" ML story is Python models via BigFrames
+-- (pandas/scikit-learn-style code transpiled to BQML under the hood, run via
+-- Dataproc/serverless Spark or Colab Enterprise) -- a different path (no
+-- literal CREATE MODEL DDL involved), requiring separate compute
+-- infrastructure this notebook doesn't stand up (out of proportion for what
+-- is really just a "here's another option" aside). The custom-materialization
+-- approach above is what teams reach for today when they want a real,
+-- version-controlled, native BQML model artifact under dbt with a literal
+-- CREATE MODEL statement they can read and audit -- and it works.
+
+
+-- =============================================================================
+-- Cleanup
+-- =============================================================================
+-- DROP MODEL IF EXISTS `PROJECT_ID.DATASET.ga4_churn_pipeline_model`;
+-- DROP TABLE IF EXISTS `PROJECT_ID.DATASET.ga4_churn_pipeline_features`;
+-- DROP TABLE IF EXISTS `PROJECT_ID.DATASET.ga4_churn_pipeline_scoring`;
+-- shutil.rmtree(the temporary dbt project directory)

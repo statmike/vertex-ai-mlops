@@ -1,0 +1,128 @@
+-- Vertex AI Pipelines (KFP) — BigQuery ML Pipeline
+-- =============================================================
+-- Train -> evaluate -> quality-gate -> conditionally score, using the
+-- OFFICIAL prebuilt google_cloud_pipeline_components.v1.bigquery ops
+-- (BigqueryCreateModelJobOp / BigqueryEvaluateModelJobOp /
+-- BigqueryPredictModelJobOp) instead of hand-rolled BigQuery client calls.
+-- These auto-track model lineage in Vertex ML Metadata and are the modern,
+-- recommended way to wire BQML into a KFP pipeline -- a real upgrade over
+-- this repo's own older custom-@dsl.component pattern (see Related content).
+--
+-- Workflow operationalized: ../../workflows/ga4_churn_prediction/
+-- Data: bigquery-public-data.ga4_obfuscated_sample_ecommerce
+--
+-- Full reference: ../../RESOURCES.md
+-- Official docs:
+--   Prebuilt BigQuery ML components: https://cloud.google.com/vertex-ai/docs/pipelines/bigqueryml-component
+--   google_cloud_pipeline_components reference: https://google-cloud-pipeline-components.readthedocs.io/en/latest/google_cloud_pipeline_components.v1.bigquery.html
+--   dsl.If (conditional control flow): https://www.kubeflow.org/docs/components/pipelines/user-guides/core-functions/control-flow/
+
+
+-- =============================================================================
+-- Pipeline definition (kfp.dsl) -- reproduced in full in the notebook
+-- =============================================================================
+-- @dsl.pipeline
+-- def ga4_churn_pipeline(project, dataset, location, quality_threshold=0.6):
+--     create_model_task = BigqueryCreateModelJobOp(
+--         project=project, location=location,
+--         query=f"CREATE OR REPLACE MODEL `{model_ref}` OPTIONS(...) AS SELECT ... FROM features_table WHERE first_date <= '2020-11-20'"
+--     )
+--     evaluate_task = BigqueryEvaluateModelJobOp(
+--         project=project, location=location,
+--         model=create_model_task.outputs['model'],
+--         job_configuration_query={'useQueryCache': 'false'},  -- see GOTCHA #2
+--     )
+--     gate_task = check_quality_gate(
+--         evaluation_metrics=evaluate_task.outputs['evaluation_metrics'],
+--         threshold=quality_threshold,
+--     )
+--     with dsl.If(gate_task.output == True):
+--         BigqueryPredictModelJobOp(
+--             project=project, location=location,
+--             model=create_model_task.outputs['model'],
+--             table_name='', query_statement=predict_query,
+--         )
+
+
+-- =============================================================================
+-- check_quality_gate -- the one custom @dsl.component this pipeline needs
+-- =============================================================================
+-- @dsl.component(base_image='python:3.11')
+-- def check_quality_gate(evaluation_metrics: dsl.Input[dsl.Artifact], threshold: float) -> bool:
+--     field_names = [f['name'] for f in evaluation_metrics.metadata['schema']['fields']]
+--     roc_auc_index = field_names.index('roc_auc')
+--     roc_auc = float(evaluation_metrics.metadata['rows'][0]['f'][roc_auc_index]['v'])
+--     return roc_auc >= threshold
+--
+-- The prebuilt ops cover CREATE MODEL / ML.EVALUATE / ML.PREDICT, but reading
+-- and branching on a metric value needs one small custom component -- exactly
+-- the "custom component fills the gap the prebuilt ops don't cover" pattern
+-- this notebook demonstrates alongside the prebuilt-first approach.
+
+
+-- =============================================================================
+-- GOTCHA #1 (verified live): BigqueryEvaluateModelJobOp's evaluation_metrics
+-- artifact is NOT a flat {metric_name: value} dict
+-- =============================================================================
+-- The artifact's .metadata stores the raw BigQuery REST API tabular response
+-- -- the SAME schema/rows, f/v cell shape as jobs.getQueryResults (and the
+-- Cloud Workflows connector's own result rows) -- not a convenient
+-- {"roc_auc": 0.73, ...} mapping. A naive evaluation_metrics.metadata.get(
+-- 'roc_auc') returns None every time (no top-level 'roc_auc' key exists),
+-- silently making any quality-gate check False even when the real metric
+-- comfortably clears the threshold. First live run: gate evaluated False,
+-- dsl.If's branch showed NOT_TRIGGERED, despite the real roc_auc being
+-- 0.7282847152847153 -- caught by dumping the raw task.outputs from a live
+-- PipelineJob's task_details, not by trusting the artifact's shape.
+-- FIX: parse the column position from metadata['schema']['fields'] (a list
+-- of {"name": ..., "type": ...} dicts, in query-column order: precision,
+-- recall, accuracy, f1_score, log_loss, roc_auc), then read that position
+-- from metadata['rows'][0]['f'][index]['v']. After the fix: dsl.If's
+-- condition-1 genuinely TRIGGERED and bigquery-predict-model-job ran.
+
+
+-- =============================================================================
+-- GOTCHA #2 (verified live, MAJOR, now documented in RESOURCES.md under
+-- CREATE MODEL): job_configuration_query={'useQueryCache': False} is
+-- silently dropped by the component library itself
+-- =============================================================================
+-- BigqueryEvaluateModelJobOp re-runs the identical "SELECT * FROM
+-- ML.EVALUATE(MODEL ga4_churn_pipeline_model)" text every time this
+-- pipeline runs against a model that gets CREATE OR REPLACE'd each run --
+-- exactly the scenario that caused a silently-stale roc_auc in
+-- pipelines/cloud_workflows/ and pipelines/dataform/. The component accepts
+-- a job_configuration_query override to set useQueryCache: false, but
+-- passing the Python bool False is a no-op: google_cloud_pipeline_
+-- components.container.v1.gcp_launcher.utils.json_util.recursive_remove_empty
+-- strips any dict value that's falsy under plain Python truthiness (`if v:`)
+-- BEFORE merging the override into the job body -- so `False` never reaches
+-- the BigQuery API call, and caching silently stays on. Confirmed via
+-- INFORMATION_SCHEMA.JOBS_BY_PROJECT: job_configuration_query={'useQueryCache':
+-- False} still showed cache_hit: true on the evaluate job. The BigQuery
+-- REST API itself accepts the STRING 'false' for this boolean field and
+-- genuinely disables caching -- confirmed both via a direct REST call
+-- (cacheHit: False) and inside a real pipeline run (cache_hit: false in
+-- INFORMATION_SCHEMA). FIX: job_configuration_query={'useQueryCache':
+-- 'false'} -- the string, not the Python bool.
+
+
+-- =============================================================================
+-- Verified live end-to-end execution result:
+-- =============================================================================
+-- BigqueryCreateModelJobOp -> BOOSTED_TREE_CLASSIFIER trained (~5 min)
+-- BigqueryEvaluateModelJobOp -> roc_auc ~0.73 (cache_hit: false, confirmed)
+-- check_quality_gate -> True (0.6 threshold)
+-- dsl.If condition-1 -> TRIGGERED
+-- BigqueryPredictModelJobOp -> SUCCEEDED, scoring table written
+-- Overall PipelineJob state -> PIPELINE_STATE_SUCCEEDED
+
+
+-- =============================================================================
+-- Cleanup
+-- =============================================================================
+-- DROP MODEL IF EXISTS `PROJECT_ID.DATASET.ga4_churn_pipeline_model`;
+-- DROP TABLE IF EXISTS `PROJECT_ID.DATASET.ga4_churn_pipeline_features`;
+-- BigqueryPredictModelJobOp's destination_table (table_name='' -> auto-created)
+-- lands in a hidden, anonymous BigQuery dataset ("_<hash>") with BigQuery's own
+-- default temp-table expiration -- nothing to drop by hand.
+-- Vertex Pipeline artifacts under gs://BUCKET/bq_ml/vertex_kfp/pipeline_root/ are not auto-deleted -- delete manually if desired.

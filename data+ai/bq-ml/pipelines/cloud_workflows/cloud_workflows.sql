@@ -1,0 +1,104 @@
+-- Cloud Workflows — BigQuery ML Pipeline
+-- =============================================================
+-- The same drift-check -> conditional-retrain -> report logic as
+-- pipelines/sql_scripting/, re-expressed as external declarative
+-- orchestration: a YAML Workflow definition that submits one BigQuery job
+-- per step via the BigQuery connector, polls each to completion, and
+-- branches on the result -- control flow lives in Cloud Workflows, not in
+-- BigQuery's own scripting language. A lightweight, serverless,
+-- near-free alternative to Airflow for simple linear/branching pipelines.
+--
+-- Workflow operationalized: ../../workflows/ga4_churn_prediction/
+-- Data: bigquery-public-data.ga4_obfuscated_sample_ecommerce
+--
+-- Full reference: ../../RESOURCES.md
+-- Official docs:
+--   Cloud Workflows overview: https://cloud.google.com/workflows/docs/overview
+--   BigQuery connector: https://cloud.google.com/workflows/docs/reference/googleapis/bigquery/Overview
+--   Codelab (jobs.insert + poll pattern): https://codelabs.developers.google.com/codelabs/cloud-workflows-bigquery-parallel
+
+
+-- =============================================================================
+-- workflow.yaml (deployed via `gcloud workflows deploy` / WorkflowsClient)
+-- =============================================================================
+-- main:
+--   params: [args]
+--   steps:
+--     - init: assign project_id, dataset_id, cutoff_date, features_table, model_ref
+--     - build_drift_query: assemble the ML.VALIDATE_DATA_DRIFT query text
+--         piecewise across MULTIPLE assign steps -- see gotcha #1 below
+--     - check_drift: call run_bq_query -> drift_rows
+--     - branch_on_drift:
+--         switch:
+--           - condition: len(drift_rows) > 0
+--             steps:
+--               - get_prior_metric: call run_bq_query (ML.EVALUATE) -> prior_metric_rows
+--               - build_retrain_query: assemble CREATE OR REPLACE MODEL text
+--               - retrain_model: call run_bq_job (long-running, polled)
+--               - get_new_metric: call run_bq_query (ML.EVALUATE) -> new_metric_rows
+--               - build_drift_report: return status + before/after roc_auc
+--         next: no_drift_report
+--     - no_drift_report: return "NO_DRIFT_DETECTED_NO_RETRAIN"
+--
+-- run_bq_query (subworkflow): submit_job (run_bq_job) -> jobs.getQueryResults -> return rows
+-- run_bq_job (subworkflow): jobs.insert -> poll jobs.get every 5s until state == "DONE" -> return jobId/location
+--
+-- (Full YAML: see the notebook -- reproduced in full there since Cloud
+-- Workflows deploys from a real .yaml file, not inline SQL.)
+
+
+-- =============================================================================
+-- GOTCHA #1 (verified live): Workflows expressions cap at 400 characters
+-- =============================================================================
+-- A single ${"..." + var + "..."} expression longer than 400 chars fails to
+-- deploy: "maximum length for an expression is 400 characters". The full
+-- drift-check query (with two feature-column subqueries) and the full
+-- CREATE MODEL statement both exceed this on their own. Fixed by building
+-- query text across several small `assign` steps (each concatenation well
+-- under 400 chars) rather than one large inline expression -- a real
+-- authoring constraint specific to Workflows' YAML expression language, not
+-- present in Python string building.
+
+
+-- =============================================================================
+-- GOTCHA #2 (verified live, MAJOR, now documented in RESOURCES.md under
+-- CREATE MODEL): BigQuery's query result cache can silently serve a STALE
+-- roc_auc after CREATE OR REPLACE MODEL
+-- =============================================================================
+-- The first live run of this workflow reported IDENTICAL
+-- roc_auc_before_retrain and roc_auc_after_retrain (0.7688881118881119 both)
+-- -- not a coincidence: the "before" and "after" ML.EVALUATE queries are
+-- separate top-level jobs (one per Workflows step), and BigQuery served the
+-- second one from cache despite the model having genuinely changed via
+-- CREATE OR REPLACE MODEL in between. Confirmed directly with `bq query
+-- --nouse_cache`: the true post-retrain value was 0.729021978021978 (the
+-- PRE-retrain figure), while the cache silently returned a stale value from
+-- an earlier, different model version. FIX: set useQueryCache: false on
+-- every BigQuery job this pipeline submits (see run_bq_job in the
+-- notebook). After the fix: roc_auc_before_retrain=0.729021978021978,
+-- roc_auc_after_retrain=0.7794135864135864 -- two genuinely distinct,
+-- correct values. This risk is specific to external orchestrators issuing
+-- SEPARATE query jobs before/after a retrain (Cloud Workflows, a custom
+-- monitoring script, a notebook) -- it was not observed inside
+-- pipelines/sql_scripting/'s single multi-statement BigQuery script, where
+-- the equivalent before/after ML.EVALUATE sub-queries reliably differed
+-- every time.
+
+
+-- =============================================================================
+-- Verified live end-to-end execution result:
+-- =============================================================================
+-- Drift detected in 5/12 features (same as every other Phase 8 pipeline --
+-- deterministic, doesn't depend on model training): total_engagement_time_msec
+-- ~0.49, n_begin_checkout ~0.19, n_add_to_cart ~0.18, n_events ~0.14,
+-- n_page_view ~0.13, all JENSEN_SHANNON_DIVERGENCE.
+-- Model retrained on full cohort: roc_auc improved from 0.7290 to 0.7794 --
+-- a real, positive outcome, consistent with every other pipeline in Phase 8.
+
+
+-- =============================================================================
+-- Cleanup
+-- =============================================================================
+-- workflows_client.delete_workflow(name=workflow.name)
+-- DROP MODEL IF EXISTS `PROJECT_ID.DATASET.ga4_churn_pipeline_model`;
+-- DROP TABLE IF EXISTS `PROJECT_ID.DATASET.ga4_churn_pipeline_features`;
