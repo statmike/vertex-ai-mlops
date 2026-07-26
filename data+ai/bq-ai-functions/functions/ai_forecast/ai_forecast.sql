@@ -8,6 +8,11 @@
 --
 -- Full reference: ../../RESOURCES.md
 -- Official docs: https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-forecast
+--
+-- Need custom holiday effects, external regressors, hierarchical
+-- reconciliation, or forecast bounds? See ../../../bq-ml/models/arima_plus/
+-- (the trainable ARIMA_PLUS model) -- AI.FORECAST is the faster, zero-setup
+-- alternative; ARIMA_PLUS is the answer once you need that level of control.
 
 
 -- =============================================================================
