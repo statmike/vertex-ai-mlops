@@ -2,7 +2,7 @@
   "name": "bigquery-ml",
   "version": "0.1.0",
   "generated_date": "2026-07-29",
-  "source_commit": "d756d1cd",
+  "source_commit": "3633e2d9",
   "reference_files": [
     "classification.md",
     "model-management.md",
@@ -47,6 +47,7 @@
     "logistic_regression.md",
     "matrix_factorization.md",
     "pca.md",
+    "propensity_score_matching.md",
     "random_forest_classifier.md",
     "random_forest_regressor.md",
     "recommendation.md",
