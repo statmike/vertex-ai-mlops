@@ -2,7 +2,7 @@
   "name": "bigquery-ml",
   "version": "0.1.0",
   "generated_date": "2026-07-29",
-  "source_commit": "3633e2d9",
+  "source_commit": "95ca228a",
   "reference_files": [
     "classification.md",
     "model-management.md",
@@ -56,6 +56,7 @@
     "scalers.md",
     "scheduled_queries.md",
     "sql_scripting.md",
+    "survival_analysis.md",
     "text.md",
     "transform_only.md",
     "vertex_kfp.md",
