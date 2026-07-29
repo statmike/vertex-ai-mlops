@@ -31,6 +31,25 @@ TOP_K = int(os.getenv("TOP_K", "5"))
 # --- Resource prefix ---
 RESOURCE_PREFIX = os.getenv("RESOURCE_PREFIX", "bigquery_context")
 
+# --- Enrichment tier ---
+# setup.py replicates the identical corpus into one dataset per tier
+# ({prefix}_tier0.._tier3), differing only in Knowledge Catalog enrichment.
+# ACTIVE_TIER selects which single tier dataset is in scope for a run. The
+# benchmark sets this per run; the notebook / adk-web story defaults to the
+# fully enriched tier 3.
+#
+# CRITICAL: every tier dataset holds identically-named tables, and downstream
+# scoring matches on short table name. Scope must resolve to EXACTLY ONE tier
+# dataset, or candidates collide across tiers. This is why SCOPE is a single
+# dataset, not a list spanning tiers.
+ACTIVE_TIER = int(os.getenv("ACTIVE_TIER", "3"))
+
+
+def tier_dataset(tier: int) -> str:
+    """Dataset id holding the corpus at a given enrichment tier."""
+    return f"{RESOURCE_PREFIX}_tier{tier}"
+
+
 # ---------------------------------------------------------------------------
 # Scope — what agents search within.
 #
@@ -38,17 +57,23 @@ RESOURCE_PREFIX = os.getenv("RESOURCE_PREFIX", "bigquery_context")
 #   "dataset"             — all tables in that dataset
 #   "dataset.table"       — only that specific table
 #
-# Setup creates these datasets with views over bigquery-public-data tables.
-# Agents discover the metadata at runtime via BQ API, Dataplex, etc.
+# Scoped to the single ACTIVE_TIER dataset so all five discovery approaches see
+# one consistent copy of the corpus. Agents discover the metadata at runtime via
+# BQ API, Knowledge Catalog, etc.
 # ---------------------------------------------------------------------------
-SCOPE = [
-    f"{RESOURCE_PREFIX}_transportation.austin_bikeshare_trips",
-    f"{RESOURCE_PREFIX}_transportation.austin_bikeshare_stations",
-    f"{RESOURCE_PREFIX}_transportation.nyc_taxi_trips_2022",
-    f"{RESOURCE_PREFIX}_weather",
-    f"{RESOURCE_PREFIX}_demographics",
-    f"{RESOURCE_PREFIX}_geography",
-]
+SCOPE = [tier_dataset(ACTIVE_TIER)]
+
+
+def set_active_tier(tier: int) -> None:
+    """Repoint SCOPE at a different tier dataset (used by the benchmark harness).
+
+    Mutates the module globals so downstream helpers (``get_datasets`` etc.) and
+    any code reading ``config.SCOPE`` observe the new tier. Callers that also
+    cache metadata (e.g. ``context_cache``) must repopulate after this.
+    """
+    global ACTIVE_TIER, SCOPE
+    ACTIVE_TIER = tier
+    SCOPE = [tier_dataset(tier)]
 
 
 # ---------------------------------------------------------------------------

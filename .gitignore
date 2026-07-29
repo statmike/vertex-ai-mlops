@@ -12,6 +12,7 @@ terraform.tfstate.backup
 __pycache__/
 uv.lock
 .adk/
-.claude/
+.claude/*
+!.claude/skills/
 .coverage
 .antigravitycli

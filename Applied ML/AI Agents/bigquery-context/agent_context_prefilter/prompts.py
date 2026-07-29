@@ -8,14 +8,21 @@ from context_cache import get_all_briefs
 today_date = datetime.date.today().strftime("%A, %B %d, %Y")
 project_id = GOOGLE_CLOUD_PROJECT
 
-all_briefs = get_all_briefs()
-
 global_instructions = f"""\
 You are a BigQuery table discovery agent that pre-filters tables by reviewing
 brief metadata summaries. Today's date is {today_date}. Project: {project_id}.
 """
 
-agent_instructions = f"""\
+
+def agent_instructions(_ctx=None) -> str:
+    """ADK InstructionProvider: rebuilt per request so the embedded briefs
+    reflect the *live* per-tier cache.
+
+    ``get_all_briefs()`` must be read at request time, not frozen at import:
+    the benchmark harness repopulates the cache per tier, so a frozen brief
+    list would leak the import-time default tier's tables into every tier's run.
+    """
+    return f"""\
 You discover relevant BigQuery tables by reviewing brief metadata summaries
 and nominating the most relevant candidates for detailed reranking.
 
@@ -28,7 +35,7 @@ and nominating the most relevant candidates for detailed reranking.
 
 ## Tables in scope
 
-{all_briefs}
+{get_all_briefs()}
 
 ## Output format
 Begin your response with: **[Approach 4: Context Pre-Filter]**

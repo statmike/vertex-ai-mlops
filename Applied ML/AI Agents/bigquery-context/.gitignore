@@ -14,3 +14,6 @@ build/
 
 # ADK session state
 .adk/
+
+# Generated deliverable — regenerate with `make report`
+report.pdf

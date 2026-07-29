@@ -732,6 +732,7 @@ A function moves from Preview to GA. Minimal content changes, mostly status labe
 - [ ] Function notebook `cell-0`: Remove "Preview" mention if present in the description
 - [ ] Function `.sql` file: Remove any Preview notes in the header comment
 - [ ] Audit log: Record the change
+- [ ] If this changes a decision tree, introduces a new cross-cutting gotcha, or adds a new head-to-head comparison with `bq-ml`: update `../../agent-skills/.agents/skills/bigquery-ai-functions/` (SKILL.md and/or the relevant `reference/*.md`)
 
 #### New capability (new parameter, new model version, new supported model, etc.)
 
@@ -743,6 +744,7 @@ An existing function gains new features — e.g., a new parameter, a new support
 - [ ] Related function notebooks: Update "Alternatives" sections if relationships changed
 - [ ] Workflow notebooks: Check if any workflows should demonstrate the new capability
 - [ ] Audit log: Record the change
+- [ ] If this changes a decision tree, introduces a new cross-cutting gotcha, or adds a new head-to-head comparison with `bq-ml`: update `../../agent-skills/.agents/skills/bigquery-ai-functions/` (SKILL.md and/or the relevant `reference/*.md`)
 
 #### Removed capability (deprecated model version, removed parameter, etc.)
 
@@ -753,6 +755,7 @@ A function loses a capability — e.g., a model version is retired (like TimesFM
 - [ ] Function `.sql` file: Update or remove affected examples
 - [ ] Workflow notebooks: Update any workflows that use the deprecated capability
 - [ ] Audit log: Record the change
+- [ ] If this changes a decision tree, introduces a new cross-cutting gotcha, or adds a new head-to-head comparison with `bq-ml`: update `../../agent-skills/.agents/skills/bigquery-ai-functions/` (SKILL.md and/or the relevant `reference/*.md`)
 
 #### New function
 
@@ -767,6 +770,7 @@ A completely new BigQuery AI function is released.
 - [ ] Cross-reference — Featured in: If used in any workflows, add `**Featured in:**` line; update workflow `**Functions used:**` lines
 - [ ] `PLANS.md`: Update the cross-referencing mapping table; add to development phases if tracking
 - [ ] Audit log: Record the addition
+- [ ] If this changes a decision tree, introduces a new cross-cutting gotcha, or adds a new head-to-head comparison with `bq-ml`: update `../../agent-skills/.agents/skills/bigquery-ai-functions/` (SKILL.md and/or the relevant `reference/*.md`)
 
 #### New workflow
 
@@ -779,6 +783,7 @@ A new end-to-end workflow notebook is added.
 - [ ] Cross-reference: Add the workflow to the `**Featured in:**` line of each function notebook it uses
 - [ ] `PLANS.md`: Update the cross-referencing mapping table and the completed workflows list
 - [ ] Audit log: Record the addition
+- [ ] If this changes a decision tree, introduces a new cross-cutting gotcha, or adds a new head-to-head comparison with `bq-ml`: update `../../agent-skills/.agents/skills/bigquery-ai-functions/` (SKILL.md and/or the relevant `reference/*.md`)
 
 ### How to run an audit
 

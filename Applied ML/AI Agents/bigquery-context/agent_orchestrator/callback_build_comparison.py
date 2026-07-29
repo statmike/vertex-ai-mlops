@@ -16,8 +16,8 @@ from schemas import RerankerResponse
 
 APPROACHES = [
     ("bq_tools", "1: BQ Tools"),
-    ("dataplex_search", "2: Search"),
-    ("dataplex_context", "3: Context"),
+    ("kc_search", "2: KC Search"),
+    ("kc_context", "3: KC Context"),
     ("context_prefilter", "4: Pre-Filter"),
     ("semantic_context", "5: Semantic"),
 ]

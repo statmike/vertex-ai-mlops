@@ -1,8 +1,8 @@
 """Shared context cache — pre-fetched table metadata with brief and detailed views.
 
 Populated once at module import time (when ``adk web`` or ``adk run`` loads any
-agent that imports this module).  Both views are derived from the Dataplex
-lookupContext API (JSON format):
+agent that imports this module).  Both views are derived from the Knowledge
+Catalog lookupContext API (JSON format):
 
 - **brief**: schema columns with name, type, and description only (dataProfile stripped)
 - **detailed**: full JSON including dataProfile (nullRatio, distinctValues, sampleValues)
@@ -60,22 +60,35 @@ def _entry_name_to_full_id(entry_name: str) -> str | None:
         return None
 
 
-def _build_brief(entry: dict) -> dict:
-    """Build a compact brief dict by stripping dataProfile from schema columns.
+# Top-level capsule keys dropped from briefs (noise, not signal for pre-filtering).
+_BRIEF_DROP_KEYS = {"system", "type"}
 
-    Keeps: table_id, name, description, schema (column name, type, description).
-    Strips: dataProfile, system, type (entry type path).
+
+def _build_brief(entry: dict) -> dict:
+    """Build a compact brief dict by stripping the heavy dataProfile stats.
+
+    Subtractive by design: keeps every capsule key *except* per-column
+    ``dataProfile`` (the bulk of the payload) and a small noise denylist.
+
+    This preserves the cheap, high-signal enrichments the Knowledge Catalog
+    capsule now bundles — glossary terms (``related_terms``), ``guidelines``,
+    ``frequent_joins`` join hints, and ``business_descriptions`` — so briefs stay
+    useful for LLM pre-filtering (Approach 4) without shipping full profiling.
+
+    The exact enrichment key names are a preview API detail; the subtractive
+    approach means new keys flow through automatically without code changes.
     """
-    brief = {
-        "name": entry.get("name", ""),
-        "description": entry.get("description", ""),
-        "schema": [
-            {k: v for k, v in col.items() if k != "dataProfile"}
-            for col in entry.get("schema", [])
-        ],
-    }
-    if "table_id" in entry:
-        brief["table_id"] = entry["table_id"]
+    brief = {}
+    for key, value in entry.items():
+        if key in _BRIEF_DROP_KEYS:
+            continue
+        if key == "schema":
+            brief["schema"] = [
+                {k: v for k, v in col.items() if k != "dataProfile"}
+                for col in value
+            ]
+        else:
+            brief[key] = value
     return brief
 
 
@@ -135,7 +148,7 @@ def populate_cache() -> None:
                 continue
 
             # Add table_id in project.dataset.table format so the reranker
-            # uses consistent IDs (the raw name field uses Dataplex path format)
+            # uses consistent IDs (the raw name field uses catalog path format)
             entry["table_id"] = full_id
 
             brief_dict = _build_brief(entry)
@@ -149,6 +162,24 @@ def populate_cache() -> None:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
+
+def repopulate_for_tier(tier: int) -> None:
+    """Clear the cache and repopulate it for a single enrichment tier.
+
+    Used by the benchmark harness to switch the whole system between tier
+    datasets in-process. Flips ``config`` scope to the tier, clears the cache,
+    and re-runs ``populate_cache`` so approaches 3/4/5 read that tier's capsules.
+
+    Approaches read the public cache functions at request time, so a
+    clear + repopulate is sufficient — no agent objects need rebuilding.
+    """
+    import config
+
+    config.set_active_tier(tier)
+    _CACHE.clear()
+    populate_cache()
+    logger.info("Context cache repopulated for tier %d: %d table(s).", tier, len(_CACHE))
 
 
 def get_all_briefs() -> str:
@@ -175,6 +206,13 @@ def get_detailed_for_tables(table_ids: list[str]) -> str:
     entries = []
     for tid in table_ids:
         tc = _CACHE.get(tid)
+        if tc is None and "/" in tid:
+            # The nominating LLM sometimes returns the catalog entry-path form
+            # (projects/.../datasets/.../tables/...) instead of the dotted
+            # project.dataset.table key the cache is keyed on — normalize it.
+            normalized = _entry_name_to_full_id(tid)
+            if normalized:
+                tc = _CACHE.get(normalized)
         if tc and tc.detailed:
             entries.append(json.loads(tc.detailed))
     return json.dumps(entries, indent=2)
@@ -183,7 +221,7 @@ def get_detailed_for_tables(table_ids: list[str]) -> str:
 def get_all_detailed() -> str:
     """Return all table detailed JSON as an array.
 
-    Used by Approach 3 (Dataplex Context) — sends everything to the reranker.
+    Used by Approach 3 (Knowledge Catalog Context) — sends everything to the reranker.
     """
     entries = [json.loads(tc.detailed) for tc in _CACHE.values() if tc.detailed]
     return json.dumps(entries, indent=2)

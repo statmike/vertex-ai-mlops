@@ -3,48 +3,180 @@
     "id": "single-q1",
     "category": "single-table",
     "question": "What are the busiest bike share stations in Austin by month?",
-    "expected_tables": ["austin_bikeshare_trips", "austin_bikeshare_stations"]
+    "relevance": {
+      "must_have": ["austin_bikeshare_trips"],
+      "nice_to_have": ["austin_bikeshare_stations"],
+      "distractor": ["citibike_stations"]
+    }
   },
   {
     "id": "single-q2",
     "category": "single-table",
     "question": "How do tip amounts vary by time of day for NYC taxi rides?",
-    "expected_tables": ["nyc_taxi_trips_2022"]
+    "relevance": {
+      "must_have": ["nyc_taxi_trips_2022"],
+      "nice_to_have": [],
+      "distractor": ["taxi_zone_geom"]
+    }
   },
   {
     "id": "single-q3",
     "category": "single-table",
     "question": "What were the strongest hurricanes to make landfall in the last 20 years?",
-    "expected_tables": ["hurricanes"]
+    "relevance": {
+      "must_have": ["hurricanes"],
+      "nice_to_have": [],
+      "distractor": []
+    }
   },
   {
-    "id": "multi-same-q1",
-    "category": "multi-table-same-dataset",
+    "id": "single-q4",
+    "category": "single-table",
+    "question": "Which baby names have grown fastest in popularity across US states since 1990?",
+    "relevance": {
+      "must_have": ["usa_names_1910_current"],
+      "nice_to_have": [],
+      "distractor": []
+    }
+  },
+  {
+    "id": "single-q5",
+    "category": "single-table",
+    "question": "What is the average birth weight by US county?",
+    "relevance": {
+      "must_have": ["county_natality"],
+      "nice_to_have": [],
+      "distractor": []
+    }
+  },
+  {
+    "id": "multi-rel-q1",
+    "category": "multi-table-related",
     "question": "Which bike share stations have the highest average trip duration, and where are they located?",
-    "expected_tables": ["austin_bikeshare_trips", "austin_bikeshare_stations"]
+    "relevance": {
+      "must_have": ["austin_bikeshare_trips", "austin_bikeshare_stations"],
+      "nice_to_have": [],
+      "distractor": ["citibike_stations"]
+    }
   },
   {
-    "id": "multi-same-q2",
-    "category": "multi-table-same-dataset",
+    "id": "multi-rel-q2",
+    "category": "multi-table-related",
     "question": "Are there weather stations near the paths of major hurricanes?",
-    "expected_tables": ["hurricanes", "weather_stations"]
+    "relevance": {
+      "must_have": ["hurricanes", "weather_stations"],
+      "nice_to_have": [],
+      "distractor": []
+    }
   },
   {
-    "id": "multi-cross-q1",
-    "category": "multi-table-cross-dataset",
+    "id": "multi-rel-q3",
+    "category": "multi-table-related",
+    "question": "Which US counties have the worst annual air quality, and what are their boundaries?",
+    "relevance": {
+      "must_have": ["air_quality_annual_summary", "us_counties"],
+      "nice_to_have": ["zip_codes"],
+      "distractor": []
+    }
+  },
+  {
+    "id": "multi-rel-q4",
+    "category": "multi-table-related",
+    "question": "How do birth rates compare across US counties relative to their population?",
+    "relevance": {
+      "must_have": ["county_natality", "population_by_zip_2010"],
+      "nice_to_have": ["us_counties", "zip_codes"],
+      "distractor": []
+    }
+  },
+  {
+    "id": "multi-disp-q1",
+    "category": "multi-table-disparate",
     "question": "Is there a correlation between crime rates and bike share usage near specific stations in Austin?",
-    "expected_tables": ["austin_crime", "austin_bikeshare_trips", "austin_bikeshare_stations"]
+    "relevance": {
+      "must_have": ["austin_crime", "austin_bikeshare_trips", "austin_bikeshare_stations"],
+      "nice_to_have": [],
+      "distractor": ["citibike_stations"]
+    }
   },
   {
-    "id": "multi-cross-q2",
-    "category": "multi-table-cross-dataset",
+    "id": "multi-disp-q2",
+    "category": "multi-table-disparate",
     "question": "How does population density by ZIP code relate to bike share station placement in Austin?",
-    "expected_tables": ["population_by_zip_2010", "austin_bikeshare_stations"]
+    "relevance": {
+      "must_have": ["population_by_zip_2010", "austin_bikeshare_stations"],
+      "nice_to_have": ["zip_codes"],
+      "distractor": ["citibike_stations"]
+    }
   },
   {
-    "id": "multi-cross-q3",
-    "category": "multi-table-cross-dataset",
+    "id": "multi-disp-q3",
+    "category": "multi-table-disparate",
     "question": "Which US counties have the most weather stations per capita?",
-    "expected_tables": ["us_counties", "weather_stations", "population_by_zip_2010"]
+    "relevance": {
+      "must_have": ["us_counties", "weather_stations", "population_by_zip_2010"],
+      "nice_to_have": ["zip_codes"],
+      "distractor": []
+    }
+  },
+  {
+    "id": "multi-disp-q4",
+    "category": "multi-table-disparate",
+    "question": "Does county air quality relate to average birth weight across the US?",
+    "relevance": {
+      "must_have": ["air_quality_annual_summary", "county_natality"],
+      "nice_to_have": ["us_counties"],
+      "distractor": []
+    }
+  },
+  {
+    "id": "multi-disp-q5",
+    "category": "multi-table-disparate",
+    "question": "Do Austin ZIP codes with more reported crime also have worse air quality?",
+    "relevance": {
+      "must_have": ["austin_crime", "air_quality_annual_summary"],
+      "nice_to_have": ["zip_codes"],
+      "distractor": []
+    }
+  },
+  {
+    "id": "trap-q1",
+    "category": "trap",
+    "question": "Which Austin bike share stations currently have the most open docks?",
+    "relevance": {
+      "must_have": ["austin_bikeshare_stations"],
+      "nice_to_have": [],
+      "distractor": ["citibike_stations"]
+    }
+  },
+  {
+    "id": "trap-q2",
+    "category": "trap",
+    "question": "What is the total fare and tip revenue collected across NYC taxi zones?",
+    "relevance": {
+      "must_have": ["nyc_taxi_trips_2022"],
+      "nice_to_have": ["taxi_zone_geom"],
+      "distractor": []
+    }
+  },
+  {
+    "id": "trap-q3",
+    "category": "trap",
+    "question": "How does the unemployment rate differ between high-crime and low-crime Austin ZIP codes?",
+    "relevance": {
+      "must_have": ["austin_crime"],
+      "nice_to_have": [],
+      "distractor": ["unemployment_cps"]
+    }
+  },
+  {
+    "id": "trap-q4",
+    "category": "trap",
+    "question": "Which Citi Bike-style docking stations in Austin are the busiest?",
+    "relevance": {
+      "must_have": ["austin_bikeshare_trips", "austin_bikeshare_stations"],
+      "nice_to_have": [],
+      "distractor": ["citibike_stations"]
+    }
   }
 ]

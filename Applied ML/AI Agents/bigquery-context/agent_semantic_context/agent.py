@@ -1,6 +1,6 @@
 """Approach 5: Semantic Context — semantic search + cached Knowledge Context.
 
-Combines Dataplex semantic search (like Approach 2) to narrow candidates with
+Combines Knowledge Catalog semantic search (like Approach 2) to narrow candidates with
 detailed cached Knowledge Context capsules (like Approach 3) for those matches.
 Fully deterministic — the ``before_agent_callback`` handles the entire workflow:
 semantic search → cache lookup → call shared reranker → return results.
@@ -20,9 +20,9 @@ root_agent = agents.Agent(
     name="agent_semantic_context",
     model=AGENT_MODEL,
     description=(
-        "Discovers relevant BigQuery tables using Dataplex semantic search "
-        "to narrow candidates, then enriches matches with cached Knowledge "
-        "Context capsules and reranks results."
+        "Discovers relevant BigQuery tables using Knowledge Catalog semantic "
+        "search to narrow candidates, then enriches matches with cached "
+        "Knowledge Context capsules and reranks results."
     ),
     global_instruction=prompts.global_instructions,
     instruction=prompts.agent_instructions,

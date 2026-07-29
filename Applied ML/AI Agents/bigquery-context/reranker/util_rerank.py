@@ -35,6 +35,15 @@ For each table, evaluate:
 3. Whether joins to other candidate tables would help
 4. What SQL patterns (WHERE filters, GROUP BY, aggregations) would be needed
 
+Some candidate metadata comes from the Knowledge Catalog context capsule and may
+include richer signals — use them when present:
+- `frequent_joins` (or join hints): real observed join relationships. Prefer
+  these when proposing join_suggestions rather than guessing join keys.
+- glossary terms / `related_terms` / `business_descriptions`: business meaning of
+  columns. Use them to disambiguate columns and improve reasoning.
+- `guidelines`: authored NL→SQL guidance for the table. Fold applicable
+  guidance directly into sql_hints.
+
 Return ALL tables with confidence >= 0.5, ranked by relevance (most relevant
 first). Do not omit borderline tables — include anything that could
 plausibly help answer the question, even indirectly (e.g., a population
@@ -58,6 +67,49 @@ For sql_hints, provide concrete SQL guidance like:
 
 
 _genai_client = None
+
+
+# ---------------------------------------------------------------------------
+# Reranker token-usage accounting (exact, for the benchmark cost metric).
+#
+# ``call_reranker`` invokes Gemini directly (not as an ADK tool), so its
+# ``usage_metadata`` never reaches the ADK event stream. We record it here in a
+# process-local accumulator the benchmark harness resets before each isolated
+# approach-run and reads afterwards. Runs are sequential (one approach at a
+# time), so a plain module global is sufficient and exact.
+# ---------------------------------------------------------------------------
+_USAGE_LOG: list[dict] = []
+
+
+def reset_usage() -> None:
+    """Clear the reranker usage accumulator (call before an isolated run)."""
+    _USAGE_LOG.clear()
+
+
+def get_usage() -> dict:
+    """Return aggregated reranker token usage since the last ``reset_usage``.
+
+    Returns a dict with ``prompt_tokens``, ``output_tokens``, ``total_tokens``,
+    and ``calls`` (number of reranker Gemini invocations).
+    """
+    return {
+        "prompt_tokens": sum(u["prompt_tokens"] for u in _USAGE_LOG),
+        "output_tokens": sum(u["output_tokens"] for u in _USAGE_LOG),
+        "total_tokens": sum(u["total_tokens"] for u in _USAGE_LOG),
+        "calls": len(_USAGE_LOG),
+    }
+
+
+def _record_usage(response) -> None:
+    """Append one Gemini response's token usage to the accumulator."""
+    usage = getattr(response, "usage_metadata", None)
+    if usage is None:
+        return
+    _USAGE_LOG.append({
+        "prompt_tokens": getattr(usage, "prompt_token_count", 0) or 0,
+        "output_tokens": getattr(usage, "candidates_token_count", 0) or 0,
+        "total_tokens": getattr(usage, "total_token_count", 0) or 0,
+    })
 
 
 def _get_client() -> genai.Client:
@@ -85,7 +137,8 @@ def call_reranker(
         candidate_metadata: String containing table metadata (schemas,
             descriptions, profiles, etc.) from the discovery approach.
         discovery_method: Which approach produced the candidates
-            ("bq_tools", "dataplex_search", "dataplex_context").
+            ("bq_tools", "kc_search", "kc_context", "context_prefilter",
+            "semantic_context").
         top_k: Maximum number of tables to return.
 
     Returns:
@@ -120,6 +173,8 @@ the question (even as a supporting join), include it.
         ),
     )
 
+    _record_usage(response)
+
     result = RerankerResponse.model_validate(json.loads(response.text))
 
     # Normalize table IDs — the reranker sometimes picks up Dataplex path
@@ -135,7 +190,7 @@ def format_reranker_markdown(result: RerankerResponse, label: str) -> str:
 
     Args:
         result: The reranker result to format.
-        label: Approach label, e.g. "Approach 2: Dataplex Search".
+        label: Approach label, e.g. "Approach 2: Knowledge Catalog Search".
     """
     lines = [f"**[{label}]**", ""]
 

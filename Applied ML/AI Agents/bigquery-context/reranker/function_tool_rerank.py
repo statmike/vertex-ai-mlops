@@ -1,4 +1,4 @@
-"""Shared reranker tool used by all three discovery agents.
+"""Shared reranker tool used by all five discovery agents.
 
 Takes candidate table metadata (as a string) from any discovery approach
 and produces a ranked RerankerResponse via Gemini structured output.
@@ -30,7 +30,7 @@ async def rerank_tables(
         candidate_metadata: All table metadata gathered during discovery,
             formatted as a readable string (schemas, descriptions, etc.).
         discovery_method: Which discovery approach produced the candidates.
-            One of: "bq_tools", "dataplex_search", "dataplex_context",
+            One of: "bq_tools", "kc_search", "kc_context",
             "context_prefilter", "semantic_context".
         table_ids: List of fully qualified table IDs (project.dataset.table)
             for all candidate tables included in candidate_metadata.
