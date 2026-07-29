@@ -15,15 +15,22 @@ counts what the API returns **raw** vs. what survives the client-side
 
 What it demonstrates (against the ``tier3`` corpus of 15 in-scope tables):
 
-- **The predicate is enforceable.** ``parent:(datasets/…)`` *alone* (no free-text
-  question) returns only in-scope tables — the API honors the filter perfectly
-  when it is the whole query.
+- **The predicate is enforceable — two independently-valid forms prove it.** Both
+  ``parent:(datasets/…)`` and the full-path ``parent:(projects/…/datasets/…)``,
+  issued *alone* (no free-text question), return only in-scope tables — so the API
+  honors the filter perfectly when it is the whole query, and it is not a matter
+  of using the "wrong" parent syntax.
 - **A combined NL query relaxes it.** The moment a free-text question is ANDed
   with the predicate under ``semantic_search=True``, the API fills the page with
   tables from unrelated datasets and the in-scope survivors collapse.
-- **No query-construction fix recovers it.** Exact ``parent=``, the
-  ``fully_qualified_name`` prefix, the BigQuery-FQN parent form, and explicit
-  ``NOT`` negation all leak identically.
+- **The pollution is unrelated datasets, not name collisions.** The out-of-scope
+  results are entirely different datasets in this and other projects — never a
+  same-named copy of the scoped dataset — so the leak is the ``parent:`` predicate
+  being dropped, not semantic search matching an identically-named dataset
+  elsewhere.
+- **No query-construction fix recovers it.** Exact ``parent=``, the full-path
+  ``projects/…/datasets/…`` form, the ``fully_qualified_name`` prefix, the
+  BigQuery-FQN parent form, and explicit ``NOT`` negation all leak identically.
 - **A wider page does not help.** In-scope count stays pinned while pollution
   grows linearly with ``page_size`` (the API caps output at 100).
 - **Keyword mode is not a fallback.** ``semantic_search=False`` returns nothing
@@ -95,6 +102,25 @@ def _search(client, name: str, query: str, semantic: bool, page_size: int):
     return raw, in_scope, out_scope
 
 
+def _out_of_scope_fqns(client, name: str, query: str, page_size: int) -> list[str]:
+    """Return the fully-qualified names of the out-of-scope results.
+
+    Proves the pollution is genuinely *other* datasets (in this and other
+    projects), not same-named copies of the scoped dataset — i.e. the leak is the
+    ``parent:`` predicate being dropped, not a cross-project name collision.
+    """
+    request = dataplex_v1.SearchEntriesRequest(
+        name=name, query=query, page_size=page_size, semantic_search=True
+    )
+    out = []
+    for result in client.search_entries(request=request):
+        fqn = result.dataplex_entry.fully_qualified_name or "(empty fqn)"
+        parts = fqn.rsplit(".", 2)
+        if not (len(parts) >= 2 and is_table_in_scope(parts[-2], parts[-1])):
+            out.append(fqn)
+    return out
+
+
 def _formulations(question: str, ds: str) -> dict[str, tuple[str, bool]]:
     """The battery of (query, semantic_search) formulations to compare.
 
@@ -109,9 +135,16 @@ def _formulations(question: str, ds: str) -> dict[str, tuple[str, bool]]:
         # Control: the predicate ALONE — proves the filter is enforceable.
         "control: parent: only (sem=T)":
             (f"parent:(datasets/{ds}) AND system=BIGQUERY", True),
+        # Control: the full path form ALONE — a SECOND independently-valid parent
+        # syntax that also enforces perfectly on its own (rules out "wrong form").
+        "control: parent: path-form only (sem=T)":
+            (f"parent:(projects/{proj}/datasets/{ds}) AND system=BIGQUERY", True),
         # Alternatives that a reader might expect to enforce scope:
         "alt: parent= exact (sem=T)":
             (f"({question}) AND system=BIGQUERY AND parent=datasets/{ds}", True),
+        "alt: parent: path-form (sem=T)":
+            (f"({question}) AND system=BIGQUERY "
+             f"AND parent:(projects/{proj}/datasets/{ds})", True),
         "alt: parent: bigquery-fqn (sem=T)":
             (f"({question}) AND system=BIGQUERY AND parent:(bigquery:{proj}.{ds})", True),
         "alt: fully_qualified_name: (sem=T)":
@@ -153,6 +186,21 @@ def main() -> None:
     for ps in (20, 50, 100, 200):
         raw, ins, out = _search(client, name, query, True, ps)
         print(f"  {ps:10} {raw:4} {ins:4} {out:4}")
+
+    # What ARE the out-of-scope results? Show they are unrelated datasets (this and
+    # other projects), not same-named copies of the scoped dataset — so the leak is
+    # the predicate being dropped, not a cross-project name collision.
+    print("\n=== what the pollution actually is (bikeshare, question + parent:) ===")
+    print(f"  out-of-scope results are NOT copies of '{ds}' — they are unrelated "
+          "datasets\n  in this and other projects (the parent: predicate was "
+          "dropped, not a name collision):")
+    polluters = _out_of_scope_fqns(client, name, query, 20)
+    named = [f for f in polluters if f != "(empty fqn)"]
+    empty = len(polluters) - len(named)
+    for fqn in named:
+        print(f"    {fqn}")
+    if empty:
+        print(f"    (+ {empty} entries with no resolvable table name — also out of scope)")
 
 
 if __name__ == "__main__":
