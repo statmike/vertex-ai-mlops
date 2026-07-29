@@ -49,6 +49,17 @@ This project provides a progressive learning system: start with a quick overview
 | [Interactive Overview](overview.ipynb) | Runnable notebook tour — one example per category |
 | [Setup Reference](setup/) | Connections, models, endpoints, quotas, and permissions |
 | [Detailed Function Reference](RESOURCES.md) | Complete syntax, inputs, outputs, and limitations for every function |
+| [Agent Skill](../../agent-skills/.agents/skills/bigquery-ai-functions/SKILL.md) | Packaged, use-case-organized reference for AI coding agents — see below |
+
+### Using this project with an AI coding agent
+
+This project's Agent Skill content lives centrally in [`agent-skills/`](../../agent-skills/) at the repo root (alongside every other skill built from this repo), not inside this folder — see the [`bigquery-ai-functions` skill](../../agent-skills/.agents/skills/bigquery-ai-functions/SKILL.md), a use-case-organized (generation, classification/scoring, embeddings/search, forecasting/anomalies, driver analysis, document processing, workflows), gotcha-rich distillation of `RESOURCES.md` built for coding agents, not just human readers.
+
+- **Claude Code** — picked up automatically from `.claude/skills/bigquery-ai-functions` (a repo-root symlink into `agent-skills/`) anywhere in this repo; no setup needed. It activates automatically when your request matches — generating/classifying/scoring content, embeddings and semantic search, zero-training forecasting, document processing — or invoke it explicitly.
+- **Google Antigravity, Codex, and other `.agents/skills/`-compatible tools** — discovered from the repo-root `.agents/skills/bigquery-ai-functions/` symlink, using the same `SKILL.md` files.
+- **Standalone / other repos** — the whole `agent-skills/.agents/skills/bigquery-ai-functions/` folder is self-contained and can be copied into any other project.
+
+Not sure whether BigQuery AI Functions or [BigQuery ML](../bq-ml/) fits your task? The [`choosing-a-bigquery-ai-approach`](../../agent-skills/.agents/skills/choosing-a-bigquery-ai-approach/SKILL.md) skill triages between the two.
 
 ---
 

@@ -295,30 +295,35 @@ Keep our content in sync with the official BigQuery ML documentation. Mirrors th
 - [ ] Pre-validate all SQL with `bq query` (train + drop validation models)
 - [ ] Cross-reference: add **Featured in:** if used by a workflow/pipeline
 - [ ] `PLANS.md`: check the Development Phases item; update the mapping table; add an audit-log entry
+- [ ] If this changes a decision tree, introduces a new cross-cutting gotcha, or adds a new head-to-head comparison with `bq-ai-functions`: update `../../agent-skills/.agents/skills/bigquery-ml/` (SKILL.md and/or the relevant `reference/*.md`)
 
 #### New model-free function
 - [ ] `RESOURCES.md`: Add a full entry in the Model-Free Functions section
 - [ ] `README.md`: Add to the Functions table
 - [ ] Create `functions/{name}/` with `{name}.ipynb` + `{name}.sql`
 - [ ] Cross-reference + `PLANS.md` mapping + audit-log entry
+- [ ] If this changes a decision tree, introduces a new cross-cutting gotcha, or adds a new head-to-head comparison with `bq-ai-functions`: update `../../agent-skills/.agents/skills/bigquery-ml/` (SKILL.md and/or the relevant `reference/*.md`)
 
 #### New workflow
 - [ ] Create `workflows/{name}/` notebook
 - [ ] `README.md`: Add to the Workflows table
 - [ ] Cross-reference: **Models used:** / **Functions used:** in the workflow; **Featured in:** on each component
 - [ ] `PLANS.md`: mapping table + audit-log entry
+- [ ] If this changes a decision tree, introduces a new cross-cutting gotcha, or adds a new head-to-head comparison with `bq-ai-functions`: update `../../agent-skills/.agents/skills/bigquery-ml/` (SKILL.md and/or the relevant `reference/*.md`)
 
 #### New pipeline
 - [ ] Create `pipelines/{approach}/` content
 - [ ] `README.md`: Add to the Pipelines table
 - [ ] Cross-reference: **Workflow operationalized:** link
 - [ ] `PLANS.md`: mapping table + audit-log entry
+- [ ] If this changes a decision tree, introduces a new cross-cutting gotcha, or adds a new head-to-head comparison with `bq-ai-functions`: update `../../agent-skills/.agents/skills/bigquery-ml/` (SKILL.md and/or the relevant `reference/*.md`)
 
 #### Status / capability change (Preview→GA, new option, new model_type, etc.)
 - [ ] Update `RESOURCES.md` entry (status, options, syntax, outputs, limitations)
 - [ ] Update `README.md` status labels and tables
 - [ ] If it affects a built notebook, revise + re-run (Restart & Run All) before review
 - [ ] `PLANS.md`: audit-log entry
+- [ ] If this changes a decision tree, introduces a new cross-cutting gotcha, or adds a new head-to-head comparison with `bq-ai-functions`: update `../../agent-skills/.agents/skills/bigquery-ml/` (SKILL.md and/or the relevant `reference/*.md`)
 
 ### How to run an audit
 1. **Prepare** — review the audit log; note Google Cloud Next / release-note announcements since last audit.

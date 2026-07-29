@@ -50,8 +50,19 @@ This is the sibling project to [**BigQuery AI Functions**](../bq-ai-functions/) 
 | [Setup Reference](setup/) | Datasets, connections (for remote/imported/export), IAM, the CREATE MODEL deep dive, quotas, BigFrames |
 | [Detailed Reference](RESOURCES.md) | Syntax, options, outputs, and limitations for CREATE MODEL and every `ML.*` function |
 | [Project Plan](PLANS.md) | The operating manual: conventions, templates, backlog, and audit procedure |
+| [Agent Skill](../../agent-skills/.agents/skills/bigquery-ml/SKILL.md) | Packaged, use-case-organized reference for AI coding agents — see below |
 
 New to BigQuery ML? Start with the [**Logistic Regression**](models/logistic_regression/) model — it walks the entire lifecycle end to end and is the template every other model follows.
+
+### Using this project with an AI coding agent
+
+This project's Agent Skill content lives centrally in [`agent-skills/`](../../agent-skills/) at the repo root (alongside every other skill built from this repo), not inside this folder — see the [`bigquery-ml` skill](../../agent-skills/.agents/skills/bigquery-ml/SKILL.md), a use-case-organized (classification / regression / unsupervised / model management / preprocessing / workflows-and-pipelines), gotcha-rich distillation of `RESOURCES.md` built for coding agents, not just human readers.
+
+- **Claude Code** — picked up automatically from `.claude/skills/bigquery-ml` (a repo-root symlink into `agent-skills/`) anywhere in this repo; no setup needed. It activates automatically when your request matches — training/evaluating/deploying a model, picking a preprocessing function, choosing an orchestration pipeline — or invoke it explicitly.
+- **Google Antigravity, Codex, and other `.agents/skills/`-compatible tools** — discovered from the repo-root `.agents/skills/bigquery-ml/` symlink, using the same `SKILL.md` files.
+- **Standalone / other repos** — the whole `agent-skills/.agents/skills/bigquery-ml/` folder is self-contained and can be copied into any other project.
+
+Not sure whether BigQuery ML or [BigQuery AI Functions](../bq-ai-functions/) fits your task? The [`choosing-a-bigquery-ai-approach`](../../agent-skills/.agents/skills/choosing-a-bigquery-ai-approach/SKILL.md) skill triages between the two.
 
 ## Models
 
