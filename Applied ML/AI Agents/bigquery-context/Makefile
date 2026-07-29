@@ -1,4 +1,4 @@
-.PHONY: help install setup cleanup test lint format check clean
+.PHONY: help install setup cleanup report test lint format check clean
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -14,6 +14,9 @@ setup: ## Create BQ datasets, views, and Dataplex profile scans
 
 cleanup: ## Delete all BQ datasets and Dataplex scans created by setup
 	uv run python scripts/cleanup.py
+
+report: ## Render report.pdf from readme.md + examples/results.md
+	uv run --with weasyprint --with markdown python examples/build_report.py
 
 test: ## Run all tests
 	uv run pytest

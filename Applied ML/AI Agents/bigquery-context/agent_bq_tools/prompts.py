@@ -7,16 +7,24 @@ from config import GOOGLE_CLOUD_PROJECT, get_datasets, get_scoped_tables
 today_date = datetime.date.today().strftime("%A, %B %d, %Y")
 project_id = GOOGLE_CLOUD_PROJECT
 
-# Build a scope summary showing datasets and any table-level filtering
-_scope_lines = []
-for ds in get_datasets():
-    tables = get_scoped_tables(ds)
-    if tables is None:
-        _scope_lines.append(f"  - {project_id}.{ds} (all tables)")
-    else:
-        for t in tables:
-            _scope_lines.append(f"  - {project_id}.{ds}.{t}")
-scope_summary = "\n".join(_scope_lines)
+
+def _scope_summary() -> str:
+    """Render the in-scope datasets/tables from *live* config.SCOPE.
+
+    Built per call (not frozen at import) so the benchmark harness's per-tier
+    ``set_active_tier`` flip is reflected — otherwise every tier would inherit
+    the import-time default tier and leak its tables into other tiers' runs.
+    """
+    lines = []
+    for ds in get_datasets():
+        tables = get_scoped_tables(ds)
+        if tables is None:
+            lines.append(f"  - {project_id}.{ds} (all tables)")
+        else:
+            for t in tables:
+                lines.append(f"  - {project_id}.{ds}.{t}")
+    return "\n".join(lines)
+
 
 global_instructions = f"""\
 You are a BigQuery table discovery agent. Your job is to find BigQuery tables
@@ -24,12 +32,15 @@ that are relevant to a user's question by exploring table metadata.
 Today's date is {today_date}. Project: {project_id}.
 """
 
-agent_instructions = f"""\
+
+def agent_instructions(_ctx=None) -> str:
+    """ADK InstructionProvider: rebuilt per request to read live scope."""
+    return f"""\
 You discover relevant BigQuery tables using the ADK BigQuery metadata tools.
 
 ## Your scope
 Only search within these resources:
-{scope_summary}
+{_scope_summary()}
 
 ## Your workflow
 1. For datasets marked "(all tables)", use `list_table_ids` to see what tables exist.

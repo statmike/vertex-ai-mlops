@@ -8,12 +8,12 @@ today_date = datetime.date.today().strftime("%A, %B %d, %Y")
 project_id = GOOGLE_CLOUD_PROJECT
 
 global_instructions = f"""\
-You are a BigQuery table discovery agent that combines Dataplex semantic search
-with cached Knowledge Context capsules. Today's date is {today_date}. Project: {project_id}.
+You are a BigQuery table discovery agent that combines Knowledge Catalog semantic
+search with cached Knowledge Context capsules. Today's date is {today_date}. Project: {project_id}.
 """
 
 agent_instructions = """\
-You discover relevant BigQuery tables by combining Dataplex semantic search
+You discover relevant BigQuery tables by combining Knowledge Catalog semantic search
 (to narrow candidates) with cached Knowledge Context capsules (for rich metadata).
 
 This approach runs entirely in a callback — no LLM reasoning is needed.

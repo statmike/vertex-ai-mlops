@@ -1,6 +1,6 @@
 """Pydantic schemas for the bigquery-context reranker output.
 
-All three discovery approaches produce the same RerankerResponse,
+All five discovery approaches produce the same RerankerResponse,
 making results directly comparable regardless of the discovery method.
 """
 
@@ -42,7 +42,10 @@ class RankedTable(BaseModel):
     )
     reasoning: str = Field(description="Why this table is relevant to the user's question")
     discovery_method: str = Field(
-        description="Which approach found this table: bq_tools, dataplex_search, dataplex_context"
+        description=(
+            "Which approach found this table: bq_tools, kc_search, kc_context, "
+            "context_prefilter, semantic_context"
+        )
     )
     table_description: str = Field(
         default="", description="Business description of the table"
@@ -70,7 +73,7 @@ class RerankerResponse(BaseModel):
     """Ranked list of BigQuery tables relevant to a user's question.
 
     Produced by the reranker tool after any discovery approach.
-    All three approaches return this same schema.
+    All five approaches return this same schema.
     """
 
     question: str = Field(description="The original user question")

@@ -35,7 +35,7 @@ async def discover_and_rerank(callback_context: CallbackContext):
     nominated_ids = get_table_ids()
 
     # Store nominations in state (all cached tables for this approach)
-    callback_context.state["nominated_tables_dataplex_context"] = nominated_ids
+    callback_context.state["nominated_tables_kc_context"] = nominated_ids
 
     if not context:
         empty = RerankerResponse(
@@ -44,13 +44,13 @@ async def discover_and_rerank(callback_context: CallbackContext):
             ranked_tables=[],
             notes="No knowledge context available.",
         )
-        callback_context.state["reranker_result_dataplex_context"] = (
+        callback_context.state["reranker_result_kc_context"] = (
             empty.model_dump_json()
         )
         return types.Content(
             role="model",
             parts=[types.Part(text=(
-                "**[Approach 3: Dataplex Context]**\n\n"
+                "**[Approach 3: Knowledge Catalog Context]**\n\n"
                 "No knowledge context available for tables in scope."
             ))],
         )
@@ -61,16 +61,16 @@ async def discover_and_rerank(callback_context: CallbackContext):
         call_reranker,
         question=question,
         candidate_metadata=context,
-        discovery_method="dataplex_context",
+        discovery_method="kc_context",
         top_k=top_k,
     )
 
-    callback_context.state["reranker_result_dataplex_context"] = (
+    callback_context.state["reranker_result_kc_context"] = (
         result.model_dump_json()
     )
     return types.Content(
         role="model",
         parts=[types.Part(text=format_reranker_markdown(
-            result, "Approach 3: Dataplex Context"
+            result, "Approach 3: Knowledge Catalog Context"
         ))],
     )
