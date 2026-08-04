@@ -82,8 +82,13 @@ logging.basicConfig(
 logger = logging.getLogger("benchmark")
 
 for name in (
-    "google.adk", "google.auth", "google.genai", "urllib3",
-    "httpcore", "httpx", "grpc",
+    "google.adk",
+    "google.auth",
+    "google.genai",
+    "urllib3",
+    "httpcore",
+    "httpx",
+    "grpc",
 ):
     logging.getLogger(name).setLevel(logging.WARNING)
 
@@ -99,6 +104,7 @@ APPROACHES = [
     ("kc_context", "agent_kc_context.agent", "3: KC Context"),
     ("context_prefilter", "agent_context_prefilter.agent", "4: Context Pre-Filter"),
     ("semantic_context", "agent_semantic_context.agent", "5: Semantic Context"),
+    ("search_direct", "agent_search_direct.agent", "6: Search Direct"),
 ]
 
 
@@ -193,9 +199,7 @@ async def run_cell(
     qid = question["id"]
     text = question["question"]
 
-    session = await runner.session_service.create_session(
-        app_name=app_name, user_id=USER_ID
-    )
+    session = await runner.session_service.create_session(app_name=app_name, user_id=USER_ID)
     user_message = types.Content(role="user", parts=[types.Part(text=text)])
 
     reset_usage()
@@ -216,9 +220,10 @@ async def run_cell(
     state = final.state
 
     nominated = state.get(f"nominated_tables_{approach}", [])
-    # Search-based approaches record raw-vs-filtered page stats (the ``parent:``
-    # scope predicate is advisory, so the API can fill the page with out-of-scope
-    # tables our filter drops). Absent for the full-corpus approaches.
+    # Search-based approaches record raw-vs-filtered page stats. With the bare
+    # query syntax the ``parent:`` predicate is honored, so raw and in-scope
+    # counts should match; the client-side filter is defense-in-depth. Absent for
+    # the full-corpus approaches.
     search_stats = state.get(f"search_stats_{approach}")
 
     ranked_tables = []
@@ -268,15 +273,21 @@ async def run_cell(
 async def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runs", type=int, default=5, help="Replicates per cell (n)")
-    parser.add_argument("--tier", type=int, action="append",
-                        help="Restrict to tier(s); repeatable. Default: all.")
-    parser.add_argument("--approach", type=str, action="append",
-                        help="Restrict to approach key(s); repeatable. Default: all.")
+    parser.add_argument(
+        "--tier", type=int, action="append", help="Restrict to tier(s); repeatable. Default: all."
+    )
+    parser.add_argument(
+        "--approach",
+        type=str,
+        action="append",
+        help="Restrict to approach key(s); repeatable. Default: all.",
+    )
     parser.add_argument("--category", type=str, help="Filter questions by category")
     parser.add_argument("--id", type=str, help="Run a single question by ID")
     parser.add_argument("--resume", action="store_true", help="Skip completed cells")
-    parser.add_argument("--delay", type=float, default=1.0,
-                        help="Seconds between cells (rate-limit cushion)")
+    parser.add_argument(
+        "--delay", type=float, default=1.0, help="Seconds between cells (rate-limit cushion)"
+    )
     parser.add_argument("--results", type=str, default=str(RESULTS_FILE))
     args = parser.parse_args()
 
@@ -306,15 +317,19 @@ async def main():
 
     total = len(tiers) * len(questions) * len(approaches) * args.runs
     logger.info(
-        "Factorial sweep: %d tier(s) × %d question(s) × %d approach(es) × %d run(s) "
-        "= %d cells",
-        len(tiers), len(questions), len(approaches), args.runs, total,
+        "Factorial sweep: %d tier(s) × %d question(s) × %d approach(es) × %d run(s) = %d cells",
+        len(tiers),
+        len(questions),
+        len(approaches),
+        args.runs,
+        total,
     )
 
     done = 0
     for tier in tiers:
-        logger.info("=== TIER %d — repopulating cache + scoping to %s ===",
-                    tier, config.tier_dataset(tier))
+        logger.info(
+            "=== TIER %d — repopulating cache + scoping to %s ===", tier, config.tier_dataset(tier)
+        )
         # Flips config.SCOPE to the single tier dataset AND rebuilds the cache
         # for the context approaches. Correctness-critical: one tier per run.
         repopulate_for_tier(tier)
@@ -325,23 +340,26 @@ async def main():
                 for run_idx in range(args.runs):
                     ck = cell_key(question["id"], key, tier, run_idx)
                     done += 1
-                    if args.resume and ck in existing:
+                    # Resume skips only *successful* cells; error cells (e.g. a
+                    # transient 429) are re-run so a resume pass is self-healing.
+                    if args.resume and ck in existing and "error" not in existing[ck]:
                         logger.info("[%d/%d] skip (done): %s", done, total, ck)
                         continue
                     try:
-                        cell = await run_cell(
-                            runner, app_name, key, tier, run_idx, question
-                        )
+                        cell = await run_cell(runner, app_name, key, tier, run_idx, question)
                         existing[ck] = cell
                         save_results(results_path, metadata, existing)
                         logger.info(
                             "[%d/%d] %s — %.2fs, %d ranked, %d tok",
-                            done, total, ck, cell["latency_s"],
-                            cell["ranked_count"], cell["reranker_total_tokens"],
+                            done,
+                            total,
+                            ck,
+                            cell["latency_s"],
+                            cell["ranked_count"],
+                            cell["reranker_total_tokens"],
                         )
                     except Exception as e:
-                        logger.error("[%d/%d] FAILED %s: %s", done, total, ck, e,
-                                    exc_info=True)
+                        logger.error("[%d/%d] FAILED %s: %s", done, total, ck, e, exc_info=True)
                         existing[ck] = {
                             "cell_key": ck,
                             "question_id": question["id"],

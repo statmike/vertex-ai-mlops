@@ -1,7 +1,7 @@
 [project]
 name = "bigquery-context"
 version = "0.1.0"
-description = "Five approaches to BigQuery table discovery for AI agents: BQ metadata tools, Knowledge Catalog search, Knowledge Context API, LLM context pre-filter, and semantic context."
+description = "Six approaches to BigQuery table discovery for AI agents: BQ metadata tools, Knowledge Catalog search, Knowledge Context API, LLM context pre-filter, semantic context, and search-direct."
 readme = "readme.md"
 requires-python = ">=3.13.3"
 dependencies = [

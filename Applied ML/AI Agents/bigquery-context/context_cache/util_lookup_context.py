@@ -116,10 +116,7 @@ def lookup_context(
     client = _get_client()
 
     request = dataplex_v1.LookupContextRequest(
-        name=(
-            f"projects/{GOOGLE_CLOUD_PROJECT}"
-            f"/locations/{BQ_LOCATION.lower()}"
-        ),
+        name=(f"projects/{GOOGLE_CLOUD_PROJECT}/locations/{BQ_LOCATION.lower()}"),
         resources=entry_names,
         options={"format": format.lower()},
     )

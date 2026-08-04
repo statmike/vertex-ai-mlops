@@ -105,11 +105,13 @@ def _record_usage(response) -> None:
     usage = getattr(response, "usage_metadata", None)
     if usage is None:
         return
-    _USAGE_LOG.append({
-        "prompt_tokens": getattr(usage, "prompt_token_count", 0) or 0,
-        "output_tokens": getattr(usage, "candidates_token_count", 0) or 0,
-        "total_tokens": getattr(usage, "total_token_count", 0) or 0,
-    })
+    _USAGE_LOG.append(
+        {
+            "prompt_tokens": getattr(usage, "prompt_token_count", 0) or 0,
+            "output_tokens": getattr(usage, "candidates_token_count", 0) or 0,
+            "total_tokens": getattr(usage, "total_token_count", 0) or 0,
+        }
+    )
 
 
 def _get_client() -> genai.Client:
@@ -198,9 +200,7 @@ def format_reranker_markdown(result: RerankerResponse, label: str) -> str:
         lines.append(result.notes or "No relevant tables found.")
         return "\n".join(lines)
 
-    lines.append(
-        f"Found **{len(result.ranked_tables)}** relevant table(s):"
-    )
+    lines.append(f"Found **{len(result.ranked_tables)}** relevant table(s):")
     lines.append("")
 
     for t in result.ranked_tables:

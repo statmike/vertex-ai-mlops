@@ -12,9 +12,9 @@ GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT", "")
 GOOGLE_CLOUD_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 
 # --- Models ---
-AGENT_MODEL = os.getenv("AGENT_MODEL", "gemini-2.5-flash")
+AGENT_MODEL = os.getenv("AGENT_MODEL", "gemini-3.6-flash")
 AGENT_MODEL_LOCATION = os.getenv("AGENT_MODEL_LOCATION", "")
-TOOL_MODEL = os.getenv("TOOL_MODEL", "gemini-2.5-flash")
+TOOL_MODEL = os.getenv("TOOL_MODEL", "gemini-3.5-flash-lite")
 TOOL_MODEL_LOCATION = os.getenv("TOOL_MODEL_LOCATION", "")
 
 # ADK uses GOOGLE_CLOUD_LOCATION for model endpoints. Override it when a
@@ -57,7 +57,7 @@ def tier_dataset(tier: int) -> str:
 #   "dataset"             — all tables in that dataset
 #   "dataset.table"       — only that specific table
 #
-# Scoped to the single ACTIVE_TIER dataset so all five discovery approaches see
+# Scoped to the single ACTIVE_TIER dataset so all six discovery approaches see
 # one consistent copy of the corpus. Agents discover the metadata at runtime via
 # BQ API, Knowledge Catalog, etc.
 # ---------------------------------------------------------------------------
@@ -79,6 +79,7 @@ def set_active_tier(tier: int) -> None:
 # ---------------------------------------------------------------------------
 # Helpers — parse SCOPE into datasets, tables, and filters
 # ---------------------------------------------------------------------------
+
 
 def get_datasets() -> list[str]:
     """Return unique dataset names from SCOPE (preserving order)."""
@@ -114,13 +115,4 @@ def get_dataplex_entry_name(dataset: str, table: str) -> str:
         f"projects/{GOOGLE_CLOUD_PROJECT}/locations/{BQ_LOCATION.lower()}"
         f"/entryGroups/@bigquery/entries/bigquery.googleapis.com"
         f"/projects/{GOOGLE_CLOUD_PROJECT}/datasets/{dataset}/tables/{table}"
-    )
-
-
-def get_dataplex_dataset_entry_name(dataset: str) -> str:
-    """Build a Dataplex entry name for a BQ dataset in this project."""
-    return (
-        f"projects/{GOOGLE_CLOUD_PROJECT}/locations/{BQ_LOCATION.lower()}"
-        f"/entryGroups/@bigquery/entries/bigquery.googleapis.com"
-        f"/projects/{GOOGLE_CLOUD_PROJECT}/datasets/{dataset}"
     )

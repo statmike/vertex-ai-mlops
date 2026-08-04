@@ -112,7 +112,7 @@ DEFINITION_ENTRY_LINK_TYPE = (
 # CORPUS — the single set of tables, replicated into every tier dataset.
 #
 # Each view is free (zero storage cost) and places the table in your project's
-# Knowledge Catalog so all five discovery approaches work equally. A ``role`` of
+# Knowledge Catalog so all six discovery approaches work equally. A ``role`` of
 # "distractor" marks look-alike tables that are never a correct answer — they
 # exist so precision and trap questions are meaningful (see examples/questions.json).
 # ---------------------------------------------------------------------------

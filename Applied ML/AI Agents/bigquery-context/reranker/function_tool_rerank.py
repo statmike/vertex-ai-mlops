@@ -1,7 +1,8 @@
-"""Shared reranker tool used by all five discovery agents.
+"""Shared reranker tool used by five of the six discovery agents.
 
-Takes candidate table metadata (as a string) from any discovery approach
-and produces a ranked RerankerResponse via Gemini structured output.
+Takes candidate table metadata (as a string) from any discovery approach and
+produces a ranked RerankerResponse via Gemini structured output. (Approach 6,
+Search Direct, skips the reranker and uses semantic search's own ranking.)
 """
 
 import asyncio

@@ -8,7 +8,6 @@ from .cache import (
     get_all_detailed,
     get_detailed_for_tables,
     get_table_ids,
-    is_cached,
     repopulate_for_tier,
 )
 
@@ -17,6 +16,5 @@ __all__ = [
     "get_all_detailed",
     "get_detailed_for_tables",
     "get_table_ids",
-    "is_cached",
     "repopulate_for_tier",
 ]

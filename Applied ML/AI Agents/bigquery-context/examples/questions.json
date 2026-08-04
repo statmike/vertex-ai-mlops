@@ -140,6 +140,76 @@
     }
   },
   {
+    "id": "multi-disp-q6",
+    "category": "multi-table-disparate",
+    "question": "Which Austin ZIP codes have the most reported crimes per capita?",
+    "relevance": {
+      "must_have": ["austin_crime", "population_by_zip_2010"],
+      "nice_to_have": ["zip_codes"],
+      "distractor": ["unemployment_cps"]
+    }
+  },
+  {
+    "id": "multi-disp-q7",
+    "category": "multi-table-disparate",
+    "question": "Which Austin ZIP codes have the most reported crime relative to their resident population?",
+    "relevance": {
+      "must_have": ["austin_crime", "population_by_zip_2010"],
+      "nice_to_have": ["zip_codes"],
+      "distractor": ["unemployment_cps"]
+    }
+  },
+  {
+    "id": "multi-disp-q8",
+    "category": "multi-table-disparate",
+    "question": "Which Austin ZIP codes have the most reported crimes per square mile?",
+    "relevance": {
+      "must_have": ["austin_crime", "zip_codes"],
+      "nice_to_have": [],
+      "distractor": []
+    }
+  },
+  {
+    "id": "multi-disp-q9",
+    "category": "multi-table-disparate",
+    "question": "Which Austin ZIP codes have the most reported crime relative to their land area?",
+    "relevance": {
+      "must_have": ["austin_crime", "zip_codes"],
+      "nice_to_have": [],
+      "distractor": []
+    }
+  },
+  {
+    "id": "multi-disp-q10",
+    "category": "multi-table-disparate",
+    "question": "Which US counties have the most weather stations relative to their resident population?",
+    "relevance": {
+      "must_have": ["us_counties", "weather_stations", "population_by_zip_2010"],
+      "nice_to_have": ["zip_codes"],
+      "distractor": []
+    }
+  },
+  {
+    "id": "multi-disp-q11",
+    "category": "multi-table-disparate",
+    "question": "Which US counties have the highest number of births per capita?",
+    "relevance": {
+      "must_have": ["county_natality", "population_by_zip_2010"],
+      "nice_to_have": ["us_counties", "zip_codes"],
+      "distractor": []
+    }
+  },
+  {
+    "id": "multi-disp-q12",
+    "category": "multi-table-disparate",
+    "question": "Which US counties have the most births relative to their resident population?",
+    "relevance": {
+      "must_have": ["county_natality", "population_by_zip_2010"],
+      "nice_to_have": ["us_counties", "zip_codes"],
+      "distractor": []
+    }
+  },
+  {
     "id": "trap-q1",
     "category": "trap",
     "question": "Which Austin bike share stations currently have the most open docks?",

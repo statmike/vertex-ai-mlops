@@ -1,7 +1,8 @@
 """Pydantic schemas for the bigquery-context reranker output.
 
-All five discovery approaches produce the same RerankerResponse,
-making results directly comparable regardless of the discovery method.
+All six discovery approaches produce the same RerankerResponse, making results
+directly comparable regardless of the discovery method. Five build it from the
+shared reranker; Search Direct builds it from semantic search's own order.
 """
 
 from pydantic import BaseModel, Field
@@ -18,7 +19,8 @@ class ColumnHint(BaseModel):
         default=False, description="Whether this column is useful in WHERE clauses"
     )
     useful_for_aggregation: bool = Field(
-        default=False, description="Whether this column is useful in GROUP BY or aggregate functions"
+        default=False,
+        description="Whether this column is useful in GROUP BY or aggregate functions",
     )
 
 
@@ -37,19 +39,15 @@ class RankedTable(BaseModel):
 
     table_id: str = Field(description="Fully qualified table ID (project.dataset.table)")
     rank: int = Field(description="Rank position (1 = most relevant)")
-    confidence: float = Field(
-        ge=0.0, le=1.0, description="Confidence score from 0.0 to 1.0"
-    )
+    confidence: float = Field(ge=0.0, le=1.0, description="Confidence score from 0.0 to 1.0")
     reasoning: str = Field(description="Why this table is relevant to the user's question")
     discovery_method: str = Field(
         description=(
             "Which approach found this table: bq_tools, kc_search, kc_context, "
-            "context_prefilter, semantic_context"
+            "context_prefilter, semantic_context, search_direct"
         )
     )
-    table_description: str = Field(
-        default="", description="Business description of the table"
-    )
+    table_description: str = Field(default="", description="Business description of the table")
     key_columns: list[ColumnHint] = Field(
         default_factory=list, description="Important columns for answering the question"
     )
@@ -63,17 +61,14 @@ class RankedTable(BaseModel):
     join_suggestions: list[JoinSuggestion] = Field(
         default_factory=list, description="Suggested joins to other tables in scope"
     )
-    row_count: int | None = Field(default=None, description="Approximate row count if known")
-    last_modified: str | None = Field(
-        default=None, description="Last modification timestamp if known"
-    )
 
 
 class RerankerResponse(BaseModel):
     """Ranked list of BigQuery tables relevant to a user's question.
 
-    Produced by the reranker tool after any discovery approach.
-    All five approaches return this same schema.
+    Produced by the reranker tool after any discovery approach (or, for Search
+    Direct, built from semantic search's own ranking). All six approaches return
+    this same schema.
     """
 
     question: str = Field(description="The original user question")

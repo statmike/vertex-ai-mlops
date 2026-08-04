@@ -12,10 +12,9 @@ Knowledge Catalog is the product formerly called Dataplex Universal Catalog
 from google.adk import agents
 
 from config import AGENT_MODEL
-from reranker import TOOLS as RERANKER_TOOLS
+
 from . import prompts
 from .tools import discover_and_rerank
-
 
 root_agent = agents.Agent(
     name="agent_kc_search",
@@ -26,6 +25,6 @@ root_agent = agents.Agent(
     ),
     global_instruction=prompts.global_instructions,
     instruction=prompts.agent_instructions,
-    tools=RERANKER_TOOLS,
+    tools=[],
     before_agent_callback=discover_and_rerank,
 )

@@ -5,13 +5,12 @@ Uses the ADK BigQueryToolset filtered to discovery-only tools
 plus the shared reranker tool.
 """
 
-import os
-
 from google.adk import agents
 from google.adk.tools import bigquery as bq_tools
 
 from config import AGENT_MODEL, GOOGLE_CLOUD_PROJECT
 from reranker import TOOLS as RERANKER_TOOLS
+
 from . import prompts
 from .callback_filter_scope import filter_scope
 

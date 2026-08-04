@@ -84,8 +84,7 @@ def _build_brief(entry: dict) -> dict:
             continue
         if key == "schema":
             brief["schema"] = [
-                {k: v for k, v in col.items() if k != "dataProfile"}
-                for col in value
+                {k: v for k, v in col.items() if k != "dataProfile"} for col in value
             ]
         else:
             brief[key] = value
@@ -123,9 +122,7 @@ def populate_cache() -> None:
         if not table_list:
             continue
 
-        entry_names = [
-            get_dataplex_entry_name(dataset, tbl_name) for tbl_name, _ in table_list
-        ]
+        entry_names = [get_dataplex_entry_name(dataset, tbl_name) for tbl_name, _ in table_list]
 
         # Batched lookupContext — up to 10 per API call, merged into one JSON array
         context_json = lookup_context_batched(entry_names)
@@ -233,11 +230,6 @@ def get_table_ids() -> list[str]:
     Useful for validation and prompt building.
     """
     return list(_CACHE.keys())
-
-
-def is_cached(full_id: str) -> bool:
-    """Check whether a table is in the cache."""
-    return full_id in _CACHE
 
 
 # ---------------------------------------------------------------------------

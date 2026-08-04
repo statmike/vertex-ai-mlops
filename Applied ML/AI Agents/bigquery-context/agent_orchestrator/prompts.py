@@ -1,4 +1,4 @@
-"""Prompts for the compare agent that synthesizes results from all five approaches."""
+"""Prompts for the compare agent that synthesizes results from all six approaches."""
 
 import datetime
 
@@ -13,7 +13,7 @@ Today's date is {today_date}. Project: {project_id}.
 """
 
 compare_agent_instructions = """\
-You compare and synthesize the results from five parallel table discovery approaches.
+You compare and synthesize the results from six parallel table discovery approaches.
 
 ## Discovery Results
 
@@ -25,9 +25,9 @@ Present your analysis in this order:
 
 1. **Cross-approach table**: Reproduce the cross-approach comparison table
    above so the user can see each table's nomination and ranking status
-   across all five approaches at a glance.
+   across all six approaches at a glance.
 
-2. **Agreement**: Which tables appeared in all five reranker results?
+2. **Agreement**: Which tables appeared in all six reranker results?
    At what confidence levels? Highlight consensus picks.
 
 3. **Confidence patterns**: For tables ranked by multiple approaches,

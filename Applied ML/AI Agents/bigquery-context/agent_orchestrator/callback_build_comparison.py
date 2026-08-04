@@ -1,7 +1,7 @@
 """Callback: assemble discovery results from state for the compare agent.
 
 Runs as ``before_agent_callback`` on the compare agent. Reads all
-nomination and reranker result state keys from the five approaches,
+nomination and reranker result state keys from the six approaches,
 formats a structured summary with a cross-approach comparison table,
 and stores it in ``state["discovery_summary"]``. Returns ``None`` so
 the LLM still runs and reasons over the injected data.
@@ -20,6 +20,7 @@ APPROACHES = [
     ("kc_context", "3: KC Context"),
     ("context_prefilter", "4: Pre-Filter"),
     ("semantic_context", "5: Semantic"),
+    ("search_direct", "6: Search Direct"),
 ]
 
 
@@ -34,7 +35,7 @@ def _format_summary(state: dict) -> str:
         if raw:
             try:
                 parsed_results[key] = RerankerResponse.model_validate(json.loads(raw))
-            except (json.JSONDecodeError, Exception):
+            except Exception:
                 parsed_results[key] = None
         else:
             parsed_results[key] = None
@@ -62,9 +63,7 @@ def _format_summary(state: dict) -> str:
 
     # Sort tables by how many approaches ranked them (most consensus first)
     def sort_key(table_id):
-        ranked_count = sum(
-            1 for key, _ in APPROACHES if table_id in ranks_by_approach[key]
-        )
+        ranked_count = sum(1 for key, _ in APPROACHES if table_id in ranks_by_approach[key])
         best_conf = max(
             (ranks_by_approach[key].get(table_id, (99, 0.0))[1] for key, _ in APPROACHES),
             default=0.0,
@@ -132,15 +131,15 @@ def _format_summary(state: dict) -> str:
             sections.append("")
             continue
 
-        sections.append(
-            "| Rank | Table | Confidence | Key Columns | SQL Hints |"
-        )
+        sections.append("| Rank | Table | Confidence | Key Columns | SQL Hints |")
         sections.append("|---|---|---|---|---|")
         for t in result.ranked_tables:
             norm_id = _normalize_table_id(t.table_id)
-            cols = ", ".join(
-                f"`{c.name}` ({c.data_type})" for c in t.key_columns
-            ) if t.key_columns else ""
+            cols = (
+                ", ".join(f"`{c.name}` ({c.data_type})" for c in t.key_columns)
+                if t.key_columns
+                else ""
+            )
             sections.append(
                 f"| {t.rank} | `{short_name(norm_id)}` | {t.confidence:.2f} "
                 f"| {cols} | {t.sql_hints} |"
