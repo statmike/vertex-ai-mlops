@@ -1,0 +1,55 @@
+[project]
+name = "agent-building"
+version = "0.1.0"
+description = "A learner for the Gemini Enterprise Agent Platform: one multi-agent retail workflow run through every pillar (Build, Scale, Govern, Optimize) with Google ADK."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "google-adk[a2a]>=1.31.0,<2",
+    "google-genai>=1.64.0",
+    "google-cloud-aiplatform[agent_engines,adk,evaluation]>=1.112.0",
+    "google-cloud-bigquery>=3.31.0",
+    "google-cloud-bigquery-connection>=1.0.0",
+    "google-cloud-storage>=2.19.0",
+    "google-cloud-dataplex>=2.20.0",
+    "google-cloud-geminidataanalytics>=0.3.0",
+    "anthropic[vertex]>=0.40.0",
+    "a2a-sdk[http-server]>=0.3.4,<0.4",
+    "uvicorn>=0.34.0",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.10.0",
+    "pandas>=2.2.0",
+    "altair>=5.5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.8.0",
+    "ipykernel>=6.30.0",
+    "db-dtypes>=1.3.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+# Provisioning and deploy are pure CLI scripts, not library code. The optimize/
+# harness IS library code (imported + unit-tested), so it stays linted.
+extend-exclude = ["scripts", "deploy"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501", "B008"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+# Make the root-level config.py importable as `config` from tests.
+pythonpath = ["."]
+testpaths = [
+    "agent_concierge/tests",
+    "agent_concierge/sub_agents/agent_catalog/tests",
+    "agent_concierge/sub_agents/agent_analytics/tests",
+    "agent_discovery/tests",
+    "optimize/tests",
+]

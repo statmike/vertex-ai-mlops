@@ -1,0 +1,22 @@
+# Environment — machine-specific, never checked in (use .env.example as the template)
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.ruff_cache/
+.pytest_cache/
+
+# ADK local sessions
+.adk/
+
+# Generated at deploy time by deploy.py — not checked in
+requirements.txt
+
+# Generated eval/deploy artifacts (folders are kept via their own .gitkeep)
+optimize/results/*
+!optimize/results/.gitkeep
+!optimize/results/.gitignore
+deploy/concierge/deployment.json
+deploy/discovery/deployment.json

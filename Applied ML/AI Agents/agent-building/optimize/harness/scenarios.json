@@ -1,0 +1,50 @@
+[
+  {
+    "id": "return_window",
+    "question": "What is theLook's return window for online orders?",
+    "expected_agent": "agent_catalog",
+    "reference": "Cites the return policy document — a specific number of days within which items can be returned for a refund."
+  },
+  {
+    "id": "sale_returns",
+    "question": "Can I return items I bought on sale, or are those final?",
+    "expected_agent": "agent_catalog",
+    "reference": "Answers from the return policy whether sale/clearance items are returnable or final sale."
+  },
+  {
+    "id": "shipping_time",
+    "question": "How long does standard shipping take once I place an order?",
+    "expected_agent": "agent_catalog",
+    "reference": "Quotes the shipping FAQ for standard delivery timeframe."
+  },
+  {
+    "id": "top_category_sales",
+    "question": "Which product category has generated the most sales revenue?",
+    "expected_agent": "agent_analytics",
+    "reference": "Returns a category name backed by summed order/order_items revenue from live BigQuery data."
+  },
+  {
+    "id": "orders_last_month",
+    "question": "How many orders were completed in the most recent full month of data?",
+    "expected_agent": "agent_analytics",
+    "reference": "Returns a numeric order count derived from the orders table for the latest month."
+  },
+  {
+    "id": "avg_order_value",
+    "question": "What is the average order value across all completed orders?",
+    "expected_agent": "agent_analytics",
+    "reference": "Returns a dollar figure computed from order_items sale prices over completed orders."
+  },
+  {
+    "id": "tables_about_orders",
+    "question": "What tables do you have that contain information about orders?",
+    "expected_agent": "agent_discovery",
+    "reference": "Lists catalog entries such as orders and order_items with a short description of each."
+  },
+  {
+    "id": "where_is_customer_data",
+    "question": "Where can I find data about customers and their locations?",
+    "expected_agent": "agent_discovery",
+    "reference": "Points to the users table (and related fields) from the data catalog."
+  }
+]

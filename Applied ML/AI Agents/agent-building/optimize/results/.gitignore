@@ -1,0 +1,4 @@
+# Generated eval artifacts — keep the folder, ignore its contents.
+*
+!.gitignore
+!.gitkeep
