@@ -22,7 +22,34 @@ import dotenv
 dotenv.load_dotenv(dotenv_path=Path(__file__).resolve().parent / ".env")
 
 # --- Google Cloud ---
-GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT", "")
+def _project_id(raw: str) -> str:
+    """Return the project *ID*, resolving from a project number if needed.
+
+    Agent Runtime injects the reserved ``GOOGLE_CLOUD_PROJECT`` env var as the
+    project *number*, but resource identifiers that must textually match — BigQuery
+    fully-qualified table names, and especially the Knowledge Catalog ``parent:``
+    search predicate (entries are named ``bigquery:{project_id}.dataset.table``) —
+    need the project *ID*. A number silently matches nothing, so the deployed
+    discovery agent's catalog search returns zero rows while it works locally.
+
+    Locally the value from .env is already the ID (contains letters), so this is a
+    no-op and makes no network call. Only a purely numeric value triggers a
+    Resource Manager lookup to convert it.
+    """
+    if not raw or not raw.isdigit():
+        return raw
+    try:
+        from google.cloud import resourcemanager_v3
+
+        client = resourcemanager_v3.ProjectsClient()
+        return client.get_project(name=f"projects/{raw}").project_id
+    except Exception:
+        # If resolution fails, fall back to the raw value rather than crashing at
+        # import; call sites that only need a BigQuery client still work.
+        return raw
+
+
+GOOGLE_CLOUD_PROJECT = _project_id(os.getenv("GOOGLE_CLOUD_PROJECT", ""))
 GOOGLE_CLOUD_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 
 # --- Router / reasoning model (agent_concierge) ---
