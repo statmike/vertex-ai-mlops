@@ -30,3 +30,17 @@ def test_explicit_url_overrides_host_port(monkeypatch):
     url = discovery_agent_card_url()
     assert url.startswith("https://svc.example.com/")
     assert url.endswith(AGENT_CARD_WELL_KNOWN_PATH.lstrip("/"))
+
+
+def test_deployed_runtime_uses_authenticated_card_path(monkeypatch):
+    """A deployed Agent Runtime serves an authenticated /v1/card, not well-known."""
+    import config
+
+    runtime_url = (
+        "https://us-central1-aiplatform.googleapis.com/v1beta1/projects/1/"
+        "locations/us-central1/reasoningEngines/123/a2a"
+    )
+    monkeypatch.setattr(config, "DISCOVERY_A2A_URL", runtime_url, raising=False)
+    url = discovery_agent_card_url()
+    assert url == f"{runtime_url}/v1/card"
+    assert ".well-known" not in url

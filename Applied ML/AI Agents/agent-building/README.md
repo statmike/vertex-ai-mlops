@@ -115,8 +115,8 @@ agent-building/
 │
 ├── deploy/                        # *** Phase 2: Scale + Govern → Agent Runtime ***
 │   ├── deploy.py                  # multi-target CLI: concierge | discovery
-│   ├── entrypoint_concierge.py    # AdkApp(app=...) — ships the observability plugin
-│   ├── entrypoint_discovery.py    # AdkApp(agent=...) for the standalone A2A agent
+│   ├── entrypoint_concierge.py    # AdkApp(app=...) — source mode, ships the observability plugin
+│   ├── entrypoint_discovery.py    # A2aAgent(...) — object mode, native A2A on Runtime
 │   └── interact.ipynb             # sessions + Memory Bank walkthrough on a deployment
 │
 ├── optimize/                      # *** Phase 3: Optimize — eval, simulation, observability ***
@@ -186,7 +186,9 @@ make deploy-discovery      # deploy the standalone A2A agent first (it's the dep
 make deploy-concierge      # deploy the router + in-process specialists
 ```
 
-The two composition styles become **two separate Runtime resources**. The concierge's `RemoteA2aAgent` wiring is unchanged from local — only discovery's URL differs, and the hop is now authenticated (a token-refreshing client for the `googleapis.com` endpoint, `None` for localhost; see [`utils/auth.py`](agent_concierge/utils/auth.py)).
+The two composition styles become **two separate Runtime resources** — deployed two different ways. The concierge ships in **source mode** as an `AdkApp` (its Python is uploaded and it exposes `stream_query`). Discovery ships in **object mode** as an [`A2aAgent`](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/overview), which Agent Runtime serves as a real, native **A2A** endpoint. The concierge's `RemoteA2aAgent` wiring is unchanged from local — only discovery's URL differs, and the hop is now authenticated (a token-refreshing client for the `googleapis.com` endpoint, `None` for localhost; see [`utils/auth.py`](agent_concierge/utils/auth.py)).
+
+> **Why this project runs on google-adk 2.x.** Serving native A2A on Agent Runtime uses the `A2aAgent` template, which requires A2A protocol **v1.0** types that ship only in `a2a-sdk` 1.x — and ADK lifts its `a2a-sdk` cap to allow that only at **2.5.0+**. The deployed cross-Runtime A2A hop is therefore a 2.x capability; on ADK 1.x it cannot be served. Locally, the v0.3 well-known card path still works, and the consumer branches on the endpoint to pick the right card path and protocol. See [`deploy/readme.md`](deploy/readme.md) for the wiring.
 
 **Scale** — deployment gives you, with no extra code:
 

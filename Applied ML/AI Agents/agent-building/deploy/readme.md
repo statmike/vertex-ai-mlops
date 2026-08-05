@@ -57,22 +57,32 @@ Agent Runtime gives every deployed ADK agent, with no extra code:
 This is the same hybrid architecture from Phase 1, now at Runtime scale. The two
 composition styles map onto **two separate Runtime resources**:
 
-| Target | What deploys | Runs where | Reached how |
+| Target | What deploys | Deploy mode | Reached how |
 |---|---|---|---|
-| **`discovery`** | `agent_discovery` (Claude on Vertex) + its catalog tool | its own Runtime resource | over **A2A** (auto-hosted agent card) |
-| **`concierge`** | router + in-process `agent_catalog` / `agent_analytics` + observability | its own Runtime resource | `stream_query` API / ADK web |
+| **`discovery`** | `agent_discovery` (Claude on Vertex) + its catalog tool, wrapped in an `A2aAgent` | **object** (cloudpickled) | native **A2A** — Runtime serves the agent card + protocol on `.../a2a` |
+| **`concierge`** | router + in-process `agent_catalog` / `agent_analytics` + observability, wrapped in an `AdkApp` | **source** (uploaded `.py`) | `stream_query` API / ADK web |
 
 Deploy **discovery first** — it's the dependency. Then point the concierge at
 discovery's A2A endpoint and deploy it. The concierge's `RemoteA2aAgent` wiring is
-unchanged from local; only the URL (and now, authentication) differs.
+unchanged from local; only the URL (and now, authentication + protocol version)
+differs.
 
 ```
    Phase 1 (local)                          Phase 2 (deployed)
    ───────────────                          ──────────────────
-   concierge  (adk web)                     concierge  ── Agent Runtime resource
+   concierge  (adk web)                     concierge  ── Agent Runtime resource (AdkApp)
      └─A2A→ localhost:8001                     └─authed A2A→ discovery Runtime resource
-              discovery (uvicorn)                             (auto-hosted agent card)
+              discovery (uvicorn, to_a2a)                    (A2aAgent, native A2A on .../a2a)
 ```
+
+> **Why ADK 2.x here.** Building this deployed hop is exactly why the project
+> runs on **google-adk 2.6+ / a2a-sdk 1.x**. Native A2A on Agent Runtime uses the
+> `vertexai.agent_engines.templates.a2a.A2aAgent` template, which requires A2A
+> protocol **v1.0** types (`supported_interfaces`, `TransportProtocol`,
+> `PROTOCOL_VERSION_CURRENT`) that only ship in `a2a-sdk` 1.x — and ADK only
+> lifts its `a2a-sdk<0.4` cap at 2.5.0+. On ADK 1.x the deployed cross-Runtime A2A
+> hop cannot be served at all. Locally, `to_a2a()` still serves a v0.3 card at the
+> well-known path; the consumer branches on the URL to pick the right card path.
 
 ---
 
@@ -101,33 +111,26 @@ uv run python deploy/deploy.py concierge --info      # resource name + console U
 make deploy-delete                          # tear down both
 ```
 
-Each deploy runs a **local smoke test** first (against the exact `AdkApp` that
-ships). Skip it with `--skip-local-test`.
+Each deploy runs a **local smoke test** first (against the exact object that
+ships — the concierge's `AdkApp`, discovery's in-memory runner). Skip it with
+`--skip-local-test`.
 
 ---
 
 ## How it works
 
-### Source-file deployment
+The two agents ship in **two different deploy modes**, each the natural fit for
+what it exposes. `deploy.py` picks the mode per target from `AGENT_CONFIGS`.
 
-Uses the [source-file deployment method](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/deploy)
+### Concierge — source mode (`AdkApp`)
+
+The concierge uses the [source-file deployment method](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/deploy)
 of the client-based SDK (`google-cloud-aiplatform` v1.112.0+): your Python source
-is uploaded directly — no pickling, no manual staging bucket.
-
-At deploy time, `deploy.py`:
-
-1. Collects the source to ship — every `agent_*` package, the `deploy/` package,
-   **and the root `config.py`** (this project shares one root config across all
-   agents, so it must travel with the source).
-2. Generates a `requirements.txt` from `pyproject.toml` (removed afterward).
-3. Uploads it with the entrypoint, [class-methods spec](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/sessions/manage-with-adk), and env vars.
-
-### Entrypoints — `AdkApp`, not a raw agent
-
-Agent Runtime needs an [`AdkApp`](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/develop/adk)
+is uploaded directly — no pickling. Agent Runtime needs an
+[`AdkApp`](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/develop/adk)
 so it can expose `stream_query`, `create_session`, and the Memory Bank methods as
-API endpoints. Thin entrypoint modules build it without touching the `agent.py`
-files that also serve `adk web`:
+API endpoints. A thin entrypoint module builds it without touching the `agent.py`
+that also serves `adk web`:
 
 ```python
 # deploy/entrypoint_concierge.py
@@ -136,8 +139,38 @@ from agent_concierge.agent import app as concierge_app   # the ADK App (carries 
 app = AdkApp(app=concierge_app, enable_tracing=True)
 ```
 
-Note the concierge wraps its ADK **`App`** (so the observability plugin ships too),
-while discovery wraps its raw `root_agent`.
+The concierge wraps its ADK **`App`** so the observability plugin ships too. At
+deploy time `deploy.py`:
+
+1. Collects the source to ship — every `agent_*` package, the `deploy/` package,
+   **and the root `config.py`** (this project shares one root config across all
+   agents, so it must travel with the source).
+2. Generates a `requirements.txt` from `pyproject.toml` (removed afterward).
+3. Uploads it with the entrypoint, [class-methods spec](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/sessions/manage-with-adk), and env vars.
+
+### Discovery — object mode (`A2aAgent`)
+
+The discovery agent doesn't expose `stream_query`; it speaks **native A2A**. That
+comes from the `vertexai.agent_engines.templates.a2a.A2aAgent` template, which
+Agent Runtime serves as a real A2A endpoint (agent card + JSON protocol) at
+`.../reasoningEngines/{id}/a2a`. `entrypoint_discovery.py` builds one:
+
+```python
+# deploy/entrypoint_discovery.py (sketch)
+from vertexai.agent_engines.templates.a2a import A2aAgent
+# 1. Build the ADK agent card, then retarget its primary interface to the
+#    template's required binding — AgentCardBuilder emits JSONRPC, but A2aAgent
+#    requires HTTP+JSON / protocol v1.0 or it raises ValueError.
+# 2. Wrap the discovery Runner in an A2aAgentExecutor(use_legacy=False).
+app = A2aAgent(agent_card=..., agent_executor_builder=...)
+```
+
+Because `A2aAgent` is a live template object (not just source), discovery deploys
+in **object mode**: `client.agent_engines.create(agent=<A2aAgent>, config={...})`
+cloudpickles the object and ships `agent_discovery` + `config.py` as extra
+packages. `A2aAgent.set_up()` rewrites the card's URL to the live Runtime endpoint
+at deploy time, and `register_operations()` publishes the A2A surface — no
+class-methods spec.
 
 ### Sessions + Memory Bank — mostly automatic
 
@@ -155,12 +188,22 @@ See the [ADK Memory Bank quickstart](https://docs.cloud.google.com/gemini-enterp
 
 ### The authenticated A2A hop
 
-Local discovery is plain HTTP on `localhost`. A **deployed** discovery agent's A2A
-endpoint lives under `*-aiplatform.googleapis.com` and requires an authenticated,
-auto-refreshing token. `agent_concierge/utils/auth.py` returns a token-refreshing
-`httpx` client for a `googleapis.com` URL and `None` for localhost, so the same
-`RemoteA2aAgent` works both places. (An A2A consumer configured this way is best
-run from `adk web` or Cloud Run; see the [walkthrough notebook](interact.ipynb).)
+Local discovery is plain HTTP on `localhost`, and `to_a2a()` serves its card at
+the **well-known path** (`/.well-known/agent-card.json`, protocol v0.3). A
+**deployed** discovery agent lives under `*-aiplatform.googleapis.com`, speaks
+protocol **v1.0**, and serves an *authenticated* card at `.../a2a/v1/card` — not
+the well-known path. So the concierge adapts on both axes:
+
+- **Card path** — `agent_concierge/utils/a2a.py` branches on `googleapis.com` in
+  the base URL: `/v1/card` for a deployed Runtime, well-known for localhost.
+- **Auth** — `agent_concierge/utils/auth.py` returns a token-refreshing `httpx`
+  client for a `googleapis.com` URL and `None` for localhost.
+- **Protocol** — the `RemoteA2aAgent` is built with `use_legacy=False` so it
+  talks v1.0 to both ends (requires a2a-sdk 1.x / ADK 2.x).
+
+The same `RemoteA2aAgent` wiring works in both places. (An A2A consumer configured
+this way is best run from `adk web` or Cloud Run; see the
+[walkthrough notebook](interact.ipynb).)
 
 ---
 
@@ -182,8 +225,8 @@ See the platform [Govern overview](https://docs.cloud.google.com/gemini-enterpri
 ```
 deploy/
 ├── deploy.py                 # multi-target CLI: concierge | discovery
-├── entrypoint_concierge.py   # AdkApp(app=concierge App) — ships the plugin
-├── entrypoint_discovery.py   # AdkApp(agent=discovery root_agent)
+├── entrypoint_concierge.py   # AdkApp(app=concierge App) — source mode, ships the plugin
+├── entrypoint_discovery.py   # A2aAgent(agent_card, executor) — object mode, native A2A
 ├── interact.ipynb            # sessions + memory walkthrough (SDK) against a deployment
 ├── concierge/deployment.json # written by deploy.py (resource name, timestamps)
 └── discovery/deployment.json

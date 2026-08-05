@@ -111,8 +111,10 @@ STAGING_BUCKET = os.getenv("STAGING_BUCKET", "")
 def discovery_a2a_base_url() -> str:
     """Base URL where the discovery agent's A2A server is reachable.
 
-    The concierge appends ADK's AGENT_CARD_WELL_KNOWN_PATH to this to locate
-    the agent card — we import that constant rather than hardcode the suffix,
-    since ADK owns the well-known path.
+    Local: a ``to_a2a()`` uvicorn server on host:port. Deployed: the discovery
+    agent's Agent Runtime A2A endpoint (``.../reasoningEngines/{id}/a2a``). The
+    concierge derives the card URL from this — a well-known path locally, the
+    Runtime's authenticated ``/v1/card`` when deployed (see
+    agent_concierge/utils/a2a.py).
     """
     return (DISCOVERY_A2A_URL or f"http://{DISCOVERY_A2A_HOST}:{DISCOVERY_A2A_PORT}").rstrip("/")

@@ -49,6 +49,9 @@ discovery_agent = RemoteA2aAgent(
     ),
     agent_card=_discovery_card_url,
     httpx_client=authed_httpx_client_for(_discovery_card_url),
+    # A2A protocol v1.0: talk to the discovery service over the current protocol,
+    # not the v0.3 legacy path. Requires a2a-sdk 1.x (ADK 2.x) on both ends.
+    use_legacy=False,
 )
 
 root_agent = Agent(
