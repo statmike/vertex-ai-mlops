@@ -451,9 +451,39 @@ def _local_test_object(agent_name: str) -> bool:
 
 # --- Deploy config assembly ----------------------------------------------
 
+def _staging_bucket() -> str:
+    """STAGING_BUCKET, normalized to a ``gs://`` URI (object-mode create requires it)."""
+    bucket = os.getenv("STAGING_BUCKET", "").strip()
+    if bucket and not bucket.startswith("gs://"):
+        bucket = f"gs://{bucket}"
+    return bucket
+
+
+def _bake_discovery_card(env_vars: dict[str, str]) -> None:
+    """Resolve the deployed discovery card and bake it into the concierge's env.
+
+    The deployed concierge can't read the discovery card from the Runtime resource
+    at startup — its service agent lacks ``aiplatform.reasoningEngines.get``, and a
+    control-plane call on every cold start would be fragile. The card is static per
+    deployment, so we resolve it here (with the deployer's admin creds) and pass it
+    as ``DISCOVERY_A2A_CARD``; the deployed concierge just parses that env var. A
+    no-op unless DISCOVERY_A2A_URL points at a deployed (googleapis.com) endpoint.
+    """
+    from agent_concierge.utils.a2a import DISCOVERY_A2A_CARD_ENV, deployed_agent_card_json
+
+    base_url = os.getenv("DISCOVERY_A2A_URL", "").strip().rstrip("/")
+    if "googleapis.com" not in base_url:
+        return
+    print("  Baking deployed discovery card into DISCOVERY_A2A_CARD...")
+    env_vars[DISCOVERY_A2A_CARD_ENV] = deployed_agent_card_json(base_url)
+
+
 def _source_deploy_config(agent_name: str, req_name: str, packages: list[str]) -> dict:
     """Config for SOURCE-mode deployment (concierge / AdkApp)."""
     config = AGENT_CONFIGS[agent_name]
+    env_vars = _get_env_vars()
+    if agent_name == "concierge":
+        _bake_discovery_card(env_vars)
     cfg = {
         "source_packages": packages,
         "entrypoint_module": config["entrypoint_module"],
@@ -462,10 +492,10 @@ def _source_deploy_config(agent_name: str, req_name: str, packages: list[str]) -
         "class_methods": ADK_CLASS_METHODS,
         "display_name": config["display_name"],
         "description": config["description"],
-        "env_vars": _get_env_vars(),
+        "env_vars": env_vars,
         "agent_framework": "google-adk",
     }
-    staging_bucket = os.getenv("STAGING_BUCKET", "")
+    staging_bucket = _staging_bucket()
     if staging_bucket:
         cfg["staging_bucket"] = staging_bucket
     return cfg
@@ -486,7 +516,7 @@ def _object_deploy_config(agent_name: str) -> dict:
         "description": config["description"],
         "env_vars": _get_env_vars(),
     }
-    staging_bucket = os.getenv("STAGING_BUCKET", "")
+    staging_bucket = _staging_bucket()
     if staging_bucket:
         cfg["staging_bucket"] = staging_bucket
     return cfg
@@ -499,6 +529,67 @@ def _load_agent_object(agent_name: str):
     config = AGENT_CONFIGS[agent_name]
     mod = importlib.import_module(config["entrypoint_module"])
     return getattr(mod, config["entrypoint_object"])
+
+
+def _grant_a2a_invoke_permission(discovery_resource_name: str) -> None:
+    """Let the concierge's Runtime service agent invoke discovery over A2A.
+
+    Agent-to-agent A2A on Agent Runtime is a control-plane ``:query`` call, which
+    needs ``aiplatform.reasoningEngines.query`` — a permission the stock
+    ``roles/aiplatform.reasoningEngineServiceAgent`` (what every deployed agent
+    runs as) does NOT include. Without this grant the concierge's A2A hop to
+    discovery fails with 403 on ``.../a2a/message:send``.
+
+    We grant it at the *resource* level (only on the discovery engine, not the
+    whole project) via the reasoningEngines IAM policy — least privilege. The
+    caller is the project's shared Runtime service agent, so this covers the
+    concierge (and any future in-project A2A caller of discovery). Idempotent:
+    re-adding an existing binding is a no-op.
+    """
+    import google.auth
+    import google.auth.transport.requests
+    import httpx
+
+    # The resource name carries the project NUMBER (projects/{number}/...), which
+    # is exactly what the service-agent email needs — no separate lookup required.
+    parts = discovery_resource_name.split("/")
+    number = parts[parts.index("projects") + 1]
+    sa = f"service-{number}@gcp-sa-aiplatform-re.iam.gserviceaccount.com"
+    role = "roles/aiplatform.viewer"  # only predefined role with reasoningEngines.query
+    location = _location_from_resource(discovery_resource_name)
+
+    creds, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+    creds.refresh(google.auth.transport.requests.Request())
+    base = f"https://{location}-aiplatform.googleapis.com/v1/{discovery_resource_name}"
+    headers = {"Authorization": f"Bearer {creds.token}"}
+
+    get = httpx.post(f"{base}:getIamPolicy", headers=headers, json={}, timeout=60.0)
+    get.raise_for_status()
+    policy = get.json()
+    bindings = policy.get("bindings", [])
+    member = f"serviceAccount:{sa}"
+    for b in bindings:
+        if b.get("role") == role and member in b.get("members", []):
+            print(f"  A2A invoke permission already granted to {sa}.")
+            return
+    for b in bindings:
+        if b.get("role") == role:
+            b.setdefault("members", []).append(member)
+            break
+    else:
+        bindings.append({"role": role, "members": [member]})
+    policy["bindings"] = bindings
+
+    set_ = httpx.post(
+        f"{base}:setIamPolicy", headers=headers, json={"policy": policy}, timeout=60.0
+    )
+    set_.raise_for_status()
+    print(f"  Granted A2A invoke ({role}) to {sa} on discovery.")
+
+
+def _location_from_resource(resource_name: str) -> str:
+    parts = resource_name.split("/")
+    return parts[parts.index("locations") + 1] if "locations" in parts else "us-central1"
 
 
 # --- Commands -------------------------------------------------------------
@@ -531,8 +622,15 @@ def cmd_delete(agent_name: str) -> None:
 
 
 def _a2a_url_for(resource_name: str) -> str:
-    """Deployed A2A base URL for a reasoningEngine resource name."""
-    location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
+    """Deployed A2A base URL for a reasoningEngine resource name.
+
+    The region is parsed from the resource name (``.../locations/{region}/...``),
+    not from GOOGLE_CLOUD_LOCATION — importing the agent packages rewrites that
+    env var to the model-serving location (often ``global``), which is not where
+    the Runtime resource lives.
+    """
+    parts = resource_name.split("/")
+    location = parts[parts.index("locations") + 1] if "locations" in parts else "us-central1"
     return f"https://{location}-aiplatform.googleapis.com/v1beta1/{resource_name}/a2a"
 
 
@@ -576,25 +674,27 @@ def _test_source(agent_name: str, resource_name: str) -> None:
 def _test_object(agent_name: str, resource_name: str) -> None:
     """Test a deployed A2aAgent by making the real authenticated A2A hop.
 
-    This exercises exactly what the concierge does in production: resolve the
-    Runtime's authenticated agent card, then run a turn over the A2A protocol.
+    This exercises exactly what the concierge does in production: read the card
+    embedded in the deployed resource (the Runtime serves no fetchable card),
+    retarget it to the live endpoint, then run a turn over the A2A protocol.
     """
     from google.adk.agents.remote_a2a_agent import RemoteA2aAgent
     from google.adk.runners import InMemoryRunner
     from google.genai import types as genai_types
 
+    from agent_concierge.utils.a2a import _fetch_deployed_agent_card
     from agent_concierge.utils.auth import authed_httpx_client_for
 
     config = AGENT_CONFIGS[agent_name]
     base_url = _a2a_url_for(resource_name)
-    card_url = f"{base_url}/v1/card"
-    print(f"  A2A card: {card_url}")
+    card = _fetch_deployed_agent_card(base_url)
+    print(f"  A2A endpoint: {base_url}")
 
     remote = RemoteA2aAgent(
         name=agent_name,
         description=config["description"],
-        agent_card=card_url,
-        httpx_client=authed_httpx_client_for(card_url),
+        agent_card=card,
+        httpx_client=authed_httpx_client_for(base_url),
         use_legacy=False,
     )
     runner = InMemoryRunner(agent=remote, app_name=agent_name)
@@ -658,6 +758,9 @@ def cmd_update(agent_name: str) -> None:
     meta["last_updated_at"] = datetime.now().isoformat()
     _save_deployment(agent_name, meta)
     print("Deployment updated.")
+
+    if agent_name == "discovery":
+        _grant_a2a_invoke_permission(resource_name)
 
 
 def cmd_deploy(agent_name: str, skip_local_test: bool) -> None:
@@ -725,6 +828,7 @@ def cmd_deploy(agent_name: str, skip_local_test: bool) -> None:
     print("  - Cloud Monitoring / Logging / Trace")
     print("  - Prompt/response capture")
     if agent_name == "discovery":
+        _grant_a2a_invoke_permission(new_meta["resource_name"])
         print("\nNext: set DISCOVERY_A2A_URL in .env to this agent's A2A endpoint,")
         print("      then deploy or update the concierge to complete the A2A hop.")
     dep_file = AGENT_CONFIGS[agent_name]["deployment_file"]

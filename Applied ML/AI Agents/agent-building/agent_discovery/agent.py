@@ -13,8 +13,6 @@ Serving:
     Deployed — packaged for Agent Runtime in deploy/ (Phase 2).
 """
 
-import os
-
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
 from google.adk.agents import Agent
 from google.adk.models.anthropic_llm import Claude
@@ -23,16 +21,27 @@ from config import (
     DISCOVERY_A2A_PORT,
     DISCOVERY_MODEL,
     DISCOVERY_MODEL_LOCATION,
+    GOOGLE_CLOUD_PROJECT,
 )
 
 from . import prompts, tools
 
-# The ADK Claude wrapper builds its AnthropicVertex client from these env vars at
-# request time, so pin the location to where Claude is served before use.
-os.environ["GOOGLE_CLOUD_LOCATION"] = DISCOVERY_MODEL_LOCATION
+# The ADK Claude wrapper reads GOOGLE_CLOUD_LOCATION at *request* time to pick the
+# Model Garden region — but when deployed, the A2aAgent Runtime template rewrites
+# that env var to the infra region (us-central1) during set_up(), where Claude
+# may not be servable. Passing the model as a fully-qualified resource path pins
+# the region inside the model string, which the wrapper parses in preference to
+# the env var (see anthropic_llm._anthropic_client), so it's correct both locally
+# and deployed regardless of what GOOGLE_CLOUD_LOCATION holds at request time.
+_DISCOVERY_MODEL_PATH = (
+    f"projects/{GOOGLE_CLOUD_PROJECT}/locations/{DISCOVERY_MODEL_LOCATION}"
+    f"/publishers/anthropic/models/{DISCOVERY_MODEL}"
+    if GOOGLE_CLOUD_PROJECT
+    else DISCOVERY_MODEL
+)
 
 root_agent = Agent(
-    model=Claude(model=DISCOVERY_MODEL),
+    model=Claude(model=_DISCOVERY_MODEL_PATH),
     name="agent_discovery",
     description=(
         "Finds datasets and tables in theLook's data catalog and explains what "

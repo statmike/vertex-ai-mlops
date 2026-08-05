@@ -10,14 +10,19 @@ dependencies = [
     "google-cloud-aiplatform[agent_engines,adk,evaluation]>=1.112.0",
     "google-cloud-bigquery>=3.31.0",
     "google-cloud-bigquery-connection>=1.0.0",
-    # ADK 2.x's BigQueryAgentAnalyticsPlugin imports bigquery_storage_v1 but no
-    # longer pulls it transitively (it did on ADK 1.x); declare it explicitly.
+    # ADK 2.x's BigQueryAgentAnalyticsPlugin imports bigquery_storage_v1 and
+    # pyarrow but no longer pulls them transitively (it did on ADK 1.x); declare
+    # them explicitly.
     "google-cloud-bigquery-storage>=2.39.0",
+    "pyarrow>=17.0.0",
     "google-cloud-storage>=2.19.0",
     "google-cloud-dataplex>=2.20.0",
     "google-cloud-geminidataanalytics>=0.3.0",
     "anthropic[vertex]>=0.40.0",
     "a2a-sdk[http-server]>=1.0,<2",
+    # Object-mode deploy (discovery/A2aAgent) cloudpickles the agent; the remote
+    # Runtime container needs cloudpickle to unpickle it. Not pulled transitively.
+    "cloudpickle>=3.0.0",
     "uvicorn>=0.34.0",
     "python-dotenv>=1.0.0",
     "pydantic>=2.10.0",

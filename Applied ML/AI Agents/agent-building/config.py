@@ -113,8 +113,9 @@ def discovery_a2a_base_url() -> str:
 
     Local: a ``to_a2a()`` uvicorn server on host:port. Deployed: the discovery
     agent's Agent Runtime A2A endpoint (``.../reasoningEngines/{id}/a2a``). The
-    concierge derives the card URL from this — a well-known path locally, the
-    Runtime's authenticated ``/v1/card`` when deployed (see
+    concierge uses this to build the discovery agent card — a well-known URL
+    locally, and (deployed) the resource name to read the card embedded in the
+    Runtime resource, since the Runtime serves no fetchable card (see
     agent_concierge/utils/a2a.py).
     """
     return (DISCOVERY_A2A_URL or f"http://{DISCOVERY_A2A_HOST}:{DISCOVERY_A2A_PORT}").rstrip("/")

@@ -59,7 +59,7 @@ composition styles map onto **two separate Runtime resources**:
 
 | Target | What deploys | Deploy mode | Reached how |
 |---|---|---|---|
-| **`discovery`** | `agent_discovery` (Claude on Vertex) + its catalog tool, wrapped in an `A2aAgent` | **object** (cloudpickled) | native **A2A** — Runtime serves the agent card + protocol on `.../a2a` |
+| **`discovery`** | `agent_discovery` (Claude on Vertex) + its catalog tool, wrapped in an `A2aAgent` | **object** (cloudpickled) | native **A2A** — Runtime serves the protocol on `.../a2a`; the card is embedded in the resource |
 | **`concierge`** | router + in-process `agent_catalog` / `agent_analytics` + observability, wrapped in an `AdkApp` | **source** (uploaded `.py`) | `stream_query` API / ADK web |
 
 Deploy **discovery first** — it's the dependency. Then point the concierge at
@@ -190,19 +190,39 @@ See the [ADK Memory Bank quickstart](https://docs.cloud.google.com/gemini-enterp
 
 Local discovery is plain HTTP on `localhost`, and `to_a2a()` serves its card at
 the **well-known path** (`/.well-known/agent-card.json`, protocol v0.3). A
-**deployed** discovery agent lives under `*-aiplatform.googleapis.com`, speaks
-protocol **v1.0**, and serves an *authenticated* card at `.../a2a/v1/card` — not
-the well-known path. So the concierge adapts on both axes:
+**deployed** discovery agent lives under `*-aiplatform.googleapis.com` and speaks
+protocol **v1.0** — but the Runtime serves **no fetchable card at any path**. The
+card is *embedded in the reasoningEngine resource* (in its `class_methods` spec)
+at deploy time, carrying a placeholder URL that `A2aAgent.set_up()` only rewrites
+inside the serving process. So the concierge adapts on three axes
+(`agent_concierge/utils/a2a.py`, keyed off `googleapis.com` in the base URL):
 
-- **Card path** — `agent_concierge/utils/a2a.py` branches on `googleapis.com` in
-  the base URL: `/v1/card` for a deployed Runtime, well-known for localhost.
+- **Card** — local: hand `RemoteA2aAgent` the well-known URL *string* and let it
+  resolve over HTTP. Deployed: the card can't be fetched at runtime — the
+  concierge's Runtime service agent has no control-plane read, and a network call
+  on every cold start would be fragile. Since the card is *static per
+  deployment*, `deploy.py` resolves it once at deploy time (with the deployer's
+  admin creds — read the resource, retarget its interface URL to the live
+  `.../a2a` endpoint) and bakes the JSON into the concierge's `DISCOVERY_A2A_CARD`
+  env var. The deployed concierge just parses that env var and hands
+  `RemoteA2aAgent` the resolved `AgentCard` *object* — no control-plane call.
+  (Reading the card from the resource remains the fallback for admin-credentialed
+  contexts: local `adk web` against a deployed discovery, and `discovery --test`.)
 - **Auth** — `agent_concierge/utils/auth.py` returns a token-refreshing `httpx`
   client for a `googleapis.com` URL and `None` for localhost.
 - **Protocol** — the `RemoteA2aAgent` is built with `use_legacy=False` so it
   talks v1.0 to both ends (requires a2a-sdk 1.x / ADK 2.x).
+- **Invoke permission** — the A2A call itself (`.../a2a/message:send`) is a
+  control-plane `:query` on the discovery engine, which needs
+  `aiplatform.reasoningEngines.query`. The stock `reasoningEngineServiceAgent`
+  role every deployed agent runs as does **not** include it, so without a grant
+  the hop fails with **403**. `deploy.py` grants it right after deploying
+  discovery — bound at the **resource** level on the discovery engine only (least
+  privilege, via `roles/aiplatform.viewer`, the one predefined role carrying that
+  permission), and torn down automatically when the engine is deleted.
 
-The same `RemoteA2aAgent` wiring works in both places. (An A2A consumer configured
-this way is best run from `adk web` or Cloud Run; see the
+The same `RemoteA2aAgent` wiring runs a turn in both places. (An A2A consumer
+configured this way is best run from `adk web` or Cloud Run; see the
 [walkthrough notebook](interact.ipynb).)
 
 ---

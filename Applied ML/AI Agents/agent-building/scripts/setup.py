@@ -75,6 +75,13 @@ CONNECTION_SA_ROLES = [
 # dataplex.projects.search, which lives in catalogViewer, not the auto-granted
 # dataplex.viewer. Locally the agent borrows the developer's own permissions, so
 # this gap only surfaces after deploy — we close it here so setup is complete.
+#
+# One more deploy-time grant is NOT here on purpose: the concierge's cross-agent
+# A2A call to discovery needs aiplatform.reasoningEngines.query, which the stock
+# reasoningEngineServiceAgent role lacks. That one is *resource*-scoped (bound to
+# the discovery engine only, least privilege) so it can't be granted until the
+# engine exists — deploy/deploy.py applies it right after deploying discovery, and
+# it's torn down automatically when the engine is deleted.
 RUNTIME_SA_ROLES = [
     "roles/dataplex.catalogViewer",
 ]

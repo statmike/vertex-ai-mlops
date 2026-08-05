@@ -25,6 +25,8 @@ from google.adk.agents import Agent  # noqa: E402
 from google.adk.agents.remote_a2a_agent import RemoteA2aAgent  # noqa: E402
 from google.adk.apps import App  # noqa: E402
 
+from config import discovery_a2a_base_url  # noqa: E402
+
 from . import prompts  # noqa: E402
 from .bq_plugin import bq_analytics_plugin  # noqa: E402
 from .sub_agents.agent_analytics.agent import analytics_agent  # noqa: E402
@@ -33,22 +35,24 @@ from .utils import (  # noqa: E402
     MEMORY_TOOLS,
     add_session_to_memory,
     authed_httpx_client_for,
-    discovery_agent_card_url,
+    discovery_agent_card,
 )
 
-# Discovery is a separate deployable, reached over A2A by its agent-card URL.
-# When that URL is a deployed Agent Runtime endpoint, calls must be authenticated;
-# authed_httpx_client_for returns a token-refreshing client (None for localhost,
-# where RemoteA2aAgent builds its own plain client).
-_discovery_card_url = discovery_agent_card_url()
+# Discovery is a separate deployable, reached over A2A. Locally its card is a
+# well-known URL string (RemoteA2aAgent resolves it over HTTP); deployed, the
+# Runtime serves no fetchable card, so discovery_agent_card() returns the
+# AgentCard object read from the resource spec (see utils/a2a.py). The auth client
+# keys off the *base* URL — a token-refreshing client for a Runtime endpoint, None
+# for localhost (where RemoteA2aAgent builds its own plain client).
+_discovery_base_url = discovery_a2a_base_url()
 discovery_agent = RemoteA2aAgent(
     name="agent_discovery",
     description=(
         "Finds datasets and tables in theLook's data catalog and explains what "
         "each contains. Runs as a separate A2A service."
     ),
-    agent_card=_discovery_card_url,
-    httpx_client=authed_httpx_client_for(_discovery_card_url),
+    agent_card=discovery_agent_card(),
+    httpx_client=authed_httpx_client_for(_discovery_base_url),
     # A2A protocol v1.0: talk to the discovery service over the current protocol,
     # not the v0.3 legacy path. Requires a2a-sdk 1.x (ADK 2.x) on both ends.
     use_legacy=False,
