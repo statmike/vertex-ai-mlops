@@ -79,18 +79,32 @@ uv run python optimize/judge_local.py   # 2. judge + report -> results/local_sco
 ### Platform engine (managed Simulation + AutoRaters)
 
 Uses the managed **Gen AI Evaluation & Simulation API**: it *generates* realistic
-conversation scenarios from the agent's own definition, drives a **simulated
-user** through multi-turn conversations, then scores the traces with prebuilt
-**multi-turn** raters.
+conversation scenarios from the agent's own definition (passing the whole
+multi-agent topology so it understands the router and its specialists), drives a
+**simulated user** through multi-turn conversations, then scores the resulting
+answers with prebuilt AutoRaters.
 
 ```bash
 uv run python optimize/simulate_platform.py   # generate scenarios + simulate -> results/platform_traces.json
-uv run python optimize/evaluate_platform.py   # score with MULTI_TURN AutoRaters
+uv run python optimize/evaluate_platform.py   # score with managed AutoRaters
 ```
 
-Raters used: `MULTI_TURN_TASK_SUCCESS` and `MULTI_TURN_TOOL_USE_QUALITY`. To group
-failures, `client.evals.generate_loss_clusters(...)`. This is a preview feature —
-see the docs links below.
+Raters used: `FINAL_RESPONSE_QUALITY` and `GENERAL_QUALITY`. To group failures,
+`client.evals.generate_loss_clusters(...)`. This is a preview feature — see the
+docs links below.
+
+> **Multi-agent limitation, worth knowing.** The prebuilt raters that read the
+> raw agent trace (`MULTI_TURN_TASK_SUCCESS`, `MULTI_TURN_TOOL_USE_QUALITY`,
+> `MULTI_TURN_TRAJECTORY_QUALITY`) currently **reject a multi-agent system** with
+> `400 … does not support multiagent evaluation` — and the concierge is exactly
+> that (a router over three specialists). So `evaluate_platform.py` flattens each
+> simulated conversation to a plain prompt + final answer and scores *that* with
+> the final-response raters, which judge answer text regardless of how many agents
+> produced it. Routing correctness across the full system is still measured
+> offline by the local engine. Two more preview edges the scripts handle: the
+> scenario-generation model is `global`-only (`allow_cross_region_model=True`),
+> and Gemini-3 `thought_signature` bytes must be persisted as base64 to survive
+> the trace round-trip.
 
 **Why both?** The local engine is fast, free, and runs in CI on every change with
 a scenario set you control. The platform engine explores conversations you didn't
