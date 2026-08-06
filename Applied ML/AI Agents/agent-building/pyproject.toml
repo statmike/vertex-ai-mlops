@@ -5,7 +5,9 @@ description = "A learner for the Gemini Enterprise Agent Platform: one multi-age
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "google-adk[a2a]>=2.6,<3",
+    # [a2a] for the A2A protocol types; [mcp] pulls the `mcp` package (>=1.24,<2)
+    # ADK's McpToolset and the adk_to_mcp_tool_type hosting helper import lazily.
+    "google-adk[a2a,mcp]>=2.6,<3",
     "google-genai>=1.64.0",
     "google-cloud-aiplatform[agent_engines,adk,evaluation]>=1.112.0",
     "google-cloud-bigquery>=3.31.0",
@@ -62,5 +64,8 @@ testpaths = [
     "agent_concierge/sub_agents/agent_catalog/tests",
     "agent_concierge/sub_agents/agent_analytics/tests",
     "agent_discovery/tests",
+    "agent_mcp_client/tests",
+    "agent_web/tests",
+    "mcp_server/tests",
     "optimize/tests",
 ]

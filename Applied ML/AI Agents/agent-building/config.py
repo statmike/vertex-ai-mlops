@@ -122,6 +122,26 @@ DISCOVERY_A2A_PORT = int(os.getenv("DISCOVERY_A2A_PORT", "8001"))
 DISCOVERY_A2A_URL = os.getenv("DISCOVERY_A2A_URL", "")  # overrides host:port when set
 
 # ---------------------------------------------------------------------------
+# MCP (agent_mcp_client consumes tools from a remote MCP server over HTTP)
+# ---------------------------------------------------------------------------
+# theLook's tools are re-published as an MCP server (see mcp_server/). This is the
+# URL an ADK McpToolset connects to. Locally that's the Streamable-HTTP server
+# from `python -m mcp_server.server --transport http`; in production it would be a
+# Cloud Run service hosting the same app. The Streamable-HTTP endpoint is /mcp.
+MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:8009/mcp")
+
+# Model the MCP-client agent reasons with (Gemini 3 Flash — it just orchestrates
+# calls to the MCP tools). Its own inference endpoint, same split as the others.
+MCP_CLIENT_MODEL = os.getenv("MCP_CLIENT_MODEL", "gemini-3-flash-preview")
+MCP_CLIENT_MODEL_LOCATION = os.getenv("MCP_CLIENT_MODEL_LOCATION", "global")
+
+# --- Web-grounding model (agent_web: Google Search grounding) ---
+# Gemini 3 Flash — a built-in grounding tool does the retrieval; the model
+# synthesizes and cites. Grounding needs a Gemini model on a Vertex endpoint.
+WEB_MODEL = os.getenv("WEB_MODEL", "gemini-3-flash-preview")
+WEB_MODEL_LOCATION = os.getenv("WEB_MODEL_LOCATION", "global")
+
+# ---------------------------------------------------------------------------
 # Observability (BigQuery Agent Analytics plugin — see agent_concierge/bq_plugin.py)
 # ---------------------------------------------------------------------------
 BQ_ANALYTICS_DATASET = os.getenv("BQ_ANALYTICS_DATASET") or f"{RESOURCE_PREFIX}_analytics"

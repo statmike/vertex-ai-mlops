@@ -50,6 +50,7 @@ from google.adk.sessions.in_memory_session_service import InMemorySessionService
 from vertexai.agent_engines.templates.a2a import A2aAgent
 
 from agent_discovery.agent import root_agent
+from agent_discovery.skills import apply_skills
 
 # Placeholder RPC URL — A2aAgent.set_up() overwrites this with the real
 # reasoningEngines/{id}/a2a URL once the Runtime resource exists.
@@ -78,14 +79,16 @@ def build_agent_card():
 
     ADK's builder stamps the primary interface as JSONRPC, but both the A2aAgent
     template and Agent Runtime's REST routes require HTTP+JSON on the primary
-    interface, so we retarget it here.
+    interface, so we retarget it here. We also replace the auto-derived skills
+    with the explicit, richly-described ones (see agent_discovery/skills.py) so
+    the deployed card advertises the same capabilities a consumer sees locally.
     """
     builder = AgentCardBuilder(agent=root_agent, rpc_url=_PLACEHOLDER_RPC_URL)
     card = _run_sync(builder.build())
     primary = card.supported_interfaces[0]
     primary.protocol_binding = TransportProtocol.HTTP_JSON
     primary.protocol_version = PROTOCOL_VERSION_CURRENT
-    return card
+    return apply_skills(card)
 
 
 def create_runner() -> Runner:

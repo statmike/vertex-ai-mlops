@@ -13,11 +13,15 @@ Serving:
     Deployed — packaged for Agent Runtime in deploy/ (Phase 2).
 """
 
+import asyncio
+
+from google.adk.a2a.utils.agent_card_builder import AgentCardBuilder
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
 from google.adk.agents import Agent
 from google.adk.models.anthropic_llm import Claude
 
 from config import (
+    DISCOVERY_A2A_HOST,
     DISCOVERY_A2A_PORT,
     DISCOVERY_MODEL,
     DISCOVERY_MODEL_LOCATION,
@@ -25,6 +29,7 @@ from config import (
 )
 
 from . import prompts, tools
+from .skills import apply_skills
 
 # The ADK Claude wrapper reads GOOGLE_CLOUD_LOCATION at *request* time to pick the
 # Model Garden region — but when deployed, the A2aAgent Runtime template rewrites
@@ -52,5 +57,23 @@ root_agent = Agent(
     tools=tools.TOOLS,
 )
 
+def _local_agent_card():
+    """Build the local well-known card with explicit skills.
+
+    ``to_a2a`` would auto-build a card from the agent, but that yields generic
+    auto-derived skills. Build the card ourselves with the same ``rpc_url``
+    ``to_a2a`` uses (``{protocol}://{host}:{port}/``), swap in the explicit skills
+    (see skills.py), and hand it back so the served well-known card advertises the
+    same capabilities the deployed card does. Unlike the deployed path we keep the
+    builder's default (JSONRPC) primary interface — locally the card is served over
+    the standard well-known route and consumed by RemoteA2aAgent as-is.
+    """
+    builder = AgentCardBuilder(
+        agent=root_agent,
+        rpc_url=f"http://{DISCOVERY_A2A_HOST}:{DISCOVERY_A2A_PORT}/",
+    )
+    return apply_skills(asyncio.run(builder.build()))
+
+
 # A2A application: `uvicorn agent_discovery.agent:a2a_app --port <DISCOVERY_A2A_PORT>`.
-a2a_app = to_a2a(root_agent, port=DISCOVERY_A2A_PORT)
+a2a_app = to_a2a(root_agent, port=DISCOVERY_A2A_PORT, agent_card=_local_agent_card())
