@@ -8,6 +8,12 @@ from google.adk.agents import Agent
 from config import ANALYTICS_MODEL
 
 from . import prompts, tools
+from .examples import example_tool
+
+# Attach the Example Store few-shot tool when configured (None-guarded). It steers
+# answers with the most similar curated examples per question; omitted when the
+# store isn't provisioned, so the agent behaves identically either way.
+_tools = [*tools.TOOLS, *([example_tool] if example_tool else [])]
 
 analytics_agent = Agent(
     model=ANALYTICS_MODEL,
@@ -18,5 +24,5 @@ analytics_agent = Agent(
     ),
     global_instruction=prompts.global_instructions,
     instruction=prompts.agent_instructions,
-    tools=tools.TOOLS,
+    tools=_tools,
 )

@@ -142,6 +142,92 @@ WEB_MODEL = os.getenv("WEB_MODEL", "gemini-3-flash-preview")
 WEB_MODEL_LOCATION = os.getenv("WEB_MODEL_LOCATION", "global")
 
 # ---------------------------------------------------------------------------
+# Skill Registry (platform-managed, semantically-searchable skill bundles)
+# ---------------------------------------------------------------------------
+# The Skill Registry (`client.skills`) publishes packaged skill bundles — a
+# directory with a SKILL.md at its root — that agents can discover by semantic
+# search. Unlike loss clustering (global-only), the registry is served only in a
+# few regions; `global` returns INTERNAL. Default to us-central1.
+SKILL_REGISTRY_LOCATION = os.getenv("SKILL_REGISTRY_LOCATION", "us-central1")
+
+# Where the skill bundles to publish live. This demo reuses the sibling
+# `agent-skills/` project's bundles (SKILL.md + reference/ + narrative/) rather
+# than authoring throwaway ones. Default resolves to that project relative to the
+# repo root; override to point at any directory of skill bundles.
+_DEFAULT_SKILLS_SRC = (
+    Path(__file__).resolve().parents[3] / "agent-skills" / ".agents" / "skills"
+)
+SKILLS_SOURCE_DIR = os.getenv("SKILLS_SOURCE_DIR", str(_DEFAULT_SKILLS_SRC))
+
+# ---------------------------------------------------------------------------
+# Model Armor (Govern pillar — prompt/response guardrails)
+# ---------------------------------------------------------------------------
+# Model Armor screens user prompts and model responses for prompt-injection /
+# jailbreak attempts, malicious URLs, and responsible-AI harms against a template
+# you provision once (scripts/setup.py). The concierge applies it via
+# before/after_model callbacks (see agent_concierge/guard.py). Set
+# MODEL_ARMOR_TEMPLATE to "" to disable the guard entirely (callbacks no-op).
+#
+# The API is regional and uses a per-region REST endpoint
+# (modelarmor.<location>.rep.googleapis.com); the template lives in that same
+# region. Default to the infra location so it sits with the deployed agent.
+MODEL_ARMOR_LOCATION = os.getenv("MODEL_ARMOR_LOCATION", GOOGLE_CLOUD_LOCATION)
+MODEL_ARMOR_TEMPLATE = os.getenv("MODEL_ARMOR_TEMPLATE", f"{RESOURCE_PREFIX}_guard")
+
+# ---------------------------------------------------------------------------
+# Example Store (Build — managed few-shot example retrieval)
+# ---------------------------------------------------------------------------
+# The Example Store holds curated (question -> ideal answer) examples and serves
+# the few most similar ones for each incoming question, so the analytics agent
+# gets dynamic few-shot steering without hard-coding examples in the prompt. The
+# store is provisioned + seeded by scripts/setup.py; the analytics agent attaches
+# it via ADK's VertexAiExampleStore (see agent_analytics/examples.py).
+#
+# Vertex assigns the store a numeric resource ID at creation (a custom id passed
+# to create() is NOT honored), so nothing here can predict the full resource name
+# up front. Instead setup, cleanup, and the agent all key on the deterministic
+# EXAMPLE_STORE_DISPLAY_NAME: setup creates/finds the store by that display name,
+# and the agent resolves the store's resource name by listing and matching it.
+# Set EXAMPLE_STORE_DISPLAY_NAME blank to disable (the agent runs with no tool).
+#
+# EXAMPLE_STORE_NAME is an optional escape hatch: set it to the full resource name
+# (projects/.../exampleStores/<numeric-id>, which setup.py prints) to skip the
+# list-and-match lookup entirely — handy in deploy where a network call at import
+# is undesirable. The API is regional; keep it with the infra location. The
+# embedding model backs the semantic search over stored examples.
+EXAMPLE_STORE_LOCATION = os.getenv("EXAMPLE_STORE_LOCATION", GOOGLE_CLOUD_LOCATION)
+EXAMPLE_STORE_DISPLAY_NAME = os.getenv(
+    "EXAMPLE_STORE_DISPLAY_NAME", f"{RESOURCE_PREFIX.replace('_', '-')}-examples"
+)
+EXAMPLE_STORE_NAME = os.getenv("EXAMPLE_STORE_NAME", "")  # full resource name override
+EXAMPLE_STORE_EMBEDDING_MODEL = os.getenv(
+    "EXAMPLE_STORE_EMBEDDING_MODEL", "text-embedding-005"
+)
+
+# ---------------------------------------------------------------------------
+# RAG Engine / Vector Search (Build — managed retrieval for the catalog agent)
+# ---------------------------------------------------------------------------
+# RAG Engine is the managed alternative to the catalog agent's object-table +
+# AI.GENERATE approach: scripts/setup.py creates a RAG corpus (backed by the
+# managed vector database — this is the "Vector Search" storage), imports the same
+# GCS retail docs, and the catalog agent attaches a semantic-retrieval tool over
+# it (see agent_catalog/rag.py). It runs *alongside* the object-table tool so both
+# retrieval styles are demonstrable; the agent picks whichever fits.
+#
+# Like the Example Store, Vertex assigns the corpus a numeric resource id, so
+# setup/cleanup/agent resolve it by the deterministic RAG_CORPUS_DISPLAY_NAME
+# (or an explicit RAG_CORPUS_NAME full-resource-name override). Set the display
+# name blank to disable (the agent keeps only the object-table tool). The API is
+# regional; keep it with the infra location.
+RAG_LOCATION = os.getenv("RAG_LOCATION", GOOGLE_CLOUD_LOCATION)
+RAG_CORPUS_DISPLAY_NAME = os.getenv(
+    "RAG_CORPUS_DISPLAY_NAME", f"{RESOURCE_PREFIX.replace('_', '-')}-retail-docs"
+)
+RAG_CORPUS_NAME = os.getenv("RAG_CORPUS_NAME", "")  # full resource name override
+RAG_EMBEDDING_MODEL = os.getenv("RAG_EMBEDDING_MODEL", "text-embedding-005")
+RAG_SIMILARITY_TOP_K = int(os.getenv("RAG_SIMILARITY_TOP_K", "5"))
+
+# ---------------------------------------------------------------------------
 # Observability (BigQuery Agent Analytics plugin — see agent_concierge/bq_plugin.py)
 # ---------------------------------------------------------------------------
 BQ_ANALYTICS_DATASET = os.getenv("BQ_ANALYTICS_DATASET") or f"{RESOURCE_PREFIX}_analytics"

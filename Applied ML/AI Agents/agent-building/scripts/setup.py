@@ -18,9 +18,23 @@ RESOURCE_PREFIX so cleanup can find them):
   6. AI connection   — a BigQuery Cloud Resource connection ({BQ_DATASET}_ai) the
                        AI.* functions use, with the needed IAM roles granted.
   7. Object table    — {BQ_OBJECT_TABLE} over the GCS docs, for the catalog agent.
-  8. Runtime IAM     — grants the Agent Runtime service agent the catalog-search
-                       role deployed agents need (the discovery agent), which
-                       Runtime does not grant automatically.
+  8. Runtime IAM     — grants the Agent Runtime service agent the roles deployed
+                       agents need but Runtime does not grant automatically:
+                       catalog search (discovery), Model Armor (the guard), and
+                       Example Store read (the analytics few-shot tool).
+  9. Model Armor     — a guardrail template ({MODEL_ARMOR_TEMPLATE}) the concierge
+                       screens prompts/responses against, plus the modelarmor.user
+                       role on the Agent Runtime service agent so deployed agents
+                       can call it.
+ 10. Example Store   — a managed few-shot store ({EXAMPLE_STORE_DISPLAY_NAME})
+                       seeded with curated analytics Q&A; the analytics agent
+                       retrieves the most similar examples per question (dynamic
+                       few-shot). Vertex assigns it a numeric id, so it's matched
+                       by display name — the resource name is printed on create.
+ 11. RAG corpus      — a RAG Engine corpus ({RAG_CORPUS_DISPLAY_NAME}) over the
+                       same GCS retail docs, backed by the managed vector database;
+                       the catalog agent retrieves from it (managed alternative to
+                       its object-table tool). Also matched by display name.
 
 Knowledge Catalog is the product formerly called Dataplex Universal Catalog
 (renamed April 2026); the API/SDK namespace remains ``dataplex``.
@@ -40,7 +54,15 @@ from config import (  # noqa: E402
     BQ_OBJECT_TABLE,
     DATAPLEX_LOCATION,
     DOCS_PREFIX,
+    EXAMPLE_STORE_DISPLAY_NAME,
+    EXAMPLE_STORE_EMBEDDING_MODEL,
+    EXAMPLE_STORE_LOCATION,
     GOOGLE_CLOUD_PROJECT,
+    MODEL_ARMOR_LOCATION,
+    MODEL_ARMOR_TEMPLATE,
+    RAG_CORPUS_DISPLAY_NAME,
+    RAG_EMBEDDING_MODEL,
+    RAG_LOCATION,
     THELOOK_DATASET,
     THELOOK_PROJECT,
     THELOOK_TABLES,
@@ -61,6 +83,7 @@ REQUIRED_APIS = [
     "dataplex.googleapis.com",
     "geminidataanalytics.googleapis.com",
     "cloudresourcemanager.googleapis.com",
+    "modelarmor.googleapis.com",
 ]
 
 # IAM roles the AI connection's service account needs to read GCS + call models.
@@ -84,6 +107,15 @@ CONNECTION_SA_ROLES = [
 # it's torn down automatically when the engine is deleted.
 RUNTIME_SA_ROLES = [
     "roles/dataplex.catalogViewer",
+    # The concierge's Model Armor guard calls sanitizeUserPrompt/sanitizeModelResponse
+    # on every turn; that permission lives in modelarmor.user. Locally the developer's
+    # own creds cover it, so (like catalogViewer) this gap only surfaces once deployed.
+    "roles/modelarmor.user",
+    # The analytics agent's ExampleTool searches the Example Store each turn
+    # (aiplatform.exampleStores.readExample/get/list). The default Runtime service
+    # agent role grants none of those; aiplatform.viewer is the least-privilege
+    # predefined role that covers exactly the read set (not create/update/delete).
+    "roles/aiplatform.viewer",
 ]
 
 # Synthetic unstructured corpus: filename -> plain-text content. Deliberately
@@ -136,6 +168,40 @@ RETAIL_DOCS: dict[str, str] = {
         "credit. Membership can be cancelled anytime for a prorated refund."
     ),
 }
+
+
+# Curated few-shot examples for the analytics agent's Example Store: each pairs a
+# representative question with an ideal, well-formatted answer. The store serves
+# the most semantically-similar ones per incoming question, so these shape tone
+# and formatting (currency, thousands separators, concise phrasing) dynamically.
+ANALYTICS_EXAMPLES: list[tuple[str, str]] = [
+    (
+        "How many orders were placed in total?",
+        "theLook has 124,931 orders in total.",
+    ),
+    (
+        "What were the top 5 product categories by revenue?",
+        "The top 5 categories by revenue are:\n"
+        "1. Outerwear & Coats — $1.42M\n"
+        "2. Jeans — $1.19M\n"
+        "3. Sweaters — $0.98M\n"
+        "4. Suits & Sport Coats — $0.87M\n"
+        "5. Swim — $0.74M",
+    ),
+    (
+        "How many distinct customers have placed at least one order?",
+        "80,044 distinct customers have placed at least one order.",
+    ),
+    (
+        "What is the average order value?",
+        "The average order value is $85.46 across all completed orders.",
+    ),
+    (
+        "Which distribution center has shipped the most items?",
+        "Chicago IL has shipped the most items — 34,127 — followed by "
+        "Houston TX (28,905) and Los Angeles CA (26,540).",
+    ),
+]
 
 
 def _run(cmd: list[str]) -> subprocess.CompletedProcess:
@@ -362,6 +428,263 @@ def create_object_table() -> None:
         print(f"Object table FAILED: {e}")
 
 
+def create_model_armor_template() -> None:
+    """Create the Model Armor guardrail template the concierge screens against.
+
+    Idempotent: an existing template of the same name is left as-is. The template
+    is regional and served from a per-region REST endpoint
+    (modelarmor.<location>.rep.googleapis.com), so the client is pinned there.
+
+    Filters enabled: prompt-injection / jailbreak detection, malicious-URI
+    detection, and responsible-AI harms (hate, harassment, sexual, dangerous) at a
+    medium confidence threshold — a sensible default a real deployment would tune.
+    """
+    from google.api_core.client_options import ClientOptions
+    from google.api_core.exceptions import AlreadyExists
+    from google.cloud import modelarmor_v1 as ma
+
+    print("Model Armor template:")
+    parent = f"projects/{GOOGLE_CLOUD_PROJECT}/locations/{MODEL_ARMOR_LOCATION}"
+    client = ma.ModelArmorClient(
+        transport="rest",
+        client_options=ClientOptions(
+            api_endpoint=f"modelarmor.{MODEL_ARMOR_LOCATION}.rep.googleapis.com"
+        ),
+    )
+
+    medium = ma.DetectionConfidenceLevel.MEDIUM_AND_ABOVE
+    template = ma.Template(
+        filter_config=ma.FilterConfig(
+            pi_and_jailbreak_filter_settings=ma.PiAndJailbreakFilterSettings(
+                filter_enforcement=ma.PiAndJailbreakFilterSettings.PiAndJailbreakFilterEnforcement.ENABLED,
+                confidence_level=medium,
+            ),
+            malicious_uri_filter_settings=ma.MaliciousUriFilterSettings(
+                filter_enforcement=ma.MaliciousUriFilterSettings.MaliciousUriFilterEnforcement.ENABLED,
+            ),
+            rai_settings=ma.RaiFilterSettings(
+                rai_filters=[
+                    ma.RaiFilterSettings.RaiFilter(filter_type=t, confidence_level=medium)
+                    for t in (
+                        ma.RaiFilterType.HATE_SPEECH,
+                        ma.RaiFilterType.HARASSMENT,
+                        ma.RaiFilterType.SEXUALLY_EXPLICIT,
+                        ma.RaiFilterType.DANGEROUS,
+                    )
+                ]
+            ),
+        )
+    )
+    try:
+        client.create_template(
+            request=ma.CreateTemplateRequest(
+                parent=parent, template_id=MODEL_ARMOR_TEMPLATE, template=template
+            )
+        )
+        print(f"    Created: {MODEL_ARMOR_TEMPLATE} (in {MODEL_ARMOR_LOCATION})")
+    except AlreadyExists:
+        print(f"    Exists:  {MODEL_ARMOR_TEMPLATE}")
+    except Exception as e:  # noqa: BLE001 — guard is optional; don't fail setup
+        print(f"    FAILED (non-fatal): {MODEL_ARMOR_TEMPLATE} - {e}")
+
+
+def _example_store_display_name(store) -> str | None:
+    """Read a store's display name across SDK shapes (attr or backing resource)."""
+    name = getattr(store, "display_name", None)
+    if name:
+        return name
+    gca = getattr(store, "_gca_resource", None)
+    return getattr(gca, "display_name", None)
+
+
+def create_example_store() -> None:
+    """Create the Example Store and seed it with curated analytics few-shot Q&A.
+
+    Idempotent: keyed on the deterministic display name, since Vertex assigns the
+    store a numeric resource id at creation (a custom id is ignored). If a store
+    with EXAMPLE_STORE_DISPLAY_NAME already exists it's reused; otherwise one is
+    created (a slow LRO — several minutes is normal). Either way the store's
+    examples are cleared and re-seeded (upsert_examples always *appends* new
+    example ids, so a plain re-run would duplicate — we remove first to converge
+    on exactly the seed set), and the resolved resource name is printed so it can
+    be pinned via EXAMPLE_STORE_NAME to skip the lookup.
+
+    The analytics agent's ExampleTool searches this store on every turn and injects
+    the most similar examples, so the seed set shapes answer tone and formatting.
+    """
+    import vertexai
+    from vertexai.preview import example_stores
+
+    print("Example Store:")
+    vertexai.init(project=GOOGLE_CLOUD_PROJECT, location=EXAMPLE_STORE_LOCATION)
+
+    # Reuse an existing store with this display name; otherwise create one (slow LRO).
+    store = None
+    try:
+        for existing in example_stores.ExampleStore.list():
+            if _example_store_display_name(existing) == EXAMPLE_STORE_DISPLAY_NAME:
+                store = existing
+                print(f"    Exists:  {EXAMPLE_STORE_DISPLAY_NAME}")
+                break
+    except Exception as e:  # noqa: BLE001 — list is best-effort; fall through to create
+        print(f"    (could not list existing stores: {e})")
+
+    if store is None:
+        try:
+            store = example_stores.ExampleStore.create(
+                example_store_config=example_stores.ExampleStoreConfig(
+                    vertex_embedding_model=EXAMPLE_STORE_EMBEDDING_MODEL,
+                ),
+                display_name=EXAMPLE_STORE_DISPLAY_NAME,
+                description="agent-building — curated analytics few-shot examples.",
+            )
+            print(f"    Created: {EXAMPLE_STORE_DISPLAY_NAME} (in {EXAMPLE_STORE_LOCATION})")
+        except Exception as e:  # noqa: BLE001 — store is optional; don't fail setup
+            print(f"    FAILED (non-fatal): {EXAMPLE_STORE_DISPLAY_NAME} - {e}")
+            return
+
+    # Clear any existing examples first so re-runs converge on exactly the seed
+    # set. upsert_examples always appends (fresh example ids), so without this a
+    # re-run would silently duplicate every example.
+    try:
+        fetched = store.fetch_examples()
+        existing_examples = (
+            fetched.get("examples", []) if isinstance(fetched, dict) else (fetched or [])
+        )
+        existing_ids = [
+            eid
+            for e in existing_examples
+            if (eid := (e.get("example_id") if isinstance(e, dict) else None))
+        ]
+        if existing_ids:
+            store.remove_examples(example_ids=existing_ids)
+            print(f"    Cleared: {len(existing_ids)} prior example(s)")
+    except Exception as e:  # noqa: BLE001 — clearing is best-effort
+        print(f"    (could not clear prior examples: {e})")
+
+    # Seed the curated examples. Each is a search-key -> (question, ideal answer)
+    # pair the tool retrieves by semantic similarity. The Example Store types are
+    # TypedDicts keyed on vertexai.generative_models.Content.
+    from vertexai.generative_models import Content, Part
+
+    examples: list[example_stores.Example] = [
+        example_stores.Example(
+            stored_contents_example=example_stores.StoredContentsExample(
+                search_key=question,
+                contents_example=example_stores.ContentsExample(
+                    contents=[
+                        Content(role="user", parts=[Part.from_text(question)]),
+                    ],
+                    expected_contents=[
+                        example_stores.ExpectedContent(
+                            content=Content(
+                                role="model", parts=[Part.from_text(answer)]
+                            ),
+                        ),
+                    ],
+                ),
+            )
+        )
+        for question, answer in ANALYTICS_EXAMPLES
+    ]
+    try:
+        store.upsert_examples(examples=examples)
+        print(f"    Seeded:  {len(examples)} analytics examples")
+    except Exception as e:  # noqa: BLE001
+        print(f"    Seed FAILED (non-fatal): {e}")
+    # The agent resolves this by display name, but printing the resource name lets
+    # you pin EXAMPLE_STORE_NAME to skip that lookup (e.g. in a deploy env).
+    print(f"    Resource: {store.resource_name}")
+
+
+def create_rag_corpus() -> None:
+    """Create a RAG Engine corpus over the retail docs and import them.
+
+    Idempotent, keyed on the deterministic display name (like the Example Store,
+    Vertex assigns a numeric resource id). If a corpus with RAG_CORPUS_DISPLAY_NAME
+    exists it's reused; otherwise one is created backed by the managed vector
+    database (RagManagedVertexVectorSearch — this is the Vector Search storage; the
+    older RagManagedDb backend is rejected in serverless mode) with the configured
+    embedding model. Then the same GCS retail docs the object table exposes are
+    imported (chunked + embedded); re-importing the same URIs is a no-op upsert.
+
+    Uses the ``agentplatform`` client (the successor to ``vertexai.preview.rag``,
+    which is deprecated and whose backend_config embedding path is broken in this
+    SDK build). The catalog agent still *resolves* the corpus via the older SDK's
+    list_corpora — the resource is the same either way.
+
+    The catalog agent retrieves from this corpus via ADK's VertexAiRagRetrieval —
+    a managed alternative to its object-table + AI.GENERATE tool over the same docs.
+    """
+    import agentplatform
+    from agentplatform._genai.types import common
+    from google.genai import types as gtypes
+
+    print("RAG corpus:")
+    client = agentplatform.Client(project=GOOGLE_CLOUD_PROJECT, location=RAG_LOCATION)
+
+    # Reuse an existing corpus with this display name; otherwise create one.
+    corpus = None
+    try:
+        for existing in client.rag.list_corpora().rag_corpora or []:
+            if existing.display_name == RAG_CORPUS_DISPLAY_NAME:
+                corpus = existing
+                print(f"    Exists:  {RAG_CORPUS_DISPLAY_NAME}")
+                break
+    except Exception as e:  # noqa: BLE001 — list is best-effort; fall through to create
+        print(f"    (could not list existing corpora: {e})")
+
+    if corpus is None:
+        # Embedding endpoint must be fully qualified with the region, or corpus
+        # creation fails resolving the prediction endpoint.
+        embed_endpoint = (
+            f"projects/{GOOGLE_CLOUD_PROJECT}/locations/{RAG_LOCATION}"
+            f"/publishers/google/models/{RAG_EMBEDDING_MODEL}"
+        )
+        try:
+            corpus = client.rag.create_corpus(
+                rag_corpus=common.RagCorpus(
+                    display_name=RAG_CORPUS_DISPLAY_NAME,
+                    description="agent-building — theLook retail docs (managed RAG).",
+                    vector_db_config=common.RagVectorDbConfig(
+                        rag_managed_vertex_vector_search=(
+                            common.RagVectorDbConfigRagManagedVertexVectorSearch()
+                        ),
+                        rag_embedding_model_config=common.RagEmbeddingModelConfig(
+                            vertex_prediction_endpoint=(
+                                common.RagEmbeddingModelConfigVertexPredictionEndpoint(
+                                    endpoint=embed_endpoint,
+                                )
+                            ),
+                        ),
+                    ),
+                ),
+            )
+            print(f"    Created: {RAG_CORPUS_DISPLAY_NAME} (in {RAG_LOCATION})")
+        except Exception as e:  # noqa: BLE001 — corpus is optional; don't fail setup
+            print(f"    FAILED (non-fatal): {RAG_CORPUS_DISPLAY_NAME} - {e}")
+            return
+
+    # Import the same GCS docs the object table exposes. Re-importing identical
+    # URIs upserts (no duplicates), so this is safe to re-run.
+    uris = f"gs://{docs_bucket_name()}/{DOCS_PREFIX}/"
+    try:
+        resp = client.rag.import_files(
+            name=corpus.name,
+            import_config=common.ImportRagFilesConfig(
+                gcs_source=gtypes.GcsSource(uris=[uris]),
+                rag_file_chunking_config=common.RagFileChunkingConfig(
+                    chunk_size=512, chunk_overlap=100
+                ),
+            ),
+        )
+        print(f"    Imported: {uris} ({resp.imported_rag_files_count} files)")
+    except Exception as e:  # noqa: BLE001
+        print(f"    Import FAILED (non-fatal): {e}")
+    # Printed so it can be pinned via RAG_CORPUS_NAME to skip the runtime lookup.
+    print(f"    Resource: {corpus.name}")
+
+
 def _project_number() -> str | None:
     """Resolve the project *number* (Agent Runtime's SA is keyed to it)."""
     result = _run(
@@ -415,6 +738,12 @@ def main() -> None:
     create_ai_connection()
     print()
     create_object_table()
+    print()
+    create_model_armor_template()
+    print()
+    create_example_store()
+    print()
+    create_rag_corpus()
     print()
     grant_runtime_iam()
     print("\nSetup complete. Run the agents with:  uv run adk web .")

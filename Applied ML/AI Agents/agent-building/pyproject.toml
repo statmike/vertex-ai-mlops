@@ -23,6 +23,9 @@ dependencies = [
     "google-cloud-resource-manager>=1.12.0",
     "google-cloud-dataplex>=2.20.0",
     "google-cloud-geminidataanalytics>=0.3.0",
+    # Model Armor guardrails: the concierge screens prompts + responses through a
+    # Model Armor template via before/after_model callbacks (see agent_concierge/guard.py).
+    "google-cloud-modelarmor>=0.2.0",
     "anthropic[vertex]>=0.40.0",
     "a2a-sdk[http-server]>=1.0,<2",
     # Object-mode deploy (discovery/A2aAgent) cloudpickles the agent; the remote
@@ -68,4 +71,5 @@ testpaths = [
     "agent_web/tests",
     "mcp_server/tests",
     "optimize/tests",
+    "skills/tests",
 ]

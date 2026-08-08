@@ -87,11 +87,47 @@ answers with prebuilt AutoRaters.
 ```bash
 uv run python optimize/simulate_platform.py   # generate scenarios + simulate -> results/platform_traces.json
 uv run python optimize/evaluate_platform.py   # score with managed AutoRaters
+uv run python optimize/optimize_platform.py   # Agent Optimizer: cluster failures into patterns
 ```
 
-Raters used: `FINAL_RESPONSE_QUALITY` and `GENERAL_QUALITY`. To group failures,
-`client.evals.generate_loss_clusters(...)`. This is a preview feature — see the
-docs links below.
+Raters used by `evaluate_platform.py`: `FINAL_RESPONSE_QUALITY` and
+`GENERAL_QUALITY`.
+
+### Agent Optimizer — why answers lose
+
+Evaluation gives you a *score*; the **Agent Optimizer**
+(`client.evals.generate_loss_clusters(...)`) gives you the *reasons*. It reads the
+failed-rubric signals from a rubric-based AutoRater and groups the failures into
+semantic **loss patterns** with an L1/L2 taxonomy and representative examples —
+each pattern is a candidate instruction fix. On our own simulated run it surfaces
+patterns like *"Instruction Following / Over-Punting"* (the agent declines a
+request for last-30-days data by mislabeling it a "prediction") and *"Hallucination
+of Action"* (claims it "reviewed the shipping docs" without a tool call) — concrete,
+fixable behaviors, not just a number.
+
+This is a **preview** feature served only in the `global` region, and two of its
+constraints interact awkwardly with a multi-agent system; `optimize_platform.py`
+resolves the tension so the analysis actually runs (see the note below).
+
+The published Quality Flywheel adds a *step 5* that closes the loop
+automatically — an Optimizer service (`client.optimizer.optimize`) that rewrites
+system instructions from the failure data. That surface is **not yet in the
+installed SDK** (2.0 exposes `client.prompt_optimizer`, a heavier data-driven
+prompt-tuning job, not the flywheel optimizer), so we stop at loss clusters and
+treat each pattern as a candidate instruction fix to apply by hand — which is the
+same signal the auto-optimizer would act on.
+
+> **Two hard constraints, and how the script satisfies both at once.** *(1)* Loss
+> clustering only carries signal from the **`MULTI_TURN_*` agentic raters** — hand
+> it a `FINAL_RESPONSE_QUALITY` result and the operation completes with an *empty*
+> response (no error, no clusters). *(2)* Those same multi-turn raters **reject a
+> multi-agent trace** (`does not support multiagent evaluation`, 400) — and the
+> concierge is a router over three specialists. The two constraints look
+> contradictory. The resolution: wrap each flattened prompt/final-answer as a
+> **synthetic single-turn `AgentData` that declares one agent**. One turn + one
+> declared agent satisfies the multi-turn rater, and it *is* `AgentData` with
+> conversation turns, which is what clustering requires. Routing correctness across
+> the real four-agent topology stays covered offline by the local engine.
 
 > **Multi-agent limitation, worth knowing.** The prebuilt raters that read the
 > raw agent trace (`MULTI_TURN_TASK_SUCCESS`, `MULTI_TURN_TOOL_USE_QUALITY`,
@@ -146,6 +182,7 @@ optimize/
 ├── judge_local.py           # local engine, step 2: judge + report
 ├── simulate_platform.py     # platform engine, step 1: generate + simulate
 ├── evaluate_platform.py     # platform engine, step 2: AutoRaters
+├── optimize_platform.py     # platform engine, step 3: Agent Optimizer (loss clusters)
 ├── observe_events.py        # observability: summarize the BQ event log
 └── results/                 # generated traces, scores, reports (gitignored)
 ```
@@ -154,5 +191,7 @@ optimize/
 
 - [Gen AI evaluation service overview](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/evaluation-overview)
 - [Evaluate agents](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/evaluation-agents)
+- [Evaluate your agents — Quality Flywheel, loss analysis & Optimizer](https://docs.cloud.google.com/gemini-enterprise-agent-platform/optimize/evaluation/evaluate-agents)
+- [`Evals` client reference (`generate_loss_clusters`)](https://docs.cloud.google.com/python/docs/reference/agentplatform/latest/vertexai._genai.evals.Evals)
 - [ADK BigQuery Agent Analytics plugin](https://google.github.io/adk-docs/observability/bigquery-agent-analytics/)
 - [Agent Runtime tracing / Cloud Trace](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/manage/tracing)

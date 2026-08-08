@@ -29,6 +29,10 @@ from config import discovery_a2a_base_url  # noqa: E402
 
 from . import prompts  # noqa: E402
 from .bq_plugin import bq_analytics_plugin  # noqa: E402
+from .guard import (  # noqa: E402
+    model_armor_after_callback,
+    model_armor_before_callback,
+)
 from .sub_agents.agent_analytics.agent import analytics_agent  # noqa: E402
 from .sub_agents.agent_catalog.agent import catalog_agent  # noqa: E402
 from .utils import (  # noqa: E402
@@ -69,6 +73,10 @@ root_agent = Agent(
     # turn back into it. Both are no-ops locally without a memory service.
     tools=MEMORY_TOOLS,
     after_agent_callback=add_session_to_memory,
+    # Govern pillar: screen prompts + responses through Model Armor. Both are None
+    # when the guard is unconfigured, so the agent runs unchanged (see guard.py).
+    before_model_callback=model_armor_before_callback,
+    after_model_callback=model_armor_after_callback,
 )
 
 # App bundles the root agent with the observability plugin (None-guarded, so the

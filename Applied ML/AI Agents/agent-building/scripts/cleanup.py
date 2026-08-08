@@ -5,7 +5,11 @@
 Idempotent: missing resources are skipped. Names are reconstructed from the same
 config + helpers setup.py used, so this removes exactly what was created:
 
-  - Agent Runtime service-agent IAM bindings (catalog search)
+  - Agent Runtime service-agent IAM bindings (catalog search, Model Armor,
+    Example Store read)
+  - Model Armor guardrail template {MODEL_ARMOR_TEMPLATE}
+  - Example Store (matched by display name {EXAMPLE_STORE_DISPLAY_NAME})
+  - RAG Engine corpus (matched by display name {RAG_CORPUS_DISPLAY_NAME})
   - Dataplex profile scans (one per view)
   - BigQuery dataset {BQ_DATASET} (views + object table, deleted with contents)
   - BigQuery AI connection {BQ_DATASET}_ai
@@ -26,19 +30,30 @@ from config import (  # noqa: E402
     BQ_DATASET,
     BQ_LOCATION,
     DATAPLEX_LOCATION,
+    EXAMPLE_STORE_DISPLAY_NAME,
+    EXAMPLE_STORE_LOCATION,
+    EXAMPLE_STORE_NAME,
     GOOGLE_CLOUD_PROJECT,
+    MODEL_ARMOR_LOCATION,
+    MODEL_ARMOR_TEMPLATE,
+    RAG_CORPUS_DISPLAY_NAME,
+    RAG_CORPUS_NAME,
+    RAG_LOCATION,
     THELOOK_TABLES,
 )
 from scripts.resources import (  # noqa: E402
     agent_runtime_service_agent,
     ai_connection_id,
     docs_bucket_name,
+    model_armor_template_path,
     profile_scan_id,
 )
 
 # Kept in sync with setup.RUNTIME_SA_ROLES — the roles to revoke on teardown.
 RUNTIME_SA_ROLES = [
     "roles/dataplex.catalogViewer",
+    "roles/modelarmor.user",
+    "roles/aiplatform.viewer",
 ]
 
 
@@ -67,6 +82,108 @@ def revoke_runtime_iam() -> None:
             print(f"    Revoked: {role}")
         else:
             print(f"    Not removed (may not exist): {role}")
+
+
+def delete_model_armor_template() -> None:
+    """Delete the Model Armor guardrail template setup.py created."""
+    from google.api_core.client_options import ClientOptions
+    from google.api_core.exceptions import NotFound
+    from google.cloud import modelarmor_v1 as ma
+
+    client = ma.ModelArmorClient(
+        transport="rest",
+        client_options=ClientOptions(
+            api_endpoint=f"modelarmor.{MODEL_ARMOR_LOCATION}.rep.googleapis.com"
+        ),
+    )
+    name = model_armor_template_path(
+        GOOGLE_CLOUD_PROJECT, MODEL_ARMOR_LOCATION, MODEL_ARMOR_TEMPLATE
+    )
+    print("Deleting Model Armor template:")
+    try:
+        client.delete_template(request=ma.DeleteTemplateRequest(name=name))
+        print(f"    Deleted: {MODEL_ARMOR_TEMPLATE}")
+    except NotFound:
+        print(f"    Not found: {MODEL_ARMOR_TEMPLATE}")
+    except Exception as e:  # noqa: BLE001
+        print(f"    FAILED (non-fatal): {MODEL_ARMOR_TEMPLATE} - {e}")
+
+
+def delete_example_store() -> None:
+    """Delete the Example Store setup.py created.
+
+    Matched the same way setup resolves it: by the explicit EXAMPLE_STORE_NAME
+    resource name if set, else by the deterministic display name (Vertex assigns a
+    numeric resource id, so there's nothing else stable to match on).
+    """
+    import vertexai
+    from vertexai.preview import example_stores
+
+    print("Deleting Example Store:")
+    vertexai.init(project=GOOGLE_CLOUD_PROJECT, location=EXAMPLE_STORE_LOCATION)
+
+    targets = []
+    try:
+        if EXAMPLE_STORE_NAME:
+            targets = [example_stores.ExampleStore(EXAMPLE_STORE_NAME)]
+        else:
+            targets = [
+                s
+                for s in example_stores.ExampleStore.list()
+                if (getattr(s, "display_name", None)
+                    or getattr(getattr(s, "_gca_resource", None), "display_name", None))
+                == EXAMPLE_STORE_DISPLAY_NAME
+            ]
+    except Exception as e:  # noqa: BLE001
+        print(f"    FAILED (non-fatal) listing stores: {e}")
+        return
+
+    if not targets:
+        print(f"    Not found: {EXAMPLE_STORE_NAME or EXAMPLE_STORE_DISPLAY_NAME}")
+        return
+    for store in targets:
+        try:
+            store.delete()
+            print(f"    Deleted: {store.resource_name}")
+        except Exception as e:  # noqa: BLE001
+            print(f"    FAILED (non-fatal): {store.resource_name} - {e}")
+
+
+def delete_rag_corpus() -> None:
+    """Delete the RAG Engine corpus setup.py created (and its imported files).
+
+    Matched the same way setup resolves it: by the explicit RAG_CORPUS_NAME
+    resource name if set, else by the deterministic display name.
+    """
+    import vertexai
+    from vertexai.preview import rag
+
+    print("Deleting RAG corpus:")
+    vertexai.init(project=GOOGLE_CLOUD_PROJECT, location=RAG_LOCATION)
+
+    names = []
+    try:
+        if RAG_CORPUS_NAME:
+            names = [RAG_CORPUS_NAME]
+        else:
+            names = [
+                c.name
+                for c in rag.list_corpora()
+                if getattr(c, "display_name", None) == RAG_CORPUS_DISPLAY_NAME
+            ]
+    except Exception as e:  # noqa: BLE001
+        print(f"    FAILED (non-fatal) listing corpora: {e}")
+        return
+
+    if not names:
+        print(f"    Not found: {RAG_CORPUS_NAME or RAG_CORPUS_DISPLAY_NAME}")
+        return
+    for name in names:
+        try:
+            rag.delete_corpus(name=name)
+            print(f"    Deleted: {name}")
+        except Exception as e:  # noqa: BLE001
+            print(f"    FAILED (non-fatal): {name} - {e}")
 
 
 def delete_profile_scans() -> None:
@@ -134,6 +251,12 @@ def main() -> None:
 
     print(f"Removing agent-building resources from {GOOGLE_CLOUD_PROJECT}\n")
     revoke_runtime_iam()
+    print()
+    delete_model_armor_template()
+    print()
+    delete_example_store()
+    print()
+    delete_rag_corpus()
     print()
     delete_profile_scans()
     print()
