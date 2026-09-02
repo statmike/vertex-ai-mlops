@@ -452,7 +452,7 @@ moves[['question', 'semantic_rank', 'hybrid_rank', 'positions_gained']]
 
 Under hybrid retrieval the `distance` column is **not** a distance. Semantic-only values above are cosine distances, where a perfect match is `0`; hybrid values cluster tightly just above `0.967`, and a row that is its own best match still scores about `0.967`, never `0`. The two columns are **not comparable** — do not plot them on one axis, do not threshold hybrid values with a cosine cutoff, and do not call a hybrid value a cosine distance. Use it for ordering, nothing else.
 
-What the number is: **one minus a Reciprocal Rank Fusion score**. Each leg — the vector search and the lexical (BM25) search — produces its own ranked list, and every row scores the sum of `1 / (k + rank)` over the two lists, with the standard constant `k = 60` on the vector leg. Taking the returned values apart row by row shows something the standard form does not predict: the two legs do not count from the same base. The lexical leg uses 61.
+What the number is: **one minus a Reciprocal Rank Fusion score**. Each leg — the vector search and the lexical (BM25) search — produces its own ranked list, and every row scores the sum of `1 / (k + rank)` over the two lists, with the standard constant `k = 60` on the vector leg. Taking the returned values apart row by row puts the lexical term one denominator higher than that, which the 60/61 form below reproduces exactly:
 
 ```
 distance = 1 − ( 1/(60 + rank_vector) + 1/(61 + rank_lexical) )
@@ -480,11 +480,20 @@ What a keyword match buys is lexical rank 1, worth `1/62 ≈ 0.0161`, and `top_k
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | deepest semantic rank retrievable | 3 | 6 | 10 | 23 | 56 | 110 | 212 | 468 | 510 | 640 | 1,000 | 2,080 | 3,000 |
 
-The score gate binds below `top_k = 51`; from there up the pool is the tighter one and reach settles at exactly `10 * top_k`. The searches here pass `top_k => -1` so that every entry comes back ranked and the whole comparison is visible; a production pipeline sets `top_k` to the number of documents it means to paste into the prompt. A three-document context window reaches vector rank 6, so on this run the lexical leg re-ranks the neighbourhood rather than rescuing an entry from the back of the list — the cell below recomputes that bound from the rank bases it measures. The sizing rule that falls out: to retrieve an entry sitting at vector rank `R` by its exact token, `top_k` has to be at least `R / 10` — a floor, not a recipe. That ratio is the pool bound alone, and below a few hundred ranks deep the score bound is the tighter of the two, so take the requirement from the reach table above: an entry at vector rank 100 needs `top_k = 29`, not 10. Only above the crossover at `top_k = 51` does `R / 10` become the answer itself.
+The score gate binds below `top_k = 51`; from there up the pool is the tighter one and reach settles at exactly `10 * top_k`. The searches here pass `top_k => -1` so that every entry comes back ranked and the whole comparison is visible; a production pipeline sets `top_k` to the number of documents it means to paste into the prompt. A three-document context window reaches vector rank 6, so on this run the lexical leg re-ranks the neighbourhood rather than rescuing an entry from the back of the list — the cell below recomputes that bound from the denominators it measures. The sizing rule that falls out: to retrieve an entry sitting at vector rank `R` by its exact token, `top_k` has to be at least `R / 10` — a floor, not a recipe. That ratio is the pool bound alone, and below a few hundred ranks deep the score bound is the tighter of the two, so take the requirement from the reach table above: an entry at vector rank 100 needs `top_k = 29`, not 10. Only above the crossover at `top_k = 51` does `R / 10` become the answer itself.
 
-> **Reverse-engineered from observation, not documented by Google.** The reference pages describe no fusion algorithm, return no score or rank column, and still define `distance` as the semantic distance — which the hybrid output contradicts. A Google Cloud blog post names "Reciprocal Rank Fusion and BM25" without publishing a formula. The decomposition above reproduces observed values exactly, rank-base asymmetry and all, but it is inferred from behavior and can change without notice. Build on the *ordering*; never hard-code the arithmetic.
+> **Reverse-engineered from observation, not documented by Google.** The reference pages describe no fusion algorithm, return no score or rank column, and still define `distance` as the semantic distance — which the hybrid output contradicts. A Google Cloud blog post names "Reciprocal Rank Fusion and BM25" without publishing a formula. The decomposition above reproduces observed values exactly, but it is inferred from behavior and can change without notice. Build on the *ordering*; never hard-code the arithmetic.
 
-The cell below re-derives it on this run's results: it takes each returned row's known vector rank, subtracts that leg's contribution from the observed score, and solves for the lexical rank the fusion must have used. Whole numbers confirm the `1/(k + rank)` shape. Whether those numbers form a permutation of `1..n` is a second, independent check, and it is the one that exposes the rank base. Solved with 60 on both legs, the implied ranks come out as `2..n + 1` over an `n`-entry knowledge base — for the thirteen entries here, ranks running `2..14`, with 14 one past the last rank such a list can hand out. That is not an anomaly in the data and not a rounding artifact; it is precisely what a lexical base of 61 looks like when it is decoded with 60. Every implied rank lands one too high, so subtract one to read the true 1-based lexical ranks: the entry carrying the token holds lexical rank 1, and the rest follow in the order the vector leg put them in.
+The cell below re-derives it on this run's results: it takes each returned row's known vector rank, subtracts that leg's contribution from the observed score, and solves for the lexical rank the fusion must have used. Whole numbers confirm the `1/(k + rank)` shape. Whether those numbers form a permutation of `1..n` is a second, independent check. Solved with 60 on both legs, the implied ranks come out as `2..n + 1` over an `n`-entry knowledge base — for the thirteen entries here, ranks running `2..14`. Subtract one and they read as a clean `1..13`, with the entry carrying the token at lexical rank 1 and the rest following in the order the vector leg put them in.
+
+**What that shift does and does not prove.** Only the vector rank is observed here; the lexical term is a residual, so what the arithmetic pins is a set of *denominators*, not a pair of constants. Two readings fit identically, because `1/(61 + r)` and `1/(60 + (r + 1))` are the same number:
+
+| Reading | Vector leg | Lexical leg |
+|---|---|---|
+| A — two constants | k = 60, ranks `1..n` | k = 61, ranks `1..n` |
+| B — one constant, offset ranks | k = 60, ranks `1..n` | k = 60, ranks `2..n+1` |
+
+The tempting argument — "no 13-entry list hands out rank 14, so the bases must differ" — rules out a shared base combined with *this notebook's* 1-based lexical numbering. It does not rule out reading B, where a contiguous block starting at 2 is exactly what an offset ranking looks like. **B is the likelier**: k = 60 over 1-based ranks is canonical RRF (Cormack, Clarke and Buettcher, 2009) and the default wherever the constant is exposed — Elasticsearch and OpenSearch name it `rank_constant` and default it to 60, Spanner and AlloyDB write 60 into their documented SQL — while 61 appears as the constant in no published implementation. The 60/61 form is kept because it is the shortest expression that reproduces every observed value.
 
 ```python
 rrf_k = 60  # the standard Reciprocal Rank Fusion constant
@@ -511,8 +520,9 @@ whole = int(decomposed['is_whole_number'].sum())
 n = len(decomposed)
 print(f'{whole} of {n} returned rows decompose to whole-number lexical ranks at k = {rrf_k}.')
 
-# Whole numbers confirm the 1/(k + rank) shape. They do not confirm the rank base: check the
-# implied ranks against 1..n, the only set an n-document lexical list can hand out.
+# Whole numbers confirm the 1/(k + rank) shape. They say nothing about where the lexical leg
+# starts counting: check the implied ranks against 1..n, the set an n-document list hands out
+# when both legs share this notebook's numbering.
 implied = sorted(int(r) for r in decomposed.loc[decomposed['is_whole_number'],
                                                 'implied_lexical_rank'].round())
 expected = list(range(1, n + 1))
@@ -529,11 +539,12 @@ elif implied == [r + implied[0] - 1 for r in expected]:
     lexical_base = rrf_k + offset
     print(f'The implied ranks are 1..{n} shifted by exactly +{offset}: they run {implied[0]}..'
           f'{implied[-1]}, and no {n}-document list can hand out a rank of {implied[-1]}. '
-          f'The two legs do not share a rank base — the lexical term is '
-          f'1/({lexical_base} + rank_lexical) against 1/({rrf_k} + rank_vector) for the vector '
-          f'leg. Subtract {offset} from the column below to read true 1-based lexical ranks: the '
-          f'row carrying the token holds lexical rank 1, and every other row follows behind it in '
-          f'the order the vector leg put them in.')
+          f'Equivalently: the lexical term is 1/({lexical_base} + rank_lexical) against '
+          f'1/({rrf_k} + rank_vector), or the same k = {rrf_k} on both legs with the lexical '
+          f'ranks offset by {offset} — the residual cannot tell those apart. Subtract {offset} '
+          f'from the column below to read 1-based lexical ranks: the row carrying the token '
+          f'holds lexical rank 1, and every other row follows behind it in the order the vector '
+          f'leg put them in.')
 else:
     print(f'The implied ranks are whole numbers but neither a permutation of 1..{n} nor a uniform '
           f'shift of one: {implied}. Trust the ordering, not the arithmetic.')

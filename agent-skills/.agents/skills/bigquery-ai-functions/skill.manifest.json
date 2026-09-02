@@ -2,7 +2,7 @@
   "name": "bigquery-ai-functions",
   "version": "0.2.0",
   "generated_date": "2026-09-02",
-  "source_commit": "23b8bc7f",
+  "source_commit": "45f6a0a8",
   "reference_files": [
     "classification-and-scoring.md",
     "document-processing.md",

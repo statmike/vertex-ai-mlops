@@ -786,21 +786,22 @@ Google does not document the fusion. The only public statement of the algorithm 
 
 > **Reverse-engineered, not documented.** Everything in the rest of this section was recovered by arithmetic on observed outputs. Google publishes no formula for the hybrid score, so this behavior is not part of any contract and can change without notice. Consume the *ordering*, never the number.
 
-What the observed values fit, exactly, is reciprocal rank fusion over two 1-based ranked lists — with **a different rank base for each leg**, 60 for the vector list and 61 for the lexical one:
+What the observed values fit, exactly, is reciprocal rank fusion over two 1-based ranked lists:
 
 ```
 distance = 1 - ( 1/(60 + rank_vector) + 1/(61 + rank_lexical) )
 ```
 
-The asymmetry is easy to miss and easy to check. A row at vector rank 1 and lexical rank 2 returns `0.9677335415040333`, which is `1 - (1/61 + 1/63)`. Neither shared base reproduces it — the returned value falls *between* the two:
+Only one of those ranks is read directly, though. `VECTOR_SEARCH` returns no rank column, so `rank_vector` comes from a separate semantic-only run and the lexical term is the remainder. That pins *denominators*, not constants: the semantic leg's top row contributes `1/61` and the lexical leg's top row contributes `1/62`. Two readings fit identically, since `1/(61 + rank_lexical)` and `1/(60 + (rank_lexical + 1))` are the same number:
 
-| Reading | Expression at vector rank 1, lexical rank 2 | Value |
+| Reading | Semantic leg | Lexical leg |
 |---|---|---|
-| 60 under both legs | `1 - (1/61 + 1/62)` | `0.9674775251189847` |
-| **measured, 60 and 61** | `1 - (1/61 + 1/63)` | **`0.9677335415040333`** |
-| 61 under both legs | `1 - (1/62 + 1/63)` | `0.9679979518689196` |
+| A — two constants | k = 60, ranks `1..n` | k = 61, ranks `1..n` |
+| **B — one constant, offset ranks** | k = 60, ranks `1..n` | k = 60, ranks `2..n+1` |
 
-Landing between the two shared-base readings is the signature of mixed bases, and it is reproducible from the ranks alone.
+Nothing observable separates them, but **B is the likelier**. `k = 60` over 1-based ranks is canonical RRF (Cormack, Clarke and Buettcher, 2009) and the default wherever the constant is exposed — Elasticsearch and OpenSearch name it `rank_constant` and default it to 60, Spanner and AlloyDB write 60 into their documented SQL. No published implementation uses 61 as the constant; 61 appears everywhere instead as the rank-1 denominator `1/(60 + 1)`, which is the transcription slip that would produce the observed `1/62` on a top row. The semantic leg lands on the canonical `1/61` here, so the extra `+1` is on the lexical side.
+
+The 60/61 form is used throughout this notebook because it is the shortest expression that reproduces every observed value — arithmetic that holds, not two design decisions.
 
 Worked against the two rows Google prints in its own `VECTOR_SEARCH` hybrid example:
 
@@ -824,11 +825,11 @@ The cell below tests all of this against this notebook's own data, using the pag
 rank_lexical = 1 / ( (1 - distance) - 1/(60 + rank_vector) ) - 61
 ```
 
-If both rank bases are right, those recovered ranks come out as whole numbers; if either is wrong they come out as arbitrary fractions, so the rounding-error column is the actual test. The recovered ranks carry a second signature of pool-wide ranking, in the `rank_lexical - rank_vector` offsets the cell tallies: the one row that matched the SKU token holds lexical rank 1, and every row above it in vector order is pushed down exactly one place. Rows below it should keep their positions, and the tally shows most of them do — read the `+0` bucket against the `±1` and `±2` strays, which are distance ties re-broken between the two `ROW_NUMBER` passes rather than fusion effects.
+If the arithmetic is right, those recovered ranks come out as whole numbers; if it is wrong they come out as arbitrary fractions, so the rounding-error column is the actual test. Under reading B the engine's own lexical ranks would be one higher than the `implied_rank_lexical` recovered here — the same integers, shifted. The recovered ranks carry a second signature of pool-wide ranking, in the `rank_lexical - rank_vector` offsets the cell tallies: the one row that matched the SKU token holds lexical rank 1, and every row above it in vector order is pushed down exactly one place. Rows below it should keep their positions, and the tally shows most of them do — read the `+0` bucket against the `±1` and `±2` strays, which are distance ties re-broken between the two `ROW_NUMBER` passes rather than fusion effects.
 
 ```python
-K_VECTOR = 60   # rank base for the vector leg  — empirical, see the note above
-K_LEXICAL = 61  # rank base for the lexical leg — the two bases are not the same
+K_VECTOR = 60   # canonical RRF constant, 1-based ranks — reproduces the vector leg exactly
+K_LEXICAL = 61  # shorthand: equivalently k=60 with lexical ranks offset by one (see above)
 
 ranks = client.query(f'''
   SELECT base.sku AS sku, distance,

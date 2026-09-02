@@ -1397,7 +1397,20 @@ The diagnostic signature of a query whose target sits outside the pool is that t
 distance = 1 - ( 1/(60 + rank_vector) + 1/(61 + rank_lexical) )
 ```
 
-**The two legs do not share a rank base.** This is only visible if you recover both ranks independently rather than solving for one of them: decoding a fused score with k = 60 on *both* terms yields lexical ranks `2 .. n+1`, and no n-row list can hand out rank n+1. Measured on a 30-row corpus where `rank_vector` was read directly from a separate semantic-only `VECTOR_SEARCH` run, the implied lexical ranks form an exact `1 .. 30` permutation only under k = 61. Which leg carries the extra 1 is settled by any row where the two ranks differ: at semantic rank 1 and lexical rank 2, BigQuery returns `1 - (1/61 + 1/63)` = `0.9677335415040333`. That value falls *between* the two readings a shared base would give those same ranks -- 60 on both legs gives `1 - (1/61 + 1/62)` = `0.9674775251189847`, and 61 on both legs gives `1 - (1/62 + 1/63)` = `0.9679979518689196`. Landing strictly between them is the signature of mixed bases: no single k reproduces the observed number. (`0.9674775251189847` carries two distinct meanings in this section, so keep them apart: here it is the shared-base-60 *reading* of a rank 1 / rank 2 row -- a candidate the measurement rules out -- while elsewhere it is the best score actually attainable under the measured law, at rank 1 in *both* legs. The same expression `1/61 + 1/62` produces both.) The asymmetry is determined, not cosmetic.
+**What is measured, and what is inferred.** `VECTOR_SEARCH` returns no rank column, so only one of the two ranks is ever read directly. `rank_vector` comes from a separate semantic-only run over the same rows; the lexical term is whatever remains after subtracting `1/(60 + rank_vector)` from `1 - distance`. What the arithmetic pins is therefore a set of *denominators*, not a pair of constants. Measured on a 30-row corpus, the semantic leg's top row contributes `1/61`, the lexical leg's top row contributes `1/62`, and the remaining lexical denominators run contiguously from there.
+
+Two readings fit identically, because `1/(61 + rank_lexical)` and `1/(60 + (rank_lexical + 1))` are the same number:
+
+| Reading | Semantic leg | Lexical leg |
+|---|---|---|
+| A -- two constants | k = 60, ranks `1..n` | k = 61, ranks `1..n` |
+| B -- one constant, offset ranks | k = 60, ranks `1..n` | k = 60, ranks `2..n+1` |
+
+Nothing observable from outside BigQuery separates them, but **B is the likelier**. k = 60 over 1-based ranks is the canonical RRF of Cormack, Clarke and Buettcher (2009) and the default wherever the constant is exposed -- Elasticsearch and OpenSearch both name it `rank_constant` and default it to 60, and Spanner and AlloyDB write 60 into their documented SQL. A constant of 61 appears in no published implementation. Where 61 *does* appear constantly is as the rank-1 denominator, `1/(60 + 1)` -- which is exactly the transcription slip that would yield the observed `1/62` on a top-ranked row. The semantic leg here lands on the canonical `1/61` for its own top row, so this notebook's rank convention already agrees with BigQuery's on one leg; the extra `+1` sits on the lexical side specifically.
+
+One argument that looks decisive and is not: decoding with k = 60 on both legs yields lexical ranks `2 .. n+1`, and no n-row list hands out rank n+1. That rules out a shared base combined with ordinary 1-based lexical numbering. It does *not* rule out reading B, where `2 .. n+1` is precisely what an offset 1-based ranking looks like. A contiguous block starting at 2 is evidence *for* an offset, not against a shared constant.
+
+The 60/61 form is used throughout this document because it is the shortest expression that reproduces every observed value. Read it as arithmetic that holds, not as two deliberate design decisions.
 
 Three worked examples from that run, each matching a live returned value exactly:
 
@@ -1407,7 +1420,7 @@ Three worked examples from that run, each matching a live returned value exactly
 | 2 | 1 | `1 - (1/62 + 1/62)` | `0.967741935484` |
 | 9 | 2 | `1 - (1/69 + 1/63)` | `0.969634230504` |
 
-The middle row is the one that trips people up: `1/62 + 1/62` is a value the *measured* law produces -- `1/(60 + 2)` and `1/(61 + 1)` happen to coincide at ranks (2, 1). It is also the `distance` on the `tiger` row of Google's published hybrid example, which decodes to exactly those ranks. Seeing two equal denominators is not evidence of a shared rank base; only reading both ranks independently settles that.
+The middle row is the one that trips people up: `1/62 + 1/62` is a value the measured arithmetic produces -- `1/(60 + 2)` and `1/(61 + 1)` happen to coincide at ranks (2, 1). It is also the `distance` on the `tiger` row of Google's published hybrid example, which decodes to exactly those ranks. Seeing two equal denominators is not evidence of a shared rank base: under either reading above, ranks (2, 1) produce `1/62` twice.
 
 Consequences worth internalizing:
 

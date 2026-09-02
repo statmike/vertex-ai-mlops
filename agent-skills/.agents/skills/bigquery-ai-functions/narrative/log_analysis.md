@@ -549,7 +549,7 @@ It is a **fused rank score**. Each of the two searches produces its own ranking,
 distance = 1 - ( 1/(60 + rank_vector) + 1/(61 + rank_lexical) )
 ```
 
-with 1-based ranks. The two legs do not share a rank base: 60 for the vector leg, 61 for the lexical leg. That asymmetry is determined, not cosmetic. A row ranked 1st by the vector search and 2nd by the lexical search scores:
+with 1-based ranks. A row ranked 1st by the vector search and 2nd by the lexical search scores:
 
 ```
 1 - (1/61 + 1/63)
@@ -557,9 +557,16 @@ with 1-based ranks. The two legs do not share a rank base: 60 for the vector leg
   = 0.9677335415040333
 ```
 
-Neither shared base reproduces that value. For the same row — vector rank 1, lexical rank 2 — 60 on both legs gives `1 - (1/61 + 1/62) = 0.9674775251189847` and 61 on both legs gives `1 - (1/62 + 1/63) = 0.9679979518689196`. What BigQuery returns falls *between* the two, which is the signature of two different bases rather than one.
+**What is measured, and what is inferred.** Only the vector rank is ever read directly — `VECTOR_SEARCH` returns no rank column, so `rank_vector` comes from a separate semantic-only run over the same rows and the lexical term is whatever remains. That pins *denominators*, not constants. Since `1/(61 + r)` and `1/(60 + (r + 1))` are the same number, two readings fit every observation identically:
 
-`0.9674775251189847` appears again below as the best attainable score. That is the same arithmetic, `1/61 + 1/62`, reached from different ranks: under the measured law it is a row at rank 1 on *both* legs. Here it is the shared-base-60 reading of a rank-1 / rank-2 row, and it is the wrong prediction for that row.
+| Reading | Vector leg | Lexical leg |
+|---|---|---|
+| A — two constants | k = 60, ranks `1..n` | k = 61, ranks `1..n` |
+| B — one constant, offset ranks | k = 60, ranks `1..n` | k = 60, ranks `2..n+1` |
+
+**B is the likelier.** k = 60 over 1-based ranks is canonical reciprocal rank fusion (Cormack, Clarke and Buettcher, 2009) and the default wherever the constant is exposed — Elasticsearch and OpenSearch name it `rank_constant` and default it to 60, Spanner and AlloyDB write 60 into their documented SQL — while 61 appears as the constant in no published implementation. The 60/61 form is kept throughout this notebook because it is the shortest expression that reproduces every observed value, not because two bases were deliberately chosen.
+
+`0.9674775251189847` appears below as the best attainable score: the same arithmetic, `1/61 + 1/62`, evaluated at the best ranks a row can hold — rank 1 on *both* legs.
 
 What that means when reading the column:
 
@@ -572,7 +579,7 @@ What that means when reading the column:
 
 > **This decomposition is reverse-engineered from observed behavior; Google does not document it.** The reference pages describe `distance` only as the distance "for the semantic search portion of a vector search" and say nothing about fusion, the constants, or the scale change. The formula here was recovered by matching returned values to all 16 significant digits. Treat it as an explanation of what the function does today, not a contract — it can change without notice.
 
-The cell below rebuilds the arithmetic from live results rather than asserting it: it re-runs the semantic search across all 30 tickets to recover each row's vector rank, solves the formula for the lexical rank, and then reconstructs the fused score from those two integers. At `top_k => 12` the pool is 120 rows, so all 30 tickets sit inside it and every returned row has a lexical rank to recover. Every one of them comes back as an exact integer — that is the evidence the formula is right, including the 61 on the lexical leg.
+The cell below rebuilds the arithmetic from live results rather than asserting it: it re-runs the semantic search across all 30 tickets to recover each row's vector rank, solves the formula for the lexical rank, and then reconstructs the fused score from those two integers. At `top_k => 12` the pool is 120 rows, so all 30 tickets sit inside it and every returned row has a lexical rank to recover. Every one of them comes back as an exact integer — that is the evidence the `1/(k + rank)` shape is right. It is not evidence about the base: under reading B the engine's own lexical ranks are one higher than the integers recovered here, the same numbers shifted.
 
 ```python
 query = f'''

@@ -459,17 +459,24 @@ modes
 
 ### Reading the hybrid `distance`
 
-Both hybrid calls return a `distance` column, and in neither case is it a distance. Hybrid fuses the two legs by **rank**, not by score, using reciprocal rank fusion with 1-based ranks. The two legs do not count from the same base:
+Both hybrid calls return a `distance` column, and in neither case is it a distance. Hybrid fuses the two legs by **rank**, not by score, using reciprocal rank fusion with 1-based ranks. The lexical term sits one denominator higher than the semantic one:
 
 ```
 distance = 1 - ( 1/(60 + rank_vector) + 1/(61 + rank_lexical) )
 ```
 
-The semantic leg uses 60, the standard fusion constant; the lexical leg uses 61. That asymmetry is measured, not cosmetic. A row sitting at semantic rank 1 and lexical rank 2 comes back as `1 - (1/61 + 1/63) = 0.9677335415040333`, and that value lands *between* the two readings a shared base would give for the same pair of ranks — 60 on both legs predicts `1 - (1/61 + 1/62) = 0.9674775251189847`, 61 on both legs predicts `1 - (1/62 + 1/63) = 0.9679979518689196`. Falling between them is the signature of two different bases.
+A row sitting at semantic rank 1 and lexical rank 2 comes back as `1 - (1/61 + 1/63) = 0.9677335415040333`, exactly. What that pins is a set of *denominators*, not a pair of constants — `VECTOR_SEARCH` returns no rank column, so only `rank_vector` is observed and the lexical term is the remainder. Since `1/(61 + r)` and `1/(60 + (r + 1))` are the same number, two readings fit identically:
+
+| Reading | Semantic leg | Lexical leg |
+|---|---|---|
+| A — two constants | k = 60, ranks `1..n` | k = 61, ranks `1..n` |
+| B — one constant, offset ranks | k = 60, ranks `1..n` | k = 60, ranks `2..n+1` |
+
+**B is the likelier.** k = 60 over 1-based ranks is canonical reciprocal rank fusion (Cormack, Clarke and Buettcher, 2009) and the default wherever the constant is exposed — Elasticsearch and OpenSearch name it `rank_constant` and default it to 60, Spanner and AlloyDB write 60 into their documented SQL — while 61 appears as the constant in no published implementation. The 60/61 form is used here because it is the shortest expression that reproduces every observed value, not because two bases were deliberately chosen.
 
 Lower still sorts first. Three consequences follow directly from the arithmetic:
 
-- **Values cluster just below 1** — the fused results above sit within a few thousandths of `0.97`. A document that matches the query perfectly does *not* score 0; the best score available, rank 1 on both legs, is `1 - (1/61 + 1/62) = 0.96748`. That is the same expression the shared-base-60 reading produces at ranks 1 and 2 above, which is arithmetic coincidence and not shared meaning: here it is the measured law evaluated at the best ranks a row can hold.
+- **Values cluster just below 1** — the fused results above sit within a few thousandths of `0.97`. A document that matches the query perfectly does *not* score 0; the best score available, rank 1 on both legs, is `1 - (1/61 + 1/62) = 0.96748`.
 - **The numbers are not comparable to Approach 1's `COSINE` distances or Approach 2's `EUCLIDEAN` ones.** Different scale, different meaning. Compare *ranks* across approaches, never the values.
 - **Every pooled row collects both terms.** BigQuery hands the lexical leg only the top `10 * top_k` rows by semantic rank, and inside that candidate pool it ranks *all* of them, not just the rows BM25 matched: the matches take lexical ranks `1..m` and every remaining candidate falls in behind them in its semantic order. No pooled row is ever missing from a list, so no pooled row ever forfeits a term — an article that never mentions `Cloud Scheduler` still earns a lexical rank, namely its semantic rank pushed down one place for each matching article ranked below it. Only where nothing matches at all does that reduce to `1 - ( 1/(60 + r) + 1/(61 + r) )` at semantic rank `r`. A row deeper than `10 * top_k` never enters the pool and gets no lexical rank at all.
 

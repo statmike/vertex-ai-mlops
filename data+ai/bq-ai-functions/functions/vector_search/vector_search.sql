@@ -249,25 +249,34 @@ ORDER BY h.hybrid_rank NULLS LAST;
 -- Under hybrid, distance is a fused RANK score, not a distance. Every returned
 -- value is reproduced from the two integer ranks alone, to within 1e-12:
 --   distance = 1 - ( 1/(60 + rank_vector) + 1/(61 + rank_lexical) ), ranks from 1.
--- The two legs do not share a rank base: 60 for the semantic leg, 61 for the
--- lexical leg. The asymmetry is determined, not cosmetic — a row first on the
--- vector leg and second on the lexical leg returns 0.9677335415040333, which is
--- 1 - (1/61 + 1/63). Neither shared base reproduces it:
+-- VECTOR_SEARCH returns no rank column, so only rank_vector is read directly —
+-- from a separate semantic-only run — and the lexical term is the remainder.
+-- What that pins is denominators, not constants: the semantic leg's top row
+-- contributes 1/61 and the lexical leg's top row contributes 1/62. Two readings
+-- fit identically, since 1/(61 + r) and 1/(60 + (r + 1)) are the same number:
 --
---   reading             expression at rank_vector 1, rank_lexical 2   value
---   60 on both legs     1 - (1/61 + 1/62)                             0.9674775251189847
---   measured (60 / 61)  1 - (1/61 + 1/63)                             0.9677335415040333
---   61 on both legs     1 - (1/62 + 1/63)                             0.9679979518689196
+--   A  two constants          semantic k=60 ranks 1..n   lexical k=61 ranks 1..n
+--   B  one constant, offset   semantic k=60 ranks 1..n   lexical k=60 ranks 2..n+1
 --
--- The returned value falls BETWEEN the two shared-base readings, which is the
--- signature of mixed bases: a single shared base cannot straddle its own
--- prediction. Note that the same arithmetic, 1 - (1/61 + 1/62) =
--- 0.9674775251189847, carries two separate meanings here. In the table it is the
--- shared-base-60 prediction for a rank-1 / rank-2 row, which BigQuery does not
--- return. Under the real law it is the score of a row first on BOTH legs, and
--- that is the best attainable hybrid score, not 0. Hybrid scores cluster just
--- under 1, lower is still better, and they are not comparable to the distances a
--- semantic-only search returns.
+-- Nothing observable separates them, but B is the likelier. k=60 over 1-based
+-- ranks is canonical RRF (Cormack et al. 2009) and the default wherever the
+-- constant is exposed — Elasticsearch and OpenSearch call it rank_constant and
+-- default it to 60; Spanner and AlloyDB write 60 into their documented SQL. No
+-- published implementation uses 61 as the constant; 61 appears everywhere as the
+-- rank-1 denominator 1/(60 + 1), which is the transcription slip that yields the
+-- observed 1/62 on a top row. The semantic leg lands on the canonical 1/61 here,
+-- so the extra +1 sits on the lexical side specifically.
+--
+-- Do not treat "decoding with 60 on both legs implies lexical ranks 2..n+1, and
+-- no n-row list hands out n+1" as decisive. It rules out a shared base with
+-- ordinary 1-based numbering; it is exactly what reading B predicts.
+--
+-- The 60/61 form is used below because it is the shortest expression that
+-- reproduces every observed value — arithmetic that holds, not two design
+-- decisions. Note 1 - (1/61 + 1/62) = 0.9674775251189847 is the score of a row
+-- first on BOTH legs: the best attainable hybrid score, not 0. Hybrid scores
+-- cluster just under 1, lower is still better, and they are not comparable to
+-- the distances a semantic-only search returns.
 --
 -- THE LEXICAL LEG RANKS THE ENTIRE CANDIDATE POOL. BigQuery hands BM25 only the top
 -- 10 * top_k rows by semantic rank; that pool is all it ever sees. Inside the pool it

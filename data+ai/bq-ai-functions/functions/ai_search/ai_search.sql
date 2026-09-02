@@ -133,9 +133,16 @@ FROM AI.SEARCH(
 --   VECTOR — a real distance in the distance_type space, and a self-match
 --            is 0.
 --   HYBRID — 1 minus a Reciprocal Rank Fusion score over the vector and
---            lexical rank lists, with 1-based ranks and two different rank
---            bases — 60 for the semantic leg, 61 for the lexical leg:
+--            lexical rank lists, with 1-based ranks:
 --              distance = 1 - ( 1/(60 + rank_vector) + 1/(61 + rank_lexical) )
+--            Only rank_vector is ever observed, so what this pins is a set of
+--            denominators, not a pair of constants: 1/(61 + r) and
+--            1/(60 + (r + 1)) are the same number, so k = 60 / k = 61 over
+--            1-based ranks and a shared k = 60 with lexical ranks starting at
+--            2 fit identically. The latter is likelier — k = 60 over 1-based
+--            ranks is canonical RRF and 61 is used as the constant in no
+--            published implementation — but the 60/61 form above is the
+--            shortest expression that reproduces every observed value.
 --            A row first in both lists scores 1 - (1/61 + 1/62) = 0.96747753,
 --            the best score attainable. A self-match is ~0.967, never 0, and
 --            the value is NOT comparable to a VECTOR-mode distance.
