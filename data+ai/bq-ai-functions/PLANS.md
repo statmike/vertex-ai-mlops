@@ -197,16 +197,20 @@ Each workflow is a notebook that uses multiple AI functions together to accompli
 
 | Workflow | Functions Used | Description |
 |----------|---------------|-------------|
-| **[Data Enrichment](workflows/data_enrichment/)** | AI.GENERATE | Fix misspellings, fill missing fields, correct errors via search-grounded web lookups |
+| **[Data Enrichment](workflows/data_enrichment/)** | AI.GENERATE, AI.PREDICT | Fix misspellings and correct errors via search-grounded web lookups, then fill a missing structured attribute with TabFM |
 | **[Content Analysis Pipeline](workflows/content_analysis/)** | AI.GENERATE_TABLE, AI.CLASSIFY, AI.SCORE, AI.GENERATE | Generate sample data, classify by topic, score urgency, generate executive summary |
-| **[Semantic Search System](workflows/semantic_search/)** | AI.EMBED, VECTOR_SEARCH, AI.SEARCH | Build a semantic search index, compare manual (VECTOR_SEARCH) vs simplified (AI.SEARCH) approaches |
+| **[Semantic Search System](workflows/semantic_search/)** | AI.EMBED, VECTOR_SEARCH, AI.SEARCH | Build a semantic search index, compare manual (VECTOR_SEARCH), simplified (AI.SEARCH), and hybrid approaches |
 | **[RAG Pipeline](workflows/rag_pipeline/)** | AI.GENERATE_TABLE, AI.EMBED, VECTOR_SEARCH, AI.GENERATE | Generate a knowledge base, embed it, search it, answer questions with retrieved context |
 | **[Time Series Intelligence](workflows/time_series_intelligence/)** | AI.FORECAST, AI.DETECT_ANOMALIES, AI.EVALUATE, AI.KEY_DRIVERS | Forecast sales, detect anomalies, evaluate accuracy, compare TimesFM model versions, explain a change by segment |
-| **[Metric Diagnostics](workflows/metric_diagnostics/)** | AI.KEY_DRIVERS, AI.GENERATE | Explain why a metric moved between two periods, then narrate the key drivers in plain language |
+| **[Metric Diagnostics](workflows/metric_diagnostics/)** | AI.KEY_DRIVERS, AI.PREDICT, AI.GENERATE | Explain why a metric moved between two periods, project it forward with TabFM, then narrate the key drivers in plain language |
 | **[Document Intelligence](workflows/document_intelligence/)** | AI.CLASSIFY, AI.GENERATE, AI.SCORE | Classify mixed documents, extract key fields, score quality, summarize findings |
 | **[Content Moderation](workflows/content_moderation/)** | AI.GENERATE_TABLE, AI.IF, AI.CLASSIFY, AI.SCORE, AI.GENERATE | Flag, categorize, and score user-generated content for moderation |
 | **[Multimodal Analysis](workflows/multimodal_analysis/)** | AI.EMBED, AI.SIMILARITY, AI.GENERATE | Embed document images, find similar documents, generate visual descriptions |
-| **[Document RAG](workflows/document_rag/)** | AI.PARSE_DOCUMENT, AI.EMBED, VECTOR_SEARCH, AI.GENERATE | Parse real documents, embed chunks, search, answer questions with grounded context |
+| **[Document RAG](workflows/document_rag/)** ⚠️ | AI.PARSE_DOCUMENT, AI.EMBED, VECTOR_SEARCH, AI.GENERATE | Parse real documents, embed chunks, search, answer questions with grounded context. **Blocked — AI.PARSE_DOCUMENT is offline and its docs are withdrawn. Do not re-run.** |
+| **[Log Analysis](workflows/log_analysis/)** | AI.GENERATE_TABLE, AI.CLASSIFY, AI.SCORE, AI.AGG, AI.EMBED, VECTOR_SEARCH | Classify support tickets, score priority, summarize patterns, and retrieve by error code with hybrid search |
+| **[Image Deduplication](workflows/image_deduplication/)** | AI.EMBED, VECTOR_SEARCH | Group near-duplicate images using embedding similarity to protect train/test split integrity |
+| **[Catalog Search](workflows/catalog_search/)** | AI.EMBED, VECTOR_SEARCH, AI.SEARCH | Hybrid retrieval over a product catalog — exact-token lookups pure semantics misses, with a populated vector index |
+| **[Zero-Shot Tabular Prediction](workflows/tabular_prediction/)** | AI.PREDICT, AI.EVALUATE, AI.KEY_DRIVERS, AI.GENERATE | Zero-shot regression and classification with TabFM, evaluated and explained, with no model training |
 
 Each workflow notebook includes:
 - Problem statement and approach
@@ -322,7 +326,12 @@ Tables and other notebook-specific resources use a `{function_name}_` prefix:
 | `ai_generate_embedding` | `ai_generate_embedding_docs`, model: `embedding_multimodal`, GCS: `gs://BUCKET/bq_ai_functions/ai_generate_embedding/` |
 | `content_moderation` (workflow) | `workflow_mod_posts`, `workflow_mod_flagged`, `workflow_mod_classified`, `workflow_mod_scored` |
 | `multimodal_analysis` (workflow) | `workflow_mm_embeddings`, GCS: `gs://BUCKET/bq_ai_functions/multimodal_analysis/` |
-| `log_analysis` (workflow) | `workflow_log_tickets`, `workflow_log_classified`, `workflow_log_scored` |
+| `log_analysis` (workflow) | `workflow_log_tickets`, `workflow_log_classified`, `workflow_log_scored`, `workflow_log_embedded` |
+| `ai_predict` | none — AI.PREDICT creates no persistent resources |
+| `image_deduplication` (workflow) | `workflow_dedup_embeddings` |
+| `metric_diagnostics` (workflow) | `workflow_metricdiag_trips`, `workflow_metricdiag_segments`, `workflow_metricdiag_drivers`, `workflow_metricdiag_projection` |
+| `catalog_search` (workflow) | `workflow_catalog_auto`, `workflow_catalog_products`, vector index: `workflow_catalog_hybrid_index` |
+| `tabular_prediction` (workflow) | `workflow_tabpred_split`, `workflow_tabpred_regression`, `workflow_tabpred_classification`, `workflow_tabpred_h2h`, `workflow_tabpred_drivers` |
 
 ### Cleanup strategy
 
@@ -340,7 +349,7 @@ Bidirectional links between functions and workflows help users navigate the proj
 
 ### Function notebooks → Workflows
 
-Every function notebook's overview cell (cell-0) includes a **Featured in:** line listing the workflows that use it:
+Every function notebook's overview cell (cell index **1** — cell index 0 is the header/badge table) includes a **Featured in:** line listing the workflows that use it:
 
 ```markdown
 **Featured in:** [Content Analysis Pipeline](../../workflows/content_analysis/) | [RAG Pipeline](../../workflows/rag_pipeline/)
@@ -350,7 +359,7 @@ This line goes immediately before the **References:** line.
 
 ### Workflow notebooks → Functions
 
-Every workflow notebook's overview cell (cell-0) includes a **Functions used:** line listing all functions demonstrated:
+Every workflow notebook's overview cell (cell index **1** — cell index 0 is the header/badge table) includes a **Functions used:** line listing all functions demonstrated:
 
 ```markdown
 **Functions used:** [`AI.GENERATE_TABLE`](../../functions/ai_generate_table/) | [`AI.CLASSIFY`](../../functions/ai_classify/) | [`AI.SCORE`](../../functions/ai_score/) | [`AI.GENERATE`](../../functions/ai_generate/)
@@ -360,20 +369,21 @@ Every workflow notebook's overview cell (cell-0) includes a **Functions used:** 
 
 | Function | Featured in Workflows |
 |----------|----------------------|
-| AI.GENERATE | Content Analysis, Data Enrichment, RAG Pipeline, Document Intelligence, Content Moderation, Multimodal Analysis, Document RAG, Metric Diagnostics |
-| AI.GENERATE_TABLE | Content Analysis, RAG Pipeline, Content Moderation |
+| AI.GENERATE | Content Analysis, Data Enrichment, RAG Pipeline, Document Intelligence, Content Moderation, Multimodal Analysis, Document RAG, Metric Diagnostics, Tabular Prediction |
+| AI.GENERATE_TABLE | Content Analysis, RAG Pipeline, Content Moderation, Log Analysis |
 | AI.IF | Content Moderation |
 | AI.CLASSIFY | Content Analysis, Document Intelligence, Content Moderation |
 | AI.SCORE | Content Analysis, Document Intelligence, Content Moderation |
 | AI.AGG | Content Analysis, Content Moderation, Document Intelligence, Log Analysis |
-| AI.EMBED | Semantic Search, RAG Pipeline, Multimodal Analysis, Document RAG |
+| AI.EMBED | Semantic Search, Catalog Search, RAG Pipeline, Multimodal Analysis, Document RAG, Log Analysis, Image Deduplication |
 | AI.SIMILARITY | Multimodal Analysis |
-| VECTOR_SEARCH | Semantic Search, RAG Pipeline, Document RAG |
-| AI.SEARCH | Semantic Search |
+| VECTOR_SEARCH | Semantic Search, Catalog Search, RAG Pipeline, Document RAG, Log Analysis, Image Deduplication |
+| AI.SEARCH | Semantic Search, Catalog Search |
 | AI.FORECAST | Time Series Intelligence |
 | AI.DETECT_ANOMALIES | Time Series Intelligence |
-| AI.EVALUATE | Time Series Intelligence |
-| AI.KEY_DRIVERS | Metric Diagnostics, Time Series Intelligence |
+| AI.PREDICT | Tabular Prediction, Metric Diagnostics, Data Enrichment |
+| AI.EVALUATE | Time Series Intelligence, Tabular Prediction |
+| AI.KEY_DRIVERS | Metric Diagnostics, Time Series Intelligence, Tabular Prediction |
 | AI.PARSE_DOCUMENT | Document RAG |
 | AI.COUNT_TOKENS | — (utility; not featured in a workflow) |
 
@@ -417,10 +427,11 @@ Build out the full-treatment functions, starting with the most commonly used:
 - [x] AI.SEARCH
 - [x] AI.SIMILARITY
 
-### Phase 4: Forecasting
+### Phase 4: Predictive AI (originally "Forecasting")
 - [x] AI.FORECAST
 - [x] AI.DETECT_ANOMALIES
 - [x] AI.EVALUATE
+- [x] AI.PREDICT — added in Phase 10; the section was renamed from Forecasting to Predictive AI when TabFM joined TimesFM
 
 ### Phase 5: Legacy Functions (Lightweight)
 - [x] ML.GENERATE_TEXT
@@ -465,6 +476,33 @@ Build out the full-treatment functions, starting with the most commonly used:
 - [x] AI.AGG added to existing workflows: Content Analysis, Content Moderation, Document Intelligence
 - [x] [Log Analysis](workflows/log_analysis/log_analysis.ipynb) — classify, score, and summarize support tickets with AI.AGG
 
+### Phase 10: AI.PREDICT and Hybrid Search (2026-09-01)
+
+Driven by three upstream changes landing together: `AI.PREDICT` shipped, `AI.EVALUATE` gained a second (tabular) branch, and hybrid search arrived as parameters on the two existing search functions rather than as the long-expected `HYBRID_SEARCH` TVF.
+
+**New function**
+- [x] `AI.PREDICT` — zero-shot tabular regression and classification on TabFM (`functions/ai_predict/`, 30 cells, 6 SQL examples, penguins)
+
+**New workflows**
+- [x] [Zero-Shot Tabular Prediction](workflows/tabular_prediction/) — AI.PREDICT → AI.EVALUATE → AI.KEY_DRIVERS → AI.GENERATE, with a head-to-head against trained bq-ml models
+- [x] [Catalog Search](workflows/catalog_search/) — hybrid retrieval over a ~7,275-row product catalog, large enough to actually populate a vector index
+
+**Enhanced existing content**
+- [x] `AI.EVALUATE` — TabFM branch added alongside the TimesFM branch (30 → 36 cells)
+- [x] `VECTOR_SEARCH` — 4 hybrid examples, the `STORING` rule, batch/hybrid exclusion (32 → 40 cells)
+- [x] `AI.SEARCH` — full `mode` surface (VECTOR/HYBRID/AUTO), status corrected to GA (29 → 36 cells)
+- [x] Semantic Search — third "hybrid" approach alongside manual and simplified
+- [x] RAG Pipeline — Step 5 hybrid retrieval with a batch-vs-hybrid routing rule
+- [x] Log Analysis — hand-authored error codes + AI.EMBED/hybrid retrieval sub-pipeline
+- [x] Metric Diagnostics — AI.PREDICT projection step
+- [x] Data Enrichment — expanded to 24 rows with a `sector` label; AI.PREDICT classification contrasted against search-grounded AI.GENERATE
+- [x] Document RAG — header pointer to ML.PROCESS_DOCUMENT (markdown only; **do not re-run**)
+- [x] Forecasting section renamed **Predictive AI** across README/RESOURCES/overview (TimesFM + TabFM)
+- [x] `workflows/README.md` created (was missing, and linked from README.md)
+- [x] `agent-skills` mirror updated in the same commit: `reference/forecasting-and-anomalies.md` → `reference/predictive-ai.md`, hybrid-search guidance corrected, 3 new narratives, manifest → 0.2.0
+
+**Counts after this phase:** 25 functions, 14 workflows.
+
 ---
 
 ## Resolved Questions
@@ -492,7 +530,7 @@ Build out the full-treatment functions, starting with the most commonly used:
 | `AI.GENERATE_TEXT` | `bbq.ai.generate_text(model, data)` | Takes model name string + DataFrame/Series. Generates `AI.GENERATE_TEXT` SQL. |
 | `AI.GENERATE_TABLE` | `bbq.ai.generate_table(model, data, output_schema=...)` | Takes model name string + DataFrame/Series. `output_schema` can be string or mapping. |
 | `AI.GENERATE_EMBEDDING` | `bbq.ai.generate_embedding(model, data)` | Takes model name string + DataFrame/Series. Generates `AI.GENERATE_EMBEDDING` SQL. |
-| `AI.FORECAST` | `bbq.ai.forecast(df, data_col=..., timestamp_col=...)` | No model object needed. Wraps `AI.FORECAST` SQL directly. Supports `id_cols`, `horizon`, `confidence_level`, `context_window`. |
+| `AI.FORECAST` | `bbq.ai.forecast(df, data_col=..., timestamp_col=...)` | No model object needed. Wraps `AI.FORECAST` SQL directly. Supports `id_cols`, `horizon`, `confidence_level`, `context_window`. **Wrapper skew:** still hardcodes `model='TimesFM 2.0'` while the SQL function now defaults to TimesFM 2.5 — pass `model` explicitly. |
 
 **`bigframes.bigquery.*` — Search functions:**
 
@@ -524,11 +562,15 @@ Build out the full-treatment functions, starting with the most commonly used:
 | `AI.SIMILARITY` | No BigFrames API | Use `%%bigquery` magics or raw SQL via `session.read_gbq_query()` |
 | `AI.SEARCH` | No BigFrames API | Use `%%bigquery` magics or raw SQL via `session.read_gbq_query()` |
 | `AI.DETECT_ANOMALIES` (TimesFM) | No BigFrames API | Use `%%bigquery` magics or raw SQL. (Note: `ARIMAPlus.detect_anomalies()` exists but uses ARIMA_PLUS, not TimesFM.) |
-| `AI.EVALUATE` (TimesFM) | No BigFrames API | Use `%%bigquery` magics or raw SQL. (Note: `ARIMAPlus.evaluate()` exists but uses ARIMA_PLUS, not TimesFM.) |
+| `AI.EVALUATE` (TimesFM and TabFM) | No BigFrames API | Use `%%bigquery` magics or raw SQL. (Note: `ARIMAPlus.evaluate()` exists but uses ARIMA_PLUS, not TimesFM.) |
+| `AI.PREDICT` (TabFM) | No BigFrames API | Use `%%bigquery` magics or raw SQL via `session.read_gbq_query()`. `bigframes.bigquery.ai` has `forecast` but no `predict`. |
+| `VECTOR_SEARCH` hybrid args | Not exposed | `bbq.vector_search()` has no `lexical_search_columns` / `lexical_search_query_value` parameter — hybrid search requires raw SQL. |
 | `ML.GENERATE_TEXT` | No direct API | Use `bbq.ai.generate_text()` (wraps `AI.GENERATE_TEXT` instead) or `GeminiTextGenerator` |
 | `ML.GENERATE_EMBEDDING` | No direct API | Use `bbq.ai.generate_embedding()` (wraps `AI.GENERATE_EMBEDDING` instead) or `TextEmbeddingGenerator` |
 
-**Key insight for notebooks:** Most functions have BigFrames coverage via `bbq.ai.*`, but 5 functions (AI.EMBED, AI.SIMILARITY, AI.SEARCH, AI.DETECT_ANOMALIES, AI.EVALUATE) will need a `session.read_gbq_query()` workaround in the BigFrames section. This is still valuable to show — it demonstrates that BigFrames can always fall back to raw SQL execution.
+**Key insight for notebooks:** Most functions have BigFrames coverage via `bbq.ai.*`, but 6 functions (AI.EMBED, AI.SIMILARITY, AI.SEARCH, AI.DETECT_ANOMALIES, AI.EVALUATE, AI.PREDICT) need a `session.read_gbq_query()` workaround in the BigFrames section, as do the hybrid-search arguments on `VECTOR_SEARCH` and the `mode` argument on `AI.SEARCH`. This is still valuable to show — it demonstrates that BigFrames can always fall back to raw SQL execution.
+
+**The wrapper lags the SQL surface.** Two independent findings from the 2026-09-01 audit make this a standing expectation, not a one-off: `bbq.ai.forecast` still defaults to a model version the SQL function no longer defaults to, and AI.PREDICT shipped with no wrapper at all. When a function is new or recently changed, verify the BigFrames signature against the installed wheel rather than assuming parity.
 
 **Prompt pattern difference:** The scalar `bbq.ai.*` functions use a tuple-based prompt pattern:
 ```python
@@ -781,6 +823,27 @@ A new end-to-end workflow notebook is added.
 - [ ] `README.md`: Add to the workflow table in the landing page
 - [ ] Cross-reference: Add `**Functions used:**` line to the workflow's overview cell
 - [ ] Cross-reference: Add the workflow to the `**Featured in:**` line of each function notebook it uses
+- [ ] **Cross-reference round-trip check** — do not eyeball this, run it. For every function named in the workflow's `**Functions used:**` line, confirm that function's notebook names this workflow in its `**Featured in:**` line, and vice versa. `workflows/README.md` promises these links are bidirectional, so a one-way link makes that promise false. A programmatic sweep of all function notebooks against all workflow notebooks in the 2026-09-02 review found five one-way links that had survived several phases precisely because they were only ever checked by hand:
+
+  ```bash
+  # from data+ai/bq-ai-functions/ — prints every one-way Functions-used / Featured-in edge
+  python3 - <<'PY'
+  import json, pathlib, re
+  def line(p, tag):
+      nb = json.load(open(p))
+      for c in nb['cells'][:3]:
+          m = re.search(rf'\*\*{tag}:\*\*(.*)', ''.join(c['source']))
+          if m: return set(re.findall(r'\]\(([^)]+)\)', m.group(1)))
+      return set()
+  wf = {p.parent.name: line(p, 'Functions used') for p in pathlib.Path('workflows').glob('*/*.ipynb')}
+  fn = {p.parent.name: line(p, 'Featured in') for p in pathlib.Path('functions').glob('*/*.ipynb')}
+  for w, funcs in wf.items():
+      for f in funcs:
+          k = f.rstrip('/').split('/')[-1]
+          if k in fn and not any(w == t.rstrip('/').split('/')[-1] for t in fn[k]):
+              print(f'one-way: workflows/{w} -> functions/{k} (no back-link)')
+  PY
+  ```
 - [ ] `PLANS.md`: Update the cross-referencing mapping table and the completed workflows list
 - [ ] Audit log: Record the addition
 - [ ] If this changes a decision tree, introduces a new cross-cutting gotcha, or adds a new head-to-head comparison with `bq-ml`: update `../../agent-skills/.agents/skills/bigquery-ai-functions/` (SKILL.md and/or the relevant `reference/*.md`)
@@ -825,32 +888,35 @@ Each function's documentation URL is recorded in the table below and mirrored in
 
 **Documentation URLs:**
 
+> Google migrated these docs from `cloud.google.com` to `docs.cloud.google.com`. The old host 301-redirects, but tools that do not follow cross-host redirects (including `WebFetch`) silently return navigation chrome instead of the page. Use the `docs.` host, and prefer `curl -sL` plus extraction of the `devsite-article-body` div over a fetch tool.
+
 | Function | Documentation URL |
 |----------|-------------------|
-| AI.GENERATE | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate |
-| AI.GENERATE_TEXT | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate-text |
-| AI.GENERATE_TABLE | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-generate-table |
-| AI.GENERATE_BOOL | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate-bool |
-| AI.GENERATE_DOUBLE | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate-double |
-| AI.GENERATE_INT | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate-int |
-| ML.GENERATE_TEXT | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-generate-text |
-| AI.IF | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-if |
-| AI.SCORE | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-score |
-| AI.CLASSIFY | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-classify |
-| AI.AGG | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-agg |
-| AI.EMBED | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-embed |
-| AI.GENERATE_EMBEDDING | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate-embedding |
-| ML.GENERATE_EMBEDDING | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-generate-embedding |
-| AI.SIMILARITY | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-similarity |
-| VECTOR_SEARCH | https://cloud.google.com/bigquery/docs/reference/standard-sql/search_functions#vector_search |
-| AI.SEARCH | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-search |
-| AI.FORECAST | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-forecast |
-| AI.DETECT_ANOMALIES | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-detect-anomalies |
-| AI.EVALUATE | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-evaluate |
-| ML.PROCESS_DOCUMENT | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-process-document |
-| AI.PARSE_DOCUMENT | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-parse-document |
-| AI.KEY_DRIVERS | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-key-drivers |
-| AI.COUNT_TOKENS | https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-count-tokens |
+| AI.GENERATE | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate |
+| AI.GENERATE_TEXT | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate-text |
+| AI.GENERATE_TABLE | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-generate-table |
+| AI.GENERATE_BOOL | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate-bool |
+| AI.GENERATE_DOUBLE | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate-double |
+| AI.GENERATE_INT | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate-int |
+| ML.GENERATE_TEXT | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-generate-text |
+| AI.IF | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-if |
+| AI.SCORE | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-score |
+| AI.CLASSIFY | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-classify |
+| AI.AGG | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-agg |
+| AI.EMBED | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-embed |
+| AI.GENERATE_EMBEDDING | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate-embedding |
+| ML.GENERATE_EMBEDDING | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-generate-embedding |
+| AI.SIMILARITY | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-similarity |
+| VECTOR_SEARCH | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/search_functions#vector_search |
+| AI.SEARCH | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-search |
+| AI.FORECAST | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-forecast |
+| AI.DETECT_ANOMALIES | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-detect-anomalies |
+| AI.PREDICT | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-predict |
+| AI.EVALUATE | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-evaluate |
+| ML.PROCESS_DOCUMENT | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-process-document |
+| AI.PARSE_DOCUMENT | ⚠️ **404 — withdrawn.** Was: https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-parse-document |
+| AI.KEY_DRIVERS | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-key-drivers |
+| AI.COUNT_TOKENS | https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-count-tokens |
 
 ### Tracked upcoming functions
 
@@ -858,7 +924,9 @@ Functions announced but without published reference documentation. Check periodi
 
 | Function | Category | Status | Announced | Source | Expected Doc URL |
 |----------|----------|--------|-----------|--------|-----------------|
-| HYBRID_SEARCH | Embeddings & Search | Preview | Cloud Next 2026 (Apr) | [Blog](https://cloud.google.com/blog/products/data-analytics/unveiling-new-bigquery-capabilities-for-the-agentic-era) | search_functions#hybrid_search |
+| *(none currently tracked)* | — | — | — | — | — |
+
+**Resolved 2026-09-01 — HYBRID_SEARCH does not exist.** It was tracked here from the Cloud Next 2026 announcement, but BigQuery shipped hybrid search as a *capability* of the two existing search functions, not as a new function: `VECTOR_SEARCH`'s `lexical_search_columns` argument and `AI.SEARCH`'s `mode => 'HYBRID'`. There is no `HYBRID_SEARCH` in the SQL surface and no reference page for one. Treated as "new capability ×2", not "new function". See [Hybrid Search](RESOURCES.md#hybrid-search-capability).
 
 ### Tracked upcoming enhancements
 
@@ -866,7 +934,7 @@ Capabilities observed in training labs or announcements but not yet in published
 
 | Function | Enhancement | Status | Source | Notes |
 |----------|------------|--------|--------|-------|
-| AI.PARSE_DOCUMENT | Gemini model endpoint (`endpoint => 'gemini-2.5-flash'`) | Not in public docs | [L400 Lab 1](../../../ds-l400/lab-1/teacher/lab_1_parse_2_extraction.ipynb) | Currently only Layout Parser processor endpoints are documented. Gemini endpoints would eliminate the Document AI processor setup entirely — just `endpoint => 'model-name'` with a connection. When available: add Example 7 to notebook, update RESOURCES.md endpoint description, update README.md ("No" for Requires Model). |
+| AI.PARSE_DOCUMENT | Gemini model endpoint (`endpoint => 'gemini-2.5-flash'`) | Blocked — the whole function is offline and its docs are withdrawn | [L400 Lab 1](../../../ds-l400/lab-1/teacher/lab_1_parse_2_extraction.ipynb) | Currently only Layout Parser processor endpoints are documented. Gemini endpoints would eliminate the Document AI processor setup entirely — just `endpoint => 'model-name'` with a connection. When available: add Example 7 to notebook, update RESOURCES.md endpoint description, update README.md ("No" for Requires Model). |
 
 ### Audit log
 
@@ -885,8 +953,18 @@ Capabilities observed in training labs or announcements but not yet in published
 | 2026-06-19 | AI.KEY_DRIVERS — new function | Created functions/ai_key_drivers/ with notebook (36 cells, 7 SQL examples) and SQL file. AI.KEY_DRIVERS (Preview) is an augmented analytics TVF for key driver / contribution analysis — finds the segments driving a metric change between an interest and reference set. No CREATE MODEL, no connection, no endpoint (structured tables only; no ObjectRef). Added new "Augmented Analytics" section to RESOURCES.md with full documentation (syntax, inputs/outputs, best practices, limitations, and a comparison to contribution analysis models + ML.GET_INSIGHTS). Added README.md function-map subsection, relationship diagram box, and project tree entry. Examples use the public NYC Citi Bike dataset (April 2017 interest vs April 2016 reference; metric SUM(tripduration); dimensions usertype/gender/start_station_name). |
 | 2026-06-19 | Metric Diagnostics — new workflow + TSI integration | Created workflows/metric_diagnostics/ with notebook (25 cells): build interest/reference dataset → confirm headline shift with SQL → AI.KEY_DRIVERS surfaces drivers → AI.GENERATE narrates an executive summary. Integrated AI.KEY_DRIVERS into time_series_intelligence as Step 5 (companion segmented region × product_line table with an injected H2 surge; explains which segments drove the H1→H2 change). Updated cross-references: Featured in lines (ai_key_drivers → both workflows; ai_generate → Metric Diagnostics), README.md workflows table + project tree, PLANS.md completed workflows + mapping table. |
 | 2026-07-16 | AI.COUNT_TOKENS — new function | Created functions/ai_count_tokens/ with notebook (26 cells, 5 SQL examples) and SQL file. AI.COUNT_TOKENS (Preview) is a utility scalar function that estimates a prompt's INPUT token count inside BigQuery with no Vertex AI charge — used to size/cost prompts before calling the paid generation functions. No connection, model, or ObjectRef; signature AI.COUNT_TOKENS(INPUT [, endpoint => ...]) returns STRUCT<result INT64, full_response JSON> (input tokens only — not thinking/output). Added full RESOURCES.md entry in General Purpose Functions + section-intro note (kept out of the 7-column generation comparison table as it's a utility, not a generator). Added README.md function-map row, relationship-diagram note, and project tree entry. Added a short cell to overview.ipynb. Examples use bigquery-public-data.imdb.reviews. No native BigFrames wrapper — read_gbq_query fallback documented. All SQL pre-validated against BigQuery. |
-
 | 2026-07-17 | AI.PARSE_DOCUMENT — offline for revision | Google took AI.PARSE_DOCUMENT (Preview) **offline for revision as of 2026-06-01**; it does not currently execute. Applied the AI.AGG-disable playbook: added `⚠️ NOT CURRENTLY WORKING` banners to the overview cells of functions/ai_parse_document/ai_parse_document.ipynb and workflows/document_rag/document_rag.ipynb (the whole Document RAG workflow is blocked — its Step 1 uses the function). Added a status note to the RESOURCES.md AI.PARSE_DOCUMENT entry and ⚠️ markers to the README.md function-map row and Document RAG workflow row. Existing documentation/examples retained as-is for when it returns. **Reversal when re-enabled:** remove the two notebook banners, clear the RESOURCES/README status markers, Restart & Run All both notebooks, verify, and log a re-enablement entry (precedent: AI.AGG disable 2026-04-13 → re-enable 2026-05-22). Banners are markdown-only, so no re-run was needed to apply them. |
+| 2026-09-01 | AI.PREDICT — new function | Created `functions/ai_predict/` with notebook and SQL file. AI.PREDICT (Preview) runs zero-shot regression **or** classification on tabular rows using **TabFM**, a pre-trained tabular foundation model that learns in-context from a training relation at query time — no `CREATE MODEL`, no connection, no endpoint, no persisted model object. Examples use `bigquery-public-data.ml_datasets.penguins` (regression on `body_mass_g`, classification on `sex`). Renamed the Forecasting section to **Predictive AI** across README.md, RESOURCES.md, and the agent skill (`reference/forecasting-and-anomalies.md` → `reference/predictive-ai.md`) so it covers both foundation models — TimesFM for time series and TabFM for tabular rows. Verified limits: task type is inferred from the label column's **type** (an `INT64`-coded categorical silently becomes a regression); OOM at 10,000 training rows, works at 8,000; hard caps of 20 feature columns and 10 classes; `DATE`/`TIMESTAMP`/`BYTES`/`JSON`/`GEOGRAPHY`/`ARRAY`/`STRUCT` all rejected; 30–95s latency per call; token-based pricing formula effective 2026-10-30; no BigFrames wrapper. Documentation bug found: the reference page says passthrough columns come from the training table, but observed behavior returns the prediction rows. |
+| 2026-09-01 | AI.EVALUATE — second (tabular) branch | AI.EVALUATE now has **two mutually exclusive branches**. The existing forecast branch scores a TimesFM forecast against actuals; the new tabular branch takes AI.PREDICT's two relations plus `label_col` and scores TabFM accuracy on held-out rows. Mixing forecast-shaped and tabular-shaped arguments in one call errors. Expanded `functions/ai_evaluate/` to cover both. Branch asymmetries documented: only the TimesFM branch returns `ai_evaluate_status` — the tabular branch has no per-row status column — and the tabular branch returns **no `log_loss`, no `roc_auc`, and no confusion matrix** for classification (use BigQuery ML's `ML.EVALUATE` on a trained classifier if you need those). |
+| 2026-09-01 | AI.FORECAST — default model version flipped 2.0 → 2.5 | **The default `model` for the TimesFM functions is now TimesFM 2.5, not 2.0, and this changed without a release note.** Confirmed empirically with a three-way live comparison of the same AI.FORECAST query against `bigquery-public-data.new_york_citibike.citibike_trips`: unpinned and `'TimesFM 2.5'` agree to the last digit, while `'TimesFM 2.0'` differs (24125.2324 vs 24596.082 on the first forecast point). **Consequence:** every unpinned forecast query in this repo now returns different numbers than its committed output — `ai_forecast`, `ai_detect_anomalies`, `ai_evaluate`, and `time_series_intelligence` will all shift on their next Restart & Run All even with no code change. Also found a **wrapper skew**: `bigframes.bigquery.ai.forecast()` still hardcodes `model="TimesFM 2.0"`, so the same logical call returns different answers from Python than from SQL. Standing rule added: pin `model` explicitly in examples, and verify a BigFrames wrapper's defaults rather than assuming SQL parity. |
+| 2026-09-01 | Hybrid search — resolved as a capability, not a function | **HYBRID_SEARCH does not exist and never shipped.** It had been tracked here since the Cloud Next 2026 announcement as an upcoming function with docs pending; BigQuery instead delivered hybrid retrieval as parameters on the two existing search TVFs — `VECTOR_SEARCH`'s `lexical_search_columns` / `lexical_search_query_value`, and `AI.SEARCH`'s `mode => 'VECTOR'\|'HYBRID'\|'AUTO'`. Removed from tracked-upcoming; reclassified as "new capability ×2". Enhanced `functions/vector_search/` and `functions/ai_search/` with hybrid examples and added a Hybrid Search section to RESOURCES.md. Verified findings: both routes are **single-query only** (batch `query_table` + `lexical_search_columns` fails with `lexical_search_columns is not supported when query_value is not specified.`); neither requires a vector index; the returned `distance` is **not a distance** but a reciprocal-rank-fusion score with **1-based ranks and a different rank base per leg** — `distance = 1 - ( 1/(60 + rank_vector) + 1/(61 + rank_lexical) )`, so a row ranked 1 by both legs scores `1 - (1/61 + 1/62)` = `0.9674775251189847`, not 0, and cosine-tuned thresholds must never be reused; every column in `lexical_search_columns` must also appear in `STORING(...)` and may not be the index key; and an AI.SEARCH base table can **never** have a hybrid vector index, because autonomous embedding generation produces a `STRUCT<result, status>` column while a vector index key must be `ARRAY<FLOAT64>` — which means `mode => 'AUTO'` silently resolves to semantic-only there, so name `'HYBRID'` explicitly. |
+| 2026-09-01 | Catalog Search + Zero-Shot Tabular Prediction — new workflows | Created `workflows/catalog_search/`: hybrid retrieval over the full `bigquery-public-data.thelook_ecommerce.products` catalog (~7,275 rows) — the exact-token SKU lookups pure semantics misses, plus a corpus large enough to actually populate a vector index (index population is asynchronous and does not begin until the table exceeds ~10 MB, so small demo tables silently fall back to brute force). Demonstrates both the autonomous-embedding AI.SEARCH route and the indexed VECTOR_SEARCH route, which require two separate tables for the STRUCT-vs-ARRAY reason above. Created `workflows/tabular_prediction/`: the full TabFM tour — AI.PREDICT regression and classification on penguins, AI.EVALUATE scoring, AI.KEY_DRIVERS for explanation, AI.GENERATE for a model card — including a head-to-head against trained BigQuery ML models from `../../bq-ml/` (indicative only: the BQML side uses AUTO_SPLIT, not the notebook's FARM_FINGERPRINT 70/30 split). Counts after this phase: **25 functions, 14 workflows.** Created the previously-missing `workflows/README.md` (required by the new-workflow checklist and linked from README.md). |
+| 2026-09-01 | Enhanced existing workflows | `log_analysis` — full rebuild: hand-authored error codes into the 30 seed STRUCTs and added an AI.EMBED + hybrid-retrieval sub-pipeline as Step 5, making it the clearest case where an exact token beats semantics outright. `data_enrichment` — expanded to ~24 rows with a new low-cardinality `sector` column containing genuine NULLs, so the workflow now contrasts Google Search grounding against AI.PREDICT zero-shot classification for the same gap (~4x the per-run Gemini cost, accepted). `metric_diagnostics` — added an AI.PREDICT projection alongside the AI.KEY_DRIVERS explanation. `semantic_search` and `rag_pipeline` — added hybrid alongside the existing semantic-only approaches. Updated all reciprocal `**Featured in:**` links in `ai_embed`, `ai_generate`, `ai_key_drivers`, and `vector_search`. |
+| 2026-09-01 | AI.PARSE_DOCUMENT — escalated to documentation withdrawn | The 2026-07-17 outage has escalated: the reference page now returns **HTTP 404**, and the function is absent from both the docs navigation and the BigQuery AI functions overview page. (A web-search result claiming it was not deprecated was checked directly against the live URL and is wrong.) Escalated the `⚠️ NOT CURRENTLY WORKING` banners in `functions/ai_parse_document/ai_parse_document.ipynb` and its `.sql` header to `⚠️ NOT CURRENTLY WORKING — DOCUMENTATION WITHDRAWN`, and annotated the dead doc links in RESOURCES.md and the SQL file as `404 as of 2026-09-01` rather than deleting them, so the page can be re-checked if the function returns. Per Mike's decision, `workflows/document_rag/` gets a **header pointer to ML.PROCESS_DOCUMENT** as the interim alternative (with an honest note on the differences) — **not** a rebuild. **Neither notebook may be re-run**: their committed outputs are the only surviving record of the function working, and a Restart & Run All would fail at the parse step and destroy that evidence. **Reversal when re-enabled:** extends the 2026-07-17 instructions — first re-verify the doc URL returns 200, then remove the withdrawn-docs banners and the ML.PROCESS_DOCUMENT pointer, clear the RESOURCES/README markers, restore the dead-link annotations, Restart & Run All both notebooks, and log a re-enablement entry. |
+| 2026-09-02 | Post-execution review — hybrid-search narrative corrected, three doc-vs-behavior mismatches fixed | Four findings, all verified against live queries rather than inferred. **(1) The sub-project's loudest Phase 10 claim was wrong.** All six hybrid demonstrations returned the same rows as semantic-only, so "hybrid retrieval recovers the exact tokens semantic search misses" was never a measured result. Root cause established live: reciprocal rank fusion **re-ranks the page and only modestly widens it** — a lexical hit promotes a row to lexical rank 1, worth `1/62` ≈ `0.0161` of score, and that is all the lift available. That caps its *reach*: a matched row at semantic rank `R` scores `1/(60 + R) + 1/62` and must displace the row holding the last slot, which sits at semantic rank `top_k` and — pushed down one by the match — lexical rank `top_k + 1`, scoring `1/(60 + top_k) + 1/(62 + top_k)`. That is the **score gate**, and it is one of two — a **candidate-pool gate** (next row) caps reach at `10 * top_k` independently, and the effective reach is the smaller of the two. Deepest semantic rank retrievable by `top_k` after both gates: 2 → 3, 3 → 6, 5 → 10, 10 → 23, 20 → 56, 30 → 110, 40 → 212, 50 → 468, 51 → 510, 64 → 640, 100 → 1,000, 208 → 2,080, 300 → 3,000. All six demos used `top_k` between 2 and 64 — reach 3 to 640 — deep enough to nudge a row already near the top, never deep enough to rescue a buried one. Demos re-engineered to give the target *both* signals and to **print the added/dropped sets rather than assert an outcome**; `vector_search`, `semantic_search`, `rag_pipeline`, `log_analysis` and `catalog_search` each carry a re-engineered demo written against the measured law; the notebooks are pending re-execution, so the recall win is predicted by the arithmetic and not yet shown in stored output. Narrative rewritten in `README.md`, `workflows/README.md`, `RESOURCES.md`, `SKILL.md`, `reference/embeddings-and-search.md` and `reference/workflows.md` in the same commit. **(2) The published RRF formula was off by one, and the "single-list penalty" published alongside it is withdrawn.** The measured law is `distance = 1 - ( 1/(60 + rank_vector) + 1/(61 + rank_lexical) )` — **the legs do not share a rank base**; decoding with k = 60 on both terms yields lexical ranks `2..n+1`, impossible for an n-row list, while k = 61 on the lexical leg yields an exact `1..n` permutation (verified on a 30-row corpus with `rank_vector` read from a separate semantic-only run). Best attainable score is therefore `1 - (1/61 + 1/62)` = `0.9674775251189847`, and the widely-quoted `1 - 2/61` = `0.967213` is **unattainable**. The single-list penalty — a row present in only one leg's list forfeits the other term, is capped at `1 - 1/61` = `0.98361`, and therefore loses to any dual-signal row — was published here and is now **withdrawn**. There is no single-list state inside the candidate pool: the lexical leg ranks the **entire pool**. BM25 matches take lexical ranks `1..m` and every remaining pooled row falls back to its semantic order behind them, so no *pooled* row forfeits a term and `0.98361` is not a reachable ceiling. Evidence: a `lexical_search_query_value` matching zero rows still gave every pooled row a lexical term, with `rank_lexical = rank_vector`; promoting one row to lexical rank 1 moved the former rank-1 row to 2 and left every row below the promoted row byte-identical. The actionable replacement is the reach list in finding (1) and the sizing rule that falls out of it: **to retrieve a row at semantic rank `R` by exact token, size `top_k` to at least `R/10`, and above that to whatever the reach list requires** — `R/10` is a floor, not a recipe. The two gates cross at `top_k` 51, so below a few hundred ranks deep the score gate is the one that binds and `R/10` is not enough: a target at semantic rank 100 needs `top_k` = 29, not 10. Reach grows with `top_k`, never without bound. Verified on a 500-row corpus whose target sat at semantic rank 500 of 500: absent at `top_k` 10, 49 and 50, returned from `top_k` 51 upward (the score gate predicted the flip between 50 and 51 exactly; the 510-row pool was not binding there), with distance `0.9820852534562212` = `1 - (1/560 + 1/62)`. When the identifier *is* the whole query and the answer must be certain, use a `WHERE` predicate — a predicate cannot be outranked by a fusion score. **(3) TabFM (`AI.PREDICT`) output is not deterministic** — `FARM_FINGERPRINT` pins the split only. Identical calls return different predictions (regression MAE 236.52 / 236.35 / 235.84; classification accuracy 0.9468 / 0.9362 / 0.9468), consistent with averaging shuffled `n_ensembles` passes. `AI.EVALUATE` therefore scores its own fresh predictions rather than the materialized rows. `RESOURCES.md`'s best-practice line scoped to the split, Limitations bullet added, mirrored in `reference/predictive-ai.md`. **(4) The three TimesFM status columns disagree about success.** `ai_evaluate_status` and `ai_detect_anomalies_status` return **`NULL`**; only `ai_forecast_status` returns a zero-length empty string. `RESOURCES.md` had flattened all three to "Empty if successful", so `WHERE ai_evaluate_status <> ''` silently dropped every successful row. Filter with `IS NOT NULL`. Also fixed: the vector-index floor is **two gates** — `CREATE VECTOR INDEX` is rejected outright below 5,000 rows (verified for both `IVF` and `TREE_AH`; undocumented by Google) while *population* waits for ~10 MB; `VECTOR_SEARCH` status aligned to `GA (single-search/hybrid syntax Preview)` across README and RESOURCES; bigframes version reconciled to **2.39.0** (the `uv.lock` pin that actually executed) from an unsourced 2.48.0; `AI.PREDICT` accepted column types corrected from five to six in the skill. A programmatic round-trip check for `**Functions used:**`/`**Featured in:**` was added to the "New workflow" checklist above, after five one-way links survived several phases of hand-checking. |
+| 2026-09-02 | Hybrid reach — the lexical candidate-pool gate (supersedes the reach tail in the row above) | **BigQuery hands the BM25 leg only the top `10 * top_k` rows by semantic rank.** A row deeper than that receives **no lexical rank at all**, however perfectly the token matches — BM25 never sees it. Hybrid reach is therefore governed by **two gates**, not one: **Gate 1 (candidate pool)** `rank_vector <= 10 * top_k`; **Gate 2 (fusion score)** `1/(60 + rank_vector) + 1/(61 + rank_lexical)` must beat the row holding the last slot. **Effective reach = min( score_reach(`top_k`), 10 * `top_k` )** — Gate 1 binds for `top_k >= 51`, Gate 2 below that. Deepest semantic rank retrievable: 2 → 3, 3 → 6, 5 → 10, 10 → 23, 20 → 56, 30 → 110, 40 → 212, 50 → 468, 51 → 510, 64 → 640, 100 → 1,000, 208 → 2,080, 300 → 3,000. **Supersedes** two claims recorded above: the **`top_k >= 64` → any semantic rank / unbounded reach** threshold, and the `63 → 953,189` reach entry — both are the score gate read in isolation, and the pool gate caps `top_k = 63` at 630 and `top_k = 64` at 640. Also supersedes "the lexical leg ranks the **entire corpus**": it ranks the entire **pool**. The scoring law itself — 60 semantic base, 61 lexical base, exact to 15-16 significant digits — is **unchanged and still correct**. Measured across **four independent corpora** (8, 500, 1,500 and 3,000 synthetic rows plus the real 7,275-row `thelook_ecommerce.products` catalog), ~35 data points, including **three sharp out-of-sample predictions**: 3,000-row table with the target at semantic rank 3,000 — predicted flip at `top_k = 300`, observed 299 no match / **300 match**; 1,500-row table with the target at rank 1,500 — predicted 150, observed 149 / **150**; 500-row table with the target at rank 500 — flips at 51 on the score gate, the pool never binding. The catalog's target at semantic rank 2,072 is absent at `top_k = 64` precisely because the pool was 640 rows; it needs `top_k >= 208`. All three synthetic probe tables (500, 1,500 and 3,000 rows) were **unindexed**, sitting below the 5,000-row `CREATE VECTOR INDEX` floor established in the row above, and are brute-force scanned. The 7,275-row catalog — the fourth corpus — **was** indexed: it carried a `TREE_AH` hybrid vector index with `lexical_search_columns`, status `ACTIVE` at 100% coverage, when the `top_k = 64` observation was made. That is the stronger result: the pool gate shows up identically with and without an index, so it is neither an index artifact nor something an index can avoid. Diagnostic signature of a row outside the pool: the whole result set returns with `rank_lexical = rank_vector`, i.e. every distance equals `1 - ( 1/(60+r) + 1/(61+r) )`; a best distance of `0.967478` means **nothing matched**, `0.967734` means a match fired. **Rule to teach:** hybrid widens recall proportionally to `top_k`, never unboundedly — for a target at semantic rank `R`, size `top_k` to at least `R/10` and above that to whatever the reach list requires — `R/10` is necessary, not sufficient, and below `R ≈ 500` the score gate binds instead (rank 100 needs `top_k` = 29, not 10); when the identifier *is* the whole query and the answer must be certain, use `WHERE sku = @sku`, which cannot be outranked by a fusion score and has no pool. Correction applied in this commit to every hand-authored source carrying the reach claim: `README.md`, `RESOURCES.md` and `overview.ipynb`; `functions/vector_search/` and `functions/ai_search/` (notebook + `.sql` each); the `semantic_search`, `rag_pipeline`, `log_analysis` and `catalog_search` workflow notebooks; and the agent skill's hand-written files (`SKILL.md`, `reference/embeddings-and-search.md`, `reference/workflows.md`). The six matching `narrative/` files are tool-generated; all 39 narratives plus `skill.manifest.json` were regenerated from the corrected notebooks in this same commit, and `agent-skills validate --all` passes on all three skills. |
+| 2026-09-02 | Hybrid RRF write-up — mixed-base counterexample made reproducible, `R/10` scoped, catalog index status corrected | Three corrections to the way the measured law is presented; the law itself is unchanged. **(1) The asymmetry counterexample was not reproducible.** The passage showing that the two legs do not share a rank base gave, for a row at semantic rank 1 / lexical rank 2, the observed `0.9677335415040333` = `1 - (1/61 + 1/63)` against a "symmetric prediction" of `1 - (1/62 + 1/62)` — but `1/62 + 1/62` is the shared-base-61 reading of a row at rank **1 in both legs**, not a reading of a (1, 2) row under any single base, so a reader who checked the arithmetic could not reproduce it. Replaced everywhere with the *between-the-shared-bases* framing: 60 on both legs gives `1 - (1/61 + 1/62)` = `0.9674775251189847`, 61 on both legs gives `1 - (1/62 + 1/63)` = `0.9679979518689196`, and the measured `0.9677335415040333` falls **between** them — which is the signature of mixed bases. Because `0.9674775251189847` is also the best attainable score under the true law (rank 1 in both legs), the two roles of that number are now stated explicitly wherever both appear. **(2) `top_k >= R/10` is necessary, not sufficient.** It was published as a sizing recipe; it is a floor. Below `R ≈ 500` the score gate binds and `R/10` falls short — rank 100 needs `top_k = 29` rather than 10, rank 200 needs `40` rather than 20, rank 500 needs 51 rather than 50. Every "size `top_k` to about `R/10`" phrasing now states the floor and points at the effective-reach table for the real answer. **(3) The probe corpora were misdescribed as "both probe tables unindexed".** There are **three** synthetic probe tables (3,000, 1,500 and 500 rows), all unindexed because they sit below the 5,000-row `CREATE VECTOR INDEX` floor, and the fourth corpus — the 7,275-row product catalog — **was** indexed, carrying a `TREE_AH` hybrid index with `lexical_search_columns` at `ACTIVE` / 100% coverage when the `top_k = 64` observation was made. That strengthens the finding rather than weakening it: the pool gate appears identically with and without an index, so it is neither an index artifact nor something an index can avoid. Also in this pass: the demo `top_k` range in the 2026-09-02 review row above corrected from "2 and 30 — reach 3 to 110" to **2 and 64 — reach 3 to 640** (`catalog_search` sweeps to `top_k => 64`, the largest page size any demo used), and the same row's file list restated to cover the hand-authored sources only, since the agent skill's `narrative/` files are tool-generated and pick up corrections on regeneration. |
+| 2026-09-02 | `catalog_search` re-executed — two-gate model confirmed end to end, and a routing gap in the sibling skills closed | **The flagship demo now shows the pool gate live on a real 7,275-row catalog with an `ACTIVE` `TREE_AH` hybrid index.** Target at semantic rank 2,072: absent at `top_k` 5, 64 and **207** (pool 2,070 — two rows short), returned at **208** (pool 2,080) at page position 60. The fused distance matched the predicted `1 - (1/(60 + 2072) + 1/62)` = `0.983401924589965` to **zero difference across all 15 digits**. At `top_k` 207 the best distance was exactly `1 - (1/61 + 1/62)` = `0.967477525119`, the zero-match signature, confirming BM25 never saw the row; at 208 the same head-of-page rows shift to `0.967734`, the one-match signature, because the single match pushed every unmatched row down one lexical rank. Cell 32 independently shows a genuine recall change (1 row added, 1 dropped, all 4 shared rows repositioned) with the promoted row at `1 - (1/62 + 1/62)` = vector rank 2 / lexical rank 1. **Separately, Phase 10 opened a gap in the router skill and it is now fixed.** `choosing-a-bigquery-ai-approach` split the world as "tabular/trained → BigQuery ML, generative/unstructured → AI functions" and routed *all* structured prediction to `bigquery-ml`; `AI.PREDICT` breaks that split, since it is a foundation model for ordinary feature tables. Added a tabular-prediction decision question and head-to-head bullet (20-feature / 10-class caps, and the measured nondeterminism), corrected the routing lines, and added the reciprocal pointer in the `bigquery-ml` skill. Both bumped to 0.1.1; `bigquery-ai-functions` regenerated at 0.2.0 (39 narratives, 22 changed, 3 new). `agent-skills validate --all` passes on all three. |
 
 ### Notebook update plan (May 2026 audit)
 

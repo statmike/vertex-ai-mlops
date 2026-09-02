@@ -1,15 +1,15 @@
 {
   "name": "bigquery-ai-functions",
-  "version": "0.1.0",
-  "generated_date": "2026-07-29",
-  "source_commit": "d756d1cd",
+  "version": "0.2.0",
+  "generated_date": "2026-09-02",
+  "source_commit": "23b8bc7f",
   "reference_files": [
     "classification-and-scoring.md",
     "document-processing.md",
     "driver-analysis.md",
     "embeddings-and-search.md",
-    "forecasting-and-anomalies.md",
     "generation-and-structured-output.md",
+    "predictive-ai.md",
     "workflows.md"
   ],
   "narrative_files": [
@@ -30,9 +30,11 @@
     "ai_if.md",
     "ai_key_drivers.md",
     "ai_parse_document.md",
+    "ai_predict.md",
     "ai_score.md",
     "ai_search.md",
     "ai_similarity.md",
+    "catalog_search.md",
     "content_analysis.md",
     "content_moderation.md",
     "data_enrichment.md",
@@ -47,6 +49,7 @@
     "multimodal_analysis.md",
     "rag_pipeline.md",
     "semantic_search.md",
+    "tabular_prediction.md",
     "time_series_intelligence.md",
     "vector_search.md"
   ]

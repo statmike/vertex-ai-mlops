@@ -202,6 +202,8 @@ client.query(query).to_dataframe()
 
 Control prediction interval width and model version.
 
+**The default is TimesFM 2.5.** It was TimesFM 2.0, and Google changed it on the reference pages with no release note — so an unpinned forecast written before the change now returns different values. The call below pins `'TimesFM 2.0'` to show the older model explicitly; pin whichever version you need whenever the numbers have to be reproducible.
+
 ```python
 query = f'''
 SELECT *

@@ -1,19 +1,21 @@
 # Log Analysis — BigQuery AI Functions
 
-An end-to-end log analysis pipeline that composes four AI functions to analyze application support tickets:
+An end-to-end log analysis pipeline that composes six functions to analyze application support tickets:
 
 1. **Generate** sample support tickets with `AI.GENERATE_TABLE`
 2. **Classify** each ticket by category with `AI.CLASSIFY`
 3. **Score** each ticket for priority with `AI.SCORE`
 4. **Summarize** patterns by category with `AI.AGG` (the star of this workflow)
+5. **Retrieve** similar past incidents with `AI.EMBED` + hybrid `VECTOR_SEARCH`
 
 **What this demonstrates:**
 - `AI.AGG` as the natural aggregation function — summarize groups of tickets without manual batching
 - Composing classify → score → aggregate in a single analytical pipeline
 - Using `TO_JSON_STRING` to pass structured data to `AI.AGG`
-- Comparing `AI.AGG` with the manual `STRING_AGG` + `AI.GENERATE` approach
+- Where `AI.AGG` stops being trustworthy — it batches hierarchically, so the counts and totals it states are reconstructions rather than aggregates
+- Hybrid retrieval — pairing semantic similarity with an exact lexical match on an error code, and measuring what fusion actually buys: the rows it adds, and how far up the ranking it can lift them
 
-**Functions used:** `functions/ai_generate_table` (`AI.GENERATE_TABLE`) | `functions/ai_classify` (`AI.CLASSIFY`) | `functions/ai_score` (`AI.SCORE`) | `functions/ai_agg` (`AI.AGG`)
+**Functions used:** `functions/ai_generate_table` (`AI.GENERATE_TABLE`) | `functions/ai_classify` (`AI.CLASSIFY`) | `functions/ai_score` (`AI.SCORE`) | `functions/ai_agg` (`AI.AGG`) | `functions/ai_embed` (`AI.EMBED`) | `functions/vector_search` (`VECTOR_SEARCH`) (hybrid)
 
 **Prerequisites:** `setup` (Setup guide) | `RESOURCES.md` (Function reference)
 
@@ -88,7 +90,11 @@ print('Model gemini_flash ready')
 ---
 ## Step 1 — Generate sample support tickets with AI.GENERATE_TABLE
 
-Generate 30 realistic IT support tickets from seed categories. Each ticket has a user, description, resolution, and timestamps — mimicking real helpdesk data.
+Generate 30 realistic IT support tickets from seed categories. Each ticket has a user, description, resolution, and resolution time — mimicking real helpdesk data.
+
+Every seed also carries an **error code**. The codes are written by hand in the SQL below rather than invented by the model, for two reasons: they stay identical on every run, and the prompt can require the model to quote the code verbatim inside the description. That gives Step 5 a stable token that appears both in a dedicated column and in free text.
+
+Two codes repeat across seeds on purpose: `VPN-4033` covers a provisioning request and a disconnect complaint, and `AUTH-0142` covers two access tickets. A third code, `IDP-7761`, appears exactly once — on a data ticket about a quarterly archive job. That single ticket is what Step 5 has to find. The same identity-provider fault that locks users out also breaks the archive job's service credential, but nothing in the way the ticket is written resembles a login problem, so the code is the only thread connecting the two.
 
 ```python
 output_schema = """user_name STRING OPTIONS(description = "The employee who submitted the ticket"),
@@ -98,59 +104,62 @@ output_schema = """user_name STRING OPTIONS(description = "The employee who subm
 
 query = f'''
 CREATE OR REPLACE TABLE `{PROJECT_ID}.{DATASET_ID}.workflow_log_tickets` AS
-SELECT ticket_id, user_name, ticket_description, resolution, resolution_hours
+SELECT ticket_id, error_code, user_name, ticket_description, resolution, resolution_hours
 FROM AI.GENERATE_TABLE(
   MODEL `{PROJECT_ID}.{DATASET_ID}.gemini_flash`,
   (SELECT
     ticket_id,
+    error_code,
     CONCAT(
       'Generate one realistic IT support ticket. Category: ', category,
       '. Scenario: ', scenario,
-      '. Write a detailed description (2-3 sentences) and a resolution. ',
+      '. The user saw error code ', error_code,
+      '. Mention this code verbatim in the description. ',
+      'Write a detailed description (2-3 sentences) and a resolution. ',
       'Create a believable employee name. ',
       'Set resolution_hours between 0.5 and 48, or null if unresolved.'
     ) AS prompt
    FROM UNNEST([
-     STRUCT(1 AS ticket_id, 'access' AS category, 'new employee needs VPN access' AS scenario),
-     STRUCT(2, 'access', 'password reset for locked account'),
-     STRUCT(3, 'access', 'MFA token not working after phone upgrade'),
-     STRUCT(4, 'access', 'shared drive permissions denied'),
-     STRUCT(5, 'access', 'SSO login loop on new laptop'),
-     STRUCT(6, 'hardware', 'laptop screen flickering intermittently'),
-     STRUCT(7, 'hardware', 'keyboard keys sticking after coffee spill'),
-     STRUCT(8, 'hardware', 'docking station not detecting external monitors'),
-     STRUCT(9, 'hardware', 'battery draining in under 2 hours'),
-     STRUCT(10, 'hardware', 'trackpad unresponsive after OS update'),
-     STRUCT(11, 'software', 'Slack keeps crashing on startup'),
-     STRUCT(12, 'software', 'Excel macro broken after Office update'),
-     STRUCT(13, 'software', 'VPN disconnects every 30 minutes'),
-     STRUCT(14, 'software', 'Docker containers failing to build'),
-     STRUCT(15, 'software', 'IDE license expired and blocking work'),
-     STRUCT(16, 'network', 'Wi-Fi drops in conference room B'),
-     STRUCT(17, 'network', 'cannot reach internal wiki from remote'),
-     STRUCT(18, 'network', 'latency spikes during video calls'),
-     STRUCT(19, 'network', 'DNS resolution failing for staging servers'),
-     STRUCT(20, 'network', 'printer not found on office network'),
-     STRUCT(21, 'security', 'suspicious login from unknown location'),
-     STRUCT(22, 'security', 'phishing email reported by multiple users'),
-     STRUCT(23, 'security', 'unauthorized app installed on work laptop'),
-     STRUCT(24, 'security', 'sensitive file shared externally by accident'),
-     STRUCT(25, 'security', 'antivirus flagging a development tool'),
-     STRUCT(26, 'data', 'accidental deletion of production database rows'),
-     STRUCT(27, 'data', 'ETL pipeline failing with schema mismatch'),
-     STRUCT(28, 'data', 'dashboard showing stale data after migration'),
-     STRUCT(29, 'data', 'backup restoration needed for corrupted file'),
-     STRUCT(30, 'data', 'BigQuery query hitting quota limits')
+     STRUCT(1 AS ticket_id, 'access' AS category, 'new employee needs VPN access' AS scenario, 'VPN-4033' AS error_code),
+     STRUCT(2, 'access', 'password reset for locked account', 'AUTH-0142'),
+     STRUCT(3, 'access', 'MFA token not working after phone upgrade', 'MFA-2210'),
+     STRUCT(4, 'access', 'shared drive permissions denied', 'PERM-0307'),
+     STRUCT(5, 'access', 'SSO login loop on new laptop', 'AUTH-0142'),
+     STRUCT(6, 'hardware', 'laptop screen flickering intermittently', 'HW-1180'),
+     STRUCT(7, 'hardware', 'keyboard keys sticking after coffee spill', 'HW-1204'),
+     STRUCT(8, 'hardware', 'docking station not detecting external monitors', 'DOCK-0521'),
+     STRUCT(9, 'hardware', 'battery draining in under 2 hours', 'PWR-0918'),
+     STRUCT(10, 'hardware', 'trackpad unresponsive after OS update', 'DRV-3312'),
+     STRUCT(11, 'software', 'Slack keeps crashing on startup', 'APP-5007'),
+     STRUCT(12, 'software', 'Excel macro broken after Office update', 'APP-5119'),
+     STRUCT(13, 'software', 'VPN disconnects every 30 minutes', 'VPN-4033'),
+     STRUCT(14, 'software', 'Docker containers failing to build', 'BLD-7742'),
+     STRUCT(15, 'software', 'IDE license expired and blocking work', 'LIC-6301'),
+     STRUCT(16, 'network', 'Wi-Fi drops in conference room B', 'NET-2048'),
+     STRUCT(17, 'network', 'cannot reach internal wiki from remote', 'NET-2065'),
+     STRUCT(18, 'network', 'latency spikes during video calls', 'NET-2103'),
+     STRUCT(19, 'network', 'DNS resolution failing for staging servers', 'DNS-0553'),
+     STRUCT(20, 'network', 'printer not found on office network', 'NET-2211'),
+     STRUCT(21, 'security', 'suspicious login from unknown location', 'SEC-9001'),
+     STRUCT(22, 'security', 'phishing email reported by multiple users', 'SEC-9014'),
+     STRUCT(23, 'security', 'unauthorized app installed on work laptop', 'SEC-9027'),
+     STRUCT(24, 'security', 'sensitive file shared externally by accident', 'DLP-8802'),
+     STRUCT(25, 'security', 'antivirus flagging a development tool', 'SEC-9033'),
+     STRUCT(26, 'data', 'accidental deletion of production database rows', 'DB-3401'),
+     STRUCT(27, 'data', 'ETL pipeline failing with schema mismatch', 'ETL-7120'),
+     STRUCT(28, 'data', 'quarterly archive job writing zero-byte files to cold storage', 'IDP-7761'),
+     STRUCT(29, 'data', 'backup restoration needed for corrupted file', 'BKP-4409'),
+     STRUCT(30, 'data', 'BigQuery query hitting quota limits', 'QUOTA-0429')
    ])),
   STRUCT(
-    \"\"\"{output_schema}\"\"\" AS output_schema
+    """{output_schema}""" AS output_schema
   )
 )
 '''
 client.query(query).result()
 
 tickets = client.query(
-    f'SELECT ticket_id, user_name, LEFT(ticket_description, 80) AS description_preview, resolution_hours FROM `{PROJECT_ID}.{DATASET_ID}.workflow_log_tickets` ORDER BY ticket_id'
+    f'SELECT ticket_id, error_code, user_name, LEFT(ticket_description, 80) AS description_preview, resolution_hours FROM `{PROJECT_ID}.{DATASET_ID}.workflow_log_tickets` ORDER BY ticket_id'
 ).to_dataframe()
 print(f'{len(tickets)} tickets generated')
 tickets.head(10)
@@ -166,6 +175,7 @@ query = f'''
 CREATE OR REPLACE TABLE `{PROJECT_ID}.{DATASET_ID}.workflow_log_classified` AS
 SELECT
   ticket_id,
+  error_code,
   user_name,
   ticket_description,
   resolution,
@@ -204,6 +214,7 @@ query = f'''
 CREATE OR REPLACE TABLE `{PROJECT_ID}.{DATASET_ID}.workflow_log_scored` AS
 SELECT
   ticket_id,
+  error_code,
   user_name,
   ticket_description,
   resolution,
@@ -250,7 +261,7 @@ if len(high_priority) == 0:
     print('No high-priority tickets — operations are running smoothly!')
 else:
     print(f'{len(high_priority)} high-priority tickets:')
-    high_priority
+    display(high_priority)
 ```
 
 ---
@@ -300,3 +311,349 @@ FROM `{PROJECT_ID}.{DATASET_ID}.workflow_log_scored`
 df = client.query(query).to_dataframe()
 print(df.iloc[0]['weekly_report'])
 ```
+
+### Checking AI.AGG's arithmetic
+
+`AI.AGG` never sees all 30 tickets in one model call. It batches them hierarchically and summarizes the summaries, so every count, total, and average in the report above is a figure the model reassembled from partial views — not an aggregate BigQuery computed. Volume numbers are both the first thing a reader checks and the easiest thing for this to get wrong.
+
+The rule that follows: **reach for `GROUP BY` when the number has to be right, and for `AI.AGG` when the prose has to be good.** The cell below computes the same figures the report tries to state, prints them next to it for comparison, and then feeds them back into `AI.AGG` so the model spends its call on synthesis instead of counting.
+
+```python
+truth = client.query(f'''
+  SELECT category,
+    COUNT(*) AS tickets,
+    ROUND(SUM(IFNULL(resolution_hours, 0)), 1) AS total_hours,
+    ROUND(AVG(IFNULL(resolution_hours, 0)), 2) AS avg_hours
+  FROM `{PROJECT_ID}.{DATASET_ID}.workflow_log_scored`
+  GROUP BY category
+  ORDER BY tickets DESC
+''').to_dataframe()
+
+print(f'Ground truth from GROUP BY — {int(truth["tickets"].sum())} tickets, '
+      f'{truth["total_hours"].sum():.1f} total hours. '
+      f'Compare against the report above:')
+display(truth)
+
+facts = '; '.join(
+    f'{row.category}: {row.tickets} tickets, {row.total_hours} hours'
+    for row in truth.itertuples()
+)
+
+query = f'''
+SELECT
+  AI.AGG(
+    TO_JSON_STRING(STRUCT(ticket_id, category, ticket_description, priority, resolution_hours)),
+    'You are a VP of IT writing a weekly operations report. The verified totals, computed in SQL, '
+    'are: {facts}. Use those figures verbatim and do not recount anything. '
+    'Write a brief executive report (3-4 paragraphs) covering the most critical issues, '
+    'resolution performance, and the top 2 recommendations for the coming week.'
+  ) AS weekly_report
+FROM `{PROJECT_ID}.{DATASET_ID}.workflow_log_scored`
+'''
+print('\n=== Grounded report — counting done by GROUP BY, prose by AI.AGG ===')
+print(client.query(query).to_dataframe().iloc[0]['weekly_report'])
+```
+
+---
+## Step 5 — Find similar past incidents with hybrid retrieval
+
+Triage gets faster when whoever picks up a new ticket can see how the same problem was handled before. That is a retrieval problem, and it needs two different kinds of matching at the same time:
+
+- **Semantic** — *users cannot authenticate after switching to a new device* should surface the MFA-after-phone-upgrade ticket even though the two share almost no words. Embeddings are good at this.
+- **Lexical** — the same incident's log carries `IDP-7761`. An embedding model has no notion of what that token stands for, so the one earlier ticket carrying it can sit near the bottom of the semantic ranking simply because it is written about something else — a scheduled archive job, not a login.
+
+`VECTOR_SEARCH` can run both at once. Its single-query syntax accepts `lexical_search_columns` and `lexical_search_query_value` alongside `query_value`, then fuses the two result lists into a single ranking. That is **hybrid search**.
+
+Whether fusion actually changes *which rows come back* is a measurable question, not an assumption. The cells below run both searches over the same corpus and print the difference between the two result sets.
+
+The tickets need embeddings first. `AI.EMBED` turns each description into an `ARRAY<FLOAT64>` stored in a new table, alongside the columns the search should return — including `resolution`, so every hit arrives with its fix attached.
+
+```python
+query = f'''
+CREATE OR REPLACE TABLE `{PROJECT_ID}.{DATASET_ID}.workflow_log_embedded` AS
+SELECT
+  ticket_id,
+  error_code,
+  category,
+  priority,
+  ticket_description,
+  resolution,
+  (AI.EMBED(
+    content => ticket_description,
+    endpoint => 'text-embedding-005',
+    task_type => 'RETRIEVAL_DOCUMENT'
+  )).result AS embedding
+FROM `{PROJECT_ID}.{DATASET_ID}.workflow_log_scored`
+'''
+client.query(query).result()
+
+embedded = client.query(f'''
+  SELECT ticket_id, error_code, category, ARRAY_LENGTH(embedding) AS embedding_dims
+  FROM `{PROJECT_ID}.{DATASET_ID}.workflow_log_embedded`
+  ORDER BY ticket_id
+''').to_dataframe()
+print(f'{len(embedded)} tickets embedded')
+embedded.head()
+```
+
+### Semantic search alone
+
+The incident being triaged is *users cannot authenticate after switching to a new device*, and its log carries error code `IDP-7761`. Called with only `query_value`, `VECTOR_SEARCH` ranks tickets by embedding distance, so access tickets about logins and new devices dominate.
+
+`AI.EMBED` builds the query vector inline, with `task_type => 'RETRIEVAL_QUERY'` to pair correctly with the `RETRIEVAL_DOCUMENT` vectors already stored.
+
+A second call with `top_k => 30` ranks the entire corpus, so the cell can print exactly where the one ticket carrying the code lands. That position is the number the rest of this section turns on.
+
+```python
+INCIDENT_TEXT = 'users cannot authenticate after switching to a new device'
+ERROR_CODE = 'IDP-7761'  # seeded onto exactly one ticket in Step 1 — a data ticket, not an access one
+TOP_K = 12               # out of 30 tickets
+
+QUERY_VECTOR = f'''(AI.EMBED(
+    content => '{INCIDENT_TEXT}',
+    endpoint => 'text-embedding-005',
+    task_type => 'RETRIEVAL_QUERY'
+  )).result'''
+
+query = f'''
+SELECT
+  base.ticket_id,
+  base.error_code,
+  base.category,
+  base.priority,
+  LEFT(base.ticket_description, 100) AS description,
+  distance
+FROM VECTOR_SEARCH(
+  TABLE `{PROJECT_ID}.{DATASET_ID}.workflow_log_embedded`,
+  'embedding',
+  query_value => {QUERY_VECTOR},
+  top_k => {TOP_K},
+  distance_type => 'COSINE'
+)
+ORDER BY distance
+'''
+semantic_only = client.query(query).to_dataframe()
+
+# Rank the whole corpus so the code-carrying ticket's true position is visible
+ranked = client.query(f'''
+SELECT
+  base.ticket_id,
+  base.error_code,
+  ROW_NUMBER() OVER (ORDER BY distance) AS semantic_rank
+FROM VECTOR_SEARCH(
+  TABLE `{PROJECT_ID}.{DATASET_ID}.workflow_log_embedded`,
+  'embedding',
+  query_value => {QUERY_VECTOR},
+  top_k => 30,
+  distance_type => 'COSINE'
+)
+QUALIFY base.error_code = '{ERROR_CODE}'
+''').to_dataframe()
+
+TARGET = int(ranked['ticket_id'].iloc[0])
+TARGET_SEMANTIC_RANK = int(ranked['semantic_rank'].iloc[0])
+print(f'Ticket carrying {ERROR_CODE}: {TARGET} — semantic rank {TARGET_SEMANTIC_RANK} of 30')
+print(f'Returned by semantic-only top {TOP_K}: {TARGET in set(semantic_only["ticket_id"])}')
+print(f'Categories returned: {sorted(semantic_only["category"].unique().tolist())}')
+semantic_only
+```
+
+### Hybrid — semantic similarity plus the exact code
+
+Same query vector and the same `top_k`, now with a lexical query alongside it, so the two result sets are directly comparable.
+
+- `lexical_search_columns` names the `STRING` columns to keyword-match. They do **not** have to be the column the embeddings came from, so the search can match the code in its own dedicated column *and* wherever the model quoted it in the description.
+- `lexical_search_query_value` is the text to keyword-match, and it is independent of `query_value`. Here it is the error code, not the incident sentence — two different questions asked in one call.
+
+Hybrid is single-query only: `lexical_search_columns` is rejected when `VECTOR_SEARCH` is called in its batch (query-table) form. A vector index is not required — without one, both sides run brute force, which is fine at this scale.
+
+The cell prints the set difference in both directions. Fusion re-ranks everything, so a row it adds arrives at the expense of a row the semantic search would have returned.
+
+```python
+def hybrid_search(k):
+    """Same query vector, plus a lexical query on the error code, fused into one top-k ranking."""
+    return client.query(f'''
+    SELECT
+      base.ticket_id,
+      base.error_code,
+      base.category,
+      base.priority,
+      LEFT(base.ticket_description, 100) AS description,
+      distance
+    FROM VECTOR_SEARCH(
+      TABLE `{PROJECT_ID}.{DATASET_ID}.workflow_log_embedded`,
+      'embedding',
+      query_value => {QUERY_VECTOR},
+      top_k => {k},
+      distance_type => 'COSINE',
+      lexical_search_columns => ['error_code', 'ticket_description'],
+      lexical_search_query_value => '{ERROR_CODE}'
+    )
+    ORDER BY distance
+    ''').to_dataframe()
+
+
+hybrid = hybrid_search(TOP_K)
+
+gained = sorted(int(t) for t in set(hybrid['ticket_id']) - set(semantic_only['ticket_id']))
+dropped = sorted(int(t) for t in set(semantic_only['ticket_id']) - set(hybrid['ticket_id']))
+print(f'Tickets hybrid added that semantic-only missed: {gained or "none"}')
+print(f'Tickets hybrid dropped to make room: {dropped or "none"}')
+print(f'Ticket {TARGET}, the only one carrying {ERROR_CODE}, in the hybrid top {TOP_K}: '
+      f'{TARGET in set(hybrid["ticket_id"])}')
+hybrid
+```
+
+### How far up can fusion lift a row?
+
+Fusion does not put the exact-token match on top, and how deep in the ranking it can reach is decided by `top_k` — twice over, through two separate gates.
+
+**Gate 1 — the candidate pool.** The lexical leg never sees the whole table. BigQuery hands it the top `10 * top_k` rows by semantic rank and BM25 scores only those. A row deeper than `10 * top_k` receives no lexical rank at all, so no token match, however exact, can reach it. At `top_k => 12` the pool is 120 rows, which covers this 30-ticket corpus several times over; on a 7,275-ticket archive the same `top_k` would leave 7,155 rows invisible to the keyword search.
+
+**Gate 2 — the fused score.** Inside the pool both legs rank every candidate. BM25 matches take lexical ranks 1..m, and every pooled row the keyword search does not match falls in behind them in semantic order, so no pooled row is ever missing from a list. What a lexical match buys a row is promotion to lexical rank 1, worth `1/62 ≈ 0.0161` — a fixed amount of lift, competing against a page whose last slot is held by a row that also carries both terms. A matched row at semantic rank `R` scores `1/(60 + R) + 1/62`. It has to displace the row at semantic rank `top_k`, which the match itself pushes down to lexical rank `top_k + 1` and which therefore scores `1/(60 + top_k) + 1/(61 + top_k + 1)`.
+
+A row has to clear both gates, so the reach is whichever one is tighter — `min(score reach, 10 * top_k)`:
+
+| `top_k` | 2 | 3 | 5 | 10 | 20 | 30 | 40 | 50 | 51 | 64 | 100 | 208 | 300 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| deepest semantic rank retrievable | 3 | 6 | 10 | 23 | 56 | 110 | 212 | 468 | 510 | 640 | 1,000 | 2,080 | 3,000 |
+
+The score gate binds below `top_k = 51`; from 51 up the pool is the limit and reach grows strictly in proportion to `top_k`. There is no threshold past which it stops being a limit: at `top_k => 64` a matched row surfaces from semantic rank 640 at best.
+
+That fixes the sizing rule for error-code lookup. **To surface a code buried at semantic rank `R`, `top_k` has to be at least `R/10`** — necessary, but not on its own sufficient. The two gates cross at `top_k = 51`, so for `R` under a few hundred it is the score gate that binds and `R/10` falls short: a code at semantic rank 100 needs `top_k => 29`, not 10, and one at rank 200 needs 40, not 20. Read the number to use off the reach table above rather than dividing. A code sitting at rank 2,072 in a 7,275-ticket archive needs `top_k => 208`; asking for it at `top_k => 64` returns nothing, because the pool stopped at 640. And when the code *is* the whole question, skip the arithmetic: `WHERE error_code = @code` has no pool and cannot be outranked by a fusion score.
+
+The cell below prints where the code-carrying ticket lands in the full 30-row fused ranking, how many positions that is worth, and whether the *identical* hybrid query returns it at `top_k => 5`. The table above says what to expect. At `top_k => 30` the pool is 300 and the score reach is 110, so 110 is the binding number — far past anything a 30-ticket corpus can hide, and the ticket makes the page and climbs well up it. At `top_k => 5` the reach is 10; the lexical search still runs and still finds the row, but the row cannot buy its way onto a five-row page, and the result collapses back onto what semantic search alone would have returned.
+
+```python
+full_hybrid = hybrid_search(30)
+fused_position = int(full_hybrid.index[full_hybrid['ticket_id'] == TARGET][0]) + 1
+narrow = hybrid_search(5)
+
+print(f'Ticket {TARGET} — vector rank {TARGET_SEMANTIC_RANK} of 30, '
+      f'fused position {fused_position} of 30')
+print(f'Positions gained by adding the lexical leg: {TARGET_SEMANTIC_RANK - fused_position}')
+print(f'Returned by the same hybrid query at top_k => 5:  {TARGET in set(narrow["ticket_id"])}')
+print(f'Returned by the same hybrid query at top_k => {TOP_K}: {TARGET in set(hybrid["ticket_id"])}')
+
+narrow_gain = sorted(int(t) for t in set(narrow['ticket_id']) - set(semantic_only['ticket_id'].head(5)))
+print(f'Rows the top_k => 5 hybrid adds over the semantic-only top 5: {narrow_gain or "none"}')
+```
+
+### What the hybrid `distance` column actually is
+
+Under hybrid search, `distance` stops being a distance. Two things give it away: values land in a narrow band just under 1 instead of spreading across the COSINE range seen in the semantic-only result, and a row that matches perfectly does not score 0.
+
+It is a **fused rank score**. Each of the two searches produces its own ranking, and the rankings are combined with Reciprocal Rank Fusion:
+
+```
+distance = 1 - ( 1/(60 + rank_vector) + 1/(61 + rank_lexical) )
+```
+
+with 1-based ranks. The two legs do not share a rank base: 60 for the vector leg, 61 for the lexical leg. That asymmetry is determined, not cosmetic. A row ranked 1st by the vector search and 2nd by the lexical search scores:
+
+```
+1 - (1/61 + 1/63)
+  = 1 - (0.01639344262295082 + 0.015873015873015872)
+  = 0.9677335415040333
+```
+
+Neither shared base reproduces that value. For the same row — vector rank 1, lexical rank 2 — 60 on both legs gives `1 - (1/61 + 1/62) = 0.9674775251189847` and 61 on both legs gives `1 - (1/62 + 1/63) = 0.9679979518689196`. What BigQuery returns falls *between* the two, which is the signature of two different bases rather than one.
+
+`0.9674775251189847` appears again below as the best attainable score. That is the same arithmetic, `1/61 + 1/62`, reached from different ranks: under the measured law it is a row at rank 1 on *both* legs. Here it is the shared-base-60 reading of a rank-1 / rank-2 row, and it is the wrong prediction for that row.
+
+What that means when reading the column:
+
+- **Lower is still better** — the reciprocal ranks are subtracted from 1, so a strong row on both signals subtracts the most.
+- **The values are not comparable to VECTOR-mode distances.** A hybrid 0.967 and a cosine 0.967 have nothing to do with each other.
+- **The magnitude carries no similarity information**, only the ordering does. Rank 1 on both signals gives `1 - (1/61 + 1/62) = 0.9674775251189847`, the best attainable score no matter how good the match is.
+- **Each reciprocal term is small and decays fast.** The vector term tops out at `1/61 ≈ 0.0164` and the lexical term at `1/62 ≈ 0.0161`; by rank 10 a term is worth 0.0143 and by rank 25, 0.0118. The whole score lives inside a range narrower than 0.02, which is why one signal can never dominate the other.
+- **No pooled row forfeits a term.** The lexical leg ranks the entire candidate pool — the top `10 * top_k` rows by vector rank — not just the keyword matches: BM25 hits take lexical ranks 1..m and every remaining pooled row falls in behind them in vector order. A row whose text contains nothing like the token still carries a lexical rank — its vector rank, pushed down one place for each matching row below it. Only where nothing matches at all does the page reduce to `1 - ( 1/(60 + r) + 1/(61 + r) )` at vector rank `r`. What an exact-token match changes is that rank, promoting the row to lexical rank 1. Rows outside the pool are never scored by BM25 at all, and a result set where every row's lexical rank equals its vector rank is the signature that nothing in the pool matched.
+- **`distance_type` is still accepted in hybrid mode**, and it still governs how the vector leg orders its candidates — but the value returned in `distance` is the fused rank score, never a COSINE distance, whatever is passed.
+
+> **This decomposition is reverse-engineered from observed behavior; Google does not document it.** The reference pages describe `distance` only as the distance "for the semantic search portion of a vector search" and say nothing about fusion, the constants, or the scale change. The formula here was recovered by matching returned values to all 16 significant digits. Treat it as an explanation of what the function does today, not a contract — it can change without notice.
+
+The cell below rebuilds the arithmetic from live results rather than asserting it: it re-runs the semantic search across all 30 tickets to recover each row's vector rank, solves the formula for the lexical rank, and then reconstructs the fused score from those two integers. At `top_k => 12` the pool is 120 rows, so all 30 tickets sit inside it and every returned row has a lexical rank to recover. Every one of them comes back as an exact integer — that is the evidence the formula is right, including the 61 on the lexical leg.
+
+```python
+query = f'''
+WITH incident AS (
+  SELECT (AI.EMBED(
+    content => '{INCIDENT_TEXT}',
+    endpoint => 'text-embedding-005',
+    task_type => 'RETRIEVAL_QUERY'
+  )).result AS query_vector
+),
+semantic AS (
+  SELECT
+    base.ticket_id AS ticket_id,
+    ROW_NUMBER() OVER (ORDER BY distance) AS vector_rank,
+    distance AS vector_distance
+  FROM VECTOR_SEARCH(
+    TABLE `{PROJECT_ID}.{DATASET_ID}.workflow_log_embedded`,
+    'embedding',
+    query_value => (SELECT query_vector FROM incident),
+    top_k => 30,
+    distance_type => 'COSINE')
+),
+fused AS (
+  SELECT
+    base.ticket_id AS ticket_id,
+    base.error_code AS error_code,
+    distance AS fused_distance
+  FROM VECTOR_SEARCH(
+    TABLE `{PROJECT_ID}.{DATASET_ID}.workflow_log_embedded`,
+    'embedding',
+    query_value => (SELECT query_vector FROM incident),
+    top_k => {TOP_K},
+    distance_type => 'COSINE',
+    lexical_search_columns => ['error_code', 'ticket_description'],
+    lexical_search_query_value => '{ERROR_CODE}')
+),
+terms AS (
+  SELECT
+    f.ticket_id,
+    f.error_code,
+    s.vector_rank,
+    ROUND(s.vector_distance, 4) AS vector_distance,
+    f.fused_distance,
+    1 / (60 + s.vector_rank) AS vector_term,
+    (1 - f.fused_distance) - 1 / (60 + s.vector_rank) AS lexical_term
+  FROM fused f
+  JOIN semantic s USING (ticket_id)
+),
+solved AS (
+  -- The lexical leg ranks the whole candidate pool — the top 10 * top_k rows by vector
+  -- rank — with BM25 matches taking ranks 1..m and every other pooled row following in
+  -- vector order, so every returned row has a lexical rank to recover.
+  SELECT
+    *,
+    CAST(ROUND(SAFE_DIVIDE(1, lexical_term) - 61) AS INT64) AS lexical_rank
+  FROM terms
+)
+SELECT
+  ticket_id,
+  error_code,
+  vector_rank,
+  vector_distance,
+  lexical_rank,
+  fused_distance,
+  1 - (vector_term + 1 / (61 + lexical_rank)) AS rebuilt_from_ranks
+FROM solved
+ORDER BY fused_distance
+'''
+rrf = client.query(query).to_dataframe()
+
+gap = (rrf['rebuilt_from_ranks'] - rrf['fused_distance']).abs()
+print(f'Rows whose fused score rebuilds exactly from the two integer ranks: '
+      f'{int(gap.lt(1e-12).sum())} of {len(rrf)}')
+print(f'Rows with a solved lexical rank: {int(rrf["lexical_rank"].notna().sum())} of {len(rrf)}')
+print(f'Best solved lexical rank among the returned rows: {rrf["lexical_rank"].min()}')
+rrf
+```
+
+Both halves of the workflow serve triage. The `AI.AGG` narratives in Step 4 answer the queue-level question — what is going wrong across all tickets this week — provided the numbers in them are checked against `GROUP BY`. Hybrid retrieval answers the ticket-level one: *has anyone seen this exact error before, and what fixed it?* Because `resolution` travels with every hit, the answer comes back with the remedy already attached.
+
+Two things about hybrid retrieval are worth carrying out of Step 5:
+
+- **It is a re-ranking that also widens.** The lexical leg changes the fused score of every row, so a row it adds arrives at the expense of a row the semantic search would have returned. Step 5 prints both sides of that trade rather than claiming only the upside.
+- **`top_k` decides how far the widening reaches, through two gates.** BM25 only ever sees the top `10 * top_k` rows by semantic rank, and inside that pool a match is worth `1/62 ≈ 0.0161` of lift against the row holding the last slot. The tighter of the two fixes the deepest rank a matched row can climb from: 10 at `top_k => 5`, 110 at `top_k => 30`, 640 at `top_k => 64`. Size `top_k` short of that reach and the lexical leg does its work while the row it found never appears. For a code expected at semantic rank `R`, `R/10` is the floor and not the recipe — under a few hundred ranks deep the score gate binds first, so take the value from the reach table in Step 5. When an identifier is the whole question and the answer has to be certain, `WHERE error_code = @code` is the right tool — a predicate has no pool and cannot be outranked by a fusion score.

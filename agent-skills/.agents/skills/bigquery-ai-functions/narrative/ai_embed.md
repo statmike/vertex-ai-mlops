@@ -13,7 +13,7 @@
 - `functions/ai_similarity` (`AI.SIMILARITY`) — Cosine similarity between two inputs (uses embeddings internally)
 - `functions/vector_search` (`VECTOR_SEARCH`) — Top-K nearest neighbor search on pre-computed embeddings
 
-**Featured in:** `workflows/semantic_search` (Semantic Search System) | `workflows/rag_pipeline` (RAG Pipeline) | `workflows/multimodal_analysis` (Multimodal Analysis) | `workflows/document_rag` (Document RAG Pipeline)
+**Featured in:** `workflows/semantic_search` (Semantic Search System) | `workflows/rag_pipeline` (RAG Pipeline) | `workflows/multimodal_analysis` (Multimodal Analysis) | `workflows/document_rag` (Document RAG Pipeline) | `workflows/log_analysis` (Log Analysis) | `workflows/catalog_search` (Catalog Search) | `workflows/image_deduplication` (Image Deduplication)
 
 **Multimodal:** Supports image input via `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef) with `multimodalembedding@001`. For PDFs, use `gemini-embedding-2-preview` (Preview) which embeds PDFs directly without rendering to images.
 

@@ -20,13 +20,15 @@ Both can be reached via `CREATE MODEL` + `ML.*` (structured, trained) or `AI.*` 
    Yes → BigQuery ML (`ML.WEIGHTS`, `ML.GLOBAL_EXPLAIN`, `ML.FEATURE_IMPORTANCE`). Generative functions don't expose this.
 3. **Is the task naturally expressed as a prompt/instruction** ("is this spam?", "summarize this", "extract these fields", "rate this 1-10") **rather than a numeric feature table?**
    Yes → BigQuery AI Functions. The managed functions (`AI.IF`/`AI.SCORE`/`AI.CLASSIFY`/`AI.AGG`) and generation functions are built exactly for this.
-4. **Do you need custom holidays, external regressors, hierarchical reconciliation, or explicit forecast-bound control for a forecast?**
+4. **For a regression or classification on a normal feature table, do you need reproducible predictions, >20 feature columns, or >10 classes?**
+   Yes → a trained model (`LINEAR_REG`, `LOGISTIC_REG`, `BOOSTED_TREE_*` — BigQuery ML). No, and you'd rather skip training entirely → `AI.PREDICT` (TabFM, zero training). Note that **tabular prediction is no longer BigQuery ML's exclusively** — `AI.PREDICT` is a foundation model for ordinary feature tables, so "it's tabular" is not by itself a reason to route to BigQuery ML.
+5. **Do you need custom holidays, external regressors, hierarchical reconciliation, or explicit forecast-bound control for a forecast?**
    Yes → `ARIMA_PLUS`/`ARIMA_PLUS_XREG` (BigQuery ML). No, just want a fast baseline forecast → `AI.FORECAST` (zero training).
-5. **Do you need >12 dimensions, or a ratio/category metric type, for a "why did this metric move" analysis?**
+6. **Do you need >12 dimensions, or a ratio/category metric type, for a "why did this metric move" analysis?**
    Yes → `CONTRIBUTION_ANALYSIS` (BigQuery ML). No, ≤12 dimensions and a summable metric → `AI.KEY_DRIVERS` (zero training, faster).
-6. **Is this unstructured content** (free text, images, documents) **that needs semantic understanding, generation, or search?**
+7. **Is this unstructured content** (free text, images, documents) **that needs semantic understanding, generation, or search?**
    Yes → BigQuery AI Functions (`AI.GENERATE*`, `AI.EMBED`, `VECTOR_SEARCH`, `AI.CLASSIFY`). BigQuery ML's models are structured/tabular-first (though PCA/AUTOENCODER can embed structured data, and `embeddings_classification` shows the two approaches composing).
-7. **Do you need this to run at real production scale with monitoring, drift detection, and a scheduled retrain pipeline?**
+8. **Do you need this to run at real production scale with monitoring, drift detection, and a scheduled retrain pipeline?**
    Yes → BigQuery ML has the full lifecycle for this (`ML.VALIDATE_DATA_DRIFT`, 8 orchestration pipeline approaches). Generative functions are typically called per-request rather than "retrained."
 
 If two or more answers point the same direction, that's your answer — go to that skill's decision tree. **If the answers conflict or the task doesn't map cleanly onto any of these questions, ask the user directly** which of the tradeoffs above matters most to them, with 2-3 concrete options and the tradeoff for each — don't silently pick one.
@@ -37,14 +39,15 @@ These pairs solve visibly similar problems with the two different approaches, an
 
 - **Forecasting**: `ARIMA_PLUS` (BigQuery ML) vs. `AI.FORECAST` (BigQuery AI Functions). `AI.FORECAST` is faster to stand up (no `CREATE MODEL`) but has no custom holidays, no external regressors, no hierarchy, and less control over forecast bounds. `ARIMA_PLUS`/`ARIMA_PLUS_XREG` trade setup time for that control.
 - **Driver / key-factor analysis**: `CONTRIBUTION_ANALYSIS` (BigQuery ML) vs. `AI.KEY_DRIVERS` (BigQuery AI Functions). `AI.KEY_DRIVERS` is simpler and zero-training but caps at 12 dimensions and summable metrics only; `CONTRIBUTION_ANALYSIS` supports more dimensions and ratio/category metric types.
-- **Classification**: a trained classifier (`BOOSTED_TREE_CLASSIFIER`, `LOGISTIC_REG`, etc. — BigQuery ML) needs labeled training data and improves with volume/retraining, but is fast and cheap per-prediction once trained. `AI.CLASSIFY` (BigQuery AI Functions) needs zero training data — just a category list — but costs an LLM call per row and won't out-learn a well-trained model's precision on a stable, high-volume task.
+- **Tabular regression / classification**: a trained model (`LINEAR_REG`, `LOGISTIC_REG`, `BOOSTED_TREE_*` — BigQuery ML) vs. `AI.PREDICT` (TabFM — BigQuery AI Functions). `AI.PREDICT` needs no `CREATE MODEL` and no labeled training run, but it caps at **20 feature columns and 10 classes**, and — measured, not documented — **its output is not deterministic**: repeating a byte-identical call returns slightly different predictions, and `FARM_FINGERPRINT` pins only *which rows* split, never the predictions themselves. `AI.EVALUATE` scores its own fresh predictions rather than any rows you materialized. If a number has to reproduce, train the model.
+- **Classification (unstructured / prompt-shaped input)**: a trained classifier (`BOOSTED_TREE_CLASSIFIER`, `LOGISTIC_REG`, etc. — BigQuery ML) needs labeled training data and improves with volume/retraining, but is fast and cheap per-prediction once trained. `AI.CLASSIFY` (BigQuery AI Functions) needs zero training data — just a category list — but costs an LLM call per row and won't out-learn a well-trained model's precision on a stable, high-volume task.
 - **Embeddings**: BigQuery ML's `PCA`/`AUTOENCODER`/`MATRIX_FACTORIZATION` models can produce embeddings from structured/tabular data via `ML.GENERATE_EMBEDDING`. BigQuery AI Functions' `AI.EMBED`/`AI.GENERATE_EMBEDDING` produce embeddings from text/image/multimodal content via a foundation model. These aren't really competing — pick by input type (tabular vs. unstructured content).
 - **The two approaches compose, they aren't always exclusive** — `bq-ml`'s `embeddings_classification` workflow uses `AI.EMBED` (generative) to featurize product names, then a trained `BOOSTED_TREE_CLASSIFIER` (BigQuery ML) to classify with those embeddings as input. Don't assume the answer is always either/or.
 
 ## After triaging
 
 Route to the matching skill for the actual decision tree and implementation detail:
-- Structured/tabular prediction, trained models, model management, or scheduled pipelines → [`bigquery-ml` skill](../bigquery-ml/SKILL.md).
-- Generative/prompt-driven tasks, embeddings/search over unstructured content, zero-training forecasting/anomalies/drivers, or document processing → [`bigquery-ai-functions` skill](../bigquery-ai-functions/SKILL.md).
+- Trained models, model management, reproducible tabular prediction, or scheduled pipelines → [`bigquery-ml` skill](../bigquery-ml/SKILL.md).
+- Generative/prompt-driven tasks, embeddings/search over unstructured content, zero-training tabular prediction/forecasting/anomalies/drivers, or document processing → [`bigquery-ai-functions` skill](../bigquery-ai-functions/SKILL.md).
 
 This skill only triages — it deliberately does not duplicate either domain skill's own catalog or gotchas.

@@ -6,7 +6,7 @@
 - You want to detect unusual spikes or drops in time series data
 - You need anomaly probability scores for each data point
 - You want to detect anomalies across multiple time series simultaneously
-- You can choose between TimesFM 2.0 (default) and TimesFM 2.5 via the `model` parameter
+- You can choose between TimesFM 2.5 (the current default) and TimesFM 2.0 via the `model` parameter
 - You can control how much history the model sees with `context_window` (64–15,360 depending on model)
 
 **Alternatives:**
@@ -233,9 +233,11 @@ ORDER BY anomaly_prob DESC
 client.query(query).to_dataframe()
 ```
 
-### 5. Using TimesFM 2.5
+### 5. Pinning the TimesFM model version
 
-The `model` parameter selects which TimesFM version to use. TimesFM 2.5 supports larger context windows (up to 15,360) and may produce different anomaly probabilities.
+The `model` parameter selects which TimesFM version to use. **The default is TimesFM 2.5** — it was TimesFM 2.0, and Google changed it on the reference pages with no release note, so an unpinned query written before the change now returns different anomaly probabilities than it used to. Pin `model` explicitly whenever the numbers need to be reproducible.
+
+TimesFM 2.5 also supports larger context windows (up to 15,360 against 2.0's 2,048).
 
 ```python
 query = f'''

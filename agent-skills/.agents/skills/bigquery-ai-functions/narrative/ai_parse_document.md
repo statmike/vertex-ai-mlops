@@ -1,4 +1,8 @@
-> **⚠️ NOT CURRENTLY WORKING:** The `AI.PARSE_DOCUMENT` function (preview) has been temporarily taken offline for revision (as of 2026-06-01). See the [BigQuery release notes](https://cloud.google.com/bigquery/docs/release-notes) for status. This notebook will not run successfully until the function is re-enabled.
+> **⚠️ NOT CURRENTLY WORKING — DOCUMENTATION WITHDRAWN:** The `AI.PARSE_DOCUMENT` function (preview) was taken offline for revision on 2026-06-01, and its status has since escalated. As of 2026-09-01 the reference page returns HTTP 404, the function is absent from the BigQuery AI functions navigation tree, and it is absent from the generative AI overview. This notebook does not run.
+>
+> **Use `functions/ml_process_document` (`ML.PROCESS_DOCUMENT`) in the meantime.** It reaches the same Document AI Layout Parser, at the cost of the `CREATE MODEL` step this function existed to remove, and it returns one JSON column (`ml_process_document_result`) rather than typed `chunk_id`/`start_page`/`end_page`/`content` fields.
+>
+> The stored outputs below are a record of this notebook running before the withdrawal, not current behavior. Check the [BigQuery release notes](https://docs.cloud.google.com/bigquery/docs/release-notes) for restoration — there is precedent (`AI.AGG` was pulled and re-enabled in April–May 2026).
 
 # AI.PARSE_DOCUMENT — BigQuery AI Functions
 

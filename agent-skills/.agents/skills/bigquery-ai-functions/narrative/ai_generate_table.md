@@ -12,7 +12,7 @@
 - `functions/ai_generate` (`AI.GENERATE`) — Scalar function with output_schema, no model required
 - `functions/ai_generate_text` (`AI.GENERATE_TEXT`) — TVF for free-form text output, multi-provider
 
-**Featured in:** `workflows/content_analysis` (Content Analysis Pipeline) | `workflows/rag_pipeline` (RAG Pipeline) | `workflows/content_moderation` (Content Moderation)
+**Featured in:** `workflows/content_analysis` (Content Analysis Pipeline) | `workflows/rag_pipeline` (RAG Pipeline) | `workflows/content_moderation` (Content Moderation) | `workflows/log_analysis` (Log Analysis)
 
 **Multimodal:** Supports document, image, and video input via `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT prompt with ObjectRefRuntime fields to extract structured data from unstructured files.
 

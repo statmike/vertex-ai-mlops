@@ -1,17 +1,19 @@
 # Semantic Search System — BigQuery AI Functions
 
-Build a semantic search system in BigQuery, comparing two approaches:
+Build a semantic search system in BigQuery, comparing three approaches:
 
 1. **Manual approach**: `AI.EMBED` to create embeddings + `VECTOR_SEARCH` to query them
 2. **Simplified approach**: `AI.SEARCH` with autonomous embedding generation
+3. **Hybrid approach**: semantic + lexical keyword matching in one call
 
 **What this demonstrates:**
 - Creating and storing embeddings with `AI.EMBED`
 - Searching with `VECTOR_SEARCH` (single query, batch, filtered)
 - Setting up autonomous embeddings for `AI.SEARCH`
-- Comparing the two approaches: flexibility vs simplicity
+- Adding a keyword leg with `VECTOR_SEARCH` lexical columns and `AI.SEARCH` `mode => 'HYBRID'`
+- Comparing the three approaches: flexibility vs simplicity vs exact-term recall
 
-**Functions used:** `functions/ai_embed` (`AI.EMBED`) | `functions/vector_search` (`VECTOR_SEARCH`) | `functions/ai_search` (`AI.SEARCH`)
+**Functions used:** `functions/ai_embed` (`AI.EMBED`) | `functions/vector_search` (`VECTOR_SEARCH`) (semantic + hybrid) | `functions/ai_search` (`AI.SEARCH`) (semantic + hybrid)
 
 **Prerequisites:** `setup` (Setup guide) | `RESOURCES.md` (Function reference)
 
@@ -77,7 +79,7 @@ print(f'Connection {CONNECTION_ID} ready (SA: {sa})')
 ---
 ## Step 1 — Create a knowledge base
 
-Create a sample knowledge base of technical documentation articles. We'll use this same data for both search approaches.
+Create a sample knowledge base of technical documentation articles. We'll use this same data for all three search approaches.
 
 ```python
 # Source data — technical documentation articles
@@ -284,6 +286,8 @@ else:
 
 `AI.SEARCH` is much simpler — just pass the table, column, and search text. No manual embedding of queries, no distance type selection.
 
+It picks the distance metric too: the default is `EUCLIDEAN`, where Step 3a asked for `COSINE`. The same question therefore comes back on a different scale here. Approach 3 adds a third scale — a fused rank score that is not a distance at all. Compare *ranks* across the three approaches; never compare the `distance` values.
+
 ```python
 query = f'''
 SELECT base.product, base.title, base.content, distance
@@ -298,15 +302,200 @@ client.query(query).to_dataframe()
 ```
 
 ---
-## Comparison: Manual vs Simplified
+## Approach 3: Hybrid — semantic + lexical
 
-| Feature | Manual (EMBED + VECTOR_SEARCH) | Simplified (AI.SEARCH) |
-|---------|-------------------------------|------------------------|
-| **Setup** | Create embeddings yourself | Autonomous — BigQuery handles it |
-| **Query embedding** | You call AI.EMBED on queries | Automatic |
-| **Task types** | Full control (RETRIEVAL_DOCUMENT / RETRIEVAL_QUERY) | Managed by BigQuery |
-| **Distance metrics** | Choose COSINE, EUCLIDEAN, DOT_PRODUCT | Managed |
-| **Filtering** | Pre-filter base table with subquery | Not supported |
-| **Batch queries** | Multiple queries in one call | One query at a time |
-| **Vector indexes** | Supports IVF and TreeAH indexes | Managed |
-| **Best for** | Production systems needing control | Quick prototyping, simple search |
+Semantic search matches meaning, which is what you want right up until the answer hinges on a term the question never spells out — a product name, an error code, a SKU. Embeddings blur those tokens into their neighborhood. Lexical (keyword) search matches them literally.
+
+Hybrid search runs both legs and fuses the two rankings into one result set. BigQuery exposes it two ways, and both run on the tables already built above:
+
+- `VECTOR_SEARCH` with `lexical_search_columns` + `lexical_search_query_value` — any table with an embedding column (Approach 1's table)
+- `AI.SEARCH` with `mode => 'HYBRID'` — tables with autonomous embedding generation (Approach 2's table)
+
+Neither one needs a vector index here. An index only accelerates the lexical leg, and BigQuery does not populate one until the base table reaches 5,000 rows and 10 MB, so this 10-row knowledge base never gets one.
+
+### Step 2c — VECTOR_SEARCH with lexical columns
+
+The question below is phrased entirely in storage vocabulary: a nightly job that moves files between tiers. The operator running it already knows the exact term the answer turns on — `Cloud Scheduler` — but that term appears in exactly one article, and that article files under Cloud Functions rather than Cloud Storage. This is the shape hybrid exists for: fuzzy intent on one leg, an exact token on the other.
+
+Start with the semantic-only ranking. Ranking all ten articles, instead of only the top 3 a user would be shown, makes it visible where the exact-term article actually sits before any fusion happens.
+
+```python
+# Semantic-only baseline — rank every article, then take the top 3 a user would see
+TOP_K = 3
+
+query = f'''
+SELECT
+  ROW_NUMBER() OVER (ORDER BY distance) AS semantic_rank,
+  base.id, base.product, base.title,
+  CONTAINS_SUBSTR(base.content, 'Cloud Scheduler') AS names_the_term,
+  distance
+FROM VECTOR_SEARCH(
+  TABLE `{PROJECT_ID}.{DATASET_ID}.workflow_search_embedded`,
+  'embedding',
+  query_value => (AI.EMBED(
+    content => 'How do I schedule a nightly job that moves files between storage tiers?',
+    endpoint => 'text-embedding-005',
+    task_type => 'RETRIEVAL_QUERY'
+  )).result,
+  top_k => 10,
+  distance_type => 'COSINE'
+)
+ORDER BY distance
+'''
+semantic_all = client.query(query).to_dataframe()
+semantic_top = semantic_all.head(TOP_K)
+
+term_rank = semantic_all.loc[semantic_all['names_the_term'], 'semantic_rank']
+print(f'Semantic-only top {TOP_K}: {[int(i) for i in semantic_top["id"]]}')
+print('Semantic rank of the article naming "Cloud Scheduler": '
+      f'{int(term_rank.iloc[0]) if len(term_rank) else "not returned"}')
+semantic_all
+```
+
+```python
+# Hybrid — same semantic question, plus a literal keyword leg carrying the exact term
+query = f'''
+SELECT
+  base.id, base.product, base.title,
+  CONTAINS_SUBSTR(base.content, 'Cloud Scheduler') AS names_the_term,
+  distance
+FROM VECTOR_SEARCH(
+  TABLE `{PROJECT_ID}.{DATASET_ID}.workflow_search_embedded`,
+  'embedding',
+  query_value => (AI.EMBED(
+    content => 'How do I schedule a nightly job that moves files between storage tiers?',
+    endpoint => 'text-embedding-005',
+    task_type => 'RETRIEVAL_QUERY'
+  )).result,
+  lexical_search_columns => ['title', 'content'],
+  lexical_search_query_value => 'Cloud Scheduler',
+  top_k => {TOP_K},
+  distance_type => 'COSINE'
+)
+ORDER BY distance
+'''
+hybrid = client.query(query).to_dataframe()
+
+semantic_ids = [int(i) for i in semantic_top['id']]
+hybrid_ids = [int(i) for i in hybrid['id']]
+rank_of = {int(i): int(r) for i, r in zip(semantic_all['id'], semantic_all['semantic_rank'])}
+added = [i for i in hybrid_ids if i not in semantic_ids]
+dropped = [i for i in semantic_ids if i not in hybrid_ids]
+
+print(f'Semantic-only top {TOP_K}: {semantic_ids}')
+print(f'Hybrid top {TOP_K}:        {hybrid_ids}')
+print('Article ids the lexical leg added: '
+      f'{[f"id {i} (semantic rank {rank_of[i]})" for i in added] if added else "none"}')
+print(f'Article ids pushed out to make room: {dropped if dropped else "none"}')
+hybrid
+```
+
+`lexical_search_columns` lists the `STRING` columns to match literally and `lexical_search_query_value` is the text to match them against. The two legs take **separate** inputs: the semantic leg gets the user's question, the lexical leg gets the exact term worth pinning.
+
+The cell above prints what that bought — the ids each ranking returned, any id the lexical leg pulled into the top 3, the semantic rank that id held beforehand, and whatever was pushed out to make room. The fused list is the same length as the semantic one, so every promotion is a swap, not an append. How far down the semantic list a lexical match can reach is set by `top_k`, and the bound is arithmetic rather than luck: *Reading the hybrid `distance`* below works it out.
+
+Two constraints to know before reaching for it:
+
+- Hybrid is **single-query only**. The lexical arguments cannot be combined with the batch (query-table) form from Step 5a — BigQuery rejects it with `lexical_search_columns is not supported when query_value is not specified.`
+- The `distance` column is no longer a cosine distance, even though `distance_type => 'COSINE'` is still accepted. See *Reading the hybrid `distance`* below.
+
+### Step 3c — AI.SEARCH with mode => 'HYBRID'
+
+`AI.SEARCH` has no lexical column arguments at all. It has a single `mode`:
+
+- `'VECTOR'` — semantic only
+- `'HYBRID'` — semantic + lexical
+- `'AUTO'` (default) — hybrid *if the table has a vector index configured with lexical search columns*, otherwise semantic only
+
+Step 3b omitted `mode`, so it ran as `AUTO` and resolved to a semantic-only search — and on this table it always will. `AI.SEARCH` requires autonomous embedding generation, and Step 2b's `content_embedding` is a generated `STRUCT<result ARRAY<FLOAT64>, status STRING>` column. A vector index cannot be built on a generated `STRUCT` column, or on a field of one, so `workflow_search_auto` can never carry the index `AUTO` looks for. On an autonomous-embedding table, `'HYBRID'` has to be asked for by name. An *indexed* hybrid search means projecting `content_embedding.result` into a second table as a plain `ARRAY<FLOAT64>` column and querying that with `VECTOR_SEARCH` — the `workflows/catalog_search` (Catalog Search) workflow builds that two-table design end to end.
+
+The price of the simplicity: one string feeds both legs, so the query text has to carry the intent *and* the keyword. And the lexical leg matches only `column_to_search` — `'content'` here, the same column the embedding is generated from. When the keyword belongs to a *different* column, that is `VECTOR_SEARCH`'s job.
+
+The cell below runs one identical string through `'VECTOR'` and `'HYBRID'` so the fusion effect is measured against its own baseline rather than against a differently-worded query.
+
+```python
+# One query text, both modes — the only difference is the fusion
+query = f'''
+WITH both_modes AS (
+  SELECT
+    'VECTOR' AS search_mode, base.id, base.title,
+    CONTAINS_SUBSTR(base.content, 'Cloud Scheduler') AS names_the_term, distance
+  FROM AI.SEARCH(
+    TABLE `{PROJECT_ID}.{DATASET_ID}.workflow_search_auto`,
+    'content',
+    'nightly job to move files between storage tiers using Cloud Scheduler',
+    top_k => {TOP_K},
+    mode => 'VECTOR'
+  )
+  UNION ALL
+  SELECT
+    'HYBRID', base.id, base.title,
+    CONTAINS_SUBSTR(base.content, 'Cloud Scheduler'), distance
+  FROM AI.SEARCH(
+    TABLE `{PROJECT_ID}.{DATASET_ID}.workflow_search_auto`,
+    'content',
+    'nightly job to move files between storage tiers using Cloud Scheduler',
+    top_k => {TOP_K},
+    mode => 'HYBRID'
+  )
+)
+SELECT
+  search_mode,
+  RANK() OVER (PARTITION BY search_mode ORDER BY distance) AS result_rank,
+  id, title, names_the_term, distance
+FROM both_modes
+ORDER BY search_mode DESC, distance
+'''
+modes = client.query(query).to_dataframe()
+
+for mode in ['VECTOR', 'HYBRID']:
+    leg = modes[modes['search_mode'] == mode]
+    hit = leg[leg['names_the_term']]
+    where = f'rank {int(hit["result_rank"].iloc[0])}' if len(hit) else f'not in the top {TOP_K}'
+    print(f'{mode:6} top {TOP_K}: {[int(i) for i in leg["id"]]}   '
+          f'article naming "Cloud Scheduler": {where}')
+modes
+```
+
+### Reading the hybrid `distance`
+
+Both hybrid calls return a `distance` column, and in neither case is it a distance. Hybrid fuses the two legs by **rank**, not by score, using reciprocal rank fusion with 1-based ranks. The two legs do not count from the same base:
+
+```
+distance = 1 - ( 1/(60 + rank_vector) + 1/(61 + rank_lexical) )
+```
+
+The semantic leg uses 60, the standard fusion constant; the lexical leg uses 61. That asymmetry is measured, not cosmetic. A row sitting at semantic rank 1 and lexical rank 2 comes back as `1 - (1/61 + 1/63) = 0.9677335415040333`, and that value lands *between* the two readings a shared base would give for the same pair of ranks — 60 on both legs predicts `1 - (1/61 + 1/62) = 0.9674775251189847`, 61 on both legs predicts `1 - (1/62 + 1/63) = 0.9679979518689196`. Falling between them is the signature of two different bases.
+
+Lower still sorts first. Three consequences follow directly from the arithmetic:
+
+- **Values cluster just below 1** — the fused results above sit within a few thousandths of `0.97`. A document that matches the query perfectly does *not* score 0; the best score available, rank 1 on both legs, is `1 - (1/61 + 1/62) = 0.96748`. That is the same expression the shared-base-60 reading produces at ranks 1 and 2 above, which is arithmetic coincidence and not shared meaning: here it is the measured law evaluated at the best ranks a row can hold.
+- **The numbers are not comparable to Approach 1's `COSINE` distances or Approach 2's `EUCLIDEAN` ones.** Different scale, different meaning. Compare *ranks* across approaches, never the values.
+- **Every pooled row collects both terms.** BigQuery hands the lexical leg only the top `10 * top_k` rows by semantic rank, and inside that candidate pool it ranks *all* of them, not just the rows BM25 matched: the matches take lexical ranks `1..m` and every remaining candidate falls in behind them in its semantic order. No pooled row is ever missing from a list, so no pooled row ever forfeits a term — an article that never mentions `Cloud Scheduler` still earns a lexical rank, namely its semantic rank pushed down one place for each matching article ranked below it. Only where nothing matches at all does that reduce to `1 - ( 1/(60 + r) + 1/(61 + r) )` at semantic rank `r`. A row deeper than `10 * top_k` never enters the pool and gets no lexical rank at all.
+
+What the keyword actually buys, then, is a promotion to lexical rank 1, worth `1/62 ≈ 0.0161`. That is real money on this scale, and it does pull rows in from outside the semantic top `top_k` — but only so deep, and `top_k` bounds the depth twice over. A matched row has to be inside the `10 * top_k` candidate pool, *and* its fused score has to beat the row holding the last slot. The reach is whichever bound is tighter:
+
+| `top_k` | 2 | 3 | 5 | 10 | 20 | 30 | 40 | 50 | 51 | 64 | 100 | 208 | 300 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| deepest semantic rank retrievable | 3 | 6 | 10 | 23 | 56 | 110 | 212 | 468 | 510 | 640 | 1,000 | 2,080 | 3,000 |
+
+The score half of that is one comparison. A matched row at semantic rank `R` scores `1/(60 + R) + 1/62`. To make the page it has to beat the row holding the last slot, which keeps its semantic rank `top_k` and — pushed down one place by the match — takes lexical rank `top_k + 1`, scoring `1/(60 + top_k) + 1/(61 + top_k + 1)`. That comparison relaxes fast, and from `top_k = 51` up it stops binding at all: the pool is the tighter of the two from there on, and reach is exactly `10 * top_k`.
+
+This notebook runs at `top_k = 3`, a reach of 6, which is why the comparison above shows a promotion of a few positions rather than a rescue from the bottom of a ten-article list. That is the rule to carry away: hybrid does widen recall, but in proportion to `top_k` rather than without limit — to reach an exact-token match sitting at semantic rank `R`, `top_k` has to be at least `R / 10`, and usually more. That ratio is the pool bound alone; below a few hundred ranks deep the score bound is the tighter of the two, so read the requirement off the reach table above rather than from the ratio — a target at semantic rank 100 needs `top_k = 29`, not 10. The two gates cross at `top_k = 51`, and only above that does `R / 10` become the answer rather than the floor. And when the term *is* the whole question and you want certainty rather than arithmetic, filter on it — a `WHERE CONTAINS_SUBSTR(content, @term)` predicate cannot be outranked by a fusion score, and it has no pool to fall outside of.
+
+This formula is reverse-engineered from observed results and reproduces them exactly, but Google documents no fusion formula and no score column, so it can change without notice. Treat a hybrid `distance` as an opaque ordering in production code. The full decomposition, with the underlying ranks solved out of live results, is in `functions/vector_search` (`VECTOR_SEARCH`).
+
+---
+## Comparison: Manual vs Simplified vs Hybrid
+
+| Feature | Manual (EMBED + VECTOR_SEARCH) | Simplified (AI.SEARCH) | Hybrid (semantic + lexical) |
+|---------|-------------------------------|------------------------|-----------------------------|
+| **Setup** | Create embeddings yourself | Autonomous — BigQuery handles it | None — runs on either table as-is |
+| **Query embedding** | You call AI.EMBED on queries | Automatic | Follows the function it runs on |
+| **Task types** | Full control (RETRIEVAL_DOCUMENT / RETRIEVAL_QUERY) | Managed by BigQuery | Follows the function it runs on |
+| **Distance metrics** | Choose COSINE, EUCLIDEAN, DOT_PRODUCT | Choose COSINE, EUCLIDEAN, DOT_PRODUCT (EUCLIDEAN default) | Accepted, but `distance` comes back as a fused rank score |
+| **Keyword input** | None — semantic only | None — semantic only until `mode => 'HYBRID'` is named | `VECTOR_SEARCH`: a separate `lexical_search_query_value` over chosen `lexical_search_columns`. `AI.SEARCH`: the one query string, matched only against `column_to_search` |
+| **Filtering** | Pre-filter base table with subquery | Pre-filter with a base table query | Pre-filter works on both |
+| **Batch queries** | Multiple queries in one call | One query at a time | Not supported — single query only |
+| **Vector indexes** | Supports IVF and TreeAH indexes | Impossible — the generated `STRUCT` embedding column cannot be an index key | Optional accelerator for the lexical leg; `AUTO` needs an index with `lexical_search_columns`, so `AI.SEARCH` must name `'HYBRID'` |
+| **Best for** | Production systems needing control | Quick prototyping, simple search | Exact terms — product names, error codes, SKUs — reachable at most `10 * top_k` deep in the semantic ranking, so `top_k` >= `R / 10` is a floor for a target at rank `R`, not a recipe: below `top_k` = 51 the scoring gate binds first and needs more |

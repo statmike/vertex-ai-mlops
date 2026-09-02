@@ -11,7 +11,7 @@
 **Alternatives:**
 - Contribution analysis model + [`ML.GET_INSIGHTS`](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ml-get-insights) — use when you need more than 12 dimensions or non-summable (ratio / by-category) metrics. `AI.KEY_DRIVERS` is the simpler, model-free equivalent for summable metrics. See `bq-ml/models/contribution_analysis` (`../bq-ml/models/contribution_analysis/`), which uses this exact dataset and interest/reference split for a direct comparison — it verifies both differentiators live and finds that `ML.GET_INSIGHTS`'s output schema actually differs by metric type (summable vs. ratio vs. category each return different derived-statistic columns), a nuance not covered here.
 
-**Featured in:** `workflows/metric_diagnostics` (Metric Diagnostics) | `workflows/time_series_intelligence` (Time Series Intelligence)
+**Featured in:** `workflows/metric_diagnostics` (Metric Diagnostics) | `workflows/time_series_intelligence` (Time Series Intelligence) | `workflows/tabular_prediction` (Zero-Shot Tabular Prediction)
 
 **References:** `RESOURCES.md` (Full syntax reference) | [Official documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-key-drivers) | `setup` (Setup guide)
 

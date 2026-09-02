@@ -38,7 +38,7 @@
 ---
 # BigQuery AI Functions Resources
 
-BigQuery AI functions let you use generative AI, embeddings, forecasting, and anomaly detection directly within SQL queries. These functions span several categories: general-purpose text/multimodal generation, managed classification and scoring, embedding generation and semantic search, and time series forecasting. They connect to Vertex AI models (Gemini, embedding models, TimesFM, and third-party models) and can process structured data, text, images, audio, video, and PDFs -- all from within BigQuery SQL.
+BigQuery AI functions let you use generative AI, embeddings, search, forecasting, and tabular prediction directly within SQL queries. These functions span several categories: general-purpose text/multimodal generation, managed classification and scoring, embedding generation and semantic/hybrid search, and predictive AI (forecasting, anomaly detection, regression, and classification). They connect to Vertex AI models (Gemini, embedding models, TimesFM, TabFM, and third-party models) and can process structured data, text, images, audio, video, and PDFs -- all from within BigQuery SQL.
 
 For each function below we collect top level info. The documentation url is provided for each as a research retrieval page to help fill in this structure for each:
 Function Name
@@ -909,11 +909,12 @@ These functions create vector embeddings from text and multimodal data, compute 
 - `AI.SIMILARITY` computes cosine similarity between two inputs by generating embeddings at runtime -- good for prototyping and small comparisons.
 - `VECTOR_SEARCH` performs top-K nearest neighbor search on pre-computed embeddings -- supports vector indexes for efficient ANN search.
 - `AI.SEARCH` is a simplified semantic search over tables with autonomous embedding generation enabled.
+- **Hybrid search** (semantic + keyword) is a *capability* of `VECTOR_SEARCH` and `AI.SEARCH`, not a separate function. See [Hybrid Search](#hybrid-search-capability).
 
 | Feature | AI.EMBED | AI.GENERATE_EMBEDDING | ML.GENERATE_EMBEDDING | AI.SIMILARITY | VECTOR_SEARCH | AI.SEARCH |
 |---------|----------|----------------------|----------------------|---------------|---------------|-----------|
 | **Type** | Scalar | TVF | TVF | Scalar | TVF | TVF |
-| **Status** | Preview | GA (some Preview) | GA (some Preview) | Preview | GA (single search Preview) | Preview |
+| **Status** | Preview | GA (some Preview) | GA (some Preview) | Preview | GA (single search Preview) | GA (`mode` Preview) |
 | **Requires Model Object** | No (endpoint param) | Yes (MODEL reference) | Yes (MODEL reference) | No (endpoint param) | No | No (uses table config) |
 | **Input Data** | Single value | Table/Query | Table/Query | Two values | Table/Query + Table/Query or single value | Table/Query + string literal |
 | **Output** | STRUCT(result, status) | Table with embedding + stats | Table with ml_generate_embedding_* cols | FLOAT64 | Table with query/base/distance | Table with base/distance |
@@ -921,6 +922,7 @@ These functions create vector embeddings from text and multimodal data, compute 
 | **Supports PCA/Autoencoder/MF** | No | Yes | Yes | No | No | No |
 | **Uses Vector Index** | No | No | No | No | Yes | Yes |
 | **Requires Autonomous Embedding** | No | No | No | No | Optional (for STRING cols) | Yes (required) |
+| **Supports Hybrid Search** | No | No | No | No | Yes (single search only) | Yes (`mode => 'HYBRID'`) |
 
 ---
 
@@ -1223,8 +1225,8 @@ AI.SIMILARITY(
 ---
 
 ### `VECTOR_SEARCH`
-- **Description:** Table-valued function that searches embeddings to find the top-K closest embeddings from a base table to a given query embedding. Supports both batch searches (multiple query rows) and single searches (one embedding value). Can use vector indexes for approximate nearest neighbor (ANN) search.
-- **Use cases:** Semantic search, recommendation systems, classification, clustering, retrieval augmented generation (RAG).
+- **Description:** Table-valued function that searches embeddings to find the top-K closest embeddings from a base table to a given query embedding. Supports both batch searches (multiple query rows) and single searches (one embedding value). Can use vector indexes for approximate nearest neighbor (ANN) search. The single search syntax additionally supports **hybrid search** -- combining semantic similarity with lexical (keyword) matching -- via `lexical_search_columns` and `lexical_search_query_value`.
+- **Use cases:** Semantic search, hybrid semantic + keyword search, recommendation systems, classification, clustering, retrieval augmented generation (RAG).
 - [documentation](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/search_functions#vector_search)
 - **Type:** Table-valued function (TVF) -- GA (single search syntax is Preview)
 
@@ -1241,17 +1243,21 @@ VECTOR_SEARCH(
 )
 ```
 
-**Syntax (single search -- Preview):**
+**Syntax (single search -- Preview; also the hybrid search syntax):**
 ```sql
 VECTOR_SEARCH(
   { TABLE base_table | (base_table_query) },
   column_to_search,
   query_value => single_query_value,
+  [, lexical_search_columns => lexical_search_columns_value]
+  [, lexical_search_query_value => single_lexical_search_query_value]
   [, top_k => top_k_value]
   [, distance_type => distance_type_value]
   [, options => options_value]
 )
 ```
+
+Supplying a non-empty `lexical_search_columns` is what makes the search hybrid. Hybrid search is only available in the single search syntax -- **there is no batch hybrid search**. See [Hybrid Search](#hybrid-search-capability) below for how the fused score is computed.
 
 **Inputs:**
 
@@ -1262,6 +1268,8 @@ VECTOR_SEARCH(
 | `query_table` / `query_table_query` | Table/Query | Required for batch | Query embeddings to find nearest neighbors for. |
 | `query_column_to_search` | Named arg, STRING | Optional (batch only) | Column in query table containing embeddings. ARRAY\<FLOAT64\> or STRING. |
 | `query_value` | Named arg, ARRAY\<FLOAT64\> or STRING | Required for single search | Single embedding or string to search for. |
+| `lexical_search_columns` | Named arg, ARRAY\<STRING\> | Optional (single search only) | Base table columns to match lexically. Non-empty value switches the call to hybrid search. If the base table has a vector index with `lexical_search_columns`, these columns must be a subset of the indexed ones. |
+| `lexical_search_query_value` | Named arg, STRING | Optional (single search only) | The keyword query text for the lexical leg. Defaults to `query_value` when that is a STRING. |
 | `top_k` | Named arg, INT64 | Optional | Number of nearest neighbors per query. Default: 10. Negative = return all. |
 | `distance_type` | Named arg, STRING | Optional | `EUCLIDEAN` (default), `COSINE`, or `DOT_PRODUCT`. |
 | `options` | Named arg, JSON STRING | Optional | `fraction_lists_to_search` (0.0-1.0, index only), `use_brute_force` (boolean). |
@@ -1276,11 +1284,13 @@ VECTOR_SEARCH(
 
 **Outputs (single search):** Same but without the `query` column.
 
+**Outputs (hybrid search):** Same shape as single search, but `distance` is **not a distance** -- it is a reciprocal rank fusion (RRF) score derived from the row's rank in the semantic and lexical result lists. Hybrid `distance` values are not comparable to semantic-only `distance` values. See [Hybrid Search](#hybrid-search-capability).
+
 **Supported models:** VECTOR_SEARCH does not directly reference models. Operates on pre-computed ARRAY\<FLOAT64\> embeddings or STRING columns with autonomous embedding generation. Embeddings can come from any source (AI.EMBED, AI.GENERATE_EMBEDDING, external).
 
 **Best practices:** Use a vector index for large base tables. Use brute force for exact results. Use single search syntax for single queries (optimized performance).
 
-**Limitations:** Row-level and column-level security policies apply. Project running the query must match the project containing the base table. Subqueries in base_table_query might interfere with index usage. Logical views cannot be used.
+**Limitations:** Row-level and column-level security policies apply. Project running the query must match the project containing the base table. Subqueries in base_table_query might interfere with index usage. Logical views cannot be used. Hybrid search requires the single search syntax and therefore cannot be combined with batch search.
 
 **Locations:** Not specified specifically -- operates wherever BigQuery tables exist.
 
@@ -1291,10 +1301,10 @@ VECTOR_SEARCH(
 ---
 
 ### `AI.SEARCH`
-- **Description:** (Preview) Table-valued function for semantic search on tables that have autonomous embedding generation enabled. Embeds the search query at runtime and searches the specified table. Uses vector indexes when available.
-- **Use cases:** Semantic search, recommendation, classification, clustering, outlier detection.
+- **Description:** Table-valued function for semantic and hybrid search on tables that have autonomous embedding generation enabled. Embeds the search query at runtime and searches the specified table. Uses vector indexes when available.
+- **Use cases:** Semantic search, hybrid semantic + keyword search, recommendation, classification, clustering, outlier detection.
 - [documentation](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-search)
-- **Type:** Table-valued function (TVF) -- Preview
+- **Type:** Table-valued function (TVF) -- GA (the `mode` argument is Preview)
 
 **Syntax:**
 ```sql
@@ -1302,6 +1312,7 @@ AI.SEARCH(
   { TABLE base_table | base_table_query },
   column_to_search,
   query_value
+  [, mode => mode_value]
   [, top_k => top_k_value]
   [, distance_type => distance_type_value]
   [, options => options_value]
@@ -1315,24 +1326,35 @@ AI.SEARCH(
 | `base_table` / `base_table_query` | Table/Query | Required | Table to search. **Must have autonomous embedding generation enabled.** |
 | `column_to_search` | STRING literal | Required | Name of the **source string column** (not the generated embedding column). |
 | `query_value` | STRING literal | Required | Search query text. Embedded at runtime using the base table's connection and endpoint. |
+| `mode` | Named arg, STRING | Optional (Preview) | `AUTO` (default), `VECTOR`, or `HYBRID`. See below. |
 | `top_k` | Named arg, INT64 | Optional | Default: 10. Negative = return all. |
-| `distance_type` | Named arg, STRING | Optional | `EUCLIDEAN` (default), `COSINE`, or `DOT_PRODUCT`. |
+| `distance_type` | Named arg, STRING | Optional | `EUCLIDEAN` (default), `COSINE`, or `DOT_PRODUCT`. Ignored in `HYBRID` mode. |
 | `options` | Named arg, JSON STRING | Optional | `fraction_lists_to_search`, `use_brute_force`. |
+
+**Search modes:**
+
+| Mode | Behavior |
+|------|----------|
+| `AUTO` | Default. Runs hybrid search **only if** the base table has a vector index configured with `lexical_search_columns`; otherwise silently runs semantic-only search. |
+| `VECTOR` | Semantic-only search. `distance` is a true distance in the chosen `distance_type`. |
+| `HYBRID` | Combines semantic and lexical matching on `column_to_search`. Runs with or without a vector index. `distance` is an RRF score, not a distance. |
+
+> **Gotcha:** `AUTO` does not mean "hybrid". Because a vector index cannot currently be built on an autonomous embedding generation column (see [Hybrid Search](#hybrid-search-capability)), `AUTO` on an AI.SEARCH base table resolves to semantic-only. The query succeeds either way, so the fallback is silent. Specify `mode => 'HYBRID'` explicitly when you want hybrid behavior.
 
 **Outputs:**
 
 | Column | Type | Description |
 |--------|------|-------------|
 | `base` | STRUCT | All columns from base_table |
-| `distance` | FLOAT64 | Distance between query_value embedding and base embedding |
+| `distance` | FLOAT64 | In `VECTOR`/`AUTO`-semantic mode, the distance between the query_value embedding and the base embedding. In `HYBRID` mode, a reciprocal rank fusion score -- not a distance, and not comparable across modes. |
 
 **Supported models:** Uses whatever embedding model and connection are configured for the base table's autonomous embedding generation.
 
-**AI.SEARCH vs VECTOR_SEARCH:** Use AI.SEARCH for simplified semantic search when the base table has autonomous embedding generation and you want to search for a single string literal. Use VECTOR_SEARCH for batch queries, custom embeddings, or tables without autonomous embedding generation.
+**AI.SEARCH vs VECTOR_SEARCH:** Use AI.SEARCH for simplified semantic or hybrid search when the base table has autonomous embedding generation and you want to search for a single string literal. Use VECTOR_SEARCH for batch queries, custom embeddings, control over which columns are matched lexically, or tables without autonomous embedding generation. In hybrid mode AI.SEARCH matches lexically only against `column_to_search`; VECTOR_SEARCH lets you name any set of columns in `lexical_search_columns`.
 
-**Best practices:** Create a vector index on the embedding column for better performance on large tables.
+**Best practices:** Create a vector index on the embedding column for better performance on large tables. State `mode` explicitly rather than relying on `AUTO`.
 
-**Limitations:** Base table must have autonomous embedding generation enabled. If embedding generation fails for query_value, the entire query fails. Rows with missing embeddings are skipped.
+**Limitations:** Base table must have autonomous embedding generation enabled. If embedding generation fails for query_value, the entire query fails. Rows with missing embeddings are skipped. Hybrid mode matches lexically only on `column_to_search`.
 
 **Locations:** All locations supporting Vertex AI embedding models, plus US and EU multi-regions.
 
@@ -1342,36 +1364,150 @@ AI.SEARCH(
 
 ---
 
-### `HYBRID_SEARCH` *(docs pending)*
-- **Description:** (Preview) Table-valued function that unifies semantic (vector) search and full-text (keyword) search into a single function, combining both retrieval methods for improved precision. Announced at Google Cloud Next 2026.
-- **Use cases:** RAG pipelines requiring both keyword and semantic matching, complex document exploration, search scenarios where neither vector nor text search alone achieves sufficient precision.
-- Reference documentation not yet published. Expected URL: `https://cloud.google.com/bigquery/docs/reference/standard-sql/search_functions#hybrid_search`
-- **Type:** Table-valued function -- Preview
-- **Status:** Announced April 2026. No reference docs available yet. Full syntax, inputs, outputs, and limitations will be added when documentation publishes.
+### Hybrid Search *(capability)*
 
-**Relationship to VECTOR_SEARCH and AI.SEARCH:** HYBRID_SEARCH combines the semantic search capability of VECTOR_SEARCH with BigQuery's built-in full-text SEARCH function, returning results ranked by a combination of both signals.
+Hybrid search combines semantic (vector) retrieval with lexical (keyword) matching, so that exact tokens -- SKUs, error codes, model numbers, proper nouns -- can influence the ranking instead of being dissolved into embedding similarity. **BigQuery ships this as a capability of the two existing search functions, not as a separate `HYBRID_SEARCH` function.** There is no `HYBRID_SEARCH` in the SQL surface.
+
+> **Set the expectation correctly before you reach for it.** Hybrid search fuses two *rankings* of the same corpus; it does not union two result sets. How deep a lexical match can reach is decided entirely by `top_k`, through **two independent gates**: BigQuery hands the lexical leg only the top `10 * top_k` rows by semantic rank, and inside that pool a lexical hit is worth a bounded amount of score -- at most `1/62` = `0.0161`. Effective reach is the smaller of the two. At the page sizes most demos use (`top_k` under ~30) the score gate holds reach to ~110 rows and the token only nudges rows the semantic leg already placed near the top. At `top_k` = 64 the pool gate holds it to semantic rank 640, and no exact-token match reaches deeper than that no matter how perfect the match. Sizing `top_k` is part of the design, not an afterthought.
+
+| Route | How to invoke | Lexical columns | Batch? |
+|-------|---------------|-----------------|--------|
+| `VECTOR_SEARCH` | Single search syntax + `lexical_search_columns` (+ optional `lexical_search_query_value`) | Any set of base table columns you name | No -- single query only |
+| `AI.SEARCH` | `mode => 'HYBRID'` | Only `column_to_search` | No -- single query only |
+
+**Neither route requires a vector index.** Both run against an unindexed base table; the index is a speed optimization for the lexical leg, not a prerequisite.
+
+**Two gates, and `top_k` sets both.** A lexically-matched row appears on the result page only if it clears both of these:
+
+```
+Gate 1 (candidate pool):   rank_vector <= 10 * top_k
+Gate 2 (fusion score):     1/(60 + rank_vector) + 1/(61 + rank_lexical)
+                             must beat the row holding the last slot
+```
+
+**Effective reach = `min( score_reach(top_k), 10 * top_k )`.** Gate 1 binds for `top_k` >= 51; Gate 2 binds below that. Everything else in this section is a consequence of those two lines.
+
+**Gate 1: the lexical candidate pool is `10 * top_k` rows.** BigQuery hands the lexical (BM25) leg only the top `10 * top_k` rows by semantic rank. A row deeper than that receives **no lexical rank at all** -- BM25 never sees it, however exactly the token matches, and no amount of score can rescue it. This is why a page of 64 reaches semantic rank 640 and stops.
+
+The diagnostic signature of a query whose target sits outside the pool is that the whole result set comes back with `rank_lexical = rank_vector`, so every returned value is exactly `1 - ( 1/(60 + r) + 1/(61 + r) )`. Read the top row: a best `distance` of **`0.967478`** (= `1 - (1/61 + 1/62)`) means *nothing matched*, while **`0.967734`** (= `1 - (1/61 + 1/63)`) means a match fired somewhere and pushed the top semantic row to lexical rank 2. Those two numbers tell you whether to raise `top_k` or fix the token.
+
+**Gate 2 -- scoring: reciprocal rank fusion.** In hybrid mode the returned `distance` column is a fused rank score rather than a geometric distance. Each candidate is ranked separately by the semantic leg and the lexical leg, and the two ranks are combined. Reproduced against live results, the value matches reciprocal rank fusion with **k = 60 on the semantic leg and k = 61 on the lexical leg**, both ranks 1-based:
+
+```
+distance = 1 - ( 1/(60 + rank_vector) + 1/(61 + rank_lexical) )
+```
+
+**The two legs do not share a rank base.** This is only visible if you recover both ranks independently rather than solving for one of them: decoding a fused score with k = 60 on *both* terms yields lexical ranks `2 .. n+1`, and no n-row list can hand out rank n+1. Measured on a 30-row corpus where `rank_vector` was read directly from a separate semantic-only `VECTOR_SEARCH` run, the implied lexical ranks form an exact `1 .. 30` permutation only under k = 61. Which leg carries the extra 1 is settled by any row where the two ranks differ: at semantic rank 1 and lexical rank 2, BigQuery returns `1 - (1/61 + 1/63)` = `0.9677335415040333`. That value falls *between* the two readings a shared base would give those same ranks -- 60 on both legs gives `1 - (1/61 + 1/62)` = `0.9674775251189847`, and 61 on both legs gives `1 - (1/62 + 1/63)` = `0.9679979518689196`. Landing strictly between them is the signature of mixed bases: no single k reproduces the observed number. (`0.9674775251189847` carries two distinct meanings in this section, so keep them apart: here it is the shared-base-60 *reading* of a rank 1 / rank 2 row -- a candidate the measurement rules out -- while elsewhere it is the best score actually attainable under the measured law, at rank 1 in *both* legs. The same expression `1/61 + 1/62` produces both.) The asymmetry is determined, not cosmetic.
+
+Three worked examples from that run, each matching a live returned value exactly:
+
+| rank_vector | rank_lexical | Arithmetic | Returned `distance` |
+|---|---|---|---|
+| 1 | 3 | `1 - (1/61 + 1/64)` | `0.967981557377` |
+| 2 | 1 | `1 - (1/62 + 1/62)` | `0.967741935484` |
+| 9 | 2 | `1 - (1/69 + 1/63)` | `0.969634230504` |
+
+The middle row is the one that trips people up: `1/62 + 1/62` is a value the *measured* law produces -- `1/(60 + 2)` and `1/(61 + 1)` happen to coincide at ranks (2, 1). It is also the `distance` on the `tiger` row of Google's published hybrid example, which decodes to exactly those ranks. Seeing two equal denominators is not evidence of a shared rank base; only reading both ranks independently settles that.
+
+Consequences worth internalizing:
+
+- **The best attainable score is `1 - (1/61 + 1/62)` = `0.9674775251189847`** -- rank 1 in *both* legs. An exact self-match does not return a near-zero "distance". (The oft-quoted `1 - 2/61` = `0.967213` is not attainable: the two denominators can never be equal at rank 1.)
+- **Each leg contributes at most ~`1/61` = `0.0164`.** A rank-1 lexical hit is worth `1/62` = `0.0161` and nothing more. That single number is the budget the whole capability operates inside.
+- **The lexical leg ranks the entire candidate pool, so no pooled row ever forfeits a term.** True BM25 matches take lexical ranks `1..m`; every remaining pooled row falls back to its *semantic* order behind them. Verified with a `lexical_search_query_value` matching zero rows -- every row still received a lexical term, with `rank_lexical = rank_vector`. Verified again by promoting one row to lexical rank 1: the row formerly at lexical rank 1 moved to 2, and every row below the promoted row was byte-identical. Within the pool there is no "single-list" state and no forfeiture ceiling; every row in the result is scored from both terms. Outside the pool there is no scoring at all -- that is Gate 1, not a forfeited term.
+- **Therefore an unmatched row is not penalized, only un-promoted.** It keeps a lexical rank -- its own semantic rank, pushed down one place for each row below it that did match. Where nothing matched at all, that reduces to `1 - ( 1/(60 + r) + 1/(61 + r) )` at semantic rank `r` -- at `r = 10`, `1 - (1/70 + 1/71)` = `0.97163`. A lexical match moves that row to lexical rank 1, replacing its `1/(61 + r)` with `1/62`. That single substitution is the entire mechanism.
+- **What limits hybrid is reach, and reach is a function of `top_k` twice over.** For the score gate: a matched row at semantic rank `R` scores `1/(60 + R) + 1/62`, and it has to displace the row holding the last slot, which sits at semantic rank `top_k` and -- pushed down one position by the match -- lexical rank `top_k + 1`, scoring `1/(60 + top_k) + 1/(61 + top_k + 1)`. For the pool gate the bound is simply `10 * top_k`. Taking the `min` of the two gives the deepest semantic rank a lexically-matched row can occupy and still make the page:
+
+  | `top_k` | 2 | 3 | 5 | 10 | 20 | 30 | 40 | 50 | 51 | 64 | 100 | 208 | 300 |
+  |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+  | deepest semantic rank retrievable | 3 | 6 | 10 | 23 | 56 | 110 | 212 | 468 | 510 | 640 | 1,000 | 2,080 | 3,000 |
+  | binding gate | score | score | score | score | score | score | score | score | pool | pool | pool | pool | pool |
+
+  Below `top_k` = 51 the score gate is the binding one and growth is steeply non-linear -- nearly flat through the page sizes demos typically use, then accelerating. From `top_k` = 51 upward the pool gate takes over and reach becomes exactly linear at `10 * top_k`. There is no page size at which reach becomes unbounded. `top_k` >= `R/10` is therefore a floor for retrieving a row at semantic rank `R`, not a recipe: it is necessary everywhere, but sufficient only once the pool gate is the binding one. Below that crossover the score gate decides and `R/10` falls short -- a target at semantic rank 100 needs `top_k` of 29, not 10, and one at rank 200 needs 40, not 20. Read the real number off the row above.
+- **The evidence.** A 500-row corpus: 499 rows about office and desk items, semantically close to the query `"desk accessories for a computer setup"`, plus one target row `ZQX-9999` described as `"bulk compost bin for garden waste and autumn leaf mulching"` -- semantic rank **500 of 500**. Searching with `lexical_search_query_value => 'ZQX-9999'`:
+
+  | `top_k` | 10 | 49 | 50 | 51 | 63 | 64 |
+  |---|---|---|---|---|---|---|
+  | target returned | no | no | no | **yes** | yes | yes |
+
+  The arithmetic predicts the flip between 50 and 51 to the exact position. The target's returned `distance`, `0.9820852534562212`, is exactly `1 - (1/560 + 1/62)` -- semantic rank 500, lexical rank 1. Here the score gate is the binding one: at `top_k` = 51 the pool is 510 rows, comfortably deeper than the target.
+
+- **The pool gate, isolated.** Repeating the same construction on deeper corpora puts the target beyond any plausible score-gate reach, so the flip lands on `10 * top_k` exactly. Each of these was a sharp prediction made before the query ran; the 500-row probe is listed alongside them as the contrasting case, where the score gate is the binding one:
+
+  | corpus | index | target semantic rank | predicted flip | observed |
+  |---|---|---|---|---|
+  | 3,000 rows | none | 3,000 | `top_k` = 300 | 299 no match, **300 match** |
+  | 1,500 rows | none | 1,500 | `top_k` = 150 | 149 no match, **150 match** |
+  | 500 rows | none | 500 | `top_k` = 51 (score gate) | 50 absent, **51 present** |
+  | 7,275-row product catalog | `TREE_AH` hybrid, `ACTIVE`, 100% coverage | 2,072 | needs `top_k` >= 208 | `top_k` = 64 returned nothing |
+
+  The three synthetic probe tables are **unindexed** -- at 3,000, 1,500 and 500 rows they sit below BigQuery's 5,000-row `CREATE VECTOR INDEX` floor and are brute-force scanned, so no index existed that could have restricted anything. The product catalog is the opposite case: it carried a fully populated hybrid `TREE_AH` index declaring `lexical_search_columns`, status `ACTIVE` at 100% coverage, when the `top_k` = 64 observation was made. The pool gate behaves identically with and without an index, which makes it both *not* an index artifact and *not* something an index can avoid. At `top_k` = 64 on the catalog the pool was 640 rows and the target at rank 2,072 was never a candidate; the result set carried the zero-match signature (`rank_lexical = rank_vector`, best `distance` `0.967478`).
+- **This is why a hybrid demo at `top_k => 3` or `5` returns almost exactly the semantic-only rows:** at those page sizes reach is 6 and 10, deep enough to shuffle the top of the list, never deep enough to pull in something new. That is a property of the page size chosen, not a limit on the capability.
+- **Promotion is a swap.** The fused list is a fixed-length page, so a row hybrid adds displaces one semantic-only would have returned. Always measure both the added *and* the dropped set.
+- **When the token is all the user typed, use a predicate.** Hybrid *can* retrieve it, but only if `top_k` clears both gates for the target's semantic rank -- a tenth of that rank at the very least, and more than that whenever the score gate binds -- which you do not know in advance, and a fusion score is still a ranking that can be crowded. Use `WHERE sku = @sku` -- a predicate cannot be outranked and has no candidate pool. Hybrid earns its place on queries that carry descriptive words *and* an identifier.
+- Scores are bounded in a narrow band near 1 and are **not comparable** to `VECTOR`-mode distances. Do not threshold hybrid scores with a cutoff tuned on cosine or Euclidean distance.
+- Because the score depends only on ranks, `distance_type` has no effect in hybrid mode.
+
+**The sizing rule:** hybrid search re-ranks *and* widens, and `top_k` decides how much of each you get -- the widening is real but bounded, never unbounded. At `top_k` up to about 30 the token only nudges rows already near the top -- do not size a page that way and then expect recall. Beyond that, an exact token surfaces a row from about `10 * top_k` deep and no deeper, so for a target you expect at semantic rank `R`, **size `top_k` to at least `R/10`, and above that to whatever the reach table requires** -- the two gates cross at `top_k` = 51, so for anything shallower than a few hundred ranks the score gate is the one that binds and the floor alone will not retrieve the row. If the identifier *is* the query and you need certainty, use a `WHERE` predicate instead.
+
+> This formula is reverse-engineered from observed results, not documented by Google. Treat it as an explanation of the ordering you see, not as a contract -- it can change without notice.
+
+**Vector indexes for hybrid search.** To accelerate the lexical leg, create a vector index that declares the lexical columns:
+
+```sql
+CREATE [ OR REPLACE ] VECTOR INDEX [ IF NOT EXISTS ] index_name
+ON table_name(column_name)
+[STORING(stored_column_name [, ...])]
+[PARTITION BY partition_expression]
+OPTIONS(index_option_list);
+```
+
+```sql
+CREATE VECTOR INDEX IF NOT EXISTS my_hybrid_index
+ON my_table(embedding)
+STORING (product_name)
+OPTIONS (index_type = 'TREE_AH', distance_type = 'COSINE',
+         lexical_search_columns = ['product_name']);
+```
+
+Rules that are easy to get wrong, all confirmed against a live project:
+- Every column in `lexical_search_columns` **must also appear in `STORING(...)`**. Omitting the `STORING` clause fails with `Lexical search column x must be in the list of stored columns`.
+- A lexical column **may not also be the index key**. Naming the same column in `ON table(x)` and `STORING(x)` fails with `Column x found multiple times`.
+- The index key must be an `ARRAY<FLOAT64>` embedding column. **A vector index cannot be created on an autonomous embedding generation column**, because that column is a `STRUCT`. Demonstrating both autonomous embeddings and a vector index in one pipeline therefore requires two tables.
+- **Two separate size gates, and they fail differently.** (a) `CREATE VECTOR INDEX` is *rejected outright* below **5,000 rows**: `Total rows 30 is smaller than min allowed 5000 for CREATE VECTOR INDEX query with the IVF index type. Please use VECTOR_SEARCH table-valued function directly to perform the similarity search.` Verified 2026-09-02 on a 30-row table for **both** `IVF` and `TREE_AH` (the message names whichever `index_type` you passed), so this is not an IVF-only constraint. (b) Once created, **population** is asynchronous and does not begin until the base table exceeds roughly **10 MB**; below that the index sits at `coverage_percentage` 0 with `indexUnusedReasons` = `BASE_TABLE_TOO_SMALL` and queries silently fall back to brute force. A demo table must clear *both* bars to show a working index -- which is why the catalog workflow uses a real ~7,275-row public catalog rather than generated data. Note the 5,000-row floor is enforced by the engine but is **not** stated on the vector-index documentation page; only the 10 MB condition is documented.
+- `index_type` is `TREE_AH` or `IVF`.
+
+**Related:** [`VECTOR_SEARCH`](#vector_search) · [`AI.SEARCH`](#aisearch) · workflow [`catalog_search`](workflows/catalog_search/)
 
 ---
 
-## Forecasting
+## Predictive AI
 
-These functions perform time series forecasting, anomaly detection, and forecast evaluation using BigQuery ML's built-in TimesFM models. They do not require creating or managing separate model objects -- the TimesFM model is built in. All three functions share a common parameter pattern (`data_col`, `timestamp_col`, `id_cols`) and support the same model versions.
+These functions make predictions from historical or tabular data using BigQuery ML's built-in foundation models. None of them require creating, training, or managing a model object -- the model is built in.
+
+Two model families sit behind this section:
+
+- **TimesFM** -- a time series foundation model, used by `AI.FORECAST`, `AI.DETECT_ANOMALIES`, and `AI.EVALUATE`. These three share a common parameter pattern (`data_col`, `timestamp_col`, `id_cols`) and the same model versions.
+- **TabFM** -- a tabular foundation model, used by `AI.PREDICT` and by `AI.EVALUATE`'s second syntax. TabFM does zero-shot regression and classification by in-context learning: you hand it a training table and a prediction table in the same call, and it never persists a model.
 
 **Key relationships:**
 - `AI.FORECAST` generates future time series values from historical data.
 - `AI.DETECT_ANOMALIES` compares target data against a forecast baseline from historical data to identify anomalous points.
-- `AI.EVALUATE` computes standard forecasting metrics (MAE, MSE, RMSE, MAPE, sMAPE, MASE) by comparing a forecast against actual observed values.
+- `AI.PREDICT` predicts a label column for unlabeled rows, given a labeled training table. Regression or classification, chosen automatically from the label column's type.
+- `AI.EVALUATE` is dual-purpose: it computes forecasting metrics for a TimesFM forecast, **or** regression/classification metrics for a TabFM prediction. Which branch runs is determined by the arguments you pass.
 
-| Attribute | AI.FORECAST | AI.DETECT_ANOMALIES | AI.EVALUATE |
-|-----------|-------------|---------------------|-------------|
-| **Status** | GA | GA | GA |
-| **Purpose** | Forecast future values | Detect anomalies | Evaluate forecast accuracy |
-| **Input data sources** | 1 (history) | 2 (history + target) | 2 (history + actuals) |
-| **Supported Models** | TimesFM 2.0 (default), TimesFM 2.5 | TimesFM 2.0 (default), TimesFM 2.5 | TimesFM 2.0 (default), TimesFM 2.5 |
-| **Default Horizon** | 10 | N/A | 1024 |
-| **Min Data Points** | 3 | 3 | 3 |
-| **Max Data Points** | 2,048 (2.0) / 15,360 (2.5) | 1,024 (most recent) | Not specified |
-| **Context Window** | Yes (auto-selected) | Yes (auto-selected) | Yes (auto-selected) |
+| Attribute | AI.FORECAST | AI.DETECT_ANOMALIES | AI.PREDICT | AI.EVALUATE |
+|-----------|-------------|---------------------|------------|-------------|
+| **Status** | GA | GA | Preview | GA (TabFM branch Preview) |
+| **Model family** | TimesFM | TimesFM | TabFM | TimesFM or TabFM |
+| **Purpose** | Forecast future values | Detect anomalies | Predict a label for unlabeled rows | Evaluate a forecast or a prediction |
+| **Input data sources** | 1 (history) | 2 (history + target) | 2 (training + prediction) | 2 (history + actuals, or training + prediction) |
+| **Supported Models** | TimesFM 2.5 (default), TimesFM 2.0 | TimesFM 2.5 (default), TimesFM 2.0 | TabFM (not selectable) | TimesFM 2.5 (default), TimesFM 2.0; TabFM on the prediction branch |
+| **Default Horizon** | 10 | N/A | N/A | 1024 |
+| **Min Data Points** | 3 | 3 | Not specified | 3 |
+| **Max Data Points** | 2,048 (2.0) / 15,360 (2.5) | 1,024 (most recent) | See AI.PREDICT limitations | Not specified |
+| **Context Window** | Yes (auto-selected) | Yes (auto-selected) | N/A | Yes (auto-selected) |
+
+> **Default model version changed.** All three TimesFM functions now default to **TimesFM 2.5** (previously TimesFM 2.0). Google made this change on the reference pages without a release note. Confirmed against a live query: an unpinned `AI.FORECAST` returns values identical to `model => 'TimesFM 2.5'` and different from `model => 'TimesFM 2.0'`. Any existing unpinned query silently changes behavior -- pin `model` explicitly if you need reproducibility.
 
 ---
 
@@ -1404,7 +1540,7 @@ FROM AI.FORECAST(
 | `TABLE` / `QUERY_STATEMENT` | Table/Query | Required | -- | -- | Input data to forecast |
 | `data_col` | STRING | Required | -- | -- | Name of the data column. Must be INT64, NUMERIC, BIGNUMERIC, or FLOAT64. |
 | `timestamp_col` | STRING | Required | -- | -- | Name of the timestamp column. Must be TIMESTAMP, DATE, or DATETIME. |
-| `model` | STRING | Optional | `'TimesFM 2.0'` | -- | `'TimesFM 2.0'` or `'TimesFM 2.5'` |
+| `model` | STRING | Optional | `'TimesFM 2.5'` | -- | `'TimesFM 2.0'` or `'TimesFM 2.5'`. Recommended: TimesFM 2.5 for all new work. |
 | `id_cols` | ARRAY\<STRING\> | Optional | -- | -- | ID columns identifying unique time series. Must be STRING, INT64, ARRAY\<STRING\>, or ARRAY\<INT64\>. |
 | `horizon` | INT64 | Optional | 10 | [1, 10000] | Number of time series data points to forecast. Mutually exclusive with `forecast_end_timestamp`. |
 | `forecast_end_timestamp` | TIMESTAMP | Optional | -- | -- | End timestamp for forecasted values. Horizon is calculated from the end timestamp and input frequency. Mutually exclusive with `horizon`. Valid calculated horizon range: [1, 10000]. |
@@ -1431,7 +1567,7 @@ When not specified, the smallest window covering the input data points is auto-s
 | `confidence_level` | FLOAT64 | The confidence level value |
 | `prediction_interval_lower_bound` | FLOAT64 | Lower bound of prediction interval |
 | `prediction_interval_upper_bound` | FLOAT64 | Upper bound of prediction interval |
-| `ai_forecast_status` | STRING | Empty if successful; error string if unsuccessful |
+| `ai_forecast_status` | STRING | Empty string (zero-length, not `NULL`) if successful; error string if unsuccessful. This is the *only* one of the three TimesFM status columns that behaves this way -- `ai_evaluate_status` and `ai_detect_anomalies_status` return `NULL` on success. |
 
 **Outputs (when `output_historical_time_series = TRUE`):**
 
@@ -1446,7 +1582,7 @@ When not specified, the smallest window covering the input data points is auto-s
 | `prediction_interval_upper_bound` | FLOAT64 | Upper bound (NULL for historical points) |
 | `ai_forecast_status` | STRING | Status |
 
-**Supported models:** TimesFM 2.0 (default), TimesFM 2.5.
+**Supported models:** TimesFM 2.5 (default), TimesFM 2.0.
 
 **Best practices:** Set `output_historical_time_series` to TRUE to compare historical values with forecasted values. Minimum 3 data points required.
 
@@ -1457,6 +1593,8 @@ When not specified, the smallest window covering the input data points is auto-s
 **Provisioned throughput:** Not specified. Billed at the evaluation, inspection, and prediction rate (BigQuery ML on-demand pricing).
 
 **BigFrames API:** `bigframes.bigquery.ai.forecast(df, data_col=..., timestamp_col=...)` — Wraps `AI.FORECAST` SQL directly. No model object needed. Supports `id_cols`, `horizon`, `confidence_level`, `context_window`, and `model` parameters. Note: `bigframes.ml.forecasting.ARIMAPlus` is a different model (ARIMA_PLUS, not TimesFM).
+
+> **Wrapper skew:** the BigFrames wrapper still declares `model: str = "TimesFM 2.0"` and its docstring claims 2.0 is the only supported value. The SQL function now defaults to TimesFM 2.5 and accepts both. Calling `bbq.ai.forecast()` without specifying `model` therefore gives you **2.0**, while the equivalent SQL gives you **2.5**. Pass `model` explicitly from BigFrames.
 
 ---
 
@@ -1489,7 +1627,7 @@ FROM AI.DETECT_ANOMALIES(
 | `TARGET_TABLE` / `TARGET_QUERY_STATEMENT` | Table/Query | Required | -- | -- | Data in which to detect anomalies. Schema must match historical data. |
 | `data_col` | STRING | Required | -- | -- | Data column name. Must be INT64, NUMERIC, BIGNUMERIC, or FLOAT64. |
 | `timestamp_col` | STRING | Required | -- | -- | Timestamp column name. Must be TIMESTAMP, DATE, or DATETIME. |
-| `model` | STRING | Optional | `'TimesFM 2.0'` | -- | `'TimesFM 2.0'` or `'TimesFM 2.5'` |
+| `model` | STRING | Optional | `'TimesFM 2.5'` | -- | `'TimesFM 2.0'` or `'TimesFM 2.5'`. Recommended: TimesFM 2.5 for all new work. |
 | `id_cols` | ARRAY\<STRING\> | Optional | -- | -- | ID columns identifying unique time series |
 | `anomaly_prob_threshold` | FLOAT64 | Optional | 0.95 | [0, 1) | Threshold for anomaly detection. A target value is anomalous if its anomaly probability exceeds this threshold. |
 | `context_window` | INT64 | Optional | Auto-selected | See AI.FORECAST | Context window length for the TimesFM model. Same supported values as AI.FORECAST per model version. |
@@ -1505,9 +1643,9 @@ FROM AI.DETECT_ANOMALIES(
 | `lower_bound` | FLOAT64 | Lower bound of prediction |
 | `upper_bound` | FLOAT64 | Upper bound of prediction |
 | `anomaly_probability` | FLOAT64 | Probability that the value is an anomaly |
-| `ai_detect_anomalies_status` | STRING | Empty if successful; error string if unsuccessful |
+| `ai_detect_anomalies_status` | STRING | **`NULL` on success** -- not an empty string (verified live 2026-09-02); error string if unsuccessful. Test with `IS NOT NULL`, not `<> ''` -- see the note under [`AI.EVALUATE`](#aievaluate)'s forecast outputs. |
 
-**Supported models:** TimesFM 2.0 (default), TimesFM 2.5.
+**Supported models:** TimesFM 2.5 (default), TimesFM 2.0.
 
 **Best practices:** Historical and target data schemas must match. Use `id_cols` to break anomalies down by dimensions.
 
@@ -1521,13 +1659,90 @@ FROM AI.DETECT_ANOMALIES(
 
 ---
 
-### `AI.EVALUATE`
-- **Description:** Table-valued function that evaluates TimesFM forecasted data against actual observed values. Generates a forecast from historical data and computes evaluation metrics (MAE, MSE, RMSE, MAPE, sMAPE, MASE).
-- **Use cases:** Evaluating forecast accuracy, benchmarking model configurations, comparing forecast quality across multiple time series.
-- [documentation](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-evaluate)
-- **Type:** Table-valued function
+### `AI.PREDICT`
+- **Description:** (Preview) Table-valued function that performs zero-shot regression and classification on structured data using TabFM, Google's pre-trained tabular foundation model. You pass a labeled training table and an unlabeled prediction table in a single call; the model learns in context. There is no `CREATE MODEL`, no training job, no connection, no endpoint, and no persisted model object.
+- **Use cases:** Predicting a numeric or categorical column without building a model, filling in missing structured attributes, quick baselines before investing in a trained model, prediction inside an analytics pipeline where a model artifact would be overhead.
+- [documentation](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-predict)
+- **Type:** Table-valued function (TVF) -- Preview
 
 **Syntax:**
+```sql
+AI.PREDICT(
+  { TABLE TRAINING_TABLE | (TRAINING_QUERY) },
+  { TABLE PREDICTION_TABLE | (PREDICTION_QUERY) }
+  [, label_col => 'LABEL_COL' ]
+)
+```
+
+**Inputs:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `TRAINING_TABLE` / `TRAINING_QUERY` | Table/Query | Required | -- | Labeled training data. Must contain the label column; **every other column is treated as a feature**. |
+| `PREDICTION_TABLE` / `PREDICTION_QUERY` | Table/Query | Required | -- | Rows to predict. Must contain all training feature columns; extra columns are allowed. |
+| `label_col` | Named arg, STRING | Optional | `'label'` | Name of the label column in the training data. A column literally named `label` needs no argument. |
+
+Feature and label columns must be `STRING`, `BOOL`, `INT64`, `FLOAT64`, `NUMERIC`, or `BIGNUMERIC`. `DATE`, `TIMESTAMP`, `BYTES`, `JSON`, `GEOGRAPHY`, `ARRAY`, and `STRUCT` are rejected -- `EXTRACT` date parts into integers first.
+
+**Task selection is implicit and type-driven.** There is no `task_type` argument:
+
+| Label column type | Task | Added output columns |
+|---|---|---|
+| `INT64`, `FLOAT64`, `NUMERIC`, `BIGNUMERIC` | Regression | `predicted_<label>` (same type as the label) |
+| `BOOL`, `STRING` | Classification | `predicted_<label>`, plus `predicted_<label>_probs` as `ARRAY<STRUCT<label STRING, prob FLOAT64>>` |
+
+> **Cast your label.** A categorical encoded as INT64 (0/1, or a 1–5 rating) is silently treated as *regression* and you get fractional predictions with no probabilities. Cast it to `STRING` or `BOOL` to get classification. This consequence follows from the documented rule but is not itself documented.
+
+The `label` subfield of `predicted_<label>_probs` is typed `STRING` even when the label column is `BOOL`. Array element ordering is not documented.
+
+**Outputs:** The prediction input's columns plus the predicted column(s) above.
+
+> **Doc bug.** The reference page states that AI.PREDICT "returns the columns from the training table or query result". Both of Google's own worked examples contradict this -- the returned rows are the *prediction* rows. Trust the behavior, not the sentence.
+
+**Supported models:** TabFM only. Not selectable -- there is no `model` argument and no version pinning.
+
+**Best practices:** Keep the feature set tight; the 20-column cap is a hard limit, not a guideline. Split train/predict deterministically (e.g. `FARM_FINGERPRINT`) so that the same rows train and predict on every run -- note this pins the *split* only; the predictions themselves are not reproducible (see Limitations). Pair every AI.PREDICT call with `AI.EVALUATE` on a held-out set -- without a metric you have no idea whether the zero-shot prediction is any good. Use it as a baseline: if a trained `CREATE MODEL` beats it materially, the training cost is justified; if not, you have saved a model lifecycle.
+
+**Limitations:**
+- **Output is not deterministic.** Repeating a byte-identical `AI.PREDICT` call over the same `FARM_FINGERPRINT` split returns slightly different predictions -- consistent with the model averaging shuffled ensemble passes (`n_ensembles`, whose value Google does not document). Demonstrated by `functions/ai_predict/ai_predict.ipynb` cells 25 and 28, whose top-5 multisets differ (`5760` vs `5728` in one slot) despite identical SQL and an `ORDER BY value DESC LIMIT 5`, so tie-breaking cannot explain it. The `workflows/tabular_prediction/` notebook shows the downstream consequence: `AI.EVALUATE` scores its *own* fresh TabFM predictions rather than the rows you materialized, so the two disagree (measured across four runs: regression MAE 236.52 / 236.35 / 235.84, classification accuracy 0.9468 / 0.9362 / 0.9468 -- regression drift well under 1%, classification drift about 1pp, or 2 rows in 94). **Materialize results once and join to them; do not re-run the prediction to reproduce a number.** Drift appears to be input-dependent -- `workflows/data_enrichment/` reproduced exactly across two runs on a 6-row prediction relation -- so absence of drift on a small input is not evidence of determinism.
+- **20 feature columns** maximum (documented). Escalation path is emailing bqml-feedback@google.com.
+- **10 classification categories** maximum (documented).
+- **Practical row ceiling, undocumented but observed:** a call with 10,000 training rows fails with `Resources exceeded ... allotted memory`; 8,000 rows succeeds. Budget for roughly 5,000 training rows on on-demand slots.
+- **Latency is flat and high:** 30--95 seconds per call regardless of input size. A notebook with several AI.PREDICT calls takes minutes, not seconds.
+- Max prediction rows, max input size, timeouts, concurrency, NULL handling, categorical encoding, and the `n_ensembles` value are all **undocumented**. AI.PREDICT does not appear in any table on the BigQuery quotas page.
+- Whether these limits also bind `AI.EVALUATE`'s TabFM branch is undocumented, though it runs the same model.
+
+**Locations:** Not stated on the AI.PREDICT page. The AI.EVALUATE page says TabFM is available in all supported BigQuery ML locations (non-remote models), plus the US and EU multi-regions.
+
+**Pricing:** Today, standard BigQuery slot / bytes-processed pricing. **From 2026-10-30**, TabFM moves to token-based pricing: you are charged for TabFM tokens plus slots/bytes for the non-inference parts of the query.
+
+```
+Input tokens  = (train_rows * columns + predict_rows * (columns - 1)) * n_ensembles
+Output tokens = predict_rows * n_ensembles
+```
+
+at $0.05 / mtok input and $0.20 / mtok output. Note that `n_ensembles` -- the number of shuffled passes the model averages -- is a multiplier on your bill that Google does not document the value of.
+
+**Provisioned throughput:** Not specified.
+
+**BigFrames API:** No wrapper. `bigframes.bigquery.ai` has `forecast` but no `predict` -- checked against **bigframes 2.39.0**, this project's pin in `uv.lock` and the version that executed `functions/ai_predict/ai_predict.ipynb`. Use `%%bigquery` magics or `session.read_gbq_query()`.
+
+---
+
+### `AI.EVALUATE`
+- **Description:** Dual-purpose table-valued function. Given history and actuals it evaluates a **TimesFM forecast** (MAE, MSE, RMSE, MAPE, sMAPE, MASE). Given training and prediction inputs plus a `label_col` it evaluates a **TabFM prediction** (regression or classification metrics). Which branch runs is selected entirely by which arguments you pass.
+- **Use cases:** Evaluating forecast accuracy, benchmarking model configurations, comparing forecast quality across multiple time series, scoring AI.PREDICT output against a held-out set.
+- [documentation](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-evaluate)
+- **Type:** Table-valued function -- GA (the TabFM branch is Preview)
+
+**Branch selection:**
+
+| You pass | Branch | Model |
+|---|---|---|
+| `data_col` + `timestamp_col` | Forecast evaluation | TimesFM |
+| `label_col` | Prediction evaluation | TabFM |
+
+**Syntax (TimesFM -- forecast evaluation):**
 ```sql
 SELECT *
 FROM AI.EVALUATE(
@@ -1542,7 +1757,17 @@ FROM AI.EVALUATE(
 )
 ```
 
-**Inputs:**
+**Syntax (TabFM -- prediction evaluation, Preview):**
+```sql
+SELECT *
+FROM AI.EVALUATE(
+  { TABLE TRAINING_TABLE | (TRAINING_QUERY) },
+  { TABLE PREDICTION_TABLE | (PREDICTION_QUERY) },
+  label_col => 'LABEL_COL'
+)
+```
+
+**Inputs -- TimesFM:**
 
 | Parameter | Type | Required | Default | Range | Description |
 |-----------|------|----------|---------|-------|-------------|
@@ -1550,12 +1775,22 @@ FROM AI.EVALUATE(
 | `ACTUAL_TABLE` / `ACTUAL_QUERY_STATEMENT` | Table/Query | Required | -- | -- | Actual time series data to evaluate the forecast against |
 | `data_col` | STRING | Required | -- | -- | Data column name. Must be INT64, NUMERIC, BIGNUMERIC, or FLOAT64. |
 | `timestamp_col` | STRING | Required | -- | -- | Timestamp column name. Must be TIMESTAMP, DATE, or DATETIME. |
-| `model` | STRING | Optional | `'TimesFM 2.0'` | -- | `'TimesFM 2.0'` or `'TimesFM 2.5'` |
+| `model` | STRING | Optional | `'TimesFM 2.5'` | -- | `'TimesFM 2.0'` or `'TimesFM 2.5'`. Recommended: TimesFM 2.5 for all new work. |
 | `id_cols` | ARRAY\<STRING\> | Optional | -- | -- | ID columns identifying unique time series |
 | `horizon` | INT64 | Optional | 1024 | [1, 10000] | Number of forecasted time points to evaluate |
 | `context_window` | INT64 | Optional | Auto-selected | See AI.FORECAST | Context window length for the TimesFM model. Same supported values as AI.FORECAST per model version. |
 
-**Outputs:**
+**Inputs -- TabFM:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `TRAINING_TABLE` / `TRAINING_QUERY` | Table/Query | Required | -- | Labeled training data. Every column other than the label is a feature. |
+| `PREDICTION_TABLE` / `PREDICTION_QUERY` | Table/Query | Required | -- | Labeled evaluation data. Must contain all training feature columns. |
+| `label_col` | STRING | **Required** | none | Label column name. **Unlike AI.PREDICT, this has no default** -- AI.PREDICT falls back to `'label'`, AI.EVALUATE does not. A `STRING`/`BOOL` label evaluates classification; a numeric label evaluates regression. |
+
+The TabFM branch accepts no `model`, `horizon`, `id_cols`, `context_window`, `data_col`, or `timestamp_col`.
+
+**Outputs -- TimesFM:**
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -1566,19 +1801,43 @@ FROM AI.EVALUATE(
 | `mean_absolute_percentage_error` | FLOAT64 | MAPE for the time series |
 | `symmetric_mean_absolute_percentage_error` | FLOAT64 | sMAPE for the time series |
 | `mean_absolute_scaled_error` | FLOAT64 | MASE for the time series |
-| `ai_evaluate_status` | STRING | Empty if successful; error string if unsuccessful |
+| `ai_evaluate_status` | STRING | **`NULL` on success** -- not an empty string; error string if unsuccessful. A common value is `The time series data is too short.` |
 
-**Supported models:** TimesFM 2.0 (default), TimesFM 2.5.
+> **Test this column with `IS NOT NULL`, not `<> ''`.** The three TimesFM status columns are *not* consistent with each other, verified live 2026-09-02: `ai_evaluate_status` and `ai_detect_anomalies_status` come back **`NULL`** on success (`IS NULL` is `true`, `LENGTH` is `NULL`), while `ai_forecast_status` comes back as a genuine **zero-length empty string** (`IS NULL` is `false`, `LENGTH` is `0`). So on AI.EVALUATE and AI.DETECT_ANOMALIES, `WHERE ai_evaluate_status = ''` matches nothing at all, and `WHERE ai_evaluate_status <> ''` silently drops **every successful row** -- three-valued logic makes the `NULL` comparison unknown, not true. Select failures with `IS NOT NULL` and successes with `IS NULL`. Only AI.FORECAST's column behaves the way the empty-string wording suggests.
 
-**Best practices:** Split data into historical (for forecasting) and actual (for comparison) portions using date-based filtering. Use `id_cols` to evaluate across multiple time series.
+**Outputs -- TabFM regression** (6 columns; no `ai_evaluate_status`, no id passthrough):
 
-**Limitations:** Minimum 3 data points required. Default horizon is 1,024 (unlike AI.FORECAST which defaults to 10).
+| Column | Type | Description |
+|--------|------|-------------|
+| `mean_absolute_error` | FLOAT64 | MAE for the data |
+| `mean_squared_error` | FLOAT64 | MSE for the data |
+| `mean_squared_log_error` | FLOAT64 | Mean squared logarithmic error |
+| `median_absolute_error` | FLOAT64 | Median absolute error |
+| `r2_score` | FLOAT64 | Coefficient of determination |
+| `explained_variance` | FLOAT64 | Explained variance |
+
+**Outputs -- TabFM classification** (4 columns):
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `precision` | FLOAT64 | Macro-average precision across all classes |
+| `recall` | FLOAT64 | Macro-average recall across all classes |
+| `accuracy` | FLOAT64 | Accuracy of the prediction |
+| `f1_score` | FLOAT64 | Macro-average F1 score across all classes |
+
+> Note what is **missing** relative to `ML.EVALUATE` on a trained classification model: TabFM's AI.EVALUATE returns no `log_loss` and no `roc_auc`, and no confusion matrix. If you need threshold-tuning or ranking metrics, this function will not give them to you.
+
+**Supported models:** TimesFM 2.5 (default), TimesFM 2.0 on the forecast branch. TabFM on the prediction branch, where the `model` argument is not accepted.
+
+**Best practices:** For forecasting, split data into historical (for forecasting) and actual (for comparison) portions using date-based filtering, and use `id_cols` to evaluate across multiple time series. For prediction, pass AI.EVALUATE exactly the same training and holdout inputs you passed AI.PREDICT -- the pair is only meaningful if the split matches.
+
+**Limitations:** Minimum 3 data points required on the forecast branch. Default horizon is 1,024 (unlike AI.FORECAST which defaults to 10). TimesFM silently ignores data points beyond the max context (2,048 for 2.0, 15,360 for 2.5). On the TabFM branch, AI.PREDICT's documented caps -- **20 feature columns** and **10 classification categories** -- apply to the same model, though the AI.EVALUATE page has no Limitations section and does not restate them.
 
 **Locations:** All supported BigQuery ML locations.
 
 **Provisioned throughput:** Not specified. Billed at the evaluation, inspection, and prediction rate.
 
-**BigFrames API:** No direct equivalent for TimesFM-based evaluation. Use `%%bigquery` magics or `session.read_gbq_query()` to execute AI.EVALUATE SQL from BigFrames. Note: `bigframes.ml.forecasting.ARIMAPlus.evaluate()` exists but uses ARIMA_PLUS, not TimesFM.
+**BigFrames API:** No direct equivalent for either branch. Use `%%bigquery` magics or `session.read_gbq_query()` to execute AI.EVALUATE SQL from BigFrames. Note: `bigframes.ml.forecasting.ARIMAPlus.evaluate()` exists but uses ARIMA_PLUS, not TimesFM.
 
 ---
 ## Augmented Analytics
@@ -1799,10 +2058,13 @@ Note: `individualPageSelector`, `fromStart`, and `fromEnd` are a union field —
 ---
 
 ### `AI.PARSE_DOCUMENT`
-- **⚠️ Status (as of 2026-06-01): temporarily OFFLINE for revision.** The function (Preview) has been taken offline by Google for revision and does not currently execute. The notebook (`functions/ai_parse_document/`) and the Document RAG workflow (`workflows/document_rag/`) that depends on it carry warning banners. **Re-check the [BigQuery release notes](https://cloud.google.com/bigquery/docs/release-notes); when it returns, reverse this note, remove the notebook banners, and re-run/verify** (precedent: AI.AGG disable Apr 2026 → re-enable May 2026). Documentation below is retained as-is for when it is re-enabled.
+- **⚠️ Status (as of 2026-09-01): OFFLINE, and reference documentation now WITHDRAWN.** The function (Preview) was taken offline by Google for revision on 2026-06-01 and does not execute. As of this audit the situation has escalated: the reference page `.../bigqueryml-syntax-ai-parse-document` returns **HTTP 404**, the function no longer appears in the BigQuery docs navigation tree, and it is absent from the generative AI overview page. Google has published no release note explaining the withdrawal.
+  - **Interim alternative:** use [`ML.PROCESS_DOCUMENT`](#ml_process_document) for OCR and document extraction. It reaches the same Document AI processors but requires a remote model and a `CREATE MODEL` step — precisely the setup AI.PARSE_DOCUMENT was introduced to remove.
+  - **Affected content:** `functions/ai_parse_document/` and `workflows/document_rag/` carry warning banners. Their committed outputs are a record of the function working before 2026-06-01, not current behavior. Do not re-run them.
+  - **Re-check** the [BigQuery release notes](https://docs.cloud.google.com/bigquery/docs/release-notes). If it returns, reverse this note, remove the notebook banners, and re-run to verify (precedent: AI.AGG disable Apr 2026 → re-enable May 2026). Documentation below is retained from the last published version of the page — treat it as an archived snapshot, not a live reference.
 - **Description:** (Preview) Table-valued function that parses documents using the Document AI Layout Parser. Combines OCR, layout parsing, and chunking into a single SQL function call — no `CREATE MODEL` step required. The `endpoint` parameter points directly to a Document AI Layout Parser processor.
 - **Use cases:** Document text extraction, chunking for RAG pipelines, OCR from scanned documents, layout-aware document parsing.
-- [documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-parse-document)
+- [documentation](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-parse-document) — **dead link (HTTP 404 as of 2026-09-01)**, retained so the page can be re-checked if the function returns
 - **Type:** Table-valued function (returns a table) — Preview
 
 **Syntax:**
@@ -2314,4 +2576,4 @@ SELECT AI.SIMILARITY(
 | EXTERNAL_OBJECT_TRANSFORM | AI.CLASSIFY | Yes | `AI.CLASSIFY(docs.ref, categories)` via `EXTERNAL_OBJECT_TRANSFORM` |
 | ObjectRef content | AI.EMBED, AI.SIMILARITY, AI.GENERATE_EMBEDDING, ML.GENERATE_EMBEDDING | No (but supported) | Pass ObjectRefRuntime as the `content` parameter |
 | Object table (document processing) | ML.PROCESS_DOCUMENT | Yes | Object table rows as input to Document AI processor |
-| Not supported | VECTOR_SEARCH, AI.SEARCH, AI.FORECAST, AI.DETECT_ANOMALIES, AI.EVALUATE | — | Text/numeric input only |
+| Not supported | VECTOR_SEARCH, AI.SEARCH, AI.FORECAST, AI.DETECT_ANOMALIES, AI.PREDICT, AI.EVALUATE | — | Text/numeric input only |

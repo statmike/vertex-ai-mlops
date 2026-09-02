@@ -374,7 +374,7 @@ plt.show()
 
 `context_window` controls how many historical data points the TimesFM model uses. The model auto-selects the smallest window that covers the input, but you can override this — a larger window gives the model more history to learn patterns from, while a smaller window focuses on recent trends.
 
-Supported values for TimesFM 2.0: 64, 128, 256, 512, 1024, 2048. TimesFM 2.5 adds: 4096, 8192, 15360.
+Supported values for TimesFM 2.0: 64, 128, 256, 512, 1024, 2048. TimesFM 2.5 — the default — adds: 4096, 8192, 15360. The sweep below pins the model so the comparison isolates `context_window`.
 
 ```python
 results = []
@@ -390,13 +390,14 @@ for cw in [128, 256, 512]:
       (SELECT * FROM `{PROJECT_ID}.{DATASET_ID}.workflow_ts_sales` WHERE date >= '2024-12-01'),
       data_col => 'daily_sales',
       timestamp_col => 'date',
-      context_window => {cw}
+      context_window => {cw},
+      model => 'TimesFM 2.5'
     )
     '''
     results.append(client.query(query).to_dataframe())
 
 cw_comparison = pd.concat(results, ignore_index=True)
-print('Context window comparison (TimesFM 2.0, default):')
+print('Context window comparison (TimesFM 2.5, the current default):')
 print(cw_comparison.to_string(index=False))
 
 fig, axes = plt.subplots(1, 3, figsize=(12, 3))

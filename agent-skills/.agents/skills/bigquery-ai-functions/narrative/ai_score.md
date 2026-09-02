@@ -13,7 +13,7 @@
 - `functions/ai_generate` (`AI.GENERATE`) — Full control with output_schema for multiple output fields
 - `functions/ai_classify` (`AI.CLASSIFY`) — Categorical classification instead of numeric scoring
 
-**Featured in:** `workflows/content_analysis` (Content Analysis Pipeline) | `workflows/document_intelligence` (Document Intelligence) | `workflows/content_moderation` (Content Moderation)
+**Featured in:** `workflows/content_analysis` (Content Analysis Pipeline) | `workflows/document_intelligence` (Document Intelligence) | `workflows/content_moderation` (Content Moderation) | `workflows/log_analysis` (Log Analysis)
 
 **Multimodal:** Supports document, image, and video input via `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT input with ObjectRefRuntime fields to score unstructured data.
 

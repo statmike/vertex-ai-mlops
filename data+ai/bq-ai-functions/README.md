@@ -38,7 +38,7 @@
 ---
 # BigQuery AI Functions
 
-Use generative AI, embeddings, semantic search, forecasting, and anomaly detection directly in BigQuery SQL — no ML infrastructure to manage.
+Use generative AI, embeddings, semantic and hybrid search, forecasting, anomaly detection, and tabular prediction directly in BigQuery SQL — no ML infrastructure to manage.
 
 This project provides a progressive learning system: start with a quick overview of all available functions, drill into individual functions with hands-on examples (SQL, `%%bigquery` magics, and BigFrames), then compose functions together in end-to-end workflows.
 
@@ -53,9 +53,9 @@ This project provides a progressive learning system: start with a quick overview
 
 ### Using this project with an AI coding agent
 
-This project's Agent Skill content lives centrally in [`agent-skills/`](../../agent-skills/) at the repo root (alongside every other skill built from this repo), not inside this folder — see the [`bigquery-ai-functions` skill](../../agent-skills/.agents/skills/bigquery-ai-functions/SKILL.md), a use-case-organized (generation, classification/scoring, embeddings/search, forecasting/anomalies, driver analysis, document processing, workflows), gotcha-rich distillation of `RESOURCES.md` built for coding agents, not just human readers.
+This project's Agent Skill content lives centrally in [`agent-skills/`](../../agent-skills/) at the repo root (alongside every other skill built from this repo), not inside this folder — see the [`bigquery-ai-functions` skill](../../agent-skills/.agents/skills/bigquery-ai-functions/SKILL.md), a use-case-organized (generation, classification/scoring, embeddings/search, predictive AI, driver analysis, document processing, workflows), gotcha-rich distillation of `RESOURCES.md` built for coding agents, not just human readers.
 
-- **Claude Code** — picked up automatically from `.claude/skills/bigquery-ai-functions` (a repo-root symlink into `agent-skills/`) anywhere in this repo; no setup needed. It activates automatically when your request matches — generating/classifying/scoring content, embeddings and semantic search, zero-training forecasting, document processing — or invoke it explicitly.
+- **Claude Code** — picked up automatically from `.claude/skills/bigquery-ai-functions` (a repo-root symlink into `agent-skills/`) anywhere in this repo; no setup needed. It activates automatically when your request matches — generating/classifying/scoring content, embeddings and semantic or hybrid search, zero-training forecasting and tabular prediction, document processing — or invoke it explicitly.
 - **Google Antigravity, Codex, and other `.agents/skills/`-compatible tools** — discovered from the repo-root `.agents/skills/bigquery-ai-functions/` symlink, using the same `SKILL.md` files.
 - **Standalone / other repos** — the whole `agent-skills/.agents/skills/bigquery-ai-functions/` folder is self-contained and can be copied into any other project.
 
@@ -69,17 +69,19 @@ Workflows compose multiple AI functions together for end-to-end scenarios. See [
 
 | Workflow | Functions Used | Description |
 |----------|---------------|-------------|
-| [Data Enrichment](workflows/data_enrichment/) | AI.GENERATE (Google Search grounding + output_schema) | Fix misspellings, fill missing fields, and correct errors using grounded web lookups |
+| [Data Enrichment](workflows/data_enrichment/) | AI.GENERATE (Google Search grounding + output_schema), AI.PREDICT | Fix misspellings and correct errors using grounded web lookups, then fill a missing structured attribute with TabFM |
 | [Content Analysis Pipeline](workflows/content_analysis/) | AI.GENERATE_TABLE, AI.CLASSIFY, AI.SCORE, AI.GENERATE, AI.AGG | Generate sample data, classify it, score it, and summarize findings |
-| [Semantic Search System](workflows/semantic_search/) | AI.EMBED, VECTOR_SEARCH, AI.SEARCH | Build and query a semantic search index |
+| [Semantic Search System](workflows/semantic_search/) | AI.EMBED, VECTOR_SEARCH, AI.SEARCH | Build and query a semantic search index, three ways: manual, simplified, and hybrid |
+| [Catalog Search](workflows/catalog_search/) | AI.EMBED, VECTOR_SEARCH, AI.SEARCH | Hybrid retrieval over a real product catalog: what rank fusion does and does not buy you for exact-token lookups, with a corpus large enough to actually populate a vector index |
 | [RAG Pipeline](workflows/rag_pipeline/) | AI.GENERATE_TABLE, AI.EMBED, VECTOR_SEARCH, AI.GENERATE | Generate a knowledge base, embed, search, answer questions |
-| [Document RAG](workflows/document_rag/) ⚠️ | AI.PARSE_DOCUMENT, AI.EMBED, VECTOR_SEARCH, AI.GENERATE | Parse real documents, embed chunks, search, answer questions with grounded context. **⚠️ Blocked — depends on AI.PARSE_DOCUMENT (offline for revision as of 2026-06-01).** |
+| [Document RAG](workflows/document_rag/) ⚠️ | AI.PARSE_DOCUMENT, AI.EMBED, VECTOR_SEARCH, AI.GENERATE | Parse real documents, embed chunks, search, answer questions with grounded context. **⚠️ Blocked — depends on AI.PARSE_DOCUMENT, offline since 2026-06-01 and now with its reference docs withdrawn. Committed outputs are a pre-withdrawal record; do not re-run.** |
 | [Time Series Intelligence](workflows/time_series_intelligence/) | AI.FORECAST, AI.DETECT_ANOMALIES, AI.EVALUATE, AI.KEY_DRIVERS | Forecast, detect anomalies, evaluate accuracy, explain changes by segment |
-| [Metric Diagnostics](workflows/metric_diagnostics/) | AI.KEY_DRIVERS, AI.GENERATE | Explain why a metric moved between two periods, then narrate the drivers in plain language |
+| [Zero-Shot Tabular Prediction](workflows/tabular_prediction/) | AI.PREDICT, AI.EVALUATE, AI.KEY_DRIVERS, AI.GENERATE | Zero-shot regression and classification with TabFM, scored and explained — no model training |
+| [Metric Diagnostics](workflows/metric_diagnostics/) | AI.KEY_DRIVERS, AI.PREDICT, AI.GENERATE | Explain why a metric moved between two periods, project it forward, then narrate the drivers in plain language |
 | [Document Intelligence](workflows/document_intelligence/) | AI.CLASSIFY, AI.GENERATE, AI.SCORE, AI.AGG | Classify mixed documents, extract key fields, score quality, summarize findings |
 | [Content Moderation](workflows/content_moderation/) | AI.GENERATE_TABLE, AI.IF, AI.CLASSIFY, AI.SCORE, AI.GENERATE, AI.AGG | Flag, categorize, and score user-generated content for moderation |
 | [Multimodal Analysis](workflows/multimodal_analysis/) | AI.EMBED, AI.SIMILARITY, AI.GENERATE | Embed document images, find similar documents, generate visual descriptions |
-| [Log Analysis](workflows/log_analysis/) | AI.GENERATE_TABLE, AI.CLASSIFY, AI.SCORE, AI.AGG | Classify tickets, score priority, summarize patterns with AI.AGG |
+| [Log Analysis](workflows/log_analysis/) | AI.GENERATE_TABLE, AI.CLASSIFY, AI.SCORE, AI.AGG, AI.EMBED, VECTOR_SEARCH | Classify tickets, score priority, summarize patterns with AI.AGG, then retrieve by error code with hybrid search — and measure how far up the ranking a lexical hit can actually lift a row |
 | [Image Deduplication](workflows/image_deduplication/) | AI.EMBED, VECTOR_SEARCH | Group near-duplicate images using embedding similarity for train/test split integrity |
 
 ---
@@ -136,9 +138,12 @@ See the [Unstructured Data Infrastructure](RESOURCES.md#unstructured-data-infras
 | `AI.GENERATE_EMBEDDING` | [notebook](functions/ai_generate_embedding/ai_generate_embedding.ipynb) · [sql](functions/ai_generate_embedding/ai_generate_embedding.sql) | TVF | GA | Yes | ObjectRef | Create embeddings from text, images, or video via a remote model. |
 | `ML.GENERATE_EMBEDDING` | [notebook](functions/ml_generate_embedding/ml_generate_embedding.ipynb) · [sql](functions/ml_generate_embedding/ml_generate_embedding.sql) | TVF | GA | Yes | ObjectRef | Legacy predecessor to AI.GENERATE_EMBEDDING. Use AI.GENERATE_EMBEDDING for new work. |
 | `AI.SIMILARITY` | [notebook](functions/ai_similarity/ai_similarity.ipynb) · [sql](functions/ai_similarity/ai_similarity.sql) | Scalar | Preview | No | ObjectRef | Cosine similarity between two inputs. Generates embeddings at runtime. |
-| `VECTOR_SEARCH` | [notebook](functions/vector_search/vector_search.ipynb) · [sql](functions/vector_search/vector_search.sql) | TVF | GA | No | — | Top-K nearest neighbor search on pre-computed embeddings. Supports vector indexes. |
-| `AI.SEARCH` | [notebook](functions/ai_search/ai_search.ipynb) · [sql](functions/ai_search/ai_search.sql) | TVF | Preview | No | — | Semantic search on tables with autonomous embedding generation. |
-| `HYBRID_SEARCH` | *docs pending* | TVF | Preview | No | — | Combined semantic + full-text search in a single function. |
+| `VECTOR_SEARCH` | [notebook](functions/vector_search/vector_search.ipynb) · [sql](functions/vector_search/vector_search.sql) | TVF | GA (single-search/hybrid syntax Preview) | No | — | Top-K nearest neighbor search on pre-computed embeddings. Supports vector indexes and hybrid (semantic + keyword) search. |
+| `AI.SEARCH` | [notebook](functions/ai_search/ai_search.ipynb) · [sql](functions/ai_search/ai_search.sql) | TVF | GA (`mode` Preview) | No | — | Semantic or hybrid search on tables with autonomous embedding generation. |
+
+**Hybrid search is a capability, not a function.** There is no `HYBRID_SEARCH` in BigQuery SQL. Combine semantic and keyword matching either through `VECTOR_SEARCH`'s `lexical_search_columns` argument (single-query syntax only) or through `AI.SEARCH`'s `mode => 'HYBRID'`. Neither requires a vector index. In hybrid mode the returned `distance` is a reciprocal-rank-fusion score rather than a distance.
+
+Reach for it when a query carries **both** descriptive words and an exact token — but know what it buys, because `top_k` gates it twice. First the pool: BigQuery hands the lexical leg only the top `10 * top_k` rows by semantic rank, and a row deeper than that gets no lexical rank at all, however perfectly it matches. Inside the pool the lexical leg ranks the *entire* candidate pool — BM25 matches take lexical ranks `1..m` and the remaining pooled rows fall back to their semantic order behind them — so no pooled row forfeits a term. Then the score: `distance = 1 - ( 1/(60 + rank_vector) + 1/(61 + rank_lexical) )`, where the two legs use different rank bases (60 semantic, 61 lexical), and a lexical match is worth promotion to lexical rank 1, or `1/62` ≈ `0.016` of score, which has to beat the row holding the last slot. Effective reach is the smaller of the two, `min(score gate, 10 * top_k)`: at `top_k` of 10 a matched row can come from semantic rank 23, at 30 from 110, at 50 from 468 — and from `top_k` of 51 up the pool is what binds, so 640 at 64, 1,000 at 100, 3,000 at 300. Hybrid re-ranks and widens recall in proportion to `top_k`, never unboundedly: to retrieve a row at semantic rank `R` by exact token, size `top_k` to *at least* `R/10` — that is a floor, not a recipe. Below a few hundred ranks deep the score gate is the one that binds, and it asks for more: a row at semantic rank 100 needs `top_k` = 29, not 10. Read the real number off the reach table. If an opaque identifier is *all* the user typed, use `WHERE sku = @sku` instead — a predicate cannot be outranked by a fusion score, and it has no pool. See [Hybrid Search](RESOURCES.md#hybrid-search-capability) for the measured formula, the full reach table, and the vector-index DDL rules.
 
 **Embedding task types:** The `task_type` parameter tells the embedding model how the text will be used, which changes the resulting vector.
 
@@ -166,15 +171,20 @@ When unsure, default to `RETRIEVAL_DOCUMENT` / `RETRIEVAL_QUERY`. See the [`AI.E
 | Function | Examples | Type | Status | Requires Model | Multimodal | What It Does |
 |----------|----------|------|--------|----------------|------------|--------------|
 | `ML.PROCESS_DOCUMENT` | [notebook](functions/ml_process_document/ml_process_document.ipynb) · [sql](functions/ml_process_document/ml_process_document.sql) | TVF | GA | Yes | Object table | Extract structured data from documents in Cloud Storage using Document AI processors. |
-| `AI.PARSE_DOCUMENT` ⚠️ | [notebook](functions/ai_parse_document/ai_parse_document.ipynb) · [sql](functions/ai_parse_document/ai_parse_document.sql) | TVF | Preview (⚠️ **offline for revision** as of 2026-06-01) | No* | Object table | OCR + layout parsing + chunking via Document AI Layout Parser. No `CREATE MODEL` needed. **Temporarily offline — see notebook.** |
+| `AI.PARSE_DOCUMENT` ⚠️ | [notebook](functions/ai_parse_document/ai_parse_document.ipynb) · [sql](functions/ai_parse_document/ai_parse_document.sql) | TVF | Preview (⚠️ **offline** since 2026-06-01; **reference docs withdrawn**) | No* | Object table | OCR + layout parsing + chunking via Document AI Layout Parser. No `CREATE MODEL` needed. **Does not execute, and its reference page now returns 404. Use `ML.PROCESS_DOCUMENT` in the meantime — see notebook.** |
 
-### Forecasting — Time series forecasting, anomaly detection, and evaluation
+### Predictive AI — Forecasting, anomaly detection, regression, classification, and evaluation
 
-| Function | Examples | Type | Status | Multimodal | What It Does |
-|----------|----------|------|--------|------------|--------------|
-| `AI.FORECAST` | [notebook](functions/ai_forecast/ai_forecast.ipynb) · [sql](functions/ai_forecast/ai_forecast.sql) | TVF | GA | — | Forecast future values with TimesFM. No model training required. |
-| `AI.DETECT_ANOMALIES` | [notebook](functions/ai_detect_anomalies/ai_detect_anomalies.ipynb) · [sql](functions/ai_detect_anomalies/ai_detect_anomalies.sql) | TVF | GA | — | Detect anomalous data points by comparing against a forecast baseline. |
-| `AI.EVALUATE` | [notebook](functions/ai_evaluate/ai_evaluate.ipynb) · [sql](functions/ai_evaluate/ai_evaluate.sql) | TVF | GA | — | Evaluate forecast accuracy (MAE, MSE, RMSE, MAPE, sMAPE). |
+Two built-in foundation models sit behind these functions: **TimesFM** for time series and **TabFM** for tabular data. Neither requires `CREATE MODEL`, a connection, or an endpoint.
+
+| Function | Examples | Type | Status | Model | What It Does |
+|----------|----------|------|--------|-------|--------------|
+| `AI.FORECAST` | [notebook](functions/ai_forecast/ai_forecast.ipynb) · [sql](functions/ai_forecast/ai_forecast.sql) | TVF | GA | TimesFM | Forecast future values. No model training required. |
+| `AI.DETECT_ANOMALIES` | [notebook](functions/ai_detect_anomalies/ai_detect_anomalies.ipynb) · [sql](functions/ai_detect_anomalies/ai_detect_anomalies.sql) | TVF | GA | TimesFM | Detect anomalous data points by comparing against a forecast baseline. |
+| `AI.PREDICT` | [notebook](functions/ai_predict/ai_predict.ipynb) · [sql](functions/ai_predict/ai_predict.sql) | TVF | Preview | TabFM | Zero-shot regression and classification on structured data. Pass a training table and a prediction table in one call — no training step. |
+| `AI.EVALUATE` | [notebook](functions/ai_evaluate/ai_evaluate.ipynb) · [sql](functions/ai_evaluate/ai_evaluate.sql) | TVF | GA (TabFM branch Preview) | Both | Evaluate a TimesFM forecast (MAE, MSE, RMSE, MAPE, sMAPE, MASE) **or** a TabFM prediction (regression or classification metrics). |
+
+> **Default model version changed.** The three TimesFM functions now default to **TimesFM 2.5** instead of TimesFM 2.0, with no release note announcing it. Unpinned queries silently return different numbers than they used to — pin `model` explicitly if you need reproducibility.
 
 ### Augmented Analytics — Find what drives metric changes
 
@@ -228,23 +238,29 @@ When unsure, default to `RETRIEVAL_DOCUMENT` / `RETRIEVAL_QUERY`. See the [`AI.E
 └──────────────────────────┘   │                                      │
                                │  AI.SEARCH ◄── simplified search     │
 ┌──────────────────────────┐   │       needs autonomous embedding     │
-│     FORECASTING          │   │                                      │
-│                          │   │  HYBRID_SEARCH ◄── semantic + text   │
-│  AI.FORECAST             │   │       (Preview, docs pending)         │
-│       │                  │   └──────────────────────────────────────┘
-│  AI.DETECT_ANOMALIES     │
-│       │                  │   ┌──────────────────────────────────────┐
-│  AI.EVALUATE             │   │     DOCUMENT PROCESSING              │
+│     PREDICTIVE AI        │   │                                      │
+│                          │   │  Hybrid search = semantic +          │
+│  TimesFM - time series:  │   │       keyword. A capability of       │
+│  AI.FORECAST             │   │       both search functions above,   │
+│       │                  │   │       not a separate function.       │
+│  AI.DETECT_ANOMALIES     │   └──────────────────────────────────────┘
+│                          │
+│  TabFM - tabular:        │   ┌──────────────────────────────────────┐
+│  AI.PREDICT              │   │     DOCUMENT PROCESSING              │
+│       zero-shot, no      │   │                                      │
+│       CREATE MODEL       │   │  ML.PROCESS_DOCUMENT                 │
+│                          │   │       needs object table +           │
+│  AI.EVALUATE ◄── scores  │   │       Document AI processor          │
+│       either family      │   │       + remote model                 │
 │                          │   │                                      │
-│  All use TimesFM         │   │  ML.PROCESS_DOCUMENT                 │
-│  No model creation needed│   │       needs object table +           │
-└──────────────────────────┘   │       Document AI processor           │
-                               │       + remote model                  │
-┌──────────────────────────┐   │                                      │
-│   AUGMENTED ANALYTICS    │   │  AI.PARSE_DOCUMENT ◄── simplified     │
-│                          │   │       needs Layout Parser processor   │
-│  AI.KEY_DRIVERS          │   │       but no CREATE MODEL step        │
-│       contribution /     │   └──────────────────────────────────────┘
+│  No model creation needed│   │  AI.PARSE_DOCUMENT ◄── simplified    │
+└──────────────────────────┘   │       needs Layout Parser processor  │
+                               │       but no CREATE MODEL step       │
+┌──────────────────────────┐   │       (offline; docs withdrawn)      │
+│   AUGMENTED ANALYTICS    │   └──────────────────────────────────────┘
+│                          │
+│  AI.KEY_DRIVERS          │
+│       contribution /     │
 │       key driver analysis│
 │  No model / no connection│
 └──────────────────────────┘
@@ -253,7 +269,7 @@ When unsure, default to `RETRIEVAL_DOCUMENT` / `RETRIEVAL_QUERY`. See the [`AI.E
 **Key distinctions:**
 - **Scalar functions** (AI.GENERATE, AI.IF, AI.EMBED, etc.) operate on individual values — use them in SELECT, WHERE, JOIN.
 - **Aggregate functions** (AI.AGG) operate across groups of rows — use with GROUP BY, like SUM or COUNT.
-- **Table-valued functions** (AI.GENERATE_TEXT, VECTOR_SEARCH, AI.FORECAST, etc.) operate on tables — use them in FROM.
+- **Table-valued functions** (AI.GENERATE_TEXT, VECTOR_SEARCH, AI.FORECAST, AI.PREDICT, etc.) operate on tables — use them in FROM.
 - **"No model needed"** functions specify an endpoint directly or use a built-in model. **"Requires model"** functions need a `CREATE MODEL` statement first. See [Setup Reference](setup/) for details.
 - **Multimodal functions** process documents, images, audio, or video from Cloud Storage. Input methods vary by function — see the [Multimodal Input](#multimodal-input--documents-images-audio-video) section above.
 
@@ -282,6 +298,7 @@ bq-ai-functions/
 │   ├── ai_search/
 │   ├── ai_forecast/
 │   ├── ai_detect_anomalies/
+│   ├── ai_predict/
 │   ├── ai_evaluate/
 │   ├── ai_key_drivers/
 │   ├── ml_process_document/
@@ -292,8 +309,10 @@ bq-ai-functions/
     ├── document_rag/
     ├── content_analysis/
     ├── semantic_search/
+    ├── catalog_search/
     ├── rag_pipeline/
     ├── metric_diagnostics/
+    ├── tabular_prediction/
     ├── time_series_intelligence/
     ├── document_intelligence/
     ├── content_moderation/

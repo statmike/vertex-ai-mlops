@@ -18,7 +18,7 @@
 
 **Thinking:** Supports extended reasoning via `model_params` — use `thinking_budget` (Gemini 2.5) or `thinking_level` (Gemini 3.0+) to control reasoning depth.
 
-**Featured in:** `workflows/content_analysis` (Content Analysis Pipeline) | `workflows/data_enrichment` (Data Enrichment) | `workflows/rag_pipeline` (RAG Pipeline) | `workflows/document_intelligence` (Document Intelligence) | `workflows/content_moderation` (Content Moderation) | `workflows/multimodal_analysis` (Multimodal Analysis) | `workflows/document_rag` (Document RAG Pipeline) | `workflows/metric_diagnostics` (Metric Diagnostics)
+**Featured in:** `workflows/content_analysis` (Content Analysis Pipeline) | `workflows/data_enrichment` (Data Enrichment) | `workflows/rag_pipeline` (RAG Pipeline) | `workflows/document_intelligence` (Document Intelligence) | `workflows/content_moderation` (Content Moderation) | `workflows/multimodal_analysis` (Multimodal Analysis) | `workflows/document_rag` (Document RAG Pipeline) | `workflows/metric_diagnostics` (Metric Diagnostics) | `workflows/tabular_prediction` (Zero-Shot Tabular Prediction)
 
 **References:** `RESOURCES.md` (Full syntax reference) | [Official documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate) | `setup` (Setup guide)
 
