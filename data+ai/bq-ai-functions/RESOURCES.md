@@ -1406,7 +1406,15 @@ Two readings fit identically, because `1/(61 + rank_lexical)` and `1/(60 + (rank
 | A -- two constants | k = 60, ranks `1..n` | k = 61, ranks `1..n` |
 | B -- one constant, offset ranks | k = 60, ranks `1..n` | k = 60, ranks `2..n+1` |
 
-Nothing observable from outside BigQuery separates them, but **B is the likelier**. k = 60 over 1-based ranks is the canonical RRF of Cormack, Clarke and Buettcher (2009) and the default wherever the constant is exposed -- Elasticsearch and OpenSearch both name it `rank_constant` and default it to 60, and Spanner and AlloyDB write 60 into their documented SQL. A constant of 61 appears in no published implementation. Where 61 *does* appear constantly is as the rank-1 denominator, `1/(60 + 1)` -- which is exactly the transcription slip that would yield the observed `1/62` on a top-ranked row. The semantic leg here lands on the canonical `1/61` for its own top row, so this notebook's rank convention already agrees with BigQuery's on one leg; the extra `+1` sits on the lexical side specifically.
+Nothing observable from outside BigQuery separates them, but **B is the likelier**. k = 60 over 1-based ranks is the canonical RRF of Cormack, Clarke and Buettcher (2009) and the default wherever the constant is exposed -- Elasticsearch and OpenSearch both name it `rank_constant` and default it to 60, and Spanner and AlloyDB write 60 into their documented SQL. A constant of 61 appears in no published implementation. What is measured is that the semantic leg lands on the canonical `1/61` for its own top row -- so this document's rank convention already agrees with BigQuery's on one leg, and the extra `+1` sits on the lexical side specifically.
+
+**Why the lexical leg would start at 2 is a separate question, and it is open.** Reading B says *where* the extra `+1` sits, not *why*. Three mechanisms fit the observations equally well:
+
+- **A deliberate tie-break.** At equal ranks the vector term `1/(60 + r)` exceeds the lexical term `1/(61 + r)`, so the semantic leg wins every tie by a hair. That is what you would implement if hybrid should never reorder a tie against the embedding.
+- **A reserved slot.** If position 1 of the lexical list holds something that is not a result -- the query itself, a sentinel, a header row -- then real rows begin at 2 naturally.
+- **An off-by-one.** 61 is universal as the rank-1 *denominator*, `1/(60 + 1)`. Transcribing that as the constant, or applying `+1` to an already-1-based rank, produces exactly the observed `1/62` on a top row.
+
+Only the third is a defect, and it is the least charitable of the three. Nothing observable from outside BigQuery distinguishes them, so do not present any one of them as the explanation.
 
 One argument that looks decisive and is not: decoding with k = 60 on both legs yields lexical ranks `2 .. n+1`, and no n-row list hands out rank n+1. That rules out a shared base combined with ordinary 1-based lexical numbering. It does *not* rule out reading B, where `2 .. n+1` is precisely what an offset 1-based ranking looks like. A contiguous block starting at 2 is evidence *for* an offset, not against a shared constant.
 

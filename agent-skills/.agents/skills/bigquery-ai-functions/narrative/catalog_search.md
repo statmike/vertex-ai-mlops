@@ -799,7 +799,9 @@ Only one of those ranks is read directly, though. `VECTOR_SEARCH` returns no ran
 | A — two constants | k = 60, ranks `1..n` | k = 61, ranks `1..n` |
 | **B — one constant, offset ranks** | k = 60, ranks `1..n` | k = 60, ranks `2..n+1` |
 
-Nothing observable separates them, but **B is the likelier**. `k = 60` over 1-based ranks is canonical RRF (Cormack, Clarke and Buettcher, 2009) and the default wherever the constant is exposed — Elasticsearch and OpenSearch name it `rank_constant` and default it to 60, Spanner and AlloyDB write 60 into their documented SQL. No published implementation uses 61 as the constant; 61 appears everywhere instead as the rank-1 denominator `1/(60 + 1)`, which is the transcription slip that would produce the observed `1/62` on a top row. The semantic leg lands on the canonical `1/61` here, so the extra `+1` is on the lexical side.
+Nothing observable separates them, but **B is the likelier**. `k = 60` over 1-based ranks is canonical RRF (Cormack, Clarke and Buettcher, 2009) and the default wherever the constant is exposed — Elasticsearch and OpenSearch name it `rank_constant` and default it to 60, Spanner and AlloyDB write 60 into their documented SQL. No published implementation uses 61 as the constant. The semantic leg lands on the canonical `1/61` here, so the extra `+1` is on the lexical side.
+
+*Why* it would start at 2 is a separate, open question — reading B says where the `+1` sits, not why. Three mechanisms fit equally well: a **tie-break** (at equal ranks `1/(60 + r)` beats `1/(61 + r)`, so the semantic leg wins every tie by a hair), a **reserved slot** at lexical position 1, or an **off-by-one** (61 is universal as the rank-1 *denominator*, `1/(60 + 1)`). Only the last is a defect, and it is the least charitable; nothing observable distinguishes them.
 
 The 60/61 form is used throughout this notebook because it is the shortest expression that reproduces every observed value — arithmetic that holds, not two design decisions.
 

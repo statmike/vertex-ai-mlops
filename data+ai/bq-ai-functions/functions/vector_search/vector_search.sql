@@ -262,10 +262,19 @@ ORDER BY h.hybrid_rank NULLS LAST;
 -- ranks is canonical RRF (Cormack et al. 2009) and the default wherever the
 -- constant is exposed — Elasticsearch and OpenSearch call it rank_constant and
 -- default it to 60; Spanner and AlloyDB write 60 into their documented SQL. No
--- published implementation uses 61 as the constant; 61 appears everywhere as the
--- rank-1 denominator 1/(60 + 1), which is the transcription slip that yields the
--- observed 1/62 on a top row. The semantic leg lands on the canonical 1/61 here,
--- so the extra +1 sits on the lexical side specifically.
+-- published implementation uses 61 as the constant. The semantic leg lands on
+-- the canonical 1/61 here, so the extra +1 sits on the lexical side.
+--
+-- WHY the lexical leg would start at 2 is a separate, open question. Reading B
+-- says where the +1 sits, not why. Three mechanisms fit equally well:
+--   tie-break    at equal ranks 1/(60 + r) beats 1/(61 + r), so the semantic
+--                leg wins every tie by a hair — a defensible design choice
+--   reserved slot  if lexical position 1 holds a non-result (the query itself,
+--                a sentinel), real rows begin at 2 naturally
+--   off-by-one   61 is universal as the rank-1 DENOMINATOR, 1/(60 + 1);
+--                transcribing that as the constant gives the observed 1/62
+-- Only the last is a defect, and it is the least charitable. Nothing observable
+-- distinguishes them — do not present any one as the explanation.
 --
 -- Do not treat "decoding with 60 on both legs implies lexical ranks 2..n+1, and
 -- no n-row list hands out n+1" as decisive. It rules out a shared base with
