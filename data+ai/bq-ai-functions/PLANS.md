@@ -970,9 +970,9 @@ Re-check this list **every audit** and **on any Preview → GA transition**. GA 
 
 #### Impact map — hybrid search fusion behavior
 
-Applies to V1–V3 (and partly V4–V5). The fusion algorithm, its constants, and the pool multiplier are **undocumented and Preview**. Every number is measured-today, not contracted. If any of them changes, **all 20 files below carry it** — regenerate the reach table and re-verify every worked example rather than patching one file:
+Applies to V1–V3 (and partly V4–V5). The fusion algorithm, its constants, and the pool multiplier are **undocumented and Preview**. Every number is measured-today, not contracted. If any of them changes, **every entry below carries it** — regenerate the reach table and re-verify every worked example rather than patching one file:
 
-*Hand-authored, `data+ai/bq-ai-functions/` (11):*
+*Hand-authored, `data+ai/bq-ai-functions/` (9 entries, 11 files):*
 `README.md` · `RESOURCES.md` (Hybrid Search section) · `overview.ipynb` · `functions/vector_search/vector_search.ipynb` + `.sql` · `functions/ai_search/ai_search.ipynb` + `.sql` · `workflows/semantic_search/semantic_search.ipynb` · `workflows/rag_pipeline/rag_pipeline.ipynb` · `workflows/log_analysis/log_analysis.ipynb` · `workflows/catalog_search/catalog_search.ipynb`
 
 Also check `workflows/README.md`, which describes hybrid without carrying the arithmetic.
@@ -989,8 +989,8 @@ Two notebooks additionally **compute** the decomposition in code, so their store
 
 Applies to P1, P4, P5, P7. TabFM and TimesFM are foundation models with **moving defaults**, reached through Preview functions. If determinism, a version argument, a size limit, or a model generation changes, these carry it:
 
-*Hand-authored, `data+ai/bq-ai-functions/` (12):*
-`README.md` · `RESOURCES.md` · `overview.ipynb` · `setup/README.md` (only if the answer involves reservations) · `functions/ai_predict/` (notebook + `.sql`) · `functions/ai_evaluate/` (notebook + `.sql`) · `functions/ai_forecast/` (notebook + `.sql`) · `functions/ai_detect_anomalies/` (notebook + `.sql`) · `workflows/tabular_prediction/` · `workflows/time_series_intelligence/` · `workflows/metric_diagnostics/` · `workflows/data_enrichment/` · `workflows/README.md`
+*Hand-authored, `data+ai/bq-ai-functions/` (13 entries):*
+`README.md` · `RESOURCES.md` · `overview.ipynb` · `setup/README.md` (only if a reservation turns out to be the answer) · `functions/ai_predict/` (notebook + `.sql`) · `functions/ai_evaluate/` (notebook + `.sql`) · `functions/ai_forecast/` (notebook + `.sql`) · `functions/ai_detect_anomalies/` (notebook + `.sql`) · `workflows/tabular_prediction/` · `workflows/time_series_intelligence/` · `workflows/metric_diagnostics/` · `workflows/data_enrichment/` · `workflows/README.md`
 
 *Hand-authored skills (4, across all three skills):*
 `bigquery-ai-functions/SKILL.md` · `bigquery-ai-functions/reference/predictive-ai.md` · `bigquery-ai-functions/reference/workflows.md` · `choosing-a-bigquery-ai-approach/SKILL.md` (carries the `AI.FORECAST` vs `ARIMA_PLUS` and `AI.PREDICT` vs `BOOSTED_TREE_*` head-to-heads) — and `bigquery-ml/SKILL.md` + `reference/unsupervised-and-specialized.md` if the comparison shifts
@@ -1017,6 +1017,8 @@ grep -rl "61 + rank_lexical\|10 \* top_k\|0.9674775251189847\|[Rr]eciprocal [Rr]
 grep -rl "AI\.PREDICT\|AI\.EVALUATE\|TimesFM\|TabFM" \
   --include=*.ipynb --include=*.md --include=*.sql data+ai/bq-ai-functions agent-skills
 ```
+
+**The sweeps return more than the maps list, and that is expected.** They match any mention of the terms, including passing references that carry no claim — as of 2026-09-02 the hybrid sweep returns 21 files and the predictive sweep 34. The two sets never match the maps exactly: the sweeps also hit this file, and they miss `skill.manifest.json`, which carries the claim in generated metadata without containing any of the search terms — regenerate it regardless. Treat the extra hits as a checklist: for each one, confirm it only *names* the function rather than asserting behavior. Anything asserting behavior belongs on the map — add it.
 
 ### Audit log
 
