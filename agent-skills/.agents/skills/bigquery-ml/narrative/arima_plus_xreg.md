@@ -303,6 +303,8 @@ client.query(query).to_dataframe()
 The table below shows the top 10 flagged points by `anomaly_probability`. The plot after it shows every station's full history alongside every flagged anomaly marked directly on the time series — much easier to interpret in context than the table alone.
 
 > **GOTCHA (verified): the full-history plot reveals the same real ~6-month gap found in `models/arima_plus` (`models/arima_plus/`) — but this model type handles it differently.** `bigquery-public-data.new_york_citibike.citibike_trips` has zero rows for **October 2016 through March 2017**, across all 5 stations. Plain `ARIMA_PLUS` linearly interpolates a real numeric value across the *entire* 6-month span (see that notebook's Step 11). **`ARIMA_PLUS_XREG` does not** — `ML.DETECT_ANOMALIES` returns `NULL` for `num_trips`/`is_anomaly`/`anomaly_probability` on every day within the gap (verified directly), which correctly renders as a genuine break in the plotted line below rather than a misleading straight-line "bridge." A real, verified difference between the two model types' gap handling — don't assume the two behave identically just because they share most of the same lifecycle functions.
+>
+> That makes three distinct behaviors on the same gap, all worth knowing before trusting a value inside one: `ARIMA_PLUS` interpolates across it, `ARIMA_PLUS_XREG` returns `NULL` across it, and the model-free functions in `functions/time_series` (`functions/time_series/`) (`ML.TREND`, `ML.SEASONALITY`, `ML.DETECT_CHANGE_POINTS`) gap-fill each series to its own span before computing — which makes them report the gap's edges as structural change points.
 
 ```python
 query = f"""

@@ -41,7 +41,7 @@ If the ask is ambiguous between these generative functions and BigQuery ML's tra
 - `reference/generation-and-structured-output.md` — AI.GENERATE, AI.GENERATE_TEXT, AI.GENERATE_TABLE, AI.GENERATE_BOOL/DOUBLE/INT, legacy ML.GENERATE_TEXT, AI.COUNT_TOKENS
 - `reference/classification-and-scoring.md` — AI.IF, AI.SCORE, AI.CLASSIFY, AI.AGG
 - `reference/embeddings-and-search.md` — AI.EMBED, AI.GENERATE_EMBEDDING, legacy ML.GENERATE_EMBEDDING, AI.SIMILARITY, VECTOR_SEARCH, AI.SEARCH, and hybrid search (a capability of the last two, not a function)
-- `reference/predictive-ai.md` — AI.FORECAST, AI.DETECT_ANOMALIES, AI.PREDICT, AI.EVALUATE (TimesFM and TabFM)
+- `reference/predictive-ai.md` — AI.FORECAST, AI.DETECT_ANOMALIES, AI.PREDICT, AI.EVALUATE (TimesFM and TabFM); also routes "where did this series change?" out to the sibling `bigquery-ml` skill's model-free `ML.TREND`/`ML.SEASONALITY`/`ML.DETECT_CHANGE_POINTS`, which answer a different question than anomaly detection
 - `reference/driver-analysis.md` — AI.KEY_DRIVERS
 - `reference/document-processing.md` — ML.PROCESS_DOCUMENT, AI.PARSE_DOCUMENT (offline, docs withdrawn), Object Tables, OBJ.MAKE_REF/FETCH_METADATA/GET_ACCESS_URL
 - `reference/workflows.md` — 14 composed workflows (RAG, hybrid catalog search, tabular prediction, content moderation, semantic search, time series intelligence, etc.) as worked starting templates

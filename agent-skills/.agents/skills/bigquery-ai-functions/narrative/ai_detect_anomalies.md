@@ -12,6 +12,7 @@
 **Alternatives:**
 - `functions/ai_forecast` (`AI.FORECAST`) — Generate forecasts without anomaly detection
 - `functions/ai_evaluate` (`AI.EVALUATE`) — Evaluate forecast accuracy instead of detecting anomalies
+- `bq-ml/functions/time_series` (`ML.DETECT_CHANGE_POINTS`) — finds *sustained* level shifts rather than individual outlying points, with no model and no forecast baseline. A spike that returns to normal the next day is an anomaly, not a change point; a permanent step up in volume is a change point that may never register as an anomaly. Different questions on the same series — see also `ML.TREND` and `ML.SEASONALITY` there for model-free decomposition.
 
 **Featured in:** `workflows/time_series_intelligence` (Time Series Intelligence)
 

@@ -1569,6 +1569,10 @@ Two model families sit behind this section:
 - **TimesFM** -- a time series foundation model, used by `AI.FORECAST`, `AI.DETECT_ANOMALIES`, and `AI.EVALUATE`. These three share a common parameter pattern (`data_col`, `timestamp_col`, `id_cols`) and the same model versions.
 - **TabFM** -- a tabular foundation model, used by `AI.PREDICT` and by `AI.EVALUATE`'s second syntax. TabFM does zero-shot regression and classification by in-context learning: you hand it a training table and a prediction table in the same call, and it never persists a model.
 
+> **Cross-links (owned by `../bq-ml/`, not duplicated here):** model-free time-series description --- [`ML.TREND`, `ML.SEASONALITY`, `ML.DETECT_CHANGE_POINTS`](../bq-ml/RESOURCES.md) (Preview 2026-08-20), built in [`../bq-ml/functions/time_series/`](../bq-ml/functions/time_series/). These need no `CREATE MODEL` *and* no foundation model: they decompose a series into trend and seasonal components and locate sustained structural shifts. Reach for them when the question is *what has this series been doing* rather than *what will it do next*. The trainable statistical alternative to `AI.FORECAST` is [`ARIMA_PLUS`/`ARIMA_PLUS_XREG`](../bq-ml/RESOURCES.md).
+>
+> **Anomaly vs. change point** --- `AI.DETECT_ANOMALIES` flags individual points that deviate from a TimesFM forecast baseline; `ML.DETECT_CHANGE_POINTS` finds windows where the level shifted *and stayed shifted*, with no model and no baseline. A spike that returns to normal the next day is an anomaly and not a change point; a permanent step up in volume is a change point that may never register as an anomaly. Measured on one shared series: 79 row-level anomalies against 2 change windows, zero overlap.
+
 **Key relationships:**
 - `AI.FORECAST` generates future time series values from historical data.
 - `AI.DETECT_ANOMALIES` compares target data against a forecast baseline from historical data to identify anomalous points.
