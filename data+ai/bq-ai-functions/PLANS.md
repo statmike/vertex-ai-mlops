@@ -365,6 +365,49 @@ Every workflow notebook's overview cell (cell index **1** — cell index 0 is th
 **Functions used:** [`AI.GENERATE_TABLE`](functions/ai_generate_table/) | [`AI.CLASSIFY`](functions/ai_classify/) | [`AI.SCORE`](functions/ai_score/) | [`AI.GENERATE`](functions/ai_generate/)
 ```
 
+### Link policy
+
+This project is the canonical source of truth for BigQuery AI functions, and its content
+is copied into a distributable agent skill that has to make sense with the rest of the
+repository absent. A reference that points outside the project does not travel.
+
+A link may target:
+
+1. **this project** — relative, e.g. `functions/ai_generate/`
+2. **the sibling project** — `../bq-ml/...`
+3. **public documentation or public data** — `https://...`
+
+Anything else is a violation: elsewhere in this repository, or outside it. Other parts
+of the repo may link *in* to this project; this project does not link *out*.
+
+Two cases are treated differently:
+
+- A **link** (`[text](target)`) is followable, so an outward one always violates.
+- A **mention** (a backticked path in prose) violates only when the target still exists
+  outside the project — that is a live pointer a reader will chase. A mention of a path
+  that no longer exists is *retirement provenance*: it records where content came from
+  and there is nothing to follow, so it stays.
+
+When removing an outward reference, **change the pointer, never delete the fact.** The
+description attached to a link is usually first-hand knowledge; keep the sentence and
+retarget it — to the native equivalent where one exists, or to public documentation when
+the subject is genuinely another product surface.
+
+Exemptions:
+
+- **`PLANS.md`** is forward-looking, repo-bound, and never shipped in a skill. It may
+  cite anything, including sources outside the repository.
+- **`README.md`** may link to `agent-skills/`, the artifact built from this project.
+
+Enforced by `agent-skills/tooling`:
+
+```bash
+cd agent-skills && PYTHONPATH=tooling/src python3 -m agent_skills_tooling.cli check-links \
+  ../data+ai/bq-ai-functions --sibling ../data+ai/bq-ml --repo-root ..
+```
+
+This project currently passes with zero violations; `bq-ml` does not yet.
+
 ### Current mapping
 
 | Function | Featured in Workflows |
@@ -402,6 +445,10 @@ When **adding a new function**:
 When **removing a workflow or function**:
 1. Remove the cross-references from all linked notebooks
 2. Update the mapping table above
+
+On **every** change, before commit:
+1. Run `check-links` (command above) — it must report zero violations
+2. Regenerate any affected `agent-skills/` narrative in the same commit
 
 ---
 
@@ -1072,6 +1119,7 @@ grep -rl "AI\.PREDICT\|AI\.EVALUATE\|TimesFM\|TabFM" \
 | 2026-09-03 | Second cross-link pass — `functions/ai_detect_anomalies/` | The first pass linked `functions/ai_forecast/` and `workflows/time_series_intelligence/` to the sibling project's `functions/time_series/` but missed `ai_detect_anomalies`, which carries the sharpest contrast of the three: `AI.DETECT_ANOMALIES` flags individual outlying **points** against a TimesFM forecast baseline, while `ML.DETECT_CHANGE_POINTS` finds **sustained** level shifts with no model and no baseline at all. A spike that returns to normal the next day is an anomaly and not a change point; a permanent step up in volume is a change point that may never register as an anomaly. Added to the notebook's Alternatives list and the `.sql` header. **Reviewed and deliberately skipped:** `functions/ai_forecast/` and `workflows/time_series_intelligence/` get no new cells — both run synthetic, complete `GENERATE_DATE_ARRAY` series with injected point anomalies and no gaps, so a change-point demo there would either find nothing or rediscover the injections. Markdown/comment-only; no notebook re-executed. |
 | 2026-09-03 | Docs and skills catch-up — `RESOURCES.md` and the `bigquery-ai-functions` skill had no route to the sibling's model-free time-series functions at all | The cross-link passes updated notebooks only. Two gaps found on review: **(1)** `RESOURCES.md` contained zero mentions of `ML.TREND`/`ML.SEASONALITY`/`ML.DETECT_CHANGE_POINTS` — the reciprocal of the cross-link block `bq-ml`'s `RESOURCES.md` already carries for this project's TimesFM functions. Added to the *Predictive AI* section: what the model-free TVFs are for, plus the anomaly-vs-change-point distinction with the measured 79-anomalies-against-2-windows zero overlap. **(2)** The `bigquery-ai-functions` skill had no mention either, so an agent routed there for "something changed in my time series" could only reach `AI.DETECT_ANOMALIES` and would never surface the change-point option. Added a *"where did this series change, not which points are odd"* routing entry to `reference/predictive-ai.md` (carrying the gap-fill caveat, so the recommendation ships with its own precondition) and a pointer on the `SKILL.md` reference-file line (manifest 0.2.2 -> 0.2.3, validates OK). Confirmed adequate and left alone: `README.md`, whose single cross-project line routes to `choosing-a-bigquery-ai-approach`, which already covers change points vs. anomalies vs. drift as three distinct questions. |
 | 2026-09-03 | Docs hygiene — six broken relative links in this file | Found in the pre-push review. `PLANS.md` lines 355 and 365 used notebook-relative paths (`../../workflows/content_analysis/`, `../../functions/ai_classify/` and four more), which from a project-root file overshoot to the repo root. Dropped the `../../`; all six targets verified to exist. Also confirmed the three `RESOURCES.md#anchor` links in this file resolve to real headings. The companion sweep in `../bq-ml/` (absolute local paths and a dead citation) is recorded in that project's audit log. |
+| 2026-09-03 | Outward-link policy written down and made enforceable — this project already complies | The rule behind the recent link-hygiene fixes is now explicit: this project is the canonical source of truth for BigQuery AI functions, its content is copied into a distributable skill, and a reference pointing outside the project does not travel. Written into *Cross-Referencing Convention → Link policy* above (three allowed targets: this project, the sibling `../bq-ml/`, public documentation; `PLANS.md` exempt as forward-looking and never shipped; `README.md` may cite `agent-skills/`) and enforced by a new `check-links` subcommand in `agent-skills/tooling`, which separates a **link** (`[](…)`, followable, always a violation when outward) from a **mention** (a backticked path in prose, a violation only when the target still exists — a dangling one is retirement provenance and is kept). Baseline: **0 violations across 74 files** — this project is already clean, and the checklist above now requires it stay that way on every change. The `PLANS.md` exemption is what makes that true: this file's one out-of-repo citation is future-facing and legitimately outside a skill's scope. The sibling `bq-ml` starts at 141 violations; its cleanup is tracked in that project's audit log. Tooling and documentation only; no notebook touched, nothing re-executed. |
 
 ### Notebook update plan (May 2026 audit)
 

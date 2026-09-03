@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from agent_skills_tooling.convert_notebook import convert_notebook_to_file
+from agent_skills_tooling.link_policy import check_project
 from agent_skills_tooling.manifest import write_manifest
 from agent_skills_tooling.validate import validate_all, validate_skill
 
@@ -37,6 +38,19 @@ def _cmd_validate(args: argparse.Namespace) -> int:
     return exit_code
 
 
+def _cmd_check_links(args: argparse.Namespace) -> int:
+    result = check_project(
+        project_root=Path(args.project_root),
+        sibling_roots=[Path(s) for s in args.sibling],
+        repo_root=Path(args.repo_root),
+    )
+    for violation in result.violations:
+        print(f"VIOLATION {violation.format(result.project_root)}")
+    label = result.project_root.name
+    print(f"{'OK   ' if result.ok else 'FAIL '} [{label}] {result.scanned} files scanned, {len(result.violations)} violations")
+    return 0 if result.ok else 1
+
+
 def _cmd_manifest(args: argparse.Namespace) -> int:
     path = write_manifest(Path(args.skill_dir), version=args.version)
     print(f"Wrote {path}")
@@ -57,6 +71,12 @@ def main(argv: list[str] | None = None) -> int:
     p_validate.add_argument("skill_dir", help="A single skill directory, or the skills root with --all")
     p_validate.add_argument("--all", action="store_true", help="Treat skill_dir as a parent of multiple skills")
     p_validate.set_defaults(func=_cmd_validate)
+
+    p_links = subparsers.add_parser("check-links", help="Enforce the outward-link policy on a source project")
+    p_links.add_argument("project_root", help="e.g. data+ai/bq-ml")
+    p_links.add_argument("--sibling", action="append", default=[], help="Sibling project root a link may also target (repeatable)")
+    p_links.add_argument("--repo-root", required=True, help="Repository root, used to tell in-repo from out-of-repo")
+    p_links.set_defaults(func=_cmd_check_links)
 
     p_manifest = subparsers.add_parser("manifest", help="Generate/update a skill's manifest")
     p_manifest.add_argument("skill_dir")

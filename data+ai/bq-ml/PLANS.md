@@ -158,6 +158,47 @@ Bidirectional links help users navigate. Maintain these whenever adding/updating
 - **Workflow / pipeline notebooks → components:** **Models used:** and **Functions used:** lines in the overview cell.
 - **Mapping table** (below) records the current state.
 
+### Link policy
+
+This project is the canonical source of truth for BigQuery ML, and its content is
+copied into a distributable agent skill that has to make sense with the rest of the
+repository absent. A reference that points outside the project does not travel.
+
+A link may target:
+
+1. **this project** — relative, e.g. `models/arima_plus/`
+2. **the sibling project** — `../bq-ai-functions/...`
+3. **public documentation or public data** — `https://...`
+
+Anything else is a violation: elsewhere in this repository, or outside it. Other parts
+of the repo may link *in* to this project; this project does not link *out*.
+
+Two cases are treated differently:
+
+- A **link** (`[text](target)`) is followable, so an outward one always violates.
+- A **mention** (a backticked path in prose) violates only when the target still exists
+  outside the project — that is a live pointer a reader will chase. A mention of a path
+  that no longer exists is *retirement provenance*: it records where content came from
+  and there is nothing to follow, so it stays.
+
+When removing an outward reference, **change the pointer, never delete the fact.** The
+description attached to a link is usually first-hand knowledge; keep the sentence and
+retarget it — to the native equivalent where one exists, or to public documentation when
+the subject is genuinely another product surface (e.g. Vertex AI Pipelines mechanics).
+
+Exemptions:
+
+- **`PLANS.md`** is forward-looking, repo-bound, and never shipped in a skill. It may
+  cite anything, including sources outside the repository.
+- **`README.md`** may link to `agent-skills/`, the artifact built from this project.
+
+Enforced by `agent-skills/tooling`:
+
+```bash
+cd agent-skills && PYTHONPATH=tooling/src python3 -m agent_skills_tooling.cli check-links \
+  ../data+ai/bq-ml --sibling ../data+ai/bq-ai-functions --repo-root ..
+```
+
 ### Current mapping
 
 | Content | Type | Featured in |
@@ -348,6 +389,10 @@ Keep our content in sync with the official BigQuery ML documentation. Mirrors th
 - [ ] `PLANS.md`: audit-log entry
 - [ ] If this changes a decision tree, introduces a new cross-cutting gotcha, or adds a new head-to-head comparison with `bq-ai-functions`: update `../../agent-skills/.agents/skills/bigquery-ml/` (SKILL.md and/or the relevant `reference/*.md`)
 
+#### Every change, before commit
+- [ ] Run `check-links` (see *Link policy* above) — it must report zero violations
+- [ ] Regenerate any affected `agent-skills/` narrative in the same commit
+
 ### How to run an audit
 1. **Prepare** — review the audit log to see what was last checked and when.
 1b. **Read the release notes since the last audit.** Steps 2 onward compare what is already built against current docs; they cannot surface a function that shipped and was never noticed. Read [BigQuery release notes](https://docs.cloud.google.com/bigquery/docs/release-notes) forward from the last audit date and triage every ML/AI entry:
@@ -495,3 +540,4 @@ Items announced but without published reference docs, or not yet covered. Move t
 | 2026-09-03 | Docs and skills catch-up on the cross-link pass — three things the pass itself missed | Checking whether the documentation and skills were actually updated for the cross-link edits turned up three real gaps, all of the same shape: **the notebooks were cross-linked, the canonical reference docs and the sibling skill were not.** **(1)** Five narrative files were stale — `narrative/` is generated from the `.ipynb`, so editing `arima_plus`, `arima_plus_xreg`, `hierarchical_forecasting`, `regression_based_forecasting` and (in the sibling project) `ai_detect_anomalies` left every one of them behind. Regenerated via `convert-notebook`; the diffs contained only the new paragraphs and no incidental churn, which confirms the narratives were otherwise in sync. **(2)** `RESOURCES.md` documented the three gap behaviors in two disconnected places — the `ARIMA_PLUS_XREG` entry had the interpolate-vs-`NULL` contrast, the *Model-Free Time-Series Functions* section had the gap-fill behavior, and neither pointed at the other. Added a reciprocal clause to each so the three-way is reachable from either entry. **(3)** The `bigquery-ml` skill had the same split and now carries the three-way as one gotcha (manifest 0.2.1 -> 0.2.2). **General lesson worth keeping:** a cross-link pass is not finished when the notebooks link to each other. Anything generated from a notebook (`narrative/`) is stale the moment the notebook's markdown changes, and a fact that lives in two reference entries without a pointer between them is not discoverable from either. |
 | 2026-09-03 | Docs hygiene sweep before publishing — absolute local paths, broken relative links, one dead citation | Pre-push review of the public-facing docs, unrelated to the time-series work but found while verifying it. **(1) 77 backticked repo citations in `RESOURCES.md` carried an absolute `/home/user/git/vertex-ai-mlops/` prefix**, exposing a local filesystem layout to every reader and unusable as a path for anyone who clones the repo. Not a house style — the same file already cited files repo-relatively in many places (`data+ai/bq-ml/models/logistic_regression/...`), so this was drift. Stripped to repo-relative; 76 of 77 resolve to a real file, the 77th handled below. All 77 were inside backticks as prose, and one was additionally a markdown link destination (`02 - Vertex AI AutoML/BQML AutoML.ipynb`), which needed `../../` rather than a bare strip — it had been a broken link all along, since an absolute filesystem path in a link target never resolves for a reader. **(2) Nine broken relative links**, one pattern: notebook-relative paths pasted into a project-root file, so `../../functions/scalers/` overshot to the repo root. Three in `RESOURCES.md` (`models/export/`, `models/imported/`, `functions/scalers/`), six in the sibling project's `PLANS.md`. Every target verified to exist after dropping the `../../`. **(3) One dead citation:** `RESOURCES.md` still listed `Applied ML/Forecasting/BigQuery ML For Hierarchical Forecasting.ipynb` as a repo example — a file deliberately deleted 2026-07-21 (see the retirement row above) after `workflows/hierarchical_forecasting/` was verified feature-for-feature against it. Repointed to the rebuild, keeping the Iowa liquor hierarchy detail and naming the retired notebook explicitly as retired rather than silently dropping the provenance. **Checker caveat worth recording:** an initial sweep reported 18 broken links; 9 were the checker's own bugs, not the repo's — it did not URL-decode `%20` (so `MLOps/Model Monitoring` and `03 - BigQuery ML (BQML)` looked missing when both exist) and it terminated a link destination at the first `)`, which CommonMark explicitly permits when the parentheses are balanced. Verify a link checker against known-good targets before acting on its output. **Deliberately out of scope:** 22 absolute paths in `dataproc`/`dataflow`/`overview` notebooks — those are venv paths baked into cell *outputs* (`.venv/lib/python3.13/site-packages/...`), a different problem in different sub-projects. |
 | 2026-09-03 | Two notebooks pointed readers at deliberately deleted source notebooks — found by generalizing the dead-citation fix | The `RESOURCES.md` dead citation fixed in the previous commit was not a one-off. Grepping every `bq-ml`/`bq-ai-functions` notebook, `.sql` and `.md` for provenance references (`Modernizes`/`Replaces`/`modernized from`/`Supersedes`/`Based on`/`Rebuilt from` + a backticked path) found **5 distinct source-notebook references, 2 of which no longer exist** — both removed on purpose, and neither saying so: `workflows/hierarchical_forecasting/` cites `Applied ML/Forecasting/BigQuery ML For Hierarchical Forecasting.ipynb` (deleted in `aac6c671`) and `workflows/embeddings_classification/` cites `Applied GenAI/Embeddings/Vertex AI GenAI Embeddings - As Features For Hierarchical Classification.ipynb` (deleted in `b66e2776`). A reader following either goes looking for a file that is not in the repo. Both now name the source as retired and state that the workflow is the only remaining copy, matching the treatment applied to the `RESOURCES.md` citation. Markdown-only, one line each, no notebook re-executed (verified: zero `outputs`/`execution_count` lines in the diff); both `narrative/*.md` regenerated in the same pass, `bigquery-ml` manifest 0.2.2 -> 0.2.3. **General lesson:** retiring a source notebook is a two-sided edit — deleting the file and recording the retirement in `PLANS.md` still leaves every *forward* reference to it stale, and those live in the replacement notebook's own header where nothing flags them. When retiring anything, grep for inbound references before considering it done. |
+| 2026-09-03 | Outward-link policy written down and made enforceable — the generalization of the two previous rows | The dead-citation and retirement-provenance fixes were both instances of one unstated rule: this project is the canonical source of truth for BigQuery ML, its content is copied into a distributable skill, and a reference pointing outside the project does not travel. That rule is now written into *Cross-Referencing Convention → Link policy* above (three allowed targets: this project, the sibling project, public documentation; `PLANS.md` exempt as forward-looking and never shipped; `README.md` may cite `agent-skills/`) and enforced by a new `check-links` subcommand in `agent-skills/tooling`. The checker distinguishes a **link** (`[](…)`, followable, always a violation when outward) from a **mention** (a backticked path in prose, a violation only when the target still exists — a dangling one is retirement provenance and is kept), which is precisely the distinction the existing `validate` tooling could not make: its link check only inspects `[](…)`, while `convert-notebook` rewrites relative links into backticked text before that check runs, so the two cancelled and outward references accumulated unnoticed. Baseline on the new checker: **`bq-ml` 141 violations across 111 files, `bq-ai-functions` 0 across 74** — all 141 in-repo, none out-of-repo, none broken. Concentration is high: 90 are in `RESOURCES.md` and 89 of those sit in a single recurring construct (`**Repo example (tested):**`). Every legacy target checked has a native equivalent already built here, so the cleanup is a retarget, not new content — including the five monitoring functions (`ML.DESCRIBE_DATA`, `ML.VALIDATE_DATA_SKEW`, `ML.VALIDATE_DATA_DRIFT`, `ML.TFDV_DESCRIBE`, `ML.TFDV_VALIDATE`), all already covered by `functions/data_quality/`, which removes the one item that looked like it would need new notebook work. Tooling and documentation only; no notebook touched, nothing re-executed. Fix passes follow in separate commits. |
