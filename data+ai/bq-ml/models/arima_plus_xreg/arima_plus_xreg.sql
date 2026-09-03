@@ -16,6 +16,14 @@
 -- Official docs:
 --   CREATE MODEL (multivariate time series): https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-create-multivariate-time-series
 --   ML.FORECAST: https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-forecast
+--
+-- Gap handling differs three ways on this series' real Oct 2016 - Mar 2017
+-- outage: ARIMA_PLUS interpolates across it, ARIMA_PLUS_XREG returns NULL
+-- across it, and the model-free TVFs in ../../functions/time_series/
+-- (ML.TREND, ML.SEASONALITY, ML.DETECT_CHANGE_POINTS) gap-fill each series to
+-- its own span first -- which makes them report the gap's edges as change
+-- points. Know which one you are looking at before trusting a value inside a
+-- gap.
 
 
 -- =============================================================================

@@ -8,6 +8,12 @@
 --
 -- Full reference: ../../RESOURCES.md
 -- Official docs: https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-detect-anomalies
+--
+-- Looking for sustained level shifts rather than individual outlying points?
+-- See ../../../bq-ml/functions/time_series/ -- ML.DETECT_CHANGE_POINTS finds
+-- structural change windows with no model and no forecast baseline. A spike
+-- that returns to normal is an anomaly, not a change point; a permanent step
+-- up in volume is a change point that may never register as an anomaly.
 
 
 -- =============================================================================
