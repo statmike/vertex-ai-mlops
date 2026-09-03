@@ -429,3 +429,94 @@ ORDER BY rank_vector;
 --   distance_type = 'COSINE',
 --   lexical_search_columns = ['product', 'description']
 -- );
+
+
+-- =============================================================================
+-- Example 10: Managing an index — coverage, drift, and rebuild
+-- =============================================================================
+-- Creating an index is not managing one. Three signals describe an index's
+-- health and they move INDEPENDENTLY. All values below were measured against a
+-- live 7,275-row TREE_AH hybrid index (see workflows/catalog_search/, which
+-- runs one at real scale); the statements are left as reference rather than
+-- run here because the sample table above is under the 5,000-row floor.
+--
+--   coverage_percentage / unindexed_row_count  how much of the base table the
+--     (INFORMATION_SCHEMA.VECTOR_INDEXES)      index currently covers
+--   tfdv_drift                                 how far the VECTOR DISTRIBUTION
+--     (VECTOR_INDEX.STATISTICS)                has moved since the build
+--   last_model_build_time                      when the TreeAH model itself was
+--     (INFORMATION_SCHEMA.VECTOR_INDEXES)      built -- NOT last_refresh_time
+
+-- (a) Coverage and freshness. last_index_alteration_info is a RECORD and stays
+-- NULL until an ALTER succeeds; bq cannot render it with --format=csv.
+SELECT
+  index_name,
+  index_status,
+  coverage_percentage,
+  unindexed_row_count,
+  last_refresh_time,
+  last_model_build_time,
+  disable_reason
+FROM `PROJECT_ID.DATASET.INFORMATION_SCHEMA.VECTOR_INDEXES`
+WHERE table_name = 'catalog_products';
+
+-- (b) Drift. GOTCHA (measured): VECTOR_INDEX.STATISTICS takes EXACTLY ONE
+-- argument and it must be a relation. Adding the index name as a second
+-- argument fails with "Signature accepts at most 1 argument, found 2
+-- arguments"; passing a string instead of TABLE t fails with "argument 1 must
+-- be a relation (i.e. table subquery)". It returns a single column,
+-- tfdv_drift: NULL until the first refresh, "0.0" at fresh 100% coverage.
+-- On a table carrying NO index it returns ZERO ROWS rather than an error, and
+-- scans 0 bytes -- safe to call unconditionally, including on the sample table.
+--
+-- A NEGATIVE tfdv_drift is a sentinel, not a magnitude. Two freshly built
+-- indexes at 100% coverage reported different things: "0.0" from an
+-- unpartitioned hybrid index, -1.0 from a PARTITION BY index with no
+-- lexical_search_columns. Those differ in more than one way, so this does not
+-- isolate a cause. Read a negative value as "no drift figure available yet" and
+-- corroborate with coverage_percentage and last_refresh_time.
+SELECT *
+FROM VECTOR_INDEX.STATISTICS(TABLE `PROJECT_ID.DATASET.catalog_products`);
+
+-- (c) Why you need both numbers. Inserting 11,780 rows whose vectors duplicate
+-- ones already indexed (7,275 -> 19,055 rows) moved these three signals in
+-- completely different directions -- verified:
+--
+--     coverage_percentage    100  ->  38
+--     unindexed_row_count      0  ->  11,780
+--     tfdv_drift             0.0  ->  1.97e-5      (essentially unchanged)
+--     last_model_build_time  unchanged, across six 90-second polls
+--
+-- A large volume of NEW BUT DISTRIBUTIONALLY IDENTICAL rows is a coverage
+-- problem, not a drift problem. Coverage recovers on the automatic refresh;
+-- drift is the signal that argues for a rebuild.
+
+-- (d) Rebuild. GOTCHA (measured): this statement requires a BACKGROUND
+-- reservation. On a project billed purely on demand it is rejected outright:
+--   "Cannot alter vector index on table catalog_products because there is no
+--    BACKGROUND reservation."
+-- The check fires BEFORE validation, so this statement cannot even be dry-run:
+-- --dry_run returns the same reservation error instead of "Query successfully
+-- validated", even when the named index does not exist. Index MAINTENANCE runs
+-- as background work and background work needs slots assigned to it. Creating
+-- the index, populating it and querying through it all work with no
+-- reservation -- only the ALTER path is gated. To run this you
+-- need an Enterprise-edition reservation with a BACKGROUND job-type
+-- assignment; an autoscale reservation with baseline 0 bills only while the
+-- rebuild is actually running. The same gate applies to ALTER SEARCH INDEX --
+-- see functions/ai_search/.
+-- ALTER VECTOR INDEX catalog_products_hybrid_index
+-- ON `PROJECT_ID.DATASET.catalog_products`
+-- REBUILD;
+
+-- (e) PARTITION BY. GOTCHA (measured): the index's PARTITION BY expression must
+-- MATCH THE BASE TABLE'S PARTITIONING EXACTLY -- it does not let you choose a
+-- different partitioning for the index. Against a table partitioned by
+-- RANGE_BUCKET(id, GENERATE_ARRAY(0, 30000, 5000)), repeating that expression
+-- validates, while PARTITION BY on any other column fails with "Invalid
+-- Partition By expression" -- as does naming a column on a table that is not
+-- partitioned at all.
+-- CREATE VECTOR INDEX catalog_products_partitioned_index
+-- ON `PROJECT_ID.DATASET.catalog_products`(embedding)
+-- PARTITION BY RANGE_BUCKET(id, GENERATE_ARRAY(0, 30000, 5000))
+-- OPTIONS (index_type = 'TREE_AH', distance_type = 'COSINE');

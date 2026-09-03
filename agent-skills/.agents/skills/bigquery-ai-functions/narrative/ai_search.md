@@ -353,6 +353,64 @@ Nor on a field of it — `ON tbl(content_embedding.result)` returns `CREATE VECT
 
 **The practical consequence:** on an `AI.SEARCH` base table today, `AUTO` is always semantic-only and `HYBRID` must be asked for by name. To get an *indexed* hybrid search, project `content_embedding.result` into a second table as a plain `ARRAY<FLOAT64>` column, build the hybrid index there, and query it with `VECTOR_SEARCH` — the `workflows/catalog_search` (Catalog Search) workflow builds that two-table design end to end.
 
+### 7. `CREATE SEARCH INDEX` and `ALTER SEARCH INDEX` — the other index type
+
+A **search index** is a different object from the vector index discussed above: it powers the `SEARCH()` function over text, not `VECTOR_SEARCH`. This project creates none, and the reason is a measured size gate worth knowing before you plan around one.
+
+**`CREATE SEARCH INDEX` succeeds on a small table — and then the index never populates.** `INFORMATION_SCHEMA.SEARCH_INDEXES` reports `index_status` `TEMPORARILY DISABLED`, `coverage_percentage` 0, `disable_time` equal to `creation_time`, and this `disable_reason` (measured on a 19,055-row table):
+
+> The base table size is below the threshold of 10737418240 bytes for indexing. The index does not provide noticeable search performance gains when the base table is too small.
+
+10,737,418,240 bytes is exactly **10 GiB** — against the vector index's 5,000-row hard reject and ~10 MB population gate. Nothing at teaching scale clears it, which is why hybrid search here rides on `lexical_search_columns` on a vector index instead.
+
+```sql
+CREATE SEARCH INDEX ai_search_kb_index
+ON `PROJECT_ID.DATASET.some_large_table`(name, brand, category)
+OPTIONS (analyzer = 'LOG_ANALYZER');
+```
+
+**The recorded `ddl` is normalized, not a verbatim echo.** The statement above comes back from `SEARCH_INDEXES.ddl` as `OPTIONS (data_types = ['STRING'])`, with the analyzer surfaced in the separate `analyzer` column.
+
+**Both `ALTER` forms require a BACKGROUND reservation.** With no reservation on the project each is rejected outright:
+
+```
+Cannot alter search index on table some_large_table because there is no BACKGROUND reservation.
+```
+
+This is the same gate that blocks `ALTER VECTOR INDEX ... REBUILD` — see `functions/vector_search` (`functions/vector_search/`) section 10. Index **maintenance** runs as background work, and background work needs slots assigned to it. The check fires *before* validation, so neither statement can even be dry-run: `--dry_run` returns the same reservation error rather than `Query successfully validated`, even when the named index does not exist. Creating an index is not gated — only altering one. Running these needs an Enterprise-edition reservation with a `BACKGROUND` job-type assignment; an autoscale reservation with baseline 0 bills only while the alteration runs.
+
+```sql
+-- Both require a BACKGROUND reservation; not run here
+ALTER SEARCH INDEX ai_search_kb_index
+ON `PROJECT_ID.DATASET.some_large_table`
+SET OPTIONS (analyzer = 'NO_OP_ANALYZER');
+
+ALTER SEARCH INDEX ai_search_kb_index
+ON `PROJECT_ID.DATASET.some_large_table`
+ADD COLUMN sku;
+```
+
+Reading what an index covers is not gated at all — the cell below runs cleanly with no reservation, and returns zero rows here because this dataset carries no search index.
+
+```python
+# Inspecting search indexes needs no reservation. Zero rows is the expected
+# result in this dataset — nothing here clears the 10 GiB threshold.
+indexes = f'''
+SELECT index_name, table_name, index_status, coverage_percentage,
+       analyzer, disable_reason, last_refresh_time
+FROM `{PROJECT_ID}.{DATASET_ID}.INFORMATION_SCHEMA.SEARCH_INDEXES`
+'''
+df = client.query(indexes).to_dataframe()
+print(f'search indexes in {DATASET_ID}: {len(df)}')
+display(df)
+
+columns = f'''
+SELECT index_name, table_name, index_column_name, index_field_path
+FROM `{PROJECT_ID}.{DATASET_ID}.INFORMATION_SCHEMA.SEARCH_INDEX_COLUMNS`
+'''
+display(client.query(columns).to_dataframe())
+```
+
 ---
 ## Examples — `%%bigquery` Magics
 

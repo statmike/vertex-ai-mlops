@@ -532,6 +532,81 @@ client.query(ddl, job_config=bigquery.QueryJobConfig(dry_run=True))
 print('DDL validated — no index created')
 ```
 
+### 10. Managing an index — coverage, drift, and rebuild
+
+Creating an index is not managing one. Three signals describe an index's health, and they move **independently**:
+
+| Signal | Where to read it | What it actually means |
+|---|---|---|
+| `coverage_percentage`, `unindexed_row_count` | `INFORMATION_SCHEMA.VECTOR_INDEXES` | how much of the base table the index currently covers |
+| `tfdv_drift` | `VECTOR_INDEX.STATISTICS(TABLE t)` | how far the *vector distribution* has moved since the build |
+| `last_model_build_time` | `INFORMATION_SCHEMA.VECTOR_INDEXES` | when the TreeAH model itself was built — **not** `last_refresh_time` |
+
+**`VECTOR_INDEX.STATISTICS` takes exactly one argument, and it must be a relation.** Adding the index name as a second argument fails with `Signature accepts at most 1 argument, found 2 arguments`; passing a string instead of `TABLE t` fails with `argument 1 must be a relation (i.e. table subquery)`. It returns a single column, `tfdv_drift` — `null` until the index's first refresh, `"0.0"` at fresh 100% coverage. On a table with **no** index it returns zero rows rather than an error and scans 0 bytes, which is what the cell below shows against this notebook's sample table.
+
+**A negative `tfdv_drift` is a sentinel, not a magnitude.** Two freshly built indexes at 100% coverage reported different things: `"0.0"` from an unpartitioned hybrid index, and `-1.0` from a `PARTITION BY` index with no `lexical_search_columns`. Those two differ in more than one way, so this does not isolate a cause. Read a negative value as *no drift figure available for this index yet* and corroborate with `coverage_percentage` and `last_refresh_time` before acting on it.
+
+**Coverage and drift are not the same alarm.** Measured against a live 7,275-row `TREE_AH` hybrid index (the kind `workflows/catalog_search` (`workflows/catalog_search/`) runs at real scale), inserting 11,780 rows whose vectors duplicate ones already indexed — 7,275 → 19,055 rows — moved the three signals in completely different directions:
+
+| | before | after |
+|---|---|---|
+| `coverage_percentage` | 100 | **38** |
+| `unindexed_row_count` | 0 | **11,780** |
+| `tfdv_drift` | `0.0` | `1.97e-5` (essentially unchanged) |
+| `last_model_build_time` | 03:14:31 | 03:14:31 (unchanged, across six 90-second polls) |
+
+A large volume of *new but distributionally identical* rows is a **coverage** problem, not a drift problem. Coverage recovers on the automatic refresh; drift is the signal that argues for a rebuild.
+
+**`ALTER VECTOR INDEX ... REBUILD` requires a BACKGROUND reservation.** With no reservation on the project it is rejected outright:
+
+```
+Cannot alter vector index on table catalog_products because there is no BACKGROUND reservation.
+```
+
+The check fires *before* validation, so the statement cannot even be dry-run — `--dry_run` returns the same error rather than `Query successfully validated`, even when the named index does not exist. That is why there is no dry-run cell for it here, unlike section 9. Index **maintenance** runs as background work and background work needs slots assigned to it; creating an index, populating it, and querying through it all work with no reservation at all. Running the rebuild needs an Enterprise-edition reservation carrying a `BACKGROUND` job-type assignment — an autoscale reservation with baseline 0 is the cheap shape, billing only while the rebuild runs. The identical gate covers `ALTER SEARCH INDEX` (see `functions/ai_search` (`functions/ai_search/`)).
+
+```sql
+-- Requires a BACKGROUND reservation; not run here
+ALTER VECTOR INDEX catalog_products_hybrid_index
+ON `PROJECT_ID.DATASET.catalog_products`
+REBUILD;
+```
+
+**`PARTITION BY` must match the base table's partitioning exactly.** The clause does not let you choose a different partitioning for the index. Against a table partitioned by `RANGE_BUCKET(id, GENERATE_ARRAY(0, 30000, 5000))`, repeating that expression validates; naming any other column fails with `Invalid Partition By expression` — as does naming a column on a table that is not partitioned at all.
+
+One more field worth knowing: `last_index_alteration_info` stays `null` until an `ALTER` succeeds, and it is a `RECORD`, so `bq query --format=csv` refuses to print it (`Cannot print record field ... in CSV format`). Use `--format=prettyjson`, or read it through the client library as below.
+
+```python
+# Both queries below are safe on any table — including one with no index at all.
+
+# (a) Coverage and freshness for every vector index in the dataset.
+#     last_index_alteration_info is a RECORD and stays NULL until an ALTER succeeds.
+inventory = f'''
+SELECT
+  table_name,
+  index_name,
+  index_status,
+  coverage_percentage,
+  unindexed_row_count,
+  last_refresh_time,
+  last_model_build_time,
+  disable_reason
+FROM `{PROJECT_ID}.{DATASET_ID}.INFORMATION_SCHEMA.VECTOR_INDEXES`
+'''
+df = client.query(inventory).to_dataframe()
+print(f'vector indexes in {DATASET_ID}: {len(df)}')
+display(df)
+
+# (b) Drift. Zero rows here is the expected result — the sample table carries no
+#     index, and STATISTICS reports per index, not per table.
+stats = f'''
+SELECT * FROM VECTOR_INDEX.STATISTICS(TABLE `{PROJECT_ID}.{DATASET_ID}.vector_search_products`)
+'''
+drift = client.query(stats).to_dataframe()
+print(f'\nVECTOR_INDEX.STATISTICS rows: {len(drift)} (0 = no index on this table, not an error)')
+display(drift)
+```
+
 ---
 ## Examples — `%%bigquery` Magics
 

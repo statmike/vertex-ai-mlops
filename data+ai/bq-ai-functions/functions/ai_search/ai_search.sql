@@ -206,3 +206,64 @@ ORDER BY search_mode, distance;
 -- HYBRID must be requested by name. For an indexed hybrid search, project
 -- content_embedding.result into a second table as a plain ARRAY<FLOAT64>
 -- column, index that table, and query it with VECTOR_SEARCH.
+
+
+-- =============================================================================
+-- Reference: CREATE SEARCH INDEX and ALTER SEARCH INDEX — the other index type
+-- =============================================================================
+-- A SEARCH index is a different object from the vector index above: it powers
+-- the SEARCH() function over text, not VECTOR_SEARCH. This project creates
+-- none, and the reason is a measured size gate.
+--
+-- CREATE SEARCH INDEX SUCCEEDS on a small table -- and then the index never
+-- populates. INFORMATION_SCHEMA.SEARCH_INDEXES reports index_status
+-- 'TEMPORARILY DISABLED', coverage_percentage 0, disable_time equal to
+-- creation_time, and this disable_reason (verified 2026-09-03 on a
+-- 19,055-row table):
+--   "The base table size is below the threshold of 10737418240 bytes for
+--    indexing. The index does not provide noticeable search performance gains
+--    when the base table is too small."
+-- 10,737,418,240 bytes is exactly 10 GiB -- against the vector index's
+-- 5,000-row hard reject and ~10 MB population gate. Nothing at teaching scale
+-- clears it, which is why hybrid search here uses lexical_search_columns on a
+-- vector index instead.
+--
+-- CREATE SEARCH INDEX ai_search_kb_index
+-- ON `PROJECT_ID.DATASET.some_large_table`(name, brand, category)
+-- OPTIONS (analyzer = 'LOG_ANALYZER');
+--
+-- GOTCHA (measured): the ddl column of SEARCH_INDEXES is normalized, not a
+-- verbatim echo of what you ran. The statement above is recorded as
+--   OPTIONS (data_types = ['STRING'])
+-- with the analyzer surfaced in the separate `analyzer` column.
+--
+-- GOTCHA (measured): both ALTER forms require a BACKGROUND reservation. With
+-- no reservation on the project each is rejected outright:
+--   "Cannot alter search index on table some_large_table because there is no
+--    BACKGROUND reservation."
+-- This is the same gate that blocks ALTER VECTOR INDEX ... REBUILD (see
+-- functions/vector_search/ Example 10): index MAINTENANCE runs as background
+-- work, and background work needs slots assigned to it. The check fires BEFORE
+-- validation, so neither statement can even be dry-run -- --dry_run returns the
+-- same reservation error instead of "Query successfully validated", even when
+-- the named index does not exist. Creating the index is
+-- not gated -- only altering it. Running these requires an Enterprise-edition
+-- reservation with a BACKGROUND job-type assignment; an autoscale reservation
+-- with baseline 0 bills only while the alteration actually runs.
+--
+-- ALTER SEARCH INDEX ai_search_kb_index
+-- ON `PROJECT_ID.DATASET.some_large_table`
+-- SET OPTIONS (analyzer = 'NO_OP_ANALYZER');
+--
+-- ALTER SEARCH INDEX ai_search_kb_index
+-- ON `PROJECT_ID.DATASET.some_large_table`
+-- ADD COLUMN sku;
+--
+-- Inspect what an index covers without altering it -- these read cleanly with
+-- no reservation:
+-- SELECT index_name, index_status, coverage_percentage, analyzer,
+--        disable_reason, last_refresh_time
+-- FROM `PROJECT_ID.DATASET.INFORMATION_SCHEMA.SEARCH_INDEXES`;
+--
+-- SELECT index_name, index_column_name, index_field_path
+-- FROM `PROJECT_ID.DATASET.INFORMATION_SCHEMA.SEARCH_INDEX_COLUMNS`;

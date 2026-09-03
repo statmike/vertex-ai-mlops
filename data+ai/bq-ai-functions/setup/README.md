@@ -57,6 +57,7 @@ Individual function notebooks include inline setup cells — this page provides 
 - [Object Tables](#object-tables)
 - [Document AI Processors](#document-ai-processors)
 - [Autonomous Embedding Generation](#autonomous-embedding-generation)
+- [Managing an Index](#managing-an-index)
 
 ---
 
@@ -398,6 +399,7 @@ The user needs:
 | Create connections | `roles/bigquery.connectionAdmin` |
 | Create models | `roles/bigquery.dataEditor` on the dataset |
 | Create vector indexes | `roles/bigquery.dataEditor` on the dataset |
+| **Alter** vector or search indexes | An Enterprise-edition reservation with a `BACKGROUND` job-type assignment — see [Managing an index](#managing-an-index) |
 | Use `BLOCK_NONE` safety setting | Restricted access — requires allowlisting |
 
 ---
@@ -538,6 +540,8 @@ CREATE VECTOR INDEX my_index
   );
 ```
 
+> **Two size gates apply.** `CREATE VECTOR INDEX` is rejected outright below **5,000 rows**, and once created, population does not begin until the base table exceeds roughly **10 MB**. Below that the index sits at `coverage_percentage` 0 and queries silently fall back to brute force. See [Managing an index](#managing-an-index).
+
 3. **Use AI.SEARCH** to query:
 
 ```sql
@@ -557,3 +561,55 @@ FROM AI.SEARCH(
 - Rows without completed embeddings are skipped during search.
 - The connection used for embedding generation must have the Vertex AI User role.
 - When using `AI.SEARCH`, the search query text is embedded at runtime using the same model and connection configured on the table.
+
+---
+
+## Managing an Index
+
+Creating an index and managing one need different things from your project. **Creating** a vector index, letting it populate, and querying through it all work on plain on-demand billing. **Altering** one does not.
+
+### Reading index state — no reservation needed
+
+| What you want | Where to read it |
+|---|---|
+| Coverage, staleness, why an index is disabled | `INFORMATION_SCHEMA.VECTOR_INDEXES` / `INFORMATION_SCHEMA.SEARCH_INDEXES` |
+| Which columns an index covers | `INFORMATION_SCHEMA.VECTOR_INDEX_COLUMNS` / `INFORMATION_SCHEMA.SEARCH_INDEX_COLUMNS` |
+| Vector distribution drift | `VECTOR_INDEX.STATISTICS(TABLE my_table)` |
+
+`VECTOR_INDEX.STATISTICS` takes **exactly one argument**, and it must be a relation — `TABLE my_table`, not the index name and not a string. It returns a single column, `tfdv_drift`, and returns **zero rows** (not an error, 0 bytes scanned) on a table with no index, so it is safe to call unconditionally.
+
+Coverage and drift are **different alarms**. A large batch of new rows whose vectors resemble what is already indexed will collapse `coverage_percentage` while barely moving `tfdv_drift` — that is a coverage problem, resolved by the automatic refresh, not a reason to rebuild. `last_model_build_time` is a third signal again, distinct from `last_refresh_time`.
+
+One field to know about: `last_index_alteration_info` is a `RECORD` and stays `null` until an `ALTER` succeeds. `bq query --format=csv` refuses to print it — use `--format=prettyjson`.
+
+### Altering an index — requires a BACKGROUND reservation
+
+`ALTER VECTOR INDEX ... REBUILD`, `ALTER SEARCH INDEX ... SET OPTIONS (...)` and `ALTER SEARCH INDEX ... ADD COLUMN` all fail on a project with no reservation:
+
+```
+Cannot alter vector index on table my_table because there is no BACKGROUND reservation.
+```
+
+Index *maintenance* runs as background work, and background work needs slots assigned to it. The check fires **before** validation, so these statements cannot even be dry-run — `--dry_run` returns the same error rather than `Query successfully validated`, even when the named index does not exist.
+
+To enable them you need an **Enterprise-edition reservation with a `BACKGROUND` job-type assignment**. An autoscale reservation with baseline 0 is the cheap shape: it bills only while the alteration is actually running.
+
+```bash
+bq mk --location=US --reservation --edition=ENTERPRISE \
+  --slots=0 --autoscale_max_slots=50 my-background-res
+
+bq mk --location=US --reservation_assignment \
+  --reservation_id=PROJECT_ID:US.my-background-res \
+  --job_type=BACKGROUND --assignee_type=PROJECT --assignee_id=PROJECT_ID
+```
+
+Reservation IDs accept lowercase alphanumerics and dashes only — **no underscores**.
+
+### Size gates, by index type
+
+| Index type | Gate |
+|---|---|
+| Vector | `CREATE` rejected below **5,000 rows**; population waits for roughly **10 MB** |
+| Search | `CREATE` succeeds at any size, but the index stays `TEMPORARILY DISABLED` until the base table passes **10 GiB** (`10737418240` bytes) |
+
+A search index on a small table is not an error you will see at `CREATE` time — it shows up later as `index_status` `TEMPORARILY DISABLED` with `coverage_percentage` 0 and a `disable_reason` naming the threshold. Because nothing at demonstration scale clears 10 GiB, this project uses `lexical_search_columns` on a vector index for keyword matching rather than a search index.
