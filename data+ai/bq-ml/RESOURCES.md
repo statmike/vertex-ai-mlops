@@ -386,12 +386,12 @@ SELECT * EXCEPT(id_col) FROM `PROJECT_ID.DATASET.TABLE`;
 **BigFrames API:** `bigframes.ml.ensemble.XGBClassifier` / `bigframes.ml.ensemble.XGBRegressor` — `model = XGBClassifier(); model.fit(X, y); model.predict(X)`. **Verified: the constructor has no `class_weight`/`auto_class_weights` parameter** (checked the installed signature directly — `n_estimators`, `booster`, `max_depth`, `learning_rate`, `reg_alpha`/`reg_lambda`, etc., but no class-weighting option), unlike `bigframes.ml.linear_model.LogisticRegression` which exposes sklearn-style `class_weight`. A BigFrames `XGBClassifier` trained on an imbalanced label with no manual reweighting will not match a SQL `BOOSTED_TREE_CLASSIFIER` trained with `auto_class_weights = TRUE` — expect higher precision / lower recall from the unweighted BigFrames model, not a bug.
 
 **Repo example (tested):**
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` + notebook — `BOOSTED_TREE_CLASSIFIER` on `census_adult_income` (same data/label as `models/logistic_regression/`, for direct technique comparison), with the full lifecycle incl. the tree-visualization step (`EXPORT MODEL` → `xgboost.plot_tree()`).
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/boosted_tree_regressor/boosted_tree_regressor.sql` + notebook — `BOOSTED_TREE_REGRESSOR` on `penguins`/`body_mass_g` (same data/label as `models/linear_regression/`); `r2_score` 0.983 vs. `RANDOM_FOREST_REGRESSOR`'s 0.922 and linear regression's 0.875 on identical data. `TRANSFORM` uses `ML.LABEL_ENCODER`. Same tree-visualization step; the `reg:linear` deprecation warning on load is a `0.9`-era artifact and is gone at `xgboost_version = '2.1'` (see gotcha above).
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/workflows/regression_based_forecasting/regression_based_forecasting.ipynb` — 28 `BOOSTED_TREE_REGRESSOR` models (one per forecast horizon day, direct multi-step forecasting) trained concurrently in batches to work around the per-model training-time GOTCHA above; got the best MAPE of any technique in that notebook's comparison, including the `ARIMA_PLUS` reference, despite a worse MAE/RMSE.
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/workflows/embeddings_classification/embeddings_classification.ipynb` — 3 `BOOSTED_TREE_CLASSIFIER` models trained on a ~1M-row (product × hierarchy-node) table with `AI.EMBED`-generated 256-dim embeddings passed as `ARRAY<FLOAT64>` feature columns directly (verified: no unnesting needed); demonstrates the real-data-scale training-time finding above (19-40 min/model, not the ~270s trivial-data floor) and that raw `ML.EVALUATE` metrics don't always rank models the same way as an applied top-1 resolution accuracy computed via `ML.PREDICT` + `UNNEST`/`QUALIFY`. Also includes two baselines that outperform this whole pairwise approach: a direct multiclass `BOOSTED_TREE_CLASSIFIER` (no cross-join, trains in minutes not tens of minutes, ~69-70% category accuracy vs. the pairwise approach's ~42-48%) and a zero-training `VECTOR_SEARCH` lookup (~52% category accuracy) — **verified `VECTOR_SEARCH` needs no vector index at small scale (38 hierarchy nodes)**, it silently falls back to an exact brute-force scan; a two-stage hierarchical resolution pattern (nearest department first, then nearest category filtered to that department's children via `WHERE base.hierarchy_node_parent = query.pred_department`) mirrors the `ML.PREDICT`-based resolution used for the classifiers, but with zero training cost. A real gotcha hit while building this: `top_k` on the second-stage `VECTOR_SEARCH` call must cover *all* candidate nodes (not just a small top-k like 5), since filtering by parent happens *after* `top_k` truncation — a small `top_k` can silently drop products whose true category isn't among the globally-nearest few before the parent filter ever runs.
-- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — `BOOSTED_TREE_CLASSIFIER` on imbalanced fraud data with `auto_class_weights`, `data_split_method='CUSTOM'`, `enable_global_explain`, Vertex AI registration; then `ML.EVALUATE`, `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, `ML.FEATURE_IMPORTANCE`, `EXPORT MODEL` (produces `model.bst` XGBoost artifact), and Vertex AI Endpoint serving.
-- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - Create Model With Transpose.ipynb` — `BOOSTED_TREE_REGRESSOR` with an inline `TRANSFORM` clause (`ML.LABEL_ENCODER`, scalers, date `EXTRACT`), `num_parallel_tree=25`, `l1_reg`/`l2_reg`; shows `TRANSFORM` traveling into the exported `/model` + `/model/transform` artifacts and Vertex AI serving.
+- `data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` + notebook — `BOOSTED_TREE_CLASSIFIER` on `census_adult_income` (same data/label as `models/logistic_regression/`, for direct technique comparison), with the full lifecycle incl. the tree-visualization step (`EXPORT MODEL` → `xgboost.plot_tree()`).
+- `data+ai/bq-ml/models/boosted_tree_regressor/boosted_tree_regressor.sql` + notebook — `BOOSTED_TREE_REGRESSOR` on `penguins`/`body_mass_g` (same data/label as `models/linear_regression/`); `r2_score` 0.983 vs. `RANDOM_FOREST_REGRESSOR`'s 0.922 and linear regression's 0.875 on identical data. `TRANSFORM` uses `ML.LABEL_ENCODER`. Same tree-visualization step; the `reg:linear` deprecation warning on load is a `0.9`-era artifact and is gone at `xgboost_version = '2.1'` (see gotcha above).
+- `data+ai/bq-ml/workflows/regression_based_forecasting/regression_based_forecasting.ipynb` — 28 `BOOSTED_TREE_REGRESSOR` models (one per forecast horizon day, direct multi-step forecasting) trained concurrently in batches to work around the per-model training-time GOTCHA above; got the best MAPE of any technique in that notebook's comparison, including the `ARIMA_PLUS` reference, despite a worse MAE/RMSE.
+- `data+ai/bq-ml/workflows/embeddings_classification/embeddings_classification.ipynb` — 3 `BOOSTED_TREE_CLASSIFIER` models trained on a ~1M-row (product × hierarchy-node) table with `AI.EMBED`-generated 256-dim embeddings passed as `ARRAY<FLOAT64>` feature columns directly (verified: no unnesting needed); demonstrates the real-data-scale training-time finding above (19-40 min/model, not the ~270s trivial-data floor) and that raw `ML.EVALUATE` metrics don't always rank models the same way as an applied top-1 resolution accuracy computed via `ML.PREDICT` + `UNNEST`/`QUALIFY`. Also includes two baselines that outperform this whole pairwise approach: a direct multiclass `BOOSTED_TREE_CLASSIFIER` (no cross-join, trains in minutes not tens of minutes, ~69-70% category accuracy vs. the pairwise approach's ~42-48%) and a zero-training `VECTOR_SEARCH` lookup (~52% category accuracy) — **verified `VECTOR_SEARCH` needs no vector index at small scale (38 hierarchy nodes)**, it silently falls back to an exact brute-force scan; a two-stage hierarchical resolution pattern (nearest department first, then nearest category filtered to that department's children via `WHERE base.hierarchy_node_parent = query.pred_department`) mirrors the `ML.PREDICT`-based resolution used for the classifiers, but with zero training cost. A real gotcha hit while building this: `top_k` on the second-stage `VECTOR_SEARCH` call must cover *all* candidate nodes (not just a small top-k like 5), since filtering by parent happens *after* `top_k` truncation — a small `top_k` can silently drop products whose true category isn't among the globally-nearest few before the parent filter ever runs.
+- `03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — `BOOSTED_TREE_CLASSIFIER` on imbalanced fraud data with `auto_class_weights`, `data_split_method='CUSTOM'`, `enable_global_explain`, Vertex AI registration; then `ML.EVALUATE`, `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, `ML.FEATURE_IMPORTANCE`, `EXPORT MODEL` (produces `model.bst` XGBoost artifact), and Vertex AI Endpoint serving.
+- `03 - BigQuery ML (BQML)/BQML Feature Engineering - Create Model With Transpose.ipynb` — `BOOSTED_TREE_REGRESSOR` with an inline `TRANSFORM` clause (`ML.LABEL_ENCODER`, scalers, date `EXTRACT`), `num_parallel_tree=25`, `l1_reg`/`l2_reg`; shows `TRANSFORM` traveling into the exported `/model` + `/model/transform` artifacts and Vertex AI serving.
 
 
 ---
@@ -509,10 +509,10 @@ FROM `PROJECT_ID.DATASET.TRAINING_TABLE`;
 **BigFrames API:** `bigframes.ml.ensemble.RandomForestClassifier` / `bigframes.ml.ensemble.RandomForestRegressor` — `.fit(X, y)` / `.predict()` / `.score()`; integrates with `bigframes.ml.pipeline` for TRANSFORM-equivalent preprocessing. **Verified: `RandomForestClassifier` has no `class_weight`/`auto_class_weights` parameter** (checked the installed signature directly — same gap as `XGBClassifier`), unlike `LogisticRegression`. A BigFrames comparison against a SQL model trained with `auto_class_weights = TRUE` is not apples-to-apples.
 
 **Repo example (tested):**
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/random_forest_classifier/random_forest_classifier.sql` + notebook — `RANDOM_FOREST_CLASSIFIER` on `census_adult_income` (same data/label as `logistic_regression`/`boosted_tree_classifier`, for a three-way technique comparison), incl. a dedicated shallow illustrative forest for tree visualization.
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/random_forest_regressor/random_forest_regressor.sql` + notebook — `RANDOM_FOREST_REGRESSOR` on `penguins`/`body_mass_g` (same data/label as `linear_regression`/`boosted_tree_regressor`); the `xgboost_version` sensitivity (`r2_score` ≈ 0.92 at `2.1` vs. ≈ 0.74 at the `0.9` default, 2,482 vs. 82 splits) is measured and discussed directly in the notebook.
-- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03c - BQML Random Forest.ipynb` — full `RANDOM_FOREST_CLASSIFIER` workflow on the credit-card fraud table: `CREATE MODEL` with `num_parallel_tree=200`, `tree_method='HIST'`, `subsample=0.85`, `colsample_bytree=0.9`, `auto_class_weights=TRUE`, `enable_global_explain=TRUE`, `CUSTOM` split via a derived BOOL column; then `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE`, `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, `ML.FEATURE_IMPORTANCE`, Vertex AI registration + endpoint serving, and `EXPORT MODEL` (exports an XGBoost `model.bst`).
-- `/home/user/git/vertex-ai-mlops/MLOps/Model Monitoring/model_monitoring_job.sql` — `RANDOM_FOREST_CLASSIFIER` with `TRANSFORM(...)` preprocessing, `AUTO_CLASS_WEIGHTS=FALSE`, `NUM_PARALLEL_TREE=150`, used as the monitored/retrained model with `ML.VALIDATE_DATA_SKEW`, `ML.VALIDATE_DATA_DRIFT`, and `ML.EVALUATE` (reads `accuracy`).
+- `data+ai/bq-ml/models/random_forest_classifier/random_forest_classifier.sql` + notebook — `RANDOM_FOREST_CLASSIFIER` on `census_adult_income` (same data/label as `logistic_regression`/`boosted_tree_classifier`, for a three-way technique comparison), incl. a dedicated shallow illustrative forest for tree visualization.
+- `data+ai/bq-ml/models/random_forest_regressor/random_forest_regressor.sql` + notebook — `RANDOM_FOREST_REGRESSOR` on `penguins`/`body_mass_g` (same data/label as `linear_regression`/`boosted_tree_regressor`); the `xgboost_version` sensitivity (`r2_score` ≈ 0.92 at `2.1` vs. ≈ 0.74 at the `0.9` default, 2,482 vs. 82 splits) is measured and discussed directly in the notebook.
+- `03 - BigQuery ML (BQML)/03c - BQML Random Forest.ipynb` — full `RANDOM_FOREST_CLASSIFIER` workflow on the credit-card fraud table: `CREATE MODEL` with `num_parallel_tree=200`, `tree_method='HIST'`, `subsample=0.85`, `colsample_bytree=0.9`, `auto_class_weights=TRUE`, `enable_global_explain=TRUE`, `CUSTOM` split via a derived BOOL column; then `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE`, `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, `ML.FEATURE_IMPORTANCE`, Vertex AI registration + endpoint serving, and `EXPORT MODEL` (exports an XGBoost `model.bst`).
+- `MLOps/Model Monitoring/model_monitoring_job.sql` — `RANDOM_FOREST_CLASSIFIER` with `TRANSFORM(...)` preprocessing, `AUTO_CLASS_WEIGHTS=FALSE`, `NUM_PARALLEL_TREE=150`, used as the monitored/retrained model with `ML.VALIDATE_DATA_SKEW`, `ML.VALIDATE_DATA_DRIFT`, and `ML.EVALUATE` (reads `accuracy`).
 
 
 ---
@@ -617,7 +617,7 @@ SELECT * EXCEPT(id) FROM `PROJECT_ID.DATASET.TRAINING_TABLE`;
 
 **BigFrames API:** Verified (checked the live BigFrames API reference across every `bigframes.ml` module — `linear_model`, `ensemble`, `cluster`, `decomposition`, `forecasting`, `imported`, `llm`): **no first-class DNN/neural-network class exists anywhere in `bigframes.ml`**. This is a permanent gap, not a version-specific omission. `bigframes.ml.imported.TensorFlowModel` only *serves* an already-trained external TensorFlow model — it does not train a BQML `DNN_CLASSIFIER`/`DNN_REGRESSOR`. Use the SQL `CREATE MODEL` interface directly; there is no BigFrames comparison path for this model type.
 
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03d - BQML Deep Neural Network (DNN).ipynb` — end-to-end `DNN_CLASSIFIER` on the credit-card fraud table (`hidden_units=[64,32]`, `optimizer='SGD'`, `dropout=0.15`, `CUSTOM` split via a derived BOOL `custom_splits` column, `enable_global_explain=TRUE`, Vertex AI registry), covering `ML.TRAINING_INFO`, `ML.FEATURE_INFO`, `ML.EVALUATE`, `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, `EXPORT MODEL`, and Vertex AI Endpoint serving. Also see this project's own `models/dnn_classifier/` and `models/dnn_regressor/` for a from-scratch, fully pre-validated build on the same comparison datasets used by every other model type in this project.
+**Repo example (tested):** `03 - BigQuery ML (BQML)/03d - BQML Deep Neural Network (DNN).ipynb` — end-to-end `DNN_CLASSIFIER` on the credit-card fraud table (`hidden_units=[64,32]`, `optimizer='SGD'`, `dropout=0.15`, `CUSTOM` split via a derived BOOL `custom_splits` column, `enable_global_explain=TRUE`, Vertex AI registry), covering `ML.TRAINING_INFO`, `ML.FEATURE_INFO`, `ML.EVALUATE`, `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, `EXPORT MODEL`, and Vertex AI Endpoint serving. Also see this project's own `models/dnn_classifier/` and `models/dnn_regressor/` for a from-scratch, fully pre-validated build on the same comparison datasets used by every other model type in this project.
 
 
 ---
@@ -714,7 +714,7 @@ SELECT * FROM `PROJECT_ID.DATASET.TABLE`;
 
 **BigFrames API:** Verified (checked the live BigFrames API reference across every `bigframes.ml` module) — **no first-class wide-and-deep class exists anywhere in `bigframes.ml`**, same permanent gap as `DNN_CLASSIFIER`/`DNN_REGRESSOR`. Use the SQL `CREATE MODEL` interface directly.
 
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03e - BQML Wide-And-Deep Networks.ipynb` — trains `DNN_LINEAR_COMBINED_CLASSIFIER` on the credit-card fraud table with `hidden_units=[64,32]`, `optimizer='SGD'`, `dropout=0.05`, `CUSTOM` split, `enable_global_explain=TRUE`; then runs `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (precision/recall/accuracy/f1_score/log_loss/roc_auc), `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, Vertex AI Model Registry registration + endpoint deploy, and `EXPORT MODEL` (TensorFlow SavedModel). Also see this project's own `models/wide_and_deep_classifier/` and `models/wide_and_deep_regressor/` for a from-scratch, fully pre-validated build on the same comparison datasets used by every other model type in this project.
+**Repo example (tested):** `03 - BigQuery ML (BQML)/03e - BQML Wide-And-Deep Networks.ipynb` — trains `DNN_LINEAR_COMBINED_CLASSIFIER` on the credit-card fraud table with `hidden_units=[64,32]`, `optimizer='SGD'`, `dropout=0.05`, `CUSTOM` split, `enable_global_explain=TRUE`; then runs `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (precision/recall/accuracy/f1_score/log_loss/roc_auc), `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, Vertex AI Model Registry registration + endpoint deploy, and `EXPORT MODEL` (TensorFlow SavedModel). Also see this project's own `models/wide_and_deep_classifier/` and `models/wide_and_deep_regressor/` for a from-scratch, fully pre-validated build on the same comparison datasets used by every other model type in this project.
 
 
 ---
@@ -798,7 +798,7 @@ FROM `PROJECT_ID.DATASET.TRAINING_TABLE`;
 
 **BigFrames API:** Verified (checked the live BigFrames API reference across every `bigframes.ml` module: `linear_model`, `ensemble`, `cluster`, `decomposition`, `forecasting`, `imported`, `llm`) — **no first-class AutoML estimator class exists anywhere in `bigframes.ml`**, the same permanent gap as `DNN_CLASSIFIER`/`DNN_REGRESSOR`/wide-and-deep. Use the SQL `CREATE MODEL` interface directly.
 
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/02 - Vertex AI AutoML/BQML AutoML.ipynb` — trains an `AUTOML_CLASSIFIER` on the `fraud_prepped` table with `budget_hours = 1`, `optimization_objective = 'MAXIMIZE_AU_PRC'`, `input_label_cols = ['Class']`, and `data_split_col = 'splits'`; then runs `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (showing `precision`/`recall`/`accuracy`/`f1_score`/`log_loss`/`roc_auc`), `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, and `EXPORT MODEL` to GCS for Vertex AI Model Registry upload. Note: the run took ~1.51 hours wall-clock for a 1-hour budget, illustrating the compression overhead — **this project's own from-scratch builds took even longer** (`models/automl_classifier/`: 2.63 hours; `models/automl_regressor/`: 2.25 hours, both `budget_hours=1.0`, verified via `ML.TRAINING_INFO`'s `duration_ms`) — budget at least 2-3 hours wall-clock for a "1-hour" AutoML job, not ~1.5. Also see this project's own `models/automl_classifier/` (same `census_adult_income` data as the other classifiers) and `models/automl_regressor/` (a real `bigquery-public-data.samples.natality` regression, NOT the usual `penguins` — see the minimum-row-count limitation above) — both validated via `bq query --dry_run` (free syntax check) rather than a throwaway paid pre-validation run, given this model type's real dollar cost (~$21.25/node-hour).
+**Repo example (tested):** `02 - Vertex AI AutoML/BQML AutoML.ipynb` — trains an `AUTOML_CLASSIFIER` on the `fraud_prepped` table with `budget_hours = 1`, `optimization_objective = 'MAXIMIZE_AU_PRC'`, `input_label_cols = ['Class']`, and `data_split_col = 'splits'`; then runs `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (showing `precision`/`recall`/`accuracy`/`f1_score`/`log_loss`/`roc_auc`), `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, and `EXPORT MODEL` to GCS for Vertex AI Model Registry upload. Note: the run took ~1.51 hours wall-clock for a 1-hour budget, illustrating the compression overhead — **this project's own from-scratch builds took even longer** (`models/automl_classifier/`: 2.63 hours; `models/automl_regressor/`: 2.25 hours, both `budget_hours=1.0`, verified via `ML.TRAINING_INFO`'s `duration_ms`) — budget at least 2-3 hours wall-clock for a "1-hour" AutoML job, not ~1.5. Also see this project's own `models/automl_classifier/` (same `census_adult_income` data as the other classifiers) and `models/automl_regressor/` (a real `bigquery-public-data.samples.natality` regression, NOT the usual `penguins` — see the minimum-row-count limitation above) — both validated via `bq query --dry_run` (free syntax check) rather than a throwaway paid pre-validation run, given this model type's real dollar cost (~$21.25/node-hour).
 
 
 ---
@@ -880,7 +880,7 @@ HP-tuning-eligible option: `num_clusters` (use `HPARAM_RANGE`/`HPARAM_CANDIDATES
 
 **BigFrames API:** `bigframes.ml.cluster.KMeans` — e.g. `KMeans(n_clusters=4).fit(X)` then `.predict(X)`.
 
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03h - BQML k-means with Anomaly Detection.ipynb` — trains `KMEANS` on the fraud dataset with `num_clusters = HPARAM_RANGE(2, 100)`, `kmeans_init_method='KMEANS++'`, `distance_type='EUCLIDEAN'`, `standardize_features=TRUE`, tuned on `davies_bouldin_index` (20 trials); demonstrates `ML.EVALUATE`, `ML.CENTROIDS`, `ML.TRIAL_INFO`, `ML.FEATURE_INFO`, `ML.PREDICT`, `ML.DETECT_ANOMALIES` (with `contamination`), Vertex AI Model Registry registration, endpoint serving, and `EXPORT MODEL` (TensorFlow SavedModel).
+**Repo example (tested):** `03 - BigQuery ML (BQML)/03h - BQML k-means with Anomaly Detection.ipynb` — trains `KMEANS` on the fraud dataset with `num_clusters = HPARAM_RANGE(2, 100)`, `kmeans_init_method='KMEANS++'`, `distance_type='EUCLIDEAN'`, `standardize_features=TRUE`, tuned on `davies_bouldin_index` (20 trials); demonstrates `ML.EVALUATE`, `ML.CENTROIDS`, `ML.TRIAL_INFO`, `ML.FEATURE_INFO`, `ML.PREDICT`, `ML.DETECT_ANOMALIES` (with `contamination`), Vertex AI Model Registry registration, endpoint serving, and `EXPORT MODEL` (TensorFlow SavedModel).
 
 
 ---
@@ -963,7 +963,7 @@ You must specify **exactly one** of `num_principal_components` / `pca_explained_
 - **`ML.DETECT_ANOMALIES` requires the 3rd (input-data) argument for PCA**, same as `KMEANS` — see the general `ML.DETECT_ANOMALIES` entry.
 - **`ML.GENERATE_EMBEDDING` on a PCA model** wraps `ML.PREDICT`'s projection into a single `ml_generate_embedding_result` ARRAY<FLOAT> column; the array values match `ML.PREDICT`'s `principal_component_1`/`principal_component_2` columns exactly, in order.
 
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` — trains `model_type='PCA'` with `pca_explained_variance_ratio=0.90, scale_features=TRUE, pca_solver='AUTO'` on the credit-card `fraud_prepped` table; shows `ML.EVALUATE` (`total_explained_variance_ratio` ≈ 0.923), `ML.PRINCIPAL_COMPONENT_INFO`, `ML.PRINCIPAL_COMPONENTS`, `ML.PREDICT` (per-row component projections), `ML.DETECT_ANOMALIES` with `STRUCT(<train_fraud_rate> AS contamination)` for fraud detection, plus Vertex AI registry registration, endpoint deployment, and `EXPORT MODEL` (exports as a TensorFlow SavedModel).
+**Repo example (tested):** `03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` — trains `model_type='PCA'` with `pca_explained_variance_ratio=0.90, scale_features=TRUE, pca_solver='AUTO'` on the credit-card `fraud_prepped` table; shows `ML.EVALUATE` (`total_explained_variance_ratio` ≈ 0.923), `ML.PRINCIPAL_COMPONENT_INFO`, `ML.PRINCIPAL_COMPONENTS`, `ML.PREDICT` (per-row component projections), `ML.DETECT_ANOMALIES` with `STRUCT(<train_fraud_rate> AS contamination)` for fraud detection, plus Vertex AI registry registration, endpoint deployment, and `EXPORT MODEL` (exports as a TensorFlow SavedModel).
 
 **Repo example (tested):** `data+ai/bq-ml/workflows/anomaly_fraud_detection/anomaly_fraud_detection.ipynb` — trains `PCA` with `num_principal_components=10` on `bigquery-public-data.ml_datasets.ulb_fraud_detection` (the real ULB/Kaggle fraud dataset, 492 genuine fraud cases) and measures real precision/recall against the true `Class` label — the source of the `pca_explained_variance_ratio` non-determinism finding above; contrasts with `AUTOENCODER` and a supervised `BOOSTED_TREE_CLASSIFIER`.
 
@@ -1063,8 +1063,8 @@ HP-tuning options (used when `num_trials` set): `num_trials`, `max_parallel_tria
 - **Manually normalizing + `DOT_PRODUCT` is unnecessary** — `distance_type='COSINE'` on the raw `ML.GENERATE_EMBEDDING` output gives mathematically equivalent `VECTOR_SEARCH` rankings (verified: identical top-k neighbors, with distances that convert exactly via `COSINE = 1 - cosine_similarity` and `DOT_PRODUCT = -cosine_similarity` on unit vectors).
 
 **Repo example (tested):**
-- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` — full lifecycle: HP-tuned `AUTOENCODER` (`HPARAM_CANDIDATES`/`HPARAM_RANGE`, `num_trials=40`), `ML.FEATURE_INFO`, `ML.TRIAL_INFO`, `ML.EVALUATE`, `ML.RECONSTRUCTION_LOSS`, `ML.PREDICT` (latent_col_*), `ML.DETECT_ANOMALIES` for fraud, Vertex AI registry/endpoint serving, `EXPORT MODEL`.
-- `/home/user/git/vertex-ai-mlops/Applied GenAI/Embeddings/BQML Autoencoder As Table Embedding.ipynb` — single-config train, `ML.EVALUATE` per split, latent space as embeddings via `ML.PREDICT` and `ML.GENERATE_EMBEDDING`, `ML.NORMALIZER`, and `VECTOR_SEARCH` (IVF/TREE_AH index) for row similarity.
+- `03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` — full lifecycle: HP-tuned `AUTOENCODER` (`HPARAM_CANDIDATES`/`HPARAM_RANGE`, `num_trials=40`), `ML.FEATURE_INFO`, `ML.TRIAL_INFO`, `ML.EVALUATE`, `ML.RECONSTRUCTION_LOSS`, `ML.PREDICT` (latent_col_*), `ML.DETECT_ANOMALIES` for fraud, Vertex AI registry/endpoint serving, `EXPORT MODEL`.
+- `Applied GenAI/Embeddings/BQML Autoencoder As Table Embedding.ipynb` — single-config train, `ML.EVALUATE` per split, latent space as embeddings via `ML.PREDICT` and `ML.GENERATE_EMBEDDING`, `ML.NORMALIZER`, and `VECTOR_SEARCH` (IVF/TREE_AH index) for row similarity.
 - `data+ai/bq-ml/workflows/anomaly_fraud_detection/anomaly_fraud_detection.ipynb` — trains on the real ULB/Kaggle fraud dataset (`bigquery-public-data.ml_datasets.ulb_fraud_detection`, 492 genuine fraud cases) and measures real precision/recall against the true label — contrasts with `PCA` (comparable performance here, not dramatically different) and a supervised `BOOSTED_TREE_CLASSIFIER` (far higher recall).
 
 
@@ -1169,7 +1169,7 @@ The training query must produce three columns: a user column, an item column, an
 - **Retraining shows measurable variance, similar to `KMEANS`/`RANDOM_FOREST_*`.** Retraining the identical `CREATE OR REPLACE MODEL` statement (same name, same SQL) does not reproduce `mean_average_precision` exactly — observed 0.873 and 0.860 across two runs. Unlike `PCA` (fully deterministic) or the `DNN_*` family (bit-for-bit reproducible under a fixed name), matrix factorization's WALS training has real run-to-run variance.
 - **HP tuning produced a genuine, positive result in every run tested — though not with reproducible exact numbers.** 4 trials over `num_factors`/`l2_reg`/`wals_alpha` beat the untuned baseline both times, but the specific winning config and margin varied: one run's best trial reached `mean_average_precision=0.899` against a `0.860` baseline; a separate run's best trial reached `0.915` against a `0.873` baseline (same `num_factors`/`l2_reg`, a different `wals_alpha`). The qualitative finding — tuning beats the untuned baseline — held both times; the exact numbers didn't. A real contrast either way to `models/autoencoder/`'s equally-sized 4-trial search, which failed to beat its own untuned baseline at all.
 
-**Repo example (tested):** `models/matrix_factorization/` (this project) — full lifecycle on `bigquery-public-data.google_analytics_sample` (IMPLICIT feedback), including the temporary-reservation setup/teardown pattern. Also see [`/home/user/git/vertex-ai-mlops/02 - Vertex AI AutoML/BQML AutoML.ipynb`](/home/user/git/vertex-ai-mlops/02%20-%20Vertex%20AI%20AutoML/BQML%20AutoML.ipynb), which documents the BQML slot/job-type model and explicitly calls out that `model_type = 'MATRIX_FACTORIZATION'` is the exception that does **not** run on on-demand pricing (requires a flat-rate/reservation).
+**Repo example (tested):** `models/matrix_factorization/` (this project) — full lifecycle on `bigquery-public-data.google_analytics_sample` (IMPLICIT feedback), including the temporary-reservation setup/teardown pattern. Also see [`02 - Vertex AI AutoML/BQML AutoML.ipynb`](../../02%20-%20Vertex%20AI%20AutoML/BQML%20AutoML.ipynb), which documents the BQML slot/job-type model and explicitly calls out that `model_type = 'MATRIX_FACTORIZATION'` is the exception that does **not** run on on-demand pricing (requires a flat-rate/reservation).
 
 ---
 
@@ -1353,10 +1353,10 @@ AS (
 **BigFrames API:** [`bigframes.ml.forecasting.ARIMAPlus`](https://cloud.google.com/python/docs/reference/bigframes/latest/bigframes.ml.forecasting.ARIMAPlus) — `model = ARIMAPlus(horizon=..., auto_arima=True, data_frequency="daily", holiday_region=...)`, `model.fit(X_timestamp_df, y_value_df)`, then `model.predict(horizon=..., confidence_level=0.95)` (= `ML.FORECAST`), `model.predict_explain(...)` (= `ML.EXPLAIN_FORECAST`), `model.coef_` (= `ML.ARIMA_COEFFICIENTS`), `model.register(...)`.
 
 **Repo example (tested):**
-- `/home/user/git/vertex-ai-mlops/Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` — end-to-end: multi-series CREATE MODEL with `time_series_id_col`, `holiday_region=['GLOBAL','US']`, `horizon = HORIZON + TEST`; then `ML.ARIMA_COEFFICIENTS`, `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (`perform_aggregation=TRUE`), `ML.ARIMA_EVALUATE`, `ML.HOLIDAY_INFO`, `ML.FORECAST`, `ML.EXPLAIN_FORECAST`, custom SQL MAPE/MAE/RMSE, and `ML.DETECT_ANOMALIES`.
-- `/home/user/git/vertex-ai-mlops/Applied Forecasting/Notes - BQML ARIMA+ Handling of Granularity and Missing Data.ipynb` — demonstrates missing/absent-point interpolation and the granularity rules (WEEKLY-on-daily error; HOURLY-on-daily interpolation).
+- `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` — end-to-end: multi-series CREATE MODEL with `time_series_id_col`, `holiday_region=['GLOBAL','US']`, `horizon = HORIZON + TEST`; then `ML.ARIMA_COEFFICIENTS`, `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (`perform_aggregation=TRUE`), `ML.ARIMA_EVALUATE`, `ML.HOLIDAY_INFO`, `ML.FORECAST`, `ML.EXPLAIN_FORECAST`, custom SQL MAPE/MAE/RMSE, and `ML.DETECT_ANOMALIES`.
+- `Applied Forecasting/Notes - BQML ARIMA+ Handling of Granularity and Missing Data.ipynb` — demonstrates missing/absent-point interpolation and the granularity rules (WEEKLY-on-daily error; HOURLY-on-daily interpolation).
 - This project's own `models/arima_plus/` — from-scratch build on 5 real `bigquery-public-data.new_york_citibike.citibike_trips` stations (daily trip counts), single-series then multi-series via `time_series_id_col`; folds the granularity/missing-data gotchas above into the main notebook (verified a real gap day's linearly-interpolated value exactly: `(141+363)/2=252`) rather than keeping them in a separate notes file; adds a dedicated step verifying the custom-holiday syntax, manual `non_seasonal_order`, `forecast_limit_lower_bound` (as small standalone single-station models, kept separate from the main model specifically because of the `ML.EXPLAIN_FORECAST` incompatibility above — discovered when the main model was first built with the bound set and `ML.EXPLAIN_FORECAST` broke), and `hierarchical_time_series_cols` (a separate 6-station table grouped into 2 real Manhattan neighborhoods, since the main 5-station table has no real hierarchy) — verified bottom-up reconciliation exact to the penny at every level.
-- `/home/user/git/vertex-ai-mlops/Applied ML/Forecasting/BigQuery ML For Hierarchical Forecasting.ipynb` — the original hierarchical-forecasting notebook this feature was modernized from: `bigquery-public-data.iowa_liquor_sales.sales` (real State/County/City/Store hierarchy), built-in bottom-up hierarchical forecasting, plus a from-scratch custom top-down disaggregation (forecast proportions) and a generalized Python automation function for arbitrary hierarchy depth. See `workflows/hierarchical_forecasting/` (this project) for the modernized version — same Iowa dataset, switched to weekly granularity (real per-store daily coverage is only ~14-30%), a from-scratch reproduction of the top-down approach with a shorter generalized function, and a head-to-head accuracy comparison against the built-in bottom-up option at every hierarchy level.
+- `data+ai/bq-ml/workflows/hierarchical_forecasting/` — hierarchical forecasting on `bigquery-public-data.iowa_liquor_sales.sales` (real State/County/City/Store hierarchy): built-in bottom-up reconciliation via `hierarchical_time_series_cols`, compared head-to-head at every hierarchy level against a from-scratch top-down disaggregation (forecast proportions) that BigQuery ML has no built-in option for. Uses weekly granularity — real per-store *daily* coverage is only ~15-30%, so daily would force heavy interpolation. Modernizes and replaces the retired `Applied ML/Forecasting/BigQuery ML For Hierarchical Forecasting.ipynb`, deleted 2026-07-21 after the rebuild was verified feature-for-feature.
 
 
 ---
@@ -1455,7 +1455,7 @@ The covariates are defined implicitly by the `SELECT` list: any column other tha
 
 **BigFrames API:** `bigframes.ml.forecasting.ARIMAPlus` covers univariate ARIMA_PLUS; external-regressor (XREG) multivariate forecasting is best driven via SQL `CREATE MODEL`. (No dedicated `ARIMAPlusXReg` class — treat as "use SQL.")
 
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/Applied Forecasting/BQML Multivariate Forecasting with ARIMA+ XREG.ipynb` — Citibike daily trips near Central Park with covariates (`avg_tripduration`, `pct_subscriber`, `ratio_gender`, `capacity`). Shows full lifecycle: CREATE MODEL with `holiday_region=['GLOBAL','US']` + `auto_arima_max_order=5`; `ML.ARIMA_COEFFICIENTS` (regressor weights), `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (the 5 forecast metrics), `ML.ARIMA_EVALUATE`, `ML.HOLIDAY_INFO`, `ML.FORECAST` (covariates supplied for horizon), `ML.EXPLAIN_FORECAST` (61 cols incl. `attribution_*`), and custom SQL metrics (MAPE/MAE/pMAE/MSE/RMSE/pRMSE). NOTE: notebook predates GA `time_series_id_col` for XREG — it forecasts one series via `WHERE` and demonstrates two multi-series workarounds (`EXECUTE IMMEDIATE FOR..IN` loop; async Python client jobs). Today a single model with `time_series_id_col=['...']` replaces the workaround. Also see this project's own `models/arima_plus_xreg/` — from-scratch build using native `time_series_id_col` from the start (replacing the workaround directly), same 5 Citi Bike stations and TEST window as `models/arima_plus/` for direct forecast-accuracy comparison, 3 covariates (`capacity` dropped — needed a join, NULL for some stations), and several newly-verified cross-model-type differences from plain `ARIMA_PLUS` (no `mean_absolute_scaled_error`, `forecast_limit_lower_bound` rejected outright rather than merely breaking `ML.EXPLAIN_FORECAST`, `ML.FORECAST`/`ML.EXPLAIN_FORECAST` both strictly require the 3-argument covariate form).
+**Repo example (tested):** `Applied Forecasting/BQML Multivariate Forecasting with ARIMA+ XREG.ipynb` — Citibike daily trips near Central Park with covariates (`avg_tripduration`, `pct_subscriber`, `ratio_gender`, `capacity`). Shows full lifecycle: CREATE MODEL with `holiday_region=['GLOBAL','US']` + `auto_arima_max_order=5`; `ML.ARIMA_COEFFICIENTS` (regressor weights), `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (the 5 forecast metrics), `ML.ARIMA_EVALUATE`, `ML.HOLIDAY_INFO`, `ML.FORECAST` (covariates supplied for horizon), `ML.EXPLAIN_FORECAST` (61 cols incl. `attribution_*`), and custom SQL metrics (MAPE/MAE/pMAE/MSE/RMSE/pRMSE). NOTE: notebook predates GA `time_series_id_col` for XREG — it forecasts one series via `WHERE` and demonstrates two multi-series workarounds (`EXECUTE IMMEDIATE FOR..IN` loop; async Python client jobs). Today a single model with `time_series_id_col=['...']` replaces the workaround. Also see this project's own `models/arima_plus_xreg/` — from-scratch build using native `time_series_id_col` from the start (replacing the workaround directly), same 5 Citi Bike stations and TEST window as `models/arima_plus/` for direct forecast-accuracy comparison, 3 covariates (`capacity` dropped — needed a join, NULL for some stations), and several newly-verified cross-model-type differences from plain `ARIMA_PLUS` (no `mean_absolute_scaled_error`, `forecast_limit_lower_bound` rejected outright rather than merely breaking `ML.EXPLAIN_FORECAST`, `ML.FORECAST`/`ML.EXPLAIN_FORECAST` both strictly require the 3-argument covariate form).
 
 
 ---
@@ -1648,7 +1648,7 @@ limit. In-RAM prediction memory limit ~250 MB (`ML.EXPLAIN_PREDICT` can trigger 
 of memory*). GraphDef \< v20, unreleased TF versions, custom/`tf.contrib` ops, and RaggedTensors are
 unsupported. Object-table use is reservation-only.
 **BigFrames API:** `bigframes.ml.imported.TensorFlowModel(model_path=...)`.
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/imported/imported.ipynb` (Step 4) — a small Keras `Sequential` classifier with a `tf.keras.layers.Normalization` layer baked in (so raw feature values work directly, since imported models support no `TRANSFORM`), exported via `model.export(...)`, imported with `MODEL_TYPE='TENSORFLOW'`, scored with `ML.PREDICT` (`ARRAY<FLOAT64>` input named `"input"`, auto-named `output_0` output). Also see `/home/user/git/vertex-ai-mlops/MLOps/Serving/SQL Inference/Serve TensorFlow SavedModel Format With BigQuery.ipynb` for the production-scale version.
+**Repo example (tested):** `data+ai/bq-ml/models/imported/imported.ipynb` (Step 4) — a small Keras `Sequential` classifier with a `tf.keras.layers.Normalization` layer baked in (so raw feature values work directly, since imported models support no `TRANSFORM`), exported via `model.export(...)`, imported with `MODEL_TYPE='TENSORFLOW'`, scored with `ML.PREDICT` (`ARRAY<FLOAT64>` input named `"input"`, auto-named `output_0` output). Also see `MLOps/Serving/SQL Inference/Serve TensorFlow SavedModel Format With BigQuery.ipynb` for the production-scale version.
 
 ---
 
@@ -1675,7 +1675,7 @@ OPTIONS(
 Only TensorFlow core ops + TensorFlow Text ops supported; **SentencePiece operators not supported**;
 sparse tensors not supported. Object-table use is reservation-only (no on-demand).
 **BigFrames API:** No direct equivalent class (use TensorFlow/ONNX imported-model classes for the TF/ONNX paths).
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/imported/imported.ipynb` (Step 5) — `tf.lite.TFLiteConverter.from_saved_model(...)` on the exact SavedModel used for the `TENSORFLOW` example, then imported with `MODEL_TYPE='TENSORFLOW_LITE'`. Verified predictions match the `TENSORFLOW` import to ~7 significant figures (not bit-for-bit — ordinary float32 kernel differences between the TF runtime and the TFLite interpreter, since no quantization was applied) — same `ARRAY<FLOAT64>` input contract, same auto-named `output_0` output.
+**Repo example (tested):** `data+ai/bq-ml/models/imported/imported.ipynb` (Step 5) — `tf.lite.TFLiteConverter.from_saved_model(...)` on the exact SavedModel used for the `TENSORFLOW` example, then imported with `MODEL_TYPE='TENSORFLOW_LITE'`. Verified predictions match the `TENSORFLOW` import to ~7 significant figures (not bit-for-bit — ordinary float32 kernel differences between the TF runtime and the TFLite interpreter, since no quantization was applied) — same `ARRAY<FLOAT64>` input contract, same auto-named `output_0` output.
 
 ---
 
@@ -1713,16 +1713,16 @@ default → import error `unsupported ONNX type: ONNX_TYPE_SEQUENCE`. Fix at con
 `zipmap=False` (or `zipmap='columns'`). The repo notebook does exactly this.
 **BigFrames API:** `bigframes.ml.imported.ONNXModel(model_path=...)`.
 **Repo examples (tested):**
-- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Import Model - scikit-learn.ipynb` —
+- `03 - BigQuery ML (BQML)/BQML Import Model - scikit-learn.ipynb` —
   scikit-learn Pipeline → ONNX (`skl2onnx.convert_sklearn(..., options={id(model): {'zipmap': False}})`),
   uploaded to GCS, then `CREATE OR REPLACE MODEL ... OPTIONS(MODEL_TYPE='ONNX', MODEL_PATH='gs://.../*')`
   and `ML.PREDICT` returning `label` + `probabilities`.
-- `/home/user/git/vertex-ai-mlops/MLOps/Serving/SQL Inference/BQML Import Model via ONNX.ipynb` —
+- `MLOps/Serving/SQL Inference/BQML Import Model via ONNX.ipynb` —
   HuggingFace DistilBERT (PyTorch) → ONNX via `torch.onnx.export`, float16 + `ir_version=8` to fit the
   250 MB practical/450 MB hard limit and ONNX Runtime 1.12; pre-tokenized ARRAY inputs
   (`input_ids`, `attention_mask`); `ML.PREDICT` returns `logits` (softmax/argmax done in SQL). Shows
   the import-vs-remote tradeoff: ONNX import needs the caller to tokenize and fits small numeric models.
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/imported/imported.ipynb` (Step 2) —
+- `data+ai/bq-ml/models/imported/imported.ipynb` (Step 2) —
   scikit-learn `LogisticRegression` → ONNX via `skl2onnx.convert_sklearn(..., target_opset=13)`, then
   `onnx_model.ir_version = 8` set explicitly (both needed: a modern skl2onnx defaults to IR version 10
   and opset 22, both too new for ONNX Runtime 1.12). `zipmap=False` avoids the sequence-of-map gotcha.
@@ -1785,7 +1785,7 @@ Note the matching quirk in the other direction: `EXPORT MODEL` writes `model.bst
 re-importable as-is only when it was trained at `2.1`.
 
 **BigFrames API:** `bigframes.ml.imported.XGBoostModel(model_path=..., input=..., output=...)`.
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/imported/imported.ipynb`
+**Repo example (tested):** `data+ai/bq-ml/models/imported/imported.ipynb`
 (Step 3) — a binary classifier (`objective='binary:logistic'`) trained natively with `xgboost.train()`
 on an unpinned current `xgboost`, saved as `.json`, imported with explicit `INPUT`/`OUTPUT` (a `multi:softprob`
 objective also predicts fine but silently returns an ARRAY despite a scalar `OUTPUT` declaration — a
@@ -1877,9 +1877,9 @@ BigQuery wraps each row's `INPUT` columns into one element of the `instances` ar
 **BigFrames API:** No direct training equivalent; remote-endpoint inference is generally orchestrated via SQL/`ML.PREDICT` or the Vertex AI SDK (`aiplatform.Endpoint.predict`).
 
 **Repo example (tested):**
-- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Remote Model on Vertex AI Endpoint.ipynb` — registers an existing autoencoder endpoint as a remote model: derives `INPUT`/`OUTPUT` from the TF SavedModel signature, creates a `CLOUD_RESOURCE` connection with `bq mk --connection`, grants `roles/aiplatform.user`, then `CREATE OR REPLACE MODEL ... INPUT(...) OUTPUT(...) REMOTE WITH CONNECTION ... OPTIONS(endpoint=...)` and scores via `ML.PREDICT`.
-- `/home/user/git/vertex-ai-mlops/MLOps/Serving/SQL Inference/BQML Remote Model on Vertex AI Endpoint.ipynb` — end-to-end: deploys a HuggingFace sentiment container to a Vertex AI endpoint, creates the connection via `ConnectionServiceClient`, then `INPUT (text STRING) OUTPUT (label STRING, score FLOAT64) REMOTE WITH CONNECTION ... OPTIONS(endpoint=...)`. Shows single-row, multi-row (`UNNEST`), and table batch scoring with business logic; output includes the `remote_model_status` column. Also contrasts remote model vs ONNX import.
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/remote/remote.ipynb` — the full round trip from a BQML model: trains a `LOGISTIC_REG` → `EXPORT MODEL` (TF SavedModel) → `aiplatform.Model.upload()` with the pre-built `tf2-cpu.2-15` serving container (no Dockerfile) → deploys to a minimal `n1-standard-2` Endpoint → creates a `CLOUD_RESOURCE` connection + grants `roles/aiplatform.user` → `CREATE MODEL ... INPUT(...) OUTPUT(...) REMOTE WITH CONNECTION ... OPTIONS(endpoint=...)` → `ML.PREDICT` (single-row + 200-row batch, verified 0 `remote_model_status` errors). Verified the TF-serving container's response uses the exact field names the SavedModel signature itself exposes (`{label}_probs`/`{label}_values`/`predicted_{label}`), so `OUTPUT` can mirror them directly. Endpoint torn down within a few minutes of deployment — cross-link this entry with [`models/export/`](../../models/export/), which this notebook picks up from. Also demonstrates, as a documented live failure, the `model_registry='VERTEX_AI'` shortcut's Explanation-preprocessing bug described above (Step 4), and proves the mechanism is framework-agnostic by registering (not deploying) an XGBoost model trained entirely outside BigQuery with the `xgboost-cpu.2-1` container (Step 5).
+- `03 - BigQuery ML (BQML)/BQML Remote Model on Vertex AI Endpoint.ipynb` — registers an existing autoencoder endpoint as a remote model: derives `INPUT`/`OUTPUT` from the TF SavedModel signature, creates a `CLOUD_RESOURCE` connection with `bq mk --connection`, grants `roles/aiplatform.user`, then `CREATE OR REPLACE MODEL ... INPUT(...) OUTPUT(...) REMOTE WITH CONNECTION ... OPTIONS(endpoint=...)` and scores via `ML.PREDICT`.
+- `MLOps/Serving/SQL Inference/BQML Remote Model on Vertex AI Endpoint.ipynb` — end-to-end: deploys a HuggingFace sentiment container to a Vertex AI endpoint, creates the connection via `ConnectionServiceClient`, then `INPUT (text STRING) OUTPUT (label STRING, score FLOAT64) REMOTE WITH CONNECTION ... OPTIONS(endpoint=...)`. Shows single-row, multi-row (`UNNEST`), and table batch scoring with business logic; output includes the `remote_model_status` column. Also contrasts remote model vs ONNX import.
+- `data+ai/bq-ml/models/remote/remote.ipynb` — the full round trip from a BQML model: trains a `LOGISTIC_REG` → `EXPORT MODEL` (TF SavedModel) → `aiplatform.Model.upload()` with the pre-built `tf2-cpu.2-15` serving container (no Dockerfile) → deploys to a minimal `n1-standard-2` Endpoint → creates a `CLOUD_RESOURCE` connection + grants `roles/aiplatform.user` → `CREATE MODEL ... INPUT(...) OUTPUT(...) REMOTE WITH CONNECTION ... OPTIONS(endpoint=...)` → `ML.PREDICT` (single-row + 200-row batch, verified 0 `remote_model_status` errors). Verified the TF-serving container's response uses the exact field names the SavedModel signature itself exposes (`{label}_probs`/`{label}_values`/`predicted_{label}`), so `OUTPUT` can mirror them directly. Endpoint torn down within a few minutes of deployment — cross-link this entry with [`models/export/`](models/export/), which this notebook picks up from. Also demonstrates, as a documented live failure, the `model_registry='VERTEX_AI'` shortcut's Explanation-preprocessing bug described above (Step 4), and proves the mechanism is framework-agnostic by registering (not deploying) an XGBoost model trained entirely outside BigQuery with the `xgboost-cpu.2-1` container (Step 5).
 
 
 ---
@@ -1967,8 +1967,8 @@ Input column names must match the names in the model's `TRANSFORM` clause, with 
 **BigFrames API:** No single direct `TRANSFORM_ONLY` class. Equivalent functionality is the `bigframes.ml.preprocessing` transformers (e.g. `StandardScaler`, `MaxAbsScaler`, `OneHotEncoder`, `LabelEncoder`) and `bigframes.ml.pipeline.Pipeline`/`ColumnTransformer`, which compile to BQML preprocessing under the hood. A persisted transform-only model can be read with `bigframes.pandas.read_gbq_model`.
 
 **Repo example (tested):**
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/transform_only/transform_only.ipynb` — dedicated `TRANSFORM_ONLY` notebook on `penguins`: one pipeline chaining `ML.IMPUTER` + `ML.STANDARD_SCALER`/`ML.ROBUST_SCALER`/`ML.ONE_HOT_ENCODER`, applied via `ML.TRANSFORM`, feeding a downstream `LOGISTIC_REG` with no embedded `TRANSFORM` of its own. **Two verified findings:** (1) `ML.TRANSFORM` silently passes through any input column not referenced by the `TRANSFORM` clause, appended after the transform outputs — useful (carry an id/label through) but easy to mistake for pipeline output; (2) calling `ML.PREDICT` on the downstream model with *raw* (untransformed) data does **not** error — it silently predicts using values on the wrong scale, reproduced live: every row predicted the same class ("Gentoo penguin") regardless of true label until the input was re-wrapped in `ML.TRANSFORM`. Also confirms `EXPORT MODEL` on a transform-only model (`transform/saved_model.pb`, no predictive weights since there's no estimator).
-- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - reusable and modular.ipynb` — full tested walkthrough on `bigquery-public-data.ml_datasets.penguins`: (1) embedded `TRANSFORM` on a `BOOSTED_TREE_CLASSIFIER`; (2) reuse of any model's transform via `ML.TRANSFORM`; (3) separate `TRANSFORM_ONLY` models for imputation and for scaling, chained with CTEs and exposed as a view; (4) per‑feature `TRANSFORM_ONLY` models (feature‑store style); (5) feeding the pipeline output into a `CREATE MODEL`; (6) `ML.FEATURE_INFO`; (7) `EXPORT MODEL` to GCS (transform‑only exports a `transform/saved_model.pb`); (8) Vertex AI registration + endpoint serving; (9) consuming via BigFrames `read_gbq_model().predict()`.
+- `data+ai/bq-ml/models/transform_only/transform_only.ipynb` — dedicated `TRANSFORM_ONLY` notebook on `penguins`: one pipeline chaining `ML.IMPUTER` + `ML.STANDARD_SCALER`/`ML.ROBUST_SCALER`/`ML.ONE_HOT_ENCODER`, applied via `ML.TRANSFORM`, feeding a downstream `LOGISTIC_REG` with no embedded `TRANSFORM` of its own. **Two verified findings:** (1) `ML.TRANSFORM` silently passes through any input column not referenced by the `TRANSFORM` clause, appended after the transform outputs — useful (carry an id/label through) but easy to mistake for pipeline output; (2) calling `ML.PREDICT` on the downstream model with *raw* (untransformed) data does **not** error — it silently predicts using values on the wrong scale, reproduced live: every row predicted the same class ("Gentoo penguin") regardless of true label until the input was re-wrapped in `ML.TRANSFORM`. Also confirms `EXPORT MODEL` on a transform-only model (`transform/saved_model.pb`, no predictive weights since there's no estimator).
+- `03 - BigQuery ML (BQML)/BQML Feature Engineering - reusable and modular.ipynb` — full tested walkthrough on `bigquery-public-data.ml_datasets.penguins`: (1) embedded `TRANSFORM` on a `BOOSTED_TREE_CLASSIFIER`; (2) reuse of any model's transform via `ML.TRANSFORM`; (3) separate `TRANSFORM_ONLY` models for imputation and for scaling, chained with CTEs and exposed as a view; (4) per‑feature `TRANSFORM_ONLY` models (feature‑store style); (5) feeding the pipeline output into a `CREATE MODEL`; (6) `ML.FEATURE_INFO`; (7) `EXPORT MODEL` to GCS (transform‑only exports a `transform/saved_model.pb`); (8) Vertex AI registration + endpoint serving; (9) consuming via BigFrames `read_gbq_model().predict()`.
 
 
 ---
@@ -2186,8 +2186,8 @@ ML.CONFUSION_MATRIX(
 
 **BigFrames API:** `model.confusion_matrix(X, y)` on a `bigframes.ml` classifier (e.g. `LogisticRegression`, `XGBoostClassifier`).
 **Repo example (tested):**
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 3) — `SELECT * FROM ML.CONFUSION_MATRIX(MODEL ...)` on the census income binary classifier.
-- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` and `03b - BQML Boosted Trees.ipynb` — confusion matrix on logistic-regression and boosted-tree classifiers with an explicit input query.
+- `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 3) — `SELECT * FROM ML.CONFUSION_MATRIX(MODEL ...)` on the census income binary classifier.
+- `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` and `03b - BQML Boosted Trees.ipynb` — confusion matrix on logistic-regression and boosted-tree classifiers with an explicit input query.
 
 ---
 
@@ -2244,8 +2244,8 @@ ML.ROC_CURVE(
 
 **BigFrames API:** `model.roc_curve(X, y)` on a `bigframes.ml` binary classifier (returns fpr / tpr / thresholds).
 **Repo example (tested):**
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 4) — selects `threshold, recall, false_positive_rate, true_positives, false_positives, true_negatives, false_negatives FROM ML.ROC_CURVE(...) ORDER BY threshold`.
-- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` and `03b - BQML Boosted Trees.ipynb` — ROC curve queried and plotted for binary classifiers.
+- `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 4) — selects `threshold, recall, false_positive_rate, true_positives, false_positives, true_negatives, false_negatives FROM ML.ROC_CURVE(...) ORDER BY threshold`.
+- `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` and `03b - BQML Boosted Trees.ipynb` — ROC curve queried and plotted for binary classifiers.
 
 > Note: classification eval here covers the model-bound TVFs. For unsupervised anomaly detection (PCA / k-means / autoencoder in `03g`–`03i`) and ARIMA_PLUS forecasting eval, see the `ML.DETECT_ANOMALIES`, `ML.RECONSTRUCTION_LOSS`, and forecasting entries — `ML.CONFUSION_MATRIX` / `ML.ROC_CURVE` do not apply to those model types.
 
@@ -2316,9 +2316,9 @@ ML.EXPLAIN_PREDICT(
 **BigFrames API:** `model.predict_explain(X, top_k_features=...)` on supported supervised estimators in `bigframes.ml`.
 
 **Repo example (tested):**
-- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` — `ML.EXPLAIN_PREDICT(MODEL ..., (SELECT * ... WHERE splits='TEST'), STRUCT(10 as top_k_features))` on a logistic-regression model.
-- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — same call on a `BOOSTED_TREE_CLASSIFIER`.
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 6) — `STRUCT(5 AS top_k_features)`, selecting `top_feature_attributions`.
+- `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` — `ML.EXPLAIN_PREDICT(MODEL ..., (SELECT * ... WHERE splits='TEST'), STRUCT(10 as top_k_features))` on a logistic-regression model.
+- `03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — same call on a `BOOSTED_TREE_CLASSIFIER`.
+- `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 6) — `STRUCT(5 AS top_k_features)`, selecting `top_feature_attributions`.
 
 ---
 
@@ -2377,9 +2377,9 @@ ML.GLOBAL_EXPLAIN(
 **BigFrames API:** `model.global_explain()` on supported supervised estimators in `bigframes.ml`.
 
 **Repo example (tested):**
-- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` — model trained with `enable_global_explain = TRUE`, then `SELECT * FROM ML.GLOBAL_EXPLAIN(MODEL ...)`.
-- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — same pattern on a boosted-tree classifier.
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Examples 1 & 7) — `enable_global_explain = TRUE` then `ML.GLOBAL_EXPLAIN(...) ORDER BY attribution DESC`.
+- `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` — model trained with `enable_global_explain = TRUE`, then `SELECT * FROM ML.GLOBAL_EXPLAIN(MODEL ...)`.
+- `03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — same pattern on a boosted-tree classifier.
+- `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Examples 1 & 7) — `enable_global_explain = TRUE` then `ML.GLOBAL_EXPLAIN(...) ORDER BY attribution DESC`.
 
 ---
 
@@ -2423,7 +2423,7 @@ ML.FEATURE_IMPORTANCE(MODEL `PROJECT_ID.DATASET.MODEL_NAME`)
 **BigFrames API:** Tree-ensemble estimators expose `model.feature_importances_` in `bigframes.ml`.
 
 **Repo example (tested):**
-- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — `SELECT * FROM ML.FEATURE_IMPORTANCE(MODEL ...)` on `BOOSTED_TREE_CLASSIFIER`, documenting weight/gain/cover columns.
+- `03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — `SELECT * FROM ML.FEATURE_IMPORTANCE(MODEL ...)` on `BOOSTED_TREE_CLASSIFIER`, documenting weight/gain/cover columns.
 
 ---
 
@@ -2514,8 +2514,8 @@ FROM UNNEST((
 **BigFrames API:** `model.global_explain()` covers attribution; raw coefficients via the underlying model are exposed through the BigQuery SQL function. No dedicated `ml_weights()` wrapper — call `ML.WEIGHTS` via `bigframes.pandas.read_gbq(...)` over the TVF.
 
 **Repo example (tested):**
-- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` — `SELECT * FROM ML.WEIGHTS(MODEL ...)` on a `LOGISTIC_REG` model trained with `CATEGORY_ENCODING_METHOD='DUMMY_ENCODING'`.
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/linear_regression/linear_regression.sql` — `LINEAR_REG` on `penguins`/`body_mass_g`, trained with `DUMMY_ENCODING` specifically to keep `ML.WEIGHTS` stable and interpretable; SQL comments explain why. (Note: `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` does NOT demonstrate `ML.WEIGHTS` — that citation was a research-pass error, corrected here.)
+- `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` — `SELECT * FROM ML.WEIGHTS(MODEL ...)` on a `LOGISTIC_REG` model trained with `CATEGORY_ENCODING_METHOD='DUMMY_ENCODING'`.
+- `data+ai/bq-ml/models/linear_regression/linear_regression.sql` — `LINEAR_REG` on `penguins`/`body_mass_g`, trained with `DUMMY_ENCODING` specifically to keep `ML.WEIGHTS` stable and interpretable; SQL comments explain why. (Note: `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` does NOT demonstrate `ML.WEIGHTS` — that citation was a research-pass error, corrected here.)
 
 ---
 
@@ -2564,7 +2564,7 @@ FROM ML.ADVANCED_WEIGHTS(MODEL `PROJECT_ID.DATASET.MODEL_NAME`
 **BigFrames API:** No dedicated wrapper; call the TVF via SQL / `read_gbq`.
 
 **Repo example (tested):**
-- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` — model trained with `calculate_p_values = TRUE` and `CATEGORY_ENCODING_METHOD = 'DUMMY_ENCODING'`, then `SELECT * FROM ML.ADVANCED_WEIGHTS(MODEL ...)` to retrieve weights with p-values.
+- `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` — model trained with `calculate_p_values = TRUE` and `CATEGORY_ENCODING_METHOD = 'DUMMY_ENCODING'`, then `SELECT * FROM ML.ADVANCED_WEIGHTS(MODEL ...)` to retrieve weights with p-values.
 
 > Note: For boosted trees / random forest see `ML.FEATURE_IMPORTANCE` and `ML.GLOBAL_EXPLAIN`; for k-means see `ML.CENTROIDS`; for PCA/autoencoder see `ML.PRINCIPAL_COMPONENTS` / `ML.PRINCIPAL_COMPONENT_INFO`; for ARIMA_PLUS see `ML.ARIMA_COEFFICIENTS`. These tree/clustering/forecast notebooks (`03b`, `03g`, `03h`, `03i`, `BQML Univariate Forecasting with ARIMA+.ipynb`) do NOT use ML.WEIGHTS.
 
@@ -2791,7 +2791,7 @@ FROM ML.CENTROIDS(MODEL `PROJECT_ID.DATASET.MODEL_NAME`
 **Best practices:** Use `standardize = FALSE` to read centroids in the original feature units when profiling clusters for business stakeholders.
 **Limitations:** `KMEANS` only — not valid for PCA/autoencoder/MF or supervised models. Numeric vs. categorical features land in separate columns; `UNNEST(categorical_value)` to flatten one-hot categories.
 **BigFrames API:** `bigframes.ml.cluster.KMeans().cluster_centers_` (centroid attribute).
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03h - BQML k-means with Anomaly Detection.ipynb` — `ML.CENTROIDS` over a Vizier-tuned `KMEANS` model returns 32,910 rows (one feature x centroid x trial), with `trial_id` present because the model was HP-tuned.
+**Repo example (tested):** `03 - BigQuery ML (BQML)/03h - BQML k-means with Anomaly Detection.ipynb` — `ML.CENTROIDS` over a Vizier-tuned `KMEANS` model returns 32,910 rows (one feature x centroid x trial), with `trial_id` present because the model was HP-tuned.
 
 ---
 
@@ -2829,7 +2829,7 @@ FROM ML.PRINCIPAL_COMPONENTS(MODEL `PROJECT_ID.DATASET.MODEL_NAME`);
 **Best practices:** Output is ordered descending by eigenvalue (most-explanatory component first). Join/compare against `ML.PRINCIPAL_COMPONENT_INFO` on `principal_component_id` to weight loadings by variance explained.
 **Limitations:** `PCA` only. Categorical features are one-hot encoded — flatten `categorical_value` with `UNNEST`.
 **BigFrames API:** `bigframes.ml.decomposition.PCA().components_`.
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` — `ML.PRINCIPAL_COMPONENTS` returns 780 rows (30 features x 26 components) for a model trained with `pca_explained_variance_ratio = 0.90`.
+**Repo example (tested):** `03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` — `ML.PRINCIPAL_COMPONENTS` returns 780 rows (30 features x 26 components) for a model trained with `pca_explained_variance_ratio = 0.90`.
 
 ---
 
@@ -2867,7 +2867,7 @@ FROM ML.PRINCIPAL_COMPONENT_INFO(MODEL `PROJECT_ID.DATASET.MODEL_NAME`);
 **Best practices:** Use `cumulative_explained_variance_ratio` to pick a component count. Note `ML.EVALUATE` on a PCA model returns the single complementary metric `total_explained_variance_ratio`.
 **Limitations:** `PCA` only.
 **BigFrames API:** `bigframes.ml.decomposition.PCA().explained_variance_` / `.explained_variance_ratio_`.
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` — returns 26 rows whose `cumulative_explained_variance_ratio` reaches 0.923, matching `ML.EVALUATE`'s `total_explained_variance_ratio = 0.923`.
+**Repo example (tested):** `03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` — returns 26 rows whose `cumulative_explained_variance_ratio` reaches 0.923, matching `ML.EVALUATE`'s `total_explained_variance_ratio = 0.923`.
 
 ---
 
@@ -2908,7 +2908,7 @@ FROM ML.RECONSTRUCTION_LOSS(
 **Best practices:** For anomaly detection prefer `ML.DETECT_ANOMALIES` (handles contamination thresholding) and reserve `ML.RECONSTRUCTION_LOSS` for inspecting the raw error distribution. Larger errors indicate rows the model could not reconstruct (likely anomalous).
 **Limitations:** `AUTOENCODER` only; no imported TensorFlow models. If `TRANSFORM` was used at training, the input may only reference the `TRANSFORM` input columns.
 **BigFrames API:** No direct equivalent (`bigframes.ml` autoencoder reconstruction-loss helper not exposed); use the SQL function.
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` — `ML.RECONSTRUCTION_LOSS` over the TEST split returns `mean_absolute_error`, `mean_squared_error`, `mean_squared_log_error`, plus `trial_id` (the model was HP-tuned) and the passed-through input columns.
+**Repo example (tested):** `03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` — `ML.RECONSTRUCTION_LOSS` over the TEST split returns `mean_absolute_error`, `mean_squared_error`, `mean_squared_log_error`, plus `trial_id` (the model was HP-tuned) and the passed-through input columns.
 
 ---
 
@@ -2966,7 +2966,7 @@ FROM ML.RECOMMEND(
 
 **BigFrames API:** `bigframes.ml.decomposition.MatrixFactorization.predict()` (DataFrame in/out) is the recommendation equivalent.
 
-**Repo example (tested):** No matrix-factorization notebook exists among the assigned repo files; the closest tested lifecycle parallels are the `ML.PREDICT` patterns in `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` and the supervised `ML.PREDICT` flow in `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb`. ML.RECOMMEND syntax above is sourced from Google Cloud docs.
+**Repo example (tested):** No matrix-factorization notebook exists among the assigned repo files; the closest tested lifecycle parallels are the `ML.PREDICT` patterns in `03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` and the supervised `ML.PREDICT` flow in `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb`. ML.RECOMMEND syntax above is sourced from Google Cloud docs.
 
 ---
 
@@ -3023,8 +3023,8 @@ FROM ML.GENERATE_EMBEDDING(
 **BigFrames API:** No direct single-call `generate_embedding` wrapper for these in-house model types; equivalent results come from `PCA.transform()`, the autoencoder `predict()` latent output, and `MatrixFactorization` weights via the respective `bigframes.ml` classes. (Foundation embeddings: `bigframes.ml.llm.TextEmbeddingGenerator` — cross-link out.)
 
 **Repo example (tested):**
-- PCA projections (the values `ML.GENERATE_EMBEDDING` arrays for a PCA model) come from `ML.PREDICT` — see `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` (CREATE MODEL `model_type='PCA'`, then `ML.PREDICT` yielding `principal_component_1..N`; serving payload returns `principal_component_projections`).
-- Autoencoder latent space (the embedding source for an autoencoder model) — see `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` (CREATE MODEL `model_type='AUTOENCODER'` with `hidden_units=[...,8,...]`; `ML.PREDICT` returns `latent_col_1..8`; `ML.RECONSTRUCTION_LOSS` for quality).
+- PCA projections (the values `ML.GENERATE_EMBEDDING` arrays for a PCA model) come from `ML.PREDICT` — see `03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` (CREATE MODEL `model_type='PCA'`, then `ML.PREDICT` yielding `principal_component_1..N`; serving payload returns `principal_component_projections`).
+- Autoencoder latent space (the embedding source for an autoencoder model) — see `03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` (CREATE MODEL `model_type='AUTOENCODER'` with `hidden_units=[...,8,...]`; `ML.PREDICT` returns `latent_col_1..8`; `ML.RECONSTRUCTION_LOSS` for quality).
 
 These notebooks demonstrate the underlying `ML.PREDICT` mechanics; the `ML.GENERATE_EMBEDDING` wrapper packages those same outputs into one array column. The k-means anomaly-detection notebook (`03h`) is a sibling unsupervised example. The `ML.GENERATE_EMBEDDING` array-output syntax above is sourced from Google Cloud docs.
 
@@ -3096,7 +3096,7 @@ FROM ML.FORECAST(
 **Best practices:** Set `horizon` (and `holiday_region`) at `CREATE MODEL` time. Use the forecast-with-`LIMIT` pattern instead of post-filtering large outputs.
 **Limitations:** Adding computation on top of large outputs (min/max, arithmetic, filters) can raise "Resources exceeded during query execution". `ARIMA_PLUS_XREG` requires future feature values to forecast.
 **BigFrames API:** `bigframes.ml.forecasting.ARIMAPlus().predict(X)`.
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` (cell 45) — `STRUCT(1 AS horizon, 0.95 AS confidence_level)` over a multi-series Citibike model.
+**Repo example (tested):** `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` (cell 45) — `STRUCT(1 AS horizon, 0.95 AS confidence_level)` over a multi-series Citibike model.
 
 ---
 
@@ -3141,7 +3141,7 @@ Decomposition identity: `time_series_data = trend + Σ seasonal_period_* + holid
 **Best practices:** Use `time_series_adjusted_data WHERE time_series_type='forecast'` as the fitted forecast for custom SQL metrics (MAPE/MAE/RMSE).
 **Limitations:** Decomposition components for spikes/step/residual exist only for history. Same large-output memory caveat as `ML.FORECAST`.
 **BigFrames API:** No direct equivalent (use `ML.EXPLAIN_FORECAST` via SQL).
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` (cells 47, 53, 55) — drives both the forecast funnel chart and SQL-computed MAPE/MAE/pMAE/MSE/RMSE/pRMSE.
+**Repo example (tested):** `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` (cells 47, 53, 55) — drives both the forecast funnel chart and SQL-computed MAPE/MAE/pMAE/MSE/RMSE/pRMSE.
 
 ---
 
@@ -3188,7 +3188,7 @@ FROM ML.ARIMA_EVALUATE(
 **Best practices:** Order by the series id column for stable review; check `error_message` for short/failed series.
 **Limitations:** `seasonal_periods`, `has_holiday_effect`, etc. depend on `CREATE MODEL` options (e.g. `holiday_region`).
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` (cell 41) — full per-station ARIMA evaluation table.
+**Repo example (tested):** `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` (cell 41) — full per-station ARIMA evaluation table.
 
 ---
 
@@ -3216,7 +3216,7 @@ FROM ML.ARIMA_COEFFICIENTS(MODEL `PROJECT_ID.DATASET.MODEL_NAME`);
 **Best practices:** Join with `ML.ARIMA_EVALUATE` on the series id to pair `(p,d,q)` with the coefficient vectors.
 **Limitations:** Output is the ARIMA-specific analog of `ML.WEIGHTS`; standard `ML.WEIGHTS` does not apply to ARIMA_PLUS.
 **BigFrames API:** `bigframes.ml.forecasting.ARIMAPlus().coef_` (or `.summary()`).
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` (cell 32) — per-station `ar_coefficients` / `ma_coefficients` / `intercept_or_drift`.
+**Repo example (tested):** `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` (cell 32) — per-station `ar_coefficients` / `ma_coefficients` / `intercept_or_drift`.
 
 ---
 
@@ -3245,7 +3245,7 @@ FROM ML.HOLIDAY_INFO(MODEL `PROJECT_ID.DATASET.MODEL_NAME`);
 **Best practices:** Requires `holiday_region` (one or many, e.g. `['GLOBAL','US']`) at `CREATE MODEL`. Output spans many years/holidays — aggregate or filter by `region`/`holiday_name` for review.
 **Limitations:** Empty if the model was trained without `holiday_region`. Returns the holiday calendar/windows, not the numeric effect (use `ML.EXPLAIN_FORECAST` `holiday_effect_*` columns for magnitudes).
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` (cell 43; model trained with `holiday_region = ['GLOBAL', 'US']`) — 1,624 region/holiday/date rows.
+**Repo example (tested):** `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` (cell 43; model trained with `holiday_region = ['GLOBAL', 'US']`) — 1,624 region/holiday/date rows.
 
 ---
 
@@ -3473,7 +3473,7 @@ ML.NORMALIZER(array_expression [, p])
 - [`03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb`](../../03%20-%20BigQuery%20ML%20(BQML)/BQML%20Feature%20Engineering%20-%20preprocessing%20functions.ipynb) — standalone demos of all five with verified outputs (e.g. `ML.STANDARD_SCALER([0..10]) OVER()` matches manual z-score; `ML.ROBUST_SCALER` with `[25,75]`, `with_median`, `with_quantile_range` toggles; `ML.NORMALIZER` p ∈ {0, 1, 2, +inf}).
 - [`03 - BigQuery ML (BQML)/BQML Feature Engineering.ipynb`](../../03%20-%20BigQuery%20ML%20(BQML)/BQML%20Feature%20Engineering.ipynb) — all four scalers inside a `TRANSFORM` of `LINEAR_REG` and `BOOSTED_TREE_REGRESSOR` models (registered to Vertex AI Model Registry).
 - [`03 - BigQuery ML (BQML)/BQML Feature Engineering - reusable and modular.ipynb`](../../03%20-%20BigQuery%20ML%20(BQML)/BQML%20Feature%20Engineering%20-%20reusable%20and%20modular.ipynb) — `ML.ROBUST_SCALER` (outlier column) + `ML.STANDARD_SCALER` (other numerics) embedded in a `TRANSFORM` with `ML.IMPUTER` done in the input query.
-- [`data+ai/bq-ml/functions/scalers/scalers.ipynb`](../../functions/scalers/) — all five scalers on `penguins`, standalone and side-by-side; verifies the `STDDEV_POP` gotcha above, `ML.MIN_MAX_SCALER`'s prediction-time capping via a live `CREATE MODEL`+`ML.TRANSFORM` test, and `ML.ROBUST_SCALER`'s outlier-robustness contrasted directly against `ML.STANDARD_SCALER` on an injected outlier. Ends with a `LOGISTIC_REG` embedding the `TRANSFORM` directly (contrast with `models/transform_only/`'s standalone pipeline, which needs explicit re-application).
+- [`data+ai/bq-ml/functions/scalers/scalers.ipynb`](functions/scalers/) — all five scalers on `penguins`, standalone and side-by-side; verifies the `STDDEV_POP` gotcha above, `ML.MIN_MAX_SCALER`'s prediction-time capping via a live `CREATE MODEL`+`ML.TRANSFORM` test, and `ML.ROBUST_SCALER`'s outlier-robustness contrasted directly against `ML.STANDARD_SCALER` on an injected outlier. Ends with a `LOGISTIC_REG` embedding the `TRANSFORM` directly (contrast with `models/transform_only/`'s standalone pipeline, which needs explicit re-application).
 
 
 ---
@@ -3519,7 +3519,7 @@ ML.BUCKETIZE(numerical_expression, array_split_points[, exclude_boundaries[, out
 - **GOTCHA, verified live — `exclude_boundaries=TRUE` does NOT null out-of-range values.** It's easy to misread "drops the implicit lower/upper overflow buckets" as "values outside the split-point range become NULL." What actually happens: the **outermost split points are dropped entirely**, merging the overflow bucket into its nearest interior neighbor. With split points `[10, 20, 30]`: default gives 4 bins `(-inf,10)` `[10,20)` `[20,30)` `[30,+inf)`; with `exclude_boundaries=TRUE` this becomes just 2 bins `(-inf,20)` `[20,+inf)` — the `10` and `30` split points disappear, leaving only `20` as the sole effective boundary. No value ever becomes NULL from this option alone.
 
 **BigFrames API:** `bigframes.ml.preprocessing.KBinsDiscretizer` (strategy-dependent; not a 1:1 of explicit split points).
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — `ML.BUCKETIZE(input_column, [2, 5, 7])` and with `exclude_boundaries = TRUE`. Also `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering.ipynb`. `data+ai/bq-ml/functions/bucketizing/bucketizing.ipynb` — all 3 output formats on `penguins`, plus the `exclude_boundaries` clarification above with a concrete `[10,20,30]` proof, and `ML.QUANTILE_BUCKETIZE`/`ML.HASH_BUCKETIZE` embedded together in a real `LOGISTIC_REG` `TRANSFORM`.
+**Repo example (tested):** `03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — `ML.BUCKETIZE(input_column, [2, 5, 7])` and with `exclude_boundaries = TRUE`. Also `03 - BigQuery ML (BQML)/BQML Feature Engineering.ipynb`. `data+ai/bq-ml/functions/bucketizing/bucketizing.ipynb` — all 3 output formats on `penguins`, plus the `exclude_boundaries` clarification above with a concrete `[10,20,30]` proof, and `ML.QUANTILE_BUCKETIZE`/`ML.HASH_BUCKETIZE` embedded together in a real `LOGISTIC_REG` `TRANSFORM`.
 
 ---
 
@@ -3560,7 +3560,7 @@ ML.QUANTILE_BUCKETIZE(numerical_expression, num_buckets[, output_format]) OVER()
 - Quantile estimates are approximate on very large inputs.
 
 **BigFrames API:** `bigframes.ml.preprocessing.KBinsDiscretizer(strategy="quantile")`.
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — `ML.QUANTILE_BUCKETIZE(input_column, 2) OVER() AS feature_column`. Also in `BQML Feature Engineering.ipynb`. Also `data+ai/bq-ml/functions/bucketizing/bucketizing.ipynb` — on `penguins`' `culmen_length_mm`.
+**Repo example (tested):** `03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — `ML.QUANTILE_BUCKETIZE(input_column, 2) OVER() AS feature_column`. Also in `BQML Feature Engineering.ipynb`. Also `data+ai/bq-ml/functions/bucketizing/bucketizing.ipynb` — on `penguins`' `culmen_length_mm`.
 
 ---
 
@@ -3600,7 +3600,7 @@ ML.HASH_BUCKETIZE(string_expression, hash_bucket_size)
 - Returns INT64 (unlike `ML.BUCKETIZE`/`ML.QUANTILE_BUCKETIZE` which return STRING bin labels); operates on strings, not numerics.
 
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — `ML.HASH_BUCKETIZE(input_column, 0)` (hash only) and `ML.HASH_BUCKETIZE(input_column, 3)`. Also in `BQML Feature Engineering.ipynb`. Also `data+ai/bq-ml/functions/bucketizing/bucketizing.ipynb` — on `penguins`' `island`, plus embedded alongside `ML.QUANTILE_BUCKETIZE` in a real `LOGISTIC_REG` `TRANSFORM`.
+**Repo example (tested):** `03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — `ML.HASH_BUCKETIZE(input_column, 0)` (hash only) and `ML.HASH_BUCKETIZE(input_column, 3)`. Also in `BQML Feature Engineering.ipynb`. Also `data+ai/bq-ml/functions/bucketizing/bucketizing.ipynb` — on `penguins`' `island`, plus embedded alongside `ML.QUANTILE_BUCKETIZE` in a real `LOGISTIC_REG` `TRANSFORM`.
 
 ---
 
@@ -3719,7 +3719,7 @@ ML.IMPUTER(expression, strategy) OVER()
 **Best practices:** Choose `median` for skewed numeric data; `most_frequent` is the only valid strategy for strings. Use inside `TRANSFORM` so prediction reuses training statistics.
 **Limitations:** `mean`/`median` reject string inputs. Requires `OVER()` (empty window).
 **BigFrames API:** `bigframes.ml.impute.SimpleImputer`.
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — imputes a numeric column three ways and a string column by mode:
+**Repo example (tested):** `03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — imputes a numeric column three ways and a string column by mode:
 ```sql
 SELECT
   num_column,
@@ -3766,7 +3766,7 @@ ML.FEATURE_CROSS(struct_categorical_features [, degree])
 **Best practices:** Keep `degree` low (2) — combinations grow combinatorially and can explode cardinality. Pre-bucketize numeric columns to strings before crossing.
 **Limitations:** Categorical (string) inputs only; `degree` capped at 4. **Not exportable** in `TRANSFORM`. **Verified live:** a `CREATE MODEL ... TRANSFORM(ML.FEATURE_CROSS(...))` trains and predicts (`ML.PREDICT`) completely normally — the limitation only bites at `EXPORT MODEL` time, which fails with `"400 Model TRANSFORM contains unsupported function for exporting."` A model needing portability/serving outside BQ (`EXPORT MODEL`, `model_registry='VERTEX_AI'`, remote-model deployment) must compute crosses in the input query instead.
 **BigFrames API:** No direct equivalent (build via DataFrame ops).
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb`:
+**Repo example (tested):** `03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb`:
 ```sql
 SELECT
   input_column_1, input_column_2, input_column_3,
@@ -3812,7 +3812,7 @@ ML.POLYNOMIAL_EXPAND(struct_numerical_features [, degree])
 **Best practices:** Combine with `ML.IMPUTER`/scaling first; wrap an imputed (analytic) column inside the `STRUCT` since `ML.POLYNOMIAL_EXPAND` is scalar and can take an analytic argument.
 **Limitations:** ≤ 10 input features, no unnamed/duplicate features; `degree` ≤ 4. **Not exportable** in `TRANSFORM`, same verified failure mode as `ML.FEATURE_CROSS` above (`EXPORT MODEL` rejects it with "Model TRANSFORM contains unsupported function for exporting" — training/`ML.PREDICT` are unaffected).
 **BigFrames API:** `bigframes.ml.preprocessing.PolynomialFeatures`.
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — also shows the **compounded** pattern (impute → expand):
+**Repo example (tested):** `03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — also shows the **compounded** pattern (impute → expand):
 ```sql
 SELECT
   input_column,
@@ -3833,7 +3833,7 @@ FROM UNNEST(['1','1','2','3','4','5',NULL]) AS input_column;
 - Feature engineering with `TRANSFORM`: <https://cloud.google.com/bigquery/docs/bigqueryml-transform>
 - Inspect the preprocessed output of a model's `TRANSFORM` with `ML.TRANSFORM` (function): <https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-transform>
 
-**Repo example (tested) — TRANSFORM in a real `CREATE MODEL`:** `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/BQML Feature Engineering - Create Model With Transpose.ipynb` trains a `BOOSTED_TREE_REGRESSOR` whose `TRANSFORM` mixes scalers, `ML.LABEL_ENCODER`, and `EXTRACT(...)` date parts; the model is registered to Vertex AI and exported (the export yields a `/model` plus a `/model/transform` saved model — i.e. preprocessing travels with the model):
+**Repo example (tested) — TRANSFORM in a real `CREATE MODEL`:** `03 - BigQuery ML (BQML)/BQML Feature Engineering - Create Model With Transpose.ipynb` trains a `BOOSTED_TREE_REGRESSOR` whose `TRANSFORM` mixes scalers, `ML.LABEL_ENCODER`, and `EXTRACT(...)` date parts; the model is registered to Vertex AI and exported (the export yields a `/model` plus a `/model/transform` saved model — i.e. preprocessing travels with the model):
 ```sql
 CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.MODEL_NAME`
 TRANSFORM (
@@ -4031,7 +4031,7 @@ ML.DISTANCE(vector1, vector2 [, type])
 
 **BigFrames API:** No direct equivalent (use array math or `VECTOR_SEARCH`).
 
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/functions/distance/distance.ipynb` — all three metrics standalone, the cosine distance-vs-similarity pattern (same one used in `data+ai/bq-ai-functions/functions/ai_embed/ai_embed.sql`, lines 67/136), and real embedding similarity: trains a scratch `PCA` model on `penguins` and computes `ML.DISTANCE` between two penguins' projections from different species.
+**Repo example (tested):** `data+ai/bq-ml/functions/distance/distance.ipynb` — all three metrics standalone, the cosine distance-vs-similarity pattern (same one used in `data+ai/bq-ai-functions/functions/ai_embed/ai_embed.sql`, lines 67/136), and real embedding similarity: trains a scratch `PCA` model on `penguins` and computes `ML.DISTANCE` between two penguins' projections from different species.
 
 ---
 
@@ -4351,7 +4351,7 @@ For zero-shot (TimesFM) forecasting and anomaly detection with no model *and* no
 
 **BigFrames API:** No equivalent. `bigframes.ml.forecasting.ARIMAPlus` covers the *model* path only; reach these TVFs via `bigframes.pandas.read_gbq` over the SQL.
 
-**Repo example (tested):** `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/functions/time_series/time_series.ipynb` and `time_series.sql` — all three functions on the Citi Bike series shared with `models/arima_plus/`, including the `ARIMA_PLUS` head-to-head, the change-points-vs-anomalies overlap test, and the gap-fill demonstration.
+**Repo example (tested):** `data+ai/bq-ml/functions/time_series/time_series.ipynb` and `time_series.sql` — all three functions on the Citi Bike series shared with `models/arima_plus/`, including the `ARIMA_PLUS` head-to-head, the change-points-vs-anomalies overlap test, and the gap-fill demonstration.
 
 
 ## Model Management & Monitoring
@@ -4442,11 +4442,11 @@ bq extract --model --destination_format ML_XGBOOST_BOOSTER 'DATASET.MODEL_NAME' 
 **BigFrames API:** `bigframes.ml` estimators expose `model.to_gbq(...)` for persistence in BigQuery; GCS export is performed via the SQL `EXPORT MODEL` statement or `bq extract --model`. No dedicated one-call BigFrames GCS-export helper.
 
 **Repo example (tested):**
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/export/export.ipynb` — the dedicated general-purpose `EXPORT MODEL` notebook: a `LOGISTIC_REG` (→ TF SavedModel, downloaded and run with `tf.saved_model.load()` + `infer(...)` entirely outside BigQuery) and a small `BOOSTED_TREE_CLASSIFIER` (trained with `xgboost_version = '2.1'`, so the export is a `model.ubj` → downloaded and scored locally with an **unpinned** `xgboost` via `booster.get_score(importance_type='gain')`; the `feature_names` gotcha below still applies and is reproduced here independently). Also demonstrates `model_registry='VERTEX_AI'` as a `CREATE MODEL`-time alternative to export (registry storage only, no live serving cost) and the `bq extract --model --destination_format=...` CLI equivalent. **Verified finding:** dropping a model registered via `model_registry='VERTEX_AI'` also cascade-deletes its Vertex AI Model Registry entry — no separate `aiplatform`/`gcloud` deletion step needed.
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` (Example 9) and the companion notebook (Step 7) — `xgboost_version = '2.1'` → `EXPORT MODEL` → download `model.ubj` → unpinned `xgboost` → `booster.feature_names` reassigned manually → `xgboost.plot_tree()`. Both gotchas above were caught and verified here, at both `xgboost_version` values.
-- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — exports a `BOOSTED_TREE` model to a timestamped GCS folder (`EXPORT MODEL ... OPTIONS(URI = 'gs://.../models/{TIMESTAMP}/model')`), i.e. XGBoost Booster format.
-- `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` and `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` — export `PCA` and `AUTOENCODER` models (TensorFlow SavedModel) with the same `EXPORT MODEL ... OPTIONS(URI=...)` pattern.
-- Inverse direction (importing a TF SavedModel back into BQML for serving): `/home/user/git/vertex-ai-mlops/MLOps/Serving/SQL Inference/Serve TensorFlow SavedModel Format With BigQuery.ipynb` — useful context for the round-trip, but it demonstrates `CREATE MODEL ... MODEL_TYPE='TENSORFLOW'` (import), not EXPORT MODEL. Also see this project's own [`models/imported/`](../../models/imported/) for the same import direction.
+- `data+ai/bq-ml/models/export/export.ipynb` — the dedicated general-purpose `EXPORT MODEL` notebook: a `LOGISTIC_REG` (→ TF SavedModel, downloaded and run with `tf.saved_model.load()` + `infer(...)` entirely outside BigQuery) and a small `BOOSTED_TREE_CLASSIFIER` (trained with `xgboost_version = '2.1'`, so the export is a `model.ubj` → downloaded and scored locally with an **unpinned** `xgboost` via `booster.get_score(importance_type='gain')`; the `feature_names` gotcha below still applies and is reproduced here independently). Also demonstrates `model_registry='VERTEX_AI'` as a `CREATE MODEL`-time alternative to export (registry storage only, no live serving cost) and the `bq extract --model --destination_format=...` CLI equivalent. **Verified finding:** dropping a model registered via `model_registry='VERTEX_AI'` also cascade-deletes its Vertex AI Model Registry entry — no separate `aiplatform`/`gcloud` deletion step needed.
+- `data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` (Example 9) and the companion notebook (Step 7) — `xgboost_version = '2.1'` → `EXPORT MODEL` → download `model.ubj` → unpinned `xgboost` → `booster.feature_names` reassigned manually → `xgboost.plot_tree()`. Both gotchas above were caught and verified here, at both `xgboost_version` values.
+- `03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — exports a `BOOSTED_TREE` model to a timestamped GCS folder (`EXPORT MODEL ... OPTIONS(URI = 'gs://.../models/{TIMESTAMP}/model')`), i.e. XGBoost Booster format.
+- `03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` and `03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` — export `PCA` and `AUTOENCODER` models (TensorFlow SavedModel) with the same `EXPORT MODEL ... OPTIONS(URI=...)` pattern.
+- Inverse direction (importing a TF SavedModel back into BQML for serving): `MLOps/Serving/SQL Inference/Serve TensorFlow SavedModel Format With BigQuery.ipynb` — useful context for the round-trip, but it demonstrates `CREATE MODEL ... MODEL_TYPE='TENSORFLOW'` (import), not EXPORT MODEL. Also see this project's own [`models/imported/`](models/imported/) for the same import direction.
 
 
 ---
