@@ -481,8 +481,9 @@ ORDER BY c.start_station_name, c.b;
 
 -- SIX OF THE SEVEN windows sit on the edge of a data gap. Only one does not:
 -- 'West St & Chambers St', 2016-04-27 .. 2016-05-07, which has all 11 days
--- present and a genuine level shift across it -- 256.8 trips/day in the
--- preceding month against 373.4 in the following one.
+-- present and a genuine level shift across it: averaging the raw daily counts,
+-- the 30 days before the window run 248.1 trips/day, the window itself 210.9,
+-- and the 30 days after 373.4.
 --
 -- That is the practical workflow for this function and it is two queries long:
 -- profile the gaps, then keep the change points that do not land on one. Without
