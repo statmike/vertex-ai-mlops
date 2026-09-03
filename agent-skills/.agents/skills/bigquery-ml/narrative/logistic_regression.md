@@ -57,6 +57,7 @@ print(f'Dataset {PROJECT_ID}.{DATASET_ID} ready')
 - `auto_class_weights = TRUE` — balance the classes (the data is ~76% `<=50K`)
 - `data_split_method = 'AUTO_SPLIT'` — automatically hold out rows for evaluation
 - `enable_global_explain = TRUE` — **required** to use `ML.GLOBAL_EXPLAIN` later
+- `category_encoding_method = 'DUMMY_ENCODING'`, `calculate_p_values = TRUE`, and `l1_reg = 0` — **required** to use `ML.ADVANCED_WEIGHTS` in Step 6. All three must be set here, at `CREATE MODEL` time; p-values cannot be added to an already-trained model. Each has its own hard error if you miss it — leaving the default `ONE_HOT_ENCODING` fails with *"Please specify `CATEGORY_ENCODING_METHOD=DUMMY_ENCODING` to enable p_values calculation"*, and a non-zero `l1_reg` fails with *"L1_REG must be zero if CALCULATE_P_VALUES=TRUE"*. Note that p-values compose fine with `auto_class_weights`: class rebalancing does not disqualify the statistics.
 
 Training runs synchronously — the cell completes when the model is ready (about a minute).
 
@@ -68,7 +69,10 @@ OPTIONS(
   input_label_cols = ['income_bracket'],
   auto_class_weights = TRUE,
   data_split_method = 'AUTO_SPLIT',
-  enable_global_explain = TRUE
+  enable_global_explain = TRUE,
+  category_encoding_method = 'DUMMY_ENCODING',
+  calculate_p_values = TRUE,
+  l1_reg = 0
 ) AS
 SELECT
   age, workclass, education, education_num, marital_status, occupation,
@@ -177,7 +181,61 @@ client.query(query).to_dataframe()
 ```
 
 ---
-## Step 6 — Introspect the model
+## Step 6 — Test the coefficients with `ML.ADVANCED_WEIGHTS`
+
+`ML.GLOBAL_EXPLAIN` (Step 5) ranks features by how much they move predictions. What it cannot tell you is that a feature moves predictions only because of noise. `ML.ADVANCED_WEIGHTS` can: it returns **one row per coefficient** with a `standard_error` and a `p_value`, plus a final `__INTERCEPT__` row.
+
+Only **binary** logistic regression is supported. `income_bracket` has two classes, so this model qualifies — a multiclass label would have failed back at `CREATE MODEL` time with *"P-values can only be calculated for linear regression and binary logistic regression models."*
+
+For `LOGISTIC_REG` the weights are log-odds, so `EXP(weight)` is the odds ratio.
+
+```python
+query = f"""
+SELECT
+  processed_input,
+  category,
+  ROUND(weight, 4) AS weight,
+  ROUND(EXP(weight), 4) AS odds_ratio,
+  ROUND(standard_error, 4) AS standard_error,
+  p_value
+FROM ML.ADVANCED_WEIGHTS(MODEL `{PROJECT_ID}.{DATASET_ID}.logistic_regression_income`)
+ORDER BY p_value DESC
+"""
+client.query(query).to_dataframe()
+```
+
+That output is 106 rows — 105 coefficients plus `__INTERCEPT__`. Eight of the 105 are dropped `DUMMY_ENCODING` baselines reporting `p_value` of `NaN`, which leaves 97 real tests. **Roughly 54 of those come back with p > 0.05.**
+
+On a 32,000-row dataset, more than half the coefficients this model learned are not statistically distinguishable from zero — and nothing in `ML.WEIGHTS` or `ML.GLOBAL_EXPLAIN` would have told you. They are not spread evenly either: `native_country` alone accounts for about 38 of them, because it has 41 sparse categories the model cannot defend. Every numeric feature (`age`, `education_num`, `hours_per_week`), by contrast, is significant. That is an actionable finding — bucket or drop `native_country` and the model gets much simpler at no real cost.
+
+Look at `race` in particular: two of its categories clear p < 0.05 and two do not, on the same feature. "Race is important" is not a statement the model actually supports at the category level.
+
+Three things to watch:
+
+- **Category values in this dataset carry a leading space** (`' White'`, `' Female'`). A filter written as `category = 'White'` silently returns nothing — use `TRIM(category)`.
+- **The dropped baseline is the most frequent category**, not the first alphabetically (here `' White'` and `' Male'`). Its row is a placeholder — `weight` 0.0, `standard_error` 0.0, `p_value` `NaN` — so exclude it with `NOT IS_NAN(p_value)` before counting or averaging.
+- **`p_value` bottoms out near 1e-15** (`age` and `hours_per_week` both land there). That is double-precision floor, not a meaningful difference in strength — do not rank features by `p_value` down in that range.
+
+The practical use is to list only what the model can actually defend:
+
+```python
+query = f"""
+SELECT
+  processed_input,
+  TRIM(category) AS category,
+  ROUND(weight, 4) AS weight,
+  p_value
+FROM ML.ADVANCED_WEIGHTS(MODEL `{PROJECT_ID}.{DATASET_ID}.logistic_regression_income`)
+WHERE p_value IS NOT NULL
+  AND NOT IS_NAN(p_value)
+  AND p_value < 0.05
+ORDER BY ABS(weight) DESC
+"""
+client.query(query).to_dataframe()
+```
+
+---
+## Step 7 — Introspect the model
 
 `ML.FEATURE_INFO` reports the statistics each feature had during training. `ML.TRAINING_INFO` returns the per-iteration loss curve, useful for confirming the model converged.
 
@@ -199,7 +257,7 @@ client.query(query).to_dataframe()
 ```
 
 ---
-## Step 7 — In-model preprocessing with the `TRANSFORM` clause
+## Step 8 — In-model preprocessing with the `TRANSFORM` clause
 
 The `TRANSFORM` clause bakes preprocessing into the model. Whatever you do in `TRANSFORM` (scaling, bucketizing, feature crosses) is **saved with the model and reapplied automatically at predict time** — so `ML.PREDICT` takes raw data, with no need to repeat the preprocessing.
 
@@ -240,7 +298,7 @@ client.query(query).to_dataframe()
 ```
 
 ---
-## Step 8 — Hyperparameter tuning
+## Step 9 — Hyperparameter tuning
 
 BigQuery ML has built-in hyperparameter tuning. Set `num_trials` and define a search space with `HPARAM_RANGE` / `HPARAM_CANDIDATES`; BigQuery runs the trials and keeps the best model by `hparam_tuning_objectives`. Inspect every trial with `ML.TRIAL_INFO`.
 

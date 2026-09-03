@@ -70,8 +70,8 @@ Per-model-type deep dives covering the full lifecycle (create → evaluate → p
 
 | Model | Type | Lifecycle entry | Status | What it does |
 |-------|------|-----------------|--------|--------------|
-| [Logistic Regression](models/logistic_regression/) | `LOGISTIC_REG` | ML.PREDICT | GA | Binary classification with feature attributions and hyperparameter tuning |
-| [Linear Regression](models/linear_regression/) | `LINEAR_REG` | ML.PREDICT | GA | Continuous-value regression with interpretable coefficients (`ML.WEIGHTS`) and hyperparameter tuning |
+| [Logistic Regression](models/logistic_regression/) | `LOGISTIC_REG` | ML.PREDICT | GA | Binary classification with feature attributions, coefficient significance testing (`ML.ADVANCED_WEIGHTS`), and hyperparameter tuning |
+| [Linear Regression](models/linear_regression/) | `LINEAR_REG` | ML.PREDICT | GA | Continuous-value regression with interpretable coefficients (`ML.WEIGHTS`), standard errors and p-values (`ML.ADVANCED_WEIGHTS`), and hyperparameter tuning |
 | [Boosted Tree Classifier](models/boosted_tree_classifier/) | `BOOSTED_TREE_CLASSIFIER` | ML.PREDICT | GA | XGBoost binary classification with split-based feature importance (`ML.FEATURE_IMPORTANCE`); same data as Logistic Regression for direct comparison |
 | [Boosted Tree Regressor](models/boosted_tree_regressor/) | `BOOSTED_TREE_REGRESSOR` | ML.PREDICT | GA | XGBoost regression with tree visualization (`EXPORT MODEL` + `xgboost.plot_tree`); same data as Linear Regression for direct comparison |
 | [Random Forest Classifier](models/random_forest_classifier/) | `RANDOM_FOREST_CLASSIFIER` | ML.PREDICT | GA | Bagged tree ensemble, single-pass training; same data as Logistic/Boosted Tree Classifier for a three-way comparison |

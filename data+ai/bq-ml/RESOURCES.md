@@ -251,7 +251,7 @@ FROM `PROJECT_ID.DATASET.training_table`;
 
 **Explainability / weights:**
 - `ML.WEIGHTS` — model coefficients (incl. `__INTERCEPT__`; `category_weights` array for categoricals).
-- `ML.ADVANCED_WEIGHTS` — superset adding `standard_error` and `p_value` (requires `calculate_p_values = TRUE`).
+- `ML.ADVANCED_WEIGHTS` — superset adding `standard_error` and `p_value`, one flat row per coefficient (requires `calculate_p_values = TRUE` + `DUMMY_ENCODING` + `l1_reg = 0`, all at train time). This is the only way to learn that a weight is indistinguishable from zero; `ML.WEIGHTS` and `ML.GLOBAL_EXPLAIN` will happily report a confident-looking number for a coefficient the model cannot defend.
 - `ML.GLOBAL_EXPLAIN` — overall feature attributions (requires `enable_global_explain = TRUE` at train time).
 - `ML.EXPLAIN_PREDICT` — per-row feature attributions (`STRUCT(k AS top_k_features)`).
 
@@ -260,10 +260,10 @@ FROM `PROJECT_ID.DATASET.training_table`;
 - For imbalanced classification (e.g. fraud), use `auto_class_weights = TRUE`.
 - Use `data_split_method = 'CUSTOM'` with a BOOL split column to reproduce TRAIN/VALIDATE/TEST exactly.
 - `NORMAL_EQUATION` (auto-selected for small unregularized problems) trains in one pass — no iterations to tune; `ML.TRAINING_INFO` returns a single row with `eval_loss = NULL` (no per-iteration eval curve like gradient descent produces).
-- **Use `category_encoding_method = 'DUMMY_ENCODING'` whenever you plan to read `ML.WEIGHTS`.** With the default `ONE_HOT_ENCODING`, every category is one-hot encoded *and* the model keeps an intercept, so the design matrix is collinear (rank-deficient) for any categorical feature — the individual `category_weights` are not uniquely identified. **Verified by training the same model twice** (`models/linear_regression/`, `penguins`/`body_mass_g`, identical `SELECT`, only `AUTO_SPLIT`'s random draw differing): an `island` category's weight swung from **+305 / +353 / +340 in one run to −39 / −4 / +8.6 in another** — different scale, different sign — while `ML.PREDICT` and `ML.EVALUATE` stayed effectively unchanged. `DUMMY_ENCODING` drops one baseline category per feature (pinned to `weight: 0.0`) and makes every other category's weight a stable, well-defined delta from it.
+- **Use `category_encoding_method = 'DUMMY_ENCODING'` whenever you plan to read `ML.WEIGHTS` or `ML.ADVANCED_WEIGHTS`** (the latter requires it outright). With the default `ONE_HOT_ENCODING`, every category is one-hot encoded *and* the model keeps an intercept, so the design matrix is collinear (rank-deficient) for any categorical feature — the individual `category_weights` are not uniquely identified. **Verified by training the same model twice** (`models/linear_regression/`, `penguins`/`body_mass_g`, identical `SELECT`, only `AUTO_SPLIT`'s random draw differing): an `island` category's weight swung from **+305 / +353 / +340 in one run to −39 / −4 / +8.6 in another** — different scale, different sign — while `ML.PREDICT` and `ML.EVALUATE` stayed effectively unchanged. `DUMMY_ENCODING` drops one baseline category per feature (pinned to `weight: 0.0`) and makes every other category's weight a stable, well-defined delta from it.
 
 **Limitations:**
-- `ML.ADVANCED_WEIGHTS` p-values require **all** of: `calculate_p_values = TRUE`, `category_encoding_method = 'DUMMY_ENCODING'`, `l1_reg = 0`, **and** total feature cardinality \< 1,000. Only linear and **binary** logistic regression are supported (not multiclass).
+- `ML.ADVANCED_WEIGHTS` p-values require **all** of: `calculate_p_values = TRUE`, `category_encoding_method = 'DUMMY_ENCODING'`, `l1_reg = 0`, **and** total feature cardinality \< 1,000. Only linear and **binary** logistic regression are supported (not multiclass). None of this is retrofittable — the statistics are computed during training, so a model trained without `calculate_p_values` must be retrained, and three of the four preconditions fail at `CREATE MODEL` time rather than when you call the TVF. See that function's entry for the verified error text of each.
 - `ML.ROC_CURVE` is binary-only; `ML.CONFUSION_MATRIX` is classification-only.
 - Linear models capture only linear relationships — engineer interaction/polynomial features (via `TRANSFORM`) for nonlinearity, or use boosted trees.
 - `ML.WEIGHTS`/`ML.GLOBAL_EXPLAIN` attributions for a given category can shift materially between training runs when using `ONE_HOT_ENCODING` (see the `DUMMY_ENCODING` best practice above) — don't treat one run's per-category numbers as ground truth unless trained with `DUMMY_ENCODING`.
@@ -273,11 +273,11 @@ FROM `PROJECT_ID.DATASET.training_table`;
 **BigFrames API:** `bigframes.ml.linear_model.LinearRegression()` and `bigframes.ml.linear_model.LogisticRegression()` — `.fit(X, y)` / `.predict()` / `.score()`.
 
 **Repo example (tested):**
-- `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` — progressive LOGISTIC_REG lifecycle on `census_adult_income`: create → ML.EVALUATE → ML.CONFUSION_MATRIX → ML.ROC_CURVE → ML.PREDICT → ML.EXPLAIN_PREDICT → ML.GLOBAL_EXPLAIN → ML.FEATURE_INFO/TRAINING_INFO → TRANSFORM → HP tuning.
-- `data+ai/bq-ml/models/linear_regression/linear_regression.sql` — progressive LINEAR_REG lifecycle on `penguins`/`body_mass_g`: create (with `DUMMY_ENCODING`) → ML.EVALUATE → ML.PREDICT → ML.EXPLAIN_PREDICT → ML.GLOBAL_EXPLAIN → **ML.WEIGHTS** → ML.FEATURE_INFO/TRAINING_INFO → TRANSFORM → HP tuning. Confirmed the `NORMAL_EQUATION` single-pass behavior and the `ONE_HOT_ENCODING` category-weight instability documented above.
+- `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` — progressive LOGISTIC_REG lifecycle on `census_adult_income`: create → ML.EVALUATE → ML.CONFUSION_MATRIX → ML.ROC_CURVE → ML.PREDICT → ML.EXPLAIN_PREDICT → ML.GLOBAL_EXPLAIN → **ML.ADVANCED_WEIGHTS** → ML.FEATURE_INFO/TRAINING_INFO → TRANSFORM → HP tuning. Trained with `calculate_p_values`/`DUMMY_ENCODING`/`l1_reg = 0` so the significance read is available; Example 8 finds 54 of 97 testable coefficients insignificant at p > 0.05.
+- `data+ai/bq-ml/models/linear_regression/linear_regression.sql` — progressive LINEAR_REG lifecycle on `penguins`/`body_mass_g`: create (with `DUMMY_ENCODING`) → ML.EVALUATE → ML.PREDICT → ML.EXPLAIN_PREDICT → ML.GLOBAL_EXPLAIN → **ML.WEIGHTS** → **ML.ADVANCED_WEIGHTS** → ML.FEATURE_INFO/TRAINING_INFO → TRANSFORM → HP tuning. Confirmed the `NORMAL_EQUATION` single-pass behavior and the `ONE_HOT_ENCODING` category-weight instability documented above. Example 7 pairs `ML.WEIGHTS` with `ML.ADVANCED_WEIGHTS` on the same model, including the `STRUCT(TRUE AS standardize)` variant, and shows `island` failing significance once `species` is present.
 - `data+ai/bq-ml/workflows/regression_based_forecasting/regression_based_forecasting.ipynb` — `LINEAR_REG` used for forecasting via a lagged-feature design matrix; shows the regression `ML.EVALUATE` columns and recursive vs. direct multi-step prediction, benchmarked against `ARIMA_PLUS` on the same series.
 - `data+ai/bq-ml/workflows/cross_validation/cross_validation.sql` and `data+ai/bq-ml/workflows/ensembling/ensembling.sql` — `LOGISTIC_REG` reused as a fold-level and base-learner model respectively; `data+ai/bq-ml/workflows/propensity_score_matching/` and `data+ai/bq-ml/workflows/survival_analysis/` use the same mechanics for causal and hazard estimation rather than prediction.
-- Options this section documents that the lifecycles above cover elsewhere: `calculate_p_values` feeds `ML.ADVANCED_WEIGHTS` (standard errors + p-values) — see that function's entry below; registry registration, `EXPORT MODEL`, and endpoint serving are covered end-to-end in `data+ai/bq-ml/models/export/` and `data+ai/bq-ml/models/remote/`.
+- Options this section documents that the lifecycles above cover elsewhere: registry registration, `EXPORT MODEL`, and endpoint serving are covered end-to-end in `data+ai/bq-ml/models/export/` and `data+ai/bq-ml/models/remote/`.
 
 
 ---
@@ -2531,7 +2531,7 @@ FROM UNNEST((
 **BigFrames API:** `model.global_explain()` covers attribution; raw coefficients via the underlying model are exposed through the BigQuery SQL function. No dedicated `ml_weights()` wrapper — call `ML.WEIGHTS` via `bigframes.pandas.read_gbq(...)` over the TVF.
 
 **Repo example (tested):**
-- `data+ai/bq-ml/models/linear_regression/linear_regression.sql` — `LINEAR_REG` on `penguins`/`body_mass_g`, trained with `DUMMY_ENCODING` specifically to keep `ML.WEIGHTS` stable and interpretable; SQL comments explain why. (`models/logistic_regression/logistic_regression.sql` covers the GLM lifecycle but not `ML.WEIGHTS` — the linear-regression file is the one to read for it.)
+- `data+ai/bq-ml/models/linear_regression/linear_regression.sql` — `LINEAR_REG` on `penguins`/`body_mass_g`, trained with `DUMMY_ENCODING` specifically to keep `ML.WEIGHTS` stable and interpretable; SQL comments explain why. Example 7 immediately follows it with `ML.ADVANCED_WEIGHTS` on the same model, which is the direct way to see what `ML.WEIGHTS` alone cannot tell you — that `island`'s non-zero weights are not statistically distinguishable from zero. (`models/logistic_regression/logistic_regression.sql` covers the GLM lifecycle but not `ML.WEIGHTS` — the linear-regression file is the one to read for it; it uses `ML.ADVANCED_WEIGHTS` instead.)
 - `data+ai/bq-ml/workflows/difference_in_differences/difference_in_differences.sql` (Step 3) — the coefficient *is* the answer: the `treated_post` weight is the DiD estimate. Verified −19.29 with `optimize_strategy = 'NORMAL_EQUATION'`, matching `statsmodels.OLS` exactly, versus −6.19 under the default `AUTO_STRATEGY` — read weights for inference only from a normal-equation fit.
 - `data+ai/bq-ml/workflows/price_elasticity_dml/price_elasticity_dml.sql` (Steps 2 and 4) — `ML.WEIGHTS` on the naive and the double-ML model, verified −1.43 vs. −0.71: roughly half the apparent price sensitivity was confounding, visible only by comparing two weight readouts.
 - `data+ai/bq-ml/workflows/synthetic_control/synthetic_control.sql` (Step 2) — `ML.WEIGHTS` used as a *diagnostic of an invalid fit*: several weights come back negative and others far above 1, none of which a real percentage blend allows, on an underdetermined system (9 pre-period weeks vs. 13 donor columns).
@@ -2569,8 +2569,10 @@ FROM ML.ADVANCED_WEIGHTS(MODEL `PROJECT_ID.DATASET.MODEL_NAME`
 | `processed_input` | STRING | Feature input column name. |
 | `weight` | FLOAT64 | Weight for a numeric feature; NULL for categorical (see `category`). |
 | `category` | STRING | Category name for non-numeric/dummy-encoded inputs (NULL for numeric). |
-| `standard_error` | FLOAT64 | Standard error of the weight. NULL/absent for the intercept unless `standardize=TRUE`; `NaN` for a dropped dummy category. |
-| `p_value` | FLOAT64 | p-value of the weight. Same intercept / dropped-category caveats as `standard_error`. |
+| `standard_error` | FLOAT64 | Standard error of the weight. `NULL` for the intercept unless `standardize=TRUE`; **`0.0`** (not `NaN`) for a dropped dummy category. |
+| `p_value` | FLOAT64 | p-value of the weight. `NULL` for the intercept unless `standardize=TRUE`; **`NaN`** for a dropped dummy category. |
+
+The intercept arrives as a final row with `processed_input = '__INTERCEPT__'` and `category = NULL`. Note the two sentinel values differ: a baseline row is `weight = 0.0`, `standard_error = 0.0`, `p_value = NaN`, so `NOT IS_NAN(p_value)` is the reliable filter — reading `standard_error = 0.0` as a measured value will silently corrupt any average.
 
 **Best practices:**
 - Train with `CALCULATE_P_VALUES = TRUE` up front — p-values/standard errors are computed at CREATE MODEL time and cannot be added later.
@@ -2579,11 +2581,32 @@ FROM ML.ADVANCED_WEIGHTS(MODEL `PROJECT_ID.DATASET.MODEL_NAME`
 **Limitations:**
 - Not available for multiclass logistic regression, matrix factorization, or any non-GLM model.
 - Requires `L1_REG = 0` and `DUMMY_ENCODING`; incompatible with L1 regularization.
-- Dropped dummy categories report `weight = 0.0` with `NaN` standard error and p-value.
+- Dropped dummy categories report `weight = 0.0` and `standard_error = 0.0` with a `NaN` p-value.
+
+**Gotchas (verified live):**
+- **Each precondition fails differently, and three of the four fail at `CREATE MODEL` time, not at query time.** Verified error text:
+
+  | What you got wrong | Where it fails | Message |
+  |---|---|---|
+  | `calculate_p_values` omitted | the TVF | `Model is not supported by ML.ADVANCED_WEIGHTS because it was not trained with calculate_p_values = true.` |
+  | left the default `ONE_HOT_ENCODING` | `CREATE MODEL` | `Please specify CATEGORY_ENCODING_METHOD=DUMMY_ENCODING to enable p_values calculation.` |
+  | `l1_reg > 0` | `CREATE MODEL` | `L1_REG must be zero if CALCULATE_P_VALUES=TRUE.` |
+  | multiclass label | `CREATE MODEL` | `Option(s) calculate_p_values are found. P-values can only be calculated for linear regression and binary logistic regression models.` |
+
+- **A model with categorical features emits a warning at `CREATE MODEL` time:** `Since model contains categorical values, regression statistics will not be calculated for unstandardized intercept.` This is expected, not a failure — it is why `__INTERCEPT__` returns `NULL` statistics and why `STRUCT(TRUE AS standardize)` exists.
+- **The dropped `DUMMY_ENCODING` baseline is the most frequent category, not the first alphabetically.** On `penguins` the baselines are Adelie (146 rows), Biscoe (163), and `MALE` (168) — `MALE` wins despite `FEMALE` sorting earlier.
+- **`standardize` does not change any p-value.** It scales `weight` and `standard_error` by the same factor, so the t-statistic is invariant. Use it to compare effect sizes on a common scale, never to change which coefficients are significant.
+- **The standardized intercept is not the label mean.** Categorical features stay dummy-coded rather than centered, so it is the prediction at mean numeric features *and* baseline categories. On `penguins` it is 4110.72 while mean `body_mass_g` is 4207.06.
+- **`p_value` bottoms out near `1e-15`** (double-precision floor). Below that, differences are numerical noise — do not rank features by p-value down there.
+- **`category` values inherit whatever is in the data, including leading whitespace.** `census_adult_income` returns `' White'` and `' Female'`; `category = 'White'` matches nothing. Use `TRIM(category)`.
 
 **BigFrames API:** No dedicated wrapper; call the TVF via SQL / `read_gbq`.
 
-**Repo example:** none yet — this is the one lifecycle function with no tested example in this project. The models that satisfy the type constraint (`models/linear_regression/`, `models/logistic_regression/`, and the `LINEAR_REG`/`LOGISTIC_REG` workflows that read `ML.WEIGHTS`) are all trained without `calculate_p_values`, and the option cannot be added after training. To reproduce, retrain any of them with `calculate_p_values = TRUE`, `category_encoding_method = 'DUMMY_ENCODING'`, and `l1_reg = 0`, then call the TVF; the required options, outputs, and caveats are fully specified above.
+**Repo example (tested):** `data+ai/bq-ml/models/linear_regression/` (Example 7) and `data+ai/bq-ml/models/logistic_regression/` (Example 8) — the two model types that satisfy the constraint, each training its main model with `calculate_p_values = TRUE`, `DUMMY_ENCODING`, and `l1_reg = 0` from the start, since the options cannot be added later.
+
+The linear example is the clean statistical read: on `penguins`, `island` is the only feature whose categories are insignificant (p ≈ 0.82 and 0.42) because Gentoo appears only on Biscoe and Chinstrap only on Dream, so `island` merely restates `species`. `ML.WEIGHTS` reports non-zero island weights and gives you no way to see this. It also runs the `STRUCT(TRUE AS standardize)` variant to recover intercept statistics and to show that `flipper_length_mm` moves from 16.24 g/mm to 227.60 g per standard deviation while its p-value is unchanged at 2.6e-06.
+
+The logistic example is the scale read: on `census_adult_income` the model expands to 106 rows (105 coefficients plus `__INTERCEPT__`); eight are dropped baselines, leaving 97 real tests, and **54 of those come back with p > 0.05**. Verified breakdown — `native_country` 38/41 insignificant, `education` 5/15, `workclass` 4/8, `occupation` 4/14, `race` 2/4, `marital_status` 1/6, and every numeric feature significant. More than half of what a 32k-row model learned is undefendable, concentrated almost entirely in one sparse high-cardinality column, and neither `ML.WEIGHTS` nor `ML.GLOBAL_EXPLAIN` would surface it.
 
 > Note: For boosted trees / random forest see `ML.FEATURE_IMPORTANCE` and `ML.GLOBAL_EXPLAIN`; for k-means see `ML.CENTROIDS`; for PCA/autoencoder see `ML.PRINCIPAL_COMPONENTS` / `ML.PRINCIPAL_COMPONENT_INFO`; for ARIMA_PLUS see `ML.ARIMA_COEFFICIENTS`. The tree, clustering, and forecasting model files (`models/boosted_tree_classifier/`, `models/pca/`, `models/kmeans/`, `models/autoencoder/`, `models/arima_plus/`) do NOT use `ML.WEIGHTS`. Neither do the DNN and wide-and-deep types — `models/dnn_classifier/` (Example 7) records why: no coefficients exist, so Integrated Gradients via `ML.GLOBAL_EXPLAIN` is the only mechanism available there.
 

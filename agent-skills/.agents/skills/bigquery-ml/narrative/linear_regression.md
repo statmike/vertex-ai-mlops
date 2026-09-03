@@ -64,6 +64,9 @@ print(f'Dataset {PROJECT_ID}.{DATASET_ID} ready')
 Training runs synchronously — the cell completes when the model is ready.
 
 > For a small, unregularized problem like this one, BigQuery ML auto-selects the `NORMAL_EQUATION` solver (a single closed-form pass) instead of iterative gradient descent — see the `ML.TRAINING_INFO` note in Step 6.
+- `calculate_p_values = TRUE` and `l1_reg = 0` — these unlock `ML.ADVANCED_WEIGHTS` in Step 6, which reports a standard error and p-value for every coefficient. Both must be set **here**, at `CREATE MODEL` time; p-values cannot be added to an already-trained model. `l1_reg = 0` is the default, but it is stated explicitly so the dependency is visible.
+
+The cell below emits a warning — *"Since model contains categorical values, regression statistics will not be calculated for unstandardized intercept."* That is expected. Step 6 shows how to get intercept statistics anyway.
 
 ```python
 query = f"""
@@ -73,6 +76,8 @@ OPTIONS(
   input_label_cols = ['body_mass_g'],
   data_split_method = 'AUTO_SPLIT',
   category_encoding_method = 'DUMMY_ENCODING',
+  calculate_p_values = TRUE,
+  l1_reg = 0,
   enable_global_explain = TRUE
 ) AS
 SELECT
@@ -162,7 +167,58 @@ client.query(query).to_dataframe()
 ```
 
 ---
-## Step 6 — Introspect the model
+## Step 6 — Test the coefficients with `ML.ADVANCED_WEIGHTS`
+
+`ML.WEIGHTS` (Step 5) answers *"how big is this coefficient?"* — `ML.ADVANCED_WEIGHTS` answers *"is it distinguishable from zero at all?"*
+
+It also flattens the shape. Where `ML.WEIGHTS` puts numeric features in `weight` and nests categoricals in a `category_weights` array, `ML.ADVANCED_WEIGHTS` gives **one row per coefficient** — `processed_input`, `category`, `weight`, `standard_error`, `p_value` — plus a final `__INTERCEPT__` row.
+
+Requirements, all set back in Step 1: `calculate_p_values = TRUE`, `category_encoding_method = 'DUMMY_ENCODING'`, and `l1_reg = 0`. Total feature cardinality must also be under 1,000, and only `LINEAR_REG` and **binary** `LOGISTIC_REG` are supported.
+
+```python
+query = f"""
+SELECT
+  processed_input,
+  category,
+  ROUND(weight, 4) AS weight,
+  ROUND(standard_error, 4) AS standard_error,
+  p_value
+FROM ML.ADVANCED_WEIGHTS(MODEL `{PROJECT_ID}.{DATASET_ID}.linear_regression_penguins`)
+"""
+client.query(query).to_dataframe()
+```
+
+Read the `p_value` column and one feature stands out: **`island` is the only feature whose categories are not significant** (roughly 0.82 for Dream and 0.42 for Torgersen, against 0.05). Once `species` is in the model, where a penguin was found adds nothing — Gentoo appears only on Biscoe and Chinstrap only on Dream, so `island` is largely a restatement of `species`. `ML.WEIGHTS` shows non-zero island weights and gives you no way to notice this.
+
+Two things to watch in the output:
+
+- The dropped `DUMMY_ENCODING` baseline is the **most frequent** category, not the first alphabetically — here Adelie (146 rows), Biscoe (163), and `MALE` (168, beating the alphabetically-earlier `FEMALE`). Baseline rows report `weight` 0.0 and `standard_error` 0.0 with `p_value` `NaN`. They are placeholders, not estimates, so filter them with `IS_NAN(p_value)` rather than reading 0.0 as a measured standard error.
+- `__INTERCEPT__` comes back with a **`NULL`** standard error and p-value whenever the model has categorical features — the warning from Step 1. Passing `STRUCT(TRUE AS standardize)` gets them back.
+
+```python
+query = f"""
+SELECT
+  processed_input,
+  ROUND(weight, 4) AS weight,
+  ROUND(standard_error, 4) AS standard_error,
+  p_value
+FROM ML.ADVANCED_WEIGHTS(
+  MODEL `{PROJECT_ID}.{DATASET_ID}.linear_regression_penguins`,
+  STRUCT(TRUE AS standardize)
+)
+WHERE category IS NULL
+"""
+client.query(query).to_dataframe()
+```
+
+Standardizing rescales each numeric feature to zero mean and unit variance before reporting, and that makes intercept statistics available.
+
+Note what does **not** change: the p-values are identical either way. Standardizing scales `weight` and `standard_error` by the same factor, so the t-statistic — and therefore significance — is unchanged. Standardize to compare effect sizes across features on a common scale (`flipper_length_mm` goes from ~16 grams *per mm* to ~228 grams *per standard deviation*), not to change which features count as significant.
+
+One caution: the standardized intercept is not the average label. It lands near 4111 while mean `body_mass_g` is about 4207, because categorical features stay dummy-coded rather than centered — so the intercept is the prediction at mean numeric features **and** baseline categories, i.e. an Adelie male on Biscoe.
+
+---
+## Step 7 — Introspect the model
 
 `ML.FEATURE_INFO` reports the statistics each feature had during training. `ML.TRAINING_INFO` returns the per-iteration loss curve — for this model, BigQuery ML auto-selects the `NORMAL_EQUATION` solver, which trains in a single closed-form pass, so expect exactly one row with no `eval_loss`.
 
@@ -184,7 +240,7 @@ client.query(query).to_dataframe()
 ```
 
 ---
-## Step 7 — In-model preprocessing with the `TRANSFORM` clause
+## Step 8 — In-model preprocessing with the `TRANSFORM` clause
 
 The `TRANSFORM` clause bakes preprocessing into the model. Whatever you do in `TRANSFORM` (scaling, bucketizing, feature crosses) is **saved with the model and reapplied automatically at predict time** — so `ML.PREDICT` takes raw data, with no need to repeat the preprocessing.
 
@@ -224,7 +280,7 @@ client.query(query).to_dataframe()
 ```
 
 ---
-## Step 8 — Hyperparameter tuning
+## Step 9 — Hyperparameter tuning
 
 BigQuery ML has built-in hyperparameter tuning. Set `num_trials` and define a search space with `HPARAM_RANGE` / `HPARAM_CANDIDATES`; BigQuery runs the trials and keeps the best model by `hparam_tuning_objectives`. Inspect every trial with `ML.TRIAL_INFO`.
 
