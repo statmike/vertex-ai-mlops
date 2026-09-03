@@ -275,8 +275,9 @@ FROM `PROJECT_ID.DATASET.training_table`;
 **Repo example (tested):**
 - `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` — progressive LOGISTIC_REG lifecycle on `census_adult_income`: create → ML.EVALUATE → ML.CONFUSION_MATRIX → ML.ROC_CURVE → ML.PREDICT → ML.EXPLAIN_PREDICT → ML.GLOBAL_EXPLAIN → ML.FEATURE_INFO/TRAINING_INFO → TRANSFORM → HP tuning.
 - `data+ai/bq-ml/models/linear_regression/linear_regression.sql` — progressive LINEAR_REG lifecycle on `penguins`/`body_mass_g`: create (with `DUMMY_ENCODING`) → ML.EVALUATE → ML.PREDICT → ML.EXPLAIN_PREDICT → ML.GLOBAL_EXPLAIN → **ML.WEIGHTS** → ML.FEATURE_INFO/TRAINING_INFO → TRANSFORM → HP tuning. Confirmed the `NORMAL_EQUATION` single-pass behavior and the `ONE_HOT_ENCODING` category-weight instability documented above.
-- `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` — binary fraud classifier with `auto_class_weights`, `calculate_p_values`, `CUSTOM` split, `ML.ADVANCED_WEIGHTS` (standard errors + p-values), Vertex AI Model Registry registration, endpoint serving, `EXPORT MODEL`.
-- `Applied Forecasting/BQML Regression Based Forecasting.ipynb` — LINEAR_REG used for forecasting via lagged-feature design matrix; shows regression `ML.EVALUATE` columns and recursive vs. direct multi-step prediction.
+- `data+ai/bq-ml/workflows/regression_based_forecasting/regression_based_forecasting.ipynb` — `LINEAR_REG` used for forecasting via a lagged-feature design matrix; shows the regression `ML.EVALUATE` columns and recursive vs. direct multi-step prediction, benchmarked against `ARIMA_PLUS` on the same series.
+- `data+ai/bq-ml/workflows/cross_validation/cross_validation.sql` and `data+ai/bq-ml/workflows/ensembling/ensembling.sql` — `LOGISTIC_REG` reused as a fold-level and base-learner model respectively; `data+ai/bq-ml/workflows/propensity_score_matching/` and `data+ai/bq-ml/workflows/survival_analysis/` use the same mechanics for causal and hazard estimation rather than prediction.
+- Options this section documents that the lifecycles above cover elsewhere: `calculate_p_values` feeds `ML.ADVANCED_WEIGHTS` (standard errors + p-values) — see that function's entry below; registry registration, `EXPORT MODEL`, and endpoint serving are covered end-to-end in `data+ai/bq-ml/models/export/` and `data+ai/bq-ml/models/remote/`.
 
 
 ---
@@ -390,8 +391,8 @@ SELECT * EXCEPT(id_col) FROM `PROJECT_ID.DATASET.TABLE`;
 - `data+ai/bq-ml/models/boosted_tree_regressor/boosted_tree_regressor.sql` + notebook — `BOOSTED_TREE_REGRESSOR` on `penguins`/`body_mass_g` (same data/label as `models/linear_regression/`); `r2_score` 0.983 vs. `RANDOM_FOREST_REGRESSOR`'s 0.922 and linear regression's 0.875 on identical data. `TRANSFORM` uses `ML.LABEL_ENCODER`. Same tree-visualization step; the `reg:linear` deprecation warning on load is a `0.9`-era artifact and is gone at `xgboost_version = '2.1'` (see gotcha above).
 - `data+ai/bq-ml/workflows/regression_based_forecasting/regression_based_forecasting.ipynb` — 28 `BOOSTED_TREE_REGRESSOR` models (one per forecast horizon day, direct multi-step forecasting) trained concurrently in batches to work around the per-model training-time GOTCHA above; got the best MAPE of any technique in that notebook's comparison, including the `ARIMA_PLUS` reference, despite a worse MAE/RMSE.
 - `data+ai/bq-ml/workflows/embeddings_classification/embeddings_classification.ipynb` — 3 `BOOSTED_TREE_CLASSIFIER` models trained on a ~1M-row (product × hierarchy-node) table with `AI.EMBED`-generated 256-dim embeddings passed as `ARRAY<FLOAT64>` feature columns directly (verified: no unnesting needed); demonstrates the real-data-scale training-time finding above (19-40 min/model, not the ~270s trivial-data floor) and that raw `ML.EVALUATE` metrics don't always rank models the same way as an applied top-1 resolution accuracy computed via `ML.PREDICT` + `UNNEST`/`QUALIFY`. Also includes two baselines that outperform this whole pairwise approach: a direct multiclass `BOOSTED_TREE_CLASSIFIER` (no cross-join, trains in minutes not tens of minutes, ~69-70% category accuracy vs. the pairwise approach's ~42-48%) and a zero-training `VECTOR_SEARCH` lookup (~52% category accuracy) — **verified `VECTOR_SEARCH` needs no vector index at small scale (38 hierarchy nodes)**, it silently falls back to an exact brute-force scan; a two-stage hierarchical resolution pattern (nearest department first, then nearest category filtered to that department's children via `WHERE base.hierarchy_node_parent = query.pred_department`) mirrors the `ML.PREDICT`-based resolution used for the classifiers, but with zero training cost. A real gotcha hit while building this: `top_k` on the second-stage `VECTOR_SEARCH` call must cover *all* candidate nodes (not just a small top-k like 5), since filtering by parent happens *after* `top_k` truncation — a small `top_k` can silently drop products whose true category isn't among the globally-nearest few before the parent filter ever runs.
-- `03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — `BOOSTED_TREE_CLASSIFIER` on imbalanced fraud data with `auto_class_weights`, `data_split_method='CUSTOM'`, `enable_global_explain`, Vertex AI registration; then `ML.EVALUATE`, `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, `ML.FEATURE_IMPORTANCE`, `EXPORT MODEL` (produces `model.bst` XGBoost artifact), and Vertex AI Endpoint serving.
-- `03 - BigQuery ML (BQML)/BQML Feature Engineering - Create Model With Transpose.ipynb` — `BOOSTED_TREE_REGRESSOR` with an inline `TRANSFORM` clause (`ML.LABEL_ENCODER`, scalers, date `EXTRACT`), `num_parallel_tree=25`, `l1_reg`/`l2_reg`; shows `TRANSFORM` traveling into the exported `/model` + `/model/transform` artifacts and Vertex AI serving.
+- `data+ai/bq-ml/workflows/anomaly_fraud_detection/anomaly_fraud_detection.ipynb` — `BOOSTED_TREE_CLASSIFIER` with `auto_class_weights` on genuinely imbalanced data (`bigquery-public-data.ml_datasets.ulb_fraud_detection`, 492 fraud cases), the setting that option exists for; scored against the unsupervised `PCA` and `AUTOENCODER` detectors on the same table.
+- `data+ai/bq-ml/models/export/export.sql` — `EXPORT MODEL` on a `BOOSTED_TREE_CLASSIFIER`, which exports as an XGBoost Booster (`model.bst`) rather than the TensorFlow SavedModel the GLMs/DNNs produce; `data+ai/bq-ml/models/remote/` then deploys to a Vertex AI Endpoint. Note that when the model carries a `TRANSFORM` clause the preprocessing travels with it, landing beside the model as a separate `/model/transform` artifact so the exported model reapplies it at serving time.
 
 
 ---
@@ -511,8 +512,8 @@ FROM `PROJECT_ID.DATASET.TRAINING_TABLE`;
 **Repo example (tested):**
 - `data+ai/bq-ml/models/random_forest_classifier/random_forest_classifier.sql` + notebook — `RANDOM_FOREST_CLASSIFIER` on `census_adult_income` (same data/label as `logistic_regression`/`boosted_tree_classifier`, for a three-way technique comparison), incl. a dedicated shallow illustrative forest for tree visualization.
 - `data+ai/bq-ml/models/random_forest_regressor/random_forest_regressor.sql` + notebook — `RANDOM_FOREST_REGRESSOR` on `penguins`/`body_mass_g` (same data/label as `linear_regression`/`boosted_tree_regressor`); the `xgboost_version` sensitivity (`r2_score` ≈ 0.92 at `2.1` vs. ≈ 0.74 at the `0.9` default, 2,482 vs. 82 splits) is measured and discussed directly in the notebook.
-- `03 - BigQuery ML (BQML)/03c - BQML Random Forest.ipynb` — full `RANDOM_FOREST_CLASSIFIER` workflow on the credit-card fraud table: `CREATE MODEL` with `num_parallel_tree=200`, `tree_method='HIST'`, `subsample=0.85`, `colsample_bytree=0.9`, `auto_class_weights=TRUE`, `enable_global_explain=TRUE`, `CUSTOM` split via a derived BOOL column; then `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE`, `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, `ML.FEATURE_IMPORTANCE`, Vertex AI registration + endpoint serving, and `EXPORT MODEL` (exports an XGBoost `model.bst`).
-- `MLOps/Model Monitoring/model_monitoring_job.sql` — `RANDOM_FOREST_CLASSIFIER` with `TRANSFORM(...)` preprocessing, `AUTO_CLASS_WEIGHTS=FALSE`, `NUM_PARALLEL_TREE=150`, used as the monitored/retrained model with `ML.VALIDATE_DATA_SKEW`, `ML.VALIDATE_DATA_DRIFT`, and `ML.EVALUATE` (reads `accuracy`).
+- `data+ai/bq-ml/workflows/ensembling/ensembling.sql` — `RANDOM_FOREST_CLASSIFIER` as one of three base learners (with `LOGISTIC_REG` and `BOOSTED_TREE_CLASSIFIER`) on the same `census_adult_income` data, so the forest's standalone metrics above can be read against its contribution in an ensemble.
+- To put a tree ensemble behind a monitoring/retraining loop: `data+ai/bq-ml/functions/data_quality/` covers `ML.VALIDATE_DATA_SKEW` and `ML.VALIDATE_DATA_DRIFT` against a training baseline, and `data+ai/bq-ml/pipelines/sql_scripting/` wires drift-check → conditional `CREATE OR REPLACE MODEL` → `ML.EVALUATE` into a single scheduled script (on a `BOOSTED_TREE_CLASSIFIER`; the pattern is model-type-agnostic).
 
 
 ---
@@ -587,7 +588,7 @@ SELECT * EXCEPT(id) FROM `PROJECT_ID.DATASET.TRAINING_TABLE`;
 **Supported lifecycle functions:** `ML.EVALUATE`, `ML.PREDICT`, `ML.TRAINING_INFO`, `ML.FEATURE_INFO`, `ML.EXPLAIN_PREDICT` (local attributions), `ML.GLOBAL_EXPLAIN` (requires `enable_global_explain=TRUE`), `ML.CONFUSION_MATRIX` (classifier only), `ML.ROC_CURVE` (binary classifier only), `EXPORT MODEL` (TensorFlow SavedModel). With HP tuning: `ML.TRIAL_INFO`. NOT supported: `ML.WEIGHTS`/`ML.ADVANCED_WEIGHTS` (no coefficient weights for DNNs — use the explain functions), `ML.FEATURE_IMPORTANCE` (tree-only).
 
 **ML.EVALUATE output metrics:**
-- **DNN_CLASSIFIER:** `precision`, `recall`, `accuracy`, `f1_score`, `log_loss`, `roc_auc` (verified in repo notebook).
+- **DNN_CLASSIFIER:** `precision`, `recall`, `accuracy`, `f1_score`, `log_loss`, `roc_auc` (verified in [`models/dnn_classifier/`](models/dnn_classifier/)).
 - **DNN_REGRESSOR:** `mean_absolute_error`, `mean_squared_error`, `mean_squared_log_error`, `median_absolute_error`, `r2_score`, `explained_variance`.
 
 **Preprocessing support:** Automatic (standardization of numeric features, one-hot of categoricals) happens internally; `TRANSFORM` clause IS supported and recommended for explicit feature engineering (e.g. `ML.STANDARD_SCALER`). Normalizing numeric inputs materially helps gradient-based training.
@@ -617,7 +618,7 @@ SELECT * EXCEPT(id) FROM `PROJECT_ID.DATASET.TRAINING_TABLE`;
 
 **BigFrames API:** Verified (checked the live BigFrames API reference across every `bigframes.ml` module — `linear_model`, `ensemble`, `cluster`, `decomposition`, `forecasting`, `imported`, `llm`): **no first-class DNN/neural-network class exists anywhere in `bigframes.ml`**. This is a permanent gap, not a version-specific omission. `bigframes.ml.imported.TensorFlowModel` only *serves* an already-trained external TensorFlow model — it does not train a BQML `DNN_CLASSIFIER`/`DNN_REGRESSOR`. Use the SQL `CREATE MODEL` interface directly; there is no BigFrames comparison path for this model type.
 
-**Repo example (tested):** `03 - BigQuery ML (BQML)/03d - BQML Deep Neural Network (DNN).ipynb` — end-to-end `DNN_CLASSIFIER` on the credit-card fraud table (`hidden_units=[64,32]`, `optimizer='SGD'`, `dropout=0.15`, `CUSTOM` split via a derived BOOL `custom_splits` column, `enable_global_explain=TRUE`, Vertex AI registry), covering `ML.TRAINING_INFO`, `ML.FEATURE_INFO`, `ML.EVALUATE`, `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, `EXPORT MODEL`, and Vertex AI Endpoint serving. Also see this project's own `models/dnn_classifier/` and `models/dnn_regressor/` for a from-scratch, fully pre-validated build on the same comparison datasets used by every other model type in this project.
+**Repo example (tested):** `data+ai/bq-ml/models/dnn_classifier/` and `data+ai/bq-ml/models/dnn_regressor/` — from-scratch, fully pre-validated builds on the same comparison datasets every other model type in this project uses (`census_adult_income` for the classifier, `penguins`/`body_mass_g` for the regressor), so the DNN's metrics can be read directly against the GLM, tree, and wide-and-deep results. Between them they cover `ML.TRAINING_INFO`, `ML.FEATURE_INFO`, `ML.EVALUATE`, `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, `ML.FEATURE_IMPORTANCE`, `ML.ADVANCED_WEIGHTS`, and HP tuning (`ML.TRIAL_INFO`), with `auto_class_weights`, `enable_global_explain`, and an explicit `data_split_method`. For `EXPORT MODEL` (DNNs export as a TensorFlow SavedModel) and Vertex AI Endpoint serving, see `data+ai/bq-ml/models/export/` and `data+ai/bq-ml/models/remote/`.
 
 
 ---
@@ -714,7 +715,7 @@ SELECT * FROM `PROJECT_ID.DATASET.TABLE`;
 
 **BigFrames API:** Verified (checked the live BigFrames API reference across every `bigframes.ml` module) — **no first-class wide-and-deep class exists anywhere in `bigframes.ml`**, same permanent gap as `DNN_CLASSIFIER`/`DNN_REGRESSOR`. Use the SQL `CREATE MODEL` interface directly.
 
-**Repo example (tested):** `03 - BigQuery ML (BQML)/03e - BQML Wide-And-Deep Networks.ipynb` — trains `DNN_LINEAR_COMBINED_CLASSIFIER` on the credit-card fraud table with `hidden_units=[64,32]`, `optimizer='SGD'`, `dropout=0.05`, `CUSTOM` split, `enable_global_explain=TRUE`; then runs `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (precision/recall/accuracy/f1_score/log_loss/roc_auc), `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, Vertex AI Model Registry registration + endpoint deploy, and `EXPORT MODEL` (TensorFlow SavedModel). Also see this project's own `models/wide_and_deep_classifier/` and `models/wide_and_deep_regressor/` for a from-scratch, fully pre-validated build on the same comparison datasets used by every other model type in this project.
+**Repo example (tested):** `data+ai/bq-ml/models/wide_and_deep_classifier/` and `data+ai/bq-ml/models/wide_and_deep_regressor/` — from-scratch, fully pre-validated builds on the same comparison datasets every other model type in this project uses (`census_adult_income` and `penguins`/`body_mass_g`), which is what makes the wide-and-deep result readable against the plain DNN directly above it. Between them they cover `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (precision/recall/accuracy/f1_score/log_loss/roc_auc), `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, `ML.FEATURE_IMPORTANCE`, `ML.ADVANCED_WEIGHTS`, and HP tuning, with `auto_class_weights`, `enable_global_explain`, and an explicit `data_split_method`. `EXPORT MODEL` produces a TensorFlow SavedModel — see `data+ai/bq-ml/models/export/`, and `data+ai/bq-ml/models/remote/` for Endpoint deployment.
 
 
 ---
@@ -798,7 +799,9 @@ FROM `PROJECT_ID.DATASET.TRAINING_TABLE`;
 
 **BigFrames API:** Verified (checked the live BigFrames API reference across every `bigframes.ml` module: `linear_model`, `ensemble`, `cluster`, `decomposition`, `forecasting`, `imported`, `llm`) — **no first-class AutoML estimator class exists anywhere in `bigframes.ml`**, the same permanent gap as `DNN_CLASSIFIER`/`DNN_REGRESSOR`/wide-and-deep. Use the SQL `CREATE MODEL` interface directly.
 
-**Repo example (tested):** `02 - Vertex AI AutoML/BQML AutoML.ipynb` — trains an `AUTOML_CLASSIFIER` on the `fraud_prepped` table with `budget_hours = 1`, `optimization_objective = 'MAXIMIZE_AU_PRC'`, `input_label_cols = ['Class']`, and `data_split_col = 'splits'`; then runs `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (showing `precision`/`recall`/`accuracy`/`f1_score`/`log_loss`/`roc_auc`), `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, and `EXPORT MODEL` to GCS for Vertex AI Model Registry upload. Note: the run took ~1.51 hours wall-clock for a 1-hour budget, illustrating the compression overhead — **this project's own from-scratch builds took even longer** (`models/automl_classifier/`: 2.63 hours; `models/automl_regressor/`: 2.25 hours, both `budget_hours=1.0`, verified via `ML.TRAINING_INFO`'s `duration_ms`) — budget at least 2-3 hours wall-clock for a "1-hour" AutoML job, not ~1.5. Also see this project's own `models/automl_classifier/` (same `census_adult_income` data as the other classifiers) and `models/automl_regressor/` (a real `bigquery-public-data.samples.natality` regression, NOT the usual `penguins` — see the minimum-row-count limitation above) — both validated via `bq query --dry_run` (free syntax check) rather than a throwaway paid pre-validation run, given this model type's real dollar cost (~$21.25/node-hour).
+**Repo example (tested):** `data+ai/bq-ml/models/automl_classifier/` (same `census_adult_income` data as the other classifiers) and `data+ai/bq-ml/models/automl_regressor/` (a real `bigquery-public-data.samples.natality` regression, NOT the usual `penguins` — see the minimum-row-count limitation above). Between them they cover `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (`precision`/`recall`/`accuracy`/`f1_score`/`log_loss`/`roc_auc`), `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, and `ML.WEIGHTS`. Both were validated via `bq query --dry_run` (free syntax check) rather than a throwaway paid pre-validation run, given this model type's real dollar cost (~$21.25/node-hour).
+
+**Budget the wall-clock at 2-3× the stated budget.** `budget_hours = 1.0` produced **2.63 hours** wall-clock for the classifier and **2.25 hours** for the regressor, both verified via `ML.TRAINING_INFO`'s `duration_ms`. The overhead is not a small fixed margin on top of the budget — it more than doubled it in both measured runs, so a "1-hour" AutoML job should be planned as a 2-3 hour job.
 
 
 ---
@@ -873,14 +876,17 @@ HP-tuning-eligible option: `num_clusters` (use `HPARAM_RANGE`/`HPARAM_CANDIDATES
 - No supervised metrics or feature attributions (unsupervised).
 - `kmeans_init_col` (CUSTOM) requires exactly `num_clusters` TRUE rows.
 - `COSINE` distance changes geometry — choose deliberately.
-- **Verified gotcha: `ML.DETECT_ANOMALIES`'s input-data argument is REQUIRED for `KMEANS`, not optional.** Calling it with only `(MODEL, STRUCT(contamination))` (2 arguments) errors immediately: `"DETECT_ANOMALIES expects 3 arguments for KMEANS models but 2 were passed."` Always pass the scoring data as the 3rd argument — see the general `ML.DETECT_ANOMALIES` entry, whose syntax block already shows the 3-argument form but doesn't call out that it's mandatory for this model type specifically.
+- **Verified gotcha: `ML.DETECT_ANOMALIES`'s input-data argument is REQUIRED for `KMEANS`, not optional.** Calling it with only `(MODEL, STRUCT(contamination))` (2 arguments) errors immediately: `"DETECT_ANOMALIES expects 3 arguments for KMEANS models but 2 were passed."` Always pass the scoring data as the 3rd argument. Verified since on `models/pca/` and `models/autoencoder/` as well: the requirement is not KMEANS-specific — it holds for all three IID model types, with the model name substituted into the same error. See the general `ML.DETECT_ANOMALIES` entry, whose syntax block shows the 3-argument form but does not mark it mandatory.
 - HP-tuned models return per-trial rows in `ML.EVALUATE`/`ML.PREDICT`; downstream queries must handle/filter `trial_id`.
 
 **Locations:** Available in all BigQuery ML regions/multi-regions; no special location constraint (no connection required).
 
 **BigFrames API:** `bigframes.ml.cluster.KMeans` — e.g. `KMeans(n_clusters=4).fit(X)` then `.predict(X)`.
 
-**Repo example (tested):** `03 - BigQuery ML (BQML)/03h - BQML k-means with Anomaly Detection.ipynb` — trains `KMEANS` on the fraud dataset with `num_clusters = HPARAM_RANGE(2, 100)`, `kmeans_init_method='KMEANS++'`, `distance_type='EUCLIDEAN'`, `standardize_features=TRUE`, tuned on `davies_bouldin_index` (20 trials); demonstrates `ML.EVALUATE`, `ML.CENTROIDS`, `ML.TRIAL_INFO`, `ML.FEATURE_INFO`, `ML.PREDICT`, `ML.DETECT_ANOMALIES` (with `contamination`), Vertex AI Model Registry registration, endpoint serving, and `EXPORT MODEL` (TensorFlow SavedModel).
+**Repo example (tested):**
+- `data+ai/bq-ml/models/kmeans/` — `KMEANS` on `penguins` with `num_clusters` swept via `HPARAM_RANGE` and `standardize_features=TRUE`, tuned across trials; covers `ML.EVALUATE`, `ML.CENTROIDS`, `ML.TRIAL_INFO`, `ML.FEATURE_INFO`, `ML.PREDICT`, and `ML.DETECT_ANOMALIES` (with `contamination`).
+- `data+ai/bq-ml/workflows/customer_segmentation/customer_segmentation.ipynb` — the same model type on a real problem: RFM (recency/frequency/monetary) features engineered from raw `thelook_ecommerce` order history, then `KMEANS` at a fixed `num_clusters = 4`. The deliberate contrast with `models/kmeans/`'s `penguins` run is mechanism demo vs. applied segmentation.
+- `EXPORT MODEL` (a `KMEANS` model exports as a TensorFlow SavedModel) and Endpoint serving are covered in `data+ai/bq-ml/models/export/` and `data+ai/bq-ml/models/remote/`.
 
 
 ---
@@ -963,7 +969,11 @@ You must specify **exactly one** of `num_principal_components` / `pca_explained_
 - **`ML.DETECT_ANOMALIES` requires the 3rd (input-data) argument for PCA**, same as `KMEANS` — see the general `ML.DETECT_ANOMALIES` entry.
 - **`ML.GENERATE_EMBEDDING` on a PCA model** wraps `ML.PREDICT`'s projection into a single `ml_generate_embedding_result` ARRAY<FLOAT> column; the array values match `ML.PREDICT`'s `principal_component_1`/`principal_component_2` columns exactly, in order.
 
-**Repo example (tested):** `03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` — trains `model_type='PCA'` with `pca_explained_variance_ratio=0.90, scale_features=TRUE, pca_solver='AUTO'` on the credit-card `fraud_prepped` table; shows `ML.EVALUATE` (`total_explained_variance_ratio` ≈ 0.923), `ML.PRINCIPAL_COMPONENT_INFO`, `ML.PRINCIPAL_COMPONENTS`, `ML.PREDICT` (per-row component projections), `ML.DETECT_ANOMALIES` with `STRUCT(<train_fraud_rate> AS contamination)` for fraud detection, plus Vertex AI registry registration, endpoint deployment, and `EXPORT MODEL` (exports as a TensorFlow SavedModel).
+**Repo example (tested):**
+- `data+ai/bq-ml/models/pca/` — `model_type='PCA'` on `penguins`, covering `ML.EVALUATE` (`total_explained_variance_ratio`), `ML.PRINCIPAL_COMPONENT_INFO`, `ML.PRINCIPAL_COMPONENTS`, `ML.PREDICT` (per-row component projections), `ML.GENERATE_EMBEDDING`, `ML.FEATURE_INFO`, and `ML.DETECT_ANOMALIES` with an explicit `contamination`.
+- `data+ai/bq-ml/workflows/anomaly_fraud_detection/anomaly_fraud_detection.ipynb` — the same technique used for real fraud detection on `bigquery-public-data.ml_datasets.ulb_fraud_detection`, with `contamination` set from the training fraud rate and precision/recall scored against the true label, alongside `AUTOENCODER` and a supervised `BOOSTED_TREE_CLASSIFIER`.
+- `data+ai/bq-ml/functions/distance/` — uses a `PCA` model's projections as the input to `ML.DISTANCE` / `ML.LP_NORM` / `ML.NORMALIZER`.
+- `EXPORT MODEL` (`PCA` exports as a TensorFlow SavedModel) and Endpoint deployment: `data+ai/bq-ml/models/export/` and `data+ai/bq-ml/models/remote/`.
 
 **Repo example (tested):** `data+ai/bq-ml/workflows/anomaly_fraud_detection/anomaly_fraud_detection.ipynb` — trains `PCA` with `num_principal_components=10` on `bigquery-public-data.ml_datasets.ulb_fraud_detection` (the real ULB/Kaggle fraud dataset, 492 genuine fraud cases) and measures real precision/recall against the true `Class` label — the source of the `pca_explained_variance_ratio` non-determinism finding above; contrasts with `AUTOENCODER` and a supervised `BOOSTED_TREE_CLASSIFIER`.
 
@@ -1063,8 +1073,8 @@ HP-tuning options (used when `num_trials` set): `num_trials`, `max_parallel_tria
 - **Manually normalizing + `DOT_PRODUCT` is unnecessary** — `distance_type='COSINE'` on the raw `ML.GENERATE_EMBEDDING` output gives mathematically equivalent `VECTOR_SEARCH` rankings (verified: identical top-k neighbors, with distances that convert exactly via `COSINE = 1 - cosine_similarity` and `DOT_PRODUCT = -cosine_similarity` on unit vectors).
 
 **Repo example (tested):**
-- `03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` — full lifecycle: HP-tuned `AUTOENCODER` (`HPARAM_CANDIDATES`/`HPARAM_RANGE`, `num_trials=40`), `ML.FEATURE_INFO`, `ML.TRIAL_INFO`, `ML.EVALUATE`, `ML.RECONSTRUCTION_LOSS`, `ML.PREDICT` (latent_col_*), `ML.DETECT_ANOMALIES` for fraud, Vertex AI registry/endpoint serving, `EXPORT MODEL`.
-- `Applied GenAI/Embeddings/BQML Autoencoder As Table Embedding.ipynb` — single-config train, `ML.EVALUATE` per split, latent space as embeddings via `ML.PREDICT` and `ML.GENERATE_EMBEDDING`, `ML.NORMALIZER`, and `VECTOR_SEARCH` (IVF/TREE_AH index) for row similarity.
+- `data+ai/bq-ml/models/autoencoder/` — full lifecycle on `penguins`: HP-tuned `AUTOENCODER` (`HPARAM_CANDIDATES`/`HPARAM_RANGE` over `num_trials`), `ML.FEATURE_INFO`, `ML.TRIAL_INFO`, `ML.EVALUATE`, `ML.RECONSTRUCTION_LOSS`, `ML.PREDICT` (the `latent_col_*` outputs), and `ML.DETECT_ANOMALIES` with `contamination`. The same notebook covers the second use of this model type — the latent space *as* a table embedding, via `ML.GENERATE_EMBEDDING` plus `ML.NORMALIZER`, then `VECTOR_SEARCH` for row-to-row similarity.
+- `EXPORT MODEL` (`AUTOENCODER` exports as a TensorFlow SavedModel) and Endpoint serving: `data+ai/bq-ml/models/export/` and `data+ai/bq-ml/models/remote/`.
 - `data+ai/bq-ml/workflows/anomaly_fraud_detection/anomaly_fraud_detection.ipynb` — trains on the real ULB/Kaggle fraud dataset (`bigquery-public-data.ml_datasets.ulb_fraud_detection`, 492 genuine fraud cases) and measures real precision/recall against the true label — contrasts with `PCA` (comparable performance here, not dramatically different) and a supervised `BOOSTED_TREE_CLASSIFIER` (far higher recall).
 
 
@@ -1169,7 +1179,7 @@ The training query must produce three columns: a user column, an item column, an
 - **Retraining shows measurable variance, similar to `KMEANS`/`RANDOM_FOREST_*`.** Retraining the identical `CREATE OR REPLACE MODEL` statement (same name, same SQL) does not reproduce `mean_average_precision` exactly — observed 0.873 and 0.860 across two runs. Unlike `PCA` (fully deterministic) or the `DNN_*` family (bit-for-bit reproducible under a fixed name), matrix factorization's WALS training has real run-to-run variance.
 - **HP tuning produced a genuine, positive result in every run tested — though not with reproducible exact numbers.** 4 trials over `num_factors`/`l2_reg`/`wals_alpha` beat the untuned baseline both times, but the specific winning config and margin varied: one run's best trial reached `mean_average_precision=0.899` against a `0.860` baseline; a separate run's best trial reached `0.915` against a `0.873` baseline (same `num_factors`/`l2_reg`, a different `wals_alpha`). The qualitative finding — tuning beats the untuned baseline — held both times; the exact numbers didn't. A real contrast either way to `models/autoencoder/`'s equally-sized 4-trial search, which failed to beat its own untuned baseline at all.
 
-**Repo example (tested):** `models/matrix_factorization/` (this project) — full lifecycle on `bigquery-public-data.google_analytics_sample` (IMPLICIT feedback), including the temporary-reservation setup/teardown pattern. Also see [`02 - Vertex AI AutoML/BQML AutoML.ipynb`](../../02%20-%20Vertex%20AI%20AutoML/BQML%20AutoML.ipynb), which documents the BQML slot/job-type model and explicitly calls out that `model_type = 'MATRIX_FACTORIZATION'` is the exception that does **not** run on on-demand pricing (requires a flat-rate/reservation).
+**Repo example (tested):** `data+ai/bq-ml/models/matrix_factorization/` — full lifecycle on `bigquery-public-data.google_analytics_sample` (IMPLICIT feedback), including the temporary-reservation setup/teardown pattern this model type forces on you. `data+ai/bq-ml/workflows/recommendation/` then applies it end-to-end. The on-demand pricing exception is documented in *Pricing/slots* and *Limitations* above — this is the one model type that cannot train under on-demand pricing at all.
 
 ---
 
@@ -1335,7 +1345,7 @@ AS (
 **Manual ARIMA order (verified):** `auto_arima = FALSE` with `non_seasonal_order = STRUCT(<p> AS p, <d> AS d, <q> AS q)` pins an exact order instead of searching — confirmed `ML.ARIMA_EVALUATE` reports back exactly the specified `(p,d,q)`. Single-series only (fails with `time_series_id_col`).
 
 **Best practices:**
-- ARIMA+ is univariate and ignores a validation split — fold `VALIDATE` rows into the training data (repo notebook trains on `TRAIN`+`VALIDATE`).
+- ARIMA+ is univariate and ignores a validation split — fold any `VALIDATE` rows into the training data. [`models/arima_plus/`](models/arima_plus/) uses a plain two-way TRAIN/TEST split for exactly this reason.
 - Set `horizon` at training to cover test + future; remember `ML.FORECAST`/`ML.EXPLAIN_FORECAST` default `horizon` is 3.
 - For 10k+ series, first time a 1k-series query to estimate cost/runtime; lower `auto_arima_max_order` to cut runtime (1 vs 2 cuts runtime >50%); use `time_series_length_fraction`/`max_time_series_length` to trim trend-modeling points; wrap in multi-statement queries.
 - Cost scales with the number of candidate models (`auto_arima_max_order`/`min_order`) since input bytes are multiplied per candidate.
@@ -1353,8 +1363,8 @@ AS (
 **BigFrames API:** [`bigframes.ml.forecasting.ARIMAPlus`](https://cloud.google.com/python/docs/reference/bigframes/latest/bigframes.ml.forecasting.ARIMAPlus) — `model = ARIMAPlus(horizon=..., auto_arima=True, data_frequency="daily", holiday_region=...)`, `model.fit(X_timestamp_df, y_value_df)`, then `model.predict(horizon=..., confidence_level=0.95)` (= `ML.FORECAST`), `model.predict_explain(...)` (= `ML.EXPLAIN_FORECAST`), `model.coef_` (= `ML.ARIMA_COEFFICIENTS`), `model.register(...)`.
 
 **Repo example (tested):**
-- `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` — end-to-end: multi-series CREATE MODEL with `time_series_id_col`, `holiday_region=['GLOBAL','US']`, `horizon = HORIZON + TEST`; then `ML.ARIMA_COEFFICIENTS`, `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (`perform_aggregation=TRUE`), `ML.ARIMA_EVALUATE`, `ML.HOLIDAY_INFO`, `ML.FORECAST`, `ML.EXPLAIN_FORECAST`, custom SQL MAPE/MAE/RMSE, and `ML.DETECT_ANOMALIES`.
-- `Applied Forecasting/Notes - BQML ARIMA+ Handling of Granularity and Missing Data.ipynb` — demonstrates missing/absent-point interpolation and the granularity rules (WEEKLY-on-daily error; HOURLY-on-daily interpolation).
+- `data+ai/bq-ml/functions/time_series/` — the model-free `ML.TREND`, `ML.SEASONALITY`, and `ML.DETECT_CHANGE_POINTS` on the same Citi Bike series, for the questions that need no `CREATE MODEL` at all.
+- The interpolation and granularity behavior — missing/absent points linearly interpolated, `WEEKLY` requested on daily data rejected, `HOURLY` on daily interpolated — is stated in *Limitations* above and verified in `models/arima_plus/`; there is no separate notebook for it.
 - This project's own `models/arima_plus/` — from-scratch build on 5 real `bigquery-public-data.new_york_citibike.citibike_trips` stations (daily trip counts), single-series then multi-series via `time_series_id_col`; folds the granularity/missing-data gotchas above into the main notebook (verified a real gap day's linearly-interpolated value exactly: `(141+363)/2=252`) rather than keeping them in a separate notes file; adds a dedicated step verifying the custom-holiday syntax, manual `non_seasonal_order`, `forecast_limit_lower_bound` (as small standalone single-station models, kept separate from the main model specifically because of the `ML.EXPLAIN_FORECAST` incompatibility above — discovered when the main model was first built with the bound set and `ML.EXPLAIN_FORECAST` broke), and `hierarchical_time_series_cols` (a separate 6-station table grouped into 2 real Manhattan neighborhoods, since the main 5-station table has no real hierarchy) — verified bottom-up reconciliation exact to the penny at every level.
 - `data+ai/bq-ml/workflows/hierarchical_forecasting/` — hierarchical forecasting on `bigquery-public-data.iowa_liquor_sales.sales` (real State/County/City/Store hierarchy): built-in bottom-up reconciliation via `hierarchical_time_series_cols`, compared head-to-head at every hierarchy level against a from-scratch top-down disaggregation (forecast proportions) that BigQuery ML has no built-in option for. Uses weekly granularity — real per-store *daily* coverage is only ~15-30%, so daily would force heavy interpolation. Modernizes and replaces the retired `Applied ML/Forecasting/BigQuery ML For Hierarchical Forecasting.ipynb`, deleted 2026-07-21 after the rebuild was verified feature-for-feature.
 
@@ -1370,7 +1380,7 @@ AS (
   - You want per-regressor attributions in the forecast (`ML.EXPLAIN_FORECAST`).
 - **Category:** time-series.
 - **Connection required:** No.
-- **Status:** GA. (Multiple-series support via `time_series_id_col` and `ML.DETECT_ANOMALIES` support were both added after the original 2023 Preview; the repo notebook predates these and documents them as "future" — see Repo example notes.)
+- **Status:** GA. Multiple-series support via `time_series_id_col` and `ML.DETECT_ANOMALIES` support were both added after the original 2023 Preview; both are exercised live in [`models/arima_plus_xreg/`](models/arima_plus_xreg/) (Example 2 trains all five stations as one multi-series model; Example 10 runs `ML.DETECT_ANOMALIES` against it).
 - **documentation:** [CREATE MODEL for ARIMA_PLUS_XREG](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-create-multivariate-time-series) · journey/tutorials: [single series tutorial](https://cloud.google.com/bigquery/docs/arima-plus-xreg-single-time-series-forecasting-tutorial), [multiple series tutorial](https://cloud.google.com/bigquery/docs/arima-plus-xreg-multiple-time-series-forecasting-tutorial), [E2E user journey](https://cloud.google.com/bigquery/docs/e2e-journey). Related univariate model: [`ARIMA_PLUS`](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-create-time-series).
 
 > Built-in foundation forecasting (TimesFM via `AI.FORECAST`) is owned by `../bq-ai-functions/` — see [AI.FORECAST / AI.DETECT_ANOMALIES there](../bq-ai-functions/RESOURCES.md). `ARIMA_PLUS_XREG` is the in-scope BQML *trained-model* forecaster.
@@ -1455,7 +1465,9 @@ The covariates are defined implicitly by the `SELECT` list: any column other tha
 
 **BigFrames API:** `bigframes.ml.forecasting.ARIMAPlus` covers univariate ARIMA_PLUS; external-regressor (XREG) multivariate forecasting is best driven via SQL `CREATE MODEL`. (No dedicated `ARIMAPlusXReg` class — treat as "use SQL.")
 
-**Repo example (tested):** `Applied Forecasting/BQML Multivariate Forecasting with ARIMA+ XREG.ipynb` — Citibike daily trips near Central Park with covariates (`avg_tripduration`, `pct_subscriber`, `ratio_gender`, `capacity`). Shows full lifecycle: CREATE MODEL with `holiday_region=['GLOBAL','US']` + `auto_arima_max_order=5`; `ML.ARIMA_COEFFICIENTS` (regressor weights), `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE` (the 5 forecast metrics), `ML.ARIMA_EVALUATE`, `ML.HOLIDAY_INFO`, `ML.FORECAST` (covariates supplied for horizon), `ML.EXPLAIN_FORECAST` (61 cols incl. `attribution_*`), and custom SQL metrics (MAPE/MAE/pMAE/MSE/RMSE/pRMSE). NOTE: notebook predates GA `time_series_id_col` for XREG — it forecasts one series via `WHERE` and demonstrates two multi-series workarounds (`EXECUTE IMMEDIATE FOR..IN` loop; async Python client jobs). Today a single model with `time_series_id_col=['...']` replaces the workaround. Also see this project's own `models/arima_plus_xreg/` — from-scratch build using native `time_series_id_col` from the start (replacing the workaround directly), same 5 Citi Bike stations and TEST window as `models/arima_plus/` for direct forecast-accuracy comparison, 3 covariates (`capacity` dropped — needed a join, NULL for some stations), and several newly-verified cross-model-type differences from plain `ARIMA_PLUS` (no `mean_absolute_scaled_error`, `forecast_limit_lower_bound` rejected outright rather than merely breaking `ML.EXPLAIN_FORECAST`, `ML.FORECAST`/`ML.EXPLAIN_FORECAST` both strictly require the 3-argument covariate form).
+**Repo example (tested):** `data+ai/bq-ml/models/arima_plus_xreg/` — from-scratch build on Citi Bike daily trips using native `time_series_id_col` from the start, on the same 5 stations and TEST window as `models/arima_plus/` so the two are directly comparable on forecast accuracy. Uses `holiday_region=['GLOBAL','US']` and 3 covariates (a `capacity` covariate was dropped — it needed a join and was NULL for some stations). Covers `ML.ARIMA_COEFFICIENTS` (regressor weights), `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE`, `ML.ARIMA_EVALUATE`, `ML.HOLIDAY_INFO`, `ML.FORECAST` (covariates supplied for the horizon), `ML.EXPLAIN_FORECAST` (including the `attribution_*` columns), `ML.DETECT_ANOMALIES`, and custom SQL MAPE/MAE/pMAE/MSE/RMSE/pRMSE.
+
+Several cross-model-type differences from plain `ARIMA_PLUS` were verified here: no `mean_absolute_scaled_error` in the metrics; `forecast_limit_lower_bound` is rejected outright rather than merely breaking `ML.EXPLAIN_FORECAST`; and `ML.FORECAST` / `ML.EXPLAIN_FORECAST` both strictly require the 3-argument covariate form. Note that multi-series XREG once required a workaround (one model per series via an `EXECUTE IMMEDIATE FOR..IN` loop or async client jobs) — `time_series_id_col` is GA for XREG now and a single model replaces it.
 
 
 ---
@@ -1648,7 +1660,7 @@ limit. In-RAM prediction memory limit ~250 MB (`ML.EXPLAIN_PREDICT` can trigger 
 of memory*). GraphDef \< v20, unreleased TF versions, custom/`tf.contrib` ops, and RaggedTensors are
 unsupported. Object-table use is reservation-only.
 **BigFrames API:** `bigframes.ml.imported.TensorFlowModel(model_path=...)`.
-**Repo example (tested):** `data+ai/bq-ml/models/imported/imported.ipynb` (Step 4) — a small Keras `Sequential` classifier with a `tf.keras.layers.Normalization` layer baked in (so raw feature values work directly, since imported models support no `TRANSFORM`), exported via `model.export(...)`, imported with `MODEL_TYPE='TENSORFLOW'`, scored with `ML.PREDICT` (`ARRAY<FLOAT64>` input named `"input"`, auto-named `output_0` output). Also see `MLOps/Serving/SQL Inference/Serve TensorFlow SavedModel Format With BigQuery.ipynb` for the production-scale version.
+**Repo example (tested):** `data+ai/bq-ml/models/imported/imported.ipynb` (Step 4) — a small Keras `Sequential` classifier with a `tf.keras.layers.Normalization` layer baked in (so raw feature values work directly, since imported models support no `TRANSFORM`), exported via `model.export(...)`, imported with `MODEL_TYPE='TENSORFLOW'`, scored with `ML.PREDICT` (`ARRAY<FLOAT64>` input named `"input"`, auto-named `output_0` output).
 
 ---
 
@@ -1706,22 +1718,24 @@ OPTIONS(
 import via the Python/BigFrames client, e.g. `bq.get_model(...)`.)
 **Data types:** ONNX **Tensor** type only. Int/uint element types → `INT64`; `FLOAT16/BFLOAT16/FLOAT/DOUBLE` → `FLOAT64`; `BOOL` → `BOOL`; `STRING` → `STRING`. Map, Opaque, Sequence, Optional, Sparse-tensor value types unsupported.
 **Limitations:** `.onnx` format only; `ML.PREDICT` only; **450 MB** size limit. Runs on **ONNX Runtime
-1.12.0** — your model's opset/IR version must be compatible (the repo HuggingFace notebook downgrades
-IR version to 8 to satisfy this). Only the Tensor value type is supported. Object-table use is reservation-only.
+1.12.0** — your model's opset/IR version must be compatible ([`models/imported/`](models/imported/) sets
+`onnx_model.ir_version = 8` and `target_opset = 13` before upload to satisfy this). Only the Tensor value
+type is supported. Object-table use is reservation-only.
 **Gotcha (scikit-learn classifiers):** sklearn-onnx emits a *sequence of map* for probabilities by
 default → import error `unsupported ONNX type: ONNX_TYPE_SEQUENCE`. Fix at conversion time with
-`zipmap=False` (or `zipmap='columns'`). The repo notebook does exactly this.
+`zipmap=False` (or `zipmap='columns'`) — [`models/imported/`](models/imported/) does exactly this.
 **BigFrames API:** `bigframes.ml.imported.ONNXModel(model_path=...)`.
 **Repo examples (tested):**
-- `03 - BigQuery ML (BQML)/BQML Import Model - scikit-learn.ipynb` —
-  scikit-learn Pipeline → ONNX (`skl2onnx.convert_sklearn(..., options={id(model): {'zipmap': False}})`),
-  uploaded to GCS, then `CREATE OR REPLACE MODEL ... OPTIONS(MODEL_TYPE='ONNX', MODEL_PATH='gs://.../*')`
-  and `ML.PREDICT` returning `label` + `probabilities`.
-- `MLOps/Serving/SQL Inference/BQML Import Model via ONNX.ipynb` —
-  HuggingFace DistilBERT (PyTorch) → ONNX via `torch.onnx.export`, float16 + `ir_version=8` to fit the
-  250 MB practical/450 MB hard limit and ONNX Runtime 1.12; pre-tokenized ARRAY inputs
-  (`input_ids`, `attention_mask`); `ML.PREDICT` returns `logits` (softmax/argmax done in SQL). Shows
-  the import-vs-remote tradeoff: ONNX import needs the caller to tokenize and fits small numeric models.
+- A scikit-learn Pipeline converts with `skl2onnx.convert_sklearn(..., options={id(model): {'zipmap': False}})`
+  — the `zipmap=False` is what avoids the sequence-of-map gotcha above — then uploads to GCS and imports
+  with `CREATE OR REPLACE MODEL ... OPTIONS(MODEL_TYPE='ONNX', MODEL_PATH='gs://.../*')`, and `ML.PREDICT`
+  returns `label` + `probabilities`.
+- **A transformer is the case where ONNX import stops being the right tool.** Exporting a PyTorch
+  DistilBERT via `torch.onnx.export` takes float16 plus `ir_version=8` just to fit the 250 MB
+  practical / 450 MB hard limit and ONNX Runtime 1.12; inputs arrive pre-tokenized as ARRAYs
+  (`input_ids`, `attention_mask`) and `ML.PREDICT` returns raw `logits`, leaving softmax/argmax to SQL.
+  That is the import-vs-remote tradeoff: ONNX import suits small numeric models and pushes tokenization
+  onto the caller, while a `REMOTE` model over an Endpoint (below) keeps the whole pipeline server-side.
 - `data+ai/bq-ml/models/imported/imported.ipynb` (Step 2) —
   scikit-learn `LogisticRegression` → ONNX via `skl2onnx.convert_sklearn(..., target_opset=13)`, then
   `onnx_model.ir_version = 8` set explicitly (both needed: a modern skl2onnx defaults to IR version 10
@@ -1877,8 +1891,8 @@ BigQuery wraps each row's `INPUT` columns into one element of the `instances` ar
 **BigFrames API:** No direct training equivalent; remote-endpoint inference is generally orchestrated via SQL/`ML.PREDICT` or the Vertex AI SDK (`aiplatform.Endpoint.predict`).
 
 **Repo example (tested):**
-- `03 - BigQuery ML (BQML)/BQML Remote Model on Vertex AI Endpoint.ipynb` — registers an existing autoencoder endpoint as a remote model: derives `INPUT`/`OUTPUT` from the TF SavedModel signature, creates a `CLOUD_RESOURCE` connection with `bq mk --connection`, grants `roles/aiplatform.user`, then `CREATE OR REPLACE MODEL ... INPUT(...) OUTPUT(...) REMOTE WITH CONNECTION ... OPTIONS(endpoint=...)` and scores via `ML.PREDICT`.
-- `MLOps/Serving/SQL Inference/BQML Remote Model on Vertex AI Endpoint.ipynb` — end-to-end: deploys a HuggingFace sentiment container to a Vertex AI endpoint, creates the connection via `ConnectionServiceClient`, then `INPUT (text STRING) OUTPUT (label STRING, score FLOAT64) REMOTE WITH CONNECTION ... OPTIONS(endpoint=...)`. Shows single-row, multi-row (`UNNEST`), and table batch scoring with business logic; output includes the `remote_model_status` column. Also contrasts remote model vs ONNX import.
+- `data+ai/bq-ml/models/remote/` — the full path, picking up where `models/export/` leaves off: `CREATE MODEL` → `EXPORT MODEL` → deploy to a Vertex AI Endpoint → register that Endpoint as a `REMOTE` model → `ML.PREDICT`. Derives `INPUT`/`OUTPUT` from the exported SavedModel signature, creates the `CLOUD_RESOURCE` connection, grants `roles/aiplatform.user` to the connection's service agent, then `CREATE OR REPLACE MODEL ... INPUT(...) OUTPUT(...) REMOTE WITH CONNECTION ... OPTIONS(endpoint=...)`. Covers single-row, multi-row, and batch table scoring, and reads the per-row `remote_model_status` column (verified: 0 errors across 200 rows). Carries a real, small dollar cost for as long as the Endpoint stays deployed — the notebook tears it down.
+- The signature is not restricted to numeric features: an `INPUT (text STRING) OUTPUT (label STRING, score FLOAT64)` model over a text-classification container is the same mechanism, and is the alternative to ONNX import above when you want tokenization to stay server-side.
 - `data+ai/bq-ml/models/remote/remote.ipynb` — the full round trip from a BQML model: trains a `LOGISTIC_REG` → `EXPORT MODEL` (TF SavedModel) → `aiplatform.Model.upload()` with the pre-built `tf2-cpu.2-15` serving container (no Dockerfile) → deploys to a minimal `n1-standard-2` Endpoint → creates a `CLOUD_RESOURCE` connection + grants `roles/aiplatform.user` → `CREATE MODEL ... INPUT(...) OUTPUT(...) REMOTE WITH CONNECTION ... OPTIONS(endpoint=...)` → `ML.PREDICT` (single-row + 200-row batch, verified 0 `remote_model_status` errors). Verified the TF-serving container's response uses the exact field names the SavedModel signature itself exposes (`{label}_probs`/`{label}_values`/`predicted_{label}`), so `OUTPUT` can mirror them directly. Endpoint torn down within a few minutes of deployment — cross-link this entry with [`models/export/`](models/export/), which this notebook picks up from. Also demonstrates, as a documented live failure, the `model_registry='VERTEX_AI'` shortcut's Explanation-preprocessing bug described above (Step 4), and proves the mechanism is framework-agnostic by registering (not deploying) an XGBoost model trained entirely outside BigQuery with the `xgboost-cpu.2-1` container (Step 5).
 
 
@@ -1968,7 +1982,7 @@ Input column names must match the names in the model's `TRANSFORM` clause, with 
 
 **Repo example (tested):**
 - `data+ai/bq-ml/models/transform_only/transform_only.ipynb` — dedicated `TRANSFORM_ONLY` notebook on `penguins`: one pipeline chaining `ML.IMPUTER` + `ML.STANDARD_SCALER`/`ML.ROBUST_SCALER`/`ML.ONE_HOT_ENCODER`, applied via `ML.TRANSFORM`, feeding a downstream `LOGISTIC_REG` with no embedded `TRANSFORM` of its own. **Two verified findings:** (1) `ML.TRANSFORM` silently passes through any input column not referenced by the `TRANSFORM` clause, appended after the transform outputs — useful (carry an id/label through) but easy to mistake for pipeline output; (2) calling `ML.PREDICT` on the downstream model with *raw* (untransformed) data does **not** error — it silently predicts using values on the wrong scale, reproduced live: every row predicted the same class ("Gentoo penguin") regardless of true label until the input was re-wrapped in `ML.TRANSFORM`. Also confirms `EXPORT MODEL` on a transform-only model (`transform/saved_model.pb`, no predictive weights since there's no estimator).
-- `03 - BigQuery ML (BQML)/BQML Feature Engineering - reusable and modular.ipynb` — full tested walkthrough on `bigquery-public-data.ml_datasets.penguins`: (1) embedded `TRANSFORM` on a `BOOSTED_TREE_CLASSIFIER`; (2) reuse of any model's transform via `ML.TRANSFORM`; (3) separate `TRANSFORM_ONLY` models for imputation and for scaling, chained with CTEs and exposed as a view; (4) per‑feature `TRANSFORM_ONLY` models (feature‑store style); (5) feeding the pipeline output into a `CREATE MODEL`; (6) `ML.FEATURE_INFO`; (7) `EXPORT MODEL` to GCS (transform‑only exports a `transform/saved_model.pb`); (8) Vertex AI registration + endpoint serving; (9) consuming via BigFrames `read_gbq_model().predict()`.
+- **Composition patterns this model type enables**, beyond the single-pipeline case above: one `TRANSFORM_ONLY` model per preprocessing *stage* (imputation, then scaling), chained with CTEs and exposed as a view so downstream queries see one clean surface; or one per *feature*, feature-store style, so a transform can be versioned and reused independently of any estimator. Either way the output feeds a `CREATE MODEL` that carries no `TRANSFORM` of its own, and `ML.TRANSFORM` reapplies the exact learned statistics at scoring time. `ML.FEATURE_INFO` reports the pre-transform summary stats, and a transform-only model can also be consumed from BigFrames via `read_gbq_model().predict()`.
 
 
 ---
@@ -2065,11 +2079,11 @@ ML.EVALUATE(
 **BigFrames API:** `model.score(X, y)` on any `bigframes.ml` estimator returns the same metrics as a DataFrame.
 
 **Repo example (tested):**
-- `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` and `03b - BQML Boosted Trees.ipynb` — three-way TRAIN/VALIDATE/TEST `ML.EVALUATE` over a `SPLITS` column via `UNION ALL`.
-- `03 - BigQuery ML (BQML)/03h - BQML k-means with Anomaly Detection.ipynb` — no-input `ML.EVALUATE` returning `davies_bouldin_index`, `mean_squared_distance`.
-- `03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` and `03i - BQML Autoencoder with Anomaly Detection.ipynb` — no-input `ML.EVALUATE` for unsupervised reconstruction models.
-- `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` — `ML.EVALUATE` with input data for `model_type = 'ARIMA_PLUS'` forecast-accuracy metrics.
 - `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 2) — minimal no-input `ML.EVALUATE`.
+- `data+ai/bq-ml/workflows/ensembling/ensembling.sql` — a three-way TRAIN/VALIDATE/TEST `split` column assigned by deterministic hash, then `ML.EVALUATE` on the held-out TEST split `UNION ALL`'d across three model types into one comparison table.
+- `data+ai/bq-ml/models/kmeans/kmeans.sql` (Example 2) — no-input `ML.EVALUATE` returning `davies_bouldin_index` and `mean_squared_distance`.
+- `data+ai/bq-ml/models/pca/pca.sql` (Example 2) and `data+ai/bq-ml/models/autoencoder/autoencoder.sql` (Example 2) — no-input `ML.EVALUATE` for unsupervised reconstruction models (`total_explained_variance_ratio` for PCA; `mean_absolute_error`/`mean_squared_error`/`mean_squared_log_error` for the autoencoder). The autoencoder example doubles as the caution that these aggregates look entirely normal while a latent unit is dead — only `ML.PREDICT`'s `latent_col_*` values expose it.
+- `data+ai/bq-ml/models/arima_plus/arima_plus.sql` (Example 5) — `ML.EVALUATE` with input data plus `STRUCT(TRUE AS perform_aggregation)` for `ARIMA_PLUS` forecast-accuracy metrics; called without eval data it falls back to ARIMA-fit stats in the shape of `ML.ARIMA_EVALUATE`.
 - `data+ai/bq-ml/workflows/cross_validation/cross_validation.ipynb` — hand-rolled 5-fold cross-validation on `ulb_fraud_detection` (BQML has no native k-fold support): deterministic hash-based fold assignment, 5 `LOGISTIC_REG` models submitted concurrently, per-fold `ML.EVALUATE` `UNION ALL`'d to show real fold-to-fold variance (roc_auc 0.968-0.985), then compared against a same-model-type single holdout to check whether it's representative of the fold distribution.
 
 ---
@@ -2129,11 +2143,11 @@ ML.PREDICT(
 **BigFrames API:** `model.predict(X)` on a `bigframes.ml` estimator returns a DataFrame with the predicted columns.
 
 **Repo example (tested):**
-- `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` / `03b - BQML Boosted Trees.ipynb` — `ML.PREDICT` over the TEST split returning `predicted_<label>` + `_probs`.
-- `03 - BigQuery ML (BQML)/03h - BQML k-means with Anomaly Detection.ipynb` — `ML.PREDICT` returning `centroid_id` / `nearest_centroids_distance`.
-- `03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` — `ML.PREDICT` projecting onto principal components.
-- `03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` — `ML.PREDICT` for the autoencoder (paired with `ML.RECONSTRUCTION_LOSS`).
 - `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 5) — `predicted_income_bracket` + `predicted_income_bracket_probs`.
+- `data+ai/bq-ml/models/kmeans/kmeans.sql` (Example 3) — `CENTROID_ID` plus `NEAREST_CENTROIDS_DISTANCE` (distance to every centroid, nearest-first), with a non-training column passed through as an external check on the clusters.
+- `data+ai/bq-ml/models/pca/pca.sql` (Example 3) — `ML.PREDICT` projecting rows onto `principal_component_1..N`.
+- `data+ai/bq-ml/models/autoencoder/autoencoder.sql` (Example 3) — `ML.PREDICT` returning `latent_col_*` for the autoencoder, used to aggregate min/max/zero-count per latent column and catch a collapsed unit; paired with `ML.RECONSTRUCTION_LOSS` (Example 6) for the per-row view.
+- `data+ai/bq-ml/workflows/customer_segmentation/customer_segmentation.sql` (Step 4) — `ML.PREDICT` over the full RFM table, aggregated by `CENTROID_ID` into segment profiles. Its Step 2 comment carries the matching gotcha: keep the ID column out of the training query, then join it back via `ML.PREDICT`, or it becomes a raw unscaled feature that distorts every distance.
 - `data+ai/bq-ml/workflows/ensembling/ensembling.ipynb` — `ML.PREDICT` from 3 heterogeneous model types (`LOGISTIC_REG`/`BOOSTED_TREE_CLASSIFIER`/`RANDOM_FOREST_CLASSIFIER`) joined into one meta-feature table for a stacked ensemble; the source of the row-ID join-fanout gotcha above.
 
 
@@ -2187,7 +2201,9 @@ ML.CONFUSION_MATRIX(
 **BigFrames API:** `model.confusion_matrix(X, y)` on a `bigframes.ml` classifier (e.g. `LogisticRegression`, `XGBoostClassifier`).
 **Repo example (tested):**
 - `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 3) — `SELECT * FROM ML.CONFUSION_MATRIX(MODEL ...)` on the census income binary classifier.
-- `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` and `03b - BQML Boosted Trees.ipynb` — confusion matrix on logistic-regression and boosted-tree classifiers with an explicit input query.
+- `data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` (Example 3) — the same call on a `BOOSTED_TREE_CLASSIFIER`; `models/random_forest_classifier/`, `models/dnn_classifier/`, `models/wide_and_deep_classifier/`, and `models/automl_classifier/` each carry it too, so the matrix is directly comparable across classifier types on one dataset.
+- `data+ai/bq-ml/workflows/churn_retention/churn_retention.sql` (Step 3) — uses the matrix to settle *which class* a metric describes: the `expected_label = true` row (FALSE=1997, TRUE=3059) confirms `ML.EVALUATE`'s `recall = 0.605` is recall on the churned class, not the retained one.
+- `data+ai/bq-ml/workflows/cross_validation/cross_validation.sql` — the motivating case for k-fold: a held-out eval split with only ~15 real fraud cases (TP=13, FN=2), where a metric estimated from 15 positives is exactly the high-variance situation cross-validation exists to quantify.
 
 ---
 
@@ -2245,9 +2261,9 @@ ML.ROC_CURVE(
 **BigFrames API:** `model.roc_curve(X, y)` on a `bigframes.ml` binary classifier (returns fpr / tpr / thresholds).
 **Repo example (tested):**
 - `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 4) — selects `threshold, recall, false_positive_rate, true_positives, false_positives, true_negatives, false_negatives FROM ML.ROC_CURVE(...) ORDER BY threshold`.
-- `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` and `03b - BQML Boosted Trees.ipynb` — ROC curve queried and plotted for binary classifiers.
+- `data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` (Example 4) — the identical projection on a `BOOSTED_TREE_CLASSIFIER`. `models/random_forest_classifier/`, `models/dnn_classifier/`, `models/wide_and_deep_classifier/`, and `models/automl_classifier/` repeat it, so the curves line up across model types.
 
-> Note: classification eval here covers the model-bound TVFs. For unsupervised anomaly detection (PCA / k-means / autoencoder in `03g`–`03i`) and ARIMA_PLUS forecasting eval, see the `ML.DETECT_ANOMALIES`, `ML.RECONSTRUCTION_LOSS`, and forecasting entries — `ML.CONFUSION_MATRIX` / `ML.ROC_CURVE` do not apply to those model types.
+> Note: classification eval here covers the model-bound TVFs. For unsupervised anomaly detection (PCA / k-means / autoencoder — see `models/pca/`, `models/kmeans/`, `models/autoencoder/`) and ARIMA_PLUS forecasting eval, see the `ML.DETECT_ANOMALIES`, `ML.RECONSTRUCTION_LOSS`, and forecasting entries — `ML.CONFUSION_MATRIX` / `ML.ROC_CURVE` do not apply to those model types.
 
 
 ---
@@ -2316,9 +2332,9 @@ ML.EXPLAIN_PREDICT(
 **BigFrames API:** `model.predict_explain(X, top_k_features=...)` on supported supervised estimators in `bigframes.ml`.
 
 **Repo example (tested):**
-- `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` — `ML.EXPLAIN_PREDICT(MODEL ..., (SELECT * ... WHERE splits='TEST'), STRUCT(10 as top_k_features))` on a logistic-regression model.
-- `03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — same call on a `BOOSTED_TREE_CLASSIFIER`.
 - `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 6) — `STRUCT(5 AS top_k_features)`, selecting `top_feature_attributions`.
+- `data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` (Example 6) — the same call on a `BOOSTED_TREE_CLASSIFIER`, with a `LIMIT 10` input query showing the sample-the-input best practice above.
+- `data+ai/bq-ml/workflows/churn_retention/churn_retention.sql` (Step 5) — `STRUCT(3 AS top_k_features)` for per-customer driver attribution, i.e. the per-row counterpart to the model-level ranking in its Step 4.
 
 ---
 
@@ -2377,9 +2393,9 @@ ML.GLOBAL_EXPLAIN(
 **BigFrames API:** `model.global_explain()` on supported supervised estimators in `bigframes.ml`.
 
 **Repo example (tested):**
-- `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` — model trained with `enable_global_explain = TRUE`, then `SELECT * FROM ML.GLOBAL_EXPLAIN(MODEL ...)`.
-- `03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — same pattern on a boosted-tree classifier.
 - `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Examples 1 & 7) — `enable_global_explain = TRUE` then `ML.GLOBAL_EXPLAIN(...) ORDER BY attribution DESC`.
+- `data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` (Example 7) — the same pattern on a boosted-tree classifier, run side by side with `ML.FEATURE_IMPORTANCE` to show the two rank features differently by design.
+- `data+ai/bq-ml/workflows/churn_retention/churn_retention.sql` (Step 4) — verified live: `tenure_days` dominates (attribution 0.072), ahead of `frequency` (0.028), `recency_days` (0.015), and `age` (0.015) — account age matters more than any single RFM feature.
 
 ---
 
@@ -2423,7 +2439,8 @@ ML.FEATURE_IMPORTANCE(MODEL `PROJECT_ID.DATASET.MODEL_NAME`)
 **BigFrames API:** Tree-ensemble estimators expose `model.feature_importances_` in `bigframes.ml`.
 
 **Repo example (tested):**
-- `03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — `SELECT * FROM ML.FEATURE_IMPORTANCE(MODEL ...)` on `BOOSTED_TREE_CLASSIFIER`, documenting weight/gain/cover columns.
+- `data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` (Example 7) — `ML.FEATURE_IMPORTANCE(MODEL ...) ORDER BY importance_gain DESC` on a `BOOSTED_TREE_CLASSIFIER`, paired with `ML.GLOBAL_EXPLAIN` in the same example. The other three supported types carry it too: `models/boosted_tree_regressor/`, `models/random_forest_classifier/`, `models/random_forest_regressor/`.
+- `data+ai/bq-ml/workflows/churn_retention/churn_retention.sql` (Step 4) — verified live, the two rankings genuinely disagree: `return_rate` is 8th-of-9 by `ML.GLOBAL_EXPLAIN` attribution but 3rd by `importance_gain`. Gain measures how useful a feature is *when* the trees split on it, so a rarely-used feature can still score high; attribution measures typical contribution across all predictions, split frequency included. Neither ranking is "more correct."
 
 ---
 
@@ -2514,8 +2531,11 @@ FROM UNNEST((
 **BigFrames API:** `model.global_explain()` covers attribution; raw coefficients via the underlying model are exposed through the BigQuery SQL function. No dedicated `ml_weights()` wrapper — call `ML.WEIGHTS` via `bigframes.pandas.read_gbq(...)` over the TVF.
 
 **Repo example (tested):**
-- `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` — `SELECT * FROM ML.WEIGHTS(MODEL ...)` on a `LOGISTIC_REG` model trained with `CATEGORY_ENCODING_METHOD='DUMMY_ENCODING'`.
-- `data+ai/bq-ml/models/linear_regression/linear_regression.sql` — `LINEAR_REG` on `penguins`/`body_mass_g`, trained with `DUMMY_ENCODING` specifically to keep `ML.WEIGHTS` stable and interpretable; SQL comments explain why. (Note: `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` does NOT demonstrate `ML.WEIGHTS` — that citation was a research-pass error, corrected here.)
+- `data+ai/bq-ml/models/linear_regression/linear_regression.sql` — `LINEAR_REG` on `penguins`/`body_mass_g`, trained with `DUMMY_ENCODING` specifically to keep `ML.WEIGHTS` stable and interpretable; SQL comments explain why. (`models/logistic_regression/logistic_regression.sql` covers the GLM lifecycle but not `ML.WEIGHTS` — the linear-regression file is the one to read for it.)
+- `data+ai/bq-ml/workflows/difference_in_differences/difference_in_differences.sql` (Step 3) — the coefficient *is* the answer: the `treated_post` weight is the DiD estimate. Verified −19.29 with `optimize_strategy = 'NORMAL_EQUATION'`, matching `statsmodels.OLS` exactly, versus −6.19 under the default `AUTO_STRATEGY` — read weights for inference only from a normal-equation fit.
+- `data+ai/bq-ml/workflows/price_elasticity_dml/price_elasticity_dml.sql` (Steps 2 and 4) — `ML.WEIGHTS` on the naive and the double-ML model, verified −1.43 vs. −0.71: roughly half the apparent price sensitivity was confounding, visible only by comparing two weight readouts.
+- `data+ai/bq-ml/workflows/synthetic_control/synthetic_control.sql` (Step 2) — `ML.WEIGHTS` used as a *diagnostic of an invalid fit*: several weights come back negative and others far above 1, none of which a real percentage blend allows, on an underdetermined system (9 pre-period weeks vs. 13 donor columns).
+- `data+ai/bq-ml/workflows/survival_analysis/survival_analysis.sql` — weights on a discrete-time hazard `LOGISTIC_REG` read as hazard direction: activity features carry positive weights (faster time-to-event), `week` a small negative one.
 
 ---
 
@@ -2563,10 +2583,9 @@ FROM ML.ADVANCED_WEIGHTS(MODEL `PROJECT_ID.DATASET.MODEL_NAME`
 
 **BigFrames API:** No dedicated wrapper; call the TVF via SQL / `read_gbq`.
 
-**Repo example (tested):**
-- `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb` — model trained with `calculate_p_values = TRUE` and `CATEGORY_ENCODING_METHOD = 'DUMMY_ENCODING'`, then `SELECT * FROM ML.ADVANCED_WEIGHTS(MODEL ...)` to retrieve weights with p-values.
+**Repo example:** none yet — this is the one lifecycle function with no tested example in this project. The models that satisfy the type constraint (`models/linear_regression/`, `models/logistic_regression/`, and the `LINEAR_REG`/`LOGISTIC_REG` workflows that read `ML.WEIGHTS`) are all trained without `calculate_p_values`, and the option cannot be added after training. To reproduce, retrain any of them with `calculate_p_values = TRUE`, `category_encoding_method = 'DUMMY_ENCODING'`, and `l1_reg = 0`, then call the TVF; the required options, outputs, and caveats are fully specified above.
 
-> Note: For boosted trees / random forest see `ML.FEATURE_IMPORTANCE` and `ML.GLOBAL_EXPLAIN`; for k-means see `ML.CENTROIDS`; for PCA/autoencoder see `ML.PRINCIPAL_COMPONENTS` / `ML.PRINCIPAL_COMPONENT_INFO`; for ARIMA_PLUS see `ML.ARIMA_COEFFICIENTS`. These tree/clustering/forecast notebooks (`03b`, `03g`, `03h`, `03i`, `BQML Univariate Forecasting with ARIMA+.ipynb`) do NOT use ML.WEIGHTS.
+> Note: For boosted trees / random forest see `ML.FEATURE_IMPORTANCE` and `ML.GLOBAL_EXPLAIN`; for k-means see `ML.CENTROIDS`; for PCA/autoencoder see `ML.PRINCIPAL_COMPONENTS` / `ML.PRINCIPAL_COMPONENT_INFO`; for ARIMA_PLUS see `ML.ARIMA_COEFFICIENTS`. The tree, clustering, and forecasting model files (`models/boosted_tree_classifier/`, `models/pca/`, `models/kmeans/`, `models/autoencoder/`, `models/arima_plus/`) do NOT use `ML.WEIGHTS`. Neither do the DNN and wide-and-deep types — `models/dnn_classifier/` (Example 7) records why: no coefficients exist, so Integrated Gradients via `ML.GLOBAL_EXPLAIN` is the only mechanism available there.
 
 
 ---
@@ -2621,7 +2640,7 @@ SELECT * FROM ML.FEATURE_INFO(MODEL `PROJECT_ID.DATASET.MODEL_NAME`);
 - Stats are point-in-time from training; they do not reflect new serving data.
 
 **BigFrames API:** No direct equivalent (inspect the model object / run the SQL via `bigframes`).
-**Repo example (tested):** `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 8). Also in `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb`, `03b - BQML Boosted Trees.ipynb`, `03g - BQML - PCA with Anomaly Detection.ipynb`, `03h - BQML k-means with Anomaly Detection.ipynb`, `03i - BQML Autoencoder with Anomaly Detection.ipynb`, and `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` — same call shape across every model family.
+**Repo example (tested):** `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 8). The same call shape appears in every model family under `models/` — GLM (`linear_regression/`, `logistic_regression/`), tree ensembles (`boosted_tree_classifier/`, `boosted_tree_regressor/`, `random_forest_classifier/`, `random_forest_regressor/`), neural (`dnn_classifier/`, `dnn_regressor/`, `wide_and_deep_classifier/`, `wide_and_deep_regressor/`), unsupervised (`kmeans/`, `pca/`, `autoencoder/`, `matrix_factorization/`), forecasting (`arima_plus/`, `arima_plus_xreg/`), and `automl_classifier/`, `automl_regressor/`, `imported/`, `remote/`, `transform_only/` — 21 files in all, which is what makes it the cheapest first look at any model.
 
 ---
 
@@ -2692,7 +2711,12 @@ The boundary is exactly 10 iterations. Ruled out as causes: early stopping (disa
 - Returns nothing for `BOOSTED_TREE_*` at `xgboost_version = '2.1'` past 10 iterations — see the gotcha above.
 
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 8, loss curve). The `'2.1'` empty-result case is documented in place in `models/boosted_tree_classifier/` (Example 8 / Step 6) and `models/boosted_tree_regressor/` (Example 6 / Step 5). Also `03a - BQML Logistic Regression.ipynb`, `03b - BQML Boosted Trees.ipynb`, `03g - BQML - PCA with Anomaly Detection.ipynb`, and `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` (reduced 3-column ARIMA output).
+**Repo example (tested):**
+- `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 8) — the loss curve.
+- The `'2.1'` empty-result case is documented in place in `models/boosted_tree_classifier/` (Example 8 / Step 6) and `models/boosted_tree_regressor/` (Example 6 / Step 5).
+- `data+ai/bq-ml/models/arima_plus/arima_plus.sql` (Example 4) — the reduced ARIMA output, paired with `ML.FEATURE_INFO`.
+- `data+ai/bq-ml/models/automl_classifier/automl_classifier.sql` (Example 6, and the header note) — `duration_ms` is how the AutoML wall-clock overrun was measured: `duration_ms = 9,475,200`, i.e. 2.63 hours actual for `budget_hours = 1.0`. This is the `ML.TRAINING_INFO` use that has nothing to do with loss curves — reading the real cost of a training run after the fact.
+- `data+ai/bq-ml/workflows/difference_in_differences/difference_in_differences.sql` (header gotcha) — `ML.TRAINING_INFO` as the *detection* mechanism for a silently wrong fit: with the default `AUTO_STRATEGY` the loss is still decreasing at the final iteration and no error is raised, which is the signal to force `optimize_strategy = 'NORMAL_EQUATION'` for small-sample or collinear regressions used for inference.
 
 ---
 
@@ -2747,7 +2771,7 @@ ORDER BY trial_id;
 - **Verified (DNN): the search order for a given model name is reproducible, not freshly randomized on each retrain — and this extends to DNN training generally, not just tuning.** Three full runs of `models/dnn_regressor/` (identical SQL, no seed) reproduced bit-for-bit identical `ML.TRIAL_INFO` sampled hyperparameters and `is_optimal` trial, plus bit-identical `ML.EVALUATE` results on the non-tuned baseline and fix models. A differently-named model with the same search-space config explored a different, worse region. Don't assume renaming/duplicating a `CREATE MODEL` with `NUM_TRIALS` will reproduce a known-good (or known-bad) search outcome from a differently-named model — see the `DNN_CLASSIFIER`/`DNN_REGRESSOR` entry for details.
 
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 10 — `NUM_TRIALS=10` + `HPARAM_RANGE`, then sorts trials by `hparam_tuning_evaluation_metrics.roc_auc` and `is_optimal`). `data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` (Example 10 — tunes `learn_rate`/`max_tree_depth`; observed a transient trial `FAILED`, see gotcha above). `data+ai/bq-ml/models/random_forest_regressor/random_forest_regressor.sql` (Example 9 — observed the `is_optimal` tie, see limitation above). Also `03 - BigQuery ML (BQML)/03h - BQML k-means with Anomaly Detection.ipynb` and `03i - BQML Autoencoder with Anomaly Detection.ipynb`.
+**Repo example (tested):** `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 10 — `NUM_TRIALS=10` + `HPARAM_RANGE`, then sorts trials by `hparam_tuning_evaluation_metrics.roc_auc` and `is_optimal`). `data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` (Example 10 — tunes `learn_rate`/`max_tree_depth`; observed a transient trial `FAILED`, see gotcha above). `data+ai/bq-ml/models/random_forest_regressor/random_forest_regressor.sql` (Example 9 — observed the `is_optimal` tie, see limitation above). For the unsupervised types the tuning objective is the model's own quality metric rather than an accuracy metric: `data+ai/bq-ml/models/kmeans/kmeans.sql` sorts trials by `hparam_tuning_evaluation_metrics.davies_bouldin_index ASC`, and `data+ai/bq-ml/models/autoencoder/autoencoder.sql` by `hparam_tuning_evaluation_metrics.mean_squared_error ASC`. `models/pca/pca.sql` (Example 10) is the deliberate exception — PCA supports no tuning at all, so it uses `pca_explained_variance_ratio` to let BigQuery ML pick the component count instead.
 
 > Related hyperparameter-tuning option reference (`NUM_TRIALS`, `HPARAM_RANGE`, `HPARAM_CANDIDATES`, `HPARAM_TUNING_OBJECTIVES`) lives with the per-model-type entries and the capability matrix.
 
@@ -2791,7 +2815,10 @@ FROM ML.CENTROIDS(MODEL `PROJECT_ID.DATASET.MODEL_NAME`
 **Best practices:** Use `standardize = FALSE` to read centroids in the original feature units when profiling clusters for business stakeholders.
 **Limitations:** `KMEANS` only — not valid for PCA/autoencoder/MF or supervised models. Numeric vs. categorical features land in separate columns; `UNNEST(categorical_value)` to flatten one-hot categories.
 **BigFrames API:** `bigframes.ml.cluster.KMeans().cluster_centers_` (centroid attribute).
-**Repo example (tested):** `03 - BigQuery ML (BQML)/03h - BQML k-means with Anomaly Detection.ipynb` — `ML.CENTROIDS` over a Vizier-tuned `KMEANS` model returns 32,910 rows (one feature x centroid x trial), with `trial_id` present because the model was HP-tuned.
+**Repo example (tested):**
+- `data+ai/bq-ml/models/kmeans/kmeans.sql` (Example 4) — one row per (`centroid_id`, `feature`) `ORDER BY centroid_id, feature`, read as the interpretation step: the centroid with the highest body-mass and flipper-length coordinates is the large-species cluster. Because `KMEANS` is non-deterministic (Example 7), read the profile off the coordinates, not off a remembered `centroid_id`.
+- `data+ai/bq-ml/workflows/customer_segmentation/customer_segmentation.sql` (Step 3) — the same call on RFM features, feeding the aggregated segment profiles in Step 4.
+- On a hyperparameter-tuned model the output also carries `trial_id`, so the row count multiplies by the number of trials (one row per feature x centroid x trial) — see `models/kmeans/kmeans.sql`'s tuning example for the tuned variant.
 
 ---
 
@@ -2829,7 +2856,7 @@ FROM ML.PRINCIPAL_COMPONENTS(MODEL `PROJECT_ID.DATASET.MODEL_NAME`);
 **Best practices:** Output is ordered descending by eigenvalue (most-explanatory component first). Join/compare against `ML.PRINCIPAL_COMPONENT_INFO` on `principal_component_id` to weight loadings by variance explained.
 **Limitations:** `PCA` only. Categorical features are one-hot encoded — flatten `categorical_value` with `UNNEST`.
 **BigFrames API:** `bigframes.ml.decomposition.PCA().components_`.
-**Repo example (tested):** `03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` — `ML.PRINCIPAL_COMPONENTS` returns 780 rows (30 features x 26 components) for a model trained with `pca_explained_variance_ratio = 0.90`.
+**Repo example (tested):** `data+ai/bq-ml/models/pca/pca.sql` (Example 4) — one row per (`principal_component_id`, `feature`), so the row count is features x components. Two things it pins down: **`principal_component_id` is 0-indexed**, unlike `KMEANS`' 1-indexed `centroid_id` — indexing conventions are not consistent across unsupervised model types — and how to read a component as an axis: on the penguins model, component 0 loads negative on body mass, culmen length, and flipper length but positive on culmen depth, i.e. a body-size axis.
 
 ---
 
@@ -2867,7 +2894,9 @@ FROM ML.PRINCIPAL_COMPONENT_INFO(MODEL `PROJECT_ID.DATASET.MODEL_NAME`);
 **Best practices:** Use `cumulative_explained_variance_ratio` to pick a component count. Note `ML.EVALUATE` on a PCA model returns the single complementary metric `total_explained_variance_ratio`.
 **Limitations:** `PCA` only.
 **BigFrames API:** `bigframes.ml.decomposition.PCA().explained_variance_` / `.explained_variance_ratio_`.
-**Repo example (tested):** `03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` — returns 26 rows whose `cumulative_explained_variance_ratio` reaches 0.923, matching `ML.EVALUATE`'s `total_explained_variance_ratio = 0.923`.
+**Repo example (tested):**
+- `data+ai/bq-ml/models/pca/pca.sql` (Example 5) — one row per component; on the penguins model component 0 alone explains ~69% of variance and adding component 1 brings the cumulative total to ~88%, which is how the elbow is read. Example 10 then targets `pca_explained_variance_ratio = 0.90` and BigQuery ML picks 3 components (2 reach only ~0.88, just short), landing at ~0.97 cumulative.
+- **GOTCHA, verified live — prefer a fixed component count over a variance target when downstream results must be stable.** `data+ai/bq-ml/workflows/anomaly_fraud_detection/anomaly_fraud_detection.sql` (Step 1) trains PCA on `ulb_fraud_detection`: with `pca_explained_variance_ratio` (a *variable* component count chosen to hit a variance target), three runs of the identical `CREATE OR REPLACE MODEL` statement gave `ML.DETECT_ANOMALIES` true-positive counts of 3, 235, and 279 out of 492 real frauds — while `total_explained_variance_ratio` stayed bit-for-bit stable at ~0.95473 every time. Near-threshold eigenvalues flip which components get retained, which swings per-row reconstruction error even though the aggregate variance captured looks identical. Switching to a fixed `num_principal_components = 10` was substantially more stable (TP 114-124 across independent runs). The aggregate metric is not a stability check.
 
 ---
 
@@ -2908,7 +2937,7 @@ FROM ML.RECONSTRUCTION_LOSS(
 **Best practices:** For anomaly detection prefer `ML.DETECT_ANOMALIES` (handles contamination thresholding) and reserve `ML.RECONSTRUCTION_LOSS` for inspecting the raw error distribution. Larger errors indicate rows the model could not reconstruct (likely anomalous).
 **Limitations:** `AUTOENCODER` only; no imported TensorFlow models. If `TRANSFORM` was used at training, the input may only reference the `TRANSFORM` input columns.
 **BigFrames API:** No direct equivalent (`bigframes.ml` autoencoder reconstruction-loss helper not exposed); use the SQL function.
-**Repo example (tested):** `03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` — `ML.RECONSTRUCTION_LOSS` over the TEST split returns `mean_absolute_error`, `mean_squared_error`, `mean_squared_log_error`, plus `trial_id` (the model was HP-tuned) and the passed-through input columns.
+**Repo example (tested):** `data+ai/bq-ml/models/autoencoder/autoencoder.sql` (Example 6) — returns `mean_absolute_error`, `mean_squared_error`, and `mean_squared_log_error` per input row (the same three metrics `ML.EVALUATE` reports in aggregate), `ORDER BY mean_squared_error DESC` to surface the rows the model reconstructs worst. That is the manual, row-level view of exactly the signal `ML.DETECT_ANOMALIES` automates in the same file's Example 8. On a hyperparameter-tuned model the output also carries `trial_id`.
 
 ---
 
@@ -2966,7 +2995,12 @@ FROM ML.RECOMMEND(
 
 **BigFrames API:** `bigframes.ml.decomposition.MatrixFactorization.predict()` (DataFrame in/out) is the recommendation equivalent.
 
-**Repo example (tested):** No matrix-factorization notebook exists among the assigned repo files; the closest tested lifecycle parallels are the `ML.PREDICT` patterns in `03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` and the supervised `ML.PREDICT` flow in `03 - BigQuery ML (BQML)/03a - BQML Logistic Regression.ipynb`. ML.RECOMMEND syntax above is sourced from Google Cloud docs.
+**Repo example (tested):**
+- `data+ai/bq-ml/models/matrix_factorization/matrix_factorization.sql` — the full lifecycle on Google Merchandise Store `ga_sessions_*` data with `feedback_type = 'IMPLICIT'` (42,178 users x 320 items, ~1.3M interactions): create → evaluate → recommend → inspect factors → generate embeddings → item-item similarity via `VECTOR_SEARCH` → introspect → tune.
+- `data+ai/bq-ml/workflows/recommendation/recommendation.sql` (Step 3) — top-N per user done properly: `ROW_NUMBER() OVER (PARTITION BY visitor_id ORDER BY predicted_view_count_confidence DESC)` filtered to `rank <= 5`, rather than a global `ORDER BY ... LIMIT`.
+- **Is the personalization real?** The same file (Step 4) answers it quantitatively rather than assuming: a real visitor's personalized top-10 overlapped the global most-viewed top-10 by **0 of 10** items.
+- **GOTCHA, verified live: `ML.RECOMMEND` on a user absent from training does not error — it silently returns a ranking.** `workflows/recommendation/recommendation.sql` (Step 5) proves that ranking is not personalized by showing two different absent user IDs receive an identical top-5. Cold-start users need to be detected upstream; the function will not signal them.
+- **Retraining variance:** `models/matrix_factorization/matrix_factorization.sql` (Example 2) records that WALS training is not deterministic — repeated identical runs landed at ~0.873 and ~0.860 — comparable to `models/kmeans/` and `RANDOM_FOREST_*`, unlike PCA's determinism.
 
 ---
 
@@ -3023,10 +3057,12 @@ FROM ML.GENERATE_EMBEDDING(
 **BigFrames API:** No direct single-call `generate_embedding` wrapper for these in-house model types; equivalent results come from `PCA.transform()`, the autoencoder `predict()` latent output, and `MatrixFactorization` weights via the respective `bigframes.ml` classes. (Foundation embeddings: `bigframes.ml.llm.TextEmbeddingGenerator` — cross-link out.)
 
 **Repo example (tested):**
-- PCA projections (the values `ML.GENERATE_EMBEDDING` arrays for a PCA model) come from `ML.PREDICT` — see `03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` (CREATE MODEL `model_type='PCA'`, then `ML.PREDICT` yielding `principal_component_1..N`; serving payload returns `principal_component_projections`).
-- Autoencoder latent space (the embedding source for an autoencoder model) — see `03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` (CREATE MODEL `model_type='AUTOENCODER'` with `hidden_units=[...,8,...]`; `ML.PREDICT` returns `latent_col_1..8`; `ML.RECONSTRUCTION_LOSS` for quality).
+- `data+ai/bq-ml/models/pca/pca.sql` (Example 8) — wraps the same projection Example 3 gets from `ML.PREDICT` into one `ml_generate_embedding_result ARRAY<FLOAT>` column. Verified: the array values match `ML.PREDICT`'s `principal_component_1/2` exactly, in order.
+- `data+ai/bq-ml/models/autoencoder/autoencoder.sql` (Example 9) — the same for the autoencoder latent space; the array matches `ML.PREDICT`'s `latent_col_*` exactly, in order. Example 10 then compares the manual route (`ML.PREDICT` → wrap into an ARRAY → optional `ML.NORMALIZER`) against the wrapper, feeding both into `VECTOR_SEARCH`.
+- `data+ai/bq-ml/models/matrix_factorization/matrix_factorization.sql` — the per-entity (user/item) case, used for item-item similarity via `VECTOR_SEARCH`.
+- `data+ai/bq-ml/functions/distance/distance.sql` — `ML.DISTANCE` as the brute-force alternative for a one-off pairwise comparison, without building a vector index.
 
-These notebooks demonstrate the underlying `ML.PREDICT` mechanics; the `ML.GENERATE_EMBEDDING` wrapper packages those same outputs into one array column. The k-means anomaly-detection notebook (`03h`) is a sibling unsupervised example. The `ML.GENERATE_EMBEDDING` array-output syntax above is sourced from Google Cloud docs.
+The wrapper packages what `ML.PREDICT` already returns into a single array column purpose-built for `VECTOR_SEARCH`; the two are verified equivalent above, so choose by what consumes the output.
 
 
 ---
@@ -3096,7 +3132,9 @@ FROM ML.FORECAST(
 **Best practices:** Set `horizon` (and `holiday_region`) at `CREATE MODEL` time. Use the forecast-with-`LIMIT` pattern instead of post-filtering large outputs.
 **Limitations:** Adding computation on top of large outputs (min/max, arithmetic, filters) can raise "Resources exceeded during query execution". `ARIMA_PLUS_XREG` requires future feature values to forecast.
 **BigFrames API:** `bigframes.ml.forecasting.ARIMAPlus().predict(X)`.
-**Repo example (tested):** `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` (cell 45) — `STRUCT(1 AS horizon, 0.95 AS confidence_level)` over a multi-series Citibike model.
+**Repo example (tested):**
+- `data+ai/bq-ml/models/arima_plus/arima_plus.sql` (Example 6) — `STRUCT(28 AS horizon, 0.9 AS confidence_level)` over a multi-series Citibike-style model built with `time_series_id_col`, selecting the forecast plus both prediction-interval bounds. Example 1 shows the single-series form with only `STRUCT(28 AS horizon)`.
+- `data+ai/bq-ml/models/arima_plus_xreg/arima_plus_xreg.sql` — the same call for the covariate model, where future feature values must be supplied to forecast at all.
 
 ---
 
@@ -3141,7 +3179,10 @@ Decomposition identity: `time_series_data = trend + Σ seasonal_period_* + holid
 **Best practices:** Use `time_series_adjusted_data WHERE time_series_type='forecast'` as the fitted forecast for custom SQL metrics (MAPE/MAE/RMSE).
 **Limitations:** Decomposition components for spikes/step/residual exist only for history. Same large-output memory caveat as `ML.FORECAST`.
 **BigFrames API:** No direct equivalent (use `ML.EXPLAIN_FORECAST` via SQL).
-**Repo example (tested):** `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` (cells 47, 53, 55) — drives both the forecast funnel chart and SQL-computed MAPE/MAE/pMAE/MSE/RMSE/pRMSE.
+**Repo example (tested):**
+- `data+ai/bq-ml/models/arima_plus/arima_plus.sql` (Example 7) — selects `time_series_type`, `time_series_data`, `time_series_adjusted_data`, `trend`, `seasonal_period_weekly`, `seasonal_period_yearly`, and `holiday_effect` for one series out of a multi-series model.
+- Custom holidays (Example 10 in the same file) surface as a `holiday_effect_<holiday_name>` column. Reported honestly: with only 4 occurrences in the training history the estimated effect came out at **0.0** — statistically indistinguishable from no effect. The column existing is not evidence the effect is real.
+- **GOTCHA, verified: `forecast_limit_lower_bound` / `forecast_limit_upper_bound` are incompatible with `ML.EXPLAIN_FORECAST`.** `ML.FORECAST` and every other lifecycle function are unaffected — only this one is blocked, which is why the multi-series model in that file deliberately does not set a bound.
 
 ---
 
@@ -3188,7 +3229,7 @@ FROM ML.ARIMA_EVALUATE(
 **Best practices:** Order by the series id column for stable review; check `error_message` for short/failed series.
 **Limitations:** `seasonal_periods`, `has_holiday_effect`, etc. depend on `CREATE MODEL` options (e.g. `holiday_region`).
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` (cell 41) — full per-station ARIMA evaluation table.
+**Repo example (tested):** `data+ai/bq-ml/models/arima_plus/arima_plus.sql` (Example 3) — the full per-series model-selection table for a multi-series model. Example 10 in the same file uses it as the *verification* of a manual order: training with `auto_arima = FALSE` and `non_seasonal_order = STRUCT(2 AS p, 1 AS d, 1 AS q)`, then reading `non_seasonal_p/d/q` back to confirm auto.ARIMA was actually bypassed.
 
 ---
 
@@ -3216,7 +3257,7 @@ FROM ML.ARIMA_COEFFICIENTS(MODEL `PROJECT_ID.DATASET.MODEL_NAME`);
 **Best practices:** Join with `ML.ARIMA_EVALUATE` on the series id to pair `(p,d,q)` with the coefficient vectors.
 **Limitations:** Output is the ARIMA-specific analog of `ML.WEIGHTS`; standard `ML.WEIGHTS` does not apply to ARIMA_PLUS.
 **BigFrames API:** `bigframes.ml.forecasting.ARIMAPlus().coef_` (or `.summary()`).
-**Repo example (tested):** `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` (cell 32) — per-station `ar_coefficients` / `ma_coefficients` / `intercept_or_drift`.
+**Repo example (tested):** `data+ai/bq-ml/models/arima_plus/arima_plus.sql` (Example 8) — per-series `ar_coefficients` / `ma_coefficients` / `intercept_or_drift`, sitting directly after `ML.ARIMA_EVALUATE` (Example 3) so the `(p,d,q)` order and the coefficient vector lengths can be read against each other.
 
 ---
 
@@ -3245,7 +3286,9 @@ FROM ML.HOLIDAY_INFO(MODEL `PROJECT_ID.DATASET.MODEL_NAME`);
 **Best practices:** Requires `holiday_region` (one or many, e.g. `['GLOBAL','US']`) at `CREATE MODEL`. Output spans many years/holidays — aggregate or filter by `region`/`holiday_name` for review.
 **Limitations:** Empty if the model was trained without `holiday_region`. Returns the holiday calendar/windows, not the numeric effect (use `ML.EXPLAIN_FORECAST` `holiday_effect_*` columns for magnitudes).
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` (cell 43; model trained with `holiday_region = ['GLOBAL', 'US']`) — 1,624 region/holiday/date rows.
+**Repo example (tested):**
+- `data+ai/bq-ml/models/arima_plus/arima_plus.sql` (Example 9) — filtered to `region = 'US'` over a bounded `primary_date` range, which is the practical shape given how many rows the unfiltered output spans.
+- Example 10 in the same file registers a **custom holiday** via the `holiday_region`/custom-holiday input and then reads it back with `WHERE holiday_name = 'NYCMarathon'` — the way to confirm a custom calendar entry was actually accepted by the model.
 
 ---
 
@@ -3325,8 +3368,8 @@ FROM ML.DETECT_ANOMALIES(
 | `time_series_timestamp` / `time_series_data` | — | The timestamp and observed value (plus the `time_series_id_col` value when present). |
 
 **Best practices:**
-- Set `contamination` to a domain-informed expected outlier rate. The repo notebooks compute it from the training-data positive-class rate (`TRAIN_FRAUD_PCT ≈ 0.00174`) and pass it as `STRUCT(TRAIN_FRAUD_PCT AS contamination)`.
-- For evaluation, map `is_anomaly` to 0/1 and build a confusion matrix against known labels (the notebooks do this with `CASE WHEN is_anomaly ... END`).
+- Set `contamination` to a domain-informed expected outlier rate. [`workflows/anomaly_fraud_detection/`](workflows/anomaly_fraud_detection/) computes it from the training-data positive-class rate (`TRAIN_FRAUD_PCT ≈ 0.00174`) and passes it as `STRUCT(TRAIN_FRAUD_PCT AS contamination)`.
+- For evaluation, map `is_anomaly` to 0/1 and build a confusion matrix against known labels (`CASE WHEN is_anomaly ... END`, as in `workflows/anomaly_fraud_detection/`).
 - For ARIMA_PLUS, keep `decompose_time_series = TRUE` so forecast errors are retained for historical anomaly scoring.
 
 **Limitations:**
@@ -3337,10 +3380,12 @@ FROM ML.DETECT_ANOMALIES(
 **BigFrames API:** `model.detect_anomalies(X, contamination=...)` on `bigframes.ml.decomposition.PCA`, `bigframes.ml.cluster.KMeans`, and the autoencoder/forecasting estimators.
 
 **Repo example (tested):**
-- `03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` — PCA + `STRUCT(TRAIN_FRAUD_PCT AS contamination)`, confusion matrix from `is_anomaly`.
-- `03 - BigQuery ML (BQML)/03h - BQML k-means with Anomaly Detection.ipynb` — KMEANS (HP-tuned), output includes `normalized_distance`, `CENTROID_ID`, `trial_id`.
-- `03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` — AUTOENCODER (HP-tuned); see also `ML.RECONSTRUCTION_LOSS` for the underlying MSE.
-- `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` — ARIMA_PLUS with `STRUCT(0.95 AS anomaly_prob_threshold)`, filtering `WHERE anomaly_probability >= 0.95`; output has `is_anomaly`, `anomaly_probability`, `lower_bound`, `upper_bound`.
+- `data+ai/bq-ml/models/kmeans/kmeans.sql` (Example 6) — `STRUCT(0.05 AS contamination)`, ranked by `normalized_distance` from the nearest centroid.
+- `data+ai/bq-ml/models/pca/pca.sql` (Example 7) — the same contamination cutoff, ranked by `mean_squared_error` (reconstruction error).
+- `data+ai/bq-ml/models/autoencoder/autoencoder.sql` (Example 8) — reconstruction-based detection; its Example 6 shows the manual `ML.RECONSTRUCTION_LOSS` view of the same underlying signal.
+- `data+ai/bq-ml/models/arima_plus/arima_plus.sql` (Example 11) — the time-series form, `STRUCT(0.95 AS anomaly_prob_threshold)` with `is_anomaly` / `anomaly_probability`. `models/arima_plus_xreg/` carries the covariate variant.
+- **The ground-truth check the mechanism demos can't give you:** `data+ai/bq-ml/workflows/anomaly_fraud_detection/anomaly_fraud_detection.sql` runs PCA and AUTOENCODER detection on `ulb_fraud_detection` (284,807 rows, 492 real frauds at 0.17%) trained on features only, then scores real precision/recall against the withheld `Class` label and contrasts it with a supervised `BOOSTED_TREE_CLASSIFIER` trained *with* the label. That file is also the source of the PCA variable-component-count instability documented under `ML.PRINCIPAL_COMPONENT_INFO`.
+- **Not the same thing as data-quality monitoring, despite the name.** `ML.DETECT_ANOMALIES` finds row-level outliers *within* one dataset; `ML.VALIDATE_DATA_SKEW` / `ML.VALIDATE_DATA_DRIFT` in `functions/data_quality/` compare whole datasets or time windows to each other. Different concept, similar name.
 
 ---
 
@@ -3456,13 +3501,13 @@ ML.NORMALIZER(array_expression [, p])
 | (normalizer result) | ARRAY\<FLOAT64\> | Input array rescaled to unit p-norm. |
 
 **Best practices:**
-- Prefer the `TRANSFORM` clause over preprocessing in the source query so the learned statistics travel with the model and are reapplied at prediction (avoids training/serving skew). Tested example in [`BQML Feature Engineering.ipynb`](../../03%20-%20BigQuery%20ML%20(BQML)/BQML%20Feature%20Engineering.ipynb) scales ~16 columns inside one `TRANSFORM` and aliases each (`... OVER() as scale_flourAmt`).
+- Prefer the `TRANSFORM` clause over preprocessing in the source query so the learned statistics travel with the model and are reapplied at prediction (avoids training/serving skew). Scale each column inside one `TRANSFORM` and alias each result (`ML.STANDARD_SCALER(col) OVER() AS col_scaled`) — see `functions/scalers/scalers.sql` (Example 8).
 - Choose the scaler to match the data: `ROBUST` for outliers, `MAX_ABS` for sparse/sign-bearing data, `STANDARD` for roughly Gaussian features, `MIN_MAX` when a bounded `[0,1]` range is needed.
-- Validate `ML.STANDARD_SCALER` equals `(x - AVG) / STDDEV_POP` (not the default `STDDEV`/`STDDEV_SAMP`) and `ML.NORMALIZER` against `np.linalg.norm` — both verified in the preprocessing-functions notebook and re-confirmed in `functions/scalers/`.
+- Validate `ML.STANDARD_SCALER` equals `(x - AVG) / STDDEV_POP` (not the default `STDDEV`/`STDDEV_SAMP`) — verified live in `functions/scalers/scalers.sql` (Example 1).
 
 **Limitations / gotchas:**
 - The four analytic scalers MUST use an empty `OVER()`; omitting it errors. `ML.NORMALIZER` must NOT use `OVER()`.
-- An analytic function cannot be an argument to another analytic function, but scalar functions (e.g. `ML.NORMALIZER`, `ML.IMPUTER` results) can be nested as arguments — see the compounding example in the preprocessing-functions notebook.
+- An analytic function cannot be an argument to another analytic function, but a scalar function can take an analytic function's result as an argument (e.g. `ML.POLYNOMIAL_EXPAND` wrapping `ML.IMPUTER(...) OVER()`) — see `functions/feature_engineering/feature_engineering.sql` (Example 6).
 - `ML.NORMALIZER` normalizes across the elements of each row's ARRAY (row-wise), not down a column — semantically different from the column scalers.
 - `ML.MIN_MAX_SCALER` caps prediction-time inputs to `[0, 1]` when they fall outside the training min/max.
 - Imputation of NULLs is not done by scalers; pair with `ML.IMPUTER` (impute in the input query or earlier in the transform chain).
@@ -3470,10 +3515,10 @@ ML.NORMALIZER(array_expression [, p])
 **BigFrames API:** `bigframes.ml.preprocessing.StandardScaler`, `MinMaxScaler`, `MaxAbsScaler` (and `compose.ColumnTransformer`); not every scaler has a 1:1 class — use SQL `TRANSFORM` for full parity.
 
 **Repo examples (tested):**
-- [`03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb`](../../03%20-%20BigQuery%20ML%20(BQML)/BQML%20Feature%20Engineering%20-%20preprocessing%20functions.ipynb) — standalone demos of all five with verified outputs (e.g. `ML.STANDARD_SCALER([0..10]) OVER()` matches manual z-score; `ML.ROBUST_SCALER` with `[25,75]`, `with_median`, `with_quantile_range` toggles; `ML.NORMALIZER` p ∈ {0, 1, 2, +inf}).
-- [`03 - BigQuery ML (BQML)/BQML Feature Engineering.ipynb`](../../03%20-%20BigQuery%20ML%20(BQML)/BQML%20Feature%20Engineering.ipynb) — all four scalers inside a `TRANSFORM` of `LINEAR_REG` and `BOOSTED_TREE_REGRESSOR` models (registered to Vertex AI Model Registry).
-- [`03 - BigQuery ML (BQML)/BQML Feature Engineering - reusable and modular.ipynb`](../../03%20-%20BigQuery%20ML%20(BQML)/BQML%20Feature%20Engineering%20-%20reusable%20and%20modular.ipynb) — `ML.ROBUST_SCALER` (outlier column) + `ML.STANDARD_SCALER` (other numerics) embedded in a `TRANSFORM` with `ML.IMPUTER` done in the input query.
-- [`data+ai/bq-ml/functions/scalers/scalers.ipynb`](functions/scalers/) — all five scalers on `penguins`, standalone and side-by-side; verifies the `STDDEV_POP` gotcha above, `ML.MIN_MAX_SCALER`'s prediction-time capping via a live `CREATE MODEL`+`ML.TRANSFORM` test, and `ML.ROBUST_SCALER`'s outlier-robustness contrasted directly against `ML.STANDARD_SCALER` on an injected outlier. Ends with a `LOGISTIC_REG` embedding the `TRANSFORM` directly (contrast with `models/transform_only/`'s standalone pipeline, which needs explicit re-application).
+- [`functions/scalers/`](functions/scalers/) — all five scalers on `penguins`, standalone (Examples 1–5) and side-by-side on one column (Example 7). Covers `ML.ROBUST_SCALER` with all three optional parameters (`[10,90]` custom range, `with_median = FALSE`, `with_quantile_range = FALSE`) and `ML.NORMALIZER` at p ∈ {0, 1, 2, +inf} on `[3.0, 4.0]`, then on a real per-penguin measurement vector. Verifies the `STDDEV_POP` gotcha above (Example 1), `ML.MIN_MAX_SCALER`'s prediction-time capping via a live `CREATE MODEL` + `ML.TRANSFORM` test — 20.0 → 0.0 and 100.0 → 1.0 against a training range of `[32.1, 59.6]` (Example 2) — and `ML.ROBUST_SCALER`'s outlier robustness against `ML.STANDARD_SCALER` on an injected outlier (500 among 10–14): standard compresses the normal points into −0.35…−0.32, robust keeps them spread across −0.8…0.8 (Example 4). Example 6 shows NULLs passing through untouched. Example 8 ends with a `LOGISTIC_REG` embedding the `TRANSFORM` directly (roc_auc = 1.0), so `ML.PREDICT` on raw unscaled input works — contrast with `models/transform_only/`, whose standalone pipeline needs explicit re-application.
+- Scalers inside a real `TRANSFORM` of an estimator, across model types: [`models/linear_regression/`](models/linear_regression/) and [`models/dnn_regressor/`](models/dnn_regressor/) (`ML.STANDARD_SCALER` on the measurement columns), [`models/dnn_classifier/`](models/dnn_classifier/), [`models/wide_and_deep_regressor/`](models/wide_and_deep_regressor/), [`models/wide_and_deep_classifier/`](models/wide_and_deep_classifier/), [`models/logistic_regression/`](models/logistic_regression/), [`models/kmeans/`](models/kmeans/).
+- [`models/transform_only/`](models/transform_only/) — `ML.IMPUTER` + scaling + one-hot encoding in one `TRANSFORM_ONLY` model, the reusable/modular pattern: the preprocessing statistics are frozen at creation time and reapplied via `ML.TRANSFORM` for any downstream model.
+- [`workflows/customer_segmentation/`](workflows/customer_segmentation/) — `ML.STANDARD_SCALER` on RFM features before `KMEANS` (Step 2) — raw scale would let `monetary`, which ranges into the thousands, dominate the distance calculation. Carries the verified gotcha that `user_id` must be kept out of the training query or it becomes an unscaled feature distorting every distance.
 
 
 ---
@@ -3519,7 +3564,7 @@ ML.BUCKETIZE(numerical_expression, array_split_points[, exclude_boundaries[, out
 - **GOTCHA, verified live — `exclude_boundaries=TRUE` does NOT null out-of-range values.** It's easy to misread "drops the implicit lower/upper overflow buckets" as "values outside the split-point range become NULL." What actually happens: the **outermost split points are dropped entirely**, merging the overflow bucket into its nearest interior neighbor. With split points `[10, 20, 30]`: default gives 4 bins `(-inf,10)` `[10,20)` `[20,30)` `[30,+inf)`; with `exclude_boundaries=TRUE` this becomes just 2 bins `(-inf,20)` `[20,+inf)` — the `10` and `30` split points disappear, leaving only `20` as the sole effective boundary. No value ever becomes NULL from this option alone.
 
 **BigFrames API:** `bigframes.ml.preprocessing.KBinsDiscretizer` (strategy-dependent; not a 1:1 of explicit split points).
-**Repo example (tested):** `03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — `ML.BUCKETIZE(input_column, [2, 5, 7])` and with `exclude_boundaries = TRUE`. Also `03 - BigQuery ML (BQML)/BQML Feature Engineering.ipynb`. `data+ai/bq-ml/functions/bucketizing/bucketizing.ipynb` — all 3 output formats on `penguins`, plus the `exclude_boundaries` clarification above with a concrete `[10,20,30]` proof, and `ML.QUANTILE_BUCKETIZE`/`ML.HASH_BUCKETIZE` embedded together in a real `LOGISTIC_REG` `TRANSFORM`.
+**Repo example (tested):** [`functions/bucketizing/`](functions/bucketizing/) — Example 1 runs all three `output_format` values against the same `[3000, 4000, 5000]` split points on `penguins.body_mass_g`; Example 2 is the `exclude_boundaries` clarification above, proven live with `[10, 20, 30]`; Example 5 embeds `ML.QUANTILE_BUCKETIZE` and `ML.HASH_BUCKETIZE` together in a real `LOGISTIC_REG` `TRANSFORM` (accuracy ~0.81).
 
 ---
 
@@ -3560,7 +3605,7 @@ ML.QUANTILE_BUCKETIZE(numerical_expression, num_buckets[, output_format]) OVER()
 - Quantile estimates are approximate on very large inputs.
 
 **BigFrames API:** `bigframes.ml.preprocessing.KBinsDiscretizer(strategy="quantile")`.
-**Repo example (tested):** `03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — `ML.QUANTILE_BUCKETIZE(input_column, 2) OVER() AS feature_column`. Also in `BQML Feature Engineering.ipynb`. Also `data+ai/bq-ml/functions/bucketizing/bucketizing.ipynb` — on `penguins`' `culmen_length_mm`.
+**Repo example (tested):** [`functions/bucketizing/`](functions/bucketizing/) — Example 3 runs `ML.QUANTILE_BUCKETIZE(culmen_length_mm, 4) OVER()` in both `bucket_names` and `bucket_ranges` form side by side; Example 5 embeds it in a `LOGISTIC_REG` `TRANSFORM` alongside `ML.HASH_BUCKETIZE`, where the training-time quantiles are stored with the model.
 
 ---
 
@@ -3600,7 +3645,7 @@ ML.HASH_BUCKETIZE(string_expression, hash_bucket_size)
 - Returns INT64 (unlike `ML.BUCKETIZE`/`ML.QUANTILE_BUCKETIZE` which return STRING bin labels); operates on strings, not numerics.
 
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — `ML.HASH_BUCKETIZE(input_column, 0)` (hash only) and `ML.HASH_BUCKETIZE(input_column, 3)`. Also in `BQML Feature Engineering.ipynb`. Also `data+ai/bq-ml/functions/bucketizing/bucketizing.ipynb` — on `penguins`' `island`, plus embedded alongside `ML.QUANTILE_BUCKETIZE` in a real `LOGISTIC_REG` `TRANSFORM`.
+**Repo example (tested):** [`functions/bucketizing/`](functions/bucketizing/) — Example 4 contrasts `ML.HASH_BUCKETIZE(island, 0)` (hash only, no modulo) with `ML.HASH_BUCKETIZE(island, 3)` over `penguins`' distinct islands; Example 5 embeds it at `hash_bucket_size = 10` alongside `ML.QUANTILE_BUCKETIZE` in a real `LOGISTIC_REG` `TRANSFORM`, where BQML auto-encodes the INT64 hash bucket as an ordinary feature.
 
 ---
 
@@ -3663,14 +3708,14 @@ ML.LABEL_ENCODER(string_expression [, top_k] [, frequency_threshold]) OVER()
 - `top_k` must be less than 1,000,000 to avoid high-dimensionality issues.
 - Bucket `0` is overloaded (NULL + below-`top_k` + below-`frequency_threshold` + unseen-at-predict), so you cannot distinguish those cases downstream.
 - `drop` is unique to `ML.ONE_HOT_ENCODER`; `ML.LABEL_ENCODER` and `ML.MULTI_HOT_ENCODER` have no `drop` argument.
-- **MAJOR GOTCHA, verified live — the default discrepancy is not just a docs footnote, it changes real output:** older repo notebooks cite default `top_k = 1,000,000` / `frequency_threshold = 0`; current docs (and current live behavior) specify `top_k = 32,000` / `frequency_threshold = 5`. Tested with categories occurring 6x/7x/3x: under the **current** default, the category with only 3 occurrences (below the frequency-5 threshold) silently collapses into bucket `0` — indistinguishable from `NULL`/unseen-at-predict, no error or warning. Under `frequency_threshold=0` (the old default), that same category keeps its own index. **Any real dataset with a rare-but-meaningful category (fewer than 5 total occurrences) will silently lose it under current defaults** unless `frequency_threshold` is explicitly lowered.
+- **MAJOR GOTCHA, verified live — the default discrepancy is not just a docs footnote, it changes real output:** older documentation cites default `top_k = 1,000,000` / `frequency_threshold = 0`; current docs (and current live behavior) specify `top_k = 32,000` / `frequency_threshold = 5`. Tested with categories occurring 6x/7x/3x: under the **current** default, the category with only 3 occurrences (below the frequency-5 threshold) silently collapses into bucket `0` — indistinguishable from `NULL`/unseen-at-predict, no error or warning. Under `frequency_threshold=0` (the old default), that same category keeps its own index. **Any real dataset with a rare-but-meaningful category (fewer than 5 total occurrences) will silently lose it under current defaults** unless `frequency_threshold` is explicitly lowered.
 
 **BigFrames API:** `bigframes.ml.preprocessing.OneHotEncoder`, `bigframes.ml.preprocessing.LabelEncoder` (and the broader `bigframes.ml.preprocessing` module); these compile to the corresponding `ML.*` encoders.
 
 **Repo example (tested):**
-- `03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — standalone examples of all three over `UNNEST([...])` literals, e.g. `ML.LABEL_ENCODER(input_column, 3, 3) OVER()`, `ML.MULTI_HOT_ENCODER(input_column, 1, 2) OVER()`, and `ML.ONE_HOT_ENCODER(input_column, 'most_frequent', 3, 3) OVER()`.
-- `03 - BigQuery ML (BQML)/BQML Feature Engineering.ipynb` — `ML.ONE_HOT_ENCODER` and `ML.LABEL_ENCODER` worked examples with `top_k`/`frequency_threshold` positional args.
-- `data+ai/bq-ml/functions/encoding/encoding.ipynb` — all three encoders on `penguins`; live-proves the `frequency_threshold=5` default-vs-legacy discrepancy above with a concrete before/after (a 3-occurrence category dropping to bucket 0 under current defaults, keeping its own index under `frequency_threshold=0`); ends with `ML.ONE_HOT_ENCODER`+`ML.LABEL_ENCODER` embedded in a real `LOGISTIC_REG` `TRANSFORM`.
+- [`functions/encoding/`](functions/encoding/) — Example 1 puts `ML.ONE_HOT_ENCODER` default, dummy (`'most_frequent'`), and `'none', 32000, 0` side by side over an `UNNEST([...])` literal with a 6x/7x/3x frequency spread; Example 3 runs `ML.ONE_HOT_ENCODER` + `ML.LABEL_ENCODER` on `penguins.island` and `ML.MULTI_HOT_ENCODER(arr, 100, 0) OVER()` on a real `ARRAY<STRING>` (one feature per unique element across all rows, not per row).
+- [`functions/encoding/`](functions/encoding/) Example 2 — live proof of the default discrepancy above: the 3-occurrence category collapses into bucket `0` under the current default, and keeps its own index under `frequency_threshold = 0`. Example 4 embeds `ML.ONE_HOT_ENCODER` + `ML.LABEL_ENCODER` in a real `LOGISTIC_REG` `TRANSFORM` (accuracy ~0.71 from `island` + `sex` alone).
+- [`models/transform_only/`](models/transform_only/) — one-hot encoding as part of a reusable `TRANSFORM_ONLY` preprocessing pipeline, with the vocabulary frozen at creation time.
 
 
 ---
@@ -3683,7 +3728,7 @@ These are **manual feature preprocessing** functions. They can be used two ways:
 
 > **Analytic vs scalar.** Functions that compute statistics across *all* rows (mean, median, mode, min/max, quantiles, stddev) are **analytic** and require an empty `OVER()` clause. Functions that operate row-by-row (e.g. `ML.FEATURE_CROSS`, `ML.POLYNOMIAL_EXPAND`, `ML.BUCKETIZE`) are **scalar** and take no `OVER()`. An analytic function cannot be nested as the argument of another analytic function, but a scalar/analytic result can be wrapped by a scalar function.
 
-> **Note on `ML.TRANSPOSE`:** there is **no `ML.TRANSPOSE` function** in BigQuery ML. The repo notebook "BQML Feature Engineering - Create Model With Transpose" refers to the inline `TRANSFORM` clause technique (transposing preprocessing *into* the model), not a function. See the `TRANSFORM` clause pointer at the end of this section. The full catalog of manual preprocessing functions (encoders, scalers, bucketizers, text/image functions) lives in the **Manual preprocessing** reference: <https://cloud.google.com/bigquery/docs/manual-preprocessing>.
+> **Note on `ML.TRANSPOSE`:** there is **no `ML.TRANSPOSE` function** in BigQuery ML. Material that speaks of "transposing" refers to the inline `TRANSFORM` clause technique (transposing preprocessing *into* the model), not a function. See the `TRANSFORM` clause pointer at the end of this section. The full catalog of manual preprocessing functions (encoders, scalers, bucketizers, text/image functions) lives in the **Manual preprocessing** reference: <https://cloud.google.com/bigquery/docs/manual-preprocessing>.
 
 ---
 
@@ -3719,19 +3764,15 @@ ML.IMPUTER(expression, strategy) OVER()
 **Best practices:** Choose `median` for skewed numeric data; `most_frequent` is the only valid strategy for strings. Use inside `TRANSFORM` so prediction reuses training statistics.
 **Limitations:** `mean`/`median` reject string inputs. Requires `OVER()` (empty window).
 **BigFrames API:** `bigframes.ml.impute.SimpleImputer`.
-**Repo example (tested):** `03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — imputes a numeric column three ways and a string column by mode:
+**Repo example (tested):** [`functions/feature_engineering/`](functions/feature_engineering/) — Example 1 imputes a numeric column two ways and a string column by mode, on real `penguins` data:
 ```sql
 SELECT
-  num_column,
-  ML.IMPUTER(num_column, 'mean')   OVER() AS num_imputed_mean,
-  ML.IMPUTER(num_column, 'median') OVER() AS num_imputed_median,
-  ML.IMPUTER(num_column, 'most_frequent') OVER() AS num_imputed_mode,
-  ML.IMPUTER(string_column, 'most_frequent') OVER() AS string_imputed_mode
-FROM UNNEST([1,1,2,3,4,5,NULL]) AS num_column WITH OFFSET p1,
-     UNNEST(['a','a','b','c','d','e',NULL]) AS string_column WITH OFFSET p2
-WHERE p1 = p2;
+  ML.IMPUTER(body_mass_g, 'mean')   OVER() AS imputed_mean,
+  ML.IMPUTER(body_mass_g, 'median') OVER() AS imputed_median,
+  ML.IMPUTER(sex, 'most_frequent')  OVER() AS sex_imputed_mode
+FROM `bigquery-public-data.ml_datasets.penguins`;
 ```
-Also: `data+ai/bq-ml/functions/feature_engineering/feature_engineering.ipynb` — standalone on `penguins`' `body_mass_g`/`sex`, plus embedded in a real `LOGISTIC_REG` `TRANSFORM` (unlike `ML.FEATURE_CROSS`/`ML.POLYNOMIAL_EXPAND`, `ML.IMPUTER` **is** exportable) — verified predicting with an artificially-`NULL` input at predict time still auto-imputes correctly using the training-time statistic.
+Example 2 embeds it in a real `LOGISTIC_REG` `TRANSFORM` (unlike `ML.FEATURE_CROSS`/`ML.POLYNOMIAL_EXPAND`, `ML.IMPUTER` **is** exportable) — verified that predicting with a `NULL` `body_mass_g` at predict time auto-imputes with the training-time mean rather than erroring. Also [`models/transform_only/`](models/transform_only/) Example 1, where `ML.IMPUTER` opens a reusable preprocessing pipeline (and where its required strategy argument is contrasted against the single-argument scalers).
 
 ---
 
@@ -3766,18 +3807,16 @@ ML.FEATURE_CROSS(struct_categorical_features [, degree])
 **Best practices:** Keep `degree` low (2) — combinations grow combinatorially and can explode cardinality. Pre-bucketize numeric columns to strings before crossing.
 **Limitations:** Categorical (string) inputs only; `degree` capped at 4. **Not exportable** in `TRANSFORM`. **Verified live:** a `CREATE MODEL ... TRANSFORM(ML.FEATURE_CROSS(...))` trains and predicts (`ML.PREDICT`) completely normally — the limitation only bites at `EXPORT MODEL` time, which fails with `"400 Model TRANSFORM contains unsupported function for exporting."` A model needing portability/serving outside BQ (`EXPORT MODEL`, `model_registry='VERTEX_AI'`, remote-model deployment) must compute crosses in the input query instead.
 **BigFrames API:** No direct equivalent (build via DataFrame ops).
-**Repo example (tested):** `03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb`:
+**Repo example (tested):** [`functions/feature_engineering/`](functions/feature_engineering/) — Example 3 crosses `penguins`' `island` × `sex`:
 ```sql
-SELECT
-  input_column_1, input_column_2, input_column_3,
-  ML.FEATURE_CROSS(STRUCT(input_column_1, input_column_2, input_column_3)) AS feature_column
-FROM UNNEST(['a','b','c']) AS input_column_1 WITH OFFSET p1,
-     UNNEST(['A','B','C']) AS input_column_2 WITH OFFSET p2,
-     UNNEST(['1','2','3']) AS input_column_3 WITH OFFSET p3
-WHERE p1 = p2 AND p2 = p3;
--- e.g. {'input_column_1_input_column_2':'c_C','input_column_1_input_column_3':'c_3','input_column_2_input_column_3':'C_3'}
+SELECT island, sex,
+  ML.FEATURE_CROSS(STRUCT(island, sex)) AS crossed
+FROM `bigquery-public-data.ml_datasets.penguins`
+WHERE sex IS NOT NULL;
+-- e.g. {'island_sex': 'Dream_FEMALE'} -- one field per crossed combination,
+-- named <col_a>_<col_b>, valued <val_a>_<val_b>. Scalar function, no OVER().
 ```
-- `data+ai/bq-ml/functions/feature_engineering/feature_engineering.ipynb` — `penguins` `island`×`sex` cross, plus the live export-failure proof above (`try/except` around `EXPORT MODEL`, exact error captured).
+Example 4 then plugs it into a live `CREATE MODEL` — training and `ML.PREDICT` work normally, and only the subsequent `EXPORT MODEL` fails, with the exact error captured.
 
 ---
 
@@ -3812,18 +3851,17 @@ ML.POLYNOMIAL_EXPAND(struct_numerical_features [, degree])
 **Best practices:** Combine with `ML.IMPUTER`/scaling first; wrap an imputed (analytic) column inside the `STRUCT` since `ML.POLYNOMIAL_EXPAND` is scalar and can take an analytic argument.
 **Limitations:** ≤ 10 input features, no unnamed/duplicate features; `degree` ≤ 4. **Not exportable** in `TRANSFORM`, same verified failure mode as `ML.FEATURE_CROSS` above (`EXPORT MODEL` rejects it with "Model TRANSFORM contains unsupported function for exporting" — training/`ML.PREDICT` are unaffected).
 **BigFrames API:** `bigframes.ml.preprocessing.PolynomialFeatures`.
-**Repo example (tested):** `03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` — also shows the **compounded** pattern (impute → expand):
+**Repo example (tested):** [`functions/feature_engineering/`](functions/feature_engineering/) — Example 5 expands `penguins`' `culmen_length_mm`/`culmen_depth_mm` at `degree = 2`, yielding e.g. `{'length':36.6,'depth':18.4,'length_length':1339.56,'length_depth':673.44,'depth_depth':338.56}`. Example 6 shows the **compounded** pattern (impute → expand), which works because a scalar function may take an analytic function's result as an argument:
 ```sql
 SELECT
-  input_column,
+  body_mass_g,
   ML.POLYNOMIAL_EXPAND(
-    STRUCT(ML.IMPUTER(CAST(input_column AS FLOAT64), 'mean') OVER() AS num_imputed_mean),
+    STRUCT(ML.IMPUTER(body_mass_g, 'mean') OVER() AS mass_imputed),
     2
-  ) AS imputed_expanded
-FROM UNNEST(['1','1','2','3','4','5',NULL]) AS input_column;
--- e.g. {'num_imputed_mean':2.6667,'num_imputed_mean_num_imputed_mean':7.111}
+  ) AS expanded
+FROM `bigquery-public-data.ml_datasets.penguins`
+ORDER BY body_mass_g IS NULL DESC;
 ```
-- `data+ai/bq-ml/functions/feature_engineering/feature_engineering.ipynb` — `penguins` `culmen_length_mm`/`culmen_depth_mm` expansion plus the impute→expand compounding pattern.
 
 ---
 
@@ -3833,26 +3871,26 @@ FROM UNNEST(['1','1','2','3','4','5',NULL]) AS input_column;
 - Feature engineering with `TRANSFORM`: <https://cloud.google.com/bigquery/docs/bigqueryml-transform>
 - Inspect the preprocessed output of a model's `TRANSFORM` with `ML.TRANSFORM` (function): <https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-transform>
 
-**Repo example (tested) — TRANSFORM in a real `CREATE MODEL`:** `03 - BigQuery ML (BQML)/BQML Feature Engineering - Create Model With Transpose.ipynb` trains a `BOOSTED_TREE_REGRESSOR` whose `TRANSFORM` mixes scalers, `ML.LABEL_ENCODER`, and `EXTRACT(...)` date parts; the model is registered to Vertex AI and exported (the export yields a `/model` plus a `/model/transform` saved model — i.e. preprocessing travels with the model):
+**Repo examples (tested) — `TRANSFORM` in a real `CREATE MODEL`:**
+- [`models/transform_only/`](models/transform_only/) — the fullest version of the pattern: one `TRANSFORM` mixing `ML.IMPUTER`, two scalers, and `ML.ONE_HOT_ENCODER`, packaged as a `TRANSFORM_ONLY` model with no estimator, so the same preprocessing (and its frozen train-time statistics) can be reused by any downstream model:
 ```sql
-CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.MODEL_NAME`
-TRANSFORM (
-  JUDGE_A,
-  ML.LABEL_ENCODER(contestant_id) OVER() AS contestant,
-  EXTRACT(YEAR FROM airdate) AS year,
-  EXTRACT(ISOWEEK FROM airdate) AS week,
-  ML.MIN_MAX_SCALER(flourAmt)   OVER() AS scale_flourAmt,
-  ML.ROBUST_SCALER(saltAmt)     OVER() AS scale_saltAmt,
-  ML.STANDARD_SCALER(water1Amt) OVER() AS scale_water1Amt
+CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.transform_only_penguins`
+TRANSFORM(
+  species,
+  island,
+  ML.IMPUTER(body_mass_g, 'mean') OVER() AS body_mass_g,
+  ML.STANDARD_SCALER(culmen_length_mm) OVER() AS culmen_length_mm,
+  ML.STANDARD_SCALER(culmen_depth_mm) OVER() AS culmen_depth_mm,
+  ML.ROBUST_SCALER(flipper_length_mm) OVER() AS flipper_length_mm,
+  ML.ONE_HOT_ENCODER(sex) OVER() AS sex_encoded
 )
-OPTIONS (
-  model_type = 'BOOSTED_TREE_REGRESSOR',
-  input_label_cols = ['JUDGE_A'],
-  enable_global_explain = TRUE,
-  MODEL_REGISTRY = 'VERTEX_AI'
-) AS
-SELECT * FROM `PROJECT_ID.DATASET.bread`;
+OPTIONS(model_type = 'TRANSFORM_ONLY') AS
+SELECT species, island, sex, body_mass_g, culmen_length_mm, culmen_depth_mm, flipper_length_mm
+FROM `bigquery-public-data.ml_datasets.penguins`;
 ```
+  Example 4 exports it (a transform-only model exports like any other); Examples 6 and 7 are the payoff — predicting on raw data through a *standalone* pipeline silently gives garbage unless `ML.TRANSFORM` is re-applied first.
+- [`functions/scalers/`](functions/scalers/) Example 8 — the contrasting case: the `TRANSFORM` is embedded directly in a `LOGISTIC_REG`, so `ML.PREDICT` on raw unscaled input auto-applies the scaling and no re-application step exists to forget.
+- [`models/export/`](models/export/) Example 5 — `model_registry = 'VERTEX_AI'` with `vertex_ai_model_id`, registering the model at `CREATE MODEL` time rather than exporting it.
 
 
 ---
@@ -3905,7 +3943,7 @@ ML.NGRAMS(array_input, range [, separator])
 **Best practices:** Keep `range` tight (e.g. `[1, 2]`) — wide ranges explode feature cardinality. Tokenize and lowercase upstream for consistency.
 **Limitations:** Scalar over one array per row; does not aggregate across rows. Order is preserved from the input array.
 **BigFrames API:** No direct equivalent (use SQL / `bigframes.bigquery` passthrough).
-**Repo example (tested):** `03 - BigQuery ML (BQML)/BQML Feature Engineering - preprocessing functions.ipynb` (cell `ML.NGRAMS`) and `03 - BigQuery ML (BQML)/BQML Feature Engineering.ipynb` — `ML.NGRAMS(input_column, [2, 4])` on `['a','b','c','d']` returns `[a b, a b c, a b c d, b c, b c d, c d]`. Also `data+ai/bq-ml/functions/text/text.ipynb` — on real `thelook_ecommerce.products` name tokens.
+**Repo example (tested):** [`functions/text/`](functions/text/) — Example 1 tokenizes first (all three text functions require `ARRAY<STRING>`); Example 2 runs `ML.NGRAMS(tokens, [2, 3])` on a real tokenized product name (`SPLIT(LOWER('Low Profile Dyed Cotton Cap'), ' ')`) to produce bigrams and trigrams in one call.
 
 ---
 
@@ -4140,7 +4178,7 @@ ML.DECODE_IMAGE(image_bytes)
 - Output `STRUCT` must be `<= 60 MB`; large images can exceed editor display limits — write to a table.
 - Only JPEG/PNG/BMP object-table files are supported.
 **BigFrames API:** No direct equivalent (use SQL / object tables).
-**Repo example (tested):** None — no `ML.DECODE_IMAGE` usage found in this repo's notebooks (the BQML Feature Engineering notebooks cover tabular/text preprocessing only). Doc pattern: `ML.DECODE_IMAGE(data)` over an object table's `data` column.
+**Repo example (tested):** None — this project's preprocessing coverage (`functions/scalers/`, `functions/bucketizing/`, `functions/encoding/`, `functions/feature_engineering/`, `functions/text/`) is tabular and text only; no example exercises the image preprocessing functions. Doc pattern: `ML.DECODE_IMAGE(data)` over an object table's `data` column.
 
 ---
 
@@ -4444,9 +4482,9 @@ bq extract --model --destination_format ML_XGBOOST_BOOSTER 'DATASET.MODEL_NAME' 
 **Repo example (tested):**
 - `data+ai/bq-ml/models/export/export.ipynb` — the dedicated general-purpose `EXPORT MODEL` notebook: a `LOGISTIC_REG` (→ TF SavedModel, downloaded and run with `tf.saved_model.load()` + `infer(...)` entirely outside BigQuery) and a small `BOOSTED_TREE_CLASSIFIER` (trained with `xgboost_version = '2.1'`, so the export is a `model.ubj` → downloaded and scored locally with an **unpinned** `xgboost` via `booster.get_score(importance_type='gain')`; the `feature_names` gotcha below still applies and is reproduced here independently). Also demonstrates `model_registry='VERTEX_AI'` as a `CREATE MODEL`-time alternative to export (registry storage only, no live serving cost) and the `bq extract --model --destination_format=...` CLI equivalent. **Verified finding:** dropping a model registered via `model_registry='VERTEX_AI'` also cascade-deletes its Vertex AI Model Registry entry — no separate `aiplatform`/`gcloud` deletion step needed.
 - `data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` (Example 9) and the companion notebook (Step 7) — `xgboost_version = '2.1'` → `EXPORT MODEL` → download `model.ubj` → unpinned `xgboost` → `booster.feature_names` reassigned manually → `xgboost.plot_tree()`. Both gotchas above were caught and verified here, at both `xgboost_version` values.
-- `03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — exports a `BOOSTED_TREE` model to a timestamped GCS folder (`EXPORT MODEL ... OPTIONS(URI = 'gs://.../models/{TIMESTAMP}/model')`), i.e. XGBoost Booster format.
-- `03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` and `03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` — export `PCA` and `AUTOENCODER` models (TensorFlow SavedModel) with the same `EXPORT MODEL ... OPTIONS(URI=...)` pattern.
-- Inverse direction (importing a TF SavedModel back into BQML for serving): `MLOps/Serving/SQL Inference/Serve TensorFlow SavedModel Format With BigQuery.ipynb` — useful context for the round-trip, but it demonstrates `CREATE MODEL ... MODEL_TYPE='TENSORFLOW'` (import), not EXPORT MODEL. Also see this project's own [`models/imported/`](models/imported/) for the same import direction.
+- The same `EXPORT MODEL ... OPTIONS(URI = 'gs://.../model')` pattern in its other tested homes: [`models/random_forest_classifier/`](models/random_forest_classifier/) (Example 9) and [`models/random_forest_regressor/`](models/random_forest_regressor/) (Example 7) — XGBoost Booster format, tree visualization; [`models/boosted_tree_regressor/`](models/boosted_tree_regressor/) (Example 7); [`models/automl_classifier/`](models/automl_classifier/) (Example 7) and [`models/automl_regressor/`](models/automl_regressor/) (Example 6); [`models/transform_only/`](models/transform_only/) (Example 4) — a transform-only model exports too; [`models/remote/`](models/remote/) (Example 1) — export as the first hop of the train-in-BQML → deploy-to-a-Vertex-endpoint → call-back-as-a-remote-model round trip.
+- `PCA` and `AUTOENCODER` export as TensorFlow SavedModel by the same default path as GLMs, DNNs, `KMEANS`, and `TRANSFORM_ONLY` — see [`models/export/`](models/export/) Example 2, which records the verified signature shape (one named input tensor **per feature column**, not one packed array, plus `{label}_probs` / `{label}_values` / `predicted_{label}` outputs and categorical vocabularies written as separate asset files).
+- Inverse direction (importing a TF SavedModel back into BQML for serving): [`models/imported/`](models/imported/) — `CREATE MODEL ... model_type = 'TENSORFLOW'`, which the file explicitly cross-references against `EXPORT MODEL`'s quirks in the other direction.
 
 
 ---
@@ -4519,7 +4557,7 @@ FROM ML.DESCRIBE_DATA(
 **Best practices:** Run on a representative slice (filter by date) rather than the full table to control cost.
 **Limitations:** ARRAY columns are unnested before stats; `ARRAY<STRUCT<INT64, numerical>>` treated as sparse `ARRAY<numerical>`.
 **BigFrames API:** Use `bigframes.pandas.DataFrame.describe()` for comparable profiling; no 1:1 wrapper.
-**Repo example (tested):** `MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb` — `ML.DESCRIBE_DATA(TABLE ...)` and with `STRUCT(3 AS top_k, 4 AS num_quantiles)` on a TRAIN split. Also `data+ai/bq-ml/functions/data_quality/data_quality.ipynb` — on `census_adult_income`, numeric (`age`/`capital_gain`) and categorical (`workclass`/`income_bracket`) columns side by side.
+**Repo example (tested):** [`functions/data_quality/`](functions/data_quality/) Example 1 — `ML.DESCRIBE_DATA(TABLE ..., STRUCT(3 AS top_k, 4 AS num_quantiles))` on `census_adult_income`, run twice to contrast the two output shapes: numeric columns (`age`/`capital_gain`) populate `min`/`max`/`mean`/`stddev`/`median`/`quantiles`, while categorical columns (`workclass`/`income_bracket`) populate `unique`/`top_values`/`num_nulls` instead.
 
 ---
 
@@ -4567,7 +4605,7 @@ FROM ML.VALIDATE_DATA_SKEW(
 **Best practices:** Register the model in Vertex AI (`MODEL_REGISTRY='VERTEX_AI'`) to get clickable distribution visualizations. **MAJOR GOTCHA, verified live: how you sample the comparison data matters as much as the function call itself.** `SELECT ... LIMIT N` (no `ORDER BY`) on a non-randomly-ordered table returns a non-representative slice — tested on `bigquery-public-data.ml_datasets.census_adult_income`, a `LIMIT 5000` grab flagged `education_num` as `is_anomaly=TRUE` (Jensen-Shannon divergence ~0.65 vs. a 0.3 threshold) even though it came from the exact same table the model trained on. Switching to `WHERE RAND() < p` for a true random sample dropped every column's divergence to near-zero, correctly reporting no skew. A naive `LIMIT` can manufacture a false skew alarm.
 **Limitations:** Numerical metric is always Jensen-Shannon divergence (not configurable); needs a model that stored training stats.
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb` and `model_monitoring_job.sql` — `ML.VALIDATE_DATA_SKEW(MODEL ..., (serving query), STRUCT(TRUE AS enable_visualization_link))`. Also `data+ai/bq-ml/functions/data_quality/data_quality.ipynb` — the `LIMIT`-vs-`RAND()` sampling gotcha above, plus a self-contained scratch `LOGISTIC_REG` model (no dependency on the separate `MLOps/Model Monitoring` pipeline/dataset).
+**Repo example (tested):** [`functions/data_quality/`](functions/data_quality/) Example 2 — the `LIMIT`-vs-`RAND()` sampling gotcha above, run against a self-contained scratch `LOGISTIC_REG` model. `census_adult_income` is not randomly ordered, so a `LIMIT 5000` "serving" slice of the *identical* source table makes `education_num` flag `is_anomaly = TRUE` at JS divergence ~0.65 (threshold 0.3); switching to `WHERE RAND() < 0.15` drops every column's divergence to near zero, confirming the alarm was a sampling artifact rather than real skew.
 
 ---
 
@@ -4616,7 +4654,7 @@ The two positional args are both `(query_statement)` (base, compare).
 **Best practices:** Filter `WHERE is_anomaly = True` to drive alerts/retraining (see job SQL). Use `ML.TRANSFORM(MODEL, data)` as the inputs to monitor drift on engineered features rather than raw columns.
 **Limitations:** No schema validation between the two inputs (mismatched columns are ignored). For categorical, choosing `JENSEN_SHANNON_DIVERGENCE` changes which features appear in the report vs. `L_INFTY`.
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb` — drift on two serving windows with `STRUCT(0.03 AS categorical_default_threshold, 0.03 AS numerical_default_threshold)` and `MODEL ...`; also `STRUCT('JENSEN_SHANNON_DIVERGENCE' AS categorical_metric_type)`, and drift over `ML.TRANSFORM` outputs. `model_monitoring_job.sql` wraps it in a scheduled-query retrain/alert loop. Also `data+ai/bq-ml/functions/data_quality/data_quality.ipynb` — real (non-sampling-artifact) drift on `census_adult_income`: incorporated self-employed workers (`workclass = 'Self-emp-inc'`) skew toward more education than a random population sample, correctly flagged; plus a live `categorical_metric_type` comparison showing `L_INFTY` and `JENSEN_SHANNON_DIVERGENCE` flag genuinely different columns at the same threshold (`race`/`sex` drop out under JS while `L_INFTY` flags all three), and a `thresholds` per-column override demo. **`data+ai/bq-ml/pipelines/`** uses the 3-argument form (no `MODEL` — verified live that a plain `CREATE MODEL`-trained model doesn't qualify as the "Model Registry MODEL" the optional argument requires) as the core drift-check trigger for a real conditional-retrain pipeline, re-expressed across three orchestrators: `sql_scripting/` (inside a multi-statement `BEGIN...END` script), `cloud_workflows/` (via the BigQuery connector, built across several `assign` steps due to a 400-character YAML expression limit), and `composer_airflow/` (`BigQueryInsertJobOperator` + `BranchPythonOperator` reading the result via XCom). All three find the identical real, non-contrived signal — 5 of 12 GA4 behavioral features drift genuinely (`total_engagement_time_msec` strongest), driven by a real Black Friday/Cyber Monday population shift in the underlying data, not a sampling artifact.
+**Repo example (tested):** [`functions/data_quality/`](functions/data_quality/) Example 3 — real (non-sampling-artifact) drift on `census_adult_income`: incorporated self-employed workers (`workclass = 'Self-emp-inc'`) skew toward more education than a random population sample, correctly flagged; plus a live `categorical_metric_type` comparison showing `L_INFTY` and `JENSEN_SHANNON_DIVERGENCE` flag genuinely different columns at the same threshold (`race`/`sex` drop out under JS while `L_INFTY` flags all three), and a `thresholds` per-column override demo. **`data+ai/bq-ml/pipelines/`** uses the 3-argument form (no `MODEL` — verified live that a plain `CREATE MODEL`-trained model doesn't qualify as the "Model Registry MODEL" the optional argument requires) as the core drift-check trigger for a real conditional-retrain pipeline, re-expressed across three orchestrators: `sql_scripting/` (inside a multi-statement `BEGIN...END` script), `cloud_workflows/` (via the BigQuery connector, built across several `assign` steps due to a 400-character YAML expression limit), and `composer_airflow/` (`BigQueryInsertJobOperator` + `BranchPythonOperator` reading the result via XCom). All three find the identical real, non-contrived signal — 5 of 12 GA4 behavioral features drift genuinely (`total_engagement_time_msec` strongest), driven by a real Black Friday/Cyber Monday population shift in the underlying data, not a sampling artifact.
 
 ---
 
@@ -4648,7 +4686,7 @@ FROM ML.TFDV_DESCRIBE(
 **Best practices:** Store the output column into a snapshot table (`t TIMESTAMP, dataset_feature_statistics_list ...`) to enable historical drift.
 **Limitations:** Output is a proto blob, not tabular per-feature rows; needs the `tensorflow-data-validation` / `tensorflow-metadata` Python libs to render.
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb` — `ML.TFDV_DESCRIBE((SELECT ... TRAIN))`, JSON-parsed and passed to `tfdv.visualize_statistics`. Also `data+ai/bq-ml/functions/data_quality/data_quality.ipynb` — on `census_adult_income`, without the `tensorflow-data-validation` Python dependency (cross-links to the tutorial notebook above for the full rendered visualization).
+**Repo example (tested):** [`functions/data_quality/`](functions/data_quality/) Example 4 — `ML.TFDV_DESCRIBE` on `census_adult_income`, JSON-parsed in SQL so the proto's contents are readable without installing the `tensorflow-data-validation` Python package. Rendering the proto graphically (`tfdv.visualize_statistics`) requires that package and is outside this project's dependency set; the parsed output carries the same measurements.
 
 ---
 
@@ -4696,7 +4734,7 @@ SELECT ML.TFDV_VALIDATE(
 **Best practices:** Reuse stored `ML.TFDV_DESCRIBE` snapshots as one input to avoid recomputing baseline stats.
 **Limitations:** No schema validation; choosing `JENSEN_SHANNON_DIVERGENCE` as the default threshold metric can exclude a feature from the report. Requires TFDV Python libs to visualize.
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb` — `ML.TFDV_VALIDATE((SELECT * FROM ML.TFDV_DESCRIBE(TABLE TRAIN)), (SELECT * FROM ML.TFDV_DESCRIBE(TABLE SERVE)), 'SKEW')`, parsed and rendered with `tfdv.display_anomalies`. Also `data+ai/bq-ml/functions/data_quality/data_quality.ipynb` — both `'DRIFT'` mode (reproducing the same `education_num` signal as `ML.VALIDATE_DATA_DRIFT` above, JSON-parsed to show the actual `drift_skew_info` measurement rather than a truncated raw string) and `'SKEW'` mode (same divergence value, confirming `'SKEW'`/`'DRIFT'` differ only in the baseline schema's comparator type and semantic framing, not the underlying computation).
+**Repo example (tested):** [`functions/data_quality/`](functions/data_quality/) Example 4 — both `'DRIFT'` mode (reproducing the same `education_num` signal as `ML.VALIDATE_DATA_DRIFT` above, JSON-parsed to show the actual `drift_skew_info` measurement rather than a truncated raw string) and `'SKEW'` mode (same divergence value, confirming `'SKEW'`/`'DRIFT'` differ only in the baseline schema's comparator type and semantic framing, not the underlying computation).
 
 
 ---
