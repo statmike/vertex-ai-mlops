@@ -6,7 +6,7 @@ Write a trained BQML model to Cloud Storage in a portable format with `EXPORT MO
 
 **Two export formats, chosen by model type — not by an option you set:**
 - **TensorFlow SavedModel** — the default for most types (GLMs, DNNs, `KMEANS`, `PCA`, `AUTOENCODER`, `TRANSFORM_ONLY`, ...).
-- **XGBoost Booster** (`model.bst`) — `BOOSTED_TREE_*`/`RANDOM_FOREST_*` only.
+- **XGBoost Booster** — `BOOSTED_TREE_*`/`RANDOM_FOREST_*` only. The filename inside it depends on the training-time `xgboost_version` option: `model.bst` at the `0.9` default, `model.ubj` at `2.1` (used here).
 
 This notebook trains one of each to export both formats and proves each is genuinely portable by loading it back **outside BigQuery**, with no BigQuery client involved at that point.
 
@@ -24,7 +24,7 @@ This notebook trains one of each to export both formats and proves each is genui
 
 Set your project and location, authenticate, and create a shared dataset for the model.
 
-> `EXPORT MODEL` needs **no BigQuery connection** — only GCS write IAM for the destination bucket. `model_registry='VERTEX_AI'` (Step 5) needs the usual Vertex AI Model Registry permissions, also not a BigQuery connection. This notebook additionally installs `tensorflow` and a pinned `xgboost` **locally** to prove each export loads and runs outside BigQuery entirely.
+> `EXPORT MODEL` needs **no BigQuery connection** — only GCS write IAM for the destination bucket. `model_registry='VERTEX_AI'` (Step 5) needs the usual Vertex AI Model Registry permissions, also not a BigQuery connection. This notebook additionally installs `tensorflow` and `xgboost` **locally** to prove each export loads and runs outside BigQuery entirely.
 
 ```python
 PROJECT_ID = 'statmike-mlops-349915'  # <-- Replace with your project ID
@@ -40,7 +40,7 @@ BUCKET = 'statmike-mlops-349915'  # <-- Replace with your GCS bucket (same locat
 >
 > **Running standalone** (Colab, Colab Enterprise, Vertex AI Workbench)? The cell below installs required packages into your current kernel.
 >
-> **Verified pin:** loading a BQML-exported XGBoost Booster locally needs `xgboost<2.0` — modern xgboost (2.0+) cannot read BQML's exported legacy binary format (the same gotcha documented in `models/boosted_tree_classifier` (`models/boosted_tree_classifier/`) Step 7).
+> **No `xgboost` pin here.** The boosted tree in Step 3 is trained with `xgboost_version = '2.1'`, so its export is a `model.ubj` that current `xgboost` reads directly. At the `0.9` default the export is a legacy-binary `model.bst` that modern xgboost (2.0+) cannot read at all, and you would have to pin `xgboost==1.7.6` to load it — see `models/boosted_tree_classifier` (`models/boosted_tree_classifier/`) Step 7 for the measured comparison.
 
 ```python
 from google.cloud import bigquery, storage
@@ -154,6 +154,7 @@ query = f"""
 CREATE OR REPLACE MODEL `{PROJECT_ID}.{DATASET_ID}.export_boosted_tree_income`
 OPTIONS(
   model_type = 'BOOSTED_TREE_CLASSIFIER',
+  xgboost_version = '2.1',
   input_label_cols = ['income_bracket'],
   max_iterations = 20
 ) AS
@@ -169,9 +170,15 @@ print('Model export_boosted_tree_income created')
 ---
 ## Step 4 — `EXPORT MODEL`: XGBoost Booster
 
-`BOOSTED_TREE_*`/`RANDOM_FOREST_*` export as an XGBoost Booster (`model.bst`) instead — the format is determined by model type, not an option you set in SQL.
+`BOOSTED_TREE_*`/`RANDOM_FOREST_*` export as an XGBoost Booster instead — the *format family* is determined by model type, not an option you set in SQL. The *file* within it, however, does depend on an option: `xgboost_version`.
 
-> **GOTCHA (verified, same as `models/boosted_tree_classifier` (`models/boosted_tree_classifier/`) Step 7):** loading this file locally needs `xgboost<2.0` pinned — BQML exports using an old XGBoost binary format that modern xgboost (2.0+) cannot read — and `feature_names` must be reassigned manually after loading (the export does not preserve them).
+| | `xgboost_version = '0.9'` (the default) | `xgboost_version = '2.1'` (used in Step 3) |
+|---|---|---|
+| File written | `model.bst` — legacy binary | `model.ubj` — UBJSON |
+| Current `xgboost` can load it | No | Yes |
+| Python dependency | pinned old library (`xgboost==1.7.6`) | unpinned `xgboost` |
+
+> **GOTCHA (verified, same as `models/boosted_tree_classifier` (`models/boosted_tree_classifier/`) Step 7):** `2.1` does **not** fix feature names. At either version the export does not preserve them — `feature_names` must be reassigned manually after loading.
 
 ```python
 query = f"""
@@ -187,13 +194,13 @@ import os
 
 local_dir = '/tmp/export_boosted_tree'
 os.makedirs(local_dir, exist_ok=True)
-blob = gcs_bucket.blob('bq_ml/export/boosted_tree/model/model.bst')
-local_path = os.path.join(local_dir, 'model.bst')
+blob = gcs_bucket.blob('bq_ml/export/boosted_tree/model/model.ubj')
+local_path = os.path.join(local_dir, 'model.ubj')
 blob.download_to_filename(local_path)
 print(f'Downloaded to {local_path}')
 
 import xgboost as xgb
-print('xgboost version:', xgb.__version__)  # must be < 2.0 -- see the gotcha above
+print('xgboost version:', xgb.__version__)  # unpinned -- reads model.ubj directly
 
 booster = xgb.Booster()
 booster.load_model(local_path)

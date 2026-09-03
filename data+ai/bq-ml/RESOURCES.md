@@ -287,7 +287,7 @@ FROM `PROJECT_ID.DATASET.training_table`;
   - Structured/tabular data where high accuracy matters more than interpretability of a single equation.
   - Non-linear feature interactions that a linear/logistic model can't capture.
   - You want built-in per-prediction (local) and per-model (global) feature attributions for a tree model.
-  - You want to export an XGBoost (`.bst`) artifact or auto-register the model to Vertex AI for online serving.
+  - You want to export an XGBoost Booster artifact (`.bst`, or `.ubj` when trained with `xgboost_version = '2.1'`) or auto-register the model to Vertex AI for online serving.
 - **Category:** supervised-classification | supervised-regression.
 - **Connection required:** No for training/eval/predict. A Cloud Storage URI (not a connection) is needed only for `EXPORT MODEL`; Vertex AI registration uses `MODEL_REGISTRY`/`VERTEX_AI_MODEL_ID` options, not a connection.
 - **Status:** GA.
@@ -342,7 +342,7 @@ SELECT * EXCEPT(id_col) FROM `PROJECT_ID.DATASET.TABLE`;
 | `instance_weight_col` | STRING | No | — | column name | Per-row weight column. |
 | `enable_global_explain` | BOOL | No | `FALSE` | `TRUE`/`FALSE` | Must be `TRUE` at training time to use `ML.GLOBAL_EXPLAIN`. |
 | `approx_global_feature_contrib` | BOOL | No | TRUE when `enable_global_explain`=TRUE and `num_parallel_tree`\>=10, else FALSE | `TRUE`/`FALSE` | Use fast approximate global feature contributions (XGBoost passthrough); relevant for boosted random forests (`num_parallel_tree`\>1). |
-| `xgboost_version` | STRING | No | `0.9` | `0.9`, `1.1` | XGBoost library version used for training. |
+| `xgboost_version` | STRING | No | `0.9` | `0.9`, `1.1`, `2.1` | XGBoost library version used for training. `2.1` added 2026-08-27. **The default is still `0.9`** — a 2019 release — and it is what you get when you omit the option (verified: the option comes back as `xgboostVersion: "0.9"` in a model's training options even when never specified). The value list above is the error message's own enumeration, read back by passing an unsupported value. This option changes the `EXPORT MODEL` artifact — see the [EXPORT MODEL](#export-model) gotchas. **It also costs you `ML.TRAINING_INFO`:** at `'2.1'`, that function returns zero rows once training runs more than 10 iterations (measured; see the [`ML.TRAINING_INFO` gotcha](#mltraining_info)). Every other lifecycle function is unaffected. |
 | `data_split_method` | STRING | No | `AUTO_SPLIT` | `AUTO_SPLIT`, `RANDOM`, `CUSTOM`, `SEQ`, `NO_SPLIT` | How to split train/eval data. |
 | `data_split_col` | STRING | No | — | column name | With `CUSTOM`: `TRUE` rows => eval, `FALSE` => train. With `SEQ`: ordering column. |
 | `num_trials` | INT64 | No | — | `1`–`100` | Enables hyperparameter tuning; total trials to run. |
@@ -387,7 +387,7 @@ SELECT * EXCEPT(id_col) FROM `PROJECT_ID.DATASET.TABLE`;
 
 **Repo example (tested):**
 - `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` + notebook — `BOOSTED_TREE_CLASSIFIER` on `census_adult_income` (same data/label as `models/logistic_regression/`, for direct technique comparison), with the full lifecycle incl. the tree-visualization step (`EXPORT MODEL` → `xgboost.plot_tree()`).
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/boosted_tree_regressor/boosted_tree_regressor.sql` + notebook — `BOOSTED_TREE_REGRESSOR` on `penguins`/`body_mass_g` (same data/label as `models/linear_regression/`); `r2_score` 0.968 vs. linear regression's 0.875 on identical data. `TRANSFORM` uses `ML.LABEL_ENCODER`. Same tree-visualization step; confirmed the extra `reg:linear` deprecation warning on load (regressor-specific, see gotcha above).
+- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/boosted_tree_regressor/boosted_tree_regressor.sql` + notebook — `BOOSTED_TREE_REGRESSOR` on `penguins`/`body_mass_g` (same data/label as `models/linear_regression/`); `r2_score` 0.983 vs. `RANDOM_FOREST_REGRESSOR`'s 0.922 and linear regression's 0.875 on identical data. `TRANSFORM` uses `ML.LABEL_ENCODER`. Same tree-visualization step; the `reg:linear` deprecation warning on load is a `0.9`-era artifact and is gone at `xgboost_version = '2.1'` (see gotcha above).
 - `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/workflows/regression_based_forecasting/regression_based_forecasting.ipynb` — 28 `BOOSTED_TREE_REGRESSOR` models (one per forecast horizon day, direct multi-step forecasting) trained concurrently in batches to work around the per-model training-time GOTCHA above; got the best MAPE of any technique in that notebook's comparison, including the `ARIMA_PLUS` reference, despite a worse MAE/RMSE.
 - `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/workflows/embeddings_classification/embeddings_classification.ipynb` — 3 `BOOSTED_TREE_CLASSIFIER` models trained on a ~1M-row (product × hierarchy-node) table with `AI.EMBED`-generated 256-dim embeddings passed as `ARRAY<FLOAT64>` feature columns directly (verified: no unnesting needed); demonstrates the real-data-scale training-time finding above (19-40 min/model, not the ~270s trivial-data floor) and that raw `ML.EVALUATE` metrics don't always rank models the same way as an applied top-1 resolution accuracy computed via `ML.PREDICT` + `UNNEST`/`QUALIFY`. Also includes two baselines that outperform this whole pairwise approach: a direct multiclass `BOOSTED_TREE_CLASSIFIER` (no cross-join, trains in minutes not tens of minutes, ~69-70% category accuracy vs. the pairwise approach's ~42-48%) and a zero-training `VECTOR_SEARCH` lookup (~52% category accuracy) — **verified `VECTOR_SEARCH` needs no vector index at small scale (38 hierarchy nodes)**, it silently falls back to an exact brute-force scan; a two-stage hierarchical resolution pattern (nearest department first, then nearest category filtered to that department's children via `WHERE base.hierarchy_node_parent = query.pred_department`) mirrors the `ML.PREDICT`-based resolution used for the classifiers, but with zero training cost. A real gotcha hit while building this: `top_k` on the second-stage `VECTOR_SEARCH` call must cover *all* candidate nodes (not just a small top-k like 5), since filtering by parent happens *after* `top_k` truncation — a small `top_k` can silently drop products whose true category isn't among the globally-nearest few before the parent filter ever runs.
 - `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — `BOOSTED_TREE_CLASSIFIER` on imbalanced fraud data with `auto_class_weights`, `data_split_method='CUSTOM'`, `enable_global_explain`, Vertex AI registration; then `ML.EVALUATE`, `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, `ML.FEATURE_IMPORTANCE`, `EXPORT MODEL` (produces `model.bst` XGBoost artifact), and Vertex AI Endpoint serving.
@@ -454,6 +454,7 @@ FROM `PROJECT_ID.DATASET.TRAINING_TABLE`;
 | `enable_global_explain` | BOOL | No | FALSE | TRUE / FALSE | Required to use `ML.GLOBAL_EXPLAIN` / `ML.EXPLAIN_PREDICT`. |
 | `approx_global_feature_contrib` | BOOL | No | TRUE when `enable_global_explain`=TRUE and `num_parallel_tree`\>=10, else FALSE | TRUE / FALSE | Fast approximate feature contributions (XGBoost passthrough). |
 | `category_encoding_method` | STRING | No | `LABEL_ENCODING` | `LABEL_ENCODING`, `DUMMY_ENCODING` | Encoding for non-numeric features. |
+| `xgboost_version` | STRING | No | `0.9` | `0.9`, `1.1`, `2.1` | XGBoost library version used for training — random forests accept it on the same terms as `BOOSTED_TREE_*` (verified live on both `RANDOM_FOREST_CLASSIFIER` and `RANDOM_FOREST_REGRESSOR`; the default reads back as `0.9`). Changes the `EXPORT MODEL` artifact — see the [`BOOSTED_TREE_*` entry](#boosted_tree_classifier--boosted_tree_regressor) and the [EXPORT MODEL](#export-model) gotchas. Unlike `BOOSTED_TREE_*`, random forests pay no `ML.TRAINING_INFO` penalty for `'2.1'` — training is single-pass, so it never crosses the 10-iteration boundary where that function goes empty (measured; see the [`ML.TRAINING_INFO` gotcha](#mltraining_info)). |
 | `data_split_method` | STRING | No | `AUTO_SPLIT` | `AUTO_SPLIT`, `RANDOM`, `CUSTOM`, `SEQ`, `NO_SPLIT` | How eval data is held out. |
 | `data_split_col` | STRING | No | — | column name | With `CUSTOM`: BOOL col (TRUE=eval); with `SEQ`: ordering col. |
 | `data_split_eval_fraction` | FLOAT64 | No | 0.2 | [0, 1.0] | Eval fraction for `RANDOM`/`SEQ`. |
@@ -483,7 +484,7 @@ FROM `PROJECT_ID.DATASET.TRAINING_TABLE`;
 - Use `subsample` + `colsample_*` < 1.0 to strengthen bagging and generalization.
 - Bake preprocessing into `TRANSFORM` so serving and monitoring reuse identical logic.
 - **For tree visualization (`EXPORT MODEL` → `xgboost.plot_tree()`), train a small, separate illustrative forest** (e.g. `num_parallel_tree=10`, `max_tree_depth=3`) rather than trying to render a tree from your full-power model — see the limitation below.
-- On a small dataset, random forest can genuinely underperform boosted trees (or even a GLM) — **verified**: `RANDOM_FOREST_REGRESSOR` on `penguins`/`body_mass_g` (333 rows) reached only `r2_score ≈ 0.74` (≈ 0.76 best-tuned) vs. `BOOSTED_TREE_REGRESSOR`'s ≈ 0.97 and `LINEAR_REG`'s ≈ 0.88 on identical data. Don't assume random forest is always the stronger tree ensemble — bagging's variance reduction needs enough data to pay off.
+- **Set `xgboost_version = '2.1'` explicitly on any random forest.** The default is `0.9`, and on the regressor that default measurably under-grows the forest — see the limitation below. At `2.1`, `RANDOM_FOREST_REGRESSOR` on `penguins`/`body_mass_g` (333 rows) reaches `r2_score` ≈ 0.922, against `BOOSTED_TREE_REGRESSOR`'s ≈ 0.983 and `LINEAR_REG`'s ≈ 0.875 on identical data — second of the three, and it gets there untuned (the best of six tuning trials, ≈ 0.917, did not beat the default). Boosting still leads on this data; the margin is narrow, not the wide gap the `0.9` default suggests.
 
 **Limitations:**
 - Random forest training is **not available in all regions** — check BigQuery ML locations before choosing a dataset region.
@@ -492,8 +493,16 @@ FROM `PROJECT_ID.DATASET.TRAINING_TABLE`;
 - `ML.ROC_CURVE` is binary-classification only.
 - **Verified: `max_iterations` is not a valid option for `RANDOM_FOREST_CLASSIFIER`/`RANDOM_FOREST_REGRESSOR` at all** — `CREATE MODEL` errors immediately with `Option(s) MAX_ITERATIONS are not supported for RANDOM_FOREST_* model training` if you set it (unlike `BOOSTED_TREE_*`, where `max_iterations` is a central hyperparameter). This is a hard API-level guarantee that random forest training is single-pass, not just a documented convention — there is no way to accidentally train a "boosted random forest" via this option; `num_parallel_tree` alone defines the forest. Confirmed by `ML.TRAINING_INFO`: always exactly one row (`iteration = 1`), `learning_rate = 1.0`.
 - **Verified gotcha — trees are too dense to visualize at default settings.** Unlike a `BOOSTED_TREE_*` tree (a shallow stage fit on residuals), *every* `RANDOM_FOREST_*` tree is a complete, independently-trained tree. A default-settings forest's tree 0 (`num_parallel_tree=50`, `max_tree_depth=6`) had 2,435 dump lines and depth 15 — `xgboost.plot_tree()` triggers `graph is too large for cairo-renderer bitmaps` and produces an illegible image (confirmed even with SVG output, which sidesteps the bitmap-size limit but is still too dense to read at a glance). Fix: train a dedicated shallow illustrative forest for the diagram only (see best practices above).
-- With heavy default column subsampling (`colsample_bynode = 0.8`) over a small feature set, some features can end up with **zero** `ML.FEATURE_IMPORTANCE`/`ML.GLOBAL_EXPLAIN` — verified on the 6-feature `penguins` regressor (`island`, `culmen_length_mm` both zero, reproduced identically across two independent runs). Not a bug; a real effect of bagging variance when there are few features relative to `colsample_bynode`.
-- **Verified: retraining an identical `RANDOM_FOREST_*` model (same query, same options) is genuinely non-deterministic** — unlike `BOOSTED_TREE_*` (which reproduced predictions/loss curves essentially bit-for-bit across separate runs in testing, since it doesn't subsample by default), random forest always bags row/column subsamples (`subsample`/`colsample_bynode` default to 0.8, not 1.0), and there is no exposed random seed. Observed on `penguins`: two separate trainings of the same `RANDOM_FOREST_REGRESSOR` config produced visibly different tree structures, predictions, and `ML.GLOBAL_EXPLAIN` rankings (though `r2_score` stayed in a similar range, ~0.74–0.75). Don't expect exact reproducibility run-to-run the way GLMs or boosted trees (mostly) provide.
+- **GOTCHA (measured, undocumented): `RANDOM_FOREST_REGRESSOR` accuracy jumps sharply at `xgboost_version = '2.1'`.** Single-variable sweep on `penguins`/`body_mass_g` (333 rows, `num_parallel_tree = 50`, `tree_method = 'HIST'`, `AUTO_SPLIT`, nothing else changed):
+
+  | `xgboost_version` | `r2_score` | summed `importance_weight` (all 6 features) |
+  |---|---|---|
+  | `0.9` (default) | 0.7314, 0.7413 | 82 splits |
+  | `1.1` | 0.7442 | — |
+  | `2.1` | 0.9212, 0.9207 | 2,482 splits |
+
+  The split count is the mechanism signature: at the `0.9` default the forest is drastically under-grown, and at that size two of the six features (`island`, `culmen_length_mm`) come back at exactly **zero** `ML.FEATURE_IMPORTANCE`/`ML.GLOBAL_EXPLAIN` — at `2.1` every feature is non-zero (`island` lowest at `importance_weight` 245). Hyperparameter tuning does not close the gap at `0.9` (best tuned trial ≈ 0.755); at `2.1` all six trials land ≈ 0.907–0.917. `RANDOM_FOREST_CLASSIFIER` shows no comparable shift (`roc_auc` 0.883998 at `0.9` vs. 0.884439 at `2.1`), nor does `BOOSTED_TREE_CLASSIFIER` (0.888965 vs. 0.888313). Treat any zero-importance feature on a `0.9` random forest as a symptom of an under-grown forest, not as evidence the feature carries no signal.
+- **Verified: retraining an identical `RANDOM_FOREST_*` model (same query, same options) is genuinely non-deterministic** — unlike `BOOSTED_TREE_*` (which reproduced predictions/loss curves essentially bit-for-bit across separate runs in testing, since it doesn't subsample by default), random forest always bags row/column subsamples (`subsample`/`colsample_bynode` default to 0.8, not 1.0), and there is no exposed random seed. Observed on `penguins`: two separate trainings of the same `RANDOM_FOREST_REGRESSOR` config produced visibly different tree structures, predictions, and `ML.GLOBAL_EXPLAIN` rankings (though `r2_score` stayed in a similar range within a fixed `xgboost_version` — ~0.73–0.75 at the `0.9` default, ~0.921 at `2.1`). Don't expect exact reproducibility run-to-run the way GLMs or boosted trees (mostly) provide.
 
 **Locations:** Subject to region restrictions (random forest not supported in every BQML region/multi-region); see [BigQuery ML locations](https://cloud.google.com/bigquery/docs/locations).
 
@@ -501,7 +510,7 @@ FROM `PROJECT_ID.DATASET.TRAINING_TABLE`;
 
 **Repo example (tested):**
 - `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/random_forest_classifier/random_forest_classifier.sql` + notebook — `RANDOM_FOREST_CLASSIFIER` on `census_adult_income` (same data/label as `logistic_regression`/`boosted_tree_classifier`, for a three-way technique comparison), incl. a dedicated shallow illustrative forest for tree visualization.
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/random_forest_regressor/random_forest_regressor.sql` + notebook — `RANDOM_FOREST_REGRESSOR` on `penguins`/`body_mass_g` (same data/label as `linear_regression`/`boosted_tree_regressor`); the `r2_score ≈ 0.74` underperformance vs. boosting is discussed directly in the notebook as a genuine finding.
+- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/random_forest_regressor/random_forest_regressor.sql` + notebook — `RANDOM_FOREST_REGRESSOR` on `penguins`/`body_mass_g` (same data/label as `linear_regression`/`boosted_tree_regressor`); the `xgboost_version` sensitivity (`r2_score` ≈ 0.92 at `2.1` vs. ≈ 0.74 at the `0.9` default, 2,482 vs. 82 splits) is measured and discussed directly in the notebook.
 - `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03c - BQML Random Forest.ipynb` — full `RANDOM_FOREST_CLASSIFIER` workflow on the credit-card fraud table: `CREATE MODEL` with `num_parallel_tree=200`, `tree_method='HIST'`, `subsample=0.85`, `colsample_bytree=0.9`, `auto_class_weights=TRUE`, `enable_global_explain=TRUE`, `CUSTOM` split via a derived BOOL column; then `ML.FEATURE_INFO`, `ML.TRAINING_INFO`, `ML.EVALUATE`, `ML.CONFUSION_MATRIX`, `ML.ROC_CURVE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.GLOBAL_EXPLAIN`, `ML.FEATURE_IMPORTANCE`, Vertex AI registration + endpoint serving, and `EXPORT MODEL` (exports an XGBoost `model.bst`).
 - `/home/user/git/vertex-ai-mlops/MLOps/Model Monitoring/model_monitoring_job.sql` — `RANDOM_FOREST_CLASSIFIER` with `TRANSFORM(...)` preprocessing, `AUTO_CLASS_WEIGHTS=FALSE`, `NUM_PARALLEL_TREE=150`, used as the monitored/retrained model with `ML.VALIDATE_DATA_SKEW`, `ML.VALIDATE_DATA_DRIFT`, and `ML.EVALUATE` (reads `accuracy`).
 
@@ -1745,30 +1754,40 @@ OPTIONS(
 | Option / Clause | Type | Required | Description |
 |---|---|---|---|
 | `MODEL_TYPE` | STRING | Yes | `'XGBOOST'`. |
-| `MODEL_PATH` | STRING | Yes | GCS URI of the `.bst`/`.json` Booster file. |
+| `MODEL_PATH` | STRING | Yes | GCS URI of the Booster file. Use a `.json` or `.ubj` extension — a `.bst` upload is rejected regardless of contents (see the gotcha below). |
 | `KMS_KEY_NAME` | STRING | No | CMEK to encrypt the model. |
 | `INPUT(field_name field_type, …)` | clause | Conditional | Input schema. **Optional only if** `feature_names` AND `feature_types` are both stored in the model file (see XGBoost Model IO / JSON Schema). Input types must be supported numeric types; names must match `feature_names`. |
 | `OUTPUT(field_name field_type, …)` | clause | Conditional | Output schema. Output type must be `FLOAT64`. |
 
 **Supported lifecycle functions:** `ML.PREDICT` and **`ML.FEATURE_IMPORTANCE`** (the only imported type
 that supports a feature-attribution function).
-**Limitations:** `.bst` or `.json` (Booster) format only; model must exist in GCS before import.
+**Limitations:** Booster format only, uploaded as `.json` or `.ubj`; model must exist in GCS before import.
 **250 MB** size limit; **840 MB** memory limit to load+run (reduce trees / depth, or save via XGBoost's
 default `save_model` to shrink). Object-table use is reservation-only.
 
-**GOTCHA (verified live, undocumented as of this writing):** the importer only accepts Booster files
-saved by **XGBoost ≤ 1.5.1** — a booster saved with a modern xgboost (2.x/3.x, whatever `pip install
-xgboost` gives you today) fails to import: `"XGBoost model version newer than 1.5.1 is not
-supported."` Train with `xgboost==1.5.1` specifically for this path — that release in turn needs
-`numpy<2` in the same environment (`np.array(data, copy=False)` errors under numpy 2.x). This is the
-mirror-image of the already-known `boosted_tree_classifier`/`EXPORT MODEL` gotcha (needing
-`xgboost<2.0` to *load* a BQML-exported booster) — here it's the opposite direction: BQML's *importer*
-rejects boosters from a too-new xgboost.
+**GOTCHA (verified live, undocumented as of this writing):** what the importer accepts is decided by
+the artifact's **file extension**, not by the library version that wrote it. Measured by saving one
+Booster from `xgboost` 3.3.0 three ways and importing each:
+
+| Uploaded as | Result |
+|---|---|
+| `model.json` | Imports; `ML.PREDICT` and `ML.FEATURE_IMPORTANCE` both work |
+| `model.ubj` | Imports |
+| `model.bst` | Rejected — `Invalid XGBoost model: could not load model from file`, a JSON parse error at character position 1 |
+
+The `.bst` and `.ubj` uploads were **byte-identical** in that test (current xgboost writes UBJSON under
+either extension), so the difference is the name, not the contents. **Save as `.json` or `.ubj` and no
+version pin is needed.** This retires an earlier reading of this behavior as a blanket "Booster must
+come from XGBoost ≤ 1.5.1" cap — a modern booster imports fine under the right extension.
+
+Note the matching quirk in the other direction: `EXPORT MODEL` writes `model.bst` at the
+`xgboost_version = '0.9'` default and `model.ubj` at `'2.1'` — so a BQML-exported tree ensemble is
+re-importable as-is only when it was trained at `2.1`.
 
 **BigFrames API:** `bigframes.ml.imported.XGBoostModel(model_path=..., input=..., output=...)`.
 **Repo example (tested):** `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/imported/imported.ipynb`
 (Step 3) — a binary classifier (`objective='binary:logistic'`) trained natively with `xgboost.train()`
-on `xgboost==1.5.1`, saved as `.json`, imported with explicit `INPUT`/`OUTPUT` (a `multi:softprob`
+on an unpinned current `xgboost`, saved as `.json`, imported with explicit `INPUT`/`OUTPUT` (a `multi:softprob`
 objective also predicts fine but silently returns an ARRAY despite a scalar `OUTPUT` declaration — a
 binary objective keeps the declared type honest). `ML.FEATURE_IMPORTANCE` verified working here.
 
@@ -2652,12 +2671,28 @@ ORDER BY iteration;
 - `ORDER BY iteration` and chart `loss` vs `eval_loss` — divergence signals overfitting.
 - For linear/logistic models, `learning_rate` can *rise* across iterations when `LEARN_RATE_STRATEGY = 'LINE_SEARCH'` (the default) — expected, not a bug.
 
+**GOTCHA (measured, undocumented) — `ML.TRAINING_INFO` returns zero rows on a `BOOSTED_TREE_*` model trained with `xgboost_version = '2.1'` once training runs more than 10 iterations.** Nothing else about the model is affected: `CREATE MODEL` succeeds, and `ML.EVALUATE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.FEATURE_IMPORTANCE` and `ML.GLOBAL_EXPLAIN` all return normally. Only the training history is empty. Isolated with single-variable probes on `census_adult_income` (3 features, 5,000 rows, `early_stop = FALSE`, everything else held constant):
+
+| `xgboost_version` | `max_iterations` | rows returned |
+|---|---|---|
+| `0.9` (the default) | 20 | 20 |
+| `1.1` | 20 | 20 |
+| `2.1` | 5 | 5 |
+| `2.1` | 10 | 10 |
+| `2.1` | 11 | **0** |
+| `2.1` | 20 | **0** |
+
+The boundary is exactly 10 iterations. Ruled out as causes: early stopping (disabled in the probes above, and the default `early_stop = TRUE` behaves identically), `auto_class_weights`, and `enable_global_explain` — both of the latter return rows normally at `'2.1'` with `max_iterations = 5`. Reproduced on a realistic config too: the full 11-feature `census_adult_income` classifier at default `max_iterations` returns 9 rows at `'0.9'` and 0 rows at `'2.1'`.
+
+**Practical consequence:** on a boosted tree you get either a modern `model.ubj` export or a readable loss curve, not both. `RANDOM_FOREST_*` is unaffected — training is single-pass (one iteration), so it never reaches the boundary. To recover the curve, omit `xgboost_version` (back to the `0.9` default) or hold training to 10 iterations or fewer.
+
 **Limitations:**
 - No imported-TensorFlow support.
 - Limited usefulness for ARIMA_PLUS (use `ML.ARIMA_EVALUATE` / `ML.ARIMA_COEFFICIENTS` for forecast diagnostics instead).
+- Returns nothing for `BOOSTED_TREE_*` at `xgboost_version = '2.1'` past 10 iterations — see the gotcha above.
 
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 8, loss curve). Also `03a - BQML Logistic Regression.ipynb`, `03b - BQML Boosted Trees.ipynb`, `03g - BQML - PCA with Anomaly Detection.ipynb`, and `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` (reduced 3-column ARIMA output).
+**Repo example (tested):** `data+ai/bq-ml/models/logistic_regression/logistic_regression.sql` (Example 8, loss curve). The `'2.1'` empty-result case is documented in place in `models/boosted_tree_classifier/` (Example 8 / Step 6) and `models/boosted_tree_regressor/` (Example 6 / Step 5). Also `03a - BQML Logistic Regression.ipynb`, `03b - BQML Boosted Trees.ipynb`, `03g - BQML - PCA with Anomaly Detection.ipynb`, and `Applied Forecasting/BQML Univariate Forecasting with ARIMA+.ipynb` (reduced 3-column ARIMA output).
 
 ---
 
@@ -4268,7 +4303,7 @@ bq extract --model --destination_format ML_XGBOOST_BOOSTER 'DATASET.MODEL_NAME' 
 |---|---|
 | `LINEAR_REGRESSOR`, `LOGISTIC_REG`, `KMEANS`, `PCA`, `MATRIX_FACTORIZATION`, `AUTOENCODER`, `DNN_*`, `DNN_LINEAR_COMBINED_*`, `TRANSFORM_ONLY` | TensorFlow SavedModel (TF 1.15+) |
 | `AUTOML_CLASSIFIER`, `AUTOML_REGRESSOR` | TensorFlow SavedModel (TF 2.1.0) |
-| `BOOSTED_TREE_CLASSIFIER`, `BOOSTED_TREE_REGRESSOR`, `RANDOM_FOREST_CLASSIFIER`, `RANDOM_FOREST_REGRESSOR` | XGBoost Booster (XGBoost 0.82) |
+| `BOOSTED_TREE_CLASSIFIER`, `BOOSTED_TREE_REGRESSOR`, `RANDOM_FOREST_CLASSIFIER`, `RANDOM_FOREST_REGRESSOR` | XGBoost Booster — **format depends on the training-time `xgboost_version`**: `model.bst` (legacy binary) at the `0.9` default, `model.ubj` (UBJSON) at `2.1`. See the version gotcha below. |
 | `TENSORFLOW` (imported) | TensorFlow SavedModel — the exact imported files |
 
 > Note: ONNX is an **import**-only format (`CREATE MODEL ... model_type='ONNX'`), not an EXPORT MODEL output format. EXPORT MODEL produces only TensorFlow SavedModel or XGBoost Booster. See the import-model entries for ONNX.
@@ -4288,7 +4323,8 @@ bq extract --model --destination_format ML_XGBOOST_BOOSTER 'DATASET.MODEL_NAME' 
 - Version exports by writing to a timestamped folder (e.g. `.../models/{TIMESTAMP}/model`) so each export is immutable and reproducible.
 - For HP-tuning models, export the chosen `TRIAL_ID` explicitly rather than relying on the implicit optimal trial when you need a pinned, auditable artifact.
 - Keep dataset and bucket co-located to avoid the cross-location error — in practice a `US` multi-region dataset **is** compatible with a `US-CENTRAL1` (or other US-region) bucket (verified: export succeeded across that pairing).
-- **To visualize a boosted-tree/random-forest ensemble** (`EXPORT MODEL` → XGBoost Booster `model.bst`): download it and load with `xgboost.Booster().load_model(...)`, then `xgboost.plot_tree(booster, num_trees=0)`. See the two gotchas below — both are load-bearing, not optional.
+- **To visualize a boosted-tree/random-forest ensemble** (`EXPORT MODEL` → XGBoost Booster, `model.bst` or `model.ubj` depending on `xgboost_version`): download it and load with `xgboost.Booster().load_model(...)`, then `xgboost.plot_tree(booster, tree_idx=0)` (the older `num_trees=` keyword still works but emits a `FutureWarning` on xgboost 2.1+). See the gotchas below — they are load-bearing, not optional.
+- **If the model exists only to be exported and read back in Python, train it with `xgboost_version = '2.1'`.** It turns a pinned-dependency problem into a plain file read. It is not free, though: on a `BOOSTED_TREE_*` model that trains more than 10 iterations, `'2.1'` also empties `ML.TRAINING_INFO` (measured — see that function's gotcha). `RANDOM_FOREST_*` is single-pass and pays nothing. So set it freely on random forests and on any tree model whose loss curve you don't need; on a boosted tree you're choosing between the modern export and the training history.
 
 **Limitations:**
 - Dataset and destination bucket must be in the **same location**.
@@ -4297,17 +4333,17 @@ bq extract --model --destination_format ML_XGBOOST_BOOSTER 'DATASET.MODEL_NAME' 
 - AutoML model exports do not support Agent Platform online prediction.
 - Models trained with `TRANSFORM` before 2023-09-18 must be retrained for Model Registry online prediction.
 - Remote models and ARIMA_PLUS/time-series models cannot be exported.
-- **Verified gotcha — XGBoost version compatibility:** `BOOSTED_TREE_*`/`RANDOM_FOREST_*` exports use **XGBoost 0.82's legacy binary format**. Modern `xgboost` (2.0+, the current `pip install xgboost` default) **cannot load `model.bst`** — `xgb.Booster().load_model(...)` raises `Check failed: str[0] == '{'`. Pin an older release to load/visualize it locally (verified working: `xgboost==1.7.6`, which emits only a compatibility warning).
-- **Verified gotcha — feature names are not preserved:** the loaded booster's `feature_names` comes back `None` (generic `f0`, `f1`, ... in `get_dump()`/plots). Set `booster.feature_names` manually to the training query's non-label `SELECT` column order — this 1:1 mapping held up when checked against a model's actual split thresholds (`num_features()` matched the raw column count exactly, with no expansion for categoricals). Verified for both `BOOSTED_TREE_CLASSIFIER` and `BOOSTED_TREE_REGRESSOR`.
-- **`BOOSTED_TREE_REGRESSOR`-specific:** loading the exported booster also prints `reg:linear is now deprecated in favor of reg:squarederror` — a harmless legacy-objective-name warning (in addition to the `XGBoost < 1.0.0` compatibility warning above), not an error.
+- **Verified gotcha — XGBoost version compatibility, and how to avoid it entirely:** at the **default** `xgboost_version = '0.9'`, `BOOSTED_TREE_*`/`RANDOM_FOREST_*` exports use a **legacy binary format**. Modern `xgboost` (2.0+, the current `pip install xgboost` default) **cannot load `model.bst`** — `xgb.Booster().load_model(...)` raises `Check failed: str[0] == '{'`. Pin an older release to load/visualize it locally (verified working: `xgboost==1.7.6`, which emits only a compatibility warning). **Training with `xgboost_version = '2.1'` removes the problem at the source:** the export becomes `model.ubj` (UBJSON) instead of `model.bst`, and it loads cleanly in current `xgboost` with no pin and no warning at all (verified end-to-end against `xgboost` 3.3.0, classifier and regressor). The filename changes too, so any download step that hard-codes `model.bst` has to branch on the version. `2.1` reached GA on 2026-08-27 and is opt-in only — the default did not move.
+- **Verified gotcha — feature names are not preserved, at either version:** the loaded booster's `feature_names` comes back `None` (generic `f0`, `f1`, ... in `get_dump()`/plots). Set `booster.feature_names` manually to the training query's non-label `SELECT` column order — this 1:1 mapping held up when checked against a model's actual split thresholds (`num_features()` matched the raw column count exactly, with no expansion for categoricals). Verified for both `BOOSTED_TREE_CLASSIFIER` and `BOOSTED_TREE_REGRESSOR`, and re-verified on a `2.1` export — **this one is not fixed by the newer library**, unlike the format gotcha above.
+- **`BOOSTED_TREE_REGRESSOR`-specific, and version-dependent:** at the `0.9` default, loading the exported booster also prints `reg:linear is now deprecated in favor of reg:squarederror` — a harmless legacy-objective-name warning (in addition to the `XGBoost < 1.0.0` compatibility warning above), not an error. At `xgboost_version = '2.1'` the objective is written as `reg:squarederror` and the load is silent (verified: zero warnings captured).
 
 **Locations:** Dataset region must equal the GCS bucket region/multi-region.
 
 **BigFrames API:** `bigframes.ml` estimators expose `model.to_gbq(...)` for persistence in BigQuery; GCS export is performed via the SQL `EXPORT MODEL` statement or `bq extract --model`. No dedicated one-call BigFrames GCS-export helper.
 
 **Repo example (tested):**
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/export/export.ipynb` — the dedicated general-purpose `EXPORT MODEL` notebook: a `LOGISTIC_REG` (→ TF SavedModel, downloaded and run with `tf.saved_model.load()` + `infer(...)` entirely outside BigQuery) and a small `BOOSTED_TREE_CLASSIFIER` (→ XGBoost Booster, downloaded and scored locally with `booster.get_score(importance_type='gain')` — the same `xgboost==1.7.6`/`feature_names` gotchas as below, reproduced here independently). Also demonstrates `model_registry='VERTEX_AI'` as a `CREATE MODEL`-time alternative to export (registry storage only, no live serving cost) and the `bq extract --model --destination_format=...` CLI equivalent. **Verified finding:** dropping a model registered via `model_registry='VERTEX_AI'` also cascade-deletes its Vertex AI Model Registry entry — no separate `aiplatform`/`gcloud` deletion step needed.
-- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` (Example 9) and the companion notebook (Step 7) — `EXPORT MODEL` → download `model.bst` → `xgboost==1.7.6` (pinned) → `booster.feature_names` reassigned manually → `xgboost.plot_tree()`. Both gotchas above were caught and verified here.
+- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/export/export.ipynb` — the dedicated general-purpose `EXPORT MODEL` notebook: a `LOGISTIC_REG` (→ TF SavedModel, downloaded and run with `tf.saved_model.load()` + `infer(...)` entirely outside BigQuery) and a small `BOOSTED_TREE_CLASSIFIER` (trained with `xgboost_version = '2.1'`, so the export is a `model.ubj` → downloaded and scored locally with an **unpinned** `xgboost` via `booster.get_score(importance_type='gain')`; the `feature_names` gotcha below still applies and is reproduced here independently). Also demonstrates `model_registry='VERTEX_AI'` as a `CREATE MODEL`-time alternative to export (registry storage only, no live serving cost) and the `bq extract --model --destination_format=...` CLI equivalent. **Verified finding:** dropping a model registered via `model_registry='VERTEX_AI'` also cascade-deletes its Vertex AI Model Registry entry — no separate `aiplatform`/`gcloud` deletion step needed.
+- `/home/user/git/vertex-ai-mlops/data+ai/bq-ml/models/boosted_tree_classifier/boosted_tree_classifier.sql` (Example 9) and the companion notebook (Step 7) — `xgboost_version = '2.1'` → `EXPORT MODEL` → download `model.ubj` → unpinned `xgboost` → `booster.feature_names` reassigned manually → `xgboost.plot_tree()`. Both gotchas above were caught and verified here, at both `xgboost_version` values.
 - `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03b - BQML Boosted Trees.ipynb` — exports a `BOOSTED_TREE` model to a timestamped GCS folder (`EXPORT MODEL ... OPTIONS(URI = 'gs://.../models/{TIMESTAMP}/model')`), i.e. XGBoost Booster format.
 - `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03g - BQML - PCA with Anomaly Detection.ipynb` and `/home/user/git/vertex-ai-mlops/03 - BigQuery ML (BQML)/03i - BQML Autoencoder with Anomaly Detection.ipynb` — export `PCA` and `AUTOENCODER` models (TensorFlow SavedModel) with the same `EXPORT MODEL ... OPTIONS(URI=...)` pattern.
 - Inverse direction (importing a TF SavedModel back into BQML for serving): `/home/user/git/vertex-ai-mlops/MLOps/Serving/SQL Inference/Serve TensorFlow SavedModel Format With BigQuery.ipynb` — useful context for the round-trip, but it demonstrates `CREATE MODEL ... MODEL_TYPE='TENSORFLOW'` (import), not EXPORT MODEL. Also see this project's own [`models/imported/`](../../models/imported/) for the same import direction.

@@ -9,7 +9,9 @@ Train a **regression** model with `CREATE MODEL` (model_type = `RANDOM_FOREST_RE
 - Structured/tabular data — compare `r2_score` directly against `models/linear_regression` (Linear Regression) and `models/boosted_tree_regressor` (Boosted Tree Regressor) on the same data
 - You want built-in feature attributions plus split-based feature importance (`ML.FEATURE_IMPORTANCE`)
 
-**Random forest vs. boosted tree:** both are XGBoost-based tree ensembles in BigQuery ML, but they train fundamentally differently. A random forest builds `num_parallel_tree` complete, independent trees in a **single pass** (bagging) and averages them — `max_iterations` is not even a valid option for this model type. A boosted tree sequentially fits many *shallow* trees to the residuals of the previous ones. **On this small (333-row) dataset, that difference matters**: random forest's bagging underperforms both boosting and even plain linear regression here (`r2_score` ≈ 0.74 vs. ≈ 0.97 for boosted trees and ≈ 0.88 for linear regression — verified, and it persists even after hyperparameter tuning, see Step 8). A real, honest comparison point, not a misconfiguration.
+**Random forest vs. boosted tree:** both are XGBoost-based tree ensembles in BigQuery ML, but they train fundamentally differently. A random forest builds `num_parallel_tree` complete, independent trees in a **single pass** (bagging) and averages them — `max_iterations` is not even a valid option for this model type. A boosted tree sequentially fits many *shallow* trees to the residuals of the previous ones. On this 333-row dataset boosting still wins, but narrowly and not against a weak opponent: `r2_score` ≈ 0.983 for `models/boosted_tree_regressor` (Boosted Tree Regressor), ≈ 0.922 for this forest, ≈ 0.875 for `models/linear_regression` (Linear Regression) — same data, same label, all three measured. The forest gets there with **no tuning at all**; Step 8 shows the best-tuned trial failing to beat the untuned default.
+
+> **That number depends on `xgboost_version`.** At the `0.9` default the same forest scores `r2_score` ≈ 0.73–0.75 — measured — because it grows far fewer splits: 82 across all six features, against 2,482 at `2.1`. Step 1 sets `2.1`. The BigFrames comparison at the bottom of this notebook does not set it, and reproduces the low-split result (≈ 0.756) in the same run. Bagging is not weak on small data — the 2019 default library was under-growing the forest.
 
 **Data:** [`bigquery-public-data.ml_datasets.penguins`](https://console.cloud.google.com/marketplace/product/bigquery-public-datasets) — predict a penguin's `body_mass_g` from species, island, and bill/flipper measurements. **Same data + label as `models/linear_regression` (Linear Regression) and `models/boosted_tree_regressor` (Boosted Tree Regressor)** — compare `r2_score` across all three techniques. Rows with a NULL label or an unrecorded `sex` are filtered out.
 
@@ -57,9 +59,12 @@ print(f'Dataset {PROJECT_ID}.{DATASET_ID} ready')
 ## Step 1 — Create the model with `CREATE MODEL`
 
 `CREATE MODEL` trains and stores the model in your dataset. The essentials are `model_type` and `input_label_cols`. We also:
+- `xgboost_version = '2.1'` — the XGBoost library version used for training (GA 2026-08-27)
 - `num_parallel_tree = 50` — the number of trees in the forest, trained in parallel on row/column subsamples
 - `data_split_method = 'AUTO_SPLIT'` — automatically hold out rows for evaluation
 - `enable_global_explain = TRUE` — **required** to use `ML.GLOBAL_EXPLAIN` later
+
+> **The `xgboost_version` default is `0.9`** — a 2019 release — and omitting the option gets you that. Accepted values are `0.9`, `1.1`, and `2.1`. It is set here because it changes what `EXPORT MODEL` writes in Step 6, and it drops the legacy `reg:linear` objective name along with it — see that step.
 
 > **Gotcha (verified):** `max_iterations` is **not a valid option for `RANDOM_FOREST_*` at all** — `CREATE MODEL` errors immediately if you set it. `num_parallel_tree` alone defines the forest; training is single-pass by API-level guarantee.
 
@@ -68,6 +73,7 @@ query = f"""
 CREATE OR REPLACE MODEL `{PROJECT_ID}.{DATASET_ID}.random_forest_regressor_penguins`
 OPTIONS(
   model_type = 'RANDOM_FOREST_REGRESSOR',
+  xgboost_version = '2.1',
   input_label_cols = ['body_mass_g'],
   num_parallel_tree = 50,
   tree_method = 'HIST',
@@ -86,7 +92,7 @@ print('Model random_forest_regressor_penguins created')
 ---
 ## Step 2 — Evaluate with `ML.EVALUATE`
 
-`ML.EVALUATE` returns standard regression metrics on the automatically held-out evaluation split: mean absolute error, mean squared error, R², and explained variance. Compare `r2_score` against `models/linear_regression` (Linear Regression) and `models/boosted_tree_regressor` (Boosted Tree Regressor), which train on the exact same data — see the overview note above on why random forest underperforms both here.
+`ML.EVALUATE` returns standard regression metrics on the automatically held-out evaluation split: mean absolute error, mean squared error, R², and explained variance. Compare `r2_score` against `models/linear_regression` (Linear Regression) and `models/boosted_tree_regressor` (Boosted Tree Regressor), which train on the exact same data. Boosting still edges this out; linear regression does not — see the overview note above, including how much of that ordering depends on `xgboost_version`.
 
 ```python
 query = f"""
@@ -123,7 +129,7 @@ client.query(query).to_dataframe()
 - **`ML.GLOBAL_EXPLAIN`** — overall feature importance across the model (Shapley-style; requires `enable_global_explain = TRUE`)
 - **`ML.FEATURE_IMPORTANCE`** — tree-specific, split-based importance (`weight`/`gain`/`cover`). Neither applies to GLMs (see `models/linear_regression` (Linear Regression)) — use `ML.WEIGHTS` there instead.
 
-> On this small dataset with heavy column subsampling (`colsample_bynode` default 0.8 over just 6 features), some features can end up with **zero** importance/attribution — verified: `island` and `culmen_length_mm` both showed `importance_weight = 0` / `attribution = 0.0` in testing. A real effect of bagging variance on a small feature set, not a bug.
+> On this small dataset with heavy column subsampling (`colsample_bynode` default 0.8 over just 6 features), how much of the feature set actually gets used depends on how many splits the forest grows — and that is set by `xgboost_version`. At `2.1` (Step 1) all six features carry non-zero importance and attribution, `island` lowest at `importance_weight` 245 / `attribution` ≈ 10. At the `0.9` default the same forest grows only 82 splits in total, and `island` and `culmen_length_mm` both come back at exactly **zero** — verified both ways. A zero here is a symptom of an under-grown forest, not evidence that the feature carries no signal.
 
 ```python
 query = f"""
@@ -183,7 +189,18 @@ client.query(query).to_dataframe()
 ---
 ## Step 6 — Visualize a tree by exporting the model
 
-`EXPORT MODEL` writes a trained ensemble to Cloud Storage as an XGBoost Booster file (`model.bst`). Downloading it and loading it with the `xgboost` Python library lets you plot an individual tree's structure — same mechanism as `models/boosted_tree_regressor` (Boosted Tree Regressor), with the same gotchas (pin `xgboost==1.7.6`; reassign `feature_names` manually; expect an extra `reg:linear is now deprecated` warning on load).
+`EXPORT MODEL` writes a trained ensemble to Cloud Storage as an XGBoost Booster file. Downloading it and loading it with the `xgboost` Python library lets you plot an individual tree's structure — same mechanism as `models/boosted_tree_regressor` (Boosted Tree Regressor).
+
+**What the file is depends on `xgboost_version`**, measured both ways:
+
+| | `xgboost_version = '0.9'` (the default) | `xgboost_version = '2.1'` (used here) |
+|---|---|---|
+| File written | `model.bst` — legacy binary | `model.ubj` — UBJSON |
+| Current `xgboost` can load it | No | Yes |
+| Python dependency | pinned old library (`xgboost==1.7.6`) | unpinned `xgboost` |
+| Objective name | `reg:linear`, with a deprecation warning on load | `reg:squarederror`, and the load is silent |
+
+> **GOTCHA (verified):** `2.1` does **not** fix feature names. At either version `Booster.feature_names` comes back `None` — reassign it manually to the training query's non-label column order.
 
 > **A random-forest-specific gotcha (verified, see `models/random_forest_classifier` (Random Forest Classifier) for the original writeup):** the main model above produces trees that are **too dense to render meaningfully** — every random forest tree is a complete, independently-trained tree, unlike a boosted tree's shallow early-round tree. **Fix:** train a small, separate **illustrative forest** just for the diagram (`num_parallel_tree=10`, `max_tree_depth=3`).
 
@@ -193,6 +210,7 @@ query = f"""
 CREATE OR REPLACE MODEL `{PROJECT_ID}.{DATASET_ID}.random_forest_regressor_penguins_viz`
 OPTIONS(
   model_type = 'RANDOM_FOREST_REGRESSOR',
+  xgboost_version = '2.1',
   input_label_cols = ['body_mass_g'],
   num_parallel_tree = 10,
   max_tree_depth = 3
@@ -216,10 +234,11 @@ print('Model exported')
 ```
 
 ```python
-# Pin xgboost<2.0 -- newer versions cannot load BQML's exported XGBoost 0.82
-# binary format. graphviz is the Python binding used by xgboost.plot_tree()
+# No version pin needed: the illustrative forest above was trained with
+# xgboost_version = '2.1', so the export is a model.ubj that current xgboost
+# reads directly. graphviz is the Python binding used by xgboost.plot_tree()
 # to render; it shells out to the system 'dot' binary.
-install('xgboost==1.7.6', 'graphviz')
+install('xgboost', 'graphviz')
 
 from google.cloud import storage
 import os
@@ -229,8 +248,8 @@ os.makedirs(local_dir, exist_ok=True)
 
 storage_client = storage.Client(project=PROJECT_ID)
 bucket = storage_client.bucket(BUCKET)
-blob = bucket.blob('bq_ml/random_forest_regressor/model_viz/model.bst')
-local_path = os.path.join(local_dir, 'model.bst')
+blob = bucket.blob('bq_ml/random_forest_regressor/model_viz/model.ubj')
+local_path = os.path.join(local_dir, 'model.ubj')
 blob.download_to_filename(local_path)
 print(f'Downloaded to {local_path}')
 ```
@@ -249,7 +268,7 @@ booster.feature_names = [
 ]
 
 fig, ax = plt.subplots(figsize=(20, 10))
-xgb.plot_tree(booster, num_trees=0, ax=ax)
+xgb.plot_tree(booster, tree_idx=0, ax=ax)
 plt.title('Random Forest Regressor - Tree 0 (shallow illustrative forest)')
 plt.tight_layout()
 plt.show()
@@ -271,6 +290,7 @@ TRANSFORM(
 )
 OPTIONS(
   model_type = 'RANDOM_FOREST_REGRESSOR',
+  xgboost_version = '2.1',
   input_label_cols = ['body_mass_g'],
   num_parallel_tree = 50
 ) AS
@@ -300,13 +320,14 @@ client.query(query).to_dataframe()
 
 Tune the forest size (`num_parallel_tree`) and tree depth (`max_tree_depth`). Inspect trials with `ML.TRIAL_INFO`.
 
-> Verified: even the best-tuned trial only reaches `r2_score` ≈ 0.76 on this dataset — still well below `models/boosted_tree_regressor` (Boosted Tree Regressor)'s ≈ 0.97. This reinforces the overview note that bagging underperforms boosting here — not a tuning shortfall. Individual trials can also occasionally fail with a transient error (`status = 'FAILED'`, `NULL` metric) without failing the overall job.
+> Verified: tuning does **not** beat the untuned model here. The best trial reaches `r2_score` ≈ 0.917 against ≈ 0.922 from Step 1's defaults, and all six trials land in a narrow ≈ 0.907–0.917 band. That is the "robust, low-tuning ensemble" claim from the overview holding up, not a tuning shortfall — there was little left on the table to find. Individual trials can also occasionally fail with a transient error (`status = 'FAILED'`, `NULL` metric) without failing the overall job.
 
 ```python
 query = f"""
 CREATE OR REPLACE MODEL `{PROJECT_ID}.{DATASET_ID}.random_forest_regressor_penguins_tuned`
 OPTIONS(
   model_type = 'RANDOM_FOREST_REGRESSOR',
+  xgboost_version = '2.1',
   input_label_cols = ['body_mass_g'],
   num_trials = 6,
   max_parallel_trials = 3,

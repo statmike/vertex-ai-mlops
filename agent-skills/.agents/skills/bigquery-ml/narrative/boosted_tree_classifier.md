@@ -62,6 +62,9 @@ print(f'Dataset {PROJECT_ID}.{DATASET_ID} ready')
 - `auto_class_weights = TRUE` — balance the classes (the data is ~76% `<=50K`)
 - `data_split_method = 'AUTO_SPLIT'` — automatically hold out rows for evaluation
 - `enable_global_explain = TRUE` — **required** to use `ML.GLOBAL_EXPLAIN` later
+- `xgboost_version = '2.1'` — train with a current XGBoost library instead of the default
+
+> **The `xgboost_version` default is `0.9`** — a 2019 release — and omitting the option gets you that, on every boosted-tree and random-forest model type. `'2.1'` reached GA on 2026-08-27. It is set here because it changes what `EXPORT MODEL` writes in Step 7: a modern `model.ubj` that current `xgboost` can read directly, instead of a legacy `model.bst` that needs a pinned old library. Accepted values are `0.9`, `1.1`, and `2.1`. It also has one measured cost — `ML.TRAINING_INFO` comes back empty for this model — documented in full in Step 6.
 
 > Training takes several minutes: the first boosting iteration pays a large one-time data-loading/indexing cost, then each subsequent iteration is fast. Don't be alarmed by a slow first iteration in `ML.TRAINING_INFO` (Step 6) — that's expected, not a stall.
 
@@ -70,6 +73,7 @@ query = f"""
 CREATE OR REPLACE MODEL `{PROJECT_ID}.{DATASET_ID}.boosted_tree_classifier_income`
 OPTIONS(
   model_type = 'BOOSTED_TREE_CLASSIFIER',
+  xgboost_version = '2.1',
   input_label_cols = ['income_bracket'],
   auto_class_weights = TRUE,
   data_split_method = 'AUTO_SPLIT',
@@ -195,7 +199,28 @@ client.query(query).to_dataframe()
 ---
 ## Step 6 — Introspect the model
 
-`ML.FEATURE_INFO` reports the statistics each feature had during training. `ML.TRAINING_INFO` returns the per-iteration loss curve — with `early_stop = TRUE` (the default), training stops once improvement falls below `min_rel_progress`, so expect fewer than the `max_iterations = 20` default. Iteration numbering starts at **1** here (not 0, as in the GLM notebooks).
+`ML.FEATURE_INFO` reports the statistics each feature had during training.
+
+`ML.TRAINING_INFO` normally returns the per-iteration loss curve, with iteration numbering starting at **1** for tree models (not 0, as in the GLM notebooks). Here it comes back **empty** — a direct consequence of `xgboost_version = '2.1'` in Step 1.
+
+> **GOTCHA (measured, undocumented) — at `xgboost_version = '2.1'`, `ML.TRAINING_INFO` returns zero rows once training runs more than 10 iterations.** Nothing else about the model is affected: `CREATE MODEL` succeeds, and `ML.EVALUATE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.FEATURE_IMPORTANCE` and `ML.GLOBAL_EXPLAIN` all work on it — Steps 2–5 above are that proof. Only the training history is missing.
+>
+> Isolated with single-variable probes on the same data, `early_stop = FALSE`, everything else held constant:
+>
+> | `xgboost_version` | `max_iterations` | rows returned |
+> |---|---|---|
+> | `0.9` (the default) | 20 | 20 |
+> | `1.1` | 20 | 20 |
+> | `2.1` | 5 | 5 |
+> | `2.1` | 10 | 10 |
+> | `2.1` | 11 | **0** |
+> | `2.1` | 20 | **0** |
+>
+> The boundary is exactly 10. It isn't early stopping — the probes above disable it, and the default `early_stop = TRUE` behaves the same way — and it isn't `auto_class_weights` or `enable_global_explain`, both of which return rows normally at `'2.1'` with `max_iterations = 5`. This model uses the default `max_iterations = 20` and trains past 10, so the curve is gone.
+>
+> **The trade-off on a boosted tree is one or the other:** a modern `model.ubj` export (Step 7) or a readable loss curve. To get the curve back, omit `xgboost_version` — returning to the `0.9` default, where this same model reports 9 iterations before early stopping — or hold training to 10 iterations or fewer. This notebook keeps `'2.1'` and accepts the empty result as the documented cost.
+>
+> `RANDOM_FOREST_*` is unaffected: training there is single-pass, so it never reaches the boundary — `models/random_forest_classifier` (Random Forest Classifier) sets `'2.1'` and still reports its one `ML.TRAINING_INFO` row.
 
 ```python
 query = f"""
@@ -217,11 +242,20 @@ client.query(query).to_dataframe()
 ---
 ## Step 7 — Visualize a tree by exporting the model
 
-`EXPORT MODEL` writes the trained ensemble to Cloud Storage as an XGBoost Booster file (`model.bst`). Downloading it and loading it with the `xgboost` Python library lets you plot an individual tree's structure.
+`EXPORT MODEL` writes the trained ensemble to Cloud Storage as an XGBoost Booster file. Downloading it and loading it with the `xgboost` Python library lets you plot an individual tree's structure.
 
-> **Two gotchas, both verified:**
-> 1. **Version compatibility.** BQML exports using XGBoost 0.82's legacy binary format. Modern `xgboost` (2.0+, the current pip default) **cannot load this file** — `xgb.Booster().load_model('model.bst')` raises `Check failed: str[0] == '{'`. Pin an older version to load it (verified working: `xgboost==1.7.6`).
-> 2. **Feature names aren't preserved.** The loaded booster's `feature_names` comes back `None`. Set it manually to the training query's non-label column order — this assumes a 1:1 mapping between `SELECT` column order and the booster's internal feature index, which held up when checked against the actual split thresholds below.
+**The filename depends on `xgboost_version`, and so does how much trouble this step is.** Verified both ways on the same model:
+
+| | default `'0.9'` | `'2.1'` (used here) |
+|---|---|---|
+| File written | `model.bst`, a legacy binary format | `model.ubj`, UBJSON |
+| Current `xgboost` (3.x) can load it | **No** — `load_model()` raises `Check failed: str[0] == '{'` | **Yes** |
+| Python dependency | pin `xgboost==1.7.6` | none — whatever `pip install xgboost` gives you |
+| Warnings on load | an `XGBoost < 1.0.0` compatibility warning | none |
+
+So Step 1's one extra option is what lets the cell below install a plain, unpinned `xgboost`. If you train without it, download `model.bst` instead and pin the old library.
+
+> **GOTCHA (verified) — feature names aren't preserved, and `'2.1'` does not fix this one.** The loaded booster's `feature_names` comes back `None` at either version. Set it manually to the training query's non-label column order — this assumes a 1:1 mapping between `SELECT` column order and the booster's internal feature index, which held up when checked against the actual split thresholds below.
 > 
 > Rendering also requires the system `graphviz` package (the `dot` binary) — pre-installed in Google Colab; elsewhere run `!apt-get install -y graphviz`.
 
@@ -235,10 +269,11 @@ print('Model exported')
 ```
 
 ```python
-# Pin xgboost<2.0 -- newer versions cannot load BQML's exported XGBoost 0.82
-# binary format (see the gotcha above). graphviz is the Python binding used
-# by xgboost.plot_tree() to render; it shells out to the system 'dot' binary.
-install('xgboost==1.7.6', 'graphviz')
+# No version pin needed: the model was trained with xgboost_version = '2.1',
+# so the export is model.ubj, which current xgboost reads directly. graphviz
+# is the Python binding used by xgboost.plot_tree() to render; it shells out
+# to the system 'dot' binary.
+install('xgboost', 'graphviz')
 
 from google.cloud import storage
 import os
@@ -248,8 +283,8 @@ os.makedirs(local_dir, exist_ok=True)
 
 storage_client = storage.Client(project=PROJECT_ID)
 bucket = storage_client.bucket(BUCKET)
-blob = bucket.blob('bq_ml/boosted_tree_classifier/model/model.bst')
-local_path = os.path.join(local_dir, 'model.bst')
+blob = bucket.blob('bq_ml/boosted_tree_classifier/model/model.ubj')
+local_path = os.path.join(local_dir, 'model.ubj')
 blob.download_to_filename(local_path)
 print(f'Downloaded to {local_path}')
 ```
@@ -270,7 +305,7 @@ booster.feature_names = [
 ]
 
 fig, ax = plt.subplots(figsize=(28, 14))
-xgb.plot_tree(booster, num_trees=0, ax=ax)
+xgb.plot_tree(booster, tree_idx=0, ax=ax)
 plt.title('Boosted Tree Classifier - Tree 0 of the ensemble')
 plt.tight_layout()
 plt.show()
@@ -292,6 +327,7 @@ TRANSFORM(
 )
 OPTIONS(
   model_type = 'BOOSTED_TREE_CLASSIFIER',
+  xgboost_version = '2.1',
   input_label_cols = ['income_bracket'],
   auto_class_weights = TRUE
 ) AS
@@ -328,6 +364,7 @@ query = f"""
 CREATE OR REPLACE MODEL `{PROJECT_ID}.{DATASET_ID}.boosted_tree_classifier_income_tuned`
 OPTIONS(
   model_type = 'BOOSTED_TREE_CLASSIFIER',
+  xgboost_version = '2.1',
   input_label_cols = ['income_bracket'],
   auto_class_weights = TRUE,
   num_trials = 6,

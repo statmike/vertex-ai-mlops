@@ -18,7 +18,7 @@ OPTIONS(MODEL_TYPE = '...', MODEL_PATH = 'gs://bucket/path/*')
 
 **Data:** [`bigquery-public-data.ml_datasets.penguins`](https://console.cloud.google.com/marketplace/product/bigquery-public-datasets) — same 4 physical measurements used by `models/kmeans` (K-Means)/`models/pca` (PCA)/`models/transform_only` (Transform-Only), trained **locally** (outside BigQuery — that's the entire premise of "imported") with scikit-learn, XGBoost, and Keras, then imported and scored with `ML.PREDICT`.
 
-**A verified, undocumented gotcha driving a chunk of this notebook's Setup:** BigQuery ML's `XGBOOST` importer only accepts Booster files saved by **XGBoost ≤ 1.5.1** — a booster saved with a modern (2.x/3.x) xgboost fails to import outright ("XGBoost model version newer than 1.5.1 is not supported"). Training with that old a release, in turn, needs `numpy<2` in the same Python environment. Both pins are scoped to this notebook's own kernel session.
+**A verified, undocumented gotcha about the `XGBOOST` importer:** what it accepts is decided by the artifact's **file extension**, not by the library version that wrote it. A Booster saved by a current xgboost (3.x) imports without complaint as `model.json` or `model.ubj`, and is rejected as `model.bst` — even when the `.bst` and `.ubj` files are byte-for-byte identical. Save with a `.json`/`.ubj` extension and no version pin is needed anywhere in this notebook. Step 3 has the measurement.
 
 **References:** `RESOURCES.md` (Full reference) | [Imported models journey](https://cloud.google.com/bigquery/docs/e2e-journey-import) | `setup` (Setup guide)
 
@@ -42,22 +42,18 @@ BUCKET = 'statmike-mlops-349915'  # <-- Replace with your GCS bucket (same locat
 >
 > **Running standalone** (Colab, Colab Enterprise, Vertex AI Workbench)? The cell below installs required packages into your current kernel.
 >
-> **Verified pins (see the gotcha above):** `xgboost==1.5.1` is the newest release whose Booster files BigQuery ML's `XGBOOST` importer will load, and that release needs `numpy<2` to run correctly on this environment's Python. It also imports the now-deprecated `pkg_resources` from `setuptools`, which was dropped from very recent `setuptools` releases — hence the `setuptools<81` pin too. All three pins apply for the rest of this notebook's kernel session.
+> **No version pins (see the gotcha above):** current `xgboost` is fine, because Step 3 saves the Booster with a `.json` extension. That in turn removes the `numpy<2` and `setuptools<81` pins this notebook used to need in order to run an old xgboost release.
 
-> **This notebook shares a virtual environment with every other bq-ml notebook.** If another notebook's own `install()` cell runs at the same moment (e.g. `models/export` (`models/export/`), which pins a *different* xgboost version), the two concurrent writes to `site-packages` can corrupt `scipy` mid-install. That surfaces later as a confusing `"No module named 'numpy.strings'"` (or `'numpy.rec'`) error buried deep inside an unrelated `sklearn`/`xgboost` import — not a real version incompatibility (this exact `numpy`/`scipy`/`xgboost` combination is verified to work together correctly when installed without a race). The cell below catches that immediately, with an actionable message, instead of failing several cells later. **Avoid running this notebook's Setup at the same time as another bq-ml notebook's Setup** — if you hit the error below, wait for the other notebook's install to finish, then re-run this cell (and the one above it).
+> **This notebook shares a virtual environment with every other bq-ml notebook.** If another notebook's own `install()` cell runs at the same moment, the two concurrent writes to `site-packages` can corrupt a package mid-install. That surfaces later as a confusing `"No module named 'numpy.strings'"` (or `'numpy.rec'`) error buried deep inside an unrelated `sklearn`/`xgboost` import — not a real version incompatibility. The cell below catches that immediately, with an actionable message, instead of failing several cells later. **Avoid running this notebook's Setup at the same time as another bq-ml notebook's Setup** — if you hit the error below, wait for the other notebook's install to finish, then re-run this cell (and the one above it).
 
 ```python
 import numpy, scipy, sklearn, xgboost
 from sklearn.linear_model import LogisticRegression  # exercises the exact scipy import chain Step 2 needs
 
-assert numpy.__version__.startswith('1.'), (
-    f"numpy is {numpy.__version__}, expected 1.x (<2). Likely a concurrent install race "
-    "with another bq-ml notebook -- re-run the install cell above once it's finished."
-)
-assert xgboost.__version__ == '1.5.1', (
-    f"xgboost is {xgboost.__version__}, expected 1.5.1. Likely a concurrent install race "
-    "with another bq-ml notebook -- re-run the install cell above once it's finished."
-)
+# No version assertions -- nothing here is pinned. This cell exists to fail
+# fast and legibly if a concurrent install in the shared environment left
+# site-packages half-written: the import chain above is exactly the one
+# Step 2 and Step 3 depend on.
 print(f'Environment OK -- numpy {numpy.__version__}, scipy {scipy.__version__}, xgboost {xgboost.__version__}')
 ```
 
@@ -175,11 +171,19 @@ client.query(query).to_dataframe()
 
 XGBoost is BigQuery ML's **native** import format for this library — no conversion step, just `booster.save_model(...)`. Trained here as a **binary** classifier (predict "is this an Adelie penguin?") rather than the multiclass model used elsewhere in this notebook — verified live that a `multi:softprob` objective still predicts fine, but BigQuery ML silently returns an ARRAY of per-class probabilities even though `OUTPUT` declares a single `FLOAT64` field, which reads confusingly. A binary objective keeps the declared output type honest.
 
-> **GOTCHA (verified, undocumented as of this writing):** BigQuery ML's XGBoost importer only accepts Booster files saved by **XGBoost ≤ 1.5.1** — training with a modern xgboost (2.x/3.x, whatever `pip install xgboost` gives you today) produces a file that fails to import: `"XGBoost model version newer than 1.5.1 is not supported."` This is why Setup pins `xgboost==1.5.1` (and, transitively, `numpy<2`).
+> **GOTCHA (verified, undocumented as of this writing):** BigQuery ML's XGBoost importer decides what it will accept from the artifact's **file extension**, not from the library version that wrote it. Saving the *same* Booster from current xgboost three ways and importing each:
+>
+> | Uploaded as | Result |
+> |---|---|
+> | `model.json` | Imports; `ML.PREDICT` and `ML.FEATURE_IMPORTANCE` both work |
+> | `model.ubj` | Imports |
+> | `model.bst` | Rejected: `Invalid XGBoost model: could not load model from file` — a JSON parse error at character position 1 |
+>
+> The `.bst` and `.ubj` uploads were **byte-identical** in that test — current xgboost writes UBJSON under either extension — so what differs is the name, not the contents. Save as `.json` (below) or `.ubj` and no version pin is needed. The reverse direction has the matching quirk: `models/export` (`EXPORT MODEL`) writes `model.bst` at the `xgboost_version = '0.9'` default and `model.ubj` at `'2.1'`.
 
 ```python
 import xgboost as xgb
-print('xgboost version:', xgb.__version__)  # should be 1.5.1 -- see the gotcha above
+print('xgboost version:', xgb.__version__)  # unpinned -- the .json extension is what matters
 
 dtrain = xgb.DMatrix(X, label=y_binary, feature_names=feature_cols)
 params = {'objective': 'binary:logistic', 'max_depth': 3, 'eta': 0.3}
@@ -360,7 +364,7 @@ client.query(query).to_dataframe()
 | `ML.FEATURE_IMPORTANCE` | No | **Yes (only one)** | No | No |
 | `ML.EXPLAIN_PREDICT` | No | No | Documented, **not actually supported** (verified) | No |
 | `ML.EVALUATE` / HP tuning / `TRANSFORM` | No | No | No | No |
-| Version gotcha | IR version ≤ 8, opset ≤ ~17 | Booster version ≤ XGBoost 1.5.1 | 450 MB / ~250 MB RAM limit | Only TF core + TF Text ops |
+| Version gotcha | IR version ≤ 8, opset ≤ ~17 | Save as `.json`/`.ubj`; a `.bst` upload is rejected | 450 MB / ~250 MB RAM limit | Only TF core + TF Text ops |
 
 Every format shares the same bottom line: **no training-time BigQuery cost, no serving infrastructure, but a frozen model** with almost no introspection beyond `ML.PREDICT`.
 

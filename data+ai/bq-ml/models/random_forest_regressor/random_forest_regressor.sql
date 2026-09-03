@@ -12,14 +12,16 @@
 --       techniques directly. Rows with a NULL label or an invalid sex value
 --       ('.') are filtered out.
 --
--- NOTE: on this small (333-row) dataset, random forest's bagging
--- (num_parallel_tree parallel trees, each on row/column subsamples)
--- underperforms both boosted trees and even plain linear regression --
--- verified: r2_score ~0.74 here vs. ~0.97 for boosted_tree_regressor and
--- ~0.88 for linear_regression on the identical data, even after
--- hyperparameter tuning (best tuned r2_score ~0.76). This is a genuine,
--- reproducible comparison point, not a misconfiguration -- see the notebook
--- for a fuller discussion.
+-- NOTE: on this small (333-row) dataset boosting still wins, but narrowly.
+-- Measured r2_score: ~0.922 for this forest, ~0.983 for
+-- boosted_tree_regressor, ~0.875 for linear_regression on identical data.
+-- The forest reaches that untuned -- the best tuned trial (Example 9) does
+-- not beat it.
+--
+-- That ordering depends on xgboost_version. At the '0.9' default the same
+-- forest scores r2_score ~0.73-0.75 because it grows only 82 splits across
+-- all six features, against 2,482 at '2.1' -- verified both ways. Bagging is
+-- not weak on small data; the 2019 default library under-grew the forest.
 --
 -- Full reference: ../../RESOURCES.md
 -- Official docs:
@@ -34,9 +36,15 @@
 -- NOT a valid option for RANDOM_FOREST_* -- CREATE MODEL errors immediately
 -- if you set it. num_parallel_tree alone defines the forest; training is
 -- single-pass by API-level guarantee, not just convention.
+--
+-- xgboost_version defaults to '0.9' -- a 2019 release. '2.1' (GA 2026-08-27)
+-- is set here for what it does to the export in Example 7: a modern model.ubj
+-- that current xgboost reads with no pinned dependency, and the legacy
+-- reg:linear objective name goes away with it. Accepted values: 0.9, 1.1, 2.1.
 CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.random_forest_regressor_penguins`
 OPTIONS(
   model_type = 'RANDOM_FOREST_REGRESSOR',
+  xgboost_version = '2.1',
   input_label_cols = ['body_mass_g'],
   num_parallel_tree = 50,
   tree_method = 'HIST',
@@ -88,10 +96,13 @@ FROM ML.EXPLAIN_PREDICT(
 -- Example 5: ML.GLOBAL_EXPLAIN and ML.FEATURE_IMPORTANCE — two views of importance
 -- =============================================================================
 -- On this small dataset with heavy column subsampling (colsample_bynode
--- default 0.8 over just 6 features), some features can end up with ZERO
--- importance/attribution -- verified: island and culmen_length_mm both
--- showed importance_weight = 0 / attribution = 0.0 in testing. This is a
--- real effect of bagging variance on a small feature set, not a bug.
+-- default 0.8 over just 6 features), how much of the feature set gets used
+-- depends on how many splits the forest grows -- which xgboost_version sets.
+-- At '2.1' (Example 1) all six features carry non-zero importance and
+-- attribution, island lowest at importance_weight 245 / attribution ~10. At
+-- the '0.9' default the forest grows only 82 splits total and island and
+-- culmen_length_mm both come back at exactly ZERO -- verified both ways. A
+-- zero here means an under-grown forest, not a feature with no signal.
 SELECT *
 FROM ML.GLOBAL_EXPLAIN(MODEL `PROJECT_ID.DATASET.random_forest_regressor_penguins`)
 ORDER BY attribution DESC;
@@ -128,9 +139,16 @@ ORDER BY iteration;
 -- forest tree is complete, not a shallow residual-fitting stage like
 -- boosting). Train a small, separate illustrative forest just for the
 -- diagram.
+--
+-- The exported filename depends on xgboost_version: model.bst (legacy binary,
+-- needs a pinned xgboost==1.7.6 to load) at the '0.9' default, model.ubj at
+-- '2.1' as set below -- current xgboost reads that one unpinned, and the
+-- objective is written as reg:squarederror instead of the deprecated
+-- reg:linear. Feature names are not preserved at either version.
 CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.random_forest_regressor_penguins_viz`
 OPTIONS(
   model_type = 'RANDOM_FOREST_REGRESSOR',
+  xgboost_version = '2.1',
   input_label_cols = ['body_mass_g'],
   num_parallel_tree = 10,
   max_tree_depth = 3
@@ -156,6 +174,7 @@ TRANSFORM(
 )
 OPTIONS(
   model_type = 'RANDOM_FOREST_REGRESSOR',
+  xgboost_version = '2.1',
   input_label_cols = ['body_mass_g'],
   num_parallel_tree = 50
 ) AS
@@ -175,13 +194,15 @@ FROM ML.PREDICT(
 -- =============================================================================
 -- Example 9: Hyperparameter tuning — NUM_TRIALS + HPARAM_RANGE
 -- =============================================================================
--- Tune the forest size (num_parallel_tree) and tree depth. Verified: even
--- the best-tuned trial only reaches r2_score ~0.76 on this dataset -- still
--- well below boosted_tree_regressor's ~0.97, reinforcing the Example-1 note
--- that bagging underperforms boosting here, not a tuning shortfall.
+-- Tune the forest size (num_parallel_tree) and tree depth. Verified: tuning
+-- does NOT beat the untuned model here -- the best trial reaches r2_score
+-- ~0.917 against ~0.922 from Example 1's defaults, and all six trials land
+-- in a narrow ~0.907-0.917 band. That is the low-tuning property of bagging
+-- holding up, not a tuning shortfall.
 CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.random_forest_regressor_penguins_tuned`
 OPTIONS(
   model_type = 'RANDOM_FOREST_REGRESSOR',
+  xgboost_version = '2.1',
   input_label_cols = ['body_mass_g'],
   num_trials = 6,
   max_parallel_trials = 3,

@@ -61,14 +61,18 @@ print(f'Dataset {PROJECT_ID}.{DATASET_ID} ready')
 `CREATE MODEL` trains and stores the model in your dataset. The essentials are `model_type` and `input_label_cols`. We also:
 - `data_split_method = 'AUTO_SPLIT'` — automatically hold out rows for evaluation
 - `enable_global_explain = TRUE` — **required** to use `ML.GLOBAL_EXPLAIN` later
+- `xgboost_version = '2.1'` — train with a current XGBoost library instead of the default
 
 Unlike the classifier, there is no `auto_class_weights` option for regression.
+
+> **The `xgboost_version` default is `0.9`** — a 2019 release — and omitting the option gets you that. `'2.1'` reached GA on 2026-08-27. It is set here for what it does to Step 6: the exported booster becomes a modern `model.ubj` that current `xgboost` reads with no pinned dependency, and the regressor's legacy `reg:linear` objective name goes away with it. Accepted values are `0.9`, `1.1`, and `2.1`. It also has one measured cost — `ML.TRAINING_INFO` comes back empty for this model — documented in full in Step 5.
 
 ```python
 query = f"""
 CREATE OR REPLACE MODEL `{PROJECT_ID}.{DATASET_ID}.boosted_tree_regressor_penguins`
 OPTIONS(
   model_type = 'BOOSTED_TREE_REGRESSOR',
+  xgboost_version = '2.1',
   input_label_cols = ['body_mass_g'],
   data_split_method = 'AUTO_SPLIT',
   enable_global_explain = TRUE
@@ -160,7 +164,17 @@ client.query(query).to_dataframe()
 ---
 ## Step 5 — Introspect the model
 
-`ML.FEATURE_INFO` reports the statistics each feature had during training. `ML.TRAINING_INFO` returns the per-iteration loss curve. Iteration numbering starts at **1** here (not 0, as in the GLM notebooks).
+`ML.FEATURE_INFO` reports the statistics each feature had during training.
+
+`ML.TRAINING_INFO` normally returns the per-iteration loss curve, with iteration numbering starting at **1** for tree models (not 0, as in the GLM notebooks). Here it comes back **empty** — a direct consequence of `xgboost_version = '2.1'` in Step 1.
+
+> **GOTCHA (measured, undocumented) — at `xgboost_version = '2.1'`, `ML.TRAINING_INFO` returns zero rows once training runs more than 10 iterations.** Nothing else about the model is affected: `CREATE MODEL` succeeds, and `ML.EVALUATE`, `ML.PREDICT`, `ML.EXPLAIN_PREDICT`, `ML.FEATURE_IMPORTANCE` and `ML.GLOBAL_EXPLAIN` all work on it — Steps 2–4 above are that proof. Only the training history is missing.
+>
+> The boundary is exactly 10, measured with single-variable probes: at `'0.9'` and at `'1.1'` a 20-iteration run returns all 20 rows, while at `'2.1'` 10 iterations returns 10 rows and 11 returns none. It isn't early stopping, `auto_class_weights` or `enable_global_explain` — the full sweep is in `models/boosted_tree_classifier` (Boosted Tree Classifier) Step 6. This model runs the default `max_iterations = 20`, so the curve is gone.
+>
+> **The trade-off on a boosted tree is one or the other:** a modern `model.ubj` export (Step 6) or a readable loss curve. To get the curve back, omit `xgboost_version` — returning to the `0.9` default, where this same model reports all 20 iterations, from `loss` 3022.1 down to 144.0 — or hold training to 10 iterations or fewer. This notebook keeps `'2.1'` and accepts the empty result as the documented cost.
+>
+> `RANDOM_FOREST_*` is unaffected: training there is single-pass, so it never reaches the boundary — `models/random_forest_regressor` (Random Forest Regressor) sets `'2.1'` and still reports its one `ML.TRAINING_INFO` row.
 
 ```python
 query = f"""
@@ -182,12 +196,18 @@ client.query(query).to_dataframe()
 ---
 ## Step 6 — Visualize a tree by exporting the model
 
-`EXPORT MODEL` writes the trained ensemble to Cloud Storage as an XGBoost Booster file (`model.bst`). Downloading it and loading it with the `xgboost` Python library lets you plot an individual tree's structure.
+`EXPORT MODEL` writes the trained ensemble to Cloud Storage as an XGBoost Booster file. Downloading it and loading it with the `xgboost` Python library lets you plot an individual tree's structure.
 
-> **Two gotchas, both verified (see `models/boosted_tree_classifier` (Boosted Tree Classifier) for the original writeup):**
-> 1. **Version compatibility.** BQML exports using XGBoost 0.82's legacy binary format. Modern `xgboost` (2.0+, the current pip default) **cannot load this file** — `xgb.Booster().load_model('model.bst')` raises `Check failed: str[0] == '{'`. Pin an older version to load it (verified working: `xgboost==1.7.6`).
-> 2. **Feature names aren't preserved.** The loaded booster's `feature_names` comes back `None`. Set it manually to the training query's non-label column order.
-> 3. **Regressor-specific:** loading also prints `reg:linear is now deprecated in favor of reg:squarederror` — a harmless legacy-objective-name warning, not an error.
+**Two of the three things that used to make this step awkward are `xgboost_version` artifacts, not export limitations.** Verified both ways on the same model (see `models/boosted_tree_classifier` (Boosted Tree Classifier) for the side-by-side writeup):
+
+| | default `'0.9'` | `'2.1'` (used here) |
+|---|---|---|
+| File written | `model.bst`, a legacy binary format | `model.ubj`, UBJSON |
+| Current `xgboost` (3.x) can load it | **No** — `Check failed: str[0] == '{'` | **Yes** |
+| Python dependency | pin `xgboost==1.7.6` | none |
+| Objective name | `reg:linear`, with a deprecation warning on load | `reg:squarederror`, and the load is silent |
+
+> **GOTCHA (verified) — feature names aren't preserved, and `'2.1'` does not fix this one.** The loaded booster's `feature_names` comes back `None` at either version. Set it manually to the training query's non-label column order.
 > 
 > Rendering also requires the system `graphviz` package (the `dot` binary) — pre-installed in Google Colab; elsewhere run `!apt-get install -y graphviz`.
 
@@ -201,10 +221,11 @@ print('Model exported')
 ```
 
 ```python
-# Pin xgboost<2.0 -- newer versions cannot load BQML's exported XGBoost 0.82
-# binary format (see the gotcha above). graphviz is the Python binding used
-# by xgboost.plot_tree() to render; it shells out to the system 'dot' binary.
-install('xgboost==1.7.6', 'graphviz')
+# No version pin needed: the model was trained with xgboost_version = '2.1',
+# so the export is model.ubj, which current xgboost reads directly. graphviz
+# is the Python binding used by xgboost.plot_tree() to render; it shells out
+# to the system 'dot' binary.
+install('xgboost', 'graphviz')
 
 from google.cloud import storage
 import os
@@ -214,8 +235,8 @@ os.makedirs(local_dir, exist_ok=True)
 
 storage_client = storage.Client(project=PROJECT_ID)
 bucket = storage_client.bucket(BUCKET)
-blob = bucket.blob('bq_ml/boosted_tree_regressor/model/model.bst')
-local_path = os.path.join(local_dir, 'model.bst')
+blob = bucket.blob('bq_ml/boosted_tree_regressor/model/model.ubj')
+local_path = os.path.join(local_dir, 'model.ubj')
 blob.download_to_filename(local_path)
 print(f'Downloaded to {local_path}')
 ```
@@ -235,7 +256,7 @@ booster.feature_names = [
 ]
 
 fig, ax = plt.subplots(figsize=(28, 14))
-xgb.plot_tree(booster, num_trees=0, ax=ax)
+xgb.plot_tree(booster, tree_idx=0, ax=ax)
 plt.title('Boosted Tree Regressor - Tree 0 of the ensemble')
 plt.tight_layout()
 plt.show()
@@ -259,6 +280,7 @@ TRANSFORM(
 )
 OPTIONS(
   model_type = 'BOOSTED_TREE_REGRESSOR',
+  xgboost_version = '2.1',
   input_label_cols = ['body_mass_g']
 ) AS
 SELECT species, island, culmen_length_mm, culmen_depth_mm, flipper_length_mm, sex, body_mass_g
@@ -296,6 +318,7 @@ query = f"""
 CREATE OR REPLACE MODEL `{PROJECT_ID}.{DATASET_ID}.boosted_tree_regressor_penguins_tuned`
 OPTIONS(
   model_type = 'BOOSTED_TREE_REGRESSOR',
+  xgboost_version = '2.1',
   input_label_cols = ['body_mass_g'],
   num_trials = 6,
   max_parallel_trials = 3,

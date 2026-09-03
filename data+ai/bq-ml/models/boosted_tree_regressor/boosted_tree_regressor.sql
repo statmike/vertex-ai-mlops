@@ -24,9 +24,16 @@
 -- portion of rows for evaluation; enable_global_explain is required for
 -- ML.GLOBAL_EXPLAIN later. Unlike the classifier, there is no
 -- auto_class_weights option for regression.
+--
+-- xgboost_version defaults to '0.9' -- a 2019 release. '2.1' (GA 2026-08-27)
+-- is set here for what it does to Example 7: the exported booster becomes a
+-- modern model.ubj that current xgboost reads with no pinned dependency, and
+-- the legacy reg:linear objective name goes away with it. Accepted values:
+-- 0.9, 1.1, 2.1.
 CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.boosted_tree_regressor_penguins`
 OPTIONS(
   model_type = 'BOOSTED_TREE_REGRESSOR',
+  xgboost_version = '2.1',
   input_label_cols = ['body_mass_g'],
   data_split_method = 'AUTO_SPLIT',
   enable_global_explain = TRUE
@@ -95,9 +102,25 @@ ORDER BY importance_gain DESC;
 SELECT *
 FROM ML.FEATURE_INFO(MODEL `PROJECT_ID.DATASET.boosted_tree_regressor_penguins`);
 
--- TRAINING_INFO: per-iteration loss curve. early_stop=TRUE (the default) stops
--- once improvement falls below min_rel_progress. Note iteration numbering
--- starts at 1 (not 0, as in the LOGISTIC_REG/LINEAR_REG GLM notebooks).
+-- TRAINING_INFO: normally the per-iteration loss curve, with iteration
+-- numbering starting at 1 (not 0, as in the LOGISTIC_REG/LINEAR_REG GLM
+-- notebooks). On THIS model it returns NOTHING.
+--
+-- GOTCHA (measured, undocumented): at xgboost_version = '2.1', TRAINING_INFO
+-- returns zero rows once training runs more than 10 iterations. Nothing else
+-- about the model is affected -- CREATE MODEL succeeds and EVALUATE, PREDICT,
+-- EXPLAIN_PREDICT, FEATURE_IMPORTANCE and GLOBAL_EXPLAIN all work. The
+-- boundary is exactly 10: at '0.9' and at '1.1' a 20-iteration run returns all
+-- 20 rows, while at '2.1' 10 iterations returns 10 and 11 returns none. Not
+-- early stopping, auto_class_weights or enable_global_explain -- the full
+-- sweep is in models/boosted_tree_classifier/ Example 8. Example 1 runs the
+-- default max_iterations=20.
+--
+-- The trade-off on a boosted tree is one or the other: a modern model.ubj
+-- export (Example 7) or a readable loss curve. Omit xgboost_version to get the
+-- curve back (at the '0.9' default this model reports all 20 iterations, loss
+-- 3022.1 down to 144.0), or hold training to 10 iterations or fewer.
+-- RANDOM_FOREST_* is unaffected -- training there is single-pass.
 SELECT
   iteration,
   loss,
@@ -112,18 +135,22 @@ ORDER BY iteration;
 -- Example 7: EXPORT MODEL — visualize an individual tree
 -- =============================================================================
 -- EXPORT MODEL writes the trained ensemble to Cloud Storage as an XGBoost
--- Booster file (model.bst). Downloading it and loading it with the `xgboost`
--- Python library lets you plot an individual tree's structure -- see the
--- notebook for the Python side (xgboost.plot_tree).
+-- Booster file. Downloading it and loading it with the `xgboost` Python
+-- library lets you plot an individual tree's structure -- see the notebook
+-- for the Python side (xgboost.plot_tree).
 --
--- GOTCHA (verified in models/boosted_tree_classifier/, holds here too): BQML
--- exports using XGBoost 0.82's legacy binary format. Modern xgboost (2.0+,
--- the current pip default) CANNOT load this file -- pin an older version
--- (verified working: xgboost==1.7.6). The export also does not preserve
--- feature names -- set Booster.feature_names manually to the training
--- query's non-label column order. Regressor-specific: loading also prints
--- "reg:linear is now deprecated in favor of reg:squarederror" -- a harmless
--- legacy-objective-name warning, not an error.
+-- Two of the three things that used to make this step awkward are
+-- xgboost_version artifacts, not export limitations (verified both ways).
+-- At the '0.9' default the export is model.bst in a legacy binary format
+-- that modern xgboost (2.0+, the current pip default) CANNOT load, so you
+-- must pin an old version (verified working: xgboost==1.7.6), and loading
+-- prints "reg:linear is now deprecated in favor of reg:squarederror". With
+-- xgboost_version = '2.1' (set in Example 1) the export is model.ubj, the
+-- objective is written as reg:squarederror, and the load is silent.
+--
+-- GOTCHA (verified): '2.1' does NOT fix feature names. At either version the
+-- export does not preserve them -- set Booster.feature_names manually to the
+-- training query's non-label column order.
 EXPORT MODEL `PROJECT_ID.DATASET.boosted_tree_regressor_penguins`
 OPTIONS (URI = 'gs://BUCKET/bq_ml/boosted_tree_regressor/model');
 
@@ -144,6 +171,7 @@ TRANSFORM(
 )
 OPTIONS(
   model_type = 'BOOSTED_TREE_REGRESSOR',
+  xgboost_version = '2.1',
   input_label_cols = ['body_mass_g']
 ) AS
 SELECT species, island, culmen_length_mm, culmen_depth_mm, flipper_length_mm, sex, body_mass_g
@@ -170,6 +198,7 @@ FROM ML.PREDICT(
 CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.boosted_tree_regressor_penguins_tuned`
 OPTIONS(
   model_type = 'BOOSTED_TREE_REGRESSOR',
+  xgboost_version = '2.1',
   input_label_cols = ['body_mass_g'],
   num_trials = 6,
   max_parallel_trials = 3,

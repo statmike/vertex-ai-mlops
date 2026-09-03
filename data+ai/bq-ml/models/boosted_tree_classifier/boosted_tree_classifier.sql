@@ -22,6 +22,12 @@
 -- portion of rows for evaluation; AUTO_CLASS_WEIGHTS balances the classes;
 -- enable_global_explain is required for ML.GLOBAL_EXPLAIN later.
 --
+-- xgboost_version defaults to '0.9' -- a 2019 release -- on every boosted-tree
+-- and random-forest model type. '2.1' (GA 2026-08-27) is set here because it
+-- changes what EXPORT MODEL writes in Example 9: a modern model.ubj that
+-- current xgboost reads directly, instead of a legacy model.bst that needs a
+-- pinned old library. Accepted values: 0.9, 1.1, 2.1.
+--
 -- Training takes several minutes: the first boosting iteration pays a large
 -- one-time data-loading/indexing cost (XGBoost workers spin up), then each
 -- subsequent iteration is fast. Don't be alarmed by a slow first iteration in
@@ -29,6 +35,7 @@
 CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.boosted_tree_classifier_income`
 OPTIONS(
   model_type = 'BOOSTED_TREE_CLASSIFIER',
+  xgboost_version = '2.1',
   input_label_cols = ['income_bracket'],
   auto_class_weights = TRUE,
   data_split_method = 'AUTO_SPLIT',
@@ -118,10 +125,34 @@ ORDER BY importance_gain DESC;
 SELECT *
 FROM ML.FEATURE_INFO(MODEL `PROJECT_ID.DATASET.boosted_tree_classifier_income`);
 
--- TRAINING_INFO: per-iteration loss curve. early_stop=TRUE (the default) stops
--- once improvement falls below min_rel_progress -- expect fewer than the
--- max_iterations=20 default. Note iteration numbering starts at 1 (not 0, as
--- in the LOGISTIC_REG/LINEAR_REG GLM notebooks).
+-- TRAINING_INFO: normally the per-iteration loss curve, with iteration
+-- numbering starting at 1 (not 0, as in the LOGISTIC_REG/LINEAR_REG GLM
+-- notebooks). On THIS model it returns NOTHING.
+--
+-- GOTCHA (measured, undocumented): at xgboost_version = '2.1', TRAINING_INFO
+-- returns zero rows once training runs more than 10 iterations. Nothing else
+-- about the model is affected -- CREATE MODEL succeeds and EVALUATE, PREDICT,
+-- EXPLAIN_PREDICT, FEATURE_IMPORTANCE and GLOBAL_EXPLAIN all work. Isolated
+-- with single-variable probes, early_stop=FALSE, all else held constant:
+--
+--   xgboost_version   max_iterations   rows
+--   0.9 (the default)      20           20
+--   1.1                    20           20
+--   2.1                     5            5
+--   2.1                    10           10
+--   2.1                    11            0
+--   2.1                    20            0
+--
+-- The boundary is exactly 10. Not early stopping (disabled in the probes, and
+-- the default early_stop=TRUE behaves the same), not auto_class_weights, not
+-- enable_global_explain -- both return rows normally at '2.1' with
+-- max_iterations=5. Example 1 uses the default max_iterations=20.
+--
+-- The trade-off on a boosted tree is one or the other: a modern model.ubj
+-- export (Example 9) or a readable loss curve. Omit xgboost_version to get the
+-- curve back (at the '0.9' default this model reports 9 iterations before
+-- early stopping), or hold training to 10 iterations or fewer.
+-- RANDOM_FOREST_* is unaffected -- training there is single-pass.
 SELECT
   iteration,
   loss,
@@ -136,17 +167,22 @@ ORDER BY iteration;
 -- Example 9: EXPORT MODEL — visualize an individual tree
 -- =============================================================================
 -- EXPORT MODEL writes the trained ensemble to Cloud Storage as an XGBoost
--- Booster file (model.bst). Downloading it and loading it with the `xgboost`
--- Python library lets you plot an individual tree's structure -- see the
--- notebook for the Python side (xgboost.plot_tree).
+-- Booster file. Downloading it and loading it with the `xgboost` Python
+-- library lets you plot an individual tree's structure -- see the notebook
+-- for the Python side (xgboost.plot_tree).
 --
--- GOTCHA (verified): BQML exports using XGBoost 0.82's legacy binary format.
--- Modern xgboost (2.0+, the current pip default) CANNOT load this file --
--- xgb.Booster().load_model('model.bst') raises "Check failed: str[0] == '{'".
--- Pin an older version to load it (verified working: xgboost==1.7.6).
--- Also: the export does not preserve feature names -- Booster.feature_names
--- comes back None; set it manually to the training query's non-label column
--- order (assumed 1:1, verified against the split thresholds in this example).
+-- The filename depends on xgboost_version, verified both ways on this model.
+-- At the '0.9' default the export is model.bst in a legacy binary format that
+-- modern xgboost (2.0+, the current pip default) CANNOT load --
+-- xgb.Booster().load_model('model.bst') raises "Check failed: str[0] == '{'" --
+-- so you must pin an old library (verified working: xgboost==1.7.6). With
+-- xgboost_version = '2.1' (set in Example 1) the export is model.ubj, which
+-- current xgboost reads directly, unpinned and with no warnings.
+--
+-- GOTCHA (verified): '2.1' does NOT fix feature names. At either version the
+-- export does not preserve them -- Booster.feature_names comes back None; set
+-- it manually to the training query's non-label column order (assumed 1:1,
+-- verified against the split thresholds in this example).
 EXPORT MODEL `PROJECT_ID.DATASET.boosted_tree_classifier_income`
 OPTIONS (URI = 'gs://BUCKET/bq_ml/boosted_tree_classifier/model');
 
@@ -165,6 +201,7 @@ TRANSFORM(
 )
 OPTIONS(
   model_type = 'BOOSTED_TREE_CLASSIFIER',
+  xgboost_version = '2.1',
   input_label_cols = ['income_bracket'],
   auto_class_weights = TRUE
 ) AS
@@ -194,6 +231,7 @@ FROM ML.PREDICT(
 CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.boosted_tree_classifier_income_tuned`
 OPTIONS(
   model_type = 'BOOSTED_TREE_CLASSIFIER',
+  xgboost_version = '2.1',
   input_label_cols = ['income_bracket'],
   auto_class_weights = TRUE,
   num_trials = 6,

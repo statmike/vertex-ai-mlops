@@ -26,6 +26,12 @@
 -- portion of rows for evaluation; AUTO_CLASS_WEIGHTS balances the classes;
 -- enable_global_explain is required for ML.GLOBAL_EXPLAIN later.
 --
+-- xgboost_version defaults to '0.9' -- a 2019 release. RANDOM_FOREST_* is
+-- built on XGBoost internally, so the option applies here exactly as it does
+-- to boosted trees. '2.1' (GA 2026-08-27) is set here for what it does to the
+-- export in Example 9: a modern model.ubj that current xgboost reads with no
+-- pinned dependency. Accepted values: 0.9, 1.1, 2.1.
+--
 -- GOTCHA (verified): `max_iterations` is NOT a valid option for
 -- RANDOM_FOREST_* at all -- CREATE MODEL errors immediately with "Option(s)
 -- MAX_ITERATIONS are not supported for RANDOM_FOREST_CLASSIFIER model
@@ -36,6 +42,7 @@
 CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.random_forest_classifier_income`
 OPTIONS(
   model_type = 'RANDOM_FOREST_CLASSIFIER',
+  xgboost_version = '2.1',
   input_label_cols = ['income_bracket'],
   num_parallel_tree = 50,
   tree_method = 'HIST',
@@ -142,9 +149,14 @@ ORDER BY iteration;
 -- =============================================================================
 -- Example 9: EXPORT MODEL — visualize a tree from a small illustrative forest
 -- =============================================================================
--- Same EXPORT MODEL + xgboost mechanism as models/boosted_tree_classifier/
--- (same two gotchas: pin xgboost==1.7.6; feature_names must be reassigned
--- manually). But there is a THIRD, random-forest-specific gotcha, verified:
+-- Same EXPORT MODEL + xgboost mechanism as models/boosted_tree_classifier/.
+-- What gets written depends on xgboost_version: at the '0.9' default it is
+-- model.bst in a legacy binary format that modern xgboost cannot load (pin
+-- xgboost==1.7.6 to read it); with xgboost_version = '2.1', set on the
+-- illustrative forest below, it is model.ubj and current xgboost reads it
+-- unpinned. Feature names are NOT preserved at either version -- reassign
+-- Booster.feature_names manually. And there is a THIRD, random-forest-
+-- specific gotcha, verified:
 --
 -- A full-power random forest tree (num_parallel_tree=50, default
 -- max_tree_depth=6) is too dense to render meaningfully -- unlike a boosted
@@ -164,6 +176,7 @@ ORDER BY iteration;
 CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.random_forest_classifier_income_viz`
 OPTIONS(
   model_type = 'RANDOM_FOREST_CLASSIFIER',
+  xgboost_version = '2.1',
   input_label_cols = ['income_bracket'],
   num_parallel_tree = 10,
   max_tree_depth = 3
@@ -187,6 +200,7 @@ TRANSFORM(
 )
 OPTIONS(
   model_type = 'RANDOM_FOREST_CLASSIFIER',
+  xgboost_version = '2.1',
   input_label_cols = ['income_bracket'],
   num_parallel_tree = 50,
   auto_class_weights = TRUE
@@ -212,6 +226,7 @@ FROM ML.PREDICT(
 CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.random_forest_classifier_income_tuned`
 OPTIONS(
   model_type = 'RANDOM_FOREST_CLASSIFIER',
+  xgboost_version = '2.1',
   input_label_cols = ['income_bracket'],
   auto_class_weights = TRUE,
   num_trials = 6,

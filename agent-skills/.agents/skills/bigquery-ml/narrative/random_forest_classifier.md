@@ -58,10 +58,13 @@ print(f'Dataset {PROJECT_ID}.{DATASET_ID} ready')
 ## Step 1 — Create the model with `CREATE MODEL`
 
 `CREATE MODEL` trains and stores the model in your dataset. The essentials are `model_type` and `input_label_cols`. We also:
+- `xgboost_version = '2.1'` — the XGBoost library version used for training (GA 2026-08-27)
 - `num_parallel_tree = 50` — the number of trees in the forest, trained in parallel on row/column subsamples
 - `auto_class_weights = TRUE` — balance the classes (the data is ~76% `<=50K`)
 - `data_split_method = 'AUTO_SPLIT'` — automatically hold out rows for evaluation
 - `enable_global_explain = TRUE` — **required** to use `ML.GLOBAL_EXPLAIN` later
+
+> **The `xgboost_version` default is `0.9`** — a 2019 release — and omitting the option gets you that (verified: it comes back as `xgboostVersion: "0.9"` in the model's training options even when never specified). Accepted values are `0.9`, `1.1`, and `2.1`. `RANDOM_FOREST_*` is still built on XGBoost internally, so the option applies here exactly as it does to boosted trees. It is set here because it changes what `EXPORT MODEL` writes in Step 7 — see that step for the measured difference.
 
 > **Gotcha (verified):** `max_iterations` is **not a valid option for `RANDOM_FOREST_*` at all** — `CREATE MODEL` errors immediately with `Option(s) MAX_ITERATIONS are not supported for RANDOM_FOREST_CLASSIFIER model training` if you set it. Unlike `BOOSTED_TREE_*`, where `max_iterations` is a central hyperparameter, `num_parallel_tree` alone defines the forest — training is single-pass by API-level guarantee, not just convention.
 
@@ -70,6 +73,7 @@ query = f"""
 CREATE OR REPLACE MODEL `{PROJECT_ID}.{DATASET_ID}.random_forest_classifier_income`
 OPTIONS(
   model_type = 'RANDOM_FOREST_CLASSIFIER',
+  xgboost_version = '2.1',
   input_label_cols = ['income_bracket'],
   num_parallel_tree = 50,
   tree_method = 'HIST',
@@ -218,7 +222,18 @@ client.query(query).to_dataframe()
 ---
 ## Step 7 — Visualize a tree by exporting the model
 
-`EXPORT MODEL` writes a trained ensemble to Cloud Storage as an XGBoost Booster file (`model.bst`). Downloading it and loading it with the `xgboost` Python library lets you plot an individual tree's structure — same mechanism as `models/boosted_tree_classifier` (Boosted Tree Classifier), with the same two gotchas (pin `xgboost==1.7.6`; reassign `feature_names` manually).
+`EXPORT MODEL` writes a trained ensemble to Cloud Storage as an XGBoost Booster file. Downloading it and loading it with the `xgboost` Python library lets you plot an individual tree's structure — same mechanism as `models/boosted_tree_classifier` (Boosted Tree Classifier).
+
+**What the file is depends on `xgboost_version`**, measured both ways on this model type:
+
+| | `xgboost_version = '0.9'` (the default) | `xgboost_version = '2.1'` (used here) |
+|---|---|---|
+| File written | `model.bst` — legacy binary | `model.ubj` — UBJSON |
+| Current `xgboost` can load it | No — `Check failed: str[0] == '{'` | Yes |
+| Python dependency | pinned old library (`xgboost==1.7.6`) | unpinned `xgboost` |
+| Warnings on load | version-mismatch warnings | none |
+
+> **GOTCHA (verified):** `2.1` does **not** fix feature names. At either version `Booster.feature_names` comes back `None` — reassign it manually to the training query's non-label column order (the illustrative forest below uses the same column list, minus the label).
 
 > **A third, random-forest-specific gotcha (verified):** the main model above (`num_parallel_tree=50`, default `max_tree_depth=6`) produces trees that are **too dense to render meaningfully** — unlike a boosted tree's shallow early-round tree (fit on residuals), *every* random forest tree is a complete, independently-trained tree. Its tree 0 has 2,435 dump lines and depth 15; `xgboost.plot_tree()` triggers a `graph is too large for cairo-renderer bitmaps` warning and produces an illegible image.
 >
@@ -230,6 +245,7 @@ query = f"""
 CREATE OR REPLACE MODEL `{PROJECT_ID}.{DATASET_ID}.random_forest_classifier_income_viz`
 OPTIONS(
   model_type = 'RANDOM_FOREST_CLASSIFIER',
+  xgboost_version = '2.1',
   input_label_cols = ['income_bracket'],
   num_parallel_tree = 10,
   max_tree_depth = 3
@@ -253,10 +269,11 @@ print('Model exported')
 ```
 
 ```python
-# Pin xgboost<2.0 -- newer versions cannot load BQML's exported XGBoost 0.82
-# binary format. graphviz is the Python binding used by xgboost.plot_tree()
+# No version pin needed: the illustrative forest above was trained with
+# xgboost_version = '2.1', so the export is a model.ubj that current xgboost
+# reads directly. graphviz is the Python binding used by xgboost.plot_tree()
 # to render; it shells out to the system 'dot' binary.
-install('xgboost==1.7.6', 'graphviz')
+install('xgboost', 'graphviz')
 
 from google.cloud import storage
 import os
@@ -266,8 +283,8 @@ os.makedirs(local_dir, exist_ok=True)
 
 storage_client = storage.Client(project=PROJECT_ID)
 bucket = storage_client.bucket(BUCKET)
-blob = bucket.blob('bq_ml/random_forest_classifier/model_viz/model.bst')
-local_path = os.path.join(local_dir, 'model.bst')
+blob = bucket.blob('bq_ml/random_forest_classifier/model_viz/model.ubj')
+local_path = os.path.join(local_dir, 'model.ubj')
 blob.download_to_filename(local_path)
 print(f'Downloaded to {local_path}')
 ```
@@ -287,7 +304,7 @@ booster.feature_names = [
 ]
 
 fig, ax = plt.subplots(figsize=(20, 10))
-xgb.plot_tree(booster, num_trees=0, ax=ax)
+xgb.plot_tree(booster, tree_idx=0, ax=ax)
 plt.title('Random Forest Classifier - Tree 0 (shallow illustrative forest)')
 plt.tight_layout()
 plt.show()
@@ -307,6 +324,7 @@ TRANSFORM(
 )
 OPTIONS(
   model_type = 'RANDOM_FOREST_CLASSIFIER',
+  xgboost_version = '2.1',
   input_label_cols = ['income_bracket'],
   num_parallel_tree = 50,
   auto_class_weights = TRUE
@@ -342,6 +360,7 @@ query = f"""
 CREATE OR REPLACE MODEL `{PROJECT_ID}.{DATASET_ID}.random_forest_classifier_income_tuned`
 OPTIONS(
   model_type = 'RANDOM_FOREST_CLASSIFIER',
+  xgboost_version = '2.1',
   input_label_cols = ['income_bracket'],
   auto_class_weights = TRUE,
   num_trials = 6,

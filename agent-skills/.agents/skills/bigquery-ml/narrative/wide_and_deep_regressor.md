@@ -10,7 +10,7 @@ Train a **regression** model with `CREATE MODEL` (model_type = `DNN_LINEAR_COMBI
 - Large, sparse categorical features (high-cardinality IDs) common in ranking/recommendation problems
 - You want both memorization of specific feature combinations (wide) and generalization to unseen ones (deep)
 - Structured/tabular data — compare `r2_score` directly against `models/linear_regression` (Linear Regression), `models/boosted_tree_regressor` (Boosted Tree Regressor), `models/random_forest_regressor` (Random Forest Regressor), and `models/dnn_regressor` (DNN Regressor) on the same data
-- For most tabular tasks, try Boosted Tree first — it trains far faster, needs less tuning, and reaches `r2_score ~ 0.97` on this same dataset vs. this notebook's best of ~0.87
+- For most tabular tasks, try Boosted Tree first — it trains far faster, needs less tuning, and reaches `r2_score ~ 0.98` on this same dataset vs. this notebook's best of ~0.87
 
 **Data:** [`bigquery-public-data.ml_datasets.penguins`](https://console.cloud.google.com/marketplace/product/bigquery-public-datasets) — predict `body_mass_g` from physical measurements. **Same data + label as `models/linear_regression` (Linear Regression), `models/boosted_tree_regressor` (Boosted Tree Regressor), `models/random_forest_regressor` (Random Forest Regressor), and `models/dnn_regressor` (DNN Regressor)** — compare `r2_score` across all five techniques. Rows with a NULL label or an invalid `sex` value (`'.'`) are filtered out.
 

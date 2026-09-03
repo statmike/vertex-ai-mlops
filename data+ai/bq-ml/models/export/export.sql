@@ -56,6 +56,7 @@ OPTIONS (URI = 'gs://BUCKET/bq_ml/export/logistic_regression/model');
 CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.export_boosted_tree_income`
 OPTIONS(
   model_type = 'BOOSTED_TREE_CLASSIFIER',
+  xgboost_version = '2.1',
   input_label_cols = ['income_bracket'],
   max_iterations = 20
 ) AS
@@ -68,16 +69,22 @@ FROM `bigquery-public-data.ml_datasets.census_adult_income`;
 -- =============================================================================
 -- Example 4: EXPORT MODEL — XGBoost Booster (tree ensembles only)
 -- =============================================================================
--- BOOSTED_TREE_*/RANDOM_FOREST_* export as an XGBoost Booster (model.bst),
--- not a TensorFlow SavedModel -- the format is chosen by model type, not
+-- BOOSTED_TREE_*/RANDOM_FOREST_* export as an XGBoost Booster, not a
+-- TensorFlow SavedModel -- the format FAMILY is chosen by model type, not
 -- by an OPTIONS argument in SQL (the bq CLI's --destination_format flag,
 -- Example 6, is the only place you choose explicitly).
 --
+-- The FILE inside it does depend on an option, though: the training-time
+-- xgboost_version. At the '0.9' default the export is model.bst in a legacy
+-- binary format that modern xgboost (2.0+) cannot read, so loading it needs
+-- a pin (verified working: xgboost==1.7.6). With xgboost_version = '2.1',
+-- set in Example 3, the export is model.ubj and current xgboost reads it
+-- unpinned.
+--
 -- GOTCHA (verified, same as models/boosted_tree_classifier/'s tree-viz
--- step): loading this file locally needs xgboost<2.0 pinned (BQML exports
--- using an old XGBoost binary format that modern xgboost 2.0+ cannot
--- read) and feature_names reassigned manually after loading (the export
--- does not preserve them).
+-- step): '2.1' does NOT fix feature names -- at either version the export
+-- does not preserve them, so reassign Booster.feature_names manually after
+-- loading.
 EXPORT MODEL `PROJECT_ID.DATASET.export_boosted_tree_income`
 OPTIONS (URI = 'gs://BUCKET/bq_ml/export/boosted_tree/model');
 

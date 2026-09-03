@@ -133,7 +133,7 @@ ORDER BY iteration;
 -- a much higher learn_rate (0.05 vs. the 0.001 default) -- with scaling,
 -- more headroom (max_iterations=30), and the higher learn_rate together,
 -- r2_score reaches 0.86 -- competitive with Linear Regression (~0.88),
--- though still behind Boosted Tree Regressor (~0.97) on this dataset.
+-- though still behind Boosted Tree Regressor (~0.98) on this dataset.
 -- Verified across two full Restart & Run All passes: this result
 -- (r2_score = 0.861626) reproduces bit-for-bit -- training under a fixed
 -- model name is not a fresh random draw each time (see Example 8 for the

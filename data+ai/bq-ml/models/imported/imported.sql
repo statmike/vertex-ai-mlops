@@ -67,12 +67,15 @@ FROM ML.PREDICT(
 -- ML silently returns an ARRAY of per-class probabilities even though
 -- OUTPUT declared a single FLOAT64 field, which is confusing to read.
 --
--- GOTCHA (verified, undocumented as of this writing): BigQuery ML's
--- XGBoost importer only accepts Booster files saved by XGBoost <= 1.5.1 --
--- "XGBoost model version newer than 1.5.1 is not supported." A booster
--- saved with a modern xgboost (2.x/3.x) fails to import outright. Train
--- with xgboost==1.5.1 specifically for this step (see the notebook's
--- Setup section for the numpy<2 pin this version needs).
+-- GOTCHA (verified, undocumented as of this writing): the XGBoost importer
+-- decides what it accepts from the artifact's FILE EXTENSION, not from the
+-- library version that wrote it. The same Booster from a current xgboost
+-- (3.x) imports as model.json and as model.ubj, and is rejected as
+-- model.bst ("Invalid XGBoost model: could not load model from file") --
+-- even though the .bst and .ubj uploads were byte-identical in that test.
+-- Save with .json or .ubj and no version pin is needed. Note the matching
+-- quirk in the other direction: EXPORT MODEL (models/export/) writes
+-- model.bst at the xgboost_version = '0.9' default, model.ubj at '2.1'.
 --
 -- INPUT/OUTPUT is REQUIRED here (unlike ONNX/TensorFlow) unless the
 -- Booster file embeds both feature_names AND feature_types.

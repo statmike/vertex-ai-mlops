@@ -13,7 +13,7 @@ Train a **regression** model with `CREATE MODEL` (model_type = `DNN_REGRESSOR`) 
 - Non-linear feature/label relationships that linear or tree models underfit
 - You specifically want a neural net rather than a tree ensemble
 - Structured/tabular data — compare `r2_score` directly against `models/linear_regression` (Linear Regression), `models/boosted_tree_regressor` (Boosted Tree Regressor), and `models/random_forest_regressor` (Random Forest Regressor) on the same data
-- For most tabular tasks, try Boosted Tree first — it trains far faster, needs less tuning, and reaches `r2_score ~ 0.97` on this same dataset vs. this notebook's best of ~0.87 (see Step 7)
+- For most tabular tasks, try Boosted Tree first — it trains far faster, needs less tuning, and reaches `r2_score ~ 0.98` on this same dataset vs. this notebook's best of ~0.87 (see Step 7)
 
 **Data:** [`bigquery-public-data.ml_datasets.penguins`](https://console.cloud.google.com/marketplace/product/bigquery-public-datasets) — predict `body_mass_g` from physical measurements. **Same data + label as `models/linear_regression` (Linear Regression), `models/boosted_tree_regressor` (Boosted Tree Regressor), and `models/random_forest_regressor` (Random Forest Regressor)** — compare `r2_score` across all four techniques. Rows with a NULL label or an invalid `sex` value (`'.'`) are filtered out.
 
