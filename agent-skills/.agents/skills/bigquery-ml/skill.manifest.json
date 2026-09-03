@@ -1,8 +1,8 @@
 {
   "name": "bigquery-ml",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "generated_date": "2026-09-03",
-  "source_commit": "8e541013",
+  "source_commit": "61f454c5",
   "reference_files": [
     "classification.md",
     "model-management.md",
@@ -61,6 +61,7 @@
     "survival_analysis.md",
     "synthetic_control.md",
     "text.md",
+    "time_series.md",
     "transform_only.md",
     "uplift_cate.md",
     "vertex_kfp.md",

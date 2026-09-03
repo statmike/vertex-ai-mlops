@@ -14,7 +14,7 @@ This skill packages a verified, field-tested reference distilled from a project 
 1. **Do you have a labeled target to predict?**
    - Categorical label → see `reference/classification.md`
    - Continuous numeric label → see `reference/regression.md`
-   - No label at all (clustering, dimensionality reduction, embeddings, recommendations, time-series forecasting, or "why did this metric change") → see `reference/unsupervised-and-specialized.md`
+   - No label at all (clustering, dimensionality reduction, embeddings, recommendations, time-series forecasting *or* model-free time-series decomposition, or "why did this metric change") → see `reference/unsupervised-and-specialized.md`
 2. **Are you managing, deploying, or monitoring an existing model** (importing one trained elsewhere, calling a Vertex AI endpoint from SQL, exporting a BQML model out, or checking training/serving skew and drift) → see `reference/model-management.md`
 3. **Are you doing feature engineering / preprocessing independent of any model type** (scaling, bucketizing, encoding, imputation, text/image prep) → see `reference/preprocessing-functions.md`
 4. **Are you composing a real end-to-end task, or operationalizing one on a schedule** (drift-check → conditional retrain → score) → see `reference/workflows-and-pipelines.md`
@@ -29,6 +29,7 @@ If the ask is ambiguous between BigQuery ML (trained models) and BigQuery's gene
 - **Encoders and text functions default to `frequency_threshold = 5`** (`ML.ONE_HOT_ENCODER`, `ML.LABEL_ENCODER`, `ML.MULTI_HOT_ENCODER`, `ML.TF_IDF`, `ML.BAG_OF_WORDS`) — any category/term appearing fewer than 5 times silently collapses into the unknown bucket. Lower it explicitly if rare-but-meaningful categories matter.
 - **`MATRIX_FACTORIZATION` is the one model type that cannot train under on-demand pricing** — it needs an `ENTERPRISE`+ edition reservation. Always use an autoscale reservation (pay-per-second), never a flat capacity commitment, and tear it down after training.
 - **Joining separate models' `ML.PREDICT` outputs on raw feature columns (instead of a synthetic row ID) can silently fan out rows** when different source rows share identical feature values — add a `ROW_NUMBER()` id before training and join on that.
+- **`ML.TREND`/`ML.SEASONALITY`/`ML.DETECT_CHANGE_POINTS` gap-fill each series before computing** — on a series with a data outage, the interpolation manufactures the structural break `ML.DETECT_CHANGE_POINTS` then reports. Profile the series for gaps first and discard change points that land on a gap edge; on the tested public table six of seven detected windows were ingestion artifacts, not real changes.
 - **Validate live before writing to a notebook**: option interactions in BigQuery ML frequently don't match official docs (see the model-specific gotcha files for exact error strings) — run the actual `CREATE MODEL`/`ML.*` call against real BigQuery before documenting expected behavior.
 - **Real paid infrastructure (reservations, Composer environments, endpoints) should always be torn down for real**, not left as a reader's exercise — see `reference/workflows-and-pipelines.md` for the specific cleanup gotchas (e.g. deleting a Composer environment does not delete its GCS bucket).
 
@@ -36,7 +37,7 @@ If the ask is ambiguous between BigQuery ML (trained models) and BigQuery's gene
 
 - `reference/classification.md` — LOGISTIC_REG, BOOSTED_TREE_CLASSIFIER, RANDOM_FOREST_CLASSIFIER, DNN_CLASSIFIER, DNN_LINEAR_COMBINED_CLASSIFIER, AUTOML_CLASSIFIER
 - `reference/regression.md` — LINEAR_REG, BOOSTED_TREE_REGRESSOR, RANDOM_FOREST_REGRESSOR, DNN_REGRESSOR, DNN_LINEAR_COMBINED_REGRESSOR, AUTOML_REGRESSOR
-- `reference/unsupervised-and-specialized.md` — KMEANS, PCA, AUTOENCODER, MATRIX_FACTORIZATION, CONTRIBUTION_ANALYSIS, ARIMA_PLUS, ARIMA_PLUS_XREG
+- `reference/unsupervised-and-specialized.md` — KMEANS, PCA, AUTOENCODER, MATRIX_FACTORIZATION, CONTRIBUTION_ANALYSIS, ARIMA_PLUS, ARIMA_PLUS_XREG, plus the model-free time-series TVFs (`ML.TREND`, `ML.SEASONALITY`, `ML.DETECT_CHANGE_POINTS`)
 - `reference/model-management.md` — TRANSFORM_ONLY, imported models (TF/TFLite/ONNX/XGBoost), REMOTE models, EXPORT MODEL, data validation/drift functions
 - `reference/preprocessing-functions.md` — scalers, bucketizers, encoders, feature engineering, text, distance, image preprocessing
 - `reference/workflows-and-pipelines.md` — composing a workflow, then choosing among 8 orchestration approaches to operationalize it

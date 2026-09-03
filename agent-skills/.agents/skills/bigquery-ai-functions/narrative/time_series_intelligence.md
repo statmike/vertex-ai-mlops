@@ -18,6 +18,8 @@ An end-to-end time series analysis pipeline:
 
 **Functions used:** `functions/ai_forecast` (`AI.FORECAST`) | `functions/ai_detect_anomalies` (`AI.DETECT_ANOMALIES`) | `functions/ai_evaluate` (`AI.EVALUATE`) | `functions/ai_key_drivers` (`AI.KEY_DRIVERS`)
 
+**Related — describing a series rather than forecasting it:** the sibling `bq-ml` project's `bq-ml/functions/time_series` (`functions/time_series/`) covers `ML.TREND`, `ML.SEASONALITY` and `ML.DETECT_CHANGE_POINTS` — model-free TVFs that decompose history into trend and seasonal components and flag sustained structural shifts. They pair naturally with the anomaly detection in step 3: `AI.DETECT_ANOMALIES` finds individual off-baseline points, `ML.DETECT_CHANGE_POINTS` finds the windows where the level itself moved.
+
 **Prerequisites:** `setup` (Setup guide) | `RESOURCES.md` (Function reference)
 
 ---

@@ -13,6 +13,11 @@
 -- reconciliation, or forecast bounds? See ../../../bq-ml/models/arima_plus/
 -- (the trainable ARIMA_PLUS model) -- AI.FORECAST is the faster, zero-setup
 -- alternative; ARIMA_PLUS is the answer once you need that level of control.
+--
+-- Want to describe the history rather than predict the future? See
+-- ../../../bq-ml/functions/time_series/ -- ML.TREND, ML.SEASONALITY and
+-- ML.DETECT_CHANGE_POINTS are model-free TVFs for trend, seasonal components
+-- and sustained structural change points.
 
 
 -- =============================================================================

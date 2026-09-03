@@ -16,6 +16,13 @@
 --   CREATE MODEL (time series): https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-create-time-series
 --   ML.FORECAST: https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-forecast
 --   ML.EXPLAIN_FORECAST: https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-explain-forecast
+--
+-- Want the decomposition without the model? ../../functions/time_series/ covers
+-- ML.TREND, ML.SEASONALITY and ML.DETECT_CHANGE_POINTS -- model-free TVFs over
+-- this same Citi Bike series. Measured there: ML.SEASONALITY's components are
+-- bit-identical to this model's seasonal_period_* output; ML.TREND reaches only
+-- corr 0.9955 against this model's trend, and defaults adjust_step_changes to
+-- FALSE where this model defaults it TRUE.
 
 
 -- =============================================================================
