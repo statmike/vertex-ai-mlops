@@ -2,7 +2,7 @@
 
 Takes `pipelines/sql_scripting` (`pipelines/sql_scripting/`)'s exact drift-check → conditional-retrain → `SELECT ERROR()` script — **unchanged** — and schedules it via the BigQuery Data Transfer API, the same mechanism behind BigQuery Studio's "Scheduled queries" UI. No new BQML logic here: this notebook's real content is the scheduling/triggering/alerting layer wrapped around a script that doesn't know or care how it gets invoked.
 
-Modernizes `MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb`'s "From Job To Scheduled Query" section.
+Modernizes [MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Model%20Monitoring/bqml-model-monitoring-tutorial.ipynb)'s "From Job To Scheduled Query" section.
 
 **Workflow operationalized:** `workflows/ga4_churn_prediction` (`workflows/ga4_churn_prediction/`)
 **Builds on:** `pipelines/sql_scripting` (`pipelines/sql_scripting/`) (the script being scheduled) · **API:** `google.cloud.bigquery_datatransfer` (`TransferConfig`, `ScheduleOptions`, `EmailPreferences`, `StartManualTransferRunsRequest`)
@@ -278,5 +278,5 @@ print(run.error_status.message if run.error_status else '(none)')
 
 - `pipelines/sql_scripting` (`pipelines/sql_scripting/`) — the script this pipeline schedules, and where its drift-check/retrain design is explained in full.
 - `functions/data_quality` (`functions/data_quality/`) — `ML.VALIDATE_DATA_DRIFT`'s full mechanics.
-- `MLOps/Model%20Monitoring` (`MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb`) — the legacy tutorial this pipeline modernizes, including the `@run_date`-based rolling-window pattern for live serving tables.
+- [MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Model%20Monitoring/bqml-model-monitoring-tutorial.ipynb) — the legacy tutorial this pipeline modernizes, including the `@run_date`-based rolling-window pattern for live serving tables.
 - `workflows/ga4_churn_prediction` (`workflows/ga4_churn_prediction/`) — the workflow this pipeline operationalizes.

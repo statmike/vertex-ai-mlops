@@ -2,7 +2,7 @@
 
 The simplest possible BQML pipeline: **no external orchestrator at all.** A single multi-statement BigQuery script (`DECLARE`/`SET`/`IF`/`BEGIN...END`, submitted as one query job) checks for data drift, conditionally retrains, and reports via a deliberate `SELECT ERROR()` — the report string becomes the job's error message, which any caller can catch and forward to an alerting system. This exact script is what `pipelines/scheduled_queries` (`pipelines/scheduled_queries/`) schedules next.
 
-Modernizes `MLOps/Model Monitoring/model_monitoring_job.sql`'s `DECLARE`/`IF`/`BEGIN...END` + `SELECT ERROR()` alerting pattern.
+Modernizes [MLOps/Model Monitoring/model_monitoring_job.sql](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Model%20Monitoring/model_monitoring_job.sql)'s `DECLARE`/`IF`/`BEGIN...END` + `SELECT ERROR()` alerting pattern.
 
 **Workflow operationalized:** `workflows/ga4_churn_prediction` (`workflows/ga4_churn_prediction/`)
 **Functions used:** `ML.VALIDATE_DATA_DRIFT`, `ML.EVALUATE` · **Scripting:** `DECLARE`, `SET`, `IF...THEN...END IF`, `BEGIN...END`, `SELECT ERROR()`
@@ -237,5 +237,5 @@ This notebook ran the script once, interactively, from Python. The script itself
 ## Related content
 
 - `functions/data_quality` (`functions/data_quality/`) — `ML.VALIDATE_DATA_DRIFT`'s full mechanics (categorical vs. numerical metrics, per-column `thresholds` overrides).
-- `MLOps/Model%20Monitoring` (`MLOps/Model Monitoring/model_monitoring_job.sql`) — the legacy script this pipeline modernizes.
+- [MLOps/Model Monitoring/model_monitoring_job.sql](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Model%20Monitoring/model_monitoring_job.sql) — the legacy script this pipeline modernizes.
 - `workflows/ga4_churn_prediction` (`workflows/ga4_churn_prediction/`) — the workflow this pipeline operationalizes.

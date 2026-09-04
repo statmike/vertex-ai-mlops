@@ -269,7 +269,7 @@ Not run here — it's the exact same export as Step 2's `EXPORT MODEL` statement
 ## Related production content
 
 This notebook stays focused on `EXPORT MODEL` mechanics and proving portability with a minimal local load. For deploying an exported model to a real serving platform, see:
-- `MLOps/Serving/Platforms/Vertex%20AI%20Pre-built%20Serving%20Containers.ipynb` (`MLOps/Serving/Platforms/Vertex AI Pre-built Serving Containers.ipynb`) — upload an exported model to Vertex AI Model Registry with a pre-built serving container (no Dockerfile), the same mechanism `models/remote` (`models/remote/`) uses to deploy an Endpoint.
+- [MLOps/Serving/Platforms/Vertex AI Pre-built Serving Containers.ipynb](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Serving/Platforms/Vertex%20AI%20Pre-built%20Serving%20Containers.ipynb) — upload an exported model to Vertex AI Model Registry with a pre-built serving container (no Dockerfile), the same mechanism `models/remote` (`models/remote/`) uses to deploy an Endpoint.
 - `models/remote` (`models/remote/`) — the natural next step: deploy an exported model to a Vertex AI Endpoint and call it back from BigQuery with `REMOTE WITH CONNECTION`.
 
 ---

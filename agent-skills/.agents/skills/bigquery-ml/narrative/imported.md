@@ -372,8 +372,8 @@ Every format shares the same bottom line: **no training-time BigQuery cost, no s
 ## Related production content
 
 This notebook stays focused on the `CREATE MODEL`/`ML.PREDICT` mechanics of each import format. For the full production picture — real-world model sizes, tokenization contracts, container-free serving tradeoffs — see:
-- `MLOps/Serving/SQL%20Inference/BQML%20Import%20Model%20via%20ONNX.ipynb` (`MLOps/Serving/SQL Inference/BQML Import Model via ONNX.ipynb`) — a HuggingFace PyTorch sentiment model converted to ONNX, with the 250 MB practical limit and pre-tokenized `ARRAY` inputs.
-- `MLOps/Serving/SQL%20Inference/Serve%20TensorFlow%20SavedModel%20Format%20With%20BigQuery.ipynb` (`MLOps/Serving/SQL Inference/Serve TensorFlow SavedModel Format With BigQuery.ipynb`) — importing a TensorFlow SavedModel at production scale.
+- [MLOps/Serving/SQL Inference/BQML Import Model via ONNX.ipynb](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Serving/SQL%20Inference/BQML%20Import%20Model%20via%20ONNX.ipynb) — a HuggingFace PyTorch sentiment model converted to ONNX, with the 250 MB practical limit and pre-tokenized `ARRAY` inputs.
+- [MLOps/Serving/SQL Inference/Serve TensorFlow SavedModel Format With BigQuery.ipynb](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Serving/SQL%20Inference/Serve%20TensorFlow%20SavedModel%20Format%20With%20BigQuery.ipynb) — importing a TensorFlow SavedModel at production scale.
 
 ---
 ## Examples — `%%bigquery` Magics

@@ -12,7 +12,7 @@ Five functions for training/serving **skew** and data **drift** monitoring, plus
 
 **Data:** [`bigquery-public-data.ml_datasets.census_adult_income`](https://console.cloud.google.com/marketplace/product/bigquery-public-datasets) — same dataset as `models/logistic_regression` (Logistic Regression).
 
-**Related production content:** `MLOps/Model%20Monitoring/bqml-model-monitoring-tutorial.ipynb` (`MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb`) and `model_monitoring_job.sql` show the full production pattern — a scheduled retrain/alert loop and real `tfdv.visualize_statistics()`/`display_anomalies()` rendering. This notebook stays focused on the 5 functions' mechanics in isolation.
+**Related production content:** [MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Model%20Monitoring/bqml-model-monitoring-tutorial.ipynb) and `model_monitoring_job.sql` show the full production pattern — a scheduled retrain/alert loop and real `tfdv.visualize_statistics()`/`display_anomalies()` rendering. This notebook stays focused on the 5 functions' mechanics in isolation.
 
 **References:** `RESOURCES.md` (Full reference) | [Model monitoring overview](https://cloud.google.com/bigquery/docs/model-monitoring-overview) | `setup` (Setup guide)
 
@@ -279,7 +279,7 @@ anomalies = json.loads(df['anomalies'].iloc[0])
 print(json.dumps(anomalies['drift_skew_info'], indent=2))
 ```
 
-The `ML.TFDV_DESCRIBE` proto above is truncated for readability (it's a full per-column statistics dump); the `ML.TFDV_VALIDATE` output above is parsed and printed in full — confirming the same `education_num` divergence (~0.18) found by `ML.VALIDATE_DATA_DRIFT` in Step 4, just expressed as a TFDV `drift_skew_info` measurement instead of a tabular row. In a full TFDV Python environment, `json_format.ParseDict` + `tfdv.visualize_statistics()`/`tfdv.display_anomalies()` render both as the familiar TFDV facets/anomaly widgets. See `MLOps/Model%20Monitoring/bqml-model-monitoring-tutorial.ipynb` (`MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb`) for that full rendering.
+The `ML.TFDV_DESCRIBE` proto above is truncated for readability (it's a full per-column statistics dump); the `ML.TFDV_VALIDATE` output above is parsed and printed in full — confirming the same `education_num` divergence (~0.18) found by `ML.VALIDATE_DATA_DRIFT` in Step 4, just expressed as a TFDV `drift_skew_info` measurement instead of a tabular row. In a full TFDV Python environment, `json_format.ParseDict` + `tfdv.visualize_statistics()`/`tfdv.display_anomalies()` render both as the familiar TFDV facets/anomaly widgets. See [MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Model%20Monitoring/bqml-model-monitoring-tutorial.ipynb) for that full rendering.
 
 ### `ML.TFDV_VALIDATE`'s `'SKEW'` mode: the TFDV-native equivalent of Step 3's skew check
 
