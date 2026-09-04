@@ -13,7 +13,7 @@
 - `functions/ai_generate_table` (`AI.GENERATE_TABLE`) — TVF with structured output via output_schema
 - `functions/ml_generate_text` (`ML.GENERATE_TEXT`) — Legacy predecessor with ml_generate_text_ column prefixes
 
-**Multimodal:** Supports document, image, and video input via `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT prompt with ObjectRefRuntime fields to analyze unstructured data from Cloud Storage.
+**Multimodal:** Supports document, image, and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT prompt with ObjectRefRuntime fields to analyze unstructured data from Cloud Storage.
 
 **References:** `RESOURCES.md` (Full syntax reference) | [Official documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate-text) | `setup` (Setup guide)
 
@@ -232,7 +232,7 @@ OBJ.MAKE_REF(uri, connection)        → ObjectRef
     → OBJ.GET_ACCESS_URL(ref, 'r')   → ObjectRefRuntime (signed URL)
 ```
 
-The STRUCT replaces the STRING prompt. See the `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
+The STRUCT replaces the STRING prompt. See the `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
 
 ```python
 from google.cloud import storage as _storage

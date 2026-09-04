@@ -13,7 +13,7 @@
 - `functions/ai_embed` (`AI.EMBED`) — Create embeddings yourself and compute distance manually
 - `functions/ai_search` (`AI.SEARCH`) — Simplified semantic search with autonomous embedding generation
 
-**Multimodal:** Supports image input via `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef) with `multimodalembedding@001`. For PDFs, use `gemini-embedding-2-preview` (Preview) which compares PDFs directly without rendering to images.
+**Multimodal:** Supports image input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef) with `multimodalembedding@001`. For PDFs, use `gemini-embedding-2-preview` (Preview) which compares PDFs directly without rendering to images.
 
 **Featured in:** `workflows/multimodal_analysis` (Multimodal Analysis)
 

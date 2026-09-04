@@ -160,4 +160,4 @@ Full extracted notebook walkthroughs live in this skill's `narrative/` folder:
 
 Hybrid search has no folder of its own because it is not a function — it is covered inside `narrative/vector_search.md` and `narrative/ai_search.md`, and worked end-to-end in `narrative/catalog_search.md` (source: `workflows/catalog_search/`). The sibling `bigquery-ml` skill's `narrative/pca.md`/`narrative/autoencoder.md` show that PCA and AUTOENCODER models can also produce embeddings via `ML.GENERATE_EMBEDDING` — a non-generative-AI alternative worth knowing about for tabular/structured data rather than text/image content.
 
-Full syntax/options tables: see RESOURCES.md in the source repo (`bq-ai-functions/RESOURCES.md`).
+Full syntax/options tables: see the source repo at `bq-ai-functions/reference/embedding-generation-and-semantic-search.md`, indexed from `bq-ai-functions/RESOURCES.md`.

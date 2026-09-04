@@ -10,7 +10,7 @@
 - `functions/ai_generate_embedding` (`AI.GENERATE_EMBEDDING`) — Recommended replacement — same capabilities, cleaner column names
 - `functions/ai_embed` (`AI.EMBED`) — Scalar function, no model required
 
-**Multimodal:** Supports image and video input via `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass ObjectRef or ObjectRefRuntime values in the `content` column to create multimodal embeddings.
+**Multimodal:** Supports image and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass ObjectRef or ObjectRefRuntime values in the `content` column to create multimodal embeddings.
 
 **References:** `RESOURCES.md` (Full syntax reference) | [Official documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-generate-embedding) | `setup` (Setup guide)
 

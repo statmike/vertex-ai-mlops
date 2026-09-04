@@ -65,4 +65,4 @@ Full extracted notebook walkthroughs live in this skill's `narrative/` folder â€
 - [`narrative/ai_classify.md`](../narrative/ai_classify.md) (source: `functions/ai_classify/`)
 - [`narrative/ai_agg.md`](../narrative/ai_agg.md) (source: `functions/ai_agg/`)
 
-Full syntax/options tables: see RESOURCES.md in the source repo (`bq-ai-functions/RESOURCES.md`).
+Full syntax/options tables: see the source repo at `bq-ai-functions/reference/managed-functions.md`, indexed from `bq-ai-functions/RESOURCES.md`.

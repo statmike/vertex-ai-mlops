@@ -97,4 +97,4 @@ Full extracted notebook walkthroughs live in this skill's `narrative/` folder:
 
 The `bigquery-ml` skill's `narrative/arima_plus.md` has the other half of the `AI.FORECAST` vs. `ARIMA_PLUS` comparison.
 
-Full syntax/options tables: see RESOURCES.md in the source repo (`bq-ai-functions/RESOURCES.md`).
+Full syntax/options tables: see the source repo at `bq-ai-functions/reference/predictive-ai.md`, indexed from `bq-ai-functions/RESOURCES.md`.

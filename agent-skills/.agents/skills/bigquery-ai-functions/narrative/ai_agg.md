@@ -18,7 +18,7 @@
 
 **Featured in:** `workflows/content_analysis` (Content Analysis Pipeline) | `workflows/content_moderation` (Content Moderation) | `workflows/document_intelligence` (Document Intelligence) | `workflows/log_analysis` (Log Analysis)
 
-**Multimodal:** Supports image input via `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT input with ObjectRefRuntime fields to aggregate over images.
+**Multimodal:** Supports image input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT input with ObjectRefRuntime fields to aggregate over images.
 
 **References:** `RESOURCES.md` (Full syntax reference) | [Official documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-agg) | `setup` (Setup guide)
 

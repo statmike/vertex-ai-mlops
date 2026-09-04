@@ -45,7 +45,7 @@ Everything you need to run the BigQuery ML notebooks. Most model types need only
 - [Project, Dataset, and Credentials](#project-dataset-and-credentials)
 - [The CREATE MODEL Statement](#the-create-model-statement)
 - [Hyperparameter Tuning](#hyperparameter-tuning)
-- [Connections (remote / imported / export only)](#connections-remote--imported--export-only)
+- [Connections (remote models only)](#connections-remote-models-only)
 - [Permissions (IAM)](#permissions-iam)
 - [Quotas and Pricing](#quotas-and-pricing)
 - [BigFrames (bigframes.ml)](#bigframes-bigframesml)

@@ -817,7 +817,7 @@ prompt: `"If any value is not found, return an empty string — never return the
 A function moves from Preview to GA. Mostly status labels — **except where *Tracked open questions — the Preview watch list* below has a row for that function.** GA is when undocumented behavior gets pinned down, defaults stop moving, and restrictions lift, so start there and work the checklist second.
 
 - [ ] **Check *Tracked open questions* below first.** Any row naming this function: re-run the measurement, and follow that row's impact map rather than editing one file
-- [ ] `RESOURCES.md`: Update status in the function's entry and in the category comparison table
+- [ ] `reference/<category>.md`: Update status in the function's entry and in the category comparison table
 - [ ] `README.md`: Update status column in the function map table
 - [ ] Function notebook `cell-0`: Remove "Preview" mention if present in the description
 - [ ] Function `.sql` file: Remove any Preview notes in the header comment
@@ -828,7 +828,7 @@ A function moves from Preview to GA. Mostly status labels — **except where *Tr
 
 An existing function gains new features — e.g., a new parameter, a new supported model version, grounding support, etc.
 
-- [ ] `RESOURCES.md`: Update syntax, inputs, outputs, supported models, and/or comparison table
+- [ ] `reference/<category>.md`: Update syntax, inputs, outputs, supported models, and/or comparison table
 - [ ] Function notebook: Add or update an example if the capability is significant enough to demonstrate
 - [ ] Function `.sql` file: Add an example if appropriate
 - [ ] Related function notebooks: Update "Alternatives" sections if relationships changed
@@ -851,7 +851,7 @@ A function loses a capability — e.g., a model version is retired (like TimesFM
 
 A completely new BigQuery AI function is released.
 
-- [ ] `RESOURCES.md`: Add full entry in the appropriate category section; update the category comparison table
+- [ ] `reference/<category>.md`: Add a full entry in the appropriate category page; update that page's comparison table. If the function needs a whole new category, add the page and a row to the `RESOURCES.md` section index
 - [ ] `README.md`: Add to the function map table; update category descriptions if needed
 - [ ] Create `functions/{name}/` folder with:
   - `.ipynb` notebook following the template (overview → setup → SQL examples → magics → BigFrames → cleanup)
@@ -898,7 +898,7 @@ A new end-to-end workflow notebook is added.
 
 ### How to run an audit
 
-Each function's documentation URL is recorded in the table below and mirrored in `RESOURCES.md`. An audit compares our content against the current official documentation to catch status changes, new parameters, new models, and other updates.
+Each function's documentation URL is recorded in the table below and mirrored in the matching `reference/*.md`. An audit compares our content against the current official documentation to catch status changes, new parameters, new models, and other updates.
 
 **Step 1 — Prepare.** Review the audit log to see what was last checked and when. **Then read *Tracked open questions — the Preview watch list* below** — every row is a measurement of undocumented behavior, or a capability documented as absent, that a documentation change could invalidate, and each carries the impact map to follow if it has landed.
 
@@ -915,7 +915,7 @@ Also watch for entries that **remove or disable** a feature. Preview surface can
 
 **Skipping this step is what let six releases go unnoticed between April and September 2026** — the *Tracked upcoming* tables in both projects sat empty the whole time because nothing fed them.
 
-**Step 2 — Fetch and compare by category.** For each function, fetch its documentation URL and compare against the corresponding `RESOURCES.md` entry. Work in category batches (Generation, Managed, Embeddings & Search, Forecasting, Document Processing) to spot cross-cutting patterns. For each function, check:
+**Step 2 — Fetch and compare by category.** For each function, fetch its documentation URL and compare against the corresponding entry in `reference/*.md`. Work in category batches (Generation, Managed, Embeddings & Search, Forecasting, Document Processing) to spot cross-cutting patterns. For each function, check:
 - Status changes (Preview → GA, or new Preview badges)
 - New, removed, or changed parameters (name, type, default, range)
 - Syntax changes (new overloads, reordered params)
@@ -930,13 +930,13 @@ Also watch for entries that **remove or disable** a feature. Preview surface can
 **Step 3 — Classify each change.** Map each difference to a change type (status change, new capability, removed capability, new function) and apply the relevant checklist from the "Change types and checklists" section above.
 
 **Step 4 — Update files in order.**
-1. `RESOURCES.md` — All function entry updates (work top-to-bottom through the file)
-2. `RESOURCES.md` — Comparison tables at the top of each section (must match per-function entries)
+1. `reference/*.md` — All function entry updates (work top-to-bottom through each category page)
+2. `reference/*.md` — Comparison tables at the top of each page (must match per-function entries)
 3. `README.md` — Function map tables (status, multimodal, descriptions) and relationship diagram
 4. `PLANS.md` — Documentation URLs table (add new functions), cross-referencing mapping table, audit log
 
 **Step 5 — Check for new functions.** Search for newly announced BigQuery AI functions (blog posts, release notes, docs index pages). For each:
-- If reference docs exist: add full `RESOURCES.md` entry + `README.md` row using the "New function" checklist
+- If reference docs exist: add a full `reference/<category>.md` entry + `README.md` row using the "New function" checklist
 - If only announced (no reference docs): add to the "Tracked upcoming functions" table below with status and source link
 
 **Step 6 — Verify consistency.**
@@ -987,7 +987,7 @@ Functions announced but without published reference documentation. Check periodi
 |----------|----------|--------|-----------|--------|-----------------|
 | *(none currently tracked)* | — | — | — | — | — |
 
-**Resolved 2026-09-01 — HYBRID_SEARCH does not exist.** It was tracked here from the Cloud Next 2026 announcement, but BigQuery shipped hybrid search as a *capability* of the two existing search functions, not as a new function: `VECTOR_SEARCH`'s `lexical_search_columns` argument and `AI.SEARCH`'s `mode => 'HYBRID'`. There is no `HYBRID_SEARCH` in the SQL surface and no reference page for one. Treated as "new capability ×2", not "new function". See [Hybrid Search](RESOURCES.md#hybrid-search-capability).
+**Resolved 2026-09-01 — HYBRID_SEARCH does not exist.** It was tracked here from the Cloud Next 2026 announcement, but BigQuery shipped hybrid search as a *capability* of the two existing search functions, not as a new function: `VECTOR_SEARCH`'s `lexical_search_columns` argument and `AI.SEARCH`'s `mode => 'HYBRID'`. There is no `HYBRID_SEARCH` in the SQL surface and no reference page for one. Treated as "new capability ×2", not "new function". See [Hybrid Search](reference/embedding-generation-and-semantic-search.md#hybrid-search-capability).
 
 ### Tracked upcoming enhancements
 
@@ -997,7 +997,7 @@ Capabilities observed in training labs or announcements but not yet in published
 |----------|------------|--------|--------|-------|
 | AI.PARSE_DOCUMENT | Gemini model endpoint (`endpoint => 'gemini-2.5-flash'`) | Blocked — the whole function is offline and its docs are withdrawn | [L400 Lab 1](../../../ds-l400/lab-1/teacher/lab_1_parse_2_extraction.ipynb) | Currently only Layout Parser processor endpoints are documented. Gemini endpoints would eliminate the Document AI processor setup entirely — just `endpoint => 'model-name'` with a connection. When available: add Example 7 to notebook, update RESOURCES.md endpoint description, update README.md ("No" for Requires Model). |
 | All generative functions | `gemini-3.1-flash-lite` and `gemini-3.5-flash` | **GA 2026-08-10 — documented in [RESOURCES.md](RESOURCES.md#choosing-a-gemini-model-endpoint) as of 2026-09-02.** No notebook change needed | [Release notes](https://docs.cloud.google.com/bigquery/docs/release-notes) | **The default did not move** — omitting `endpoint` still gives `gemini-2.5-flash`, so every stored output in this project remains valid and no re-execution is required. The 3.x family is multi-regional-endpoint only, and `europe-west2`/`europe-west6` silently resolve to the **global** endpoint. **Re-check the default on every audit** — a default change *would* invalidate every generative notebook's stored output at once. |
-| AI functions taking multimodal input | Accepting an `ObjectRef` column directly, without wrapping it in `OBJ.GET_ACCESS_URL` | **Announced GA 2026-06-12; reference docs contradict the announcement.** Measurable — not yet measured | [Release notes](https://docs.cloud.google.com/bigquery/docs/release-notes) · [ObjectRef functions](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/objectref_functions) | The generative AI overview and the `AI.GENERATE_*` pages still say `OBJ.GET_ACCESS_URL` is required; `AI.SCORE`'s prompt spec accepts "an `ObjectRef` column" and `AI.IF`'s example passes `images.ref` bare. **This project can settle it by running it** — try the unwrapped form on one generative and one managed function against an existing object table. Until measured, every notebook keeps `OBJ.GET_ACCESS_URL(col, 'r')`. Recorded in [RESOURCES.md](RESOURCES.md) under Unstructured Data Infrastructure. |
+| AI functions taking multimodal input | Accepting an `ObjectRef` column directly, without wrapping it in `OBJ.GET_ACCESS_URL` | **Announced GA 2026-06-12; reference docs contradict the announcement.** Measurable — not yet measured | [Release notes](https://docs.cloud.google.com/bigquery/docs/release-notes) · [ObjectRef functions](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/objectref_functions) | The generative AI overview and the `AI.GENERATE_*` pages still say `OBJ.GET_ACCESS_URL` is required; `AI.SCORE`'s prompt spec accepts "an `ObjectRef` column" and `AI.IF`'s example passes `images.ref` bare. **This project can settle it by running it** — try the unwrapped form on one generative and one managed function against an existing object table. Until measured, every notebook keeps `OBJ.GET_ACCESS_URL(col, 'r')`. Recorded in [Unstructured Data Infrastructure](reference/unstructured-data-infrastructure.md). |
 | ObjectRef utilities | `OBJ.GET_READ_URL` | **GA 2026-03-31 per release notes; absent from the ObjectRef functions reference page.** Documented here as observed-not-documented | [Release notes](https://docs.cloud.google.com/bigquery/docs/release-notes) | Appears only in a tutorial snippet, returning a signed URL for display while the AI function is still fed `OBJ.GET_ACCESS_URL`. Add a worked example when the reference page lists it. |
 
 ### Tracked open questions — the Preview watch list
@@ -1029,14 +1029,14 @@ Re-check this list **every audit** and **on any Preview → GA transition**. GA 
 | V2 | **The fusion is undocumented.** AlloyDB and Spanner publish theirs with the 60 in it; BigQuery's only public statement is a blog post naming "Reciprocal Rank Fusion and BM25", with no formula and no constants. Nor is it documented that a perfect match returns ~0.9675 rather than 0, which is what a cosine-tuned threshold assumes | Published with a standing "reverse-engineered, not documented — consume the ordering, never the number" warning in every location | A reference page stating the algorithm | Hybrid impact map. **Every "reverse-engineered, not documented" disclaimer becomes a citation** — that is the single largest edit in the map |
 | V3 | **Is the `10 * top_k` lexical candidate-pool multiplier adjustable?** Only `fraction_lists_to_search` and `use_brute_force` are documented `options` keys | Published as measured across four corpora with three correct out-of-sample predictions; described as undocumented | A new `options` key, or documentation of the pool | Hybrid impact map — **every reach table and every `top_k` sizing rule is derived from this number** |
 | V4 | **Batch hybrid.** `lexical_search_query_value` is required alongside `lexical_search_columns`, so a `query_table` call cannot be hybrid (`lexical_search_columns is not supported when query_value is not specified.`) | Published as a hard limitation | The restriction lifting | `RESOURCES.md` limitations, `functions/vector_search/` (notebook + `.sql`), `workflows/catalog_search/`, skill `reference/embeddings-and-search.md`. **A new batch example is warranted, not just a note** |
-| V5 | **`AI.SEARCH` `mode => 'AUTO'` is always semantic-only on an autonomous-embedding table**, because the generated embedding column is a `STRUCT<result, status>` and a vector index key must be `ARRAY<FLOAT64>` | Published with the two-table workaround (project `.result` into a plain `ARRAY<FLOAT64>` and index that), which `workflows/catalog_search/` builds end to end | Vector indexes supporting the generated column, or `AUTO` gaining another route to hybrid | `functions/ai_search/` (notebook + `.sql`), `RESOURCES.md`, SKILL.md cross-cutting gotchas. **If it is fixed, the two-table design in `catalog_search` stops being necessary** and the workflow's premise needs revisiting |
+| V5 | **`AI.SEARCH` `mode => 'AUTO'` is always semantic-only on an autonomous-embedding table**, because the generated embedding column is a `STRUCT<result, status>` and a vector index key must be `ARRAY<FLOAT64>` | Published with the two-table workaround (project `.result` into a plain `ARRAY<FLOAT64>` and index that), which `workflows/catalog_search/` builds end to end | Vector indexes supporting the generated column, or `AUTO` gaining another route to hybrid | `functions/ai_search/` (notebook + `.sql`), `reference/embedding-generation-and-semantic-search.md`, SKILL.md cross-cutting gotchas. **If it is fixed, the two-table design in `catalog_search` stops being necessary** and the workflow's premise needs revisiting |
 
 #### Impact map — hybrid search fusion behavior
 
 Applies to V1–V3 (and partly V4–V5). The fusion algorithm, its constants, and the pool multiplier are **undocumented and Preview**. Every number is measured-today, not contracted. If any of them changes, **every entry below carries it** — regenerate the reach table and re-verify every worked example rather than patching one file:
 
 *Hand-authored, `data+ai/bq-ai-functions/` (9 entries, 11 files):*
-`README.md` · `RESOURCES.md` (Hybrid Search section) · `overview.ipynb` · `functions/vector_search/vector_search.ipynb` + `.sql` · `functions/ai_search/ai_search.ipynb` + `.sql` · `workflows/semantic_search/semantic_search.ipynb` · `workflows/rag_pipeline/rag_pipeline.ipynb` · `workflows/log_analysis/log_analysis.ipynb` · `workflows/catalog_search/catalog_search.ipynb`
+`README.md` · `reference/embedding-generation-and-semantic-search.md` (Hybrid Search section) · `overview.ipynb` · `functions/vector_search/vector_search.ipynb` + `.sql` · `functions/ai_search/ai_search.ipynb` + `.sql` · `workflows/semantic_search/semantic_search.ipynb` · `workflows/rag_pipeline/rag_pipeline.ipynb` · `workflows/log_analysis/log_analysis.ipynb` · `workflows/catalog_search/catalog_search.ipynb`
 
 Also check `workflows/README.md`, which describes hybrid without carrying the arithmetic.
 

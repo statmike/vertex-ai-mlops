@@ -14,7 +14,7 @@
 - `functions/ai_if` (`AI.IF`), `functions/ai_score` (`AI.SCORE`), `functions/ai_classify` (`AI.CLASSIFY`) — simplified interfaces for common tasks with auto-optimized prompts
 - `functions/ai_generate_bool` (`AI.GENERATE_BOOL`), `functions/ai_generate_double` (`AI.GENERATE_DOUBLE`), `functions/ai_generate_int` (`AI.GENERATE_INT`) — typed scalar variants returning `BOOL`, `FLOAT64`, `INT64`
 
-**Multimodal:** Supports document, image, and video input via `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT prompt with ObjectRefRuntime fields to analyze unstructured data from Cloud Storage.
+**Multimodal:** Supports document, image, and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT prompt with ObjectRefRuntime fields to analyze unstructured data from Cloud Storage.
 
 **Thinking:** Supports extended reasoning via `model_params` — use `thinking_budget` (Gemini 2.5) or `thinking_level` (Gemini 3.0+) to control reasoning depth.
 
@@ -338,7 +338,7 @@ OBJ.MAKE_REF(uri, connection)        → ObjectRef (pointer to the object)
     → OBJ.GET_ACCESS_URL(ref, 'r')   → ObjectRefRuntime (signed URL)
 ```
 
-Pass `ObjectRefRuntime` values in a STRUCT prompt with `prompt` and `object_ref_runtime` fields. See the `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
+Pass `ObjectRefRuntime` values in a STRUCT prompt with `prompt` and `object_ref_runtime` fields. See the `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
 
 ### Multimodal setup — connection and sample documents
 

@@ -12,7 +12,7 @@
 - `functions/ai_generate_bool` (`AI.GENERATE_BOOL`) — BOOL output for true/false questions
 - `functions/ai_generate` (`AI.GENERATE`) — Full control with output_schema for any structured output
 
-**Multimodal:** Supports document, image, and video input via `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT prompt with ObjectRefRuntime fields to extract integer values from unstructured data.
+**Multimodal:** Supports document, image, and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT prompt with ObjectRefRuntime fields to extract integer values from unstructured data.
 
 **References:** `RESOURCES.md` (Full syntax reference) | [Official documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate-int) | `setup` (Setup guide)
 
@@ -143,7 +143,7 @@ OBJ.MAKE_REF(uri, connection)        → ObjectRef
     → OBJ.GET_ACCESS_URL(ref, 'r')   → ObjectRefRuntime (signed URL)
 ```
 
-The STRUCT replaces the STRING prompt. See the `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
+The STRUCT replaces the STRING prompt. See the `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
 
 ```python
 import subprocess as _sp, json as _json

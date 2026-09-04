@@ -10,7 +10,7 @@
 - `functions/ai_generate_text` (`AI.GENERATE_TEXT`) — Recommended replacement — same capabilities, cleaner column names
 - `functions/ai_generate` (`AI.GENERATE`) — Scalar function, no model required, Gemini only
 
-**Multimodal:** Supports document, image, and video input via `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT prompt with ObjectRefRuntime fields to analyze unstructured data from Cloud Storage.
+**Multimodal:** Supports document, image, and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT prompt with ObjectRefRuntime fields to analyze unstructured data from Cloud Storage.
 
 **References:** `RESOURCES.md` (Full syntax reference) | [Official documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-generate-text) | `setup` (Setup guide)
 

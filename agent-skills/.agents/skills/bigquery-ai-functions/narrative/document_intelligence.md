@@ -125,7 +125,7 @@ print(f'Location: gs://{BUCKET}/{prefix}/')
 ---
 ## Step 1b — Create object table
 
-An `RESOURCES.md#unstructured-data-infrastructure` (object table) is an external table over Cloud Storage objects. It provides a `ref` column that AI functions can use to access file content. The connection grants BigQuery permission to read from GCS.
+An `reference/unstructured-data-infrastructure.md` (object table) is an external table over Cloud Storage objects. It provides a `ref` column that AI functions can use to access file content. The connection grants BigQuery permission to read from GCS.
 
 ```python
 # Create object table pointing to the uploaded documents

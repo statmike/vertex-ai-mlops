@@ -80,4 +80,4 @@ Full extracted notebook walkthroughs live in this skill's `narrative/` folder â€
 - [`narrative/ml_generate_text.md`](../narrative/ml_generate_text.md) (source: `functions/ml_generate_text/`) â€” legacy
 - [`narrative/ai_count_tokens.md`](../narrative/ai_count_tokens.md) (source: `functions/ai_count_tokens/`)
 
-Full syntax/options tables: see RESOURCES.md in the source repo (`bq-ai-functions/RESOURCES.md`).
+Full syntax/options tables: see the source repo at `bq-ai-functions/reference/general-purpose-functions.md`, indexed from `bq-ai-functions/RESOURCES.md`.

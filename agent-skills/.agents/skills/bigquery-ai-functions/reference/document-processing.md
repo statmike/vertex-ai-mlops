@@ -76,4 +76,4 @@ Full extracted notebook walkthroughs live in this skill's `narrative/` folder:
 - [`narrative/ai_parse_document.md`](../narrative/ai_parse_document.md) (source: `functions/ai_parse_document/`) — blocked/offline as of 2026-06-01; the notebook carries a warning banner
 - [`narrative/document_rag.md`](../narrative/document_rag.md) (source: `workflows/document_rag/`) — Document RAG workflow, currently blocked on the AI.PARSE_DOCUMENT outage
 
-Object Tables and `OBJ.*` functions have no dedicated function folder — they're infrastructure, not a callable AI function themselves — and are documented in RESOURCES.md's **"Unstructured Data Infrastructure"** section (`bq-ai-functions/RESOURCES.md`).
+Object Tables and `OBJ.*` functions have no dedicated function folder — they're infrastructure, not a callable AI function themselves — and are documented in the source repo at `bq-ai-functions/reference/unstructured-data-infrastructure.md`.

@@ -12,7 +12,7 @@
 - `functions/ai_embed` (`AI.EMBED`) — Scalar function, no model required, for inline embedding. Supports a built-in model (`embeddinggemma-300m`) with no Vertex AI charges.
 - `functions/ml_generate_embedding` (`ML.GENERATE_EMBEDDING`) — Legacy predecessor with ml_generate_embedding_ column prefixes
 
-**Multimodal:** Supports image and video input via `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass ObjectRef or ObjectRefRuntime values in the `content` column. `gemini-embedding-2-preview` (Preview) extends this to audio and PDFs.
+**Multimodal:** Supports image and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass ObjectRef or ObjectRefRuntime values in the `content` column. `gemini-embedding-2-preview` (Preview) extends this to audio and PDFs.
 
 **References:** `RESOURCES.md` (Full syntax reference) | [Official documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate-embedding) | `setup` (Setup guide)
 

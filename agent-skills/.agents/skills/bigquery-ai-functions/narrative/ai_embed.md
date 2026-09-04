@@ -15,7 +15,7 @@
 
 **Featured in:** `workflows/semantic_search` (Semantic Search System) | `workflows/rag_pipeline` (RAG Pipeline) | `workflows/multimodal_analysis` (Multimodal Analysis) | `workflows/document_rag` (Document RAG Pipeline) | `workflows/log_analysis` (Log Analysis) | `workflows/catalog_search` (Catalog Search) | `workflows/image_deduplication` (Image Deduplication)
 
-**Multimodal:** Supports image input via `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef) with `multimodalembedding@001`. For PDFs, use `gemini-embedding-2-preview` (Preview) which embeds PDFs directly without rendering to images.
+**Multimodal:** Supports image input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef) with `multimodalembedding@001`. For PDFs, use `gemini-embedding-2-preview` (Preview) which embeds PDFs directly without rendering to images.
 
 **References:** `RESOURCES.md` (Full syntax reference) | [Official documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-embed) | `setup` (Setup guide)
 

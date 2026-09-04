@@ -48,4 +48,4 @@ If the ask is ambiguous between these generative functions and BigQuery ML's tra
 
 ## Go deeper (only resolves inside this repo)
 
-If you're working inside the `vertex-ai-mlops` repo, every reference file's "Go deeper" pointers resolve to real, tested notebooks/`.sql` files under `functions/` and `workflows/`, plus the full syntax/options tables in `RESOURCES.md`. This skill is self-contained without that repo — the reference files above already carry the distilled decision guidance and verified gotchas — but the repo is where the full progressive examples and raw evidence live.
+If you're working inside the `vertex-ai-mlops` repo, every reference file's "Go deeper" pointers resolve to real, tested notebooks/`.sql` files under `functions/` and `workflows/`, plus the full syntax/options tables under `reference/`, indexed from `RESOURCES.md`. This skill is self-contained without that repo — the reference files above already carry the distilled decision guidance and verified gotchas — but the repo is where the full progressive examples and raw evidence live.

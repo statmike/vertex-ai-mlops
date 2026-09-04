@@ -48,7 +48,7 @@ This project provides a progressive learning system: start with a quick overview
 |----------|-------------|
 | [Interactive Overview](overview.ipynb) | Runnable notebook tour — one example per category |
 | [Setup Reference](setup/) | Connections, models, endpoints, quotas, and permissions |
-| [Detailed Function Reference](RESOURCES.md) | Complete syntax, inputs, outputs, and limitations for every function |
+| [Detailed Function Reference](RESOURCES.md) | Index to the deep reference — complete syntax, inputs, outputs, and limitations for every function, one page per category under [`reference/`](reference/) |
 | [Agent Skill](../../agent-skills/.agents/skills/bigquery-ai-functions/SKILL.md) | Packaged, use-case-organized reference for AI coding agents — see below |
 
 ### Using this project with an AI coding agent
@@ -106,7 +106,7 @@ Functions marked in the **Multimodal** column below can process files from Cloud
 | ObjectRef | Pass ObjectRef or ObjectRefRuntime directly as the content parameter |
 | — | Text/numeric only — no unstructured data input |
 
-See the [Unstructured Data Infrastructure](RESOURCES.md#unstructured-data-infrastructure) section in the Detailed Function Reference for the full ObjectRef pipeline, object table syntax, and schema details.
+See the [Unstructured Data Infrastructure](reference/unstructured-data-infrastructure.md) section in the Detailed Function Reference for the full ObjectRef pipeline, object table syntax, and schema details.
 
 ### Generation — Send prompts to GenAI models, get text or structured output
 
@@ -143,7 +143,7 @@ See the [Unstructured Data Infrastructure](RESOURCES.md#unstructured-data-infras
 
 **Hybrid search is a capability, not a function.** There is no `HYBRID_SEARCH` in BigQuery SQL. Combine semantic and keyword matching either through `VECTOR_SEARCH`'s `lexical_search_columns` argument (single-query syntax only) or through `AI.SEARCH`'s `mode => 'HYBRID'`. Neither requires a vector index. In hybrid mode the returned `distance` is a reciprocal-rank-fusion score rather than a distance.
 
-Reach for it when a query carries **both** descriptive words and an exact token — but know what it buys, because `top_k` gates it twice. First the pool: BigQuery hands the lexical leg only the top `10 * top_k` rows by semantic rank, and a row deeper than that gets no lexical rank at all, however perfectly it matches. Inside the pool the lexical leg ranks the *entire* candidate pool — BM25 matches take lexical ranks `1..m` and the remaining pooled rows fall back to their semantic order behind them — so no pooled row forfeits a term. Then the score: `distance = 1 - ( 1/(60 + rank_vector) + 1/(61 + rank_lexical) )`, where 60 is the canonical RRF constant and the lexical leg behaves as though its ranks start at 2 — the same arithmetic as writing its base as 61 — and a lexical match is worth promotion to lexical rank 1, or `1/62` ≈ `0.016` of score, which has to beat the row holding the last slot. Effective reach is the smaller of the two, `min(score gate, 10 * top_k)`: at `top_k` of 10 a matched row can come from semantic rank 23, at 30 from 110, at 50 from 468 — and from `top_k` of 51 up the pool is what binds, so 640 at 64, 1,000 at 100, 3,000 at 300. Hybrid re-ranks and widens recall in proportion to `top_k`, never unboundedly: to retrieve a row at semantic rank `R` by exact token, size `top_k` to *at least* `R/10` — that is a floor, not a recipe. Below a few hundred ranks deep the score gate is the one that binds, and it asks for more: a row at semantic rank 100 needs `top_k` = 29, not 10. Read the real number off the reach table. If an opaque identifier is *all* the user typed, use `WHERE sku = @sku` instead — a predicate cannot be outranked by a fusion score, and it has no pool. See [Hybrid Search](RESOURCES.md#hybrid-search-capability) for the measured formula, the full reach table, and the vector-index DDL rules.
+Reach for it when a query carries **both** descriptive words and an exact token — but know what it buys, because `top_k` gates it twice. First the pool: BigQuery hands the lexical leg only the top `10 * top_k` rows by semantic rank, and a row deeper than that gets no lexical rank at all, however perfectly it matches. Inside the pool the lexical leg ranks the *entire* candidate pool — BM25 matches take lexical ranks `1..m` and the remaining pooled rows fall back to their semantic order behind them — so no pooled row forfeits a term. Then the score: `distance = 1 - ( 1/(60 + rank_vector) + 1/(61 + rank_lexical) )`, where 60 is the canonical RRF constant and the lexical leg behaves as though its ranks start at 2 — the same arithmetic as writing its base as 61 — and a lexical match is worth promotion to lexical rank 1, or `1/62` ≈ `0.016` of score, which has to beat the row holding the last slot. Effective reach is the smaller of the two, `min(score gate, 10 * top_k)`: at `top_k` of 10 a matched row can come from semantic rank 23, at 30 from 110, at 50 from 468 — and from `top_k` of 51 up the pool is what binds, so 640 at 64, 1,000 at 100, 3,000 at 300. Hybrid re-ranks and widens recall in proportion to `top_k`, never unboundedly: to retrieve a row at semantic rank `R` by exact token, size `top_k` to *at least* `R/10` — that is a floor, not a recipe. Below a few hundred ranks deep the score gate is the one that binds, and it asks for more: a row at semantic rank 100 needs `top_k` = 29, not 10. Read the real number off the reach table. If an opaque identifier is *all* the user typed, use `WHERE sku = @sku` instead — a predicate cannot be outranked by a fusion score, and it has no pool. See [Hybrid Search](reference/embedding-generation-and-semantic-search.md#hybrid-search-capability) for the measured formula, the full reach table, and the vector-index DDL rules.
 
 **Embedding task types:** The `task_type` parameter tells the embedding model how the text will be used, which changes the resulting vector.
 
@@ -186,7 +186,7 @@ Two built-in foundation models sit behind these functions: **TimesFM** for time 
 
 > **Default model version changed.** All three TimesFM functions — `AI.FORECAST`, `AI.EVALUATE` and `AI.DETECT_ANOMALIES` — now default to **TimesFM 2.5** instead of TimesFM 2.0, with no release note announcing it. Unpinned queries silently return different numbers than they used to — pin `model` explicitly so a future default move cannot shift your numbers.
 >
-> **Pinning is not the same as reproducibility.** `AI.EVALUATE` and `AI.DETECT_ANOMALIES` still return a different answer on a minority of runs with `model` *and* `context_window` pinned and the query cache off — 2 of 16 runs in the measured case, a ~32% swing in the reported error metric. `AI.FORECAST` is stable. Materialize these results once and read the stored table rather than re-running the function. Details in [RESOURCES.md](RESOURCES.md#predictive-ai).
+> **Pinning is not the same as reproducibility.** `AI.EVALUATE` and `AI.DETECT_ANOMALIES` still return a different answer on a minority of runs with `model` *and* `context_window` pinned and the query cache off — 2 of 16 runs in the measured case, a ~32% swing in the reported error metric. `AI.FORECAST` is stable. Materialize these results once and read the stored table rather than re-running the function. Details in [Predictive AI](reference/predictive-ai.md).
 
 ### Augmented Analytics — Find what drives metric changes
 
@@ -282,7 +282,8 @@ Two built-in foundation models sit behind these functions: **TimesFM** for time 
 ```
 bq-ai-functions/
 ├── README.md               ◄ You are here
-├── RESOURCES.md             ◄ Detailed function reference
+├── RESOURCES.md             ◄ Index to the detailed function reference
+├── reference/               ◄ The detailed function reference, one page per category
 ├── overview.ipynb           ◄ Interactive overview notebook
 ├── setup/                   ◄ Connections, models, quotas reference
 ├── functions/               ◄ Per-function deep dives (SQL + notebook)

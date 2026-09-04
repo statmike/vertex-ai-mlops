@@ -16,7 +16,7 @@
 
 **Featured in:** `workflows/content_analysis` (Content Analysis Pipeline) | `workflows/document_intelligence` (Document Intelligence) | `workflows/content_moderation` (Content Moderation) | `workflows/log_analysis` (Log Analysis)
 
-**Multimodal:** Supports document, image, and video input via `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT input with ObjectRefRuntime fields to classify documents, images, or video.
+**Multimodal:** Supports document, image, and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT input with ObjectRefRuntime fields to classify documents, images, or video.
 
 **References:** `RESOURCES.md` (Full syntax reference) | [Official documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-classify) | `setup` (Setup guide)
 
@@ -259,7 +259,7 @@ Object table (GCS URIs + connection)
       → AI.CLASSIFY(ref, categories)
 ```
 
-See the `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
+See the `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
 
 ### Multimodal setup — connection, documents, and object table
 

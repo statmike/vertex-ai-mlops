@@ -14,7 +14,7 @@
 
 **Featured in:** `workflows/content_analysis` (Content Analysis Pipeline) | `workflows/rag_pipeline` (RAG Pipeline) | `workflows/content_moderation` (Content Moderation) | `workflows/log_analysis` (Log Analysis)
 
-**Multimodal:** Supports document, image, and video input via `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT prompt with ObjectRefRuntime fields to extract structured data from unstructured files.
+**Multimodal:** Supports document, image, and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT prompt with ObjectRefRuntime fields to extract structured data from unstructured files.
 
 **References:** `RESOURCES.md` (Full syntax reference) | [Official documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-generate-table) | `setup` (Setup guide)
 
@@ -271,7 +271,7 @@ OBJ.MAKE_REF(uri, connection)        → ObjectRef
     → OBJ.GET_ACCESS_URL(ref, 'r')   → ObjectRefRuntime (signed URL)
 ```
 
-The STRUCT prompt replaces the STRING prompt in the input table. See the `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
+The STRUCT prompt replaces the STRING prompt in the input table. See the `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
 
 ```python
 from google.cloud import storage as _storage

@@ -14,7 +14,7 @@
 - `functions/ai_generate` (`AI.GENERATE`) — Full control with output_schema for custom structured output
 - `functions/ai_classify` (`AI.CLASSIFY`) — Multi-category classification instead of boolean
 
-**Multimodal:** Supports document, image, and video input via `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT condition with ObjectRefRuntime fields to evaluate conditions on unstructured data.
+**Multimodal:** Supports document, image, and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT condition with ObjectRefRuntime fields to evaluate conditions on unstructured data.
 
 **Featured in:** `workflows/content_moderation` (Content Moderation)
 
@@ -234,7 +234,7 @@ OBJ.MAKE_REF(uri, connection)        → ObjectRef
     → OBJ.GET_ACCESS_URL(ref, 'r')   → ObjectRefRuntime (signed URL)
 ```
 
-The STRUCT replaces the STRING prompt. See the `RESOURCES.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
+The STRUCT replaces the STRING prompt. See the `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
 
 ```python
 import subprocess as _sp, json as _json
