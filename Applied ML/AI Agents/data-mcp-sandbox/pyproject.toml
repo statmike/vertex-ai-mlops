@@ -1,0 +1,83 @@
+[project]
+name = "data-mcp-sandbox"
+version = "0.1.0"
+description = "Sandbox for experimenting with MCP servers over data sources on Google Cloud."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "google-adk[mcp]>=2.6,<3",
+    "google-cloud-bigquery>=3.44.0",
+    "google-cloud-dataplex>=2.20.0",
+    "google-cloud-resource-manager>=1.18.0",
+    # Floor is a major behind what resolves today; raised so a cold cache cannot
+    # silently land on 1.x. See DEV_NOTES.md, 2026-08-31 pin audit.
+    "google-genai>=2.20",
+    "looker-sdk>=26.12.0",
+    "matplotlib>=3.11.1",
+    "numpy>=2.4.6",
+    "python-dotenv>=1.2.3",
+]
+
+# Dev-only tooling (PEP 735). Installed by `uv sync` locally and in CI; not a
+# runtime dependency of the project.
+[dependency-groups]
+dev = [
+    "ruff>=0.9",
+    "mypy>=1.15",
+    "pytest>=8",
+    # A kernel for notebooks/, and the headless runner used to execute them
+    # before they are committed. Neither is imported by anything in src/.
+    "ipykernel>=7.3.0",
+    "nbclient>=0.11.0",
+]
+
+# --- Linting & formatting: enforces the "flat, human-scannable" standard -------
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# Notebooks are runners, not logic (Golden Rule #1) — don't lint them as
+# modules. They open by putting `src/` on `sys.path`, which every import-order
+# rule reads as a violation. Correctness comes from executing them instead: they
+# are run end to end before they are committed.
+exclude = ["notebooks/"]
+
+[tool.ruff.lint]
+# A pragmatic set that pushes toward simple, typed, flat code.
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # isort (import ordering)
+    "UP",       # pyupgrade
+    "B",        # flake8-bugbear
+    "SIM",      # flake8-simplify (discourages needless nesting/complexity)
+    "ANN",      # flake8-annotations (type hints required — CODE_STANDARDS §1)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests may skip return-type annotations on test functions.
+"tests/**" = ["ANN"]
+
+[tool.ruff.lint.isort]
+# `src/` and `scripts/` are both flat first-party module roots (see the pytest
+# pythonpath above). Without this, ruff reads anything importable only from
+# scripts/ as third-party and splits the import block in two.
+known-first-party = ["estimate", "export_capture"]
+
+# --- Type checking: strict hints on all signatures (CODE_STANDARDS §1) ---------
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src"]
+# Third-party GCP libs often ship incomplete stubs; don't fail on their imports.
+ignore_missing_imports = true
+
+# --- Tests --------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+# Makes flat modules in src/ importable by name from tests (e.g. `from bq_client
+# import run_query`) without packaging or installing the project. `scripts` is
+# here so the publish path (`export_capture`) is testable; `examples` is not,
+# because both directories carry a `_bootstrap` module and adding each would make
+# which one wins depend on path order.
+pythonpath = ["src", "scripts"]

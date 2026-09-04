@@ -1,0 +1,201 @@
+"""Offline invariants for the sweep planner and its capture format.
+
+No cloud calls and no model calls — these guard the properties that make a
+1,200-cell run recoverable and interpretable, which is exactly what you cannot
+afford to discover is broken four hours in.
+"""
+
+import json
+
+import agents
+import battery
+import mcp_clients
+import traces
+from agents import _failed
+
+
+def _questions():
+    return battery.load_questions()
+
+
+def test_questions_file_parses_and_is_complete():
+    questions = _questions()
+    assert len(questions) == 12
+    assert len({question.id for question in questions}) == len(questions)
+    for question in questions:
+        assert question.golden_key
+        assert question.evidence["must_have"]
+
+
+def test_plan_is_config_major_so_an_interrupted_sweep_leaves_whole_configs():
+    current = battery.plan(_questions()[:2], ["p1_managed", "p1_toolbox"], [0, 1], 2)
+    configs_in_order = [config_key for _, config_key, _, _ in current.cells]
+    # Every cell of the first config precedes every cell of the second.
+    assert configs_in_order == sorted(configs_in_order, key=configs_in_order.index)
+    assert configs_in_order[0] == "p1_managed"
+    assert configs_in_order[-1] == "p1_toolbox"
+
+
+def test_cell_key_is_stable():
+    # --resume finds its place by this string. Changing it silently re-runs a
+    # completed sweep from scratch, at full cost.
+    assert traces.cell_key("semantic-q1", "p2_managed", 1, 3) == "semantic-q1|p2_managed|tier1|run3"
+
+
+def test_header_records_whether_the_tier_fence_was_on():
+    # Without this a results file cannot be told apart from an uncontrolled one.
+    meta = battery.header(battery.plan(_questions()[:1], ["p1_managed"], [0], 1))
+    assert "use_tier_sa" in meta
+    assert meta["total_cells"] == 1
+    assert meta["agent_model"]
+
+
+def test_round_trip_preserves_tool_calls(tmp_path):
+    path = tmp_path / "results.json"
+    cell = traces.Cell(
+        cell_key="q|c|tier0|run1",
+        question_id="q",
+        category="direct",
+        question="?",
+        config="p1_managed",
+        tier=0,
+        run=1,
+        answer="42",
+        tool_calls=[traces.ToolCall(seq=0, name="execute_sql", args={"sql": "SELECT 1"},
+                                    result="[{}]", is_error=False)],
+    )
+    traces.save(path, {cell.cell_key: cell}, {"note": "test"})
+    loaded = traces.load(path)
+    assert loaded[cell.cell_key].tool_names() == ["execute_sql"]
+    assert loaded[cell.cell_key].tool_calls[0].args == {"sql": "SELECT 1"}
+    assert json.loads(path.read_text())["header"] == {"note": "test"}
+
+
+def test_only_failed_cells_are_reworked_by_resume():
+    good = traces.Cell(cell_key="k", question_id="q", category="direct", question="?",
+                       config="p1_managed", tier=0, run=1, answer="42")
+    errored = traces.Cell(cell_key="k", question_id="q", category="direct", question="?",
+                          config="p1_managed", tier=0, run=1, answer="42", error="boom")
+    empty = traces.Cell(cell_key="k", question_id="q", category="direct", question="?",
+                        config="p1_managed", tier=0, run=1, answer="   ")
+    assert good.ok
+    assert not errored.ok
+    assert not empty.ok
+
+
+def test_mcp_success_is_not_read_as_an_error():
+    # An MCP result always carries `isError`, and "iserror" contains "error", so
+    # a substring test marks every successful call failed. Read the flag.
+    assert not _failed({"content": [{"type": "text", "text": "ok"}], "isError": False})
+    assert _failed({"content": [], "isError": True})
+    assert _failed({"error": "connection lost"})
+    assert not _failed({"content": []})  # empty but successful is not an error
+
+
+def test_transient_endpoint_failures_are_retried_and_real_ones_are_not():
+    # Verbatim from the M6 sweep. Both of these are conditions of the endpoint,
+    # and both clustered on particular arms — four 503s hit only p2_toolbox and
+    # p3_managed — so recording them would charge a service blip to an
+    # architecture. Anything that could only have come from the arm itself must
+    # still be kept: DESIGN.md §9.4 counts those as failures rather than dropping
+    # them, because dropping them flatters whichever path crashes most.
+    assert agents._is_transient(Exception(
+        "ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': "
+        "'The service is currently unavailable.', 'status': 'UNAVAILABLE'}}"
+    ))
+    assert agents._is_transient(Exception("_ResourceExhaustedError: 429 RESOURCE_EXHAUSTED"))
+
+    assert not agents._is_transient(Exception("PermissionDenied: 403 lacks bigquery.jobs.create"))
+    assert not agents._is_transient(Exception("BadRequest: 400 Unrecognized name: revenue_amount"))
+    assert not agents._is_transient(Exception("TimeoutError: toolbox server never became ready"))
+
+
+def test_matched_arms_really_match():
+    # The whole point of p1_matched/p3_matched is that the *only* difference from
+    # their managed twins is which endpoint serves the schema. If someone widens
+    # MANAGED_BIGQUERY_TOOLS and not MATCHED_BIGQUERY_TOOLS, the arm silently
+    # stops being a control and F4 goes back to measuring two things at once.
+    managed_bq = set(mcp_clients.MANAGED_BIGQUERY_TOOLS)
+    matched_bq = set(mcp_clients.MATCHED_BIGQUERY_TOOLS)
+    # `execute_sql_readonly` (managed) and `execute_sql` under writeMode:blocked
+    # (Toolbox) are the same capability under different names.
+    assert managed_bq - {"execute_sql_readonly"} == matched_bq - {"execute_sql"}
+    assert set(mcp_clients.MANAGED_DATAPLEX_TOOLS) == set(mcp_clients.MATCHED_DATAPLEX_TOOLS)
+
+    p1 = mcp_clients.CONFIGS["p1_matched"]
+    p3 = mcp_clients.CONFIGS["p3_matched"]
+    assert len(p1.toolbox_tools) == len(mcp_clients.MANAGED_BIGQUERY_TOOLS)
+    assert len(p3.toolbox_tools) == len(mcp_clients.MANAGED_DATAPLEX_TOOLS) + len(
+        mcp_clients.MANAGED_BIGQUERY_TOOLS
+    )
+
+
+def test_plan_is_the_full_factorial_with_matched_arms():
+    questions = _questions()
+    current = battery.plan(questions, list(mcp_clients.CONFIG_KEYS), [0, 1], 5)
+    assert len(mcp_clients.CONFIG_KEYS) == 10
+    assert len(current) == 12 * 10 * 2 * 5 == 1200
+    assert len({battery.traces.cell_key(q.id, c, t, r) for q, c, t, r in current.cells}) == 1200
+
+
+def test_cost_join_fields_survive_a_round_trip(tmp_path):
+    # started_at/ended_at are the join key to BigQuery job attribution and cannot
+    # be backfilled, so losing them in serialization would silently cost a sweep.
+    path = tmp_path / "r.json"
+    cell = traces.Cell(
+        cell_key="k", question_id="q", category="direct", question="?",
+        config="p1_matched", tier=1, run=1, answer="42",
+        started_at="2026-09-03T12:00:00+00:00", ended_at="2026-09-03T12:01:00+00:00",
+        attempts=3,
+        tool_calls=[traces.ToolCall(seq=0, name="execute_sql", result="[]", duration_s=1.25)],
+    )
+    traces.save(path, {cell.cell_key: cell}, {})
+    got = traces.load(path)[cell.cell_key]
+    assert got.started_at and got.ended_at
+    assert got.attempts == 3
+    assert got.tool_calls[0].duration_s == 1.25
+
+
+def test_retried_cells_are_flagged_so_latency_stays_comparable():
+    # A cell that hit quota backoff carries up to ~300s of sleep in latency_s.
+    # Reporting it alongside single-attempt cells is how you publish a fake number.
+    clean = traces.Cell(cell_key="k", question_id="q", category="direct", question="?",
+                        config="p1_managed", tier=0, run=1, answer="42", attempts=1)
+    retried = traces.Cell(cell_key="k", question_id="q", category="direct", question="?",
+                          config="p1_managed", tier=0, run=1, answer="42", attempts=4)
+    assert clean.attempts == 1
+    assert retried.attempts > 1
+
+
+def test_every_outcome_field_reaches_the_cell():
+    # `to_cell` copies Outcome -> Cell field by field. Adding a field to both and
+    # forgetting the copy line yields a results file full of defaults that looks
+    # perfectly healthy — which is exactly how started_at/ended_at shipped empty
+    # on the first instrumented smoke run. Give every shared field a value no
+    # default could be mistaken for, and check each one arrives.
+    import dataclasses
+
+    outcome_fields = {f.name for f in dataclasses.fields(agents.Outcome)}
+    shared = outcome_fields & {f.name for f in dataclasses.fields(traces.Cell)}
+
+    outcome = agents.Outcome(
+        answer="42",
+        tool_calls=[traces.ToolCall(seq=1, name="execute_sql", result="ok")],
+        usage={"total_token_count": 1234},
+        latency_s=12.5,
+        error="boom",
+        started_at="2026-01-01T00:00:00+00:00",
+        ended_at="2026-01-01T00:01:00+00:00",
+        attempts=3,
+    )
+    for name in sorted(shared):
+        assert getattr(outcome, name), f"fixture leaves Outcome.{name} at its default"
+
+    question = battery.Question(
+        id="q1", category="direct", question="how many?", evidence={}, golden_key="g",
+    )
+    cell = battery.to_cell(question, "p1_toolbox", 1, 2, outcome)
+    for name in sorted(shared):
+        assert getattr(cell, name) == getattr(outcome, name), (
+            f"Cell.{name} exists on Outcome but to_cell never copies it"
+        )

@@ -1,0 +1,134 @@
+[
+  {
+    "id": "direct-q1",
+    "category": "direct",
+    "question": "How many registered users are there?",
+    "evidence": {
+      "must_have": ["users"],
+      "nice_to_have": ["user_id"],
+      "distractor": []
+    },
+    "golden_key": "total_users"
+  },
+  {
+    "id": "direct-q2",
+    "category": "direct",
+    "question": "How many distinct event types appear in the 2026 raw events?",
+    "evidence": {
+      "must_have": ["raw_events_2026", "event_type"],
+      "nice_to_have": [],
+      "distractor": []
+    },
+    "golden_key": "distinct_event_types"
+  },
+  {
+    "id": "semantic-q1",
+    "category": "semantic-ambiguity",
+    "question": "What is our total net revenue, all time?",
+    "evidence": {
+      "must_have": ["txn_amt_x2", "status_flg"],
+      "nice_to_have": ["transactions_v2_final"],
+      "distractor": ["revenue_amount"]
+    },
+    "golden_key": "net_revenue_all_time"
+  },
+  {
+    "id": "semantic-q2",
+    "category": "semantic-ambiguity",
+    "question": "What was our net revenue over the trailing 30 days?",
+    "evidence": {
+      "must_have": ["txn_amt_x2", "status_flg", "txn_ts"],
+      "nice_to_have": ["transactions_v2_final"],
+      "distractor": ["revenue_amount"]
+    },
+    "golden_key": "net_revenue_trailing_30d"
+  },
+  {
+    "id": "semantic-q3",
+    "category": "semantic-ambiguity",
+    "question": "Which sales region produced the most net revenue, and how much was it?",
+    "evidence": {
+      "must_have": ["txn_amt_x2", "status_flg", "region"],
+      "nice_to_have": ["users", "user_id"],
+      "distractor": ["revenue_amount"]
+    },
+    "golden_key": "net_revenue_top_region"
+  },
+  {
+    "id": "governed-q1",
+    "category": "governed-logic",
+    "question": "How many Active users do we have?",
+    "evidence": {
+      "must_have": ["is_active", "raw_events_2026", "event_ts"],
+      "nice_to_have": ["users", "user_id"],
+      "distractor": []
+    },
+    "golden_key": "active_user_count"
+  },
+  {
+    "id": "governed-q2",
+    "category": "governed-logic",
+    "question": "What is the average net transaction value for our Active users?",
+    "evidence": {
+      "must_have": ["txn_amt_x2", "status_flg", "is_active", "raw_events_2026", "event_ts"],
+      "nice_to_have": ["users", "user_id"],
+      "distractor": ["revenue_amount"]
+    },
+    "golden_key": "avg_txn_value_active_users"
+  },
+  {
+    "id": "governed-q3",
+    "category": "governed-logic",
+    "question": "How much of our net revenue comes from Active users?",
+    "evidence": {
+      "must_have": ["txn_amt_x2", "status_flg", "is_active", "raw_events_2026", "event_ts"],
+      "nice_to_have": ["users", "user_id"],
+      "distractor": ["revenue_amount"]
+    },
+    "golden_key": "net_revenue_from_active_users"
+  },
+  {
+    "id": "metadata-q1",
+    "category": "metadata",
+    "question": "How many transactions are missing a net revenue value?",
+    "evidence": {
+      "must_have": ["txn_amt_x2"],
+      "nice_to_have": ["transactions_v2_final"],
+      "distractor": ["revenue_amount"]
+    },
+    "golden_key": "null_revenue_count"
+  },
+  {
+    "id": "metadata-q2",
+    "category": "metadata",
+    "question": "How many transactions were refunded?",
+    "evidence": {
+      "must_have": ["status_flg"],
+      "nice_to_have": ["transactions_v2_final"],
+      "distractor": []
+    },
+    "golden_key": "refunded_txn_count"
+  },
+  {
+    "id": "trap-q1",
+    "category": "trap",
+    "question": "Some of our list prices look wrong. How many transactions have a gross list price more than 100 times the net revenue recorded for that transaction?",
+    "evidence": {
+      "must_have": ["revenue_amount", "txn_amt_x2"],
+      "nice_to_have": ["transactions_v2_final"],
+      "distractor": []
+    },
+    "golden_key": "list_price_outlier_count"
+  },
+  {
+    "id": "trap-q2",
+    "category": "trap",
+    "question": "If we reported revenue by summing the revenue_amount column, by what percent would that overstate our actual net revenue?",
+    "evidence": {
+      "must_have": ["revenue_amount", "txn_amt_x2", "status_flg"],
+      "nice_to_have": ["transactions_v2_final"],
+      "distractor": []
+    },
+    "golden_key": "gross_minus_net_gap_pct"
+  }
+]

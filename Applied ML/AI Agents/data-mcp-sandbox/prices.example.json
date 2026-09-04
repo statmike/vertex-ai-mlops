@@ -1,0 +1,27 @@
+{
+  "_comment": [
+    "Copy to prices.json to put dollars in the report. Optional: every table",
+    "reports tokens and bytes regardless, and an unset rate prints '--', which",
+    "means unpriced and never free.",
+    "",
+    "Nothing here is filled in for you on purpose. Your rates differ from ours by",
+    "region, by edition, and by whatever committed-use discount you negotiated,",
+    "and a plausible-looking wrong number in a cost-per-correct-answer column is",
+    "worse than an empty one. Look them up, then record where and when below --",
+    "'source' and 'verified' are printed under the cost table, so a reader can",
+    "tell a dated list price from an invention.",
+    "",
+    "bq_per_tib_usd:      BigQuery on-demand analysis, per TiB billed.",
+    "                     Skip it if you are on capacity/slots -- this harness",
+    "                     measures bytes, which do not price a reservation.",
+    "input_per_mtok_usd:  Gemini prompt tokens, per million. Dominates: tool",
+    "                     schemas are resent every turn.",
+    "output_per_mtok_usd: Gemini output tokens, per million. Under 1% of total",
+    "                     tokens in every arm measured here."
+  ],
+  "bq_per_tib_usd": null,
+  "input_per_mtok_usd": null,
+  "output_per_mtok_usd": null,
+  "source": "where you looked these up",
+  "verified": "YYYY-MM-DD"
+}

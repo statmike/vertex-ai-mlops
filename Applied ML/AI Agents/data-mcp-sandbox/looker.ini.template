@@ -1,0 +1,35 @@
+# Copy to `looker.ini` (gitignored) and fill in. This file is the tracked shape;
+# the real one never leaves your machine.
+#
+# WHY A KEY AT ALL, IN AN ADC-ONLY PROJECT
+# ----------------------------------------
+# ADC covers Looker -> BigQuery. It does not cover us -> Looker: the Looker API
+# 4.0 has no ADC or Google-OAuth equivalent, so a client id/secret pair is
+# unavoidable. It is the one real secret in this repo, which is why it lives in
+# its own gitignored file rather than in `.env`.
+#
+# Generate at: Looker > Account (or Admin > Users > user > Edit Keys) > New API3 Key
+
+# Admin credentials. Used ONLY by scripts/looker_provision.py, to create the
+# sandbox's own objects. Never used by the sweep itself.
+[Looker]
+base_url=https://your-instance.looker.app
+client_id=
+client_secret=
+verify_ssl=true
+
+# The sweep's per-tier users, written automatically by
+# `scripts/looker_provision.py --apply`. Do not fill these in by hand.
+#
+# These are deliberately NON-ADMIN and scoped to a one-model model set: an admin
+# sees every model regardless, which would both violate the shared-instance guest
+# rule and hand Path 2 a decoy no other path faces.
+#
+# [t0]
+# base_url=https://your-instance.looker.app
+# client_id=
+# client_secret=
+# verify_ssl=true
+#
+# [t1]
+# ...

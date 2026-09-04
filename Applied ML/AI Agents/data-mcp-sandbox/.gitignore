@@ -1,0 +1,95 @@
+# Environments
+.venv/
+env/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# IDEs & Tools
+.vscode/
+.idea/
+.cursor/
+.windsurf/
+
+# Claude Code — commit the shared project config (.claude/settings.json, hooks),
+# but never the personal, per-developer override.
+.claude/settings.local.json
+
+# OS Generated
+.DS_Store
+Thumbs.db
+
+# Secrets & Local Config (GCP auth uses ADC — never commit credentials)
+.env
+.env.*
+# ...but not the template. `.env.*` was quietly excluding the one file a new
+# collaborator needs first, so a fresh clone had nothing to copy from.
+!.env.example
+
+# Local unit prices. Rates differ by region, edition, and negotiated discount, so
+# this is the operator's own input and never ours to commit. `prices.example.json`
+# is the tracked copy; an absent file means tokens and bytes, no dollars.
+prices.json
+
+# Service Account keys must never be committed (ADC only — CODE_STANDARDS §4)
+*-key.json
+*_key.json
+
+# Looker API3 credentials. Unlike BigQuery, the Looker API has no ADC option, so
+# this pair is a genuine secret that has to live somewhere. It lives here, local
+# to the project and never committed. `looker.ini.template` is the tracked copy.
+looker.ini
+service-account*.json
+*credentials*.json
+gcp-*.json
+
+# Packaging Artifacts
+*.egg-info/
+build/
+dist/
+
+# MCP Toolbox binary — a platform-specific download, not source.
+# Fetch it with: make toolbox
+bin/
+
+# Raw sweep captures. 960 cells x full tool results is tens of MB of JSON, and it
+# is reproducible with `make sweep`. The *scored* output and the plots under
+# results/ are small and stay tracked — they are what the README cites.
+results/raw/
+
+# Logs
+*.log
+# --- Monorepo cell, scenario B ------------------------------------------------
+# Agent harness — local tooling, not tracked (README stays tracked)
+AGENT.md
+AGENTS.md
+CLAUDE.md
+.cursorrules
+.windsurfrules
+.claude/
+CODE_STANDARDS.md
+GETTING_STARTED.md
+IDEA.md
+DESIGN.md
+DEV_NOTES.md
+ROADMAP.md
+docs/monorepo-ci.yml.example
+
+# The monorepo root .gitignore ignores `uv.lock` everywhere (pattern has no
+# slash, so it matches at any depth). Re-include it here: this cell is a
+# standalone uv project and the lockfile is what makes its env reproducible.
+# Matches the sibling `image-to-graph/uv.lock`, which is tracked. Delete this
+# line to follow the monorepo default instead.
+!uv.lock
+
