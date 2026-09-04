@@ -70,4 +70,4 @@ Full extracted notebook walkthroughs live in this skill's `narrative/` folder â€
 - [`narrative/wide_and_deep_classifier.md`](../narrative/wide_and_deep_classifier.md) (source: `models/wide_and_deep_classifier/`)
 - [`narrative/automl_classifier.md`](../narrative/automl_classifier.md) (source: `models/automl_classifier/`)
 
-Full syntax/options tables: see RESOURCES.md in the source repo (`bq-ml/RESOURCES.md`).
+Full syntax/options tables: see the source repo's per-model entries (`bq-ml/reference/create-model-model-types.md`), indexed from `bq-ml/RESOURCES.md`.

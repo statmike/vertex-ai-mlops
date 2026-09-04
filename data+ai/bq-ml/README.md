@@ -48,7 +48,7 @@ This is the sibling project to [**BigQuery AI Functions**](../bq-ai-functions/) 
 |----------|------------|
 | [Interactive Overview](overview.ipynb) | A short runnable tour — one example per category |
 | [Setup Reference](setup/) | Datasets, connections (for remote/imported/export), IAM, the CREATE MODEL deep dive, quotas, BigFrames |
-| [Detailed Reference](RESOURCES.md) | Syntax, options, outputs, and limitations for CREATE MODEL and every `ML.*` function |
+| [Detailed Reference](RESOURCES.md) | Index to the deep reference — syntax, options, outputs, and limitations for CREATE MODEL and every `ML.*` function, one page per section under [`reference/`](reference/) |
 | [Project Plan](PLANS.md) | The operating manual: conventions, templates, backlog, and audit procedure |
 | [Agent Skill](../../agent-skills/.agents/skills/bigquery-ml/SKILL.md) | Packaged, use-case-organized reference for AI coding agents — see below |
 

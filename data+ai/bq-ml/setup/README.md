@@ -129,7 +129,7 @@ OPTIONS (
 SELECT ... FROM `source_table`;
 ```
 
-- **`model_type`** picks the algorithm — see the catalog in [RESOURCES.md](../RESOURCES.md#create-model).
+- **`model_type`** picks the algorithm — see the [`model_type` catalog](../reference/comparison-tables.md#1-model_type-catalog).
 - **`input_label_cols`** names the target for supervised models.
 - **`data_split_method`** (default `AUTO_SPLIT`) holds out an evaluation set automatically, so `ML.EVALUATE` works with no extra data.
 - **`enable_global_explain = TRUE`** is required at training time if you want `ML.GLOBAL_EXPLAIN` later.

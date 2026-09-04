@@ -56,7 +56,8 @@ One folder per orchestration approach. Takes the SQL logic of a workflow and **o
 
 ### Supporting files
 - `README.md` — the landing-page map (tables + diagram + tree)
-- `RESOURCES.md` — the deep per-item reference
+- `RESOURCES.md` — the index to the deep per-item reference (scope, section map, BigFrames pointer)
+- `reference/` — the deep per-item reference itself, one page per section: `comparison-tables.md`, `create-model-model-types.md`, `model-lifecycle-functions.md`, `model-free-functions.md`, `model-management-monitoring.md`
 - `setup/README.md` — one-stop setup reference (connections, IAM, CREATE MODEL deep dive, quotas, BigFrames)
 - `overview.ipynb` — a short interactive tour (one example per category), grown as content is added
 
@@ -353,7 +354,7 @@ Keep our content in sync with the official BigQuery ML documentation. Mirrors th
 ### Change types and checklists
 
 #### New model type
-- [ ] `RESOURCES.md`: Add a full entry in the CREATE MODEL catalog + the lifecycle functions it uses; update any comparison table
+- [ ] `reference/create-model-model-types.md`: Add a full entry; add the lifecycle functions it uses to `reference/model-lifecycle-functions.md`; update `reference/comparison-tables.md`
 - [ ] `README.md`: Add a row to the Models table; update the diagram if needed
 - [ ] Create `models/{name}/` with `{name}.ipynb` (full lifecycle template) + `{name}.sql` (progressive examples)
 - [ ] Pre-validate all SQL with `bq query` (train + drop validation models)
@@ -362,7 +363,7 @@ Keep our content in sync with the official BigQuery ML documentation. Mirrors th
 - [ ] If this changes a decision tree, introduces a new cross-cutting gotcha, or adds a new head-to-head comparison with `bq-ai-functions`: update `../../agent-skills/.agents/skills/bigquery-ml/` (SKILL.md and/or the relevant `reference/*.md`)
 
 #### New model-free function
-- [ ] `RESOURCES.md`: Add a full entry in the Model-Free Functions section
+- [ ] `reference/model-free-functions.md`: Add a full entry; update `reference/comparison-tables.md` if it changes a matrix
 - [ ] `README.md`: Add to the Functions table
 - [ ] Create `functions/{name}/` with `{name}.ipynb` + `{name}.sql`
 - [ ] Cross-reference + `PLANS.md` mapping + audit-log entry
@@ -383,7 +384,7 @@ Keep our content in sync with the official BigQuery ML documentation. Mirrors th
 - [ ] If this changes a decision tree, introduces a new cross-cutting gotcha, or adds a new head-to-head comparison with `bq-ai-functions`: update `../../agent-skills/.agents/skills/bigquery-ml/` (SKILL.md and/or the relevant `reference/*.md`)
 
 #### Status / capability change (Preview→GA, new option, new model_type, etc.)
-- [ ] Update `RESOURCES.md` entry (status, options, syntax, outputs, limitations)
+- [ ] Update the entry in the relevant `reference/*.md` (status, options, syntax, outputs, limitations)
 - [ ] Update `README.md` status labels and tables
 - [ ] If it affects a built notebook, revise + re-run (Restart & Run All) before review
 - [ ] `PLANS.md`: audit-log entry
@@ -406,11 +407,11 @@ Keep our content in sync with the official BigQuery ML documentation. Mirrors th
    | A new way to **run** this work — managed runtime, new orchestration surface, new pipeline task type | *New pipeline* checklist above; row in *Tracked upcoming* until built. This bucket needs a **second source**: the BigQuery release notes do not cover Dataform or Cloud Run, so scan the [Dataform release notes](https://docs.cloud.google.com/dataform/docs/release-notes) over the same window. That is where a first-party dbt runtime, a new Dataform execution surface, or a new BigQuery pipelines task type would appear. See the *Running dbt natively on Google Cloud* row in *Tracked upcoming* for what has already been ruled out and when |
 
    Also watch for entries that **remove or disable** a feature; Preview surface can be pulled mid-Preview. **Skipping this step is what let six releases go unnoticed between April and September 2026** — the *Tracked upcoming* tables in both projects sat empty the whole time because nothing fed them.
-2. **Fetch and compare by category** — for each documented item, fetch its doc URL (table below) and compare against `RESOURCES.md`: status, options/parameters, syntax, outputs, limitations, new `model_type` values, new `ML.*` functions.
+2. **Fetch and compare by category** — for each documented item, fetch its doc URL (table below) and compare against its entry in the relevant `reference/*.md`: status, options/parameters, syntax, outputs, limitations, new `model_type` values, new `ML.*` functions.
 3. **Classify each change** and apply the relevant checklist above.
-4. **Update files in order:** RESOURCES.md entries → RESOURCES.md comparison tables → README.md tables/diagram → PLANS.md (URLs table, mapping, audit log).
+4. **Update files in order:** `reference/*.md` entries → `reference/comparison-tables.md` → `RESOURCES.md` (only if a section was added or renamed) → README.md tables/diagram → PLANS.md (URLs table, mapping, audit log).
 5. **Check for new items** — new model types or `ML.*` functions. If docs exist, add full coverage; if only announced, add to Tracked-upcoming.
-6. **Verify consistency** — grep status labels across RESOURCES/README/PLANS; confirm the URL table is complete.
+6. **Verify consistency** — grep status labels across `reference/`, README and PLANS; confirm the URL table is complete.
 7. **Identify notebook impacts** — list notebooks needing a fresh Restart & Run All.
 
 ### Documentation URLs

@@ -45,4 +45,4 @@ If the ask is ambiguous between BigQuery ML (trained models) and BigQuery's gene
 
 ## Go deeper (only resolves inside this repo)
 
-If you're working inside the `vertex-ai-mlops` repo, every reference file's "Go deeper" pointers resolve to real, tested notebooks/`.sql` files under `models/`, `functions/`, `workflows/`, and `pipelines/`, plus the full syntax/options tables in `RESOURCES.md`. This skill is self-contained without that repo — the reference files above already carry the distilled decision guidance and verified gotchas — but the repo is where the full progressive lifecycle and raw evidence live.
+If you're working inside the `vertex-ai-mlops` repo, every reference file's "Go deeper" pointers resolve to real, tested notebooks/`.sql` files under `models/`, `functions/`, `workflows/`, and `pipelines/`, plus the full syntax/options tables under `reference/`, indexed from `RESOURCES.md`. This skill is self-contained without that repo — the reference files above already carry the distilled decision guidance and verified gotchas — but the repo is where the full progressive lifecycle and raw evidence live.

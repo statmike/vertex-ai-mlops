@@ -91,6 +91,6 @@ Full extracted notebook walkthroughs live in this skill's `narrative/` folder â€
 - [`narrative/arima_plus_xreg.md`](../narrative/arima_plus_xreg.md) (source: `models/arima_plus_xreg/`)
 - [`narrative/time_series.md`](../narrative/time_series.md) (source: `functions/time_series/` â€” `ML.TREND`, `ML.SEASONALITY`, `ML.DETECT_CHANGE_POINTS`)
 
-Full syntax/options tables: see RESOURCES.md in the source repo (`bq-ml/RESOURCES.md`).
+Full syntax/options tables: see the source repo's per-model entries (`bq-ml/reference/create-model-model-types.md`), indexed from `bq-ml/RESOURCES.md`.
 
 `bq-ai-functions`'s `AI.FORECAST` and `AI.KEY_DRIVERS` are zero-setup generative alternatives to `ARIMA_PLUS` and `CONTRIBUTION_ANALYSIS` respectively, worth considering when you don't need `ARIMA_PLUS`'s custom holidays/external regressors/hierarchy or `CONTRIBUTION_ANALYSIS`'s SQL-native aggregate-level analysis.

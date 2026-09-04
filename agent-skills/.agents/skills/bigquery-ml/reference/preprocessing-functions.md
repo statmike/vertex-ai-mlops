@@ -131,7 +131,7 @@ The scaler statistics and encoder vocabulary computed here are stored with the m
 
 ## Go deeper
 
-These functions are documented in full (option tables, syntax, defaults, BigFrames equivalents) directly in `RESOURCES.md` under **"Model-Free Functions"** — there is no dedicated per-function repo folder structure for these the way there is for model types. Full extracted notebook walkthroughs live in this skill's `narrative/` folder:
+These functions are documented in full (option tables, syntax, defaults, BigFrames equivalents) in the source repo at `bq-ml/reference/model-free-functions.md` — there is no dedicated per-function repo folder structure for these the way there is for model types. Full extracted notebook walkthroughs live in this skill's `narrative/` folder:
 
 - [`narrative/scalers.md`](../narrative/scalers.md) (source: `functions/scalers/`) — all five scalers side by side on penguins, including the STDDEV_POP and MIN_MAX_SCALER capping proofs, ending in an embedded LOGISTIC_REG TRANSFORM
 - [`narrative/bucketizing.md`](../narrative/bucketizing.md) (source: `functions/bucketizing/`) — ML.BUCKETIZE/ML.QUANTILE_BUCKETIZE/ML.HASH_BUCKETIZE together, including the exclude_boundaries proof
@@ -141,4 +141,4 @@ These functions are documented in full (option tables, syntax, defaults, BigFram
 - [`narrative/distance.md`](../narrative/distance.md) (source: `functions/distance/`) — ML.DISTANCE and ML.LP_NORM together, including the Jaccard-derivation and ML.NORMALIZER-equivalence proofs
 - [`narrative/transform_only.md`](../narrative/transform_only.md) (source: `models/transform_only/`) — the fullest cross-function combination: ML.IMPUTER + scalers + ML.ONE_HOT_ENCODER feeding a downstream LOGISTIC_REG
 
-There is no repo notebook exercising the image-preprocessing family (`ML.DECODE_IMAGE`/`ML.RESIZE_IMAGE`/`ML.CONVERT_IMAGE_TYPE`/`ML.CONVERT_COLOR_SPACE`) — those entries in RESOURCES.md are documentation-pattern only, unverified live in this repo.
+There is no repo notebook exercising the image-preprocessing family (`ML.DECODE_IMAGE`/`ML.RESIZE_IMAGE`/`ML.CONVERT_IMAGE_TYPE`/`ML.CONVERT_COLOR_SPACE`) — those entries in `bq-ml/reference/model-free-functions.md` are documentation-pattern only, unverified live in this repo.

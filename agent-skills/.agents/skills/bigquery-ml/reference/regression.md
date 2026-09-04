@@ -69,4 +69,4 @@ Full extracted notebook walkthroughs live in this skill's `narrative/` folder â€
 - [`narrative/wide_and_deep_regressor.md`](../narrative/wide_and_deep_regressor.md) (source: `models/wide_and_deep_regressor/`)
 - [`narrative/automl_regressor.md`](../narrative/automl_regressor.md) (source: `models/automl_regressor/`)
 
-Full syntax/options tables: see RESOURCES.md in the source repo (`bq-ml/RESOURCES.md`).
+Full syntax/options tables: see the source repo's per-model entries (`bq-ml/reference/create-model-model-types.md`), indexed from `bq-ml/RESOURCES.md`.

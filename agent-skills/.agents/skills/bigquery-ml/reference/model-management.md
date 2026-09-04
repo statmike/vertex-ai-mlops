@@ -79,4 +79,4 @@ Full extracted notebook walkthroughs live in this skill's `narrative/` folder �
 - [`narrative/export.md`](../narrative/export.md) (source: `models/export/`) — EXPORT MODEL covering both TF SavedModel and XGBoost Booster formats, run locally outside BigQuery
 - [`narrative/data_quality.md`](../narrative/data_quality.md) (source: `functions/data_quality/`) — all five data validation/drift functions on census_adult_income; also used as the conditional-retrain trigger in pipelines/
 
-Full RESOURCES.md documentation for the data validation functions is under the "Model Management & Monitoring" section (`bq-ml/RESOURCES.md`).
+Full documentation for the data validation functions lives in the source repo at `bq-ml/reference/model-management-monitoring.md`.
