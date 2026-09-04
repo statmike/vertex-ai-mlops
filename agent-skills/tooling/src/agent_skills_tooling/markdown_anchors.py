@@ -66,5 +66,22 @@ def markdown_sources(path: Path) -> list[str]:
 
 
 def anchors_of(path: Path) -> set[str]:
-    """Every anchor a reader can link to in this file."""
-    return {slugify(title) for text in markdown_sources(path) for _, title in headings(text)}
+    """Every anchor a reader can link to in this file.
+
+    Repeated headings are the subtle part. GitHub keeps anchors unique by suffixing
+    each repeat in document order -- four "When do you need one?" headings become
+    `when-do-you-need-one`, `-1`, `-2`, `-3` (verified against GitHub's renderer on
+    `bq-ai-functions/setup/README.md`, which has exactly that). Collapsing them to one
+    slug would report a perfectly good link to `#...-2` as broken, so the count is
+    carried across the whole document -- across cells too, since GitHub renders a
+    notebook as one page.
+    """
+    seen: dict[str, int] = {}
+    anchors = set()
+    for text in markdown_sources(path):
+        for _, title in headings(text):
+            base = slugify(title)
+            count = seen.get(base, 0)
+            anchors.add(base if count == 0 else f"{base}-{count}")
+            seen[base] = count + 1
+    return anchors
