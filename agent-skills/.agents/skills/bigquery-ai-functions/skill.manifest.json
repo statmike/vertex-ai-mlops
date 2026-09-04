@@ -1,8 +1,9 @@
 {
   "name": "bigquery-ai-functions",
   "version": "0.3.0",
+  "source_project": "data+ai/bq-ai-functions",
   "generated_date": "2026-09-04",
-  "source_commit": "b3cc5320",
+  "source_commit": "0811fb10",
   "reference_files": [
     "classification-and-scoring.md",
     "document-processing.md",

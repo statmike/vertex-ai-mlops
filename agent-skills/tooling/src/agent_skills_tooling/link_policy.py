@@ -14,6 +14,9 @@ Anything else -- elsewhere in this repo, or outside it -- is a violation.
 Two distinctions matter:
 
 *Links* (``[text](target)``) are followable, so an outward one is always a violation.
+An in-project link that names a ``#anchor`` is also checked against the headings the
+target file actually offers -- a link to a heading that was renamed or moved still
+resolves to the file, so nothing else catches it.
 *Mentions* (a backticked path in prose) are only a violation when the target still
 exists somewhere outside the project: that is a live pointer a reader will chase.
 A mention of a path that no longer exists is retirement provenance -- it records
@@ -32,6 +35,8 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from agent_skills_tooling.markdown_anchors import anchors_of
+
 _LINK_RE = re.compile(r"\[([^\]]*)\]\(((?:[^()\s]|\([^()]*\))+)\)")
 _MENTION_RE = re.compile(r"`([^`\n]+)`")
 _SKIP_DIRS = {".venv", ".ipynb_checkpoints", "__pycache__", ".git", "node_modules"}
@@ -48,7 +53,7 @@ class Violation:
     file: Path
     cell: int | None
     line: int
-    kind: str  # "link" or "mention"
+    kind: str  # "link", "anchor", or "mention"
     target: str
     reason: str
 
@@ -131,25 +136,48 @@ def check_project(
             continue
         if _SKIP_DIRS & set(path.parts):
             continue
-        if path.name in EXEMPT_ANY_TARGET:
-            continue
+        # PLANS.md is exempt from the *outward-target* policy, not from having its
+        # links resolve: a citation pointing at a heading that no longer exists is
+        # broken wherever it lives.
+        policy_exempt = path.name in EXEMPT_ANY_TARGET
         result.scanned += 1
         is_readme = path.name == "README.md"
 
         for cell, text in _sources(path):
             for match in _LINK_RE.finditer(text):
                 target = match.group(2)
-                if target.startswith(_EXTERNAL_SCHEMES) or target.startswith("#"):
+                if target.startswith(_EXTERNAL_SCHEMES):
+                    continue
+                if target.startswith("#"):
+                    if target[1:] not in anchors_of(path):
+                        line = _line_of(text, match.start())
+                        result.violations.append(
+                            Violation(path, cell, line, "anchor", target, "no heading matches this anchor")
+                        )
                     continue
                 resolved = _resolve(target, path.parent)
-                if is_readme and resolved.is_relative_to(repo_root / README_ALLOWED_PREFIX):
-                    continue
-                reason = _classify(resolved, project_root, sibling_roots, repo_root)
+                skip_policy = policy_exempt or (
+                    is_readme and resolved.is_relative_to(repo_root / README_ALLOWED_PREFIX)
+                )
+                reason = "" if skip_policy else _classify(resolved, project_root, sibling_roots, repo_root)
                 if not reason and not resolved.exists():
-                    reason = "link target does not exist"
+                    reason = "" if policy_exempt else "link target does not exist"
                 if reason:
                     line = _line_of(text, match.start())
                     result.violations.append(Violation(path, cell, line, "link", target, reason))
+                    continue
+
+                anchor = target.partition("#")[2]
+                if not anchor or resolved.suffix not in {".md", ".ipynb"} or not resolved.exists():
+                    continue
+                if anchor not in anchors_of(resolved):
+                    line = _line_of(text, match.start())
+                    result.violations.append(
+                        Violation(path, cell, line, "anchor", target, "no heading matches this anchor")
+                    )
+
+            if policy_exempt:
+                continue
 
             for match in _MENTION_RE.finditer(text):
                 candidate = match.group(1).strip()

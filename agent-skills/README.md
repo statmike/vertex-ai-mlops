@@ -43,10 +43,22 @@ Links into the source repo (notebooks, `RESOURCES.md`) are written as plain repo
 ```bash
 cd agent-skills/tooling
 uv sync
+
+# Build
 uv run agent-skills convert-notebook <notebook.ipynb> --subproject-root <root> --output <out.md>
-uv run agent-skills validate .agents/skills/bigquery-ml
-uv run agent-skills validate .agents/skills --all
-uv run agent-skills manifest .agents/skills/bigquery-ml
+uv run agent-skills manifest ../.agents/skills/bigquery-ml
+uv run agent-skills validate ../.agents/skills/bigquery-ml
+uv run agent-skills validate ../.agents/skills --all
+
+# Check — run all three before committing a change to a source project
+uv run agent-skills check-links ../../data+ai/bq-ml \
+  --sibling ../../data+ai/bq-ai-functions --repo-root ../..   # outward links, dead links, dead #anchors
+uv run agent-skills check-reference ../../data+ai/bq-ml       # RESOURCES.md index vs. reference/ pages
+uv run agent-skills check-narratives ../.agents/skills --repo-root ../..   # narrative/ vs. its source notebook
 ```
+
+`check-narratives` finds each skill's notebooks through `source_project` in its
+`skill.manifest.json`; a skill without that field, or without a `narrative/`, is skipped.
+Each source project's `PLANS.md` documents the policy these checks enforce.
 
 See `PLANS.md` for the authoring standard, the backlog, and what's planned beyond this local-repo phase (external hub repo, GitHub Action sync, Claude Code plugin marketplace, community catalog submissions, PyPI installer).

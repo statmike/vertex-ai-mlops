@@ -34,10 +34,19 @@ Content should be distilled and maintained, not duplicated — the source `RESOU
 - [ ] Bump the manifest (`agent-skills manifest <skill-dir>`).
 - [ ] Audit-log entry.
 
-#### Tooling change (`convert_notebook.py`, `validate.py`, `manifest.py`)
+#### Tooling change (`convert_notebook.py`, `validate.py`, `manifest.py`, the `check-*` commands)
 - [ ] Update `tooling/src/agent_skills_tooling/`.
 - [ ] Re-run `uv sync` and re-validate all skills to confirm nothing regressed.
+- [ ] **Prove a new check fails, not just that it passes.** Break the thing it exists to
+      catch — an orphan page, a renamed heading, an edited narrative — confirm the error,
+      then restore. A check that has only ever been seen green is not known to work.
 - [ ] Audit-log entry.
+
+#### Checks the source projects depend on
+`check-links`, `check-reference` and `check-narratives` are required before every commit
+to `data+ai/bq-ml` and `data+ai/bq-ai-functions` (their `PLANS.md` files carry the
+commands and the policy). Changing one of them changes those projects' definition of
+"clean", so re-run all three against both projects in the same pass.
 
 ## Backlog / phases
 
@@ -52,3 +61,4 @@ Content should be distilled and maintained, not duplicated — the source `RESOU
 ## Audit log
 
 - **2026-07-29** — Phase 1 kickoff: scaffolded `agent-skills/`, built `tooling/` (`convert_notebook.py`, `validate.py`, `manifest.py`, CLI), proved the notebook-narrative extraction on `models/logistic_regression/logistic_regression.ipynb`.
+- **2026-09-04** — Three checks added, one extended, after `RESOURCES.md` was split into `reference/` pages in both source projects. `check-reference` verifies a project's `RESOURCES.md` index and its `reference/` pages agree (no orphan page, no dead index entry, one H1 per page, filename matching that H1's slug) — the index became load-bearing the moment it stopped holding the content, and a page it does not list is a page nobody finds. `check-narratives` regenerates every `narrative/*.md` and diffs it against the committed copy, which is the regenerate-and-diff audit that had been run by hand; it finds each skill's notebooks through a new `source_project` field in `skill.manifest.json`, so a skill without that field is skipped rather than guessed at. `check-links` gained **anchor resolution** — a link to `page.md#heading` still resolves to the file after the heading is renamed, so nothing else notices — and the `PLANS.md` exemption was narrowed to the *target* policy, since a citation pointing at a heading that does not exist is broken wherever it lives. Anchors are computed by a shared `markdown_anchors.py` implementing GitHub's slug algorithm, fence-aware because a `#` inside a fenced block is a comment and treating it as a heading invents anchors that do not exist; validated against all 141 real headings across both projects with zero collisions, and it reads `.ipynb` markdown cells as well as `.md`, without which notebook self-anchors read as broken. **Every check was proved to fail before being trusted** — an orphan page, a page renamed out of sync with its title, a broken anchor and an edited narrative each produced the expected error and a clean result on restore. Both BigQuery manifests carry `source_project` and sit at 0.3.0; `choosing-a-bigquery-ai-approach` has no narratives and is skipped. Post-state across both projects: 0 link violations, 0 reference errors, 94/94 narratives current, `validate --all` OK on all three skills.

@@ -9,6 +9,8 @@ from pathlib import Path
 from agent_skills_tooling.convert_notebook import convert_notebook_to_file
 from agent_skills_tooling.link_policy import check_project
 from agent_skills_tooling.manifest import write_manifest
+from agent_skills_tooling.narrative_drift import check_all_narratives
+from agent_skills_tooling.reference_structure import check_reference
 from agent_skills_tooling.validate import validate_all, validate_skill
 
 
@@ -51,8 +53,36 @@ def _cmd_check_links(args: argparse.Namespace) -> int:
     return 0 if result.ok else 1
 
 
+def _cmd_check_reference(args: argparse.Namespace) -> int:
+    result = check_reference(Path(args.project_root))
+    for error in result.errors:
+        print(f"ERROR {error}")
+    label = result.project_root.name
+    print(f"{'OK   ' if result.ok else 'FAIL '} [{label}] {result.checked} reference pages, {len(result.errors)} errors")
+    return 0 if result.ok else 1
+
+
+def _cmd_check_narratives(args: argparse.Namespace) -> int:
+    results = check_all_narratives(Path(args.skills_root), Path(args.repo_root))
+    exit_code = 0
+    for name, result in results.items():
+        for stale in result.stale:
+            print(f"STALE [{name}] narrative/{stale} — regenerate with convert-notebook")
+            exit_code = 1
+        for missing in result.missing_source:
+            print(f"ERROR [{name}] narrative/{missing} has no source notebook")
+            exit_code = 1
+        if result.ok:
+            print(f"OK    [{name}] {result.checked} narratives current")
+    if not results:
+        print("No skill declares a source_project — nothing to check")
+    return exit_code
+
+
 def _cmd_manifest(args: argparse.Namespace) -> int:
-    path, version = write_manifest(Path(args.skill_dir), version=args.version)
+    path, version = write_manifest(
+        Path(args.skill_dir), version=args.version, source_project=args.source_project
+    )
     print(f"Wrote {path} (version {version})")
     return 0
 
@@ -85,7 +115,25 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Set the version. Omit to keep the existing manifest's version (0.1.0 for a new skill).",
     )
+    p_manifest.add_argument(
+        "--source-project",
+        default=None,
+        help="Repo-relative project this skill is built from (e.g. data+ai/bq-ml). Omit to keep the existing value.",
+    )
     p_manifest.set_defaults(func=_cmd_manifest)
+
+    p_reference = subparsers.add_parser(
+        "check-reference", help="Check a project's RESOURCES.md index against its reference/ pages"
+    )
+    p_reference.add_argument("project_root", help="e.g. data+ai/bq-ml")
+    p_reference.set_defaults(func=_cmd_check_reference)
+
+    p_narratives = subparsers.add_parser(
+        "check-narratives", help="Regenerate every narrative and report the ones that have gone stale"
+    )
+    p_narratives.add_argument("skills_root", help="Parent of the skill directories")
+    p_narratives.add_argument("--repo-root", required=True, help="Repository root that source_project resolves against")
+    p_narratives.set_defaults(func=_cmd_check_narratives)
 
     args = parser.parse_args(argv)
     return args.func(args)
