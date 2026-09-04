@@ -112,18 +112,18 @@ try:
     env = composer_client.get_environment(name=composer_env_path)
     print(f'Environment already exists (state: {env.state.name}) — reusing it.')
 except Exception:
-    print(f'Creating Composer 3 environment {COMPOSER_ENVIRONMENT} — this takes ~20-30 minutes...')
+    print(f'Creating Gen 3 environment {COMPOSER_ENVIRONMENT} — this takes ~20-30 minutes...')
     env_config = environments.Environment(
         name=composer_env_path,
         config=environments.EnvironmentConfig(
             software_config=environments.SoftwareConfig(
-                image_version='composer-3-airflow-2.11.1-build.11',  # Composer 3's current default image
+                image_version='composer-3-airflow-2.11.1-build.11',  # Gen 3's current default image
             ),
             node_config=environments.NodeConfig(
                 service_account=environment_service_account,
             ),
             environment_size=environments.EnvironmentConfig.EnvironmentSize.ENVIRONMENT_SIZE_SMALL,
-            # Composer 3 exposes explicit per-component sizing (workloads_config) --
+            # Gen 3 exposes explicit per-component sizing (workloads_config) --
             # this is the actual lever for keeping a demo environment cheap. Every
             # component below is set to the smallest accepted values.
             workloads_config=environments.WorkloadsConfig(

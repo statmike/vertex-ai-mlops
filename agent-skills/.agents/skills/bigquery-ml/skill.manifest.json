@@ -1,8 +1,8 @@
 {
   "name": "bigquery-ml",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "generated_date": "2026-09-04",
-  "source_commit": "a1a9189e",
+  "source_commit": "e38b5c81",
   "reference_files": [
     "classification.md",
     "model-management.md",
