@@ -107,7 +107,7 @@ The Spark path. For teams in the PySpark ecosystem, or when data lives in format
 
 ### 4. [Orchestrating Batch Inference With Airflow](./Orchestrating%20Batch%20Inference%20With%20Airflow.ipynb)
 
-The scheduling and coordination layer. Airflow (Cloud Composer) handles *when* to run batch inference and *what happens around it* — data dependencies, cross-system coordination, alerting, and backfill.
+The scheduling and coordination layer. Managed Airflow — formerly Cloud Composer — handles *when* to run batch inference and *what happens around it* — data dependencies, cross-system coordination, alerting, and backfill.
 
 **What you'll learn:**
 - **Airflow → KFP pattern:** Airflow schedules and monitors, KFP runs the ML pipeline. Best separation of concerns.
@@ -116,7 +116,7 @@ The scheduling and coordination layer. Airflow (Cloud Composer) handles *when* t
 - Production patterns: data dependency sensors, multi-model DAGs with task groups, retry/alerting, backfill
 - Operators: `RunPipelineJobOperator`, `CreateBatchPredictionJobOperator`, `DataflowStartPythonJobOperator`, `DataprocCreateBatchOperator`
 
-**Best for:** Teams with existing Airflow/Composer infrastructure who need to integrate ML batch inference into broader data pipelines.
+**Best for:** Teams with existing Airflow infrastructure who need to integrate ML batch inference into broader data pipelines.
 
 ## Choosing a Platform
 
@@ -130,7 +130,7 @@ The scheduling and coordination layer. Airflow (Cloud Composer) handles *when* t
 | **Scale-to-zero** | N/A (job-based) | N/A (job-based) | N/A (Serverless) | N/A |
 | **Data ecosystem** | GCS, BigQuery | GCS, BQ, Pub/Sub, Kafka | GCS, BQ, Hive, Delta | Any (via operators) |
 | **GPU support** | Via container | Runner v2 | RAPIDS, Spark GPU | Via engines |
-| **Managed service** | Fully managed | Fully managed | Serverless option | Cloud Composer |
+| **Managed service** | Fully managed | Fully managed | Serverless option | Managed Airflow |
 | **Scheduling** | Manual / KFP | Manual / KFP | Manual / KFP | Native (cron, sensors) |
 | **Backfill** | Manual | Manual | Manual | Native |
 | **Team fit** | ML engineers | Data engineers (Beam) | Data engineers (Spark) | Platform/data engineers |
@@ -172,6 +172,6 @@ Batch/
 ## Prerequisites
 
 - A GCP project with billing enabled
-- APIs enabled: Vertex AI, Cloud Build, Artifact Registry, Cloud Storage, BigQuery, Dataflow, Dataproc, Composer (for Notebook 4)
+- APIs enabled: Vertex AI, Cloud Build, Artifact Registry, Cloud Storage, BigQuery, Dataflow, Dataproc, Cloud Composer API (for Notebook 4 — the API kept its name when the service became Managed Airflow)
 - Python >= 3.10 with the packages listed in the parent [`pyproject.toml`](../pyproject.toml)
 - Each notebook includes its own setup cells — no pre-configuration needed beyond a GCP project

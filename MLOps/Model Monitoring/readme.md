@@ -67,7 +67,7 @@ These resources help get started with BQML based model monitoring:
 - Automate Monitoring With:
     - Dataform
     - Workflows
-    - Cloud Composer
+    - Managed Airflow (formerly Cloud Composer)
     - Vertex AI Pipelines with KFP
 
 ---
