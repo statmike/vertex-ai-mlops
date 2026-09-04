@@ -52,8 +52,8 @@ def _cmd_check_links(args: argparse.Namespace) -> int:
 
 
 def _cmd_manifest(args: argparse.Namespace) -> int:
-    path = write_manifest(Path(args.skill_dir), version=args.version)
-    print(f"Wrote {path}")
+    path, version = write_manifest(Path(args.skill_dir), version=args.version)
+    print(f"Wrote {path} (version {version})")
     return 0
 
 
@@ -80,7 +80,11 @@ def main(argv: list[str] | None = None) -> int:
 
     p_manifest = subparsers.add_parser("manifest", help="Generate/update a skill's manifest")
     p_manifest.add_argument("skill_dir")
-    p_manifest.add_argument("--version", default="0.1.0")
+    p_manifest.add_argument(
+        "--version",
+        default=None,
+        help="Set the version. Omit to keep the existing manifest's version (0.1.0 for a new skill).",
+    )
     p_manifest.set_defaults(func=_cmd_manifest)
 
     args = parser.parse_args(argv)

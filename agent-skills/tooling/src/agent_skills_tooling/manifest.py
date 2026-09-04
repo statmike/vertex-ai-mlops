@@ -30,13 +30,24 @@ def _git_short_hash(cwd: Path) -> str | None:
         return None
 
 
-def build_manifest(skill_dir: Path, version: str = "0.1.0") -> dict:
+DEFAULT_VERSION = "0.1.0"
+
+
+def build_manifest(skill_dir: Path, version: str | None = None) -> dict:
+    """Build a manifest dict. `version=None` means "keep whatever is already there".
+
+    An explicit `version` always wins. Passing nothing preserves the existing
+    manifest's version, falling back to DEFAULT_VERSION for a brand-new skill.
+    """
     reference_files = sorted(p.name for p in (skill_dir / "reference").glob("*.md")) if (skill_dir / "reference").exists() else []
     narrative_files = sorted(p.name for p in (skill_dir / "narrative").glob("*.md")) if (skill_dir / "narrative").exists() else []
 
-    existing_manifest_path = skill_dir / MANIFEST_FILENAME
-    if existing_manifest_path.exists():
-        version = json.loads(existing_manifest_path.read_text()).get("version", version)
+    if version is None:
+        existing_manifest_path = skill_dir / MANIFEST_FILENAME
+        if existing_manifest_path.exists():
+            version = json.loads(existing_manifest_path.read_text()).get("version", DEFAULT_VERSION)
+        else:
+            version = DEFAULT_VERSION
 
     return {
         "name": skill_dir.name,
@@ -48,8 +59,8 @@ def build_manifest(skill_dir: Path, version: str = "0.1.0") -> dict:
     }
 
 
-def write_manifest(skill_dir: Path, version: str = "0.1.0") -> Path:
+def write_manifest(skill_dir: Path, version: str | None = None) -> tuple[Path, str]:
     manifest = build_manifest(skill_dir, version=version)
     manifest_path = skill_dir / MANIFEST_FILENAME
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
-    return manifest_path
+    return manifest_path, manifest["version"]
