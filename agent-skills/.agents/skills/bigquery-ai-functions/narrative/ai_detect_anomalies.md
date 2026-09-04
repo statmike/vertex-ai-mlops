@@ -236,7 +236,9 @@ client.query(query).to_dataframe()
 
 ### 5. Pinning the TimesFM model version
 
-The `model` parameter selects which TimesFM version to use. **The default is TimesFM 2.5** — it was TimesFM 2.0, and Google changed it on the reference pages with no release note, so an unpinned query written before the change now returns different anomaly probabilities than it used to. Pin `model` explicitly whenever the numbers need to be reproducible.
+The `model` parameter selects which TimesFM version to use. **The default is TimesFM 2.5** — it was TimesFM 2.0, and Google changed it on the reference pages with no release note, so an unpinned query written before the change now returns different anomaly probabilities than it used to. Pin `model` explicitly so a future default move cannot shift your numbers.
+
+Pinning does not make the function reproducible, though. `AI.DETECT_ANOMALIES` returns a different result on a minority of runs even with `model` and `context_window` both pinned and the query cache off — the same behavior measured in detail on `functions/ai_evaluate` (`AI.EVALUATE`), where 2 of 16 pinned runs moved the reported error by ~32%. Materialize the anomaly table once and read the stored rows rather than re-running the function.
 
 TimesFM 2.5 also supports larger context windows (up to 15,360 against 2.0's 2,048).
 

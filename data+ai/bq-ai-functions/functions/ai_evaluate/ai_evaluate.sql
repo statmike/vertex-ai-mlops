@@ -24,6 +24,19 @@
 -- TabFM limits (documented on the AI.PREDICT page): at most 20 feature columns
 --   and at most 10 classes. Keep the training relation to a few thousand rows.
 --
+-- Reproducibility: this function is NOT reproducible run to run, on either
+--   branch, and pinning `model` does not fix it. On a deterministic synthetic
+--   series with `model` and `context_window` both pinned and the query cache
+--   off, 2 of 16 runs returned mean_absolute_error 0.5913808905590097 where the
+--   other 14 returned 0.8652198481135486 -- a ~32% swing. The majority value is
+--   the correct one: it equals MAE computed by hand from AI.FORECAST output
+--   over the same history and horizon. AI.FORECAST itself is stable. Not
+--   explained by context window (every legal value swept), horizon truncation,
+--   or version mixing -- it occurs on TimesFM 2.0 and 2.5 alike. Mechanism
+--   unknown. Materialize the metric once rather than re-running this function,
+--   and when a number must be defensible recompute it from AI.FORECAST output
+--   with ordinary SQL, which is deterministic.
+--
 -- Full reference: ../../RESOURCES.md
 -- Official docs: https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-evaluate
 

@@ -1591,7 +1591,13 @@ Two model families sit behind this section:
 | **Max Data Points** | 2,048 (2.0) / 15,360 (2.5) | 1,024 (most recent) | See AI.PREDICT limitations | Not specified |
 | **Context Window** | Yes (auto-selected) | Yes (auto-selected) | N/A | Yes (auto-selected) |
 
-> **Default model version changed.** All three TimesFM functions now default to **TimesFM 2.5** (previously TimesFM 2.0). Google made this change on the reference pages without a release note. Confirmed against a live query: an unpinned `AI.FORECAST` returns values identical to `model => 'TimesFM 2.5'` and different from `model => 'TimesFM 2.0'`. Any existing unpinned query silently changes behavior -- pin `model` explicitly if you need reproducibility.
+> **Default model version changed.** All three TimesFM functions -- `AI.FORECAST`, `AI.EVALUATE` and `AI.DETECT_ANOMALIES` -- now default to **TimesFM 2.5** (previously TimesFM 2.0). Google made this change on the reference pages without a release note. Confirmed against live queries with the query cache off, one variant per job: an unpinned call returns values identical to `model => 'TimesFM 2.5'` and different from `model => 'TimesFM 2.0'`, on all three functions. Any existing unpinned query silently changes behavior -- pin `model` explicitly so a future default move cannot shift your numbers.
+
+> **Pinning `model` does not make `AI.EVALUATE` or `AI.DETECT_ANOMALIES` reproducible.** These two return a different answer on a minority of runs even with `model` **and** `context_window` pinned, the query cache off, and a deterministic input. Measured on a synthetic 335-point series forecast 31 points ahead: 2 of 16 `AI.EVALUATE` runs returned a `mean_absolute_error` of `0.5913808905590097` where the other 14 returned `0.8652198481135486` -- a ~32% swing in the headline metric at roughly 1 in 8. The **majority value is the correct one**: MAE computed by hand from `AI.FORECAST` output over the same history and horizon equals `0.8652198481135486` to the last digit. `AI.DETECT_ANOMALIES` behaves the same way; `AI.FORECAST` itself is stable across runs. Not explained by the context window (every legal value was swept), by horizon truncation, or by version mixing -- it occurs on 2.0 and 2.5 alike. The mechanism is not known and is not guessed at here.
+>
+> **What to do about it.** Treat any `AI.EVALUATE` or `AI.DETECT_ANOMALIES` metric as a *draw*, not a value. Materialize the result once and read the stored table rather than re-running the function, exactly as with `AI.PREDICT`. When a number has to be defensible, recompute it from `AI.FORECAST` output with ordinary SQL -- that path is deterministic and it is how the correct value above was established. If you must re-run, run several times and take the mode rather than the last answer.
+>
+> **How this was measured, and why it matters for your own testing.** The BigQuery **query cache** hides this entirely: re-running identical SQL returns the cached first result, so an unstable function looks perfectly stable, and changing only the `SELECT` list creates a *different* cache entry, so two "identical" comparison loops can disagree for reasons that have nothing to do with the model. Putting several variants in one `UNION ALL` is equally misleading -- three TimesFM variants in one query returned three distinct values where isolated jobs showed two of them bit-identical. For any determinism or default-version question: **one variant per job, `--nouse_cache` on every job**, collect a value set over ~10 runs and compare *sets* rather than single draws, and cross-check the answer against a function that is deterministic.
 
 ---
 
@@ -1733,7 +1739,7 @@ FROM AI.DETECT_ANOMALIES(
 
 **Best practices:** Historical and target data schemas must match. Use `id_cols` to break anomalies down by dimensions.
 
-**Limitations:** Only the most recent 1,024 time points are evaluated (contact bqml-feedback@google.com for more). Minimum 3 data points required.
+**Limitations:** **Not reproducible run to run, and pinning `model` does not fix it** -- a minority of runs return a different anomaly set and different baselines even with `model` and `context_window` pinned and the query cache off, the same behavior measured in detail on `AI.EVALUATE`. Materialize the result once rather than re-running the function; see the reproducibility note at the top of this section. Only the most recent 1,024 time points are evaluated (contact bqml-feedback@google.com for more). Minimum 3 data points required.
 
 **Locations:** All supported BigQuery ML locations.
 
@@ -1915,7 +1921,7 @@ The TabFM branch accepts no `model`, `horizon`, `id_cols`, `context_window`, `da
 
 **Best practices:** For forecasting, split data into historical (for forecasting) and actual (for comparison) portions using date-based filtering, and use `id_cols` to evaluate across multiple time series. For prediction, pass AI.EVALUATE exactly the same training and holdout inputs you passed AI.PREDICT -- the pair is only meaningful if the split matches.
 
-**Limitations:** Minimum 3 data points required on the forecast branch. Default horizon is 1,024 (unlike AI.FORECAST which defaults to 10). TimesFM silently ignores data points beyond the max context (2,048 for 2.0, 15,360 for 2.5). On the TabFM branch, AI.PREDICT's documented caps -- **20 feature columns** and **10 classification categories** -- apply to the same model, though the AI.EVALUATE page has no Limitations section and does not restate them.
+**Limitations:** **Not reproducible run to run on either branch, and pinning `model` does not fix it** -- a minority of runs (measured at 2 of 16, with `model` and `context_window` both pinned and the query cache off) return a materially different metric, a ~32% swing in `mean_absolute_error` in the measured case. The majority value is the correct one, verified by recomputing MAE from `AI.FORECAST` output. See the reproducibility note at the top of this section for the full measurement and the workaround. Minimum 3 data points required on the forecast branch. Default horizon is 1,024 (unlike AI.FORECAST which defaults to 10). TimesFM silently ignores data points beyond the max context (2,048 for 2.0, 15,360 for 2.5). On the TabFM branch, AI.PREDICT's documented caps -- **20 feature columns** and **10 classification categories** -- apply to the same model, though the AI.EVALUATE page has no Limitations section and does not restate them.
 
 **Locations:** All supported BigQuery ML locations.
 

@@ -184,7 +184,9 @@ Two built-in foundation models sit behind these functions: **TimesFM** for time 
 | `AI.PREDICT` | [notebook](functions/ai_predict/ai_predict.ipynb) · [sql](functions/ai_predict/ai_predict.sql) | TVF | Preview | TabFM | Zero-shot regression and classification on structured data. Pass a training table and a prediction table in one call — no training step. |
 | `AI.EVALUATE` | [notebook](functions/ai_evaluate/ai_evaluate.ipynb) · [sql](functions/ai_evaluate/ai_evaluate.sql) | TVF | GA (TabFM branch Preview) | Both | Evaluate a TimesFM forecast (MAE, MSE, RMSE, MAPE, sMAPE, MASE) **or** a TabFM prediction (regression or classification metrics). |
 
-> **Default model version changed.** The three TimesFM functions now default to **TimesFM 2.5** instead of TimesFM 2.0, with no release note announcing it. Unpinned queries silently return different numbers than they used to — pin `model` explicitly if you need reproducibility.
+> **Default model version changed.** All three TimesFM functions — `AI.FORECAST`, `AI.EVALUATE` and `AI.DETECT_ANOMALIES` — now default to **TimesFM 2.5** instead of TimesFM 2.0, with no release note announcing it. Unpinned queries silently return different numbers than they used to — pin `model` explicitly so a future default move cannot shift your numbers.
+>
+> **Pinning is not the same as reproducibility.** `AI.EVALUATE` and `AI.DETECT_ANOMALIES` still return a different answer on a minority of runs with `model` *and* `context_window` pinned and the query cache off — 2 of 16 runs in the measured case, a ~32% swing in the reported error metric. `AI.FORECAST` is stable. Materialize these results once and read the stored table rather than re-running the function. Details in [RESOURCES.md](RESOURCES.md#predictive-ai).
 
 ### Augmented Analytics — Find what drives metric changes
 

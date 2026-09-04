@@ -6,6 +6,15 @@
 -- Returns: time_series_timestamp, time_series_data, is_anomaly,
 --          lower/upper_bound, anomaly_probability, status
 --
+-- Model version: the default is TimesFM 2.5 (it was 2.0 and moved with no
+--   release note). Pin `model` so a future default move cannot shift your
+--   numbers -- but pinning does NOT make this function reproducible. A
+--   minority of runs return a different result with `model` and
+--   `context_window` both pinned and the query cache off; the same behavior is
+--   measured in detail on AI.EVALUATE, where 2 of 16 pinned runs moved the
+--   reported error by ~32%. Materialize the anomaly table once and read the
+--   stored rows rather than re-running the function.
+--
 -- Full reference: ../../RESOURCES.md
 -- Official docs: https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-detect-anomalies
 --
