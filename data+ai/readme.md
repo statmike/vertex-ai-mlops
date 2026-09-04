@@ -60,7 +60,7 @@ Resources for machine learning and AI across Google Cloud data services — data
 
 - **[Dataproc (Managed Service for Apache Spark)](dataproc/)** — Spark ML inference on Dataproc: batch inference with Pandas UDFs, Structured Streaming with foreachBatch, calling Vertex AI Endpoints from Spark, and Dataproc Serverless fundamentals.
 
-- **[Cloud Composer (Managed Service for Apache Airflow)](composer/)** — Orchestrating ML batch inference with Cloud Composer: four patterns covering Airflow → Dataproc, Dataflow, KFP, and Vertex AI Batch Prediction, plus production scheduling, backfill, and retry.
+- **[Managed Airflow (formerly Cloud Composer)](composer/)** — Orchestrating ML batch inference with Managed Service for Apache Airflow: four patterns covering Airflow → Dataproc, Dataflow, KFP, and Vertex AI Batch Prediction, plus production scheduling, backfill, and retry.
 
 - **[AlloyDB](alloydb/)** — ML inference with AlloyDB AI using `ML.PREDICT()` to call Vertex AI Endpoints for SQL-based predictions.
 

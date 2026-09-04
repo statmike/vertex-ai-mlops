@@ -1,9 +1,18 @@
--- Cloud Composer / Airflow — BigQuery ML Pipeline
+-- Managed Airflow (formerly Cloud Composer) — BigQuery ML Pipeline
 -- =============================================================
+-- Naming: this service was renamed from Cloud Composer to Managed Service for
+--   Apache Airflow -- short form "Managed Airflow" -- on 2026-04-24, and its
+--   generations from "Composer 3/2/1" to "Gen 3 / Gen 2 / Legacy Gen 1". The
+--   API, IAM roles, gcloud surface, image version strings and documentation
+--   URLs all keep the old "composer" spelling: composer.googleapis.com,
+--   roles/composer.worker, gcloud composer, composer-3-airflow-*, and
+--   /composer/docs/composer-3/. Both spellings therefore appear below -- the
+--   new one in prose, the old one wherever it is a literal identifier.
+--
 -- The same drift-check -> conditional-retrain -> report logic as
 -- pipelines/sql_scripting/, pipelines/scheduled_queries/, and
 -- pipelines/cloud_workflows/, re-expressed as a real Apache Airflow DAG on a
--- live Cloud Composer 3 environment -- BigQueryInsertJobOperator for every
+-- live Managed Airflow Gen 3 environment -- BigQueryInsertJobOperator for every
 -- BigQuery job, BranchPythonOperator + XCom for the conditional retrain, and
 -- a join task with trigger_rule=NONE_FAILED_MIN_ONE_SUCCESS so the DAG
 -- completes cleanly regardless of which branch ran.
@@ -13,13 +22,13 @@
 --
 -- Full reference: ../../RESOURCES.md
 -- Official docs:
---   Cloud Composer 3 overview: https://docs.cloud.google.com/composer/docs/composer-3/composer-overview
+--   Managed Airflow Gen 3 overview: https://docs.cloud.google.com/composer/docs/composer-3/composer-overview
 --   BigQueryInsertJobOperator: https://airflow.apache.org/docs/apache-airflow-providers-google/stable/operators/cloud/bigquery.html
---   MLOps/Serving/Batch/Orchestrating Batch Inference With Airflow.ipynb -- this repo's deeper Composer 2 precedent
+--   MLOps/Serving/Batch/Orchestrating Batch Inference With Airflow.ipynb -- this repo's deeper Gen 2 precedent
 
 
 -- =============================================================================
--- Cloud Composer 3 environment config -- the actual cost lever
+-- Managed Airflow Gen 3 environment config -- the actual cost lever
 -- =============================================================================
 -- environments.Environment(
 --   config=environments.EnvironmentConfig(
@@ -35,9 +44,9 @@
 --     ),
 --   ),
 -- )
--- Composer 3 adds this explicit per-component workloads_config (vs. Composer
--- 2's single node_config) -- billed in DCU-hours (~$0.06/DCU-hour in
--- us-central1), the actual "cheaper than Composer 2" mechanism.
+-- Gen 3 adds this explicit per-component workloads_config (vs. Gen 2's
+-- single node_config) -- billed in DCU-hours (~$0.06/DCU-hour in
+-- us-central1), the actual "cheaper than Gen 2" mechanism.
 
 
 -- =============================================================================
@@ -111,6 +120,6 @@
 -- DROP MODEL IF EXISTS `PROJECT_ID.DATASET.ga4_churn_pipeline_model`;
 -- DROP TABLE IF EXISTS `PROJECT_ID.DATASET.ga4_churn_pipeline_features`;
 -- Delete this notebook's own DAG file from the shared environment's DAG bucket.
--- Leave the Composer environment running if pipelines/airflow_with_kfp/ runs
+-- Leave the Managed Airflow environment running if pipelines/airflow_with_kfp/ runs
 -- next in the same session -- that notebook performs the real environment
 -- deletion in its own Cleanup section.

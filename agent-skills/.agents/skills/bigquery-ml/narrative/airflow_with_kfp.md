@@ -1,15 +1,15 @@
 # Airflow + Vertex AI Pipelines (KFP) — BigQuery ML Pipeline
 
-The "meta-orchestration" pairing: an Airflow DAG on the **same live Cloud Composer 3 environment** as `pipelines/composer_airflow` (`pipelines/composer_airflow/`), using `RunPipelineJobOperator` to trigger `pipelines/vertex_kfp` (`pipelines/vertex_kfp/`)'s already-built Vertex AI Pipeline as a single managed task. If an organization already has an enterprise Airflow footprint (for cross-system scheduling, dependencies on non-GCP systems, existing alerting/on-call tooling) *and* a KFP pipeline built the modern way with prebuilt BQML components, this is how the two connect — you don't have to choose one or the other.
+The "meta-orchestration" pairing: an Airflow DAG on the **same live Managed Airflow Gen 3 environment** as `pipelines/composer_airflow` (`pipelines/composer_airflow/`), using `RunPipelineJobOperator` to trigger `pipelines/vertex_kfp` (`pipelines/vertex_kfp/`)'s already-built Vertex AI Pipeline as a single managed task. If an organization already has an enterprise Airflow footprint (for cross-system scheduling, dependencies on non-GCP systems, existing alerting/on-call tooling) *and* a KFP pipeline built the modern way with prebuilt BQML components, this is how the two connect — you don't have to choose one or the other.
 
-> ⚠️ **Shares the live Composer 3 environment created by `pipelines/composer_airflow` (`pipelines/composer_airflow/`).** Build/run that notebook first in this session. This notebook's own Cleanup section performs the **real** deletion of that shared environment — see Cleanup before running this standalone.
+> ⚠️ **Shares the live Managed Airflow Gen 3 environment created by `pipelines/composer_airflow` (`pipelines/composer_airflow/`).** Build/run that notebook first in this session. This notebook's own Cleanup section performs the **real** deletion of that shared environment — see Cleanup before running this standalone.
 
 **Workflow operationalized:** `workflows/ga4_churn_prediction` (`workflows/ga4_churn_prediction/`) (via `pipelines/vertex_kfp` (`pipelines/vertex_kfp/`))
-**API:** Cloud Composer (`google.cloud.orchestration.airflow.service_v1`) · **Airflow operator:** `RunPipelineJobOperator`
+**API:** Cloud Composer API (`google.cloud.orchestration.airflow.service_v1`) — the API kept its original name after the service was renamed to Managed Service for Apache Airflow · **Airflow operator:** `RunPipelineJobOperator`
 
 **Data:** [`bigquery-public-data.ga4_obfuscated_sample_ecommerce`](https://console.cloud.google.com/marketplace/product/bigquery-public-datasets)
 
-**References:** `RESOURCES.md` (Full reference) | [`RunPipelineJobOperator`](https://airflow.apache.org/docs/apache-airflow-providers-google/stable/operators/cloud/vertex_ai.html) | `MLOps/Serving/Batch/Orchestrating%20Batch%20Inference%20With%20Airflow.ipynb` (`MLOps/Serving/Batch/Orchestrating Batch Inference With Airflow.ipynb`) — the repo's original "DAG 3" precedent for this exact pattern (Composer 2, non-BQML pipeline) | `setup` (Setup guide)
+**References:** `RESOURCES.md` (Full reference) | [`RunPipelineJobOperator`](https://airflow.apache.org/docs/apache-airflow-providers-google/stable/operators/cloud/vertex_ai.html) | [MLOps/Serving/Batch/Orchestrating Batch Inference With Airflow.ipynb](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Serving/Batch/Orchestrating%20Batch%20Inference%20With%20Airflow.ipynb) — the repo's original "DAG 3" precedent for this exact pattern (Composer 2, non-BQML pipeline) | `setup` (Setup guide)
 
 ---
 ## Setup
@@ -51,9 +51,9 @@ print(f'Dataset {PROJECT_ID}.{DATASET_ID} ready')
 ```
 
 ---
-## Step 0 — Confirm the shared Composer environment exists
+## Step 0 — Confirm the shared Managed Airflow environment exists
 
-Reuses `pipelines/composer_airflow` (`pipelines/composer_airflow/`)'s environment if it's already running (the common case — build that notebook first in this session); creates it if this notebook is run standalone. See that notebook's Step 0 for the full Composer 3 sizing/IAM detail.
+Reuses `pipelines/composer_airflow` (`pipelines/composer_airflow/`)'s environment if it's already running (the common case — build that notebook first in this session); creates it if this notebook is run standalone. See that notebook's Step 0 for the full Gen 3 sizing/IAM detail, and for the naming note on why the API, IAM roles and image strings still say `composer`.
 
 ```python
 import subprocess
@@ -253,7 +253,7 @@ print('Uploaded to', pipeline_template_gcs)
 ---
 ## Step 3 — Write and upload the DAG
 
-One task: `RunPipelineJobOperator`, pointed at the GCS template from Step 2. This is the entire DAG — all the actual BQML logic (train → evaluate → quality-gate → conditionally score) already lives in the compiled pipeline; Airflow's job here is purely to trigger and wait on it, the same "DAG 3" pattern as `MLOps/Serving/Batch/Orchestrating Batch Inference With Airflow.ipynb`, now pointed at a BQML pipeline instead of a Dataflow/Dataproc one.
+One task: `RunPipelineJobOperator`, pointed at the GCS template from Step 2. This is the entire DAG — all the actual BQML logic (train → evaluate → quality-gate → conditionally score) already lives in the compiled pipeline; Airflow's job here is purely to trigger and wait on it, the same "DAG 3" pattern as [MLOps/Serving/Batch/Orchestrating Batch Inference With Airflow.ipynb](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Serving/Batch/Orchestrating%20Batch%20Inference%20With%20Airflow.ipynb), now pointed at a BQML pipeline instead of a Dataflow/Dataproc one.
 
 ```python
 dag_source = '''"""DAG: trigger the pipelines/vertex_kfp/ Vertex AI Pipeline from Airflow via RunPipelineJobOperator."""
@@ -372,6 +372,6 @@ if resp is not None and resp.status_code == 200:
 ## Related content
 
 - `pipelines/vertex_kfp` (`pipelines/vertex_kfp/`) — the pipeline this DAG triggers; see that notebook for the full build (prebuilt BQML components, the `evaluation_metrics` artifact gotcha, the `useQueryCache` string-vs-bool gotcha) and both a passing and a deliberately-failing quality-gate run.
-- `pipelines/composer_airflow` (`pipelines/composer_airflow/`) — the sibling pipeline sharing this same Composer environment, running BigQuery jobs directly via `BigQueryInsertJobOperator` instead of triggering a separate Vertex Pipeline.
-- `MLOps/Serving/Batch/Orchestrating%20Batch%20Inference%20With%20Airflow.ipynb` (`MLOps/Serving/Batch/Orchestrating Batch Inference With Airflow.ipynb`) — the original "DAG 3" pattern this notebook adapts, there triggering a non-BQML Dataflow/Dataproc-adjacent pipeline on Composer 2.
+- `pipelines/composer_airflow` (`pipelines/composer_airflow/`) — the sibling pipeline sharing this same Managed Airflow environment, running BigQuery jobs directly via `BigQueryInsertJobOperator` instead of triggering a separate Vertex Pipeline.
+- [MLOps/Serving/Batch/Orchestrating Batch Inference With Airflow.ipynb](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Serving/Batch/Orchestrating%20Batch%20Inference%20With%20Airflow.ipynb) — the original "DAG 3" pattern this notebook adapts, there triggering a non-BQML Dataflow/Dataproc-adjacent pipeline on Composer 2.
 - `workflows/ga4_churn_prediction` (`workflows/ga4_churn_prediction/`) — the workflow this pipeline operationalizes.

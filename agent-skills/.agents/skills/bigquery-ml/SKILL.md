@@ -32,7 +32,7 @@ If the ask is ambiguous between BigQuery ML (trained models) and BigQuery's gene
 - **Joining separate models' `ML.PREDICT` outputs on raw feature columns (instead of a synthetic row ID) can silently fan out rows** when different source rows share identical feature values — add a `ROW_NUMBER()` id before training and join on that.
 - **`ML.TREND`/`ML.SEASONALITY`/`ML.DETECT_CHANGE_POINTS` gap-fill each series before computing** — on a series with a data outage, the interpolation manufactures the structural break `ML.DETECT_CHANGE_POINTS` then reports. Profile the series for gaps first and discard change points that land on a gap edge; on the tested public table six of seven detected windows were ingestion artifacts, not real changes.
 - **Validate live before writing to a notebook**: option interactions in BigQuery ML frequently don't match official docs (see the model-specific gotcha files for exact error strings) — run the actual `CREATE MODEL`/`ML.*` call against real BigQuery before documenting expected behavior.
-- **Real paid infrastructure (reservations, Composer environments, endpoints) should always be torn down for real**, not left as a reader's exercise — see `reference/workflows-and-pipelines.md` for the specific cleanup gotchas (e.g. deleting a Composer environment does not delete its GCS bucket).
+- **Real paid infrastructure (reservations, Managed Airflow environments, endpoints) should always be torn down for real**, not left as a reader's exercise — see `reference/workflows-and-pipelines.md` for the specific cleanup gotchas (e.g. deleting a Managed Airflow environment does not delete its GCS bucket).
 
 ## Reference files
 

@@ -1,8 +1,9 @@
 -- Airflow + Vertex AI Pipelines (KFP) — BigQuery ML Pipeline
 -- =============================================================
--- The "meta-orchestration" pairing: an Airflow DAG on the same live Cloud
--- Composer 3 environment as pipelines/composer_airflow/, using
--- RunPipelineJobOperator to trigger pipelines/vertex_kfp/'s already-built
+-- The "meta-orchestration" pairing: an Airflow DAG on the same live Managed
+-- Airflow (formerly Cloud Composer) Gen 3 environment as
+-- pipelines/composer_airflow/, using RunPipelineJobOperator to trigger
+-- pipelines/vertex_kfp/'s already-built
 -- Vertex AI Pipeline as a single managed task -- the repo's original "DAG 3"
 -- pattern (MLOps/Serving/Batch/Orchestrating Batch Inference With
 -- Airflow.ipynb), now pointed at a BQML pipeline instead of Dataflow/Dataproc.
@@ -63,7 +64,7 @@
 
 
 -- =============================================================================
--- GOTCHA #3 (verified live): deleting a Composer environment does NOT
+-- GOTCHA #3 (verified live): deleting a Managed Airflow environment does NOT
 -- delete its GCS bucket
 -- =============================================================================
 -- After composer_client.delete_environment(...).result() completed (the
@@ -100,6 +101,6 @@
 -- from the shared environment's DAG bucket.
 -- composer_client.delete_environment(...) -- the REAL shared-environment
 -- teardown lives here (this is the second/last notebook run against it).
--- Optional: also delete the now-orphaned Composer GCS bucket (see gotcha #3).
+-- Optional: also delete the now-orphaned Managed Airflow GCS bucket (see gotcha #3).
 -- Compiled pipeline spec under gs://BUCKET/bq_ml/airflow_with_kfp/ and Vertex
 -- Pipeline run history are left in place, same as pipelines/vertex_kfp/.

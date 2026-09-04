@@ -36,9 +36,9 @@
 </table><br/><br/>
 
 ---
-# Cloud Composer (Managed Service for Apache Airflow)
+# Managed Airflow (formerly Cloud Composer)
 
-Orchestrating ML batch inference with [Cloud Composer](https://cloud.google.com/composer/docs/concepts/overview) (Managed Service for Apache Airflow). Airflow adds what standalone batch jobs lack: scheduling, data dependencies, monitoring, alerting, and backfill.
+Orchestrating ML batch inference with [Managed Service for Apache Airflow](https://cloud.google.com/composer/docs/concepts/overview) — short form *Managed Airflow*, renamed from Cloud Composer on 2026-04-24; the API, IAM roles, `gcloud` surface and documentation URLs still read `composer`. Airflow adds what standalone batch jobs lack: scheduling, data dependencies, monitoring, alerting, and backfill.
 
 ## Notebooks
 

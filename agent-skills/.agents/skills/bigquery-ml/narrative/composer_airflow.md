@@ -1,15 +1,17 @@
-# Cloud Composer / Airflow — BigQuery ML Pipeline
+# Managed Airflow (formerly Cloud Composer) — BigQuery ML Pipeline
 
-The same drift-check → conditional-retrain → report logic as `pipelines/sql_scripting` (`pipelines/sql_scripting/`), `pipelines/scheduled_queries` (`pipelines/scheduled_queries/`), and `pipelines/cloud_workflows` (`pipelines/cloud_workflows/`), re-expressed as a real **Apache Airflow DAG on a live Cloud Composer 3 environment** — `BigQueryInsertJobOperator` for every BigQuery job, `BranchPythonOperator` + XCom for the conditional retrain, and a join task with a non-default `trigger_rule` so the DAG completes cleanly regardless of which branch ran. This is the fourth re-expression of the identical narrative, now on the industry-standard open-source orchestrator behind most enterprise MLOps stacks.
+The same drift-check → conditional-retrain → report logic as `pipelines/sql_scripting` (`pipelines/sql_scripting/`), `pipelines/scheduled_queries` (`pipelines/scheduled_queries/`), and `pipelines/cloud_workflows` (`pipelines/cloud_workflows/`), re-expressed as a real **Apache Airflow DAG on a live Managed Airflow Gen 3 environment** — `BigQueryInsertJobOperator` for every BigQuery job, `BranchPythonOperator` + XCom for the conditional retrain, and a join task with a non-default `trigger_rule` so the DAG completes cleanly regardless of which branch ran. This is the fourth re-expression of the identical narrative, now on the industry-standard open-source orchestrator behind most enterprise MLOps stacks.
 
-> ⚠️ **Real, non-trivial cost and ~20-30 minute provisioning time.** This notebook creates an actual Cloud Composer 3 environment, billed in DCU-hours (~$0.06/DCU-hour in `us-central1`; a minimally-sized environment like this one runs roughly $0.30-0.55/hour). Shares one environment with `pipelines/airflow_with_kfp` (`pipelines/airflow_with_kfp/`) (build/run that one right after this, in the same session, before tearing down) — see Cleanup for exactly which notebook deletes it.
+> ⚠️ **Real, non-trivial cost and ~20-30 minute provisioning time.** This notebook creates an actual Managed Airflow Gen 3 environment, billed in DCU-hours (~$0.06/DCU-hour in `us-central1`; a minimally-sized environment like this one runs roughly $0.30-0.55/hour). Shares one environment with `pipelines/airflow_with_kfp` (`pipelines/airflow_with_kfp/`) (build/run that one right after this, in the same session, before tearing down) — see Cleanup for exactly which notebook deletes it.
 
 **Workflow operationalized:** `workflows/ga4_churn_prediction` (`workflows/ga4_churn_prediction/`)
-**API:** Cloud Composer (`google.cloud.orchestration.airflow.service_v1`) · **Airflow providers:** `apache-airflow-providers-google` (runs *inside* the Composer environment, not in this notebook's own kernel)
+**API:** Cloud Composer API (`google.cloud.orchestration.airflow.service_v1`) — the API kept its original name through the rename · **Airflow providers:** `apache-airflow-providers-google` (runs *inside* the Managed Airflow environment, not in this notebook's own kernel)
 
 **Data:** [`bigquery-public-data.ga4_obfuscated_sample_ecommerce`](https://console.cloud.google.com/marketplace/product/bigquery-public-datasets)
 
-**References:** `RESOURCES.md` (Full reference) | [Cloud Composer 3 overview](https://docs.cloud.google.com/composer/docs/composer-3/composer-overview) | [`BigQueryInsertJobOperator`](https://airflow.apache.org/docs/apache-airflow-providers-google/stable/operators/cloud/bigquery.html) | `MLOps/Serving/Batch/Orchestrating%20Batch%20Inference%20With%20Airflow.ipynb` (`MLOps/Serving/Batch/Orchestrating Batch Inference With Airflow.ipynb`) — this repo's deeper, general-purpose Composer/Airflow treatment (Composer 2, Dataproc/Dataflow/KFP DAGs) this notebook only slices for BQML | `setup` (Setup guide)
+> **Naming:** this service was renamed from **Cloud Composer** to **Managed Service for Apache Airflow** (short form *Managed Airflow*) on 2026-04-24, and its generations from "Composer 3/2/1" to **Gen 3 / Gen 2 / Legacy Gen 1**. The API, IAM roles, `gcloud` surface, image-version strings and documentation URLs all keep the old `composer` spelling — `composer.googleapis.com`, `roles/composer.worker`, `gcloud composer`, `composer-3-airflow-*`, `/composer/docs/composer-3/`. Both spellings appear in this notebook for that reason: the new one in prose, the old one wherever it is a literal identifier.
+
+**References:** `RESOURCES.md` (Full reference) | [Managed Airflow Gen 3 overview](https://docs.cloud.google.com/composer/docs/composer-3/composer-overview) | [`BigQueryInsertJobOperator`](https://airflow.apache.org/docs/apache-airflow-providers-google/stable/operators/cloud/bigquery.html) | [MLOps/Serving/Batch/Orchestrating Batch Inference With Airflow.ipynb](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Serving/Batch/Orchestrating%20Batch%20Inference%20With%20Airflow.ipynb) — this repo's deeper, general-purpose Airflow treatment (Gen 2, Dataproc/Dataflow/KFP DAGs) this notebook only slices for BQML | `setup` (Setup guide)
 
 ---
 ## Setup
@@ -30,7 +32,7 @@ COMPOSER_ENVIRONMENT = 'bq-ml-composer'  # Shared across this notebook and airfl
 >
 > **Running standalone** (Colab, Colab Enterprise, Vertex AI Workbench)? The cell below installs required packages into your current kernel.
 >
-> Note: this only installs the client library used to *manage* the Composer environment (`google-cloud-orchestration-airflow`). The DAG file itself runs *inside* Composer's own managed Airflow runtime, which already has `apache-airflow` and `apache-airflow-providers-google` pre-installed — this notebook's kernel never imports `airflow` directly.
+> Note: this only installs the client library used to *manage* the Managed Airflow environment (`google-cloud-orchestration-airflow`). The DAG file itself runs *inside* that environment's own managed Airflow runtime, which already has `apache-airflow` and `apache-airflow-providers-google` pre-installed — this notebook's kernel never imports `airflow` directly.
 
 ```python
 from google.cloud import bigquery
@@ -51,7 +53,7 @@ print(f'Dataset {PROJECT_ID}.{DATASET_ID} ready')
 ```
 
 ---
-## Step 0 — Enable the Composer API, confirm IAM, and create the environment (idempotent)
+## Step 0 — Enable the Cloud Composer API, confirm IAM, and create the environment (idempotent)
 
 The environment's own service account (the project's default Compute Engine service account, unless overridden) needs `roles/composer.worker` to operate. This project's service account already has broader roles that cover it; the check below grants it explicitly if a fresh project doesn't. Creating the environment for real takes **~20-30 minutes** — this cell checks for an existing environment first (in case `airflow_with_kfp/` already created it in this session) and only creates one if missing.
 
@@ -385,7 +387,7 @@ print('DAG written to dag_ga4_churn_pipeline.py')
 ---
 ## Step 3 — Upload the DAG
 
-Composer's DAG processor picks up new files from `dag_gcs_prefix` on a short polling interval — allow a minute or two before it's parsed and available via the Airflow API.
+Managed Airflow's DAG processor picks up new files from `dag_gcs_prefix` on a short polling interval — allow a minute or two before it's parsed and available via the Airflow API.
 
 ```python
 from google.cloud import storage
@@ -404,7 +406,7 @@ time.sleep(90)
 ---
 ## Step 4 — Trigger the DAG via the Airflow REST API
 
-Authenticates with this notebook's own Application Default Credentials against Composer's IAP-fronted Airflow webserver — the same `google.auth`-based pattern documented for [accessing the Airflow REST API](https://cloud.google.com/composer/docs/access-airflow-api). If this returns `502`, the webserver is still warming up (see the gotcha in Step 0) — wait a minute and retry.
+Authenticates with this notebook's own Application Default Credentials against the environment's IAP-fronted Airflow webserver — the same `google.auth`-based pattern documented for [accessing the Airflow REST API](https://cloud.google.com/composer/docs/access-airflow-api). If this returns `502`, the webserver is still warming up (see the gotcha in Step 0) — wait a minute and retry.
 
 ```python
 import google.auth
@@ -466,6 +468,6 @@ if resp is not None and resp.status_code == 200:
 
 - `pipelines/sql_scripting` (`pipelines/sql_scripting/`), `pipelines/scheduled_queries` (`pipelines/scheduled_queries/`), `pipelines/cloud_workflows` (`pipelines/cloud_workflows/`) — the same drift-check/retrain logic via BigQuery scripting, BigQuery-native scheduling, and Cloud Workflows YAML, respectively. Four genuinely different orchestration mechanisms doing the identical job.
 - `pipelines/dataform` (`pipelines/dataform/`) and `pipelines/dbt` (`pipelines/dbt/`) — the same idea via a dependency graph instead of imperative step-by-step control flow.
-- `pipelines/airflow_with_kfp` (`pipelines/airflow_with_kfp/`) — builds on this same live Composer environment to trigger `pipelines/vertex_kfp/`'s Vertex AI Pipeline from an Airflow DAG instead of running BigQuery jobs directly.
-- `MLOps/Serving/Batch/Orchestrating%20Batch%20Inference%20With%20Airflow.ipynb` (`MLOps/Serving/Batch/Orchestrating Batch Inference With Airflow.ipynb`) — the repo's deeper, general-purpose Composer/Airflow treatment (Composer 2, Dataproc/Dataflow/KFP DAGs for non-BQML batch inference) this notebook only slices for BQML.
+- `pipelines/airflow_with_kfp` (`pipelines/airflow_with_kfp/`) — builds on this same live Managed Airflow environment to trigger `pipelines/vertex_kfp/`'s Vertex AI Pipeline from an Airflow DAG instead of running BigQuery jobs directly.
+- [MLOps/Serving/Batch/Orchestrating Batch Inference With Airflow.ipynb](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Serving/Batch/Orchestrating%20Batch%20Inference%20With%20Airflow.ipynb) — the repo's deeper, general-purpose Airflow treatment (Gen 2, Dataproc/Dataflow/KFP DAGs for non-BQML batch inference) this notebook only slices for BQML.
 - `workflows/ga4_churn_prediction` (`workflows/ga4_churn_prediction/`) — the workflow this pipeline operationalizes.
