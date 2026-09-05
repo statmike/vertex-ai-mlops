@@ -75,9 +75,12 @@ TOOLBOX_BIGQUERY_TOOLS = [
 # has no `writeMode` equivalent to neuter them with (DESIGN.md F4, ROADMAP.md).
 #
 # Reachability in *this corpus* is uneven and was measured, not assumed — see the
-# table in DEV_NOTES.md. `get_data_quality_results` in particular returns a
-# profile scan with no `dataQualityResult` field rather than an error, so an
-# agent gets a confident-looking success carrying nothing.
+# table in DEV_NOTES.md. `get_data_quality_results` used to return a profile scan
+# with no `dataQualityResult` field rather than an error, so an agent got a
+# confident-looking success carrying nothing. Since 2026-09-05 the corpus carries
+# real DATA_QUALITY scans (`catalog_setup.create_and_run_quality_scans`) and it
+# returns rules and failure rates, so any capture from before that date measured
+# a different surface than one taken after.
 TOOLBOX_DATAPLEX_TOOLS = [
     "search_entries",
     "lookup_entry",
