@@ -46,6 +46,39 @@ asserted.
 
 ## 2. Re-running it on your project
 
+### What you need to be, before you start
+
+`make bootstrap` creates service accounts, custom roles and project IAM bindings. Those
+are administrative operations, and a reader who only has data access will get through
+API enablement and corpus generation and *then* fail — after creating billable objects.
+So check this first.
+
+| Step | What it does that needs privilege | Capability |
+|---|---|---|
+| `make apis` | enables 9 services (11 with Looker) | `roles/serviceusage.serviceUsageAdmin` |
+| `make identities` | creates 2 custom roles | `roles/iam.roleAdmin` |
+| `make identities` | creates 2 service accounts, and grants *you* `tokenCreator` on each | `roles/iam.serviceAccountAdmin` |
+| `make identities` | binds 5–6 project roles per identity | `roles/resourcemanager.projectIamAdmin` |
+| `make setup` | datasets, tables, per-tier dataset ACLs | `roles/bigquery.admin` |
+| `make setup` | Dataplex scans, aspects, glossary, entry links | `roles/dataplex.admin` |
+| `make smoke` / `pilot` / `sweep` | Gemini calls for the agents and the judge | `roles/aiplatform.user` |
+| `make report` | `INFORMATION_SCHEMA.JOBS` for cost attribution | covered by `bigquery.admin` |
+| `make service-tokens` | reads Cloud Monitoring | `roles/monitoring.viewer` |
+| Path 2 | Looker instance admin, plus LookML developer mode | see [looker_setup.md](looker_setup.md) |
+
+**This list is derived from the operations the code performs, not from a least-privilege
+run.** Nobody has stood the sandbox up from exactly these roles and nothing else, so treat
+it as the shape of what is needed rather than a verified minimum — if you are `roles/owner`
+on a sandbox project, which is the expected case, none of it binds. The reason to read it
+anyway is the opposite situation: a shared or org-managed project where you *will* be told
+no, and it is much better to find that out before `make bootstrap` starts creating things.
+
+Nothing here needs a service account key. The tier fence is impersonation from your own
+ADC, which is why `iam.serviceAccountAdmin` appears above and `serviceAccountKeyAdmin`
+does not.
+
+### Running it
+
 ```bash
 cp .env.example .env          # fill in GOOGLE_CLOUD_PROJECT
 gcloud auth application-default login

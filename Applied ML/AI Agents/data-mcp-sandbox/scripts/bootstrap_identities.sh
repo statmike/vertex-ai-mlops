@@ -149,8 +149,13 @@ for TIER in "${TIERS[@]}"; do
   # read a 403. Still keyless: no JSON key is uploaded to Looker.
   #
   # Scope note: this lets ANY connection on the Looker instance impersonate these
-  # identities. On a shared instance that is a real (small) widening — these SAs
-  # are read-only and see nothing but the sandbox's own trap datasets.
+  # identities, not just ours. On a shared instance that is a real widening, and
+  # it is bounded rather than nil: table data is dataset-scoped to the sandbox's
+  # own tiers, but catalog *metadata* reads are project-wide, because the Dataplex
+  # list permissions in mcpSandboxCatalogSearch take no dataset scope. No writes.
+  # `make verify-isolation` checks both identities against a reviewed allow-list,
+  # so this bound is tested rather than asserted. Enumerated in
+  # docs/looker_setup.md.
   if [[ -n "$LOOKER_AGENT" ]]; then
     gcloud iam service-accounts add-iam-policy-binding "$SA" \
       --project "$PROJECT" \
