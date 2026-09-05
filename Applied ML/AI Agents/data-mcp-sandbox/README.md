@@ -34,7 +34,8 @@ dollar figure needs a rate card and would be wrong for most readers. Prices are
 opt-in via `prices.json`.
 
 Full tables: [`results/report.md`](results/report.md). How the arms differ:
-[`docs/paths.md`](docs/paths.md).
+[`docs/paths.md`](docs/paths.md). What was asked and what counts as right:
+[`docs/questions.md`](docs/questions.md).
 
 > **These numbers are perishable.** They are specific to a pinned model version,
 > a pinned MCP Toolbox, and vendor tool schemas that can change without notice —
@@ -119,6 +120,10 @@ No project, no corpus, no credentials. The goldens are frozen into the capture's
 header. Change `src/scoring.py` and re-run; a rubric change costs a minute
 instead of a day.
 
+[`docs/questions.md`](docs/questions.md) is the map before you start: the four
+traps, all twelve questions, the 0.5% match tolerance, and why two metrics are
+deliberately left blank rather than scored zero.
+
 ---
 
 ## How it works
@@ -172,7 +177,7 @@ nothing else in the project is using CA.
 | `src/` | All logic — flat, single-responsibility modules |
 | `examples/` | Runners: the sweep, the scorer, isolation and inventory probes |
 | `scripts/` | Provisioning, teardown, capture export |
-| `docs/` | [paths](docs/paths.md) · [reproducing](docs/reproducing.md) · [scoping](docs/scoping.md) · [Looker setup](docs/looker_setup.md) |
+| `docs/` | [paths](docs/paths.md) · [questions & rubric](docs/questions.md) · [reproducing](docs/reproducing.md) · [scoping](docs/scoping.md) · [Looker setup](docs/looker_setup.md) |
 | `results/` | The report, the scores, and the publishable capture |
 | `tests/` | pytest; imports flat modules from `src/` by name |
 | `notebooks/` | [provision](notebooks/01_provision.ipynb) · [walkthrough](notebooks/02_walkthrough.ipynb) · [results](notebooks/03_results.ipynb) — narrative and execution only, no business logic |

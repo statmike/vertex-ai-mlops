@@ -17,13 +17,15 @@ refuses to let Path 2 run until it passes.
 
 ## The instance
 
-This sandbox runs on an existing shared instance rather than its own:
+This sandbox runs on an existing shared instance rather than its own. Identifiers below are the
+placeholders `scripts/export_capture.py` substitutes into the published capture — the real ones live
+in `.env`:
 
 | | |
 |---|---|
-| Instance | `marketing-analytics` (us-central1, project `statmike-mlops-349915`) |
+| Instance | one Looker Core instance, us-central1, project `example-project` |
 | Edition | `LOOKER_CORE_ENTERPRISE_ANNUAL` |
-| `LOOKER_BASE_URL` | `https://1abfa29a-853e-4cf7-9ad6-8d3c587c4c42.looker.app` |
+| `LOOKER_BASE_URL` | `https://looker.example.com` |
 
 A dedicated instance was considered and rejected on cost: Looker Core bills a platform fee per
 instance (market-observed ~$60k/yr for Standard), so a second instance is a procurement decision, not
@@ -99,7 +101,7 @@ API3 credentials are issued at `--apply` time and printed **once**, to stdout. E
 put them in `.env`:
 
 ```bash
-export LOOKERSDK_BASE_URL=https://1abfa29a-853e-4cf7-9ad6-8d3c587c4c42.looker.app
+export LOOKERSDK_BASE_URL="$LOOKER_BASE_URL"       # https://<instance>.looker.app
 export LOOKERSDK_CLIENT_ID=...
 export LOOKERSDK_CLIENT_SECRET=...
 # Toolbox reads its own pair:

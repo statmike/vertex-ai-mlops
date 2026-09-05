@@ -141,7 +141,7 @@ One tool dominates:
 A single vendor tool declaration, resent every turn, is two thirds of an arm's
 entire prompt floor and 120× its self-hosted equivalent.
 
-This is exactly why `p1_matched` and `p3_matched` exist (Amendment A.3.3). The
+This is exactly why `p1_matched` and `p3_matched` exist. The
 as-shipped comparison varies two things at once — which tools are bound, and
 whose endpoint describes them — and the matched arms hold the first constant to
 isolate the second.

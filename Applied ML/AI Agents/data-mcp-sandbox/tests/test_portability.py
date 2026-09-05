@@ -8,8 +8,11 @@ failing quietly, and each is pinned here.
 
 import gzip
 import json
+import subprocess
 from pathlib import Path
+from urllib.parse import urlparse
 
+import config
 import estimate
 import export_capture
 import mcp_clients
@@ -146,6 +149,63 @@ def test_check_sees_through_compression(tmp_path: Path):
     }))
     assert gzip.decompress(path.read_bytes())  # really is compressed
     assert export_capture.check(path, {"secret-project": "example-project"}) == 1
+
+
+def _real_identifiers() -> dict[str, str]:
+    """The project-specific strings the export scrubs, read without a network call.
+
+    `export_capture.substitutions()` resolves the project *number* through the
+    Resource Manager API, which is fine for an export and wrong for a test. These
+    two come straight out of `.env` and cover the identifiers that actually turn
+    up in prose: the project id and the Looker host.
+    """
+    host = urlparse(config.LOOKER_BASE_URL).netloc if config.LOOKER_BASE_URL else ""
+    return {
+        value: name
+        for name, value in (("PROJECT_ID", config.PROJECT_ID), ("LOOKER_BASE_URL", host))
+        if value  # an unset var would otherwise match every file
+    }
+
+
+def _doc_text() -> dict[str, str]:
+    """Tracked prose: markdown, plus notebook *source* but not notebook output."""
+    root = Path(config.PROJECT_ROOT)
+    listing = subprocess.run(
+        ["git", "ls-files", "-co", "--exclude-standard", "*.md", "*.ipynb"],
+        cwd=root, capture_output=True, text=True, check=True,
+    )
+    out = {}
+    for name in listing.stdout.split():
+        path = root / name
+        if not path.exists():
+            continue
+        if path.suffix == ".ipynb":
+            cells = json.loads(path.read_text())["cells"]
+            out[name] = "\n".join("".join(cell["source"]) for cell in cells)
+        else:
+            out[name] = path.read_text()
+    return out
+
+
+def test_no_doc_names_the_project_the_capture_scrubs():
+    # The export replaces the project id and Looker host before publishing, on the
+    # grounds that a published file naming a live instance invites traffic to it.
+    # A doc that spells the same identifiers out undoes that for no benefit, and
+    # it is also the portability bug: a reader copying a command with someone
+    # else's project baked into it gets a 403 rather than a prompt to set `.env`.
+    #
+    # Notebook *outputs* are deliberately exempt. They are the record of a real
+    # run against a real project, and rewriting them would make the evidence say
+    # something that did not happen.
+    real = _real_identifiers()
+    assert real, "no identifiers configured - this test would pass vacuously"
+    found = [
+        f"{name} names {real[value]}"
+        for name, text in _doc_text().items()
+        for value in real
+        if value in text
+    ]
+    assert not found, f"use the export's placeholders instead: {found}"
 
 
 def test_capture_round_trips_through_gzip(tmp_path: Path):

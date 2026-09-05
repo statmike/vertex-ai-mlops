@@ -13,7 +13,7 @@ Two different things you might want, which need very different amounts of work:
 
 `results/capture.json.gz` is the raw sweep: every question, every tool call with
 its arguments and result, every answer, every token count. It carries **no
-scores** — that split is deliberate (DESIGN §7), because the rubric is the part
+scores** — that split is deliberate, because the rubric is the part
 most worth arguing with, and re-running 1,200 live cells to try a different
 metric would be absurd.
 
@@ -26,6 +26,11 @@ uv run python examples/build_results.py \
 That reads the goldens frozen into the capture's header, so it needs no corpus,
 no project, and no credentials. Change anything in `src/scoring.py` and re-run;
 a rubric change costs a minute.
+
+Read [questions.md](questions.md) first — it lays out the four traps, the twelve
+questions, how a number becomes `correct` or `sprang_trap`, and the judge's
+measured 1.3% verdict wobble, which is the floor on reading anything into a
+small adherence difference.
 
 Two passes stay off without cloud access. `--no-judge` skips the semantic
 adherence grade (one Gemini call per governed cell). `--no-cost` skips BigQuery
