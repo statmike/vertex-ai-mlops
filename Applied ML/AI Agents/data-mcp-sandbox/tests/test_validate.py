@@ -109,3 +109,58 @@ def test_a_rule_trigger_naming_a_dead_column_is_caught(monkeypatch):
     monkeypatch.setitem(scoring.RULE_TRIGGERS, "net-revenue", frozenset({"txn_amt_x3"}))
     found = validate.problems()
     assert any("txn_amt_x3" in line and "RULE_TRIGGERS" in line for line in found)
+
+
+def test_a_table_with_no_looker_view_is_caught(monkeypatch):
+    # render_all() looks every corpus table up in VIEW_NAMES and PRIMARY_KEYS, so
+    # a table added without touching lookml.py raises KeyError — but not until
+    # `make lookml`, which is after BigQuery has been provisioned.
+    import dataclasses
+
+    import lookml
+
+    extra = dataclasses.replace(corpus.USERS, name="campaigns")
+    monkeypatch.setattr(corpus, "CORPUS", [*corpus.CORPUS, extra])
+    found = validate.looker_problems()
+    assert any("VIEW_NAMES" in line and "campaigns" in line for line in found)
+    assert any("PRIMARY_KEYS" in line and "campaigns" in line for line in found)
+    assert lookml.VIEW_NAMES  # the real mapping is untouched
+
+
+def test_a_stale_primary_key_is_caught(monkeypatch):
+    # A renamed key column leaves PRIMARY_KEYS pointing at nothing. Looker then
+    # cannot use symmetric aggregates and summed measures fan out across the
+    # join, which inflates them silently rather than erroring.
+    import lookml
+
+    monkeypatch.setitem(lookml.PRIMARY_KEYS, corpus.USERS.name, "user_pk")
+    assert any("user_pk" in line for line in validate.looker_problems())
+
+
+def test_a_column_type_lookml_cannot_render_is_caught(monkeypatch):
+    import dataclasses
+
+    table = corpus.TRANSACTIONS
+    columns = [dataclasses.replace(table.columns[0], type="NUMERIC"), *table.columns[1:]]
+    swapped = dataclasses.replace(table, columns=columns)
+    monkeypatch.setattr(
+        corpus, "CORPUS", [swapped if t is table else t for t in corpus.CORPUS]
+    )
+    assert any("NUMERIC" in line for line in validate.looker_problems())
+
+
+def test_the_explore_must_name_a_real_view(monkeypatch):
+    import config
+
+    monkeypatch.setattr(config, "LOOKER_EXPLORE", "orders")
+    assert any("LOOKER_EXPLORE" in line for line in validate.looker_problems())
+
+
+def test_looker_checks_can_be_skipped(monkeypatch):
+    # A BigQuery-only adapter running SKIP_LOOKER should not be blocked by a
+    # seam only Path 2 and p4_looker_ca use.
+    import lookml
+
+    monkeypatch.setitem(lookml.PRIMARY_KEYS, corpus.USERS.name, "user_pk")
+    assert any("user_pk" in line for line in validate.problems())
+    assert not [line for line in validate.problems(include_looker=False) if "user_pk" in line]

@@ -58,12 +58,13 @@ test:
 
 check: lint types validate test
 
-# Offline coherence check on the three files that describe the experiment:
-# corpus.py (the tables), golden.py (the right answers), questions.json (what to
-# ask). They are joined by name, so a rename in one is silent in the others until
-# a sweep scores it wrong. Run this after every edit while adapting the sandbox.
+# Offline coherence check on the files that describe the experiment: corpus.py
+# (the tables), golden.py (the right answers), questions.json (what to ask),
+# scoring.py (which rule each question needs) and lookml.py (the Path 2 views).
+# They are joined by name, so a rename in one is silent in the others until a
+# sweep scores it wrong. Run this after every edit while adapting the sandbox.
 validate:
-	uv run python scripts/validate.py
+	uv run python scripts/validate.py $(LOOKER_FLAG)
 
 setup:
 	uv run python scripts/setup.py

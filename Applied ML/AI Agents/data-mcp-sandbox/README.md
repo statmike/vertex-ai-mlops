@@ -44,9 +44,10 @@ Full tables: [`results/report.md`](results/report.md). How the arms differ:
 > reproduce.
 
 **Want it on your own warehouse?** [`docs/adapting.md`](docs/adapting.md) walks it
-in seven rungs — re-score our capture with no cloud account, run it unchanged in
-your project, then move it toward your data one verifiable step at a time. Start
-anywhere; stop anywhere.
+in eight rungs — re-score our capture with no cloud account, run it unchanged in
+your project, then move it toward your data one verifiable step at a time, ending
+at your own tables and your own Looker for all ten arms. Start anywhere; stop
+anywhere. Seven of the ten arms need no Looker instance at all.
 
 ---
 

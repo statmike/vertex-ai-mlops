@@ -27,6 +27,7 @@ from pathlib import Path
 import config
 import corpus
 import golden
+import lookml
 import scoring
 
 QUESTIONS_PATH = Path(config.PROJECT_ROOT) / "examples" / "questions.json"
@@ -39,7 +40,53 @@ def corpus_names() -> set[str]:
     }
 
 
-def problems(path: Path = QUESTIONS_PATH) -> list[str]:
+def looker_problems() -> list[str]:
+    """The corpus -> LookML seam, which only Path 2 and `p4_looker_ca` depend on.
+
+    `lookml.render_all()` walks `corpus.CORPUS` and looks each table up in two
+    hand-maintained dicts. A table these do not cover raises `KeyError` — loud,
+    but only once you reach `make lookml`, which is after BigQuery is provisioned.
+    Checking here moves that to the free offline step.
+
+    Kept separate from `problems()` because a BigQuery-only adapter running with
+    SKIP_LOOKER has no reason to be blocked by it.
+    """
+    found: list[str] = []
+    for table in corpus.CORPUS:
+        if table.name not in lookml.VIEW_NAMES:
+            found.append(
+                f"lookml.VIEW_NAMES has no view name for table {table.name!r}, "
+                "so render_all() raises KeyError"
+            )
+        key = lookml.PRIMARY_KEYS.get(table.name)
+        if not key:
+            found.append(
+                f"lookml.PRIMARY_KEYS has no primary key for table {table.name!r}. "
+                "Without one Looker cannot use symmetric aggregates and a summed "
+                "measure fans out across the join, silently inflating it."
+            )
+        elif key not in {c.name for c in table.columns}:
+            found.append(
+                f"lookml.PRIMARY_KEYS[{table.name!r}] is {key!r}, which is not a "
+                f"column of that table"
+            )
+        for column in table.columns:
+            if column.type not in lookml.LOOKER_TYPES and column.type not in lookml.TIME_TYPES:
+                found.append(
+                    f"{table.name}.{column.name} is {column.type}, which lookml.py "
+                    "cannot render. Add it to LOOKER_TYPES or TIME_TYPES."
+                )
+
+    views = set(lookml.VIEW_NAMES.values())
+    if config.LOOKER_EXPLORE not in views:
+        found.append(
+            f"config.LOOKER_EXPLORE is {config.LOOKER_EXPLORE!r}, which is not one of "
+            f"the generated views {sorted(views)}. The Explore would reference nothing."
+        )
+    return found
+
+
+def problems(path: Path = QUESTIONS_PATH, include_looker: bool = True) -> list[str]:
     """Every inconsistency found, as readable lines. Empty means coherent.
 
     Returns rather than raises so a caller can print all of them at once. An
@@ -116,6 +163,9 @@ def problems(path: Path = QUESTIONS_PATH) -> list[str]:
                 "not in corpus.CORPUS. Acquisition scoring for that rule is dead."
             )
 
+    if include_looker:
+        found.extend(looker_problems())
+
     # --- goldens -> questions ---
     # Not an error: an oracle entry with no question is dead weight, but it is
     # also exactly what a half-finished adaptation looks like, so say it.
@@ -129,13 +179,14 @@ def problems(path: Path = QUESTIONS_PATH) -> list[str]:
     return found
 
 
-def report() -> bool:
+def report(include_looker: bool = True) -> bool:
     """Print the findings. True when everything agrees."""
-    found = problems()
+    found = problems(include_looker=include_looker)
     if not found:
+        scope = "+ LookML views" if include_looker else "LookML not checked"
         print(
             f"    Coherent: {len(corpus.CORPUS)} tables, {len(golden.GOLDENS)} goldens, "
-            f"{len(json.loads(QUESTIONS_PATH.read_text()))} questions."
+            f"{len(json.loads(QUESTIONS_PATH.read_text()))} questions ({scope})."
         )
         return True
     print(f"    {len(found)} problem(s) between corpus.py, golden.py and questions.json:")

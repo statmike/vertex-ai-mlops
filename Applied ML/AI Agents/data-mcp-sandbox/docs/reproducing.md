@@ -160,8 +160,9 @@ change: seven files describe the experiment and are joined *by name*, so they ha
 to move together. That is the honest answer.
 
 But you do not have to do it in one jump, and you should not. **[adapting.md](adapting.md)
-lays out seven rungs** from "re-score our capture" to "bring your own tables",
-each one independently runnable, each with the check that proves you got it right.
+lays out eight rungs** from "re-score our capture" through "bring your own tables"
+to "bring your own Looker" for all ten arms — each independently runnable, each
+with the check that proves you got it right.
 `make validate` is the fast loop — offline, free, and run automatically before
 `make setup` provisions anything.
 

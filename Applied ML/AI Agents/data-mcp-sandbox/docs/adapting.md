@@ -17,8 +17,14 @@ exactly that.
 3  Ask your own questions   questions.json            offline check
 4  Add your own metric      + golden.py
 5  Write your governance    + corpus.py               the T1 text
-6  Bring your own tables    + 4 more modules          a real project
+6  Bring your own tables    + 4 more modules          7 BigQuery arms
+7  Bring your own Looker    + lookml.py + a runbook   all 10 arms
 ```
+
+Rungs 1–6 run **seven of the ten arms** — both governance tiers, all three
+BigQuery paths, and the BigQuery half of Path 4. That is enough for the central
+T1-vs-T0 result. Rung 7 adds the semantic-layer path, and it is the only rung
+that needs a product you may not already own.
 
 After **every** edit from rung 3 onward:
 
@@ -26,9 +32,10 @@ After **every** edit from rung 3 onward:
 make validate     # offline, free, no credentials
 ```
 
-It cross-checks `corpus.py`, `golden.py`, `questions.json` and `scoring.py`, which
-are joined *by name* and by nothing a type checker can see. `make setup` runs it
-first and refuses to provision an incoherent set. See
+It cross-checks `corpus.py`, `golden.py`, `questions.json`, `scoring.py` and
+`lookml.py`, which are joined *by name* and by nothing a type checker can see.
+`make setup` runs it first and refuses to provision an incoherent set. Add
+`SKIP_LOOKER=1` to drop the Path 2 checks. See
 [why that matters](#why-the-check-exists) below.
 
 ---
@@ -63,7 +70,14 @@ first — `make bootstrap` creates service accounts and IAM bindings, and findin
 you cannot halfway through is the annoying way to learn it.
 
 Walk the rungs: `make smoke` (10 cells, ~10 min) → `make pilot` (240, ~5 h) →
-`make sweep` (1,200, ~26 h). Add `SKIP_LOOKER=1` to drop to 7 arms and 840 cells.
+`make sweep` (1,200, ~26 h).
+
+**No Looker instance?** Add `SKIP_LOOKER=1` to any target — 7 arms, 840 cells,
+~17 h. Looker is the one component behind an annual-commitment purchase, so no
+script here creates an instance. What you give up is Path 2 entirely (the
+semantic-layer arms `p2_managed`, `p2_toolbox`, and `p4_looker_ca`); what you keep
+is both tiers on every BigQuery path, which is where the largest measured effect
+lives. Rung 7 is how you add it back.
 
 **Expect different numbers than ours**, and read
 [what will not reproduce](reproducing.md#what-will-not-reproduce-and-why) before
@@ -195,7 +209,7 @@ free.
 | `src/bq_setup.py` | `_users_sql`, `_events_sql`, `_transactions_sql` | **only if you generate data** |
 | `src/scoring.py` | `RULE_TRIGGERS`, `GOVERNANCE_MARKERS` | acquisition scoring |
 | `src/catalog_setup.py` | the `DataQualityRule` set | Path 3's quality scans |
-| `src/lookml.py` | the semantic model's measures and dimensions | Path 2 only |
+| `src/lookml.py` | views, keys, measures, the Explore | **Path 2 — see rung 7** |
 
 **You probably do not need the generator.** Those three functions in `bq_setup.py`
 exist to build a synthetic trap corpus. If you already have tables, replace
@@ -218,13 +232,70 @@ is fine as long as you say so.
 wrong — for that, `make golden` prints every value live and `make setup` cross-checks
 the tiers.
 
+## Rung 7 — Bring your own Looker
+
+This is the only rung with a manual, click-through component, and the only one
+gated on a product you may not own. Budget a couple of hours the first time.
+[`docs/looker_runbook.md`](looker_runbook.md) is the step-by-step; this is what it
+adds up to.
+
+**The instance is never automated.** No script in this repo creates one — that is
+an annual commitment, and a setup script should not be able to start a charge.
+Bring your own, or an existing one you already have.
+
+**Two BigQuery connections, one per tier.** Not one shared connection. A Looker
+connection authenticates *as itself*, not as the calling user, so a single shared
+connection would make Path 2 the only arm whose tier boundary is not an IAM
+boundary — the arm would still run, still answer, and quietly stop being a
+control. Each connection is ADC + `impersonated_service_account` =
+`config.tier_service_account(tier)`, which keeps it keyless. See
+[`docs/looker_setup.md`](looker_setup.md#2-bigquery-connections--one-per-tier-and-that-is-the-point).
+
+**One genuine secret.** The Looker API has no ADC equivalent, so API3
+credentials live in `looker.ini` — gitignored, `0600`, project-local. It is the
+single exception to this project's no-keys rule, and the runbook explains why.
+
+**Then the LookML.** `make lookml` generates every file from `corpus.CORPUS`, and
+most of it follows your tables for free: one view per table, one dimension per
+column, descriptions and measures at tier 1 only, tier 0 stripped. What does *not*
+follow your tables, and must be edited in `src/lookml.py`:
+
+| What | Why it is hand-maintained |
+|---|---|
+| `VIEW_NAMES` | views are named for the *concept*, not the physical table — that is the point of a semantic layer, and it keeps the T1 naming trap out of the field names |
+| `PRIMARY_KEYS` | Looker needs a declared key for symmetric aggregates. Without one a summed measure **fans out across the join and silently inflates** |
+| `LOOKER_TYPES` / `TIME_TYPES` | only `STRING`, `FLOAT64`, `INT64`, `BOOL`, `TIMESTAMP`, `DATE` are mapped. A `NUMERIC` column has nothing to render as |
+| `_governed_fields()` | the tier-1-only measures — hardcoded per table. **This is the actual experiment on Path 2**: the governed `total_revenue` measure and `active_user_status` dimension are what tier 0 must not have |
+| `_model()` | the Explore and its joins are hand-written, keyed on `user_id`. Your join graph is yours |
+
+`make validate` checks the first three plus `LOOKER_EXPLORE` offline, so a table
+you forgot to map fails in a free second rather than as a `KeyError` after
+BigQuery is already provisioned. It cannot check the last two — a wrong join is
+still SQL that runs.
+
+**Loading the files is manual.** `make looker-plan` / `make looker-apply` create
+the connections and are additive-only, refusing any name outside the sandbox
+namespace. But the `.lkml` files themselves are dragged into the Looker IDE in
+Development Mode, validated, committed and deployed by hand — runbook
+[Step 3](looker_runbook.md#step-3--load-the-lookml-files-manual). There is no API
+for it that we chose to depend on.
+
+**Prove the fence before you trust the arm.** `make verify-isolation` and
+`looker_check.report()` confirm tier 0 cannot see tier-1 fields. Path 2 is the
+arm where a broken fence is least visible, because the semantic layer will happily
+answer from whatever it can reach.
+
+If you are running against a **shared** Looker instance, add only your own content
+and leave everything else alone. `looker-apply` is namespace-guarded for exactly
+this reason, and you should still read the plan before applying it.
+
 ---
 
 ## Why the check exists
 
-`corpus.py`, `golden.py`, `questions.json` and `scoring.py` describe one experiment
-from four angles and are joined by string equality. Three of the four ways to break
-that join fail *silently*:
+`corpus.py`, `golden.py`, `questions.json`, `scoring.py` and `lookml.py` describe
+one experiment from five angles and are joined by string equality. Most of the ways
+to break that join fail *silently*, and the loud one fails late:
 
 | Mistake | What actually happens | Without the check, you learn |
 |---|---|---|
@@ -232,6 +303,8 @@ that join fail *silently*:
 | evidence term typo | can never be matched, so evidence recall is a floor forever | never — it reads as a finding |
 | `RULE_TRIGGERS` column renamed | `rules_for()` returns `[]`, so acquisition is "not applicable" everywhere | never — it reads as "no governance to acquire" |
 | duplicate question id | cell keys collide and replicates overwrite each other | maybe, from a low cell count |
+| table missing from `VIEW_NAMES` | `KeyError` in `make lookml` | loudly, but only after BigQuery is provisioned |
+| stale `PRIMARY_KEYS` entry | no symmetric aggregates, so summed measures fan out across the join | never — the number is just too big |
 
 All four are the "unmeasured reported as zero" mistake this project takes pains to
 avoid everywhere else, arriving by typo. That is why `make validate` is offline,

@@ -110,7 +110,7 @@ def main() -> int:
     # the questions disagree, the sweep still runs and still costs money — it
     # just scores the disagreement as wrong answers. Cheapest possible failure.
     print("Checking corpus / oracle / questions:")
-    if not validate.report():
+    if not validate.report(include_looker=not args.skip_looker):
         print("\nFix the above before provisioning. Nothing was created.")
         return 1
 
