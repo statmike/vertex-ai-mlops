@@ -218,6 +218,11 @@ def profile_scan_id(tier: int, table: str) -> str:
     return bounded_id(f"{RESOURCE_PREFIX}-t{tier}-profile-{table}")
 
 
+def quality_scan_id(tier: int, table: str) -> str:
+    """DataScan id for a table's data-quality scan at a given tier."""
+    return bounded_id(f"{RESOURCE_PREFIX}-t{tier}-quality-{table}")
+
+
 def definition_link_id(tier: int, term_id: str, table: str, column: str) -> str:
     """Entry-link id for a term-to-column definition link at a given tier.
 

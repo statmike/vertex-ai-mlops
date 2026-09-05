@@ -6,6 +6,12 @@ control and must stay bare:
 1. **Profile scans** (`create_and_run_profile_scans`) — gives the metadata
    battery category real findings to report, and springs the T4 null/outlier
    trap. Reachable via the Toolbox `dataplex` source only (DESIGN.md F3/F4).
+1b. **Quality scans** (`create_and_run_quality_scans`) — the traps restated as
+   executable rules, so their calibration arrives as a measured failure rate
+   rather than as prose. Without these, `get_data_quality_results` returns the
+   *profile* scan with the quality block simply absent: an HTTP 200 carrying
+   nothing, which an agent can read as "no quality problems found" against a
+   corpus built entirely out of them.
 2. **Business rules** (`attach_business_rules`) — published as the system
    `overview` aspect. This is the only governance on the agent's critical path
    for Path 3 Managed, because it is what `lookup_context` returns.
@@ -143,6 +149,189 @@ def delete_profile_scans() -> None:
                 operation = client.delete_data_scan(name=f"{parent}/dataScans/{scan_id}")
                 operation.result()  # type: ignore[no-untyped-call]
                 print(f"    Scan deleted: {scan_id}")
+            except NotFound:
+                pass
+
+
+# --- 1b. Data-quality scans --------------------------------------------------
+#
+# Every rule below is expected to FAIL, except the uniqueness control. That is
+# the design, not a misconfiguration: each one asserts the property a naive
+# reader assumes the corpus has, so its failure rate *is* the trap's calibration
+# — 7% null, 12% refunded, 5-in-1000 outliers, 20% dormant. An agent that reads
+# these gets the trap sizes as measured findings rather than as prose.
+#
+# `txn_id_unique` passes, and is here for that reason. A scan on which every
+# rule fails is easy to dismiss as a broken scan.
+#
+# Tier 1 only, like every other enrichment in this module. A quality scan on
+# tier 0 would hand the control arm the governed definitions and flatten the one
+# contrast the experiment measures.
+
+
+# Normal `revenue_amount` is net x 1.25, so at most ~249 for the generator's
+# largest net. Outliers are net x 1000, so at least ~5000. Anything in the gap
+# separates them; 1000 is chosen to be obviously between rather than tuned.
+_OUTLIER_THRESHOLD = 1000
+
+# Only the two tables that carry traps. `raw_events_2026` is plain clickstream —
+# a scan there would publish rules with nothing to say.
+QUALITY_SCAN_TABLES = (corpus.TRANSACTIONS.name, corpus.USERS.name)
+
+
+def _quality_rules(tier: int) -> dict[str, list[dataplex_v1.DataQualityRule]]:
+    """The rules to publish, keyed by table. Each maps to a documented trap."""
+    events = f"`{config.PROJECT_ID}.{config.tier_dataset(tier)}.{corpus.RAW_EVENTS.name}`"
+    return {
+        corpus.TRANSACTIONS.name: [
+            dataplex_v1.DataQualityRule(
+                column="txn_amt_x2",
+                dimension="COMPLETENESS",
+                threshold=1.0,
+                name="net-revenue-recorded",
+                description=(
+                    f"Net revenue must be recorded. Fails on the ~{corpus.PCT_NULL_REVENUE}% "
+                    "of rows where txn_amt_x2 is NULL and revenue was never captured (T4)."
+                ),
+                non_null_expectation=dataplex_v1.DataQualityRule.NonNullExpectation(),
+            ),
+            dataplex_v1.DataQualityRule(
+                column="revenue_amount",
+                dimension="VALIDITY",
+                threshold=1.0,
+                ignore_null=True,
+                name="gross-price-plausible",
+                description=(
+                    "Gross list price should sit in the same order of magnitude as net. "
+                    f"Fails on the seeded {corpus.OUTLIERS_PER_1000}-in-1000 outliers, which "
+                    "are what make SUM(revenue_amount) wrong by far more than the "
+                    f"{int((corpus.GROSS_MULTIPLIER - 1) * 100)}% per-row markup (T1, T4)."
+                ),
+                range_expectation=dataplex_v1.DataQualityRule.RangeExpectation(
+                    max_value=str(_OUTLIER_THRESHOLD)
+                ),
+            ),
+            dataplex_v1.DataQualityRule(
+                dimension="VALIDITY",
+                threshold=1.0,
+                name="not-refunded",
+                description=(
+                    f"Refunded rows must be excluded from net revenue. Fails on the "
+                    f"~{corpus.PCT_REFUNDED}% where status_flg is TRUE — note the flag reads "
+                    "as a status, not as a refund marker (T2)."
+                ),
+                row_condition_expectation=dataplex_v1.DataQualityRule.RowConditionExpectation(
+                    sql_expression="NOT status_flg"
+                ),
+            ),
+            dataplex_v1.DataQualityRule(
+                column="txn_id",
+                dimension="UNIQUENESS",
+                threshold=1.0,
+                name="txn-id-unique",
+                description="Control. Expected to pass, so a scan of all-failures is legible.",
+                uniqueness_expectation=dataplex_v1.DataQualityRule.UniquenessExpectation(),
+            ),
+        ],
+        corpus.USERS.name: [
+            dataplex_v1.DataQualityRule(
+                dimension="CONSISTENCY",
+                # No `threshold`: the API rejects one on a SqlAssertion, because
+                # the assertion is already all-or-nothing — any returned row fails
+                # the rule. Setting it is a 400, not a silently ignored field.
+                name="is-active-matches-governed-definition",
+                description=(
+                    "The governed Active rule as an executable check: flagged AND seen in "
+                    f"the trailing {corpus.ACTIVE_WINDOW_DAYS} days. Fails on the "
+                    f"~{corpus.PCT_DORMANT}% of flagged users who are dormant, which is "
+                    "exactly the gap between is_active and Active (T3)."
+                ),
+                sql_assertion=dataplex_v1.DataQualityRule.SqlAssertion(
+                    sql_statement=(
+                        "SELECT user_id FROM ${data()} u WHERE u.is_active AND NOT EXISTS ("
+                        f"SELECT 1 FROM {events} e WHERE e.user_id = u.user_id "
+                        "AND e.event_ts >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), "
+                        f"INTERVAL {corpus.ACTIVE_WINDOW_DAYS} DAY))"
+                    )
+                ),
+            ),
+        ],
+    }
+
+
+def create_and_run_quality_scans(wait: bool = True) -> None:
+    """Create and run one data-quality scan per governed-tier table that has rules."""
+    client = dataplex_v1.DataScanServiceClient()
+    parent = f"projects/{config.require_project()}/locations/{config.DATAPLEX_LOCATION}"
+    jobs: list[tuple[str, str]] = []
+
+    targets = [(tier, table) for tier in GOVERNED_TIERS for table in QUALITY_SCAN_TABLES]
+    for i, (tier, table) in enumerate(targets):
+        if i > 0:
+            time.sleep(SCAN_THROTTLE_SECONDS)
+
+        scan_id = config.quality_scan_id(tier, table)
+        scan_name = f"{parent}/dataScans/{scan_id}"
+        resource = (
+            f"//bigquery.googleapis.com/projects/{config.PROJECT_ID}"
+            f"/datasets/{config.tier_dataset(tier)}/tables/{table}"
+        )
+        scan = dataplex_v1.DataScan(
+            data=dataplex_v1.DataSource(resource=resource),
+            data_quality_spec=dataplex_v1.DataQualitySpec(
+                rules=_quality_rules(tier)[table],
+                sampling_percent=0.0,  # 0 = full scan; the corpus is small
+                catalog_publishing_enabled=True,
+            ),
+            execution_spec=dataplex_v1.DataScan.ExecutionSpec(
+                trigger=dataplex_v1.Trigger(on_demand=dataplex_v1.Trigger.OnDemand()),
+            ),
+            description=f"Data-quality scan for {config.tier_dataset(tier)}.{table}",
+        )
+
+        try:
+            operation = client.create_data_scan(
+                request=dataplex_v1.CreateDataScanRequest(
+                    parent=parent, data_scan=scan, data_scan_id=scan_id
+                )
+            )
+            operation.result()  # type: ignore[no-untyped-call]
+            print(f"    Quality scan created: {scan_id}")
+        except AlreadyExists:
+            # Rules are edited far more often than tables are added, so a stale
+            # rule set is the likely state here rather than a matching one.
+            existing = dataplex_v1.DataScan(
+                name=scan_name, data_quality_spec=scan.data_quality_spec
+            )
+            with contextlib.suppress(Exception):
+                client.update_data_scan(
+                    request=dataplex_v1.UpdateDataScanRequest(
+                        data_scan=existing, update_mask={"paths": ["data_quality_spec"]}
+                    )
+                ).result()  # type: ignore[no-untyped-call]
+            print(f"    Quality scan exists, rules refreshed: {scan_id}")
+
+        try:
+            response = client.run_data_scan(request=dataplex_v1.RunDataScanRequest(name=scan_name))
+            jobs.append((scan_id, response.job.name))
+        except Exception as e:  # noqa: BLE001 - preview API, non-fatal
+            print(f"    Quality scan run FAILED (non-fatal): {scan_id} - {e}")
+
+    if wait and jobs:
+        _wait_for_scan_jobs(client, jobs)
+
+
+def delete_quality_scans() -> None:
+    """Tear down every data-quality scan this project created."""
+    client = dataplex_v1.DataScanServiceClient()
+    parent = f"projects/{config.require_project()}/locations/{config.DATAPLEX_LOCATION}"
+    for tier in GOVERNED_TIERS:
+        for table in QUALITY_SCAN_TABLES:
+            scan_id = config.quality_scan_id(tier, table)
+            try:
+                operation = client.delete_data_scan(name=f"{parent}/dataScans/{scan_id}")
+                operation.result()  # type: ignore[no-untyped-call]
+                print(f"    Quality scan deleted: {scan_id}")
             except NotFound:
                 pass
 

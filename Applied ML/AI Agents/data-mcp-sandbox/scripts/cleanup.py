@@ -40,7 +40,7 @@ def main() -> int:
     targets = ", ".join(config.tier_dataset(t) for t in config.TIERS)
     print(f"This will DELETE from {project}:")
     print(f"  BigQuery datasets: {targets} (and all their tables)")
-    print(f"  Dataplex profile scans in {config.DATAPLEX_LOCATION}")
+    print(f"  Dataplex profile + quality scans in {config.DATAPLEX_LOCATION}")
     print(f"  Glossary '{catalog_setup.GLOSSARY_ID}' in {config.CATALOG_LOCATION}, + terms/links")
 
     if not args.yes and input("\nProceed? [y/N] ").strip().lower() != "y":
@@ -49,8 +49,9 @@ def main() -> int:
 
     print("\n[1/3] Glossary:")
     catalog_setup.delete_glossary()
-    print("\n[2/3] Profile scans:")
+    print("\n[2/3] Profile + quality scans:")
     catalog_setup.delete_profile_scans()
+    catalog_setup.delete_quality_scans()
     print("\n[3/3] BigQuery datasets:")
     delete_datasets(bigquery.Client(project=project))
 

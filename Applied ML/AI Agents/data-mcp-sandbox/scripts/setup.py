@@ -98,7 +98,9 @@ def verify_governance() -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--skip-scans", action="store_true", help="Skip Dataplex profile scans")
+    parser.add_argument(
+        "--skip-scans", action="store_true", help="Skip Dataplex profile and quality scans"
+    )
     parser.add_argument("--skip-glossary", action="store_true", help="Skip glossary + links")
     parser.add_argument("--skip-looker", action="store_true", help="Skip the Looker check")
     args = parser.parse_args()
@@ -114,9 +116,10 @@ def main() -> int:
 
     print("\n[5/5] Knowledge Catalog governance (tier 1+):")
     if args.skip_scans:
-        print("    Profile scans: SKIPPED")
+        print("    Profile + quality scans: SKIPPED")
     else:
         catalog_setup.create_and_run_profile_scans()
+        catalog_setup.create_and_run_quality_scans()
     # Clear first: aspects are additive, so a stale one from an earlier run
     # would otherwise linger alongside the intended governance.
     for tier in config.TIERS:

@@ -319,6 +319,12 @@ under the tier-1 service account:
 That is the check that matters most: it proves the LookML encodes the *governed* definitions rather
 than merely resolving, and that the traps stay separable through Looker.
 
+**Read the ✅, not the digits.** Active users is defined over a trailing
+`ACTIVE_WINDOW_DAYS` window from *now*, so it slides as the corpus ages while the flag count stays
+at 3,520 — the figures above are what one run produced, and a rerun will land elsewhere. What must
+hold on a rerun is that the two columns match each other and that neither equals the trap. This is
+why `golden.py` recomputes against live BigQuery instead of asserting a stored constant.
+
 **The Path 2 fence holds in both directions**, and it is a real IAM 403 propagated through Looker's
 JDBC layer, not a Looker-level ACL:
 
