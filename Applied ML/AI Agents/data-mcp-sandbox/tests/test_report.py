@@ -145,3 +145,52 @@ def test_adherence_covers_every_verdict_value():
     table = report.adherence(scores, verdicts)
     for value in judge.ADHERENCE_VALUES:
         assert value in table
+
+
+def test_scan_state_keeps_unmeasured_distinct_from_absent():
+    # Three states, not two. A capture written before the field existed did not
+    # look; reporting that as "absent" would be an unmeasured thing reported as
+    # a zero, which is the mistake this project exists to avoid.
+    assert report._scan_state({"quality_scans": True}) == "present"
+    assert report._scan_state({"quality_scans": False}) == "absent"
+    assert report._scan_state({"quality_scans": None}) == "not recorded"
+    assert report._scan_state({}) == "not recorded"
+
+
+def test_a_capture_that_cannot_say_carries_the_path3_warning():
+    # p3_toolbox binds search_dq_scans, which returns a different list either
+    # side of the scans existing, so an unlabelled capture must say so.
+    assert "Path 3 comparability" in report._scan_note({})
+    assert "Path 3 comparability" in report._scan_note({"quality_scans": None})
+    # ...and a capture that does say needs no caveat.
+    assert report._scan_note({"quality_scans": True}) == ""
+    assert report._scan_note({"quality_scans": False}) == ""
+
+
+def test_scored_records_survive_the_scores_json_round_trip():
+    # `build_results.py --from-scores` rebuilds report.md from a previous run's
+    # scores.json instead of paying for a judge pass. That only stays honest if
+    # asdict() -> json -> **kwargs is lossless; a field that serializes to
+    # something its constructor will not take turns a free re-render into a
+    # silently different report.
+    import dataclasses
+    import json as json_module
+
+    import cost as cost_module
+    import judge as judge_module
+    import scoring as scoring_module
+
+    originals = [
+        scoring_module.Score(
+            cell_key="k", config="p3_toolbox", tier=1, question_id="q", category="governed-logic",
+            answered=True, correct=True, rules_required=["net-revenue"], rules_acquired=[],
+            notes=["a note"],
+        ),
+        cost_module.CellCost(cell_key="k", config="p3_toolbox", tier=1, bq_jobs=3),
+        judge_module.Verdict(cell_key="k", adherence="adheres", rationale="r", stated_value="1"),
+    ]
+    for original in originals:
+        revived = type(original)(
+            **json_module.loads(json_module.dumps(dataclasses.asdict(original), default=str))
+        )
+        assert revived == original, f"{type(original).__name__} does not round-trip"

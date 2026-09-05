@@ -336,6 +336,34 @@ def delete_quality_scans() -> None:
                 pass
 
 
+def quality_scans_present() -> bool | None:
+    """Do this sandbox's data-quality scans exist right now? None if we cannot tell.
+
+    Recorded in every capture header, because it is a property of the *environment*
+    Path 3 was measured in rather than of the code. `search_dq_scans` returns a
+    different list depending on the answer, so a capture taken before these scans
+    existed is not comparable to one taken after — and without this field, telling
+    the two apart means archaeology on the header's `git_commit`.
+
+    Returns `None` rather than `False` when the API cannot be reached: "we did not
+    look" and "they are not there" are different facts, and collapsing them is how
+    an unmeasured thing gets reported as a zero.
+    """
+    try:
+        client = dataplex_v1.DataScanServiceClient()
+        parent = f"projects/{config.require_project()}/locations/{config.DATAPLEX_LOCATION}"
+        for tier in GOVERNED_TIERS:
+            for table in QUALITY_SCAN_TABLES:
+                scan_id = config.quality_scan_id(tier, table)
+                try:
+                    client.get_data_scan(name=f"{parent}/dataScans/{scan_id}")
+                except NotFound:
+                    return False
+        return True
+    except Exception:
+        return None
+
+
 # --- 2. Business-rule aspect -------------------------------------------------
 
 

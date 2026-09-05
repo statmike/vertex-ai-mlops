@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any
 
 import agents
+import catalog_setup
 import config
 import mcp_clients
 import toolbox_server
@@ -238,6 +239,11 @@ async def run(
         return cells
 
     meta["tool_schemas"] = await measure_schemas(current.config_keys)
+    # Environment state, not code state: Path 3's `search_dq_scans` returns a
+    # different list depending on this, so captures taken either side of the
+    # scans being provisioned are not comparable on Path 3. Measured here rather
+    # than in `header()` because it is a live call, and `--dry-run` returns above.
+    meta["quality_scans"] = catalog_setup.quality_scans_present()
 
     started = time.monotonic()
     for index, (question, config_key, tier, replicate) in enumerate(todo, start=1):

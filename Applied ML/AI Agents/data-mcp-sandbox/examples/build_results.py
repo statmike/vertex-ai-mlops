@@ -59,6 +59,10 @@ def parse_args() -> argparse.Namespace:
         help="Skip the LLM judge. Adherence columns will be empty.",
     )
     parser.add_argument(
+        "--from-scores", type=Path, default=None, metavar="SCORES_JSON",
+        help="Re-render report.md from an existing scores.json. No judge, no BigQuery.",
+    )
+    parser.add_argument(
         "--no-cost", action="store_true",
         help="Skip BigQuery job attribution. Cost columns will be empty.",
     )
@@ -132,11 +136,45 @@ def judge_requests(
     return requests
 
 
+def rerender(args: argparse.Namespace) -> int:
+    """Rebuild report.md from a previous run's scores.json, changing nothing else.
+
+    A change to the report's *prose* — a new caveat, a reworded note — otherwise
+    costs a full judge pass to publish, because `--no-judge` does not reuse the
+    old verdicts, it drops the adherence columns entirely. Everything the report
+    needs is already in scores.json, keyed by cell, so re-rendering is free and
+    the resulting diff is the change and nothing else.
+
+    Deliberately does not re-score: if you changed the rubric, run the real pass.
+    """
+    saved = json.loads(args.from_scores.read_text())
+    cells = traces.load(args.results)
+    meta = saved["header"]
+
+    scores = {s["cell_key"]: scoring.Score(**s) for s in saved["scores"]}
+    costs = {c["cell_key"]: cost.CellCost(**c) for c in saved["costs"]}
+    verdicts = {v["cell_key"]: judge.Verdict(**v) for v in saved["verdicts"]}
+    prices = cost.Prices(**saved["prices"])
+    print(
+        f"re-rendering from {args.from_scores}: {len(scores)} scores, "
+        f"{len(costs)} costs, {len(verdicts)} verdicts"
+    )
+
+    args.out.mkdir(parents=True, exist_ok=True)
+    (args.out / "report.md").write_text(
+        report.build(cells, scores, costs, verdicts, prices, meta)
+    )
+    print(f"wrote {args.out / 'report.md'} (scores.json untouched)")
+    return 0
+
+
 def main() -> int:
     args = parse_args()
     if not args.results.exists():
         print(f"No capture at {args.results} - run examples/run_battery.py first.")
         return 1
+    if args.from_scores:
+        return rerender(args)
 
     cells = traces.load(args.results)
     meta = traces.read_header(args.results)

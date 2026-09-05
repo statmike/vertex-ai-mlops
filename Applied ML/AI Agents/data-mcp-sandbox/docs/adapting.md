@@ -56,6 +56,15 @@ outputs. Full detail in [reproducing.md](reproducing.md#1-re-scoring-our-capture
 **Change the rubric here first.** `src/scoring.py` is the part most worth arguing
 with, and disagreeing with it costs a minute rather than a sweep.
 
+Changing only the report's *wording* is cheaper still — `--from-scores` rebuilds
+`report.md` from a previous run's `scores.json`, with no judge calls and no
+BigQuery, so the diff is your edit and nothing else:
+
+```bash
+uv run python examples/build_results.py \
+  --results results/capture.json.gz --from-scores results/scores.json --out results
+```
+
 ## Rung 1 — Run it unchanged
 
 Your project, our corpus, our questions. This is the rung that proves your

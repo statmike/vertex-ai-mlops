@@ -199,6 +199,39 @@ with the check that proves you got it right.
   September 2026. They are an order of magnitude, not a quote, and they exclude
   quota backoff entirely.
 
+### ⚠️ Path 3 changed after the published capture was taken
+
+**The shipped `results/capture.json.gz` predates this sandbox's Dataplex
+data-quality scans, and `make setup` now creates them.** So a fresh run is *not*
+comparable to the published Path 3 numbers, for a knowable reason rather than
+noise.
+
+| | |
+|---|---|
+| Published sweep started | 2026-09-05 02:07 UTC, at commit `834421c3` |
+| Quality scans added and run | 2026-09-05 15:59 UTC, commit `e13a98c9` |
+
+What actually moves is one tool. `search_dq_scans` is bound on `p3_toolbox` and
+was called **59 times** across the capture — always returning other projects'
+scans, none of ours. After provisioning, ours are in the list (5 of 126 at the
+time of writing). The other quality tool, `get_data_quality_results`, was bound
+for all 120 Path-3 Toolbox cells and called **zero** times, so it is not the
+mechanism even though it is the one you would guess.
+
+Concretely:
+
+- **Do not merge** Path 3 cells from the published capture with cells from a
+  fresh setup. Re-run Path 3 whole, or leave it whole.
+- Paths 1, 2 and 4 are unaffected — none of them bind a Dataplex quality tool.
+- Captures from now on record `quality_scans: true | false | null` in the header
+  and `make report` prints it, so this is self-describing rather than something
+  you have to date against a commit. `null` means "did not look", which is not
+  the same as "absent".
+- To match the published environment exactly, provision normally and then drop
+  just the quality scans — `catalog_setup.delete_quality_scans()`. Note that
+  `scripts/setup.py --skip-scans` will *not* do it: that skips profile scans too,
+  and the published capture had those.
+
 A reader re-running this in six months should expect different numbers. If the
 *ordering* of the arms changes, that is the interesting finding, and it is the
 one this harness exists to keep measurable.

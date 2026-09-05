@@ -352,6 +352,42 @@ def headline(
     )
 
 
+def _scan_state(meta: dict[str, Any]) -> str:
+    """How the capture header answers "did this sandbox's DQ scans exist?".
+
+    Three states, not two. A header written before `quality_scans` was recorded
+    cannot claim the scans were absent — it simply did not look, and saying
+    "no" would report an unmeasured thing as a zero.
+    """
+    present = meta.get("quality_scans", "missing")
+    if present is True:
+        return "present"
+    if present is False:
+        return "absent"
+    return "not recorded"
+
+
+def _scan_note(meta: dict[str, Any]) -> str:
+    """Warn when a capture cannot say which Path 3 environment it was taken in.
+
+    `search_dq_scans` is bound on `p3_toolbox` and returns a different list
+    depending on whether these scans exist, so two captures either side of them
+    being provisioned are not comparable on Path 3. Empty when the header says,
+    because then the reader already has the answer.
+    """
+    if meta.get("quality_scans") in (True, False):
+        return ""
+    return (
+        "> **Path 3 comparability.** This capture predates the `quality_scans` "
+        "header field, so it cannot state whether this sandbox's Dataplex "
+        "data-quality scans existed when it ran. That matters for Path 3 only: "
+        "`search_dq_scans` is bound on `p3_toolbox` and returns a different list "
+        "either side of those scans being provisioned. Do not merge Path 3 cells "
+        "from this capture with cells from a fresh `make setup`, which now creates "
+        "them. See `docs/reproducing.md`.\n"
+    )
+
+
 def headline_note(costs: dict[str, cost_module.CellCost]) -> str:
     """Why the headline table must not be read as a cost ranking.
 
@@ -428,8 +464,10 @@ def build(
         f"Model `{meta.get('agent_model')}` at temperature {meta.get('temperature')}, "
         f"{meta.get('runs')} replicates, tier fence "
         f"{'on' if meta.get('use_tier_sa') else 'OFF'}, commit `{meta.get('git_commit')}`, "
-        f"started {meta.get('started')}.",
+        f"started {meta.get('started')}. "
+        f"Dataplex quality scans: {_scan_state(meta)}.",
         "",
+        _scan_note(meta),
         # Stated rather than left to be counted off the tables: a capture from a
         # partial or narrowed sweep looks exactly like a full one once it is
         # scored, and every rate below is a fraction of *this* denominator.
