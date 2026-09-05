@@ -8,6 +8,7 @@ dependencies = [
     "google-adk[mcp]>=2.6,<3",
     "google-cloud-bigquery>=3.44.0",
     "google-cloud-dataplex>=2.20.0",
+    "google-cloud-monitoring>=2.31.0",
     "google-cloud-resource-manager>=1.18.0",
     # Floor is a major behind what resolves today; raised so a cold cache cannot
     # silently land on 1.x. See DEV_NOTES.md, 2026-08-31 pin audit.

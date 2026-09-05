@@ -62,6 +62,47 @@ def test_every_point_gets_exactly_one_label():
     }
 
 
+# (correct, tokens-per-correct) per tier, read off the M6 capture. Rounded shapes
+# would not do: this test only bites at the real geometry, where the top cluster
+# sits just under the frame edge instead of in synthetic headroom.
+_M6_COST_SHAPE = {
+    "p1_managed": ((22, 1689323), (40, 572233)), "p1_toolbox": ((20, 252921), (45, 46428)),
+    "p2_managed": ((20, 362823), (44, 56688)), "p2_toolbox": ((19, 481595), (45, 83898)),
+    "p3_managed": ((21, 3159221), (45, 626026)), "p3_toolbox": ((20, 583464), (45, 124546)),
+    "p1_matched": ((21, 344345), (40, 96193)), "p3_matched": ((21, 777949), (45, 117246)),
+    "p4_bq_ca": ((14, 55464), (45, 8807)), "p4_looker_ca": ((9, 182560), (21, 24874)),
+}
+
+
+def test_labels_stay_inside_the_axes():
+    # `p2_toolbox t1` shipped drawn across the chart title. It overlapped no other
+    # *label*, so the overlap test below passed while the chart was visibly
+    # broken: the containment check measured width and not height, and the axes
+    # carried no y-margin, so the top cluster had nowhere to put a label but out.
+    # Either guard alone fixes it, which is why this asserts the invariant rather
+    # than one of them — the failure needs both to be missing.
+    scores = {}
+    for index, (arm, tiers) in enumerate(_M6_COST_SHAPE.items()):
+        for tier, (correct, per_correct) in enumerate(tiers):
+            for replicate in range(60):
+                score = _score(arm, tier, correct=replicate < correct,
+                               tokens=correct * per_correct // 60,
+                               index=index * 100 + replicate)
+                scores[score.cell_key] = score
+
+    axes = plots.cost_vs_accuracy(scores).axes[0]
+    renderer = axes.figure.canvas.get_renderer()
+    frame = axes.get_window_extent(renderer)
+    escaped = [
+        text.get_text() for text in axes.texts
+        if not (frame.y0 <= text.get_window_extent(renderer).y0
+                and text.get_window_extent(renderer).y1 <= frame.y1
+                and frame.x0 <= text.get_window_extent(renderer).x0
+                and text.get_window_extent(renderer).x1 <= frame.x1)
+    ]
+    assert not escaped, f"drawn outside the axes, into the title: {escaped}"
+
+
 def test_labels_do_not_overlap_each_other():
     # Three arms within a factor of two of each other in both axes: the layout
     # that produced unreadable output before labels were placed by measurement.

@@ -66,8 +66,8 @@ and flattens the tier contrast, which is the one thing the whole design is measu
 
 The provisioner creates `data_mcp_sandbox_t0` and `data_mcp_sandbox_t1`, each using **Application
 Default Credentials** with the *Impersonated Service Account* field set to that tier's sandbox
-identity (`mcp-sandbox-t0@…` / `mcp-sandbox-t1@…`). No key file is uploaded, so `CODE_STANDARDS` §4
-holds.
+identity (`mcp-sandbox-t0@…` / `mcp-sandbox-t1@…`). No key file is uploaded, so the project's
+no-service-account-keys rule holds here too.
 
 A Looker connection authenticates as **the connection**, not as the calling user. A single shared
 connection would therefore have made Path 2 the only arm whose tier boundary was not an IAM

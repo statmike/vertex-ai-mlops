@@ -37,6 +37,7 @@ SERVICES=(
   iamcredentials.googleapis.com          # impersonating them, keylessly — the tier fence itself
   cloudresourcemanager.googleapis.com    # project-level IAM bindings, project number lookup
   serviceusage.googleapis.com            # the x-goog-user-project quota header
+  monitoring.googleapis.com              # metering CA's server-side tokens (examples/service_tokens.py)
 )
 
 # Only for Path 2 and p4_looker_ca, and only when the Looker instance is Looker

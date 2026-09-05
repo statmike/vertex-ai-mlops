@@ -95,7 +95,10 @@ def cost_vs_accuracy(scores: dict[str, scoring.Score]) -> Figure:
     ax.set_xlabel("tokens per correct answer  (log scale — cheaper is left)")
     ax.set_ylabel("accuracy")
     ax.yaxis.set_major_formatter(lambda y, _: f"{y:.0%}")
-    ax.set_title("Best is top-left: accurate and cheap. The spread is 100x.")
+    # Derived, not written down. A spread quoted in a title is the kind of number
+    # that survives three captures after it stopped being true.
+    spread = max(x for x, _, _ in points) / min(x for x, _, _ in points)
+    ax.set_title(f"Best is top-left: accurate and cheap. The spread is {spread:.0f}x.")
     _tier_legend(ax)
     _label(fig, ax, points)  # last: it measures the finished axes
     return fig
@@ -240,7 +243,12 @@ def _label(
             annotation = ax.annotate(text, (x, y), textcoords="offset points",
                                      xytext=(dx, dy), ha=align, fontsize=7)
             box = annotation.get_window_extent(renderer)
-            inside = frame.x0 <= box.x0 and box.x1 <= frame.x1
+            # Both axes, not just x. Checking width alone let a label on a
+            # top-row point escape above the axes and render across the title —
+            # it never overlapped another *label*, so the collision test passed
+            # while the chart was visibly broken.
+            inside = (frame.x0 <= box.x0 and box.x1 <= frame.x1
+                      and frame.y0 <= box.y0 and box.y1 <= frame.y1)
             last = index == len(_SLOTS) - 1
             if last or (inside and not any(box.overlaps(other) for other in occupied)):
                 occupied.append(box)
@@ -262,7 +270,10 @@ def _tier_legend(ax: "matplotlib.axes.Axes") -> None:
     The bar charts get a legend from their own artists; the scatters encode tier
     in colour alone, which is an unreadable chart without this.
     """
-    ax.margins(x=0.14)  # room for the outermost labels, which otherwise clip
+    # Room for the outermost labels, which otherwise clip. `y` matters as much as
+    # `x`: without it the top-row arms have nowhere above them to put a label and
+    # all fall back to their below-slot, straight into the cluster underneath.
+    ax.margins(x=0.14, y=0.10)
     ax.legend(
         handles=[Line2D([], [], marker="o", linestyle="", color=TIER_COLOR[tier],
                         label=TIER_LABEL[tier]) for tier in (0, 1)],

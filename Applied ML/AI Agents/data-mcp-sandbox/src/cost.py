@@ -12,7 +12,17 @@ So cost is reported in three parts, and they are never silently summed:
 |-----------|----------------|--------|
 | Client tokens | `usage.py`, per cell, from the ADK event stream | measured |
 | Warehouse | `INFORMATION_SCHEMA.JOBS_BY_PROJECT`, tier SA + time window | measured |
-| Service-side model | CA's own Gemini usage, which the API does not report | **unmeasured** |
+| Service-side model | CA's own Gemini usage; the API reports none of it | **not here** |
+
+That third row stays a floor *in this module* and is no longer a dead end. The API
+reports nothing, but Cloud Monitoring meters the same spend on
+`geminidataanalytics.googleapis.com/chat/*`, and `service_tokens.py` reads it back
+per arm. It is kept separate rather than folded in here for two reasons: it
+attributes by *time block*, not per cell, so it cannot populate a `CellCost`
+without inventing a distribution; and it is project-wide, so it is only valid
+after a baseline check. Summing it into `total_usd` would bury both caveats. What
+it found is not a footnote — `p4_looker_ca` understates its tokens by 22x and is
+the third most expensive arm, not the cheapest (`docs/paths.md`).
 
 The warehouse component is the one that makes the comparison fair, and it works
 because the sweep hands CA a tier service account: CA's queries run under *our*

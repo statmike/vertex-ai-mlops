@@ -1,7 +1,8 @@
 """Provision this sandbox's Looker objects on a shared instance. Additive only.
 
-    uv run python scripts/looker_provision.py            # dry run, changes nothing
-    uv run python scripts/looker_provision.py --apply     # create what is missing
+    uv run python scripts/looker_provision.py                    # dry run, changes nothing
+    uv run python scripts/looker_provision.py --apply             # create what is missing
+    uv run python scripts/looker_provision.py --rotate-keys --apply   # reissue sweep API3 keys
 
 Needs ADMIN API3 credentials in the `[Looker]` section of `looker.ini`. The sweep's
 own credentials cannot do this and must not be able to — they are deliberately
@@ -23,7 +24,9 @@ This instance hosts unrelated production content. The sandbox may add its own
 objects; it may not touch anything already there. So this script:
 
   * only ever CREATES, never updates or deletes — an existing object is reported
-    and left exactly as found, even if its settings look wrong;
+    and left exactly as found, even if its settings look wrong. `--rotate-keys` is
+    the one deliberate exception, and it deletes nothing but API3 credentials
+    belonging to a user this script itself created (see `rotate_user_keys`);
   * refuses to act on any name outside the `config.RESOURCE_PREFIX` namespace,
     which is what stops a mistyped .env from pointing it at a neighbour's model;
   * is idempotent, so re-running after a partial failure is safe.
@@ -331,6 +334,59 @@ def ensure_user(
     report.secrets.append((section, creds.client_id or ""))
 
 
+def rotate_user_keys(sdk: Looker40SDK, tier: int, apply: bool, report: Report) -> None:
+    """Reissue one tier's sweep API3 key pair, revoking whatever it had before.
+
+    The only destructive operation in this script, so the blast radius is fenced
+    twice. It looks the user up by `RESOURCE_PREFIX` + `t{tier}` rather than
+    taking an id, and it deletes only `credentials_api3` records hanging off that
+    user — never the user, never anything else on a shared instance. A neighbour's
+    credentials are unreachable from here because their user never matches the
+    name search.
+
+    Rotation is delete-then-create because Looker has no "replace secret" call:
+    `update_user_credentials_api3` toggles disabled state and does not mint a new
+    secret. The old key stops working the moment it is deleted, so anything
+    holding it — a running Toolbox subprocess, a live MCP session — breaks until
+    `looker.ini` is re-read. Do not rotate mid-sweep.
+
+    A secret is never returned or logged; `write_section` puts it straight into
+    the 0600 ini. Only the non-secret `client_id` is reported.
+    """
+    first, last = config.RESOURCE_PREFIX, f"t{tier}"
+    label = f"{first} {last}"
+    found = sdk.search_users(first_name=first, last_name=last)
+    if not found:
+        report.manual.append(f"user {label} does not exist — nothing to rotate")
+        return
+
+    user = found[0]
+    if user.id is None:
+        report.manual.append(f"user {label} has no id — cannot rotate")
+        return
+
+    old = sdk.all_user_credentials_api3s(user.id)
+    report.updated.append(
+        f"user {label}: revoke {len(old)} API3 key(s), issue 1 new"
+    )
+    if not apply:
+        return
+
+    for credential in old:
+        if credential.id is not None:
+            sdk.delete_user_credentials_api3(user.id, credential.id)
+
+    fresh = sdk.create_user_credentials_api3(user.id)
+    section = looker_client.tier_section(tier)
+    looker_client.write_section(
+        section=section,
+        base_url=config.LOOKER_BASE_URL,
+        client_id=fresh.client_id or "",
+        client_secret=fresh.client_secret or "",
+    )
+    report.secrets.append((section, fresh.client_id or ""))
+
+
 def ensure_oauth_app(sdk: Looker40SDK, apply: bool, report: Report) -> None:
     """Pre-register the agent so the instance-hosted MCP endpoint will accept it."""
     guid = _guard(OAUTH_APP_GUID)
@@ -360,6 +416,11 @@ def main() -> int:
     parser.add_argument(
         "--apply", action="store_true", help="actually create; default is a dry run"
     )
+    parser.add_argument(
+        "--rotate-keys",
+        action="store_true",
+        help="reissue the sweep users' API3 keys instead of provisioning; revokes the old ones",
+    )
     args = parser.parse_args()
 
     if not config.looker_configured():
@@ -381,6 +442,15 @@ def main() -> int:
         print(f"Authenticated but could not read own user: {e}\n")
 
     report = Report()
+    if args.rotate_keys:
+        # Rotation only. Running the provisioning pass as well would be harmless
+        # but misleading: every object would report "already present" alongside a
+        # credential revocation, and the one destructive line would be buried.
+        for tier in config.TIERS:
+            rotate_user_keys(sdk, tier, args.apply, report)
+        _print_report(args.apply, report)
+        return 0
+
     ensure_project(sdk, args.apply, report)
     ensure_git(sdk, args.apply, report)
     permission_set_id = ensure_permission_set(sdk, args.apply, report)
@@ -391,13 +461,18 @@ def main() -> int:
         role_id = ensure_role(sdk, tier, permission_set_id, model_set_id, args.apply, report)
         ensure_user(sdk, tier, role_id, args.apply, report)
     ensure_oauth_app(sdk, args.apply, report)
+    _print_report(args.apply, report)
+    return 0
 
-    verb = "Created" if args.apply else "Would create"
+
+def _print_report(apply: bool, report: Report) -> None:
+    """What happened, or what would have. Secrets are named, never shown."""
+    verb = "Created" if apply else "Would create"
     print(f"\n{verb}:")
     for line in report.created or ["    (nothing)"]:
         print(f"    {line}")
     if report.updated:
-        print(f"\n{'Updated' if args.apply else 'Would update'}:")
+        print(f"\n{'Updated' if apply else 'Would update'}:")
         for line in report.updated:
             print(f"    {line}")
     if report.existing:
@@ -415,9 +490,8 @@ def main() -> int:
         for section, client_id in report.secrets:
             print(f"    [{section}]  client_id={client_id}  client_secret=<written, not shown>")
 
-    if not args.apply:
+    if not apply:
         print("\nDry run — nothing changed. Re-run with --apply.")
-    return 0
 
 
 if __name__ == "__main__":

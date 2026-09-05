@@ -743,6 +743,7 @@ dependencies = [
     { name = "google-adk", extra = ["mcp"] },
     { name = "google-cloud-bigquery" },
     { name = "google-cloud-dataplex" },
+    { name = "google-cloud-monitoring" },
     { name = "google-cloud-resource-manager" },
     { name = "google-genai" },
     { name = "looker-sdk" },
@@ -766,6 +767,7 @@ requires-dist = [
     { name = "google-adk", extras = ["mcp"], specifier = ">=2.6,<3" },
     { name = "google-cloud-bigquery", specifier = ">=3.44.0" },
     { name = "google-cloud-dataplex", specifier = ">=2.20.0" },
+    { name = "google-cloud-monitoring", specifier = ">=2.31.0" },
     { name = "google-cloud-resource-manager", specifier = ">=1.18.0" },
     { name = "google-genai", specifier = ">=2.20" },
     { name = "looker-sdk", specifier = ">=26.12.0" },
@@ -1136,6 +1138,22 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/96/41/695b333dad5c3bda1df09c0744b574d14ed1cc5f8d933863723d95476ea5/google_cloud_dataplex-2.20.0.tar.gz", hash = "sha256:cbdc55ec184a58c6d444f6d37fcc9070664a345a8e110f34dd7233ed37f92047", size = 894255, upload-time = "2026-06-03T15:28:01.155Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ba/9f/ca0ca400de2a1a1dbf264a5c7b1c67deb17ddf0e941598a90da759c97751/google_cloud_dataplex-2.20.0-py3-none-any.whl", hash = "sha256:920bbc466eea3ce0168f9fefc4a16fd33e6ddb70537588666ce8e6609f1e1553", size = 691436, upload-time = "2026-06-03T15:27:10.355Z" },
+]
+
+[[package]]
+name = "google-cloud-monitoring"
+version = "2.31.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "google-api-core", extra = ["grpc"] },
+    { name = "google-auth" },
+    { name = "grpcio" },
+    { name = "proto-plus" },
+    { name = "protobuf" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/84/9d/9522e169db3887e7f354bb9aa544a6e26c435ce19337e32432598db18c6f/google_cloud_monitoring-2.31.0.tar.gz", hash = "sha256:b4c9d3528c8643d4eb4b9d688cbb3c5914bc5f69b314ff7c5e1b47bdc073a9ae", size = 404747, upload-time = "2026-06-03T15:28:24.938Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/55/30/aa6635296da9c1c14d2e64f64e1cacd4f4debf8ab7e646c0559545f0f70d/google_cloud_monitoring-2.31.0-py3-none-any.whl", hash = "sha256:64f3d56ead48f0a0674f650cb2828c47b936582a02a27c55f2836681a86281c3", size = 391010, upload-time = "2026-06-03T15:27:39.536Z" },
 ]
 
 [[package]]

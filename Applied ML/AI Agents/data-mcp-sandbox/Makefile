@@ -1,6 +1,6 @@
 .PHONY: help install toolbox check lint types test setup teardown golden lookml probe \
 	identities identities-down verify-isolation looker-plan looker-apply \
-	bootstrap apis plan smoke pilot sweep report export
+	bootstrap apis plan smoke pilot sweep report export service-tokens
 
 help:
 	@echo "Start here"
@@ -30,6 +30,7 @@ help:
 	@echo "  make pilot      One replicate of everything: 240 cells. ~5h, ~55M tokens."
 	@echo "  make sweep      The full 1,200-cell battery. ~26h, ~275M tokens."
 	@echo "  make report     Score the capture and write results/report.md"
+	@echo "  make service-tokens  Meter CA's off-book server-side model spend"
 	@echo "  make export     Scrub + freeze goldens into a publishable capture"
 	@echo ""
 	@echo "  Add SKIP_LOOKER=1 to any of the above to run BigQuery-only arms."
@@ -143,6 +144,13 @@ sweep:
 
 report:
 	uv run python examples/build_results.py
+
+# The one cost component `build_results.py` cannot see: the Gemini tokens
+# Conversational Analytics spends server-side and never returns. Read back from
+# Cloud Monitoring, which attributes by time block rather than per cell — so it
+# is a separate target, not a column in the report.
+service-tokens:
+	uv run python examples/service_tokens.py
 
 # Freeze goldens into the capture and scrub project identifiers, so the file can
 # be published and the rubric re-run by someone with no project of their own.

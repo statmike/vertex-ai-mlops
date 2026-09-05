@@ -20,10 +20,12 @@ that reads the schema and writes the obvious SQL gets a confident wrong answer.
 
 | Question | Answer |
 |---|---|
-| Does governance help? | **Yes, and it is the largest effect measured.** Accuracy roughly doubles from tier 0 to tier 1 on every path — 30%→75% on `p1_toolbox`, 13%→57% on `p4_looker_ca`. |
+| Does governance help? | **Yes, and it is the largest effect measured.** Accuracy roughly doubles from tier 0 to tier 1 on every path — 33%→75% on `p1_toolbox`, 15%→35% on `p4_looker_ca`. |
 | Is it enough? | **No.** At tier 1 the governed rule reaches the agent 100% of the time, and it still gets the answer wrong on 30–40% of those cells. Acquiring a rule and applying it are different problems. |
-| Managed or self-hosted MCP? | **Behaviourally the same, 27× apart on cost.** They reach the same verdict on 93–98% of paired cells while sharing a tool-call sequence 0–7% of the time. |
-| Where does the cost come from? | **Tool schema verbosity, not tool count.** One managed `get_table_info` declaration is 78,197 chars — 65% of its arm's prompt floor, and 120× the self-hosted equivalent that does the same job. |
+| Managed or self-hosted MCP? | **Behaviourally the same, up to 12× apart on cost.** They reach the same verdict on 94–99% of paired cells while sharing a tool-call sequence 0–7% of the time. The gap is 6.9–7.7× on Path 1 and 4.8–4.9× on Path 3 — but only 1.1–1.3× on Path 2, and the schema sizes say why. |
+| Where does the cost come from? | **Tool schema verbosity, not tool count.** Schema characters predict an arm's median tokens at r = 0.97 (tier 0) and r = 0.99 (tier 1); tool count predicts nothing at r = 0.14 and r = 0.10. One managed `get_table_info` declaration is 78,197 chars — 65% of its arm's prompt floor, and 120× the self-hosted equivalent that does the same job. |
+| How long does it take? | **Latency is a separate axis — it does not track cost.** Tokens against wall clock correlates at r = 0.10 and r = -0.09. Every MCP arm spends 4.1–5.4s per tool call whatever its schema size, so latency is turn count times a constant. Path 4 takes 1–3 calls and pays 21–73s for each, because the loop moved server-side. |
+| Is the managed agent really cheapest? | **No — that was an accounting artifact, and it inverts once you meter it.** Conversational Analytics bills its own Gemini loop to a line item the API never returns. Read it back from Cloud Monitoring and `p4_looker_ca` goes from 18,045 tokens per cell to **392,158** — a 22× understatement that moves it from the cheapest arm to the third most expensive. Its 207 turns ran 1,220 server-side model calls. `p4_bq_ca` reports nothing on that meter and stays a floor. |
 
 Full tables: [`results/report.md`](results/report.md). How the arms differ:
 [`docs/paths.md`](docs/paths.md).
@@ -142,6 +144,19 @@ recall and rule acquisition are *unmeasurable* on those arms — the report prin
 report, so its cost is published as a floor. Ranking an arm bottom on a metric it
 was never eligible for is a false finding, not a conservative one.
 
+**A floor is a debt, not a conclusion.** That Path 4 floor turned out to be
+readable after all — not from the API, but from Cloud Monitoring, which meters
+CA's own Gemini loop:
+
+```bash
+uv run python examples/service_tokens.py --results results/capture.json.gz
+uv run python examples/service_tokens.py --baseline 2026-08-25 2026-09-01
+```
+
+It cost `p4_looker_ca` its first-place finish on cost. Run `--baseline` first: the
+metric has no caller label, so it attributes by time window and only holds if
+nothing else in the project is using CA.
+
 ---
 
 ## Layout
@@ -156,8 +171,11 @@ was never eligible for is a false finding, not a conservative one.
 | `tests/` | pytest; imports flat modules from `src/` by name |
 | `notebooks/` | [provision](notebooks/01_provision.ipynb) · [walkthrough](notebooks/02_walkthrough.ipynb) · [results](notebooks/03_results.ipynb) — narrative and execution only, no business logic |
 
-Design rationale is in [`DESIGN.md`](DESIGN.md); engineering decisions and the
-things that went wrong are in [`DEV_NOTES.md`](DEV_NOTES.md).
+The reasoning that did not fit here is in the module docstrings, which are written
+to be read: [`src/cost.py`](src/cost.py) on why cost is reported in three parts
+that are never silently summed, [`src/service_tokens.py`](src/service_tokens.py)
+on metering the part the API will not report, and
+[`src/scoring.py`](src/scoring.py) on the rubric.
 
 ## Checks
 

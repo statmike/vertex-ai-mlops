@@ -78,6 +78,29 @@ number in a cost-per-correct-answer column is worse than an empty one. Leave it
 absent and every table still reports tokens and bytes; a `--` means *unpriced*,
 never free.
 
+### Metering what the API does not report
+
+`make report` publishes Path 4 as a `floor`, because Conversational Analytics
+returns no usage. Recover the missing half separately:
+
+```bash
+uv run python examples/service_tokens.py --baseline 2026-08-25 2026-09-01  # first
+make service-tokens                                                        # then
+```
+
+**Run the baseline first, and on your own quiet week.** The Monitoring metric is
+labelled by `model_name` and `status` only — there is no caller dimension — so
+attribution is by time window and will absorb any other Conversational Analytics
+workload in the same project. Our baseline returns exactly zero, which is what
+makes our numbers publishable; a busy shared project may have no clean window at
+all, and in that case the honest output is the floor.
+
+Two other limits: it needs `roles/monitoring.viewer`, and Monitoring retains these
+metrics for six weeks, so a capture older than that can no longer be attributed.
+This is why the number lives in a separate command rather than a report column —
+it is time-blocked, project-wide, and perishable, and none of those are true of
+the per-cell numbers `build_results.py` produces.
+
 ### Pointing it at your own data
 
 The corpus (`src/corpus.py`) is synthetic and trap-laden by design — the traps
@@ -100,8 +123,11 @@ work, not a config change, and it is the honest answer.
   and they dominate the cost result. Tool declarations are re-sent every turn, so
   their serialized size sets a floor on prompt tokens; one endpoint's
   `get_table_info` alone accounted for 65% of an arm's surface. That single
-  detail is worth ~27× between two arms that behave near-identically. The header
-  of every capture records the measured schema sizes for exactly this reason.
+  detail is worth up to 12× between two arms that behave near-identically, and
+  the size of the gap tracks the schema sizes rather than the word "managed" —
+  Path 2's managed endpoint is not bloated, and Path 2 shows no cost gap. The
+  header of every capture records the measured schema sizes for exactly this
+  reason.
 - **MCP Toolbox is pinned to a version** (see `scripts/install_toolbox.py`). Its
   prebuilt tool inventories change between releases.
 - **Dynamic shared quota.** `gemini-3.7-flash` has no per-project bucket, so 429s

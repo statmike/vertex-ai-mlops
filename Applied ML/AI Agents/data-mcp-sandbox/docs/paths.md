@@ -77,11 +77,22 @@ The reasoning moves to the cloud. One tool, one question in, an answer out.
 This surprised us, so it is worth stating precisely.
 
 **Behaviourally, they are near-identical.** Across paths 1–3, the managed and
-Toolbox arms reach the *same verdict* on 93–98% of paired cells — while agreeing
+Toolbox arms reach the *same verdict* on 94–99% of paired cells — while agreeing
 on the exact tool-call sequence 0–7% of the time. Two different routes, same
 destination.
 
-**In cost, they differ by up to 27×.** And the cause is not the tool list.
+**In cost, they differ by up to 12×, and not evenly.** The gap is not a property
+of "managed" as a category — it is a different size on each path:
+
+| Pair | Median tokens | Tokens per correct |
+|---|---:|---:|
+| `p1_managed` / `p1_toolbox` | 6.9× (t0), 7.7× (t1) | 6.7×, 12.3× |
+| `p3_managed` / `p3_toolbox` | 4.8×, 4.9× | 5.4×, 5.0× |
+| `p2_managed` / `p2_toolbox` | **1.1×, 1.3×** | **0.8×, 0.7×** |
+
+Path 2's managed and self-hosted arms cost essentially the same, while Path 1's
+differ sevenfold. Whatever explains this has to explain that unevenness too, and
+the tool list does not: all three pairs bind comparable tools.
 
 Tool declarations are re-sent to the model on **every turn**, so their serialized
 size sets a floor on prompt tokens for the whole conversation. Measured at sweep
@@ -104,6 +115,22 @@ time and recorded in every capture's header:
 `p3_toolbox` binds nearly 3× as many tools as `p3_managed` and is **7.6× smaller**.
 Tool *count* does not predict cost; tool *schema verbosity* does.
 
+Across all ten arms, against median tokens per cell:
+
+| Predictor | tier 0 | tier 1 |
+|---|---:|---:|
+| schema characters | **r = 0.97** | **r = 0.99** |
+| tool count | r = 0.14 | r = 0.10 |
+
+Tool count is uncorrelated with what an arm costs. Schema size is very nearly the
+whole story, on both tiers independently.
+
+That also settles the uneven managed/self-hosted gap above. `p2_managed` is the
+one managed endpoint whose schemas are not bloated — 11,721 chars against
+`p2_toolbox`'s 5,602, about 2× — and it is the one pair whose costs match. Path 1
+differs 17× in schema size and 7× in cost. The category "managed vs self-hosted"
+predicts nothing on its own; the bytes on the wire predict it precisely.
+
 One tool dominates:
 
 | `get_table_info` | chars | share of arm |
@@ -123,6 +150,127 @@ isolate the second.
 that can change without notice, and this table shows that detail dominating the
 cost result. Every capture records its own measured sizes for that reason. See
 [`reproducing.md`](reproducing.md).
+
+---
+
+## Latency is a separate axis from cost
+
+Tokens do not predict wall clock. Across the ten arms, median tokens against
+median latency correlates at **r = 0.10 (tier 0)** and **r = -0.09 (tier 1)** —
+no relationship in either direction. An arm that costs 100× more does not take
+100× longer, and the cheapest arm on tokens is the slowest on the clock.
+
+What does predict latency is **how many turns the agent takes**, at a near
+constant price per turn (tier 0, single-attempt cells only, so no retry backoff
+is counted):
+
+| Arm | Schema chars | Median tokens | Median latency | Tool calls | s / call |
+|---|---:|---:|---:|---:|---:|
+| `p3_managed` | 143,814 | 930,883 | 96.4s | 20.5 | 4.7 |
+| `p1_managed` | 120,009 | 554,528 | 76.7s | 16.5 | 4.6 |
+| `p3_toolbox` | 18,865 | 193,550 | 82.3s | 17.0 | 4.8 |
+| `p2_managed` | 11,721 | 79,744 | 76.1s | 14.0 | 5.4 |
+| `p1_toolbox` | 7,030 | 79,841 | 64.3s | 13.0 | 4.9 |
+| `p3_matched` | 6,809 | 207,233 | 89.7s | 19.5 | 4.6 |
+| `p2_toolbox` | 5,602 | 71,362 | 64.0s | 15.5 | 4.1 |
+| `p1_matched` | 3,019 | 78,004 | 71.9s | 14.0 | 5.1 |
+| `p4_bq_ca` | 882 | 8,867 | 62.4s | 3.0 | **20.8** |
+| `p4_looker_ca` | 817 | 16,829 | **146.0s** | 2.0 | **73.0** |
+
+Every MCP arm sits between 4.1 and 5.4 seconds per tool call regardless of how
+verbose its schemas are — a 47× spread in schema size and a 13× spread in tokens
+produce no spread at all in the per-turn rate. Latency is turn count times a
+constant, so the way to make one of these arms faster is to make it take fewer
+steps, not to make its prompt smaller.
+
+**Path 4 is the exception, and that is the finding.** Both CA arms take one to
+three calls and pay 21s and 73s for each. The agent loop did not disappear when
+the token count dropped — it moved into someone else's process. Latency is the
+part of that hidden loop we can still see from outside.
+
+---
+
+## Reading Path 4's numbers fairly
+
+`p4_bq_ca` and `p4_looker_ca` post the smallest token totals in the sweep, by an
+order of magnitude. Taken at face value that reads as the cheap option. It is not
+a like-for-like number, and for `p4_looker_ca` we can now say by how much.
+
+1. **The model spend is off-book — but not unmeasurable.** CA plans the query,
+   inspects results, and writes the prose using its own Gemini calls,
+   server-side. The API reports none of it. Cloud Monitoring does:
+   `geminidataanalytics.googleapis.com/chat/{input,output}_token_count`.
+   `examples/service_tokens.py` reads those back over each arm's block.
+2. **The warehouse spend *is* on-book.** CA's BigQuery jobs run under our tier
+   service account, so `INFORMATION_SCHEMA` attribution catches them per cell —
+   the MiB column for Path 4 is real, and it is not zero.
+3. **The latency said the work was happening.** 73 seconds inside a single
+   `ask_data_insights` call was never a cheap call; it was an entire agent loop
+   billed to a line item we could not read. The token metric is that loop,
+   itemised.
+
+### What the server-side meter says
+
+| Arm | Tier | Recorded | Server-side | True per cell | Understated by |
+|---|:-:|--:|--:|--:|:-:|
+| `p4_looker_ca` | 0 | 1,643,038 | 30,183,342 | 530,439 | **19×** |
+| `p4_looker_ca` | 1 | 522,358 | 14,778,233 | 255,009 | **29×** |
+| `p4_bq_ca` | 0 | 776,495 | `--` | `--` | not attributable |
+| `p4_bq_ca` | 1 | 396,310 | `--` | `--` | not attributable |
+
+Averaged over its 120 cells, `p4_looker_ca` recorded 18,045 tokens per cell and
+actually consumed **392,158**. That does not soften the ranking, it inverts it:
+
+| Arm | Tokens / cell | |
+|---|--:|---|
+| `p3_managed` | 787,623 | |
+| `p1_managed` | 500,454 | |
+| **`p4_looker_ca`** | **392,158** | ← recorded 18,045; third most expensive, not cheapest |
+| `p3_matched` | 180,108 | |
+| `p3_toolbox` | 143,949 | |
+| `p2_toolbox` | 107,714 | |
+| `p1_matched` | 92,325 | |
+| `p2_managed` | 81,256 | |
+| `p1_toolbox` | 59,564 | |
+| `p4_bq_ca` | 9,773 | floor — server side still unmeasured |
+
+The 207 CA turns behind those tokens ran **1,220 server-side model calls**, about
+5.9 per turn. That is the agent loop we thought we had removed, running where the
+invoice for it is someone else's.
+
+**Why this is ours and not the project's.** The metric's only labels are
+`model_name` and `status` — no conversation, agent, or caller dimension — so
+attribution is by time window and would absorb anything else in the project using
+CA during the sweep. Two checks say nothing else was: `--baseline` over the week
+before the sweep returns **exactly zero** turns, and the 207 measured turns line
+up with the 120-cell block that produced them. Anyone rerunning this on a busier
+project must repeat the baseline check before treating the numbers as measured.
+
+### `p4_bq_ca` reports nothing, which is not the same as spending nothing
+
+Across its entire 2h08m block, `p4_bq_ca` emits **zero** on this metric, while
+`p4_looker_ca` emits 44.9M tokens in the same sweep. Both reach CA — through
+Toolbox's `bigquery-conversational-analytics` and `looker-conversational-analytics`
+respectively. The report keeps that arm on `floor`, because more than one
+mechanism fits and we have not separated them:
+
+- The BigQuery CA tool may route to a different service that meters elsewhere; the
+  metric is namespaced to `geminidataanalytics.googleapis.com` specifically.
+- The metric may count only conversation-backed chat, and the BigQuery tool may
+  use an inline/stateless datasource that never opens one — consistent with the
+  turn counter also reading zero.
+- `p4_bq_ca` may genuinely do less server-side work, planning in fewer model
+  calls. Its 20.8 s per call against Looker CA's 73.0 s is weak support.
+
+The project-wide Vertex publisher metric
+(`aiplatform.googleapis.com/publisher/online_serving/token_count`) shows 117.5M
+tokens in that window, but it counts our *own* agent's calls and every other
+workload in the project, so it cannot separate the three. Reporting `--` is the
+accurate answer; reporting the 117.5M would be worse than reporting nothing.
+
+So the honest comparison is not "Path 4 is 105× cheaper." For the Looker arm it is
+now the opposite of cheap. For the BigQuery arm it remains a floor. The report
+never adds a floor to a full measurement, and neither should a reader.
 
 ---
 
@@ -153,3 +301,39 @@ published as a floor.
 One measured trap for anyone reading CA output: **at tier 0 it hallucinated the
 governed net-revenue rule and inverted it.** Generative prose can therefore never
 serve as evidence that governance was delivered — only a tool result can.
+
+## Where CA does its arithmetic decides whether it is right
+
+`p4_looker_ca` is the one arm governance barely rescues: 15% → 35%, against
+75% for every other tier-1 arm. The tier-1 replicates say why, and it is not
+randomness.
+
+| Question (tier 1) | Governed measure available? | Five runs | Truth |
+|---|---|---|---|
+| `semantic-q1` | `total_revenue` | 4,032,361 ×5 | 4,032,361 |
+| `semantic-q2` | `total_revenue` + date filter | 241,972 ×5 | 241,972 |
+| `governed-q1` | none — governed dimension only | 2,699 ×4, **805** ×1 | 2,699 |
+| `direct-q1` | none | 1,000 ×4, **5,000** ×1 | 5,000 |
+
+Where a measure exists, CA is exact and stable across all five replicates. Where
+none exists it has to assemble the answer itself, and then it sometimes retrieves
+rows and counts them client-side over an incomplete set. The two runs name their
+own method: the correct `governed-q1` run reported *"Dimension: `users.user_id`
+(Count Distinct)"*; the wrong one reported *"Fields: `users.user_id`, Row Limit:
+`-1` (unlimited)"* and returned 805.
+
+Mechanisms ruled out with evidence rather than assertion: it is not a flat
+1,000-row cap (2,699 comes back correctly four times in five, and 805 is not a
+round number); not Looker's own row limit (`run_inline_query` with no limit, with
+`limit="5000"`, and with `limit="-1"` each returned all 5,000 users); not an
+inner join dropping rows (all 5,000 users appear in the transactions table); and
+not fan-out (all three views declare `primary_key: yes`). What is left is **where
+the aggregation happens**. Asking for unlimited rows did not prevent it, so the
+bound is not something the caller can opt out of.
+
+The consequence is general, and it lands on this project's thesis from an angle
+we did not design for: a silently incomplete row set produces a *confident wrong
+answer* whenever the agent derives the result by counting what it received. No
+error is raised. A defined measure is not only a statement of business meaning —
+it keeps the arithmetic in the warehouse, so governance here defends against an
+architectural failure mode, not just a semantic one.

@@ -366,16 +366,20 @@ BigQuery are different accounts:
 
 ---
 
-## Open decisions I need from you eventually (not blocking)
+## Two open decisions (neither blocks a sweep)
 
-1. **The tokenCreator grant** from step 0 lets *any* connection on this shared instance impersonate
-   the tier SAs. I judged that acceptable — those identities are read-only and see only the sandbox's
-   trap datasets — but it is a real widening on infrastructure you share. Say the word and I'll
-   revoke it and fall back to a Looker-ACL-only fence for Path 2.
-2. **A `DATA_QUALITY` scan on the trap tables** (parked in `ROADMAP.md`). It's what would make the
-   widened Path 3 catalog surface actually measurable — 10 of the 11 read-only tools I wired return
-   nothing against this corpus today. It changes the corpus, so it moves ground truth, which is why
-   I haven't done it.
+1. **The `tokenCreator` grant** from step 0 lets *any* connection on this Looker instance impersonate
+   the tier service accounts. On a shared instance that is a real widening, and it is deliberate: the
+   alternative is a Looker-ACL-only fence for Path 2, which is weaker. It was judged acceptable here
+   because the tier identities are read-only and can see nothing but the sandbox's trap datasets — a
+   judgement that depends on who else uses the instance, so re-make it rather than inherit it. To back
+   it out, revoke the grant and accept the ACL-only fence.
+2. **A `DATA_QUALITY` scan on the trap tables**, not currently provisioned. `catalog_setup.py` creates
+   `DATA_PROFILE` scans only, so 10 of the 11 read-only catalog tools wired into Path 3 return nothing
+   against this corpus, and question Q4 — a data-quality question — cannot distinguish a path that has
+   those tools from one that does not. Adding it is small and cheap. It is not done because it
+   **changes the corpus, and any corpus change moves the oracle in `golden.py`**, which invalidates
+   every golden captured before it.
 
 ---
 

@@ -97,9 +97,9 @@ narrows the catalog is *who is asking*.
 > Read the error before recording a ❌; the first run of this table got two entries wrong that way.
 
 Version matters more than it should here. Against **v1.1.0**, the `dataplex` source accepted `project`
-and nothing else, and the two fields that let it be fenced simply did not exist — see §3 and
-`DEV_NOTES.md`. `maximumBytesBilled` likewise appears in the docs, is rejected by v1.1.0, and works in
-v1.10.0.
+and nothing else, and the two fields that let it be fenced simply did not exist — see §3.
+`maximumBytesBilled` likewise appears in the docs, is rejected by v1.1.0, and works in v1.10.0. Pin
+the version before trusting a field name: the documentation is not versioned alongside the binary.
 
 `allowedDatasets` is genuinely enforced, not advisory: Toolbox **dry-runs** each query, reads the
 tables it touches, and rejects anything outside the list. Statements whose table set cannot be
@@ -174,7 +174,7 @@ dataplex.locations.get,dataplex.locations.list,resourcemanager.projects.get
 
 ### Doing it without service-account keys
 
-`CODE_STANDARDS.md` §4 forbids service-account JSON keys, and impersonation satisfies that: the token
+This project forbids service-account JSON keys outright, and impersonation satisfies that: the token
 is minted from your own ADC, and no key material exists anywhere.
 
 ```bash
@@ -220,9 +220,8 @@ config — *silently does not work*, because that source called `FindDefaultCred
 scopes and then suppressed the client's defaults with `option.WithCredentials`. Every catalog call
 dies in the token exchange with a `400 INVALID_ARGUMENT` that names neither scopes nor
 impersonation. The BigQuery source is unaffected, so half the server works and half does not.
-`DEV_NOTES.md` has the full diagnosis; the general lesson is that
-**`option.WithCredentials` overrides a Google client library's default scopes**, which is invisible
-with user ADC and fatal with impersonated ADC.
+The general lesson is that **`option.WithCredentials` overrides a Google client library's default
+scopes**, which is invisible with user ADC and fatal with impersonated ADC.
 
 **Managed MCP** is scoped in the `header_provider`, which is where `src/mcp_clients.py` already mints
 its bearer token:
@@ -284,8 +283,8 @@ no test**, in both directions.
 ### If you cannot create service accounts
 
 There is a design for it — provision one tier at a time, so with tier 1 absent there is nothing for a
-tier-0 agent to find. It needs no IAM at all. It was **never built, and the stub was removed**
-(DEV_NOTES.md 2026-08-31): it costs a second provisioning cycle and the loss of an interleaved sweep,
+tier-0 agent to find. It needs no IAM at all. It was **never built, and the stub was removed**:
+it costs a second provisioning cycle and the loss of an interleaved sweep,
 which puts the two arms days apart — a time confound sitting directly on the independent variable.
 
 So this is not a fallback you can reach for today. Without the tier service accounts there is **no
