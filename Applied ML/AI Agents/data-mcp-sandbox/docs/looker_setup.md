@@ -79,9 +79,26 @@ asymmetry: a tier-0 model pointed at tier-1 data now fails the same way it fails
 
 This requires one GCP-side grant, handled by `scripts/bootstrap_identities.sh`: Looker's service
 agent (`service-<project-number>@gcp-sa-looker.iam.gserviceaccount.com`) needs
-`roles/iam.serviceAccountTokenCreator` on both tier service accounts. Note the scope — that grant
-lets *any* connection on this shared instance impersonate those identities. It is an accepted, small
-widening: the tier SAs are read-only and see nothing but the sandbox's own trap datasets.
+`roles/iam.serviceAccountTokenCreator` on both tier service accounts.
+
+Note the scope. That grant is not restricted to our connections, so on a shared instance *anything*
+that can open a connection there can mint a token for these identities. Their permission set is
+therefore what the grant is worth to everyone else on the instance, and it is worth stating exactly
+rather than waving at:
+
+| | Reach |
+|---|---|
+| Table data | **Dataset-scoped.** Only the sandbox's own tier datasets — `roles/bigquery.jobUser` runs a job, reading a table still needs the dataset ACL |
+| Catalog metadata | **Project-wide.** `dataplex.entries.list` and `dataplex.projects.search` have no dataset scope to be given, so the custom `mcpSandboxCatalogSearch` role sees every Dataplex entry in the project |
+| Writes | none |
+
+The metadata row is the accepted widening, and it is the same project-wide-list hole already
+documented for glossaries, aspect types and `search_dq_scans`. It is not an oversight and it is not
+narrowable: the permission does not take a scope.
+
+Rather than leave that as prose, `make verify-isolation` enumerates both identities' project roles
+against a reviewed allow-list and fails when it grows, so a role added later cannot quietly widen
+what a Looker connection can borrow.
 
 ## 3. Roles, model sets, and API3 credentials
 

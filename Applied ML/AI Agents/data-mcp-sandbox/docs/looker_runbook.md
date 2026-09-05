@@ -345,20 +345,22 @@ accounts:
 
 ---
 
-## Two open decisions (neither blocks a sweep)
+## The `tokenCreator` grant — kept, and bounded
 
-1. **The `tokenCreator` grant** from step 0 lets *any* connection on the Looker instance impersonate
-   the tier service accounts. On a shared instance that is a real widening, and it is deliberate: the
-   alternative is a Looker-ACL-only fence for Path 2, which is weaker. It was judged acceptable here
-   because the tier identities are read-only and can see nothing but the sandbox's trap datasets — a
-   judgement that depends on who else uses the instance, so re-make it rather than inherit it. To back
-   it out, revoke the grant and accept the ACL-only fence.
-2. **A `DATA_QUALITY` scan on the trap tables**, not currently provisioned. `catalog_setup.py` creates
-   `DATA_PROFILE` scans only, so 10 of the 11 read-only catalog tools wired into Path 3 return nothing
-   against this corpus, and question Q4 — a data-quality question — cannot distinguish a path that has
-   those tools from one that does not. Adding it is small and cheap. It is not done because it
-   **changes the corpus, and any corpus change moves the oracle in `golden.py`**, which invalidates
-   every golden captured before it.
+The grant from step 0 lets *any* connection on the Looker instance impersonate the tier service
+accounts. On a shared instance that is a real widening, and it is deliberate: the alternative is a
+Looker-ACL-only fence for Path 2, which is strictly weaker, and per-connection key files are barred
+outright.
+
+What the grant is actually worth to someone else on the instance is enumerated in
+[`looker_setup.md`](looker_setup.md#2-bigquery-connections--one-per-tier-and-that-is-the-point) —
+short version: table data is dataset-scoped to the sandbox, catalog *metadata* reads are project-wide
+because the Dataplex list permissions take no scope, and there are no writes. `make verify-isolation`
+checks both identities' roles against a reviewed allow-list, so the bound is tested rather than
+claimed.
+
+That judgement depends on who else uses the instance, so re-make it rather than inherit it. To back
+it out: revoke the grant and accept the ACL-only fence for Path 2.
 
 ---
 

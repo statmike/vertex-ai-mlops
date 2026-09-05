@@ -24,6 +24,12 @@ Check 7 has no dataset behind it: a glossary is its own resource, so BigQuery
 ACLs do not filter it. If the rule is reachable from tier 0 the fence leaks
 through the business glossary even when every table check passes.
 
+A separate check bounds the *blast radius* rather than the fence. Looker's
+service agent can mint tokens for both tier identities, and on a shared instance
+that is not scoped to our connections — so the tier identities' permission set
+is what that grant is worth to anyone else on the instance. It is enumerated
+against an allow-list, and grows loudly.
+
 Path 2 (Looker) adds a second axis. It is the only path where the agent's
 identity and the identity that reaches BigQuery are different accounts, so both
 are checked: the sweep user must see exactly one model (on a shared instance,
@@ -42,6 +48,8 @@ import sys
 
 import _bootstrap  # noqa: F401 - import for the sys.path side effect
 import httpx
+from google.api_core import exceptions as gcp_exceptions
+from google.cloud import resourcemanager_v3
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
@@ -415,6 +423,72 @@ def verify_looker(tier: int, other: int, report: Report) -> None:
     report.negative(f"t{tier} connection refuses t{other} data", ran[1], control)
 
 
+# Project-level roles the tier identities are allowed to hold. Not an assertion
+# that these are harmless — an assertion that the list is short, reviewed, and
+# says so when it grows.
+#
+# It is here rather than in a unit test because it is the blast radius of a
+# specific live grant. Looker's service agent holds
+# `roles/iam.serviceAccountTokenCreator` on both tier accounts, which is what
+# lets a per-tier connection carry the IAM fence into Path 2
+# (`docs/looker_setup.md` §2). On a shared instance that grant is not scoped to
+# our connections: anything that can open a connection there can mint a token
+# for these identities. So whatever they can reach, it can reach, and this list
+# is the honest statement of what that is.
+ALLOWED_TIER_SA_ROLES = {
+    "roles/bigquery.jobUser",  # run a job; reading a table still needs dataset ACL
+    "roles/mcp.toolUser",
+    "roles/serviceusage.serviceUsageConsumer",
+    "roles/geminidataanalytics.dataAgentStatelessUser",
+    "mcpSandboxCatalogSearch",  # custom: project-wide Dataplex *metadata* read
+    "mcpSandboxGlossaryReader",  # custom, tier 1 only: glossary read
+}
+
+
+def _role_key(role: str) -> str:
+    """Match a policy role against `ALLOWED_TIER_SA_ROLES`.
+
+    Predefined roles are global (`roles/bigquery.jobUser`) and compared whole.
+    Custom ones carry the project (`projects/<id>/roles/mcpSandboxCatalogSearch`)
+    and are compared on the bare name, so the allow-list stays portable to a
+    reader's own project. Shortening both would let `roles/bigquery.jobUser` be
+    matched by a bare `jobUser` entry, which is how the first version of this
+    check reported four reviewed roles as unreviewed.
+    """
+    return role if role.startswith("roles/") else role.rsplit("/", 1)[-1]
+
+
+def verify_blast_radius(report: Report) -> None:
+    """Fail if a tier identity has picked up a role nobody reviewed.
+
+    The two custom roles are deliberately in the allow-list *and* deliberately
+    project-wide: `dataplex.entries.list` and `dataplex.projects.search` have no
+    dataset scope to be given. That is a known, accepted widening rather than an
+    oversight, and it is why the docs say catalog metadata is project-wide while
+    table data is not. The check that matters is that nothing granting
+    project-wide *data* access — `roles/bigquery.dataViewer` and relatives —
+    ever appears here, which it enforces by allow-list rather than by blocklist.
+    """
+    client = resourcemanager_v3.ProjectsClient()
+    try:
+        policy = client.get_iam_policy(request={"resource": f"projects/{config.require_project()}"})
+    except gcp_exceptions.GoogleAPICallError as exc:
+        # A reader without `resourcemanager.projects.getIamPolicy` should not see
+        # a red FAIL for a permission they do not need to run the sweep.
+        print(f"  [SKIP] tier identity role review — cannot read the IAM policy ({exc.code})")
+        return
+
+    for tier in config.TIERS:
+        member = f"serviceAccount:{config.tier_service_account(tier)}"
+        held = {binding.role for binding in policy.bindings if member in binding.members}
+        extra = sorted(r for r in held if _role_key(r) not in ALLOWED_TIER_SA_ROLES)
+        report.result(
+            f"t{tier} identity holds only reviewed roles ({len(held)} total)",
+            not extra,
+            f"unreviewed, and reachable by any Looker connection on the instance: {extra}",
+        )
+
+
 async def main_async(skip_toolbox: bool, skip_looker: bool) -> int:
     print(f"Verifying tier isolation in {config.require_project()}")
     if not config.USE_TIER_SA:
@@ -425,6 +499,7 @@ async def main_async(skip_toolbox: bool, skip_looker: bool) -> int:
         )
 
     report = Report()
+    verify_blast_radius(report)
     for tier in config.TIERS:
         other = next(t for t in config.TIERS if t != tier)
         await verify_managed(tier, other, report)
