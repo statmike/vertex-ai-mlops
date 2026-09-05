@@ -25,16 +25,24 @@ def test_unmeasured_prints_as_a_dash_not_a_zero():
     assert report.fmt(0.0) == "0.00"
 
 
-def test_headline_tokens_survive_without_the_cost_pass():
-    # `--no-cost` must still produce a token table. An earlier draft divided an
-    # empty cost list and printed `0 tokens / correct` for every arm.
+def test_headline_usage_survives_without_the_cost_pass():
+    # `--no-cost` must still produce a usage table. An earlier draft divided an
+    # empty cost list and printed `0 tokens / correct` for every arm. Tokens and
+    # seconds are copied onto the Score off the capture for exactly this reason;
+    # only the warehouse columns depend on the BigQuery attribution pass. A later
+    # draft re-sourced the token columns from CellCost and silently undid it.
     scores = {
-        "a": _score("a", answered=True, correct=True, total_tokens=1000),
-        "b": _score("b", answered=True, correct=False, total_tokens=3000),
+        "a": _score("a", answered=True, correct=True,
+                    prompt_tokens=800, output_tokens=200, latency_s=6.0),
+        "b": _score("b", answered=True, correct=False,
+                    prompt_tokens=2400, output_tokens=600, latency_s=10.0),
     }
     table = report.headline(scores, {})
-    assert "4000" in table  # 4000 tokens spent, one correct answer
-    assert "| -- | -- | -- |" in table  # MiB, USD and coverage all unmeasured
+    assert "3200" in table  # input tokens, one correct answer
+    assert "800" in table  # output tokens
+    assert "16" in table  # seconds
+    # BQ jobs, MiB and coverage are the only things the cost pass owns.
+    assert "| -- | -- | -- |" in table
 
 
 def test_headline_reports_dash_not_infinity_when_nothing_was_correct():

@@ -6,28 +6,28 @@ Model `gemini-3.7-flash` at temperature 0.0, 5 replicates, tier fence on, commit
 
 ## Headline
 
-| config | tier | accuracy (mean) | tokens / correct | MiB / correct | USD / correct | coverage |
-|---|---|---|---|---|---|---|
-| p1_managed | 0 | 37% | 1689323 | 297.7 | 0.00177 | full |
-| p1_managed | 1 | 67% | 572233 | 134.8 | 0.00080 | full |
-| p1_toolbox | 0 | 33% | 252921 | 213.0 | 0.00127 | full |
-| p1_toolbox | 1 | 75% | 46428 | 65.3 | 0.00039 | full |
-| p2_managed | 0 | 33% | 362823 | 226.5 | 0.00135 | full |
-| p2_managed | 1 | 73% | 56688 | 55.5 | 0.00033 | full |
-| p2_toolbox | 0 | 32% | 481595 | 193.2 | 0.00115 | full |
-| p2_toolbox | 1 | 75% | 83898 | 50.0 | 0.00030 | full |
-| p3_managed | 0 | 35% | 3159221 | 322.4 | 0.00192 | full |
-| p3_managed | 1 | 75% | 626026 | 75.8 | 0.00045 | full |
-| p3_toolbox | 0 | 33% | 583464 | 229.0 | 0.00136 | full |
-| p3_toolbox | 1 | 75% | 124546 | 68.4 | 0.00041 | full |
-| p1_matched | 0 | 35% | 344345 | 232.4 | 0.00139 | full |
-| p1_matched | 1 | 67% | 96193 | 116.0 | 0.00069 | full |
-| p3_matched | 0 | 35% | 777949 | 260.5 | 0.00155 | full |
-| p3_matched | 1 | 75% | 117246 | 66.2 | 0.00039 | full |
-| p4_bq_ca | 0 | 23% | 55464 | 160.7 | 0.00096 | floor |
-| p4_bq_ca | 1 | 75% | 8807 | 35.3 | 0.00021 | floor |
-| p4_looker_ca | 0 | 15% | 182560 | 184.4 | 0.00110 | floor |
-| p4_looker_ca | 1 | 35% | 24874 | 46.7 | 0.00028 | floor |
+| config | tier | accuracy (mean) | tokens in / correct | tokens out / correct | sec / correct | BQ jobs / correct | MiB / correct | coverage |
+|---|---|---|---|---|---|---|---|---|
+| p1_managed | 0 | 37% | 1673836 | 5487 | 273 | 34.4 | 297.7 | full |
+| p1_managed | 1 | 67% | 566836 | 2142 | 85 | 11.7 | 134.8 | full |
+| p1_toolbox | 0 | 33% | 245109 | 3504 | 212 | 26.0 | 213.0 | full |
+| p1_toolbox | 1 | 75% | 44167 | 1180 | 63 | 5.1 | 65.3 | full |
+| p2_managed | 0 | 33% | 350525 | 4459 | 269 | 23.3 | 226.5 | full |
+| p2_managed | 1 | 73% | 54658 | 963 | 62 | 4.1 | 55.5 | full |
+| p2_toolbox | 0 | 32% | 467996 | 4898 | 279 | 25.5 | 193.2 | full |
+| p2_toolbox | 1 | 75% | 81864 | 1000 | 44 | 3.9 | 50.0 | full |
+| p3_managed | 0 | 35% | 3139118 | 7281 | 341 | 38.9 | 322.4 | full |
+| p3_managed | 1 | 75% | 621429 | 2035 | 80 | 6.3 | 75.8 | full |
+| p3_toolbox | 0 | 33% | 574456 | 4111 | 287 | 27.5 | 229.0 | full |
+| p3_toolbox | 1 | 75% | 121638 | 1330 | 69 | 5.6 | 68.4 | full |
+| p1_matched | 0 | 35% | 332553 | 4180 | 226 | 30.7 | 232.4 | full |
+| p1_matched | 1 | 67% | 92038 | 1722 | 91 | 10.2 | 116.0 | full |
+| p3_matched | 0 | 35% | 763580 | 5152 | 297 | 32.5 | 260.5 | full |
+| p3_matched | 1 | 75% | 113687 | 1591 | 91 | 5.5 | 66.2 | full |
+| p4_bq_ca | 0 | 23% | 50918 | 2509 | 287 | 16.4 | 160.7 | floor |
+| p4_bq_ca | 1 | 75% | 7596 | 668 | 54 | 2.6 | 35.3 | floor |
+| p4_looker_ca | 0 | 15% | 177682 | 2170 | 1113 | 16.6 | 184.4 | floor |
+| p4_looker_ca | 1 | 35% | 23467 | 677 | 240 | 3.1 | 46.7 | floor |
 
 ## Capture health
 
@@ -181,7 +181,9 @@ Model `gemini-3.7-flash` at temperature 0.0, 5 replicates, tier fence on, commit
 | p4_looker_ca | 0 | 16829 | 19376 | 267 | 20.0 | 0.00016 | floor |
 | p4_looker_ca | 1 | 4228 | 6609 | 230 | 10.0 | 0.00010 | floor |
 
-Prices: cloud.google.com/bigquery/pricing, US multi-region on-demand list price (verified 2026-09-03). Token rates are unset unless a `prices.json` supplies them, so a `--` in the USD column means *unpriced*, not free. A `yes` in the last column means the arm also spent money this sweep cannot see: Conversational Analytics runs its own Gemini calls and does not report them.
+Prices: cloud.google.com/bigquery/pricing, US multi-region on-demand list price (verified 2026-09-03). Token rates are unset unless a `prices.json` supplies them, so a `--` in the USD column means *unpriced*, not free. Dollars are the only derived number in this report and the only one that depends on a rate card, which is why every other column is in units consumed.
+
+The last column is how complete the picture is. **full** means everything this sweep spent, it saw. **floor** means the arm also spent model tokens server-side that the API never reported back — Conversational Analytics runs its own Gemini loop on our behalf. A floor is a lower bound, not a total, and it is not small: `make service-tokens` meters it from Cloud Monitoring and finds `p4_looker_ca` consumed 22x the tokens recorded here.
 
 ## Semantic adherence (judged)
 
@@ -189,9 +191,9 @@ Prices: cloud.google.com/bigquery/pricing, US multi-region on-demand list price 
 |---|---|---|---|---|---|---|
 | p1_managed | 0 | 50 | 10% | 34% | 56% | 0% |
 | p1_managed | 1 | 50 | 50% | 50% | 0% | 0% |
-| p1_toolbox | 0 | 50 | 10% | 22% | 68% | 0% |
+| p1_toolbox | 0 | 50 | 10% | 20% | 70% | 0% |
 | p1_toolbox | 1 | 50 | 80% | 20% | 0% | 0% |
-| p2_managed | 0 | 50 | 10% | 34% | 56% | 0% |
+| p2_managed | 0 | 50 | 10% | 32% | 58% | 0% |
 | p2_managed | 1 | 50 | 80% | 20% | 0% | 0% |
 | p2_toolbox | 0 | 50 | 8% | 30% | 62% | 0% |
 | p2_toolbox | 1 | 50 | 80% | 20% | 0% | 0% |
@@ -205,8 +207,8 @@ Prices: cloud.google.com/bigquery/pricing, US multi-region on-demand list price 
 | p3_matched | 1 | 50 | 80% | 20% | 0% | 0% |
 | p4_bq_ca | 0 | 50 | 2% | 16% | 82% | 0% |
 | p4_bq_ca | 1 | 50 | 80% | 20% | 0% | 0% |
-| p4_looker_ca | 0 | 50 | 0% | 12% | 58% | 30% |
-| p4_looker_ca | 1 | 50 | 30% | 24% | 4% | 42% |
+| p4_looker_ca | 0 | 50 | 0% | 14% | 58% | 28% |
+| p4_looker_ca | 1 | 50 | 30% | 26% | 2% | 42% |
 
 ## Equivalence
 

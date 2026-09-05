@@ -70,13 +70,26 @@ BigQuery, at both governance tiers. **The central result survives**: governed
 versus ungoverned is still measured on every remaining path. What you lose is
 Path 2 — the semantic-layer arm — and the Looker half of the Path 4 comparison.
 
-### Your rates, not ours
+### Cost is reported in units, not dollars
 
-`cp prices.example.json prices.json` and fill it in. Nothing is pre-filled: your
-rates differ by region, edition, and negotiated discount, and a plausible wrong
-number in a cost-per-correct-answer column is worse than an empty one. Leave it
-absent and every table still reports tokens and bytes; a `--` means *unpriced*,
-never free.
+The headline table is **tokens in, tokens out, seconds, BigQuery jobs, and MiB
+scanned** — per correct answer, because an arm that is cheap and wrong is not
+cheap. Those five are things you can check against your own invoice. A dollar
+figure is not: it needs a rate card, and rates differ by region, edition and
+committed-use discount, so it is the one number in this report guaranteed to be
+wrong for most readers.
+
+Input and output are separate columns because they neither cost nor behave alike.
+Output bills several times higher than input everywhere, and it is the column that
+moves when an arm starts reasoning rather than retrieving. Summed, the two hide
+each other — and the split is what makes the headline cost result legible:
+`p1_managed` at tier 0 spends 1,673,836 input tokens per correct answer against
+5,487 output. Almost none of that is the model thinking. It is tool schemas,
+re-sent every turn.
+
+If you do want money, `cp prices.example.json prices.json` and fill it in. Nothing
+is pre-filled. Leave it absent and every table still reports units; a `--` in the
+USD column means *unpriced*, never free.
 
 ### Metering what the API does not report
 

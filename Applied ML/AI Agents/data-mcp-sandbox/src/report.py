@@ -73,6 +73,20 @@ def _group(scores: dict[str, scoring.Score], key: str, tier: int) -> list[scorin
     return [s for s in scores.values() if s.config == key and s.tier == tier]
 
 
+def _per(total: float | None, correct: int, present: object = True) -> float | None:
+    """`total` per correct answer, or `None` if that ratio would be a fiction.
+
+    Three ways it is a fiction, and all three print `--`: nothing was measured
+    (`total is None`), the pass that would have measured it never ran (`present`
+    falsy), or the arm got nothing right. That last one matters most — dividing by
+    zero correct answers yields `inf`, which sorts to the *bottom* of a
+    most-expensive list and so reads as the exact opposite of what happened.
+    """
+    if total is None or not present or not correct:
+        return None
+    return total / correct
+
+
 def _coverage(entries: list[cost_module.CellCost]) -> str:
     """How complete an arm's cost picture is. Three states, never collapsed to two.
 
@@ -216,9 +230,15 @@ def spend(
         f"\n\nPrices: {prices.source or 'none supplied'}"
         f"{f' (verified {prices.verified})' if prices.verified else ''}. "
         "Token rates are unset unless a `prices.json` supplies them, so a `--` in "
-        "the USD column means *unpriced*, not free. A `yes` in the last column "
-        "means the arm also spent money this sweep cannot see: Conversational "
-        "Analytics runs its own Gemini calls and does not report them."
+        "the USD column means *unpriced*, not free. Dollars are the only derived "
+        "number in this report and the only one that depends on a rate card, "
+        "which is why every other column is in units consumed.\n\n"
+        "The last column is how complete the picture is. **full** means everything "
+        "this sweep spent, it saw. **floor** means the arm also spent model tokens "
+        "server-side that the API never reported back — Conversational Analytics "
+        "runs its own Gemini loop on our behalf. A floor is a lower bound, not a "
+        "total, and it is not small: `make service-tokens` meters it from Cloud "
+        "Monitoring and finds `p4_looker_ca` consumed 22x the tokens recorded here."
     )
     return _table(
         ["config", "tier", "tokens (median)", "IQR", "thoughts", "MiB billed",
@@ -289,26 +309,43 @@ def headline(
     and wrong is not cheap. An arm with zero correct answers reports `--`; a
     division by zero here would silently print `inf` and sort to the bottom of a
     "most expensive" list, which reads as the opposite of what happened.
+
+    **Reported in units consumed, not money.** Tokens in, tokens out, seconds,
+    BigQuery jobs and the bytes they scanned — five things a reader can check
+    against their own invoice. Dollars are a *derived* number that needs a rate
+    card, and rates differ by region, edition and committed-use discount, so a
+    USD column is the one figure here that is guaranteed wrong for most readers.
+    It still exists (`prices.json`, opt-in) but it is no longer the headline.
+
+    Input and output are split because they neither cost nor behave alike: output
+    is several times the price of input on every published rate card, and it is
+    the column that moves when an arm starts reasoning instead of retrieving.
+    Summed, those two effects hide each other.
     """
     rows = []
     for key, tier in _arms(scores):
         group = _group(scores, key, tier)
         entries = [costs[s.cell_key] for s in group if s.cell_key in costs]
         correct = sum(1 for s in group if s.correct)
-        tokens = sum(s.total_tokens for s in group)
         mib = sum(e.bytes_billed for e in entries) / 2**20 if entries else None
-        usd = [e.total_usd for e in entries if e.total_usd is not None]
+        has = entries or None
         rows.append([
             key, str(tier),
             fmt(rate(group, lambda s: s.correct), ".0%"),
-            fmt(tokens / correct if correct else None, ".0f"),
-            fmt(mib / correct if mib is not None and correct else None, ".1f"),
-            fmt(sum(usd) / correct if usd and correct else None, ".5f"),
+            # Tokens and seconds come off the capture (`group`), not the cost pass
+            # (`entries`), so `--no-cost` still yields a usage table rather than a
+            # row of dashes. Only the warehouse columns need the attribution pass.
+            fmt(_per(sum(s.prompt_tokens for s in group), correct), ".0f"),
+            fmt(_per(sum(s.output_tokens for s in group), correct), ".0f"),
+            fmt(_per(sum(s.latency_s for s in group), correct), ".0f"),
+            fmt(_per(sum(e.bq_jobs for e in entries), correct, has), ".1f"),
+            fmt(_per(mib, correct), ".1f"),
             _coverage(entries),
         ])
     return _table(
-        ["config", "tier", "accuracy (mean)", "tokens / correct", "MiB / correct",
-         "USD / correct", "coverage"],
+        ["config", "tier", "accuracy (mean)", "tokens in / correct",
+         "tokens out / correct", "sec / correct", "BQ jobs / correct",
+         "MiB / correct", "coverage"],
         rows,
     )
 

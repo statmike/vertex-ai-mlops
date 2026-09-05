@@ -188,6 +188,35 @@ three calls and pay 21s and 73s for each. The agent loop did not disappear when
 the token count dropped — it moved into someone else's process. Latency is the
 part of that hidden loop we can still see from outside.
 
+### Seconds per *correct* answer, which is what a user waits
+
+Per-call latency flatters an arm that answers quickly and wrongly. Normalising the
+clock the same way the cost columns are normalised — per correct answer — compounds
+speed with accuracy, and separates the field much further than either alone:
+
+| Arm | Tier 0 | Tier 1 |
+|---|---:|---:|
+| `p2_toolbox` | 279s | **44s** |
+| `p4_bq_ca` | 287s | 54s |
+| `p2_managed` | 269s | 62s |
+| `p1_toolbox` | 212s | 63s |
+| `p3_toolbox` | 287s | 69s |
+| `p3_managed` | 341s | 80s |
+| `p1_managed` | 273s | 85s |
+| `p1_matched` | 226s | 91s |
+| `p3_matched` | 297s | 91s |
+| `p4_looker_ca` | **1,113s** | **240s** |
+
+At tier 0 the field is tight — 212s to 341s for every arm except `p4_looker_ca`,
+which needs **19 minutes of wall clock per right answer**, 3–5× worse than
+anything else. It is not merely the slowest per call; it is also the least
+accurate, and the two multiply.
+
+Governance is the biggest lever on this axis too. Every arm improves from tier 0
+to tier 1, by 2.5× (`p1_matched`) to 6.3× (`p2_toolbox`), and almost none of that
+is the model getting faster — it is fewer wasted turns and more of them landing
+correct.
+
 ---
 
 ## Reading Path 4's numbers fairly
