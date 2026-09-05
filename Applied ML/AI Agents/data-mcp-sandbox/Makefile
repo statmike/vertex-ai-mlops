@@ -9,6 +9,7 @@ help:
 	@echo ""
 	@echo "Setup"
 	@echo "  make install    Sync the environment (uv)"
+	@echo "  make validate   Check corpus/oracle/questions agree. Offline, free."
 	@echo "  make apis       Enable the Google Cloud APIs the sandbox needs"
 	@echo "  make toolbox    Download the pinned MCP Toolbox binary into bin/"
 	@echo "  make identities Create the per-tier service accounts (one-time, privileged)"
@@ -55,7 +56,14 @@ types:
 test:
 	uv run pytest
 
-check: lint types test
+check: lint types validate test
+
+# Offline coherence check on the three files that describe the experiment:
+# corpus.py (the tables), golden.py (the right answers), questions.json (what to
+# ask). They are joined by name, so a rename in one is silent in the others until
+# a sweep scores it wrong. Run this after every edit while adapting the sandbox.
+validate:
+	uv run python scripts/validate.py
 
 setup:
 	uv run python scripts/setup.py

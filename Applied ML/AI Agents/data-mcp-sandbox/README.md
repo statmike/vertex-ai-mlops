@@ -43,6 +43,11 @@ Full tables: [`results/report.md`](results/report.md). How the arms differ:
 > [`docs/reproducing.md`](docs/reproducing.md) for what will and will not
 > reproduce.
 
+**Want it on your own warehouse?** [`docs/adapting.md`](docs/adapting.md) walks it
+in seven rungs — re-score our capture with no cloud account, run it unchanged in
+your project, then move it toward your data one verifiable step at a time. Start
+anywhere; stop anywhere.
+
 ---
 
 ## Setup
@@ -177,7 +182,7 @@ nothing else in the project is using CA.
 | `src/` | All logic — flat, single-responsibility modules |
 | `examples/` | Runners: the sweep, the scorer, isolation and inventory probes |
 | `scripts/` | Provisioning, teardown, capture export |
-| `docs/` | [paths](docs/paths.md) · [questions & rubric](docs/questions.md) · [reproducing](docs/reproducing.md) · [scoping](docs/scoping.md) · [Looker setup](docs/looker_setup.md) · [runbook](docs/looker_runbook.md) |
+| `docs/` | [paths](docs/paths.md) · [questions & rubric](docs/questions.md) · [reproducing](docs/reproducing.md) · [**adapting**](docs/adapting.md) · [scoping](docs/scoping.md) · [Looker setup](docs/looker_setup.md) · [runbook](docs/looker_runbook.md) |
 | `results/` | The report, the scores, and the publishable capture |
 | `tests/` | pytest; imports flat modules from `src/` by name |
 | `notebooks/` | [provision](notebooks/01_provision.ipynb) · [walkthrough](notebooks/02_walkthrough.ipynb) · [results](notebooks/03_results.ipynb) — narrative and execution only, no business logic |

@@ -155,10 +155,15 @@ the per-cell numbers `build_results.py` produces.
 ### Pointing it at your own data
 
 The corpus (`src/corpus.py`) is synthetic and trap-laden by design — the traps
-are the measurement. Swapping in your tables means rewriting `corpus.py`,
-`golden.py` (the oracle), and `questions.json` together, because a question is
-only scoreable against a golden that a query can compute. That is a real piece of
-work, not a config change, and it is the honest answer.
+are the measurement. Swapping in your tables is a real piece of work, not a config
+change: seven files describe the experiment and are joined *by name*, so they have
+to move together. That is the honest answer.
+
+But you do not have to do it in one jump, and you should not. **[adapting.md](adapting.md)
+lays out seven rungs** from "re-score our capture" to "bring your own tables",
+each one independently runnable, each with the check that proves you got it right.
+`make validate` is the fast loop — offline, free, and run automatically before
+`make setup` provisions anything.
 
 ---
 

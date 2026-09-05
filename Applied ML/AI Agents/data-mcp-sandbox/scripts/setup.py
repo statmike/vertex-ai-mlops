@@ -22,6 +22,7 @@ import config
 import corpus
 import golden
 import looker_check
+import validate
 
 
 def provision_bigquery(client: bigquery.Client) -> None:
@@ -105,8 +106,16 @@ def main() -> int:
     parser.add_argument("--skip-looker", action="store_true", help="Skip the Looker check")
     args = parser.parse_args()
 
+    # First, and before anything billable exists. If the corpus, the oracle and
+    # the questions disagree, the sweep still runs and still costs money — it
+    # just scores the disagreement as wrong answers. Cheapest possible failure.
+    print("Checking corpus / oracle / questions:")
+    if not validate.report():
+        print("\nFix the above before provisioning. Nothing was created.")
+        return 1
+
     project = config.require_project()
-    print(f"Provisioning data-mcp-sandbox in {project}")
+    print(f"\nProvisioning data-mcp-sandbox in {project}")
     print(f"  Tiers:  {', '.join(config.TIER_LABELS[t] for t in config.TIERS)}")
     print(f"  Corpus: {len(corpus.CORPUS)} tables x {len(config.TIERS)} tiers")
 

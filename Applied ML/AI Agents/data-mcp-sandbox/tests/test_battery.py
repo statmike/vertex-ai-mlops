@@ -19,8 +19,13 @@ def _questions():
 
 
 def test_questions_file_parses_and_is_complete():
+    # Deliberately asserts *structure*, not a count. The battery is meant to be
+    # edited — adapting the sandbox to another warehouse means rewriting these
+    # questions — and a hardcoded `== 12` turns every such edit into a failing
+    # test that says nothing about whether the edit was correct. `validate.py`
+    # is what checks the edit is coherent.
     questions = _questions()
-    assert len(questions) == 12
+    assert questions, "questions.json is empty"
     assert len({question.id for question in questions}) == len(questions)
     for question in questions:
         assert question.golden_key
@@ -131,11 +136,18 @@ def test_matched_arms_really_match():
 
 
 def test_plan_is_the_full_factorial_with_matched_arms():
+    # The invariant is the *product*, not the shipped numbers: every question is
+    # asked on every arm at every tier for every replicate, and no cell key
+    # collides. Written against the actual lengths so that editing the battery
+    # for another warehouse changes the size without breaking the property.
+    # As shipped that is 12 x 10 x 2 x 5 = 1,200.
     questions = _questions()
-    current = battery.plan(questions, list(mcp_clients.CONFIG_KEYS), [0, 1], 5)
-    assert len(mcp_clients.CONFIG_KEYS) == 10
-    assert len(current) == 12 * 10 * 2 * 5 == 1200
-    assert len({battery.traces.cell_key(q.id, c, t, r) for q, c, t, r in current.cells}) == 1200
+    configs, tiers, runs = list(mcp_clients.CONFIG_KEYS), [0, 1], 5
+    current = battery.plan(questions, configs, tiers, runs)
+    expected = len(questions) * len(configs) * len(tiers) * runs
+    assert len(current) == expected
+    keys = {battery.traces.cell_key(q.id, c, t, r) for q, c, t, r in current.cells}
+    assert len(keys) == expected, "cell keys collide, so cells would overwrite each other"
 
 
 def test_cost_join_fields_survive_a_round_trip(tmp_path):
