@@ -11,6 +11,7 @@ import cost
 import judge
 import report
 import scoring
+import service_tokens
 import traces
 
 
@@ -61,6 +62,27 @@ def test_coverage_distinguishes_unpriced_from_incomplete():
     assert report._coverage([]) == report.DASH
     assert report._coverage(priced) == "full"
     assert report._coverage(opaque) == "floor"
+
+
+def test_headline_note_names_the_floor_arms_and_stays_silent_without_them():
+    # The note exists because the floor arms' numbers are the smallest on the
+    # page precisely *because* they are incomplete, so the table reads as a
+    # ranking that is upside down at the top. It must name whichever arms are
+    # actually floors in this capture, not a list written down once.
+    full = {"a": cost.CellCost(cell_key="a", config="p1_toolbox", tier=1)}
+    assert report.headline_note(full) == ""
+    assert report.headline_note({}) == ""
+
+    mixed = full | {
+        "b": cost.CellCost(cell_key="b", config="p4_bq_ca", tier=1,
+                           service_side_unmeasured=True),
+        "c": cost.CellCost(cell_key="c", config="p4_looker_ca", tier=0,
+                           service_side_unmeasured=True),
+    }
+    note = report.headline_note(mixed)
+    assert "`p4_bq_ca`" in note and "`p4_looker_ca`" in note
+    assert "`p1_toolbox`" not in note, "a full-coverage arm must not be caveated"
+    assert f"{service_tokens.MEASURED_UNDERSTATEMENT}x" in note
 
 
 def test_accuracy_denominator_is_cells_attempted():

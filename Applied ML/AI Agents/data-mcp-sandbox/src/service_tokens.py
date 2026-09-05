@@ -42,6 +42,15 @@ import traces
 
 MONITORING_API = "https://monitoring.googleapis.com/v3"
 
+# The correction this module measured on the M6 capture, kept as data because
+# four different places used to quote it as prose and prose drifts. Re-measure
+# with `make service-tokens` after any sweep; these are that run's numbers, not
+# a constant of nature.
+MEASURED_ARM = "p4_looker_ca"
+MEASURED_RECORDED_PER_CELL = 18_045
+MEASURED_ACTUAL_PER_CELL = 392_158
+MEASURED_UNDERSTATEMENT = round(MEASURED_ACTUAL_PER_CELL / MEASURED_RECORDED_PER_CELL)
+
 # 60s is the finest alignment the API offers, and it is what makes per-arm
 # attribution possible at all: the two Path 4 arms hand off mid-hour, so hourly
 # buckets blend them. Anything coarser silently reassigns tokens between arms.

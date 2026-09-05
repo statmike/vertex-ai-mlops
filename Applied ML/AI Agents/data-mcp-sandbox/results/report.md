@@ -29,6 +29,10 @@ Model `gemini-3.7-flash` at temperature 0.0, 5 replicates, tier fence on, commit
 | p4_looker_ca | 0 | 15% | 177682 | 2170 | 1113 | 16.6 | 184.4 | floor |
 | p4_looker_ca | 1 | 35% | 23467 | 677 | 240 | 3.1 | 46.7 | floor |
 
+**Do not sort this table by the cost columns.** `p4_bq_ca`, `p4_looker_ca` carry `floor` coverage: they spend model tokens server-side that the API never reports, so their figures are lower bounds and every other arm's are totals. Comparing them directly compares two different quantities. The gap is not small — `make service-tokens` meters `p4_looker_ca` from Cloud Monitoring at 392,158 tokens per cell against the 18,045 recorded here, a 22x understatement that moves it from the cheapest arm to the third most expensive. The floors are left uncorrected in the table on purpose: the meter attributes by time block, not per cell, and splitting a block across cells that vary in turn count would invent a distribution. Two honest numbers in two places beat one fused number that hides which half was inferred.
+
+Accuracy, latency and the BigQuery columns are unaffected — those are measured client-side for every arm.
+
 ## Capture health
 
 | config | tier | attempted | scored | failed | quota-retried | CA leak |

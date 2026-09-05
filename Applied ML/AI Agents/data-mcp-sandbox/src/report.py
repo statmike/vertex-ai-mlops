@@ -24,6 +24,7 @@ import cost as cost_module
 import judge as judge_module
 import mcp_clients
 import scoring
+import service_tokens
 import traces
 
 DASH = "--"
@@ -238,7 +239,8 @@ def spend(
         "server-side that the API never reported back — Conversational Analytics "
         "runs its own Gemini loop on our behalf. A floor is a lower bound, not a "
         "total, and it is not small: `make service-tokens` meters it from Cloud "
-        "Monitoring and finds `p4_looker_ca` consumed 22x the tokens recorded here."
+        f"Monitoring and finds `{service_tokens.MEASURED_ARM}` consumed "
+        f"{service_tokens.MEASURED_UNDERSTATEMENT}x the tokens recorded here."
     )
     return _table(
         ["config", "tier", "tokens (median)", "IQR", "thoughts", "MiB billed",
@@ -350,6 +352,47 @@ def headline(
     )
 
 
+def headline_note(costs: dict[str, cost_module.CellCost]) -> str:
+    """Why the headline table must not be read as a cost ranking.
+
+    The `coverage` column already says which arms are floors, but a column value
+    is easy to skim past when the numbers next to it are the smallest on the
+    page — and they are exactly the smallest *because* they are incomplete. The
+    one arm that has been metered moved from cheapest to third most expensive on
+    correction, so the floors are not a rounding error and sorting by the token
+    columns produces a ranking that is upside down at the top.
+
+    Derived from the data rather than written down, so an arm that stops being a
+    floor (or a new one that starts) changes this text instead of contradicting
+    it. Returns empty when nothing is a floor, because then there is no caveat.
+    """
+    floors = sorted({
+        entry.config for entry in costs.values() if entry.service_side_unmeasured
+    })
+    if not floors:
+        return ""
+    named = ", ".join(f"`{arm}`" for arm in floors)
+    return (
+        f"**Do not sort this table by the cost columns.** {named} carry "
+        f"`floor` coverage: they spend model tokens server-side that the API "
+        f"never reports, so their figures are lower bounds and every other "
+        f"arm's are totals. Comparing them directly compares two different "
+        f"quantities. The gap is not small — `make service-tokens` meters "
+        f"`{service_tokens.MEASURED_ARM}` from Cloud Monitoring at "
+        f"{service_tokens.MEASURED_ACTUAL_PER_CELL:,} tokens per cell against "
+        f"the {service_tokens.MEASURED_RECORDED_PER_CELL:,} recorded here, a "
+        f"{service_tokens.MEASURED_UNDERSTATEMENT}x understatement that moves "
+        f"it from the cheapest arm to the third most expensive. The floors are "
+        f"left uncorrected in the table on purpose: the meter attributes by "
+        f"time block, not per cell, and splitting a block across cells that "
+        f"vary in turn count would invent a distribution. Two honest numbers "
+        f"in two places beat one fused number that hides which half was "
+        f"inferred.\n\n"
+        f"Accuracy, latency and the BigQuery columns are unaffected — those "
+        f"are measured client-side for every arm."
+    )
+
+
 # --- assembly ----------------------------------------------------------------
 
 DEFAULT_PAIRS = [
@@ -396,6 +439,8 @@ def build(
         "## Headline",
         "",
         headline(scores, costs),
+        "",
+        headline_note(costs),
         "",
         "## Capture health",
         "",
