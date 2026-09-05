@@ -56,10 +56,30 @@ def test_every_point_gets_exactly_one_label():
     scores = _scores({"p1_managed": 500_000, "p1_toolbox": 50_000, "p4_bq_ca": 9_000})
     figure = plots.cost_vs_accuracy(scores)
     # Tier 0 is never correct in the fixture, so it has no cost-per-correct and
-    # is dropped rather than plotted at infinity.
+    # is dropped rather than plotted at infinity. `p4_bq_ca` carries a floor
+    # marker; only real labels may reach `ax.texts`, so an arrow drawn as an
+    # empty annotation would show up here as a stray ''.
     assert {text.get_text() for text in figure.axes[0].texts} == {
-        "p1_managed t1", "p1_toolbox t1", "p4_bq_ca t1",
+        "p1_managed t1", "p1_toolbox t1", "p4_bq_ca t1 ≥",
     }
+
+
+def test_a_floor_is_drawn_as_a_bound_not_a_measurement():
+    # The one place this matters: cheap is *left*, so an arm whose cost is only a
+    # lower bound lands where a reader concludes "cheapest". Metering
+    # `p4_looker_ca` server-side moved it 22x right, off first place entirely. A
+    # solid dot there is a wrong finding, not a rounding error.
+    scores = _scores({"p1_toolbox": 50_000, "p4_bq_ca": 9_000})
+    axes = plots.cost_vs_accuracy(scores).axes[0]
+
+    hollow = [c for c in axes.collections if not len(c.get_facecolor())
+              or c.get_facecolor()[0][3] == 0]
+    assert len(hollow) == 1, "exactly the Path 4 arm should be hollow"
+    assert axes.patches, "a floor needs an arrow saying which way the truth lies"
+    assert any("floor" in text.get_text() for text in axes.get_legend().get_texts())
+    # The spread in the title is quoted across measured arms only; a bound
+    # cannot widen a range.
+    assert "measured arms" in axes.get_title()
 
 
 # (correct, tokens-per-correct) per tier, read off the M6 capture. Rounded shapes

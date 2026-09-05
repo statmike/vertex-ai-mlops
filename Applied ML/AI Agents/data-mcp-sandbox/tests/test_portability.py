@@ -43,11 +43,16 @@ def test_dropping_looker_never_silently_empties_the_sweep():
 # --- Cost is knowable before it is spent -------------------------------------
 
 
-def test_every_shipped_arm_can_be_estimated():
+def test_every_shipped_arm_is_estimated_from_its_own_measurement():
+    # Stronger than "has a rate". Two arms were once priced by analogy to their
+    # managed twins, and the sweep put `p1_matched` at 78,003 tokens against the
+    # 554,528 the analogy predicted — a 7x over-estimate in the number someone
+    # reads before deciding to spend money. Every arm now has its own row, and
+    # this fails if a future arm is shipped on a guess.
     for key in mcp_clients.CONFIG_KEYS:
         for tier in (0, 1):
             _rate, basis = estimate.rate_for(key, tier)
-            assert basis in ("measured", "analogy"), f"{key} tier {tier} has no rate"
+            assert basis == "measured", f"{key} tier {tier} is priced by {basis}"
 
 
 def test_an_unknown_arm_over_estimates_rather_than_under():
@@ -59,10 +64,18 @@ def test_an_unknown_arm_over_estimates_rather_than_under():
     assert rate.tokens == max(r.tokens for r in estimate.OBSERVED.values())
 
 
-def test_estimate_reports_how_many_cells_are_guesses():
-    total = estimate.estimate([("p1_managed", 1), ("p1_matched", 1), ("p9_invented", 1)])
+def test_estimate_reports_how_many_cells_are_guesses(monkeypatch):
+    # BY_ANALOGY is empty today because every shipped arm got measured, but the
+    # mechanism has to keep working for the next arm added before a sweep runs.
+    # Exercised through a patched mapping rather than a real arm, so that
+    # measuring an arm cannot quietly delete this coverage — which is exactly
+    # what happened when this test named `p1_matched`.
+    monkeypatch.setitem(estimate.BY_ANALOGY, "p9_new", "p1_managed")
+    total = estimate.estimate([("p1_managed", 1), ("p9_new", 1), ("p9_invented", 1)])
     assert (total.measured, total.by_analogy, total.unknown) == (1, 1, 1)
-    assert "by analogy" in estimate.render(total)
+    rendered = estimate.render(total)
+    assert "by analogy" in rendered
+    assert "unknown" in rendered
 
 
 def test_estimate_prints_no_dollars_without_a_rate():

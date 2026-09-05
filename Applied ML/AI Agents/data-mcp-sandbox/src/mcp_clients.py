@@ -228,6 +228,23 @@ CONFIG_KEYS = tuple(CONFIGS)
 LOOKER_CONFIG_KEYS = tuple(key for key, cfg in CONFIGS.items() if cfg.needs_looker)
 
 
+def has_unmeasured_service(config_key: str) -> bool:
+    """Does this arm hand work to a service that bills its own model calls?
+
+    True for Path 4 — Conversational Analytics runs a Gemini loop server-side and
+    returns no usage for it, so every number we record for these arms is a floor
+    rather than a total. Three places need that distinction and each one is a
+    correctness question, not a presentation one: `cost.py` stamps the cell,
+    `report.py` prints `floor` instead of `full`, and `plots.py` draws the marker
+    hollow so a lower bound cannot be read off a cost axis as a measurement.
+
+    Derived from the config table rather than listed, so a new Path 4 variant
+    cannot be added without inheriting the caveat.
+    """
+    spec = CONFIGS.get(config_key)
+    return spec is not None and spec.path == 4
+
+
 def drop_looker(config_keys: list[str]) -> tuple[list[str], list[str]]:
     """Split requested configs into (runnable without Looker, dropped).
 

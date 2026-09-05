@@ -242,14 +242,6 @@ def attribute(cells: list[traces.Cell], jobs: list[Job]) -> Attribution:
     return result
 
 
-# Configs whose work is partly done by a service that bills its own model calls
-# and does not report them back. Derived from the config table rather than
-# listed, so a new Path 4 variant cannot be added without inheriting the caveat.
-def _has_unmeasured_service(config_key: str) -> bool:
-    spec = mcp_clients.CONFIGS.get(config_key)
-    return spec is not None and spec.path == 4
-
-
 def cell_costs(
     cells: list[traces.Cell], attribution: Attribution, prices: Prices
 ) -> dict[str, CellCost]:
@@ -268,7 +260,7 @@ def cell_costs(
             model_calls=int(usage.get("model_calls", 0) or 0),
             bq_jobs=len(jobs),
             bytes_billed=sum(job.bytes_billed for job in jobs),
-            service_side_unmeasured=_has_unmeasured_service(cell.config),
+            service_side_unmeasured=mcp_clients.has_unmeasured_service(cell.config),
         )
 
         if prices.bq_per_tib_usd is not None:

@@ -5,33 +5,45 @@
 than against a shrug, and that a reader on someone else's project can see the
 order of magnitude before their first cell.
 
-Every rate here is a **median observed on the M3 capture** (960 cells,
-`gemini-3.7-flash` @ `global`, this corpus, 2026-09-03), not a vendor figure and
+Every rate here is a **median observed on the published capture** (1,200 cells,
+`gemini-3.7-flash` @ `global`, this corpus, 2026-09-05), not a vendor figure and
 not a guess. Medians rather than means because the token distribution has a long
 right tail: a handful of cells where the agent looped burn 10x the typical cell,
 and a mean lets those set an expectation almost no cell meets.
 
-Treat the output as an order of magnitude. Two known reasons it will be wrong:
+Treat the output as an order of magnitude. Three known reasons it will be wrong:
 
-* **Arm-to-arm spread is 80x**, so the mix of configs matters more than the cell
-  count. A 200-cell sweep of `p3_managed` costs more than a 1,000-cell sweep of
-  `p4_bq_ca`.
+* **Arm-to-arm spread is 220x**, so the mix of configs matters far more than the
+  cell count. A 200-cell sweep of `p3_managed` tier 0 costs more than a
+  1,000-cell sweep of any Path 4 arm — by a factor of forty.
+* **Path 4's rates are floors.** Conversational Analytics runs its own Gemini
+  loop server-side and reports none of it, so the two `p4_*` rows predict what
+  your capture will *record*, not what the service will spend. Metering it
+  separately put `p4_looker_ca` 22x above its recorded figure. A Path 4 sweep is
+  the one case where this estimate under-states rather than over-states.
 * **Quota backoff is not modelled.** A cell retried through dynamic shared quota
-  contention carries up to ~300s of sleep that no rate table can predict.
+  contention carries up to ~300s of sleep that no rate table can predict. The
+  seconds below are medians over cells that never retried, for that reason.
+
+Checked against the sweep it was built from, this under-predicts by about 21%:
+20h02m and 173.3M tokens estimated, 25.5h and 237.7M actually spent. Both gaps
+are the same thing — summing medians drops the long right tail, and the excluded
+retries are real time someone waits. Under-estimating is the dangerous direction
+for a go/no-go number, so **add a quarter to whatever this prints.**
 """
 
 from dataclasses import dataclass
 
-MEASURED_ON = "M3 capture, 960 cells, gemini-3.7-flash @ global, 2026-09-03"
+MEASURED_ON = "published capture, 1,200 cells, gemini-3.7-flash @ global, 2026-09-05"
 
-# Arms that did not exist when the rates were measured, mapped to the arm whose
-# tool surface they copy. Amendment A.3.3 exists precisely because we do not know
-# whether a matched arm behaves like its managed twin — so these are the honest
-# starting guess and are counted and reported separately, never silently pooled.
-BY_ANALOGY = {
-    "p1_matched": "p1_managed",
-    "p3_matched": "p3_managed",
-}
+# Empty, and worth keeping empty rather than deleting. The matched arms once sat
+# here mapped to their managed twins, on the assumption that copying a tool
+# surface copies its cost. The sweep measured them and the assumption was wrong
+# by 7x: `p1_matched` tier 0 was predicted at 554,528 tokens and came in at
+# 78,003, right next to `p1_toolbox`. That is Amendment A.3.3's question
+# answered — the cost lives in the schema text, not in the endpoint's name — and
+# it is why an analogy is a placeholder for a measurement, never a substitute.
+BY_ANALOGY: dict[str, str] = {}
 
 
 @dataclass(frozen=True)
@@ -42,24 +54,31 @@ class Rate:
     tokens: int
 
 
-# Medians straight out of the M3 report's latency and cost tables.
+# Medians straight out of the published report's latency and cost tables. Seconds
+# are over cells that never hit a quota retry, matching `report.latency`; tokens
+# are over every scored cell.
 OBSERVED: dict[tuple[str, int], Rate] = {
-    ("p1_managed", 0): Rate(88.5, 574_009),
-    ("p1_managed", 1): Rate(36.0, 193_756),
-    ("p1_toolbox", 0): Rate(79.3, 75_790),
-    ("p1_toolbox", 1): Rate(33.1, 29_762),
-    ("p2_managed", 0): Rate(77.7, 94_122),
-    ("p2_managed", 1): Rate(43.1, 32_444),
-    ("p2_toolbox", 0): Rate(80.3, 62_615),
-    ("p2_toolbox", 1): Rate(74.4, 30_074),
-    ("p3_managed", 0): Rate(182.2, 985_792),
-    ("p3_managed", 1): Rate(55.2, 233_069),
-    ("p3_toolbox", 0): Rate(86.1, 178_437),
-    ("p3_toolbox", 1): Rate(37.7, 56_280),
-    ("p4_bq_ca", 0): Rate(57.1, 12_206),
-    ("p4_bq_ca", 1): Rate(32.0, 4_428),
-    ("p4_looker_ca", 0): Rate(172.6, 16_202),
-    ("p4_looker_ca", 1): Rate(64.5, 4_817),
+    ("p1_managed", 0): Rate(76.7, 554_528),
+    ("p1_managed", 1): Rate(35.1, 198_442),
+    ("p1_toolbox", 0): Rate(64.3, 79_841),
+    ("p1_toolbox", 1): Rate(35.2, 25_619),
+    ("p2_managed", 0): Rate(76.1, 79_744),
+    ("p2_managed", 1): Rate(38.5, 32_313),
+    ("p2_toolbox", 0): Rate(64.0, 71_361),
+    ("p2_toolbox", 1): Rate(33.3, 24_894),
+    ("p3_managed", 0): Rate(96.4, 930_883),
+    ("p3_managed", 1): Rate(37.6, 265_727),
+    ("p3_toolbox", 0): Rate(82.3, 193_550),
+    ("p3_toolbox", 1): Rate(39.8, 54_732),
+    ("p1_matched", 0): Rate(71.9, 78_003),
+    ("p1_matched", 1): Rate(29.1, 22_884),
+    ("p3_matched", 0): Rate(89.7, 207_233),
+    ("p3_matched", 1): Rate(32.3, 34_489),
+    # Floors. See the module docstring: CA's server-side spend is not in here.
+    ("p4_bq_ca", 0): Rate(62.4, 8_867),
+    ("p4_bq_ca", 1): Rate(32.8, 4_634),
+    ("p4_looker_ca", 0): Rate(146.0, 16_829),
+    ("p4_looker_ca", 1): Rate(59.4, 4_228),
 }
 
 # Used only when an arm has neither a measurement nor an analogy — a config added
@@ -140,5 +159,9 @@ def render(total: Estimate, usd_per_mtok: float | None = None) -> str:
     if total.unknown:
         basis.append(f"{total.unknown} unknown, priced at the worst observed arm")
     lines.append(f"           from {', '.join(basis)} ({MEASURED_ON})")
+    # The caveat belongs in the output, not only in the docstring. This is read
+    # by someone deciding whether to spend, and it reads low: measured against
+    # the sweep it was built from, it came in 21% under on both time and tokens.
     lines.append("           excludes quota backoff; sequential, so wall clock is the sum")
+    lines.append("           runs ~21% low against the sweep it was measured on - budget above it")
     return "\n".join(lines)

@@ -99,12 +99,6 @@ class Block:
     cells: int
 
 
-def _is_ca(config_key: str) -> bool:
-    """Does this arm reach a service that runs its own model calls? (Path 4.)"""
-    spec = mcp_clients.CONFIGS.get(config_key)
-    return spec is not None and spec.path == 4
-
-
 def blocks(cells: list[traces.Cell]) -> list[Block]:
     """Contiguous (config, tier) runs, in capture order.
 
@@ -134,7 +128,7 @@ def blocks(cells: list[traces.Cell]) -> list[Block]:
     seen: set[tuple[str, int]] = set()
     for block in found:
         key = (block.config, block.tier)
-        if key in seen and _is_ca(block.config):
+        if key in seen and mcp_clients.has_unmeasured_service(block.config):
             raise ValueError(
                 f"{block.config} tier {block.tier} appears in more than one block - "
                 "the sweep interleaved Path 4 arms, so server-side tokens cannot be "

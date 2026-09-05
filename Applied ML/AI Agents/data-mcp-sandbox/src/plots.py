@@ -9,6 +9,12 @@ The same rule the tables follow applies to every axis: **an unmeasured value is
 absent, not zero.** A bar of height zero on an accuracy chart is a claim the arm
 got everything wrong. Arms that cannot be measured on a metric are dropped from
 that chart and named in its subtitle instead.
+
+A partly-measured value gets a third treatment, because dropping it would hide a
+real arm and plotting it plain would overstate it: a **floor** is drawn hollow
+with an arrow in the direction the true value lies. Path 4 is the case — see
+`cost_vs_accuracy`, where a floor happens to land on the flattering end of the
+axis, which is the one place this distinction changes a reader's conclusion.
 """
 
 from collections import defaultdict
@@ -19,8 +25,10 @@ import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+from matplotlib.patches import FancyArrowPatch
 from matplotlib.transforms import Bbox
 
+import mcp_clients
 import scoring
 
 # No `matplotlib.use(...)` here on purpose. Nothing in this module touches
@@ -38,6 +46,16 @@ def _by_arm(scores: Iterable[scoring.Score]) -> dict[tuple[str, int], list[scori
     for score in scores:
         grouped[(score.config, score.tier)].append(score)
     return grouped
+
+
+def _is_floor(config_key: str) -> bool:
+    """Is this arm's recorded cost a lower bound rather than a total?
+
+    One definition, in `mcp_clients`, next to the config table it reads — a chart
+    that disagreed with the report's `coverage` column about which arms are
+    floors would be worse than either being wrong alone.
+    """
+    return mcp_clients.has_unmeasured_service(config_key)
 
 
 def _rate(cells: list[scoring.Score], predicate: str) -> float:
@@ -77,17 +95,38 @@ def cost_vs_accuracy(scores: dict[str, scoring.Score]) -> Figure:
     The procurement chart. Log scale because the arms span two orders of
     magnitude, which is itself the finding — a linear axis collapses nine arms
     into one indistinguishable column.
+
+    **Path 4 is drawn hollow, with an arrow.** Conversational Analytics runs its
+    own Gemini loop server-side and reports none of it, so those two arms are
+    plotted at a floor, not a cost. Left is cheap on this axis, so a floor lands
+    an arm exactly where a reader concludes "cheapest" — and metering
+    `p4_looker_ca` from Cloud Monitoring moved it 22x to the right, from first
+    place to third-most-expensive. A solid dot there would be the most
+    consequential wrong pixel in the whole report. The arrow says *at least*.
     """
     fig, ax = _figure(8, 5)
-    points = []
+    points, floors = [], []
     for (config, tier), cells in sorted(_by_arm(scores.values()).items()):
         correct = sum(cell.correct for cell in cells)
         tokens = sum(cell.total_tokens for cell in cells)
         if not correct or not tokens:
             continue  # no correct answers means no cost-per-correct, not an infinite one
-        ax.scatter(tokens / correct, correct / len(cells), s=70,
-                   color=TIER_COLOR[tier], alpha=0.85)
-        points.append((tokens / correct, correct / len(cells), f"{config} t{tier}"))
+        x, y = tokens / correct, correct / len(cells)
+        if _is_floor(config):
+            # Hollow, so it reads as an open bound rather than a measurement.
+            ax.scatter(x, y, s=70, facecolors="none", edgecolors=TIER_COLOR[tier], linewidths=1.6)
+            # A patch, not `annotate("")`. An empty annotation is still a Text,
+            # and it lands in `ax.texts` alongside the real labels — where the
+            # placement tests read them, and where an invisible zero-width box
+            # would quietly satisfy an overlap check on behalf of nothing.
+            ax.add_patch(FancyArrowPatch(
+                (x * 1.13, y), (x * 2.2, y), arrowstyle="->", mutation_scale=9,
+                color=TIER_COLOR[tier], linewidth=1.2, alpha=0.8,
+            ))
+            floors.append((x, y, f"{config} t{tier} ≥"))
+        else:
+            ax.scatter(x, y, s=70, color=TIER_COLOR[tier], alpha=0.85)
+            points.append((x, y, f"{config} t{tier}"))
 
     ax.set_xscale("log")
     # Cheap is *left* on a cost axis. An earlier version of this label said
@@ -96,11 +135,13 @@ def cost_vs_accuracy(scores: dict[str, scoring.Score]) -> Figure:
     ax.set_ylabel("accuracy")
     ax.yaxis.set_major_formatter(lambda y, _: f"{y:.0%}")
     # Derived, not written down. A spread quoted in a title is the kind of number
-    # that survives three captures after it stopped being true.
+    # that survives three captures after it stopped being true. Measured across
+    # the fully-attributed arms only — a floor cannot bound a range.
     spread = max(x for x, _, _ in points) / min(x for x, _, _ in points)
-    ax.set_title(f"Best is top-left: accurate and cheap. The spread is {spread:.0f}x.")
-    _tier_legend(ax)
-    _label(fig, ax, points)  # last: it measures the finished axes
+    ax.set_title(f"Best is top-left: accurate and cheap. "
+                 f"{spread:.0f}x spread across the measured arms.")
+    _tier_legend(ax, floors=bool(floors))
+    _label(fig, ax, points + floors)  # last: it measures the finished axes
     return fig
 
 
@@ -264,21 +305,25 @@ def _marker_box(ax: "matplotlib.axes.Axes", x: float, y: float) -> Bbox:
     )
 
 
-def _tier_legend(ax: "matplotlib.axes.Axes") -> None:
+def _tier_legend(ax: "matplotlib.axes.Axes", floors: bool = False) -> None:
     """Name the two colours on charts that carry no labelled series.
 
     The bar charts get a legend from their own artists; the scatters encode tier
-    in colour alone, which is an unreadable chart without this.
+    in colour alone, which is an unreadable chart without this. `floors` adds the
+    hollow marker, which encodes something stronger than a colour and so must be
+    spelled out rather than left to the caption.
     """
     # Room for the outermost labels, which otherwise clip. `y` matters as much as
     # `x`: without it the top-row arms have nowhere above them to put a label and
     # all fall back to their below-slot, straight into the cluster underneath.
     ax.margins(x=0.14, y=0.10)
-    ax.legend(
-        handles=[Line2D([], [], marker="o", linestyle="", color=TIER_COLOR[tier],
-                        label=TIER_LABEL[tier]) for tier in (0, 1)],
-        frameon=False, fontsize=8, loc="lower right",
-    )
+    handles = [Line2D([], [], marker="o", linestyle="", color=TIER_COLOR[tier],
+                      label=TIER_LABEL[tier]) for tier in (0, 1)]
+    if floors:
+        handles.append(Line2D([], [], marker="o", linestyle="", markerfacecolor="none",
+                              markeredgecolor="#555555", color="#555555",
+                              label="floor — true cost is further right"))
+    ax.legend(handles=handles, frameon=False, fontsize=8, loc="lower right")
 
 
 def _figure(width: float, height: float) -> tuple[Figure, "matplotlib.axes.Axes"]:
