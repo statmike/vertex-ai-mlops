@@ -113,6 +113,24 @@ Two consequences that shape the scoring:
 `make probe` prints the shipped inventory and the configured inventory separately,
 because those two numbers get conflated and only the second is what an agent sees.
 
+**Why the eleven stay bound.** Leaving dead tools in `p3_toolbox` looks like a
+handicap, so it is worth saying why it is not. `p3_managed` binds 8 tools;
+`p3_toolbox` binds 23. If you want that held constant, **`p3_matched` is the arm
+for it** — self-hosted, restricted to exactly the managed tool list, same 8 tools
+by name. So the two comparisons are already separated, and each answers a
+different question:
+
+| Read this pair | To ask |
+|---|---|
+| `p3_managed` vs `p3_matched` | Same tools, different plumbing — what does the *endpoint* cost? |
+| `p3_managed` vs `p3_toolbox` | What do you actually get if you install each one as shipped? |
+
+Trimming `p3_toolbox` to the managed eight would collapse the second question
+into the first and leave nothing measuring the capability difference. It would
+also delete the cleanest evidence for the headline below: 23 tools in 18,865
+schema chars against 8 tools in 143,814. The dead tools are not free — they are
+part of what the self-hosted offer costs, and they are counted as such.
+
 ## Path 4 — Managed Agent
 
 The reasoning moves to the cloud. One tool, one question in, an answer out.
