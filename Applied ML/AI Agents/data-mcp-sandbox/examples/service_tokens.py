@@ -12,6 +12,12 @@ Read-only: it queries a metrics API and writes nothing. Run `--baseline` over a
 quiet week first — the metric has no per-caller label, so anything else in the
 project using CA during a sweep is silently added to these numbers.
 
+The `CA calls` column is the control for a zero. It comes from the API front-end
+rather than from CA itself, so an arm that reports no tokens but does report calls
+is uninstrumented, not idle. The closing reconciliation is the other half: it
+compares what Vertex metered for this project against what the harness recorded,
+which is how you tell off-book spend from spend on someone else's book.
+
 Requires `roles/monitoring.viewer`. Metrics retain for six weeks, so an old
 capture cannot be attributed retroactively.
 """
@@ -22,6 +28,7 @@ from pathlib import Path
 import _bootstrap  # noqa: F401 - import for the sys.path side effect
 
 import battery
+import config
 import service_tokens
 import traces
 
@@ -84,6 +91,7 @@ def main() -> int:
     header = (
         f"{'arm':<16}{'tier':>5}{'cells':>7}"
         f"{'recorded':>13}{'server-side':>14}{'true/cell':>12}"
+        f"{'CA calls':>10}{'on our quota':>14}"
     )
     print(header)
     print("-" * len(header))
@@ -96,7 +104,8 @@ def main() -> int:
             # asserting a measurement this block does not have.
             print(
                 f"{usage.config:<16}{usage.tier:>5}{cells_n:>7}{client:>13,}"
-                f"{'--':>14}{'--':>12}"
+                f"{'--':>14}{'--':>12}{usage.chat_requests:>10,}"
+                f"{usage.vertex_tokens:>14,}"
             )
             unattributed.append(usage)
             continue
@@ -104,6 +113,7 @@ def main() -> int:
         print(
             f"{usage.config:<16}{usage.tier:>5}{cells_n:>7}{client:>13,}"
             f"{usage.total_tokens:>14,}{total // max(cells_n, 1):>12,}"
+            f"{usage.chat_requests:>10,}{usage.vertex_tokens:>14,}"
         )
 
     print()
@@ -116,15 +126,31 @@ def main() -> int:
                 f"({usage.turns:,} turns, {usage.model_calls:,} server-side model calls)."
             )
     for usage in unattributed:
-        print(
-            f"{usage.config} tier {usage.tier}: emits nothing on this metric across its "
-            "whole block. Its server-side spend is still unmeasured - this is not a "
-            "measurement of zero."
-        )
+        if usage.uninstrumented:
+            print(
+                f"{usage.config} tier {usage.tier}: made {usage.chat_requests:,} successful "
+                f"{service_tokens.CHAT_RPC.rsplit('.', 1)[-1]} calls and emits nothing on the "
+                "usage metrics. The calls happened; the meter is not watching this path. Its "
+                "server-side spend is unmeasured, not zero."
+            )
+        else:
+            print(
+                f"{usage.config} tier {usage.tier}: emits nothing on this metric across its "
+                "whole block, and the request meter shows no CA traffic either - so this "
+                "block did no CA work at all."
+            )
 
     print()
     print(
-        "The metric is project-wide and has no caller label. Confirm with "
+        f"`on our quota` is what Vertex metered for {config.AGENT_MODEL} in this project over "
+        "the same window. It tracks `recorded` on every arm, which is the check that matters: "
+        "if CA's server-side loop ran on our quota it would show up there as tokens the harness "
+        "never saw, and 44.9M of them could not hide in the gap."
+    )
+
+    print()
+    print(
+        "The CA metrics are project-wide and have no caller label. Confirm with "
         "`--baseline` over a quiet week before treating these as measured."
     )
     return 0

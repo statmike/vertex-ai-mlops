@@ -313,7 +313,7 @@ actually consumed **392,158**. That does not soften the ranking, it inverts it:
 | `p1_matched` | 92,325 | |
 | `p2_managed` | 81,256 | |
 | `p1_toolbox` | 59,564 | |
-| `p4_bq_ca` | 9,773 | floor — server side still unmeasured |
+| `p4_bq_ca` | 9,773 | floor — 306 CA calls that no meter costs |
 
 The 207 CA turns behind those tokens ran **1,220 server-side model calls**, about
 5.9 per turn. That is the agent loop we thought we had removed, running where the
@@ -329,25 +329,62 @@ project must repeat the baseline check before treating the numbers as measured.
 
 ### `p4_bq_ca` reports nothing, which is not the same as spending nothing
 
-Across its entire 2h08m block, `p4_bq_ca` emits **zero** on this metric, while
-`p4_looker_ca` emits 44.9M tokens in the same sweep. Both reach CA — through
-Toolbox's `bigquery-conversational-analytics` and `looker-conversational-analytics`
-respectively. The report keeps that arm on `floor`, because more than one
-mechanism fits and we have not separated them:
+Across its entire 2h08m block, `p4_bq_ca` emits **zero** on this metric — and on
+all thirteen `geminidataanalytics` metrics — while `p4_looker_ca` emits 44.9M
+tokens in the same sweep. Both reach CA, through Toolbox's
+`bigquery-conversational-analytics` and `looker-conversational-analytics`.
 
-- The BigQuery CA tool may route to a different service that meters elsewhere; the
-  metric is namespaced to `geminidataanalytics.googleapis.com` specifically.
-- The metric may count only conversation-backed chat, and the BigQuery tool may
-  use an inline/stateless datasource that never opens one — consistent with the
-  turn counter also reading zero.
-- `p4_bq_ca` may genuinely do less server-side work, planning in fewer model
-  calls. Its 20.8 s per call against Looker CA's 73.0 s is weak support.
+A zero has two readings, and the usage meter cannot tell them apart: *the arm did
+nothing*, or *the meter is not watching*. A second, independent meter can.
+`serviceruntime.googleapis.com/api/request_count` is published by the API
+front-end every consumed Google API passes through, not by CA itself, so it
+answers only "were the calls made":
 
-The project-wide Vertex publisher metric
-(`aiplatform.googleapis.com/publisher/online_serving/token_count`) shows 117.5M
-tokens in that window, but it counts our *own* agent's calls and every other
-workload in the project, so it cannot separate the three. Reporting `--` is the
-accurate answer; reporting the 117.5M would be worse than reporting nothing.
+| Arm | Tier | Successful `Chat` RPCs | CA usage meter |
+|---|:-:|--:|--:|
+| `p4_bq_ca` | 0 | **189** | 0 |
+| `p4_bq_ca` | 1 | **117** | 0 |
+| `p4_looker_ca` | 0 | 133 | 30,183,342 |
+| `p4_looker_ca` | 1 | 75 | 14,778,233 |
+
+Both arms call the **same RPC** — `google.cloud.geminidataanalytics.v1.DataChatService.Chat`,
+same service, same version, every response 200 — and `p4_bq_ca` makes *more* of
+them. That settles two of the three mechanisms this document used to list:
+
+- ~~*The BigQuery CA tool routes to a different service that meters elsewhere.*~~
+  It does not. Same service, same method, same API version.
+- ~~*`p4_bq_ca` genuinely does less server-side work.*~~ It makes 306 successful
+  CA calls to Looker CA's 208, at 20.8 s each. Whatever those seconds are, they
+  are not idleness.
+- *The meter counts only some paths.* This is what is left. It is also weaker
+  evidence than it looks: `chat/conversation/created_count` reads **zero for the
+  Looker arm too**, so "no conversation was opened" cannot be inferred from a zero
+  turn counter — the two zeros agreeing was a coincidence, not a finding.
+
+A controlled run closes it. Three `p4_bq_ca` cells, tier 1, in a four-minute
+window whose preceding baseline had **no CA requests at all**: 14 successful
+`Chat` calls, and every CA metric still read zero. The calls are real and the
+usage meter does not see them.
+
+**The spend is not on our quota either.** The `on our quota` column of
+`examples/service_tokens.py` reads the Vertex publisher metric
+(`aiplatform.googleapis.com/publisher/online_serving/token_count`) for
+`AGENT_MODEL` over each block. This document used to say that metric "cannot
+separate" our agent from the rest of the project. That was wrong twice over: the
+monitored resource carries `model_user_id`, which isolates the one model the sweep
+holds constant from the ~1.2B tokens other workloads in this project spend on
+other models; and separating by label was never the strong test anyway. The
+arithmetic is. Per block, Vertex metered 840,055 / 414,334 / 1,637,404 / 531,574
+against a harness that recorded 776,495 / 396,310 / 1,643,038 / 522,358 — our own
+agent, and nothing else. Looker CA's 44.9M server-side tokens appear **nowhere**
+on the Vertex meter. The two meters are disjoint, and a third of a million
+unexplained tokens could not hide in a gap that size, let alone 44.9M.
+
+So the honest statement is narrow and it is measured: `p4_bq_ca` performs the same
+server-side work through the same API, and **no meter this project can read
+reports its cost** — not CA's, not Vertex's. Reporting `--` is the accurate
+answer. It stays a `floor`, and now the floor is a demonstrated one rather than an
+absence of evidence.
 
 So the honest comparison is not "Path 4 is 105× cheaper." For the Looker arm it is
 now the opposite of cheap. For the BigQuery arm it remains a floor. The report

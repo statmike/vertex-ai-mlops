@@ -85,3 +85,43 @@ def test_attribution_keys_on_turns_not_tokens():
     )
     assert real.attributed
     assert real.total_tokens == 14_740_360
+
+
+def test_a_zero_is_read_against_the_request_meter_not_alone():
+    """`uninstrumented` is the difference between "did nothing" and "went uncounted".
+
+    Both readings are zero on the CA usage metrics. Only the request meter — a
+    different pipeline, published by the API front-end — can tell them apart, and
+    on M6 it recorded 189 successful `DataChatService.Chat` calls for the block
+    that reported no tokens at all.
+    """
+    uncounted = service_tokens.ServiceUsage(
+        config="p4_bq_ca", tier=0, started_at="", ended_at="",
+        turns=0, chat_requests=189,
+    )
+    assert not uncounted.attributed
+    assert uncounted.uninstrumented
+
+    idle = service_tokens.ServiceUsage(
+        config="p1_toolbox", tier=0, started_at="", ended_at="",
+        turns=0, chat_requests=0,
+    )
+    assert not idle.attributed
+    assert not idle.uninstrumented, "no calls and no tokens is an idle block, not a gap"
+
+    counted = service_tokens.ServiceUsage(
+        config="p4_looker_ca", tier=0, started_at="", ended_at="",
+        input_tokens=30_183_342, turns=133, chat_requests=133,
+    )
+    assert not counted.uninstrumented, "a metered arm is not a hole in the meter"
+
+
+def test_the_spillover_block_is_still_not_a_measurement():
+    # The 60s-boundary artifact from the test above now also carries a request
+    # count, and must not start reading as a measured arm because of it.
+    spillover = service_tokens.ServiceUsage(
+        config="p4_bq_ca", tier=1, started_at="", ended_at="",
+        input_tokens=1_700, output_tokens=25, turns=0, model_calls=2, chat_requests=117,
+    )
+    assert not spillover.attributed
+    assert spillover.uninstrumented

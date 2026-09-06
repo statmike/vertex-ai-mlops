@@ -25,7 +25,7 @@ that reads the schema and writes the obvious SQL gets a confident wrong answer.
 | Managed or self-hosted MCP? | **Behaviourally the same, up to 12× apart on cost.** They reach the same verdict on 94–99% of paired cells while sharing a tool-call sequence 0–7% of the time. The gap is 6.9–7.7× on Path 1 and 4.8–4.9× on Path 3 — but only 1.1–1.3× on Path 2, and the schema sizes say why. |
 | Where does the cost come from? | **Tool schema verbosity, not tool count.** Schema characters predict an arm's median tokens at r = 0.97 (tier 0) and r = 0.99 (tier 1); tool count predicts nothing at r = 0.14 and r = 0.10. One managed `get_table_info` declaration is 78,197 chars — 65% of its arm's prompt floor, and 120× the self-hosted equivalent that does the same job. Splitting input from output shows it directly: `p1_managed` spends **1,673,836 input tokens per correct answer against 5,487 output**. Essentially none of the bill is the model thinking. It is tool definitions, re-sent every turn. |
 | How long does it take? | **Latency is a separate axis — it does not track cost.** Tokens against wall clock correlates at r = 0.10 and r = -0.09. Every MCP arm spends 4.1–5.4s per tool call whatever its schema size, so latency is turn count times a constant. Path 4 takes 1–3 calls and pays 21–73s for each, because the loop moved server-side. Measured as **seconds per correct answer**, which is what a user actually waits, tier 1 runs 44–91s for every arm except `p4_looker_ca` at 240s — and at tier 0 that arm needs **19 minutes per right answer**, 3–5× worse than anything else. |
-| Is the managed agent really cheapest? | **No — that was an accounting artifact, and it inverts once you meter it.** Conversational Analytics bills its own Gemini loop to a line item the API never returns. Read it back from Cloud Monitoring and `p4_looker_ca` goes from 18,045 tokens per cell to **392,158** — a 22× understatement that moves it from the cheapest arm to the third most expensive. Its 207 turns ran 1,220 server-side model calls. `p4_bq_ca` reports nothing on that meter and stays a floor. |
+| Is the managed agent really cheapest? | **No — that was an accounting artifact, and it inverts once you meter it.** Conversational Analytics bills its own Gemini loop to a line item the API never returns. Read it back from Cloud Monitoring and `p4_looker_ca` goes from 18,045 tokens per cell to **392,158** — a 22× understatement that moves it from the cheapest arm to the third most expensive. Its 207 turns ran 1,220 server-side model calls. `p4_bq_ca` reports nothing on that meter, but it made **306 successful CA calls** on the same API in the same window — its cost is on no meter this project can read, which is not the same as being zero. |
 
 **Cost is reported in units consumed, not dollars** — tokens in, tokens out,
 seconds, BigQuery jobs, MiB scanned, all per *correct* answer, because an arm that
@@ -176,6 +176,14 @@ uv run python examples/service_tokens.py --baseline 2026-08-25 2026-09-01
 It cost `p4_looker_ca` its first-place finish on cost. Run `--baseline` first: the
 metric has no caller label, so it attributes by time window and only holds if
 nothing else in the project is using CA.
+
+**A zero needs a second meter.** `p4_bq_ca` reads zero on every CA usage metric,
+which could mean the arm did nothing or that nothing was counting. The `CA calls`
+column settles it from the API front-end rather than from CA itself — 306
+successful calls to the very same RPC the Looker arm uses — and the `on our quota`
+column shows Vertex metering only our own agent, so the missing spend is not
+hiding there either. Both arms do the work; only one of them is billed where we
+can see it. [docs/paths.md](docs/paths.md#p4_bq_ca-reports-nothing-which-is-not-the-same-as-spending-nothing)
 
 ---
 

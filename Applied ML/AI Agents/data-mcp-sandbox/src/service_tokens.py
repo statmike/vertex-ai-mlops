@@ -26,11 +26,17 @@ where the bill stops being itemised.
 3. *It does not cover `p4_bq_ca`.* That arm reaches CA through Toolbox's
    `bigquery-conversational-analytics` and emits **nothing** on this metric — a
    measured zero across its whole 2h08m block, against 44.9M tokens from the
-   Looker arm in the same sweep. Zero here means *not attributable by this
-   metric*, never *free*; see `docs/paths.md` for the mechanisms that fit.
+   Looker arm in the same sweep. That is not the arm being idle. `chat_calls()`
+   reads the *request* meter, which is a different pipeline from the *usage*
+   meter, and it shows both arms making the same RPC — `DataChatService.Chat`,
+   all 200s — with `p4_bq_ca` making more of them. So the usage meter is not
+   watching this arm's path, and its server-side spend is billed somewhere no
+   metric this project can read reports it. Zero here means *not attributable
+   by this metric*, never *free*. See `docs/paths.md`.
 """
 
 from dataclasses import dataclass
+from typing import Any
 
 import google.auth
 import google.auth.transport.requests
@@ -61,6 +67,19 @@ OUTPUT_METRIC = "geminidataanalytics.googleapis.com/chat/output_token_count"
 TURN_METRIC = "geminidataanalytics.googleapis.com/chat/turn_count"
 INVOCATION_METRIC = "geminidataanalytics.googleapis.com/chat/model/invocation_count"
 
+# The *request* meter, which is a separate pipeline from the *usage* meters above
+# and the only reason we can tell "made no calls" apart from "made calls nobody
+# counted". Every consumed Google API lands here whether or not it publishes
+# usage metrics of its own.
+REQUEST_METRIC = "serviceruntime.googleapis.com/api/request_count"
+CA_SERVICE = "geminidataanalytics.googleapis.com"
+CHAT_RPC = "google.cloud.geminidataanalytics.v1.DataChatService.Chat"
+
+# Our own agent's model calls, for the other half of the argument: if CA's
+# server-side loop were quietly running under this project's Vertex quota it
+# would show up here as tokens the harness never recorded. It does not.
+PUBLISHER_METRIC = "aiplatform.googleapis.com/publisher/online_serving/token_count"
+
 
 @dataclass
 class ServiceUsage:
@@ -74,6 +93,9 @@ class ServiceUsage:
     output_tokens: int = 0
     turns: int = 0
     model_calls: int = 0
+    chat_requests: int = 0
+    failed_requests: int = 0
+    vertex_tokens: int = 0
 
     @property
     def total_tokens(self) -> int:
@@ -93,8 +115,20 @@ class ServiceUsage:
 
         False means the arm's server-side work is still unmeasured — it went
         somewhere this metric does not watch. It does not mean the arm was free.
+        Check `uninstrumented` to tell that apart from an arm that made no calls.
         """
         return self.turns > 0
+
+    @property
+    def uninstrumented(self) -> bool:
+        """Did the arm call CA successfully and get counted by none of it?
+
+        The usage metrics and the request metric come from different pipelines,
+        so this is the one comparison that separates "the meter is not watching
+        this path" from "nothing happened". Both readings are zero on the usage
+        side; only one of them has traffic on the request side.
+        """
+        return self.chat_requests > 0 and self.turns == 0
 
 
 @dataclass
@@ -169,24 +203,115 @@ def series_total(session: requests.Session, project: str, metric: str, start: st
     window — two adjacent windows then return byte-identical totals and look like
     a correct answer. 60s points summed locally cannot do that.
     """
+    return _sum_points(_timeseries(session, project, f'metric.type="{metric}"', start, end))
+
+
+def _timeseries(
+    session: requests.Session,
+    project: str,
+    metric_filter: str,
+    start: str,
+    end: str,
+    group_by: tuple[str, ...] = (),
+) -> list[dict[str, Any]]:
+    """Aligned 60s series for one filter. Raw, so callers can sum or group them.
+
+    Summing the aligned points rather than asking the API for one bucket is
+    deliberate. A single alignment period longer than the interval gets *widened*
+    by the API to a whole bucket, which quietly pulls in traffic from outside the
+    window — two adjacent windows then return byte-identical totals and look like
+    a correct answer. 60s points summed locally cannot do that.
+    """
+    params: dict[str, str | list[str]] = {
+        "filter": metric_filter,
+        "interval.startTime": start,
+        "interval.endTime": end,
+        "aggregation.alignmentPeriod": f"{ALIGNMENT_SECONDS}s",
+        "aggregation.perSeriesAligner": "ALIGN_SUM",
+        "aggregation.crossSeriesReducer": "REDUCE_SUM",
+    }
+    if group_by:
+        # Repeated field: `requests` turns a list into repeated query params,
+        # which is the only form the API accepts. A comma-joined string 400s.
+        params["aggregation.groupByFields"] = list(group_by)
     response = session.get(
-        f"{MONITORING_API}/projects/{project}/timeSeries",
-        params={
-            "filter": f'metric.type="{metric}"',
-            "interval.startTime": start,
-            "interval.endTime": end,
-            "aggregation.alignmentPeriod": f"{ALIGNMENT_SECONDS}s",
-            "aggregation.perSeriesAligner": "ALIGN_SUM",
-            "aggregation.crossSeriesReducer": "REDUCE_SUM",
-        },
-        timeout=60,
+        f"{MONITORING_API}/projects/{project}/timeSeries", params=params, timeout=60
     )
     response.raise_for_status()
+    series: list[dict[str, Any]] = response.json().get("timeSeries", [])
+    return series
+
+
+def _sum_points(series: list[dict[str, Any]]) -> int:
     return sum(
         int(point["value"].get("int64Value", 0))
-        for entry in response.json().get("timeSeries", [])
-        for point in entry["points"]
+        for entry in series
+        for point in entry.get("points", [])
     )
+
+
+def chat_calls(session: requests.Session, project: str, start: str, end: str) -> dict[str, int]:
+    """Successful `DataChatService.Chat` RPCs over [start, end), by response code.
+
+    This is the control for a zero on the usage metrics. Those are published by
+    the CA service itself; this one is published by the API front-end that every
+    consumed Google API passes through, so it answers a strictly different
+    question: *were the calls made at all?*
+
+    A block with calls here and zeros there is an arm whose work is real and
+    uninstrumented. A block with zeros in both did nothing.
+    """
+    series = _timeseries(
+        session,
+        project,
+        f'metric.type="{REQUEST_METRIC}" AND resource.labels.service="{CA_SERVICE}"'
+        f' AND resource.labels.method="{CHAT_RPC}"',
+        start,
+        end,
+        group_by=("metric.labels.response_code",),
+    )
+    by_code: dict[str, int] = {}
+    for entry in series:
+        code = str(entry.get("metric", {}).get("labels", {}).get("response_code", "unknown"))
+        by_code[code] = by_code.get(code, 0) + _sum_points([entry])
+    return by_code
+
+
+def publisher_tokens(
+    session: requests.Session, project: str, start: str, end: str
+) -> dict[str, int]:
+    """Vertex publisher-model tokens over [start, end), keyed `model/type`.
+
+    The other half of the argument. If CA's server-side loop ran on this
+    project's Vertex quota, it would appear here as tokens the harness never
+    recorded.
+
+    The grouping label is `model_user_id` — the model that was *asked for*, not
+    the caller. So this separates by model, not by workload: it isolates the one
+    model the sweep holds constant from every other Vertex workload in the
+    project, which is as far as the metric goes. What settles the question is not
+    the label but the arithmetic — comparing this against `usage.py`'s own count
+    for the same window makes hidden spend a subtraction rather than an assertion.
+
+    Vertex folds thinking into `output`; the harness reports `output_tokens` and
+    `thought_tokens` separately, so reconciling per-field means adding those two.
+    `total_tokens` already includes them.
+    """
+    series = _timeseries(
+        session,
+        project,
+        f'metric.type="{PUBLISHER_METRIC}"',
+        start,
+        end,
+        group_by=("resource.labels.model_user_id", "metric.labels.type"),
+    )
+    by_model: dict[str, int] = {}
+    for entry in series:
+        model = str(entry.get("resource", {}).get("labels", {}).get("model_user_id", "unknown"))
+        kind = str(entry.get("metric", {}).get("labels", {}).get("type", "unknown"))
+        key = f"{model}/{kind}"
+        by_model[key] = by_model.get(key, 0) + _sum_points([entry])
+    return by_model
 
 
 def measure(cells: list[traces.Cell]) -> list[ServiceUsage]:
@@ -203,6 +328,7 @@ def measure(cells: list[traces.Cell]) -> list[ServiceUsage]:
         if spec is None or spec.path != 4:
             continue
         window = (block.started_at, block.ended_at)
+        by_code = chat_calls(session, project, *window)
         measured.append(
             ServiceUsage(
                 config=block.config,
@@ -213,9 +339,25 @@ def measure(cells: list[traces.Cell]) -> list[ServiceUsage]:
                 output_tokens=series_total(session, project, OUTPUT_METRIC, *window),
                 turns=series_total(session, project, TURN_METRIC, *window),
                 model_calls=series_total(session, project, INVOCATION_METRIC, *window),
+                chat_requests=by_code.get("200", 0),
+                failed_requests=sum(n for code, n in by_code.items() if code != "200"),
+                vertex_tokens=our_model_tokens(session, project, *window),
             )
         )
     return measured
+
+
+def our_model_tokens(session: requests.Session, project: str, start: str, end: str) -> int:
+    """Vertex tokens for `config.AGENT_MODEL` over [start, end).
+
+    Counting one model rather than summing the meter is the whole point. The
+    project runs other Vertex workloads — over the M6 capture span they account
+    for five times our traffic — and folding them in would turn an unrelated
+    workload into an apparent gap, which is the project-wide blur that made this
+    metric look useless in the first place.
+    """
+    metered = publisher_tokens(session, project, start, end)
+    return sum(n for key, n in metered.items() if key.split("/")[0] == config.AGENT_MODEL)
 
 
 def baseline(start: str, end: str) -> ServiceUsage:

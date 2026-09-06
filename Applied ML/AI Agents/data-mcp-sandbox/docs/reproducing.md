@@ -167,6 +167,16 @@ workload in the same project. Our baseline returns exactly zero, which is what
 makes our numbers publishable; a busy shared project may have no clean window at
 all, and in that case the honest output is the floor.
 
+**Read the `CA calls` column before you believe a zero.** It comes from
+`serviceruntime.googleapis.com/api/request_count`, published by the API front-end
+rather than by CA, so it is the one number that separates "this arm made no calls"
+from "this arm's calls were not counted". On our capture `p4_bq_ca` reads zero
+tokens against **306 successful `DataChatService.Chat` calls** — the identical RPC
+the Looker arm bills 44.9M tokens for. The adjacent `on our quota` column rules
+out the other place that spend could be hiding, by showing Vertex metering our own
+agent and nothing more. If you point this at a different project and see the same
+shape, the arm is uninstrumented, not cheap.
+
 Two other limits: it needs `roles/monitoring.viewer`, and Monitoring retains these
 metrics for six weeks, so a capture older than that can no longer be attributed.
 This is why the number lives in a separate command rather than a report column —
@@ -215,7 +225,10 @@ with the check that proves you got it right.
 - **Conversational Analytics spends model tokens we cannot see.** It runs its own
   Gemini calls server-side and does not report them. Its warehouse spend *is*
   attributable (the BigQuery jobs run under our identity, verified per cell), but
-  its model spend is reported as `floor` coverage — unmeasured, never zero.
+  its model spend is reported as `floor` coverage — unmeasured, never zero. For
+  `p4_looker_ca` Cloud Monitoring recovers it. For `p4_bq_ca` no meter in this
+  project does, and that is measured rather than assumed: the calls are visible on
+  the request meter, their cost is on neither the CA meter nor Vertex's.
 - **Estimates in `make plan`** come from medians measured on our corpus in
   September 2026. They are an order of magnitude, not a quote, and they exclude
   quota backoff entirely.
