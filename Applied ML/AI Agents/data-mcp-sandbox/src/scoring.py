@@ -261,6 +261,12 @@ def rules_acquired(cell: traces.Cell, required: list[str]) -> tuple[list[str], b
     2026-09-03). That fired the `gross list price` marker on 15 tier-0 cells.
     An arm with nothing but CA tools therefore has *unmeasurable* acquisition,
     not zero acquisition.
+
+    That is a property of the *tool*, not of Conversational Analytics. Toolbox's
+    `bigquery-conversational-analytics` returns prose; the API beneath it streams
+    a `DataMessage` carrying `generated_sql` and `big_query_job` (verified live,
+    SDK 0.13.2 — docs/paths.md). A direct-API arm would make these cells scorable
+    and is on the roadmap; until one exists this function is correct as written.
     """
     bodies = [
         (call.result or "").lower()

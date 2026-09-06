@@ -518,11 +518,34 @@ never adds a floor to a full measurement, and neither should a reader.
 
 ## What is opaque, and what that costs the measurement
 
-Path 4 discloses no query. Conversational Analytics over BigQuery emits SQL we
-can recover from its response; CA over Looker emits none and never names a field.
-So evidence recall and rule acquisition are **unmeasurable** on those arms rather
-than zero, and the report prints `--`, never `0%`. Ranking an arm bottom on a
-metric it was never eligible for is a false finding, not a conservative one.
+Evidence recall and rule acquisition are **unmeasurable** on the Path 4 arms
+rather than zero, so the report prints `--`, never `0%`. Ranking an arm bottom on
+a metric it was never eligible for is a false finding, not a conservative one.
+
+**The opacity is our transport's, not the service's.** Both Path 4 arms call
+Toolbox's `bigquery-conversational-analytics` tool, which takes a question and
+returns prose. The Conversational Analytics API underneath it returns much more.
+Probed live against `google-cloud-geminidataanalytics` 0.13.2, a single
+`inline_context` chat over one governed table streamed back a `DataMessage`
+carrying both the SQL and the BigQuery job that ran it:
+
+```text
+generated_sql   SELECT SUM(txn_amt_x2) AS total_net_revenue
+                FROM `<project>.data_mcp_sandbox_t1.transactions_v2_final`
+                WHERE status_flg IS FALSE OR status_flg IS NULL
+big_query_job   job_id=job_ZxxUiB2hEmMxg8M4UaPUcUhfsgXR  location=US
+```
+
+That is scorable on both metrics — and it is a partial trap hit worth scoring,
+since it applied the refund rule on `status_flg` but summed the gross-not-net
+`txn_amt_x2`. A `job_id` would also make Path 4's warehouse cost attributable per
+*cell* rather than per time window.
+
+So `--` is correct for this capture and the reason behind it was mis-stated: we
+attributed to Conversational Analytics a limitation that belongs to the MCP tool
+we reached it through. Closing it needs a direct-API arm, which is on the roadmap
+and not yet built. *(Verified for the BigQuery datasource only. Whether CA over
+Looker Explores discloses an equivalent query object is untested.)*
 
 Its warehouse spend *is* attributable — CA's BigQuery jobs run under our own tier
 service account and were verified per cell. Its **model** spend is not: CA makes

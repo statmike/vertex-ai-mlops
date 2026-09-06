@@ -178,9 +178,13 @@ model call per governed cell). The protocol — 1,200 cells, five replicates, wh
 they run strictly one at a time, and what each capture records about the
 conditions it ran under — is in [`docs/method.md`](docs/method.md).
 
-**Unmeasured is never reported as zero.** Path 4 discloses no query, so evidence
-recall and rule acquisition are *unmeasurable* on those arms — the report prints
-`--`. Conversational Analytics spends model tokens server-side that it does not
+**Unmeasured is never reported as zero.** Nothing in this capture discloses a
+query for Path 4, so evidence recall and rule acquisition are *unmeasurable* on
+those arms — the report prints `--`. That is a limit of the MCP tool we reach
+Conversational Analytics through, not of CA itself: called directly, the API
+returns both the generated SQL and the BigQuery job id, which we
+[verified live](docs/paths.md#what-is-opaque-and-what-that-costs-the-measurement)
+but have not yet built an arm around. Conversational Analytics spends model tokens server-side that it does not
 report, so its cost is published as a floor. Ranking an arm bottom on a metric it
 was never eligible for is a false finding, not a conservative one.
 
