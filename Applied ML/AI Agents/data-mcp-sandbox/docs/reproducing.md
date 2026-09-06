@@ -51,7 +51,21 @@ asserted.
 `make bootstrap` creates service accounts, custom roles and project IAM bindings. Those
 are administrative operations, and a reader who only has data access will get through
 API enablement and corpus generation and *then* fail — after creating billable objects.
-So check this first.
+
+**Don't read this table to find out. Run the check:**
+
+```bash
+make preflight
+```
+
+Two read-only calls, no mutations, nothing created. It asks
+`projects.testIamPermissions` for every permission the table below implies and prints
+which step you would fail at, plus whether a token actually mints for each tier service
+account. `make bootstrap` runs it first and stops if provisioning is blocked.
+
+It fails **only** on a permission that blocks provisioning. A gap in a later step — cost
+attribution needs `bigquery.jobs.listAll`, which a data-only reader often lacks — is
+reported and does not stop you: it costs a report column, not the experiment.
 
 | Step | What it does that needs privilege | Capability |
 |---|---|---|
@@ -73,6 +87,12 @@ on a sandbox project, which is the expected case, none of it binds. The reason t
 anyway is the opposite situation: a shared or org-managed project where you *will* be told
 no, and it is much better to find that out before `make bootstrap` starts creating things.
 
+The same caveat applies to `make preflight`: a clean result means *nothing obviously
+blocks you*, not that provisioning is proven to succeed. A **failure** is the reliable
+half — `testIamPermissions` is authoritative about what you hold, and it rejects a
+permission string it does not recognize rather than reporting it as denied, so preflight
+cannot invent a denial out of a typo.
+
 Nothing here needs a service account key. The tier fence is impersonation from your own
 ADC, which is why `iam.serviceAccountAdmin` appears above and `serviceAccountKeyAdmin`
 does not.
@@ -82,6 +102,7 @@ does not.
 ```bash
 cp .env.example .env          # fill in GOOGLE_CLOUD_PROJECT
 gcloud auth application-default login
+make preflight                # read-only: can you provision this? free
 make bootstrap                # APIs, toolbox binary, identities, corpus, governance
 make verify-isolation         # prove tier 0 cannot read tier 1 — do not skip this
 make plan                     # what a sweep would cost, in time and tokens. Free.

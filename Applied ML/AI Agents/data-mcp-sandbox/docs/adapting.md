@@ -71,12 +71,14 @@ Your project, our corpus, our questions. This is the rung that proves your
 environment works before any of your own thinking is mixed in.
 
 ```bash
+make preflight   # free, read-only: can you provision this at all?
 make bootstrap && make verify-isolation && make plan && make smoke
 ```
 
-Check [what you need to be able to do](reproducing.md#what-you-need-to-be-before-you-start)
-first — `make bootstrap` creates service accounts and IAM bindings, and finding out
-you cannot halfway through is the annoying way to learn it.
+`make preflight` answers [what you need to be able to
+do](reproducing.md#what-you-need-to-be-before-you-start) against your actual project
+rather than making you read a table. `make bootstrap` creates service accounts and IAM
+bindings, and finding out you cannot halfway through is the annoying way to learn it.
 
 Walk the rungs: `make smoke` (10 cells, ~10 min) → `make pilot` (240, ~5 h) →
 `make sweep` (1,200, ~26 h).

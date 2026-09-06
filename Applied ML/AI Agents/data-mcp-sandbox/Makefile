@@ -1,9 +1,11 @@
 .PHONY: help install toolbox check lint types test setup teardown golden lookml probe \
+	preflight \
 	identities identities-down verify-isolation looker-plan looker-apply \
 	bootstrap apis plan smoke pilot sweep report export service-tokens
 
 help:
 	@echo "Start here"
+	@echo "  make preflight  Can you provision this? Read-only, free. Run this first."
 	@echo "  make bootstrap  Everything below, in order, from an empty project"
 	@echo "  make plan       What a full sweep would cost, in time and tokens. Free."
 	@echo ""
@@ -40,6 +42,12 @@ help:
 	@echo "  make golden     Print live golden-truth values for every tier"
 	@echo "  make probe      Print the real tool inventory of every MCP server"
 	@echo "  make verify-isolation  Prove tier 0 cannot reach tier 1"
+
+# Two read-only IAM calls, no mutations. Answers "will make bootstrap be allowed
+# to do this?" before it creates anything billable. Only fails on a permission
+# that blocks *provisioning* — a gap in cost attribution is reported, not fatal.
+preflight:
+	uv run python scripts/preflight.py
 
 install:
 	uv sync
@@ -113,6 +121,7 @@ LOOKER_FLAG := $(if $(SKIP_LOOKER),--skip-looker,)
 # one. Looker is set up by hand — docs/looker_setup.md — or skipped entirely.
 bootstrap:
 	$(MAKE) install
+	$(MAKE) preflight
 	$(MAKE) apis
 	$(MAKE) toolbox
 	$(MAKE) identities

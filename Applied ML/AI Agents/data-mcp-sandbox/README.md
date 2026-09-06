@@ -70,6 +70,7 @@ Requires [`uv`](https://docs.astral.sh/uv/) and the
 Then provision and walk down the cost ladder:
 
 ```bash
+make preflight        # can you provision this? two read-only IAM calls, free
 make bootstrap        # APIs, Toolbox binary, tier identities, corpus, governance
 make verify-isolation # prove tier 0 cannot read tier 1 — do not skip this
 make plan             # what a sweep would cost, in time and tokens. Free.
