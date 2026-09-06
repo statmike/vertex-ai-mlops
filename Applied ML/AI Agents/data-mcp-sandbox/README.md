@@ -35,7 +35,9 @@ opt-in via `prices.json`.
 
 Full tables: [`results/report.md`](results/report.md). How the arms differ:
 [`docs/paths.md`](docs/paths.md). What was asked and what counts as right:
-[`docs/questions.md`](docs/questions.md).
+[`docs/questions.md`](docs/questions.md). Why the experiment is built this way,
+what it does *not* claim, and the limits on believing it:
+[`docs/design.md`](docs/design.md).
 
 > **These numbers are perishable.** They are specific to a pinned model version,
 > a pinned MCP Toolbox, and vendor tool schemas that can change without notice —
@@ -194,7 +196,7 @@ can see it. [docs/paths.md](docs/paths.md#p4_bq_ca-reports-nothing-which-is-not-
 | `src/` | All logic — flat, single-responsibility modules |
 | `examples/` | Runners: the sweep, the scorer, isolation and inventory probes |
 | `scripts/` | Provisioning, teardown, capture export |
-| `docs/` | [paths](docs/paths.md) · [questions & rubric](docs/questions.md) · [method](docs/method.md) · [reproducing](docs/reproducing.md) · [**adapting**](docs/adapting.md) · [scoping](docs/scoping.md) · [Looker setup](docs/looker_setup.md) · [runbook](docs/looker_runbook.md) |
+| `docs/` | [design](docs/design.md) · [paths](docs/paths.md) · [questions & rubric](docs/questions.md) · [method](docs/method.md) · [reproducing](docs/reproducing.md) · [**adapting**](docs/adapting.md) · [scoping](docs/scoping.md) · [Looker setup](docs/looker_setup.md) · [runbook](docs/looker_runbook.md) |
 | `results/` | The report, the scores, and the publishable capture |
 | `tests/` | pytest; imports flat modules from `src/` by name |
 | `notebooks/` | [provision](notebooks/01_provision.ipynb) · [walkthrough](notebooks/02_walkthrough.ipynb) · [results](notebooks/03_results.ipynb) — narrative and execution only, no business logic |

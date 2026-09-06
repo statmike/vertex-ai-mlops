@@ -100,6 +100,16 @@ The [Solution Prototypes](../Solution%20Prototypes/readme.md) folder has example
 
 This folder has examples based on core functionality of agents interacting with GCP services.  These are meant to help learn and explore core concepts.
 
+- **[Agent Building — A Tour of the Gemini Enterprise Agent Platform](./agent-building/README.md)**
+  - One multi-agent retail workflow built with ADK and run through **every pillar** of the Gemini Enterprise Agent Platform: Build, Scale, Govern, Optimize
+  - **Build**: a concierge router delegating to in-process sub-agents for document Q&A (`AI.GENERATE` over a BigQuery object table) and live analytics (Conversational Analytics API), plus an independently deployable agent consumed over the **A2A protocol**
+  - **Mixed-model fleet on purpose**: Gemini 3 Pro, Flash, and Flash-Lite alongside Claude on Vertex
+  - **Scale**: deployment to Agent Runtime with Sessions and Memory Bank
+  - **Govern**: Agent Identity, Agent Registry, Agent Gateway / Model Armor
+  - **Optimize**: two evaluation engines plus observability over the BigQuery event log
+  - **Interop**: hosting and consuming MCP servers, web grounding, explicit A2A skills, managed Example Store and RAG Engine, and the Skill Registry
+  - Clean setup/agent boundary — all provisioning lives in `scripts/`, so agent code reads like a company that already has its data
+
 - **[BigQuery Context Discovery](./bigquery-context/readme.md)**
   - Multi-agent system comparing five parallel approaches to discovering the best BigQuery tables for answering user questions
   - **BQ Metadata Tools**: LLM-driven tool calls using ADK BigQueryToolset
@@ -128,6 +138,15 @@ This folder has examples based on core functionality of agents interacting with 
   - Three usage modes: stateful sessions, stateless with agent, and inline on-demand queries
   - Comprehensive Jupyter notebook walkthrough covering all usage modes
 
+- **[Data MCP Sandbox — Comparing NL2SQL Approaches on Google Cloud](./data-mcp-sandbox/README.md)**
+  - A controlled experiment, not a demo: **does data governance actually make an agent more accurate, and what does each way of connecting one to BigQuery cost?**
+  - The same model asks the same twelve questions through **ten MCP tool surfaces** at **two governance tiers** over byte-identical corpora, five times each — 1,200 live cells, every answer scored against a live oracle
+  - Four architectures, each self-hosted (MCP Toolbox) and managed, so plumbing and capability are separated: **Raw Data Builder**, **Semantic Router**, **Governed Context** (Dataplex catalog, aspects, glossary, quality scans), **Managed Agent** (Conversational Analytics over BigQuery and over Looker)
+  - Corpus deliberately hostile in the ways real warehouses are: a column named `txn_amt_x2` that is gross-not-net, a `status_flg` boolean whose `TRUE` means refunded, and a `revenue_amount` column that is simply wrong
+  - Findings: governance roughly **doubles** accuracy on every path but does not close the gap; managed and self-hosted MCP reach the same verdict on 94–99% of paired cells while costing up to **12× apart**; cost tracks **tool schema verbosity, not tool count** (r = 0.97 vs r = 0.14)
+  - Cost reported in units consumed per *correct* answer — including the server-side Gemini tokens Conversational Analytics never returns, recovered from Cloud Monitoring
+  - Re-score the published capture offline with **no cloud account**, or adapt it to your own warehouse in eight rungs
+
 - **[Data Onboarding](./data-onboarding/readme.md)**
   - Two multi-agent systems that automate the full data lifecycle: **onboard** data from URLs into BigQuery, then **chat** with it using natural language
   - **Onboarding pipeline** with sub-agents for acquire → discover → understand → design → implement → validate
@@ -149,6 +168,14 @@ This folder has examples based on core functionality of agents interacting with 
   - Schema support: auto-generate JSON Schema or provide a custom Pydantic schema
   - Interactive HTML visualization with linked highlighting, flow subgraphs, and Mermaid diagrams
   - Q&A sub-agent for answering questions about the extracted graph
+
+- **[RFI Agent](./rfi-agent/README.md)**
+  - Multi-agent workflow that automates responding to Requests for Information across DOCX, Excel, and PDF documents
+  - Root agent orchestrates the pipeline: **extract → qualify → answer → critique → write back**
+  - **Question Extractor** pulls questions along with their location in the source file, so answers return to the right cell or paragraph
+  - **Hybrid grounding**: questions are classified generic or project-specific, then answered from an internal knowledge base or Google Search Grounding
+  - **Response Critique** validates answers against quality standards before anything is written
+  - Centralized JSON state as the single source of truth between agents; writes back into `.docx` and `.xlsx`, and produces a Markdown report for PDFs
 
 - **[Travel Planner Agent](./travel-planner/README.md)**
   - Multi-agent travel planning system using Agent-to-Agent (A2A) protocol for cross-agent communication
