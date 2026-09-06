@@ -2,7 +2,7 @@
 
 Model `gemini-3.7-flash` at temperature 0.0, 5 replicates, tier fence on, commit `834421c3`, started 2026-09-05T02:07:23+00:00. Dataplex quality scans: not recorded.
 
-> **Path 3 comparability.** This capture predates the `quality_scans` header field, so it cannot state whether this sandbox's Dataplex data-quality scans existed when it ran. That matters for Path 3 only: `search_dq_scans` is bound on `p3_toolbox` and returns a different list either side of those scans being provisioned. Do not merge Path 3 cells from this capture with cells from a fresh `make setup`, which now creates them. See `docs/reproducing.md`.
+> **Path 3 comparability.** This capture predates the `quality_scans` header field, so it cannot state whether this sandbox's Dataplex data-quality scans existed when it ran. That matters for Path 3 tier 1 only: with the scans in place `lookup_context` adds a `qualityStatus` line per governed table, and all three Path 3 arms call it. Do not merge tier-1 Path 3 cells from this capture with cells from a fresh `make setup`, which now creates them. See `docs/reproducing.md`.
 
 1200 cells scored across 20 arm/tier pairs.
 

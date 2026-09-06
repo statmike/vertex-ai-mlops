@@ -158,8 +158,8 @@ def test_scan_state_keeps_unmeasured_distinct_from_absent():
 
 
 def test_a_capture_that_cannot_say_carries_the_path3_warning():
-    # p3_toolbox binds search_dq_scans, which returns a different list either
-    # side of the scans existing, so an unlabelled capture must say so.
+    # With the scans in place `lookup_context` adds a `qualityStatus` line on
+    # every Path 3 arm, so an unlabelled capture must say it cannot tell.
     assert "Path 3 comparability" in report._scan_note({})
     assert "Path 3 comparability" in report._scan_note({"quality_scans": None})
     # ...and a capture that does say needs no caveat.

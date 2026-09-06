@@ -8,10 +8,14 @@ control and must stay bare:
    trap. Reachable via the Toolbox `dataplex` source only (docs/paths.md).
 1b. **Quality scans** (`create_and_run_quality_scans`) — the traps restated as
    executable rules, so their calibration arrives as a measured failure rate
-   rather than as prose. Without these, `get_data_quality_results` returns the
-   *profile* scan with the quality block simply absent: an HTTP 200 carrying
-   nothing, which an agent can read as "no quality problems found" against a
-   corpus built entirely out of them.
+   rather than as prose. **They reach the agent through `lookup_context`, not
+   through a quality tool.** Every `dataplex.datascans.*` permission is withheld
+   from the tier identities (`scripts/bootstrap_identities.sh`), so
+   `search_dq_scans`, `get_data_profile` and `get_data_quality_results` are
+   denied whether or not a scan exists — 93 calls, 93 failures in the published
+   capture. What a scan actually buys is one line, `qualityStatus: FAIL`, that
+   the catalog renders inline on the entry. Tier 0 has no scans and no such
+   line, which is why this counts as treatment (docs/reproducing.md).
 2. **Business rules** (`attach_business_rules`) — published as the system
    `overview` aspect. This is the only governance on the agent's critical path
    for Path 3 Managed, because it is what `lookup_context` returns.
@@ -344,10 +348,10 @@ def quality_scans_present() -> bool | None:
     """Do this sandbox's data-quality scans exist right now? None if we cannot tell.
 
     Recorded in every capture header, because it is a property of the *environment*
-    Path 3 was measured in rather than of the code. `search_dq_scans` returns a
-    different list depending on the answer, so a capture taken before these scans
-    existed is not comparable to one taken after — and without this field, telling
-    the two apart means archaeology on the header's `git_commit`.
+    Path 3 was measured in rather than of the code. `lookup_context` renders a
+    `qualityStatus` line per governed table only when these exist, so a capture
+    taken before is not comparable to one taken after — and without this field,
+    telling the two apart means archaeology on the header's `git_commit`.
 
     Returns `None` rather than `False` when the API cannot be reached: "we did not
     look" and "they are not there" are different facts, and collapsing them is how

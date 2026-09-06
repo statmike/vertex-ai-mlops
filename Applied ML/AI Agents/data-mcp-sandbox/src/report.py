@@ -370,21 +370,26 @@ def _scan_state(meta: dict[str, Any]) -> str:
 def _scan_note(meta: dict[str, Any]) -> str:
     """Warn when a capture cannot say which Path 3 environment it was taken in.
 
-    `search_dq_scans` is bound on `p3_toolbox` and returns a different list
-    depending on whether these scans exist, so two captures either side of them
-    being provisioned are not comparable on Path 3. Empty when the header says,
-    because then the reader already has the answer.
+    `lookup_context` renders a `qualityStatus` line per governed table only when
+    these scans exist, so two captures either side of them being provisioned are
+    not comparable on Path 3 tier 1 — on all three Path 3 arms, since all three
+    call it. Empty when the header says, because then the reader already has the
+    answer.
+
+    Not `search_dq_scans`, which is the obvious guess and is wrong: the tier
+    identities hold no `dataplex.datascans.*` permission, so every scan tool is
+    denied either side of provisioning (docs/reproducing.md).
     """
     if meta.get("quality_scans") in (True, False):
         return ""
     return (
         "> **Path 3 comparability.** This capture predates the `quality_scans` "
         "header field, so it cannot state whether this sandbox's Dataplex "
-        "data-quality scans existed when it ran. That matters for Path 3 only: "
-        "`search_dq_scans` is bound on `p3_toolbox` and returns a different list "
-        "either side of those scans being provisioned. Do not merge Path 3 cells "
-        "from this capture with cells from a fresh `make setup`, which now creates "
-        "them. See `docs/reproducing.md`.\n"
+        "data-quality scans existed when it ran. That matters for Path 3 tier 1 "
+        "only: with the scans in place `lookup_context` adds a `qualityStatus` "
+        "line per governed table, and all three Path 3 arms call it. Do not merge "
+        "tier-1 Path 3 cells from this capture with cells from a fresh "
+        "`make setup`, which now creates them. See `docs/reproducing.md`.\n"
     )
 
 

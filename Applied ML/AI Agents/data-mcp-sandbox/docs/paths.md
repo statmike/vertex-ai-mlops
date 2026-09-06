@@ -91,12 +91,24 @@ Two consequences that shape the scoring:
   term and its full definition. At tier 1 a business rule therefore reaches the
   agent **twice** — once as the table's `overview` aspect, once per linked column
   — and the acquisition check must not count that as two independent hits.
-- **Availability is not reachability.** Of the 15 Dataplex tools wired into
-  `p3_toolbox`, only `get_data_profile` returns real signal against this corpus,
-  because provisioning creates profile scans. Binding a tool is not evidence an
-  agent uses it: `get_data_quality_results` was bound on all 120 Path-3 Toolbox
-  cells and called **zero times** in the published sweep, while `search_dq_scans`
-  was called 59.
+- **Availability is not reachability, twice over.** Binding a tool is not
+  evidence an agent calls it — `get_data_quality_results` was bound on all 120
+  Path-3 Toolbox cells and called **zero times**. And calling one is not evidence
+  it answers. Every scan tool is denied to the tier identities, which hold no
+  `dataplex.datascans.*` permission at all:
+
+  | Tool | Calls | Errors |
+  |---|---:|---:|
+  | `search_dq_scans` | 59 | **59** |
+  | `list_data_products` | 33 | **33** |
+  | `get_data_profile` | 1 | **1** |
+
+  93 calls, no successes, one cause. So the *only* Dataplex tools that returned
+  anything on `p3_toolbox` are the four catalog ones — `search_entries`,
+  `lookup_entry`, `lookup_context`, `search_aspect_types`. The profile
+  statistics still reach the agent, but through `lookup_context`, exactly as they
+  do on the managed arm that has no profile tool. **Eleven of fifteen Dataplex
+  tools are surface area that costs schema tokens and returns nothing.**
 
 `make probe` prints the shipped inventory and the configured inventory separately,
 because those two numbers get conflated and only the second is what an agent sees.

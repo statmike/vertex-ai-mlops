@@ -93,8 +93,10 @@ rather than waving at:
 | Writes | none |
 
 The metadata row is the accepted widening, and it is the same project-wide-list hole already
-documented for glossaries, aspect types and `search_dq_scans`. It is not an oversight and it is not
-narrowable: the permission does not take a scope.
+documented for glossaries and aspect types. It is not an oversight and it is not narrowable: the
+permission does not take a scope. Data scans have the same hole and are handled the other way —
+`mcpSandboxCatalogSearch` grants no `dataplex.datascans.*` at all, so every scan tool is denied to
+both tiers rather than project-wide to both (docs/paths.md).
 
 Rather than leave that as prose, `make verify-isolation` enumerates both identities' project roles
 against a reviewed allow-list and fails when it grows, so a role added later cannot quietly widen

@@ -232,18 +232,48 @@ noise.
 | Published sweep started | 2026-09-05 02:07 UTC, at commit `834421c3` |
 | Quality scans added and run | 2026-09-05 15:59 UTC, commit `e13a98c9` |
 
-What actually moves is one tool. `search_dq_scans` is bound on `p3_toolbox` and
-was called **59 times** across the capture — always returning other projects'
-scans, none of ours. After provisioning, ours are in the list (5 of 126 at the
-time of writing). The other quality tool, `get_data_quality_results`, was bound
-for all 120 Path-3 Toolbox cells and called **zero** times, so it is not the
-mechanism even though it is the one you would guess.
+**What moves is `lookup_context`, and none of the quality tools.** That is the
+opposite of the obvious guess, so it is worth being precise about, because the
+guess picks the wrong arms.
+
+Every Dataplex scan tool is **permanently denied to the tier service accounts**,
+before and after provisioning. `mcpSandboxCatalogSearch` grants entry and aspect
+reads and no `dataplex.datascans.*` at all, so `search_dq_scans` fails at
+`locations/-/dataScans` — a project-wide list, refused before a single scan is
+enumerated. Creating scans cannot change that answer. Measured across the
+capture, on `p3_toolbox`:
+
+| Tool | Calls | Errors | Denied permission |
+|---|---:|---:|---|
+| `search_dq_scans` | 59 | **59** | `dataplex.datascans.list` |
+| `list_data_products` | 33 | **33** | `dataplex.dataProducts.list` |
+| `get_data_profile` | 1 | **1** | `dataplex.datascans.getData` |
+| `get_data_quality_results` | 0 | – | never called |
+
+93 calls, zero successes. Re-probed live after provisioning: still denied,
+identically. So the tool everyone would name is not the mechanism.
+
+The mechanism is a **field**. `lookup_context` renders a `qualityStatus` line per
+table, and it appears **0 times in all 12,555 tool calls** of the published
+capture and on every tier-1 table today:
+
+```
+qualityStatus: FAIL
+```
+
+Quality scans are governed-tier only (`GOVERNED_TIERS` in `src/catalog_setup.py`),
+so tier 0's payload is unchanged and only the **treatment** moved.
 
 Concretely:
 
-- **Do not merge** Path 3 cells from the published capture with cells from a
-  fresh setup. Re-run Path 3 whole, or leave it whole.
-- Paths 1, 2 and 4 are unaffected — none of them bind a Dataplex quality tool.
+- **Do not merge** tier-1 Path 3 cells from the published capture with cells from
+  a fresh setup. Re-run Path 3 whole, or leave it whole.
+- It is **all three** Path 3 arms, not just the Toolbox one. `lookup_context` was
+  called 93 times on `p3_managed`, 80 on `p3_matched`, 58 on `p3_toolbox` — and
+  it is one of only three tools the managed catalog server exposes at all.
+- **Tier 0 is unaffected**, on every arm. The comparison that moved is the
+  governed one.
+- Paths 1, 2 and 4 are unaffected — none of them call `lookup_context`.
 - Captures from now on record `quality_scans: true | false | null` in the header
   and `make report` prints it, so this is self-describing rather than something
   you have to date against a commit. `null` means "did not look", which is not

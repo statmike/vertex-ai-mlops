@@ -239,10 +239,11 @@ async def run(
         return cells
 
     meta["tool_schemas"] = await measure_schemas(current.config_keys)
-    # Environment state, not code state: Path 3's `search_dq_scans` returns a
-    # different list depending on this, so captures taken either side of the
-    # scans being provisioned are not comparable on Path 3. Measured here rather
-    # than in `header()` because it is a live call, and `--dry-run` returns above.
+    # Environment state, not code state: with these scans in place Path 3's
+    # `lookup_context` adds a `qualityStatus` line per governed table, so captures
+    # taken either side of provisioning are not comparable on Path 3 tier 1.
+    # Measured here rather than in `header()` because it is a live call, and
+    # `--dry-run` returns above.
     meta["quality_scans"] = catalog_setup.quality_scans_present()
 
     started = time.monotonic()
