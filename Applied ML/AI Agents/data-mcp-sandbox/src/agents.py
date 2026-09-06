@@ -3,7 +3,7 @@
 Every cell gets a fresh `InMemoryRunner` and a fresh session, run one at a time.
 Reusing a runner would let one question's context bleed into the next, and
 running cells concurrently would make per-config latency and token attribution
-meaningless (DESIGN.md §7).
+meaningless (docs/method.md).
 
 The instruction is deliberately **uniform across all 10 configs and both tiers**.
 It names the data location and asks for a number; it says nothing about
@@ -31,7 +31,7 @@ USER_ID = "evaluator"
 
 # Temperature 0 for every cell. It is not determinism on a reasoning model —
 # 3.7 Flash still varies its thinking — which is exactly why the design runs
-# n=5 replicates rather than trusting a single sample (DESIGN.md §9.3).
+# n=5 replicates rather than trusting a single sample (docs/questions.md).
 TEMPERATURE = 0.0
 
 BASE_INSTRUCTION = """You are a data analyst answering questions about a company's data.
@@ -148,7 +148,7 @@ async def ask(config_key: str, tier: int, question: str) -> Outcome:
     """Run one question end to end, retrying only on transient endpoint failures.
 
     Every other error is returned in the outcome rather than raised. A cell that
-    blows up on its own merits is a data point — DESIGN.md §9.4 counts it as a
+    blows up on its own merits is a data point — docs/method.md counts it as a
     failure instead of dropping it, which would flatter whichever architecture
     crashes most. A 429 or a 503 is the opposite: it says nothing about the
     architecture, so keeping it would poison exactly the comparison the sweep

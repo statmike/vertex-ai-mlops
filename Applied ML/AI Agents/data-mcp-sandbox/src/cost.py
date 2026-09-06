@@ -212,7 +212,7 @@ class Attribution:
 def attribute(cells: list[traces.Cell], jobs: list[Job]) -> Attribution:
     """Assign each job to the cell whose window contains it.
 
-    Unambiguous only because the sweep is strictly sequential (DESIGN.md §7) —
+    Unambiguous only because the sweep is strictly sequential (docs/method.md) —
     with two cells in flight, a job's timestamp would name two possible owners
     and the whole approach would collapse. Timestamps are recorded to the
     second, so a job landing exactly on a boundary can go either way; the sweep's

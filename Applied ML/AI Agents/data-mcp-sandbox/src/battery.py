@@ -2,7 +2,7 @@
 
 The sweep is a full factorial: every question, on every config, at every tier,
 repeated `runs` times. At the default n=5 that is 12 x 8 x 2 x 5 = 960 cells
-(DESIGN.md §7).
+(docs/method.md).
 
 This module **captures only**. No scoring happens here and none should: the
 rubric will change, and re-running 960 live cells to try a new metric would be
@@ -17,7 +17,7 @@ Three properties the sweep depends on, all of them deliberate:
   than the cell in progress.
 * **Failures are recorded, not dropped.** A cell that errors is an observation
   about that architecture. Dropping it would flatter whichever path crashes
-  most (DESIGN.md §9.4).
+  most (docs/method.md).
 """
 
 import json
@@ -115,7 +115,7 @@ def _git_commit() -> str:
 
 
 def header(current: Plan) -> dict[str, Any]:
-    """The reproducibility block stored alongside the cells (DESIGN.md §7).
+    """The reproducibility block stored alongside the cells (docs/method.md).
 
     `use_tier_sa` is here because it is the difference between a measured
     isolation boundary and none at all. A results file that does not say which

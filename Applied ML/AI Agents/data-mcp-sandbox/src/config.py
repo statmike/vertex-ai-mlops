@@ -84,7 +84,7 @@ RESOURCE_PREFIX = os.getenv("RESOURCE_PREFIX", "data_mcp_sandbox")
 # --- Governance tiers (the independent variable) -----------------------------
 # The identical corpus is replicated into one dataset per tier, differing ONLY in
 # governance. T0 is the ungoverned control; T1 carries descriptions, catalog
-# enrichment, and a semantic LookML model. See DESIGN.md §6.3.
+# enrichment, and a semantic LookML model. See docs/paths.md.
 TIERS: tuple[int, ...] = (0, 1)
 
 TIER_LABELS = {
@@ -127,7 +127,7 @@ TIER_SA_PREFIX = os.getenv("TIER_SA_PREFIX", "mcp-sandbox")
 #
 # An earlier design provisioned one tier at a time in two "epochs" as a fallback
 # for operators who cannot bootstrap. It was retired unbuilt once the identity
-# fence verified 24/24 — see DEV_NOTES.md 2026-08-31.
+# fence verified 24/24 by `make verify-isolation`.
 USE_TIER_SA = os.getenv("USE_TIER_SA", "false").lower() in ("1", "true", "yes")
 
 

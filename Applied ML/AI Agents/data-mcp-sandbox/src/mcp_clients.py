@@ -72,10 +72,10 @@ TOOLBOX_BIGQUERY_TOOLS = [
 ]
 # `--prebuilt dataplex` ships 24 tools. All 15 read-only ones are bound; the 9
 # that mutate or trigger billable scan jobs are not, because the dataplex source
-# has no `writeMode` equivalent to neuter them with (DESIGN.md F4, ROADMAP.md).
+# has no `writeMode` equivalent to neuter them with (docs/paths.md).
 #
-# Reachability in *this corpus* is uneven and was measured, not assumed — see the
-# table in DEV_NOTES.md. `get_data_quality_results` used to return a profile scan
+# Reachability in *this corpus* is uneven and was measured, not assumed.
+# `get_data_quality_results` used to return a profile scan
 # with no `dataQualityResult` field rather than an error, so an agent got a
 # confident-looking success carrying nothing. Since 2026-09-05 the corpus carries
 # real DATA_QUALITY scans (`catalog_setup.create_and_run_quality_scans`) and it
@@ -111,7 +111,7 @@ TOOLBOX_LOOKER_TOOLS = [
 
 @dataclass(frozen=True)
 class PathConfig:
-    """One cell of the 4-path x 2-variant matrix (DESIGN.md §4)."""
+    """One cell of the 4-path x 2-variant matrix (docs/paths.md)."""
 
     key: str
     path: int

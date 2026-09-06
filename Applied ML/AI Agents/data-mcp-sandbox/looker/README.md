@@ -5,7 +5,7 @@
 from the BigQuery corpus or the golden-truth oracle.
 
 Two models, one per governance tier. They are the Looker half of the tier
-experiment (`DESIGN.md` §6.3):
+experiment (`docs/paths.md`):
 
 - **`data_mcp_sandbox_t0`** — raw passthrough. Dimensions only, **no measures**, no
   descriptions. An agent has to assemble revenue itself, and can pick the wrong

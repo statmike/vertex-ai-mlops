@@ -2,7 +2,7 @@
 
     uv run python examples/probe_tool_inventory.py [--tier 1]
 
-**Diagnostic, not scored.** DESIGN.md findings F3 and F4 claim the managed
+**Diagnostic, not scored.** `docs/paths.md` claims the managed
 servers expose a narrower surface than self-hosted Toolbox. That claim decides
 which paths can answer which question categories, so it should be reproducible
 on demand rather than cited from documentation that will drift.
@@ -95,13 +95,13 @@ async def main_async(tier: int) -> int:
     else:
         print("\nLooker instance MCP: SKIPPED (LOOKER_BASE_URL is unset or still the placeholder)")
 
-    print("\nDifference — what Toolbox ships that managed does not (DESIGN.md F4):")
+    print("\nDifference — what Toolbox ships that managed does not (docs/paths.md):")
     print(f"    bigquery: {sorted(set(prebuilt_bq) - set(managed_bq)) or 'nothing'}")
     print(f"    dataplex: {sorted(set(prebuilt_dp) - set(managed_dp)) or 'nothing'}")
     print("\nWhat managed has that Toolbox does not:")
     print(f"    bigquery: {sorted(set(managed_bq) - set(prebuilt_bq)) or 'nothing'}")
     print(f"    dataplex: {sorted(set(managed_dp) - set(prebuilt_dp)) or 'nothing'}")
-    print("\nShipped but NOT wired into this sandbox's Path 3 (see ROADMAP.md):")
+    print("\nShipped but NOT wired into this sandbox's Path 3 (see TOOLBOX_DATAPLEX_TOOLS):")
     print(f"    bigquery: {sorted(set(prebuilt_bq) - set(toolbox_bq)) or 'nothing'}")
     print(f"    dataplex: {sorted(set(prebuilt_dp) - set(toolbox_dp)) or 'nothing'}")
     return 0

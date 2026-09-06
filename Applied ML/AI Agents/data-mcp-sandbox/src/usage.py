@@ -1,7 +1,7 @@
 """Per-cell token accounting.
 
 A process-local accumulator, reset at the start of every evaluation cell and
-read at the end. Cells run strictly one at a time (DESIGN.md §7), so a module
+read at the end. Cells run strictly one at a time (docs/method.md), so a module
 global is honest here — with concurrent cells it would silently blend them,
 which is exactly why the battery never parallelizes.
 

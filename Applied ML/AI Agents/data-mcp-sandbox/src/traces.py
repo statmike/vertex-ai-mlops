@@ -3,11 +3,11 @@
 `run_battery.py` captures; `build_results.py` scores. These dataclasses are the
 contract between the two, and they hold **no scores** — only what happened. That
 split is deliberate: the rubric will change, and re-running 960 live cells to
-try a new metric would be absurd (DESIGN.md §7).
+try a new metric would be absurd (docs/method.md).
 
 Everything a scorer could need must therefore be captured here, including tool
 results, because a tool result is the only evidence that a governed rule ever
-reached the agent (the acquisition half of DESIGN.md §9.1).
+reached the agent (the acquisition half of docs/questions.md).
 """
 
 import gzip
@@ -129,7 +129,7 @@ def load(path: Path) -> dict[str, Cell]:
 
 
 def save(path: Path, cells: dict[str, Cell], header: dict[str, Any]) -> None:
-    """Write every cell plus the reproducibility header (DESIGN.md §7).
+    """Write every cell plus the reproducibility header (docs/method.md).
 
     Rewrites the whole file each time rather than appending. At 960 cells the
     file is a few MB, and a single valid JSON document is worth far more than

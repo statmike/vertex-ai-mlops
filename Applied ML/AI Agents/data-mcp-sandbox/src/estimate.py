@@ -148,7 +148,7 @@ def render(total: Estimate, usd_per_mtok: float | None = None) -> str:
             f"all tokens at the input rate"
         )
     else:
-        # Never print a dollar figure off an invented rate (DESIGN A.5). BigQuery
+        # Never print a dollar figure off an invented rate. BigQuery
         # bytes are omitted for the same reason they are unpriced by default: this
         # sandbox's corpus is small enough that model tokens dominate, and another
         # project's will not be.

@@ -21,7 +21,7 @@ where the bill stops being itemised.
    than assumed: run it over a quiet week and see what the floor looks like.
 2. *It needs contiguous blocks.* `blocks()` refuses to attribute a config/tier
    whose cells interleave with another arm's, because a 60s-aligned series cannot
-   be split finer than the runs are. The sweep is sequential (DESIGN.md §7) so
+   be split finer than the runs are. The sweep is sequential (docs/method.md) so
    this holds today; a parallel runner would silently break it, hence the check.
 3. *It does not cover `p4_bq_ca`.* That arm reaches CA through Toolbox's
    `bigquery-conversational-analytics` and emits **nothing** on this metric — a

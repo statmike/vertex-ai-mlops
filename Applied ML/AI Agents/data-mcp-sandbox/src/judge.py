@@ -1,7 +1,7 @@
 """LLM-as-a-Judge for the one thing code cannot decide: semantic adherence.
 
 Everything measurable by parsing is measured in `scoring.py`. The judge is
-deliberately confined to DESIGN.md §9.2's last two rows — *did this agent reason
+deliberately confined to docs/questions.md's last two rows — *did this agent reason
 from the governed definitions, or invent a calculation?* — plus a numeric
 fallback for the rare prose answer with no extractable number.
 

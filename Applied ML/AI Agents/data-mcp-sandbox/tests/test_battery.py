@@ -102,7 +102,7 @@ def test_transient_endpoint_failures_are_retried_and_real_ones_are_not():
     # and both clustered on particular arms — four 503s hit only p2_toolbox and
     # p3_managed — so recording them would charge a service blip to an
     # architecture. Anything that could only have come from the arm itself must
-    # still be kept: DESIGN.md §9.4 counts those as failures rather than dropping
+    # still be kept: docs/method.md counts those as failures rather than dropping
     # them, because dropping them flatters whichever path crashes most.
     assert agents._is_transient(Exception(
         "ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': "

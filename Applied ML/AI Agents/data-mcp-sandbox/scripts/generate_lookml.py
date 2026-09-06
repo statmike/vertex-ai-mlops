@@ -27,7 +27,7 @@ README = """# LookML for the sandbox (generated)
 from the BigQuery corpus or the golden-truth oracle.
 
 Two models, one per governance tier. They are the Looker half of the tier
-experiment (`DESIGN.md` §6.3):
+experiment (`docs/paths.md`):
 
 - **`{t0}`** — raw passthrough. Dimensions only, **no measures**, no
   descriptions. An agent has to assemble revenue itself, and can pick the wrong

@@ -6,7 +6,7 @@ oracle, and by the report generator, so documentation can never drift from what
 
 Three tables, four deliberate traps. Every trap is a case where the naive read of
 the raw schema produces a *plausible but wrong* answer, and only governed context
-(catalog aspects or the LookML semantic layer) gets it right. See DESIGN.md §6.
+(catalog aspects or the LookML semantic layer) gets it right. See docs/questions.md.
 """
 
 from dataclasses import dataclass, field
@@ -154,9 +154,11 @@ class GlossaryTerm:
     columns: dict[str, list[str]]  # table -> columns the term defines
 
 
-# Real glossary terms, created for console fidelity only. No MCP surface reads
-# glossaries (DESIGN.md F5), so nothing on the agent's critical path depends on
-# these — the guidelines aspect above is what actually reaches the model.
+# Real glossary terms. There is no glossary *tool* on any MCP surface, but the
+# definitions still reach the model: `lookup_context` renders each linked column
+# with a `terms:` field carrying the term and its full text, so at tier 1 a rule
+# arrives both here and in the overview aspect (docs/paths.md). Keep the wording
+# aligned with the aspect above — scoring treats them as one rule, not two.
 GLOSSARY_TERMS: list[GlossaryTerm] = [
     GlossaryTerm(
         term_id="net-revenue",

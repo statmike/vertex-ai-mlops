@@ -1,6 +1,6 @@
 """Deterministic scoring of captured cells. No model calls happen here.
 
-Everything that can be decided by parsing is decided by parsing — DESIGN.md §9.2
+Everything that can be decided by parsing is decided by parsing — docs/questions.md
 sends only semantic adherence to the judge, because an LLM asked to compare two
 numbers adds variance for no gain.
 
@@ -388,8 +388,8 @@ def corpus_rule_text(rule: str) -> str:
 
 # --- equivalence -------------------------------------------------------------
 #
-# IDEA.md listed Equivalence as a judge criterion. Comparing two traces is a
-# sequence-and-number comparison, so it lives in code (DESIGN.md §9.2) — an LLM
+# Equivalence was originally scoped as a judge criterion. Comparing two traces is a
+# sequence-and-number comparison, so it lives in code (docs/questions.md) — an LLM
 # asked to do it adds variance and nothing else.
 
 

@@ -4,7 +4,7 @@ This module **checks, it does not provision.** LookML lives in a Git-backed
 Looker project, and the instance-hosted MCP endpoint requires an admin to
 pre-register the agent as an OAuth client app — neither is creatable from a
 client SDK. So setup verifies the human-performed steps and reports precisely
-what is missing (DEV_NOTES: `IDEA.md` snippets are stale).
+what is missing.
 
 Two models are required, mirroring the governance tiers:
 

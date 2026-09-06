@@ -5,7 +5,7 @@ control and must stay bare:
 
 1. **Profile scans** (`create_and_run_profile_scans`) — gives the metadata
    battery category real findings to report, and springs the T4 null/outlier
-   trap. Reachable via the Toolbox `dataplex` source only (DESIGN.md F3/F4).
+   trap. Reachable via the Toolbox `dataplex` source only (docs/paths.md).
 1b. **Quality scans** (`create_and_run_quality_scans`) — the traps restated as
    executable rules, so their calibration arrives as a measured failure rate
    rather than as prose. Without these, `get_data_quality_results` returns the
@@ -15,8 +15,12 @@ control and must stay bare:
 2. **Business rules** (`attach_business_rules`) — published as the system
    `overview` aspect. This is the only governance on the agent's critical path
    for Path 3 Managed, because it is what `lookup_context` returns.
-3. **Glossary terms + definition links** (`create_glossary_and_links`) — console
-   fidelity only. No MCP surface reads glossaries (DESIGN.md F5).
+3. **Glossary terms + definition links** (`create_glossary_and_links`) — **on the
+   agent's critical path**, despite there being no glossary *tool* on any MCP
+   surface. `lookup_context` renders each linked column with a `terms:` field
+   carrying the term and its full definition, so a Path 3 agent receives the
+   business rule here as well as in `overview`. Verified in the published
+   capture, not assumed. Skipping this step weakens tier 1 (docs/paths.md).
 
 Preview APIs are used throughout, so every enrichment call is non-fatal: a
 failure is printed and setup continues. Check the printed summary rather than
@@ -371,7 +375,7 @@ def attach_business_rules() -> None:
     """Write the business rules onto governed-tier table entries as `overview`.
 
     This is the *only* governance Path 3 Managed can reach — `lookup_context` is
-    the sole context tool the managed server exposes (DESIGN.md F3). If this step
+    the sole context tool the managed server exposes (docs/paths.md). If this step
     reports FAILED, tier 1 is not actually governed for that path, and its scores
     are meaningless rather than merely low.
 

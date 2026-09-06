@@ -8,7 +8,7 @@ Each entry pairs the governed-correct answer with the `trap` answer a naive agen
 produces when it misses the governance. Scoring uses both: matching `value` is
 correct, matching `trap_value` is a *diagnosed* failure ("sprang the trap") rather
 than an undifferentiated wrong number, which is what makes the trap taxonomy in
-DESIGN.md §6 legible in the results.
+docs/questions.md legible in the results.
 
 Windows are stated as **trailing N days**, not calendar months. "Last month" is
 ambiguous between the two and the oracle cannot score an answer the question did

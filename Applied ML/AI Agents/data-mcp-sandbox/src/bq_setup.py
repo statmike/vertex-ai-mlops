@@ -8,7 +8,7 @@ pandas dependency and no 250k-row upload.
 Tier 0 is built first and then copied verbatim into every other tier, which
 guarantees the tiers hold byte-identical data. Governance — column descriptions
 here, catalog aspects in `catalog_setup` — is the *only* difference between them
-(DESIGN.md §6.3).
+(docs/paths.md).
 
 One deliberate exception to determinism: timestamps are anchored to
 `CURRENT_TIMESTAMP()` at build time so "last month" stays meaningful as the

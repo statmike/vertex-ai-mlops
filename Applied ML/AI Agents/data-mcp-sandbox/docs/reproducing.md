@@ -199,9 +199,9 @@ with the check that proves you got it right.
   September 2026. They are an order of magnitude, not a quote, and they exclude
   quota backoff entirely.
 
-### ⚠️ Path 3 changed after the published capture was taken
+### Path 3 changed after the published capture was taken
 
-**The shipped `results/capture.json.gz` predates this sandbox's Dataplex
+⚠️ **The shipped `results/capture.json.gz` predates this sandbox's Dataplex
 data-quality scans, and `make setup` now creates them.** So a fresh run is *not*
 comparable to the published Path 3 numbers, for a knowable reason rather than
 noise.

@@ -10,7 +10,7 @@ prebuilt `bigquery` source is measurably unsafe for a controlled experiment:
   agent running the tier-0 arm can read the governed tier-1 dataset and quietly
   contaminate the control.
 
-Both were measured, not inferred (see `DEV_NOTES.md`). A rendered source sets
+Both were measured against the live server, not inferred. A rendered source sets
 `writeMode: blocked` and `allowedDatasets`, which the server enforces, and names
 the tier's service account so the process runs fenced. `--prebuilt` also cannot
 be combined with `--config`: the config files conflict on the source name
@@ -86,7 +86,7 @@ CATALOG: dict[str, ToolSpec] = {
     ),
     # --- dataplex source (`--prebuilt dataplex` ships 24; the 15 read-only ones
     # are here, the 9 mutating/job-triggering ones are deliberately absent —
-    # see `TOOLBOX_DATAPLEX_TOOLS` in mcp_clients.py and ROADMAP.md) ---
+    # see `TOOLBOX_DATAPLEX_TOOLS` in mcp_clients.py) ---
     "search_entries": ToolSpec(
         "dataplex-search-entries", DATAPLEX_SOURCE, "Search the Knowledge Catalog for data assets."
     ),
@@ -178,7 +178,7 @@ def _impersonation(tier: int) -> list[str]:
     Both the `bigquery` and `dataplex` sources take this field as of v1.10.0, so
     the tier identity is set per-source in the YAML and no credential file is
     ever written. Under v1.1.0 the dataplex source had no such field and had to
-    be reached through process-level ADC, which did not work — see `DEV_NOTES.md`.
+    be reached through process-level ADC, which did not work.
     """
     if not config.USE_TIER_SA:
         return []

@@ -1,13 +1,15 @@
-"""Invariants for running this on someone else's project (DESIGN A.3.4).
+"""Invariants for running this on someone else's project.
 
-Three things have to hold for a reader to pick this up: they must be able to run
-it without Looker, to know the cost before they spend it, and to re-score our
-published capture without a project of their own. Each of those has a way of
-failing quietly, and each is pinned here.
+Four things have to hold for a reader to pick this up: they must be able to run
+it without Looker, to know the cost before they spend it, to re-score our
+published capture without a project of their own, and to actually open every file
+this repo points them at. Each of those has a way of failing quietly, and each is
+pinned here.
 """
 
 import gzip
 import json
+import re
 import subprocess
 from pathlib import Path
 from urllib.parse import urlparse
@@ -82,7 +84,7 @@ def test_estimate_reports_how_many_cells_are_guesses(monkeypatch):
 
 
 def test_estimate_prints_no_dollars_without_a_rate():
-    # DESIGN A.5: a rate invented to fill a column is worse than an empty column.
+    # A rate invented to fill a column is worse than an empty column.
     text = estimate.render(estimate.estimate([("p1_managed", 1)]), usd_per_mtok=None)
     assert "$" not in text
     assert "unpriced" in text
@@ -206,6 +208,152 @@ def test_no_doc_names_the_project_the_capture_scrubs():
         if value in text
     ]
     assert not found, f"use the export's placeholders instead: {found}"
+
+
+# --- Every file this repo points at is a file a reader can open ---------------
+
+# Paths a reader creates themselves, or that a command generates. Naming one of
+# these is an instruction, not a broken pointer, so they are exempt.
+LOCAL_BY_DESIGN = {
+    ".env",              # cp .env.example .env
+    "prices.json",       # cp prices.example.json prices.json
+    "looker.ini",        # written by looker_provision.py, 0600, never committed
+    "tools.yaml",        # rendered at run time by toolbox_server.py
+    "settings.local.json",  # per-developer agent config, explicitly not shared
+}
+
+# Directories whose contents are generated, not authored. `results/raw/` holds
+# multi-MB sweep captures; the scrubbed, publishable one is what gets committed.
+GENERATED_DIRS = ("results/raw/", "bin/")
+
+# `.gitignore` names ignored files as its entire job.
+NOT_POINTERS = {".gitignore"}
+
+# Extensions worth checking. Anything that looks like a repo file rather than a
+# BigQuery table, a Python module reference, or a hostname.
+_PATHLIKE = re.compile(r"\b[\w./-]+\.(?:md|py|json|yaml|yml|toml|lkml|ini|sh|cfg|txt)\b")
+
+
+def _tracked_text() -> dict[str, str]:
+    """Every tracked file whose contents a reader might follow a pointer out of."""
+    root = Path(config.PROJECT_ROOT)
+    listing = subprocess.run(
+        ["git", "ls-files"], cwd=root, capture_output=True, text=True, check=True
+    )
+    out = {}
+    for name in listing.stdout.split():
+        path = root / name
+        if not path.exists() or path.suffix not in {".md", ".py", ".toml", ".ipynb", ".mk", ""}:
+            continue
+        try:
+            out[name] = path.read_text()
+        except UnicodeDecodeError:
+            continue
+    return out
+
+
+def test_no_tracked_file_points_at_an_untracked_one():
+    """A pointer to a gitignored file works for us and 404s for everyone else.
+
+    This is the failure that is invisible from inside the repo: the author has the
+    harness design doc sitting right there, so citing it by name and section reads
+    as helpful rather than as a dead link. Forty-one of those had accumulated
+    across 24 files before this test existed — all pointing into the agent
+    harness, which is deliberately local-only for a monorepo cell.
+
+    Scoped to names that *resolve to something on disk which is not tracked*,
+    because that is exactly the trap. A name resolving to nothing is a different
+    thing — a generated artifact, or a file the reader creates — and the two
+    exemption lists above cover the ones that are real instructions.
+    """
+    root = Path(config.PROJECT_ROOT)
+    tracked = set(
+        subprocess.run(
+            ["git", "ls-files"], cwd=root, capture_output=True, text=True, check=True
+        ).stdout.split()
+    )
+
+    dead = []
+    for name, text in _tracked_text().items():
+        if name in NOT_POINTERS:
+            continue
+        for match in set(_PATHLIKE.findall(text)):
+            if Path(match).name in LOCAL_BY_DESIGN:
+                continue
+            # Both spellings occur: repo-relative (`docs/paths.md`) and relative
+            # to the citing file (`paths.md` inside docs/, `../docs/x.md` above
+            # it). Resolve each, and judge trackedness on what it resolved to.
+            here = (root / name).parent
+            for base in (root, here):
+                target = (base / match.lstrip("./")).resolve()
+                if not target.exists():
+                    continue
+                rel = str(target.relative_to(root.resolve()))
+                if rel in tracked or rel.startswith(GENERATED_DIRS):
+                    break
+                dead.append(f"{name} -> {match}")
+                break
+
+    assert not dead, (
+        "tracked files point at paths that exist locally but are not committed, "
+        f"so they are dead for anyone who clones: {sorted(dead)}"
+    )
+
+
+def _github_slug(heading: str) -> str:
+    """The anchor GitHub generates for a heading.
+
+    Faithful to `github-slugger`, and the order matters: **trim first, then strip
+    punctuation, and never collapse runs of hyphens.** A heading opening with an
+    emoji trims to nothing, loses the emoji, and is left with a leading space that
+    becomes a leading hyphen — so `## ⚠️ Note` is `#-note`, not `#note`. Getting
+    the order wrong the other way produces a checker that reports working links as
+    broken, which is worse than no checker: the fix looks like editing the link.
+    """
+    text = heading.strip().lower()
+    text = re.sub(r"[^\w\s-]", "", text, flags=re.UNICODE)
+    return text.replace(" ", "-")
+
+
+def test_every_markdown_link_resolves():
+    """Relative links and `#anchors` in tracked markdown point at something real.
+
+    Anchors rot in a way plain links do not: renaming a heading leaves every
+    pointer to it silently landing at the top of the page instead of 404ing, so
+    nothing ever surfaces it.
+    """
+    root = Path(config.PROJECT_ROOT).resolve()
+    docs = [
+        name
+        for name in subprocess.run(
+            ["git", "ls-files", "*.md"], cwd=root, capture_output=True, text=True, check=True
+        ).stdout.split()
+    ]
+    anchors = {
+        name: {
+            _github_slug(m.group(1))
+            for m in re.finditer(r"^#{1,6}\s+(.*)$", (root / name).read_text(), re.M)
+        }
+        for name in docs
+    }
+
+    broken = []
+    for name in docs:
+        here = (root / name).parent
+        for match in re.finditer(r"\[[^\]]*\]\(([^)]+)\)", (root / name).read_text()):
+            target = match.group(1)
+            if target.startswith(("http://", "https://", "mailto:")):
+                continue
+            path, _, anchor = target.partition("#")
+            resolved = (here / path).resolve() if path else (root / name).resolve()
+            if not resolved.exists():
+                broken.append(f"{name} -> {target} (no such file)")
+                continue
+            rel = str(resolved.relative_to(root))
+            if anchor and rel in anchors and anchor not in anchors[rel]:
+                broken.append(f"{name} -> {target} (no such heading)")
+
+    assert not broken, f"broken markdown links: {sorted(broken)}"
 
 
 def test_capture_round_trips_through_gzip(tmp_path: Path):

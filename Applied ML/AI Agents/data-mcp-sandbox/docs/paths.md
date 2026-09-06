@@ -1,5 +1,8 @@
 # The ten arms
 
+The *what* of the comparison. [method](method.md) is how the sweep is run,
+[questions](questions.md) is what counts as a right answer.
+
 The experiment's independent variable. Every arm is the **same model**
 (`gemini-3.7-flash`, temperature 0) asking the **same twelve questions** against
 the **same corpus**. Only the tool surface changes, so a score difference is
@@ -60,6 +63,43 @@ Catalog alongside the warehouse. Read the rule, then query.
 `p3_toolbox` binds 15 of the 24 tools `--prebuilt dataplex` ships. The 9 that
 mutate or trigger billable scan jobs are excluded, because the dataplex source
 has no `writeMode` equivalent to neuter them with.
+
+### What each catalog surface actually exposes
+
+Measured by calling `tools/list` and `tools/call` against the live servers, not
+read off documentation. Reproduce it with `make probe`.
+
+The managed catalog server exposes **exactly three** tools — `search_entries`,
+`lookup_context`, `lookup_entry` — against Toolbox's 24. That 8× gap is the
+largest managed/self-hosted asymmetry anywhere in this experiment, and it is the
+obvious reason to predict that Path 3 Managed cannot answer a question about data
+quality or distribution.
+
+**It is the wrong prediction, and the reason is worth knowing.** `lookup_context`
+returns far more than its name implies. On the governed table it returns the
+`overview` rule text, every column description, **the profile-scan statistics**
+(`nullRatio`, `distinctValues`, `sampleValues`) and the linked glossary terms —
+5,035 characters against 1,554 on the ungoverned control. So the profile data *is*
+on the critical path for the managed arm. It has to extract a statistic from a
+YAML blob rather than call a purpose-built tool, which is a difference in effort,
+not in capability.
+
+Two consequences that shape the scoring:
+
+- **There is no glossary tool on either variant, and the glossary still arrives.**
+  `lookup_context` renders each linked column with a `terms:` field carrying the
+  term and its full definition. At tier 1 a business rule therefore reaches the
+  agent **twice** — once as the table's `overview` aspect, once per linked column
+  — and the acquisition check must not count that as two independent hits.
+- **Availability is not reachability.** Of the 15 Dataplex tools wired into
+  `p3_toolbox`, only `get_data_profile` returns real signal against this corpus,
+  because provisioning creates profile scans. Binding a tool is not evidence an
+  agent uses it: `get_data_quality_results` was bound on all 120 Path-3 Toolbox
+  cells and called **zero times** in the published sweep, while `search_dq_scans`
+  was called 59.
+
+`make probe` prints the shipped inventory and the configured inventory separately,
+because those two numbers get conflated and only the second is what an agent sees.
 
 ## Path 4 — Managed Agent
 

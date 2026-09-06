@@ -1,6 +1,6 @@
 """Turn scored cells into the tables a reader can act on.
 
-Aggregation follows DESIGN.md §9.4: **median + IQR** for the per-config tables,
+Aggregation follows docs/method.md: **median + IQR** for the per-config tables,
 **means** for the headline. Medians saturate at 1.0 on the easy categories and
 hide the tail — the ceiling effect `bigquery-context` documents — so a median-only
 report would show eight identical arms.

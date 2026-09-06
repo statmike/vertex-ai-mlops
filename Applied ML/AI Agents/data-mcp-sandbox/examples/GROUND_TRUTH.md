@@ -21,7 +21,7 @@ carries three independent signals:
 | **Evidence precision** | `\|emitted ∩ (must ∪ nice)\| / \|emitted\|` | Did it stay on the right context? A distractor drags this down. |
 | **Answer accuracy** | numeric match to `golden.py` within `tolerance` | Did it *apply* the context correctly? |
 
-Acquisition and application come apart, and that gap is the headline metric (DESIGN.md §9.1). High
+Acquisition and application come apart, and that gap is the headline metric (docs/questions.md). High
 recall with a wrong answer means the architecture delivered the governance and the model fumbled it.
 Low recall with a right answer usually means luck, and n=5 is there to catch it.
 
@@ -95,7 +95,7 @@ That is the subtler and more interesting comparison, and it is what these two me
 
 `trap-q1` outlier count, `trap-q2` gross-vs-net overstatement.
 
-These deviate from the seed archetype in DESIGN.md §8, which described the category as questions
+These deviate from the original seed archetype for this category, which was questions
 "phrased to bait a decoy column outright". Both of these instead require `revenue_amount`
 legitimately, so it is **not** a distractor here. The reason: a question that merely baits the decoy
 is already covered three times over by the `semantic-ambiguity` set, and a fourth would add rows

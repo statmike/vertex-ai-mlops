@@ -5,6 +5,9 @@ as data and code you can change rather than as a claim. This page is the map:
 what the corpus hides, what the twelve questions ask, and how an answer becomes
 a `correct` or a `sprang_trap`.
 
+The *what counts as right*. [paths](paths.md) is what is being compared and
+[method](method.md) is how the sweep is run.
+
 Nothing here needs a cloud account. `results/capture.json.gz` carries the raw
 sweep and the frozen oracle, so you can re-score the whole thing offline — see
 [reproducing](reproducing.md#1-re-scoring-our-capture-no-cloud-account).
