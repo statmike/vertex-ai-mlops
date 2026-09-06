@@ -33,11 +33,17 @@ is cheap and wrong is not cheap. Those you can check against your own invoice; a
 dollar figure needs a rate card and would be wrong for most readers. Prices are
 opt-in via `prices.json`.
 
-Full tables: [`results/report.md`](results/report.md). How the arms differ:
-[`docs/paths.md`](docs/paths.md). What was asked and what counts as right:
-[`docs/questions.md`](docs/questions.md). Why the experiment is built this way,
-what it does *not* claim, and the limits on believing it:
-[`docs/design.md`](docs/design.md).
+### Read it in order
+
+| To ask | Read |
+|---|---|
+| What are my actual options, and which of them did you run? | [`docs/paths.md`](docs/paths.md#the-option-space-and-which-of-it-we-ran) — the option space and the empty cells |
+| Is the comparison fair? | [`docs/paths.md`](docs/paths.md#is-that-fair) — the endpoint is worth 40×, the tool list under 7%, both measured |
+| Why is it built this way, and what does it *not* claim? | [`docs/design.md`](docs/design.md) |
+| What was asked, and what counts as right? | [`docs/questions.md`](docs/questions.md) |
+| What happened? | [`results/report.md`](results/report.md) — full tables |
+| How do I re-run exactly this? | [`docs/reproducing.md`](docs/reproducing.md) |
+| How do I run it on my own data? | [`docs/adapting.md`](docs/adapting.md) |
 
 > **These numbers are perishable.** They are specific to a pinned model version,
 > a pinned MCP Toolbox, and vendor tool schemas that can change without notice —
@@ -137,11 +143,23 @@ deliberately left blank rather than scored zero.
 
 ## How it works
 
-**Four paths × two server flavours, plus two matched arms and two managed
-agents.** Path 1 is raw BigQuery. Path 2 routes through a Looker semantic layer.
-Path 3 adds the Knowledge Catalog. Path 4 hands the whole question to
-Conversational Analytics. Each of paths 1–3 runs both a Google-managed MCP
-endpoint and a self-hosted MCP Toolbox. Details in [`docs/paths.md`](docs/paths.md).
+**Three independent choices, not one.** Where the reasoning runs — a local agent
+loop (paths 1–3) or a cloud service that owns the loop (path 4). Who hosts the
+tools — a Google-managed MCP endpoint or a self-hosted MCP Toolbox. And which
+tools you bind under that server's ceiling, which is 9 on the managed side and 32
+on Toolbox. Path 1 is raw BigQuery, Path 2 routes through a Looker semantic
+layer, Path 3 adds the Knowledge Catalog, Path 4 hands the whole question to
+Conversational Analytics — which is not a fourth server but a *single tool* on one
+you already run. The grid, and why four of its cells are empty, is in
+[`docs/paths.md`](docs/paths.md#the-option-space-and-which-of-it-we-ran).
+
+**Fairness is decomposed, not asserted.** Managed and self-hosted differ on two
+things at once — the endpoint and the tool list — so the `_matched` arms hold the
+tool list constant and vary only the endpoint. `p1_managed` and `p1_matched` bind
+the same five tools and differ **40×** on schema size. `p3_toolbox` and
+`p3_matched` share an endpoint with 23 tools against 8 and differ by **under 7%**,
+at identical tier-1 accuracy. The endpoint is the whole cost story; the tool count
+is not.
 
 **Tiers are separated by IAM, not by prompt.** Knowledge Catalog search is
 project-wide and content-addressed — `search_entries` takes a query, not a scope

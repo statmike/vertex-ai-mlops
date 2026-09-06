@@ -23,6 +23,105 @@ answered from it. See [`scoping.md`](scoping.md).
 
 ---
 
+## The option space, and which of it we ran
+
+Choosing how to put an LLM in front of BigQuery is not one decision. It is three,
+and they are independent:
+
+1. **Where the reasoning runs.** A local agent loop that calls tools and writes
+   the SQL itself (Paths 1–3), or a cloud service that owns the loop and hands
+   back a finished answer (Path 4).
+2. **Who hosts the tools.** A Google-managed MCP endpoint you authenticate to, or
+   the **MCP Toolbox for Databases** running as your own process.
+3. **Which tools you bind.** Every server ships more than you should hand an
+   agent. You pick a subset under its ceiling — and the ceilings are very
+   different sizes.
+
+The one that catches people: **Conversational Analytics is not a fourth server.**
+It is an API service that surfaces as a *single tool* on a server you already run.
+"Use the managed agent" is a tool-selection decision, not an infrastructure one —
+which is why Path 4 has no managed column.
+
+Crossing choice 2 with choice 3 gives the grid. Ten arms occupy it; the empty
+cells are empty for stated reasons, not by omission.
+
+| Tool configuration | Managed endpoint | Self-hosted Toolbox |
+|---|---|---|
+| **As shipped, minus write** | `p1_managed` `p2_managed` `p3_managed` | — *(a)* |
+| **Matched to the managed list** | *(b)* | `p1_matched` `p3_matched` |
+| **Curated for a real deployment** | *(c)* | `p1_toolbox` `p2_toolbox` `p3_toolbox` |
+| **One tool that is a whole agent** | *(d)* | `p4_bq_ca` `p4_looker_ca` |
+
+**(a) Toolbox exactly as it ships is not run, deliberately.** `--prebuilt
+bigquery` is write-enabled and unscoped — a `CREATE OR REPLACE TABLE` succeeded
+against our sandbox — and `--prebuilt dataplex` includes tools that start billable
+scan jobs. No team should deploy that, so benchmarking it would measure a
+configuration nobody runs. This is the one cell we skip on judgement rather than
+on logic; the exclusion list is [below](#path-3--governed-context).
+
+**(b) and (c) are the same cell on the managed side, and that is the finding.**
+The managed servers expose 9 tools total (6 BigQuery + 3 catalog). We removed
+exactly one, `execute_sql`, for write safety. There is no headroom to curate: the
+vendor's list *is* the deployment list. Self-hosted Toolbox ships 32 (8 + 24), so
+curation is unavoidable there — we cut 9 that mutate or trigger billable scans and
+kept 23.
+
+**(d) Conversational Analytics has no managed MCP endpoint.** It is reachable only
+through Toolbox, so both Path 4 arms are self-hosted even though the reasoning
+they invoke is entirely Google's.
+
+**Path 2 has no matched arm because it needs none.** Looker's managed MCP and the
+Toolbox `looker` source each expose seven tools, and we bind all seven on both
+sides. Nothing was trimmed to equalize them. That makes Path 2 an accidental
+control — and it is the pair with the smallest cost gap in the experiment
+(1.1–1.3× against 6.9–7.7× on Path 1), which is exactly what the schema-verbosity
+finding below predicts.
+
+### Is that fair?
+
+Two things differ between a managed arm and its Toolbox twin: **the endpoint** and
+**the tool list**. A raw managed-vs-toolbox gap cannot be assigned to either. The
+`_matched` arms exist to break that tie — same server as `_toolbox`, restricted to
+the same tool names as `_managed`, so tool count is held constant and only the
+endpoint varies.
+
+Both halves were then measured rather than argued.
+
+**Holding the tool list constant, the endpoint is worth ~40×.** `p1_managed` and
+`p1_matched` bind the **same five tools**. Managed serializes them in 120,009
+characters; Toolbox in 3,019.
+
+**Holding the endpoint constant, the tool list is worth almost nothing.**
+`p3_toolbox` binds 23 tools against `p3_matched`'s 8 — 2.8× the schema — on the
+same server, same model, same questions:
+
+| Path 3 | tools | schema chars | tool calls | tokens in / correct | accuracy |
+|---|---:|---:|---:|---:|---:|
+| `p3_matched` · tier 0 | 8 | 6,809 | 18.5 | 763,580 | 35% |
+| `p3_toolbox` · tier 0 | 23 | 18,865 | 17.0 | **574,456** | 33% |
+| `p3_matched` · tier 1 | 8 | 6,809 | 5.0 | **113,687** | 75% |
+| `p3_toolbox` · tier 1 | 23 | 18,865 | 7.0 | 121,638 | 75% |
+
+Identical accuracy at tier 1, two points apart at tier 0, and cost within ±7% —
+going the *wrong* way at tier 0, where the larger surface is cheaper because it
+resolved in fewer turns and turn count absorbed the schema. So the eleven inert
+Dataplex tools discussed under Path 3 are a real cost on paper and not a
+measurable one in the result. *(Caveat: `p3_matched` tier 1 excluded 14 of 60
+cells, the most in the capture, so that 7% rests on 46 clean cells against 60.)*
+
+The two together are why the headline is about **schema verbosity, not tool
+count** — and why trimming `p3_toolbox` to match would change the framing without
+changing a number.
+
+### What this does not cover
+
+Stated so the grid is not mistaken for the whole world: one model, one corpus at
+one scale, single-turn questions only, BigQuery as the only warehouse, and
+Toolbox's non-Google sources untested. Those are on the roadmap, not in the
+result. See [`design.md`](design.md#6-threats-to-validity).
+
+---
+
 ## Path 1 — Raw Data Builder
 
 Schema plus SQL. No governance surface at all. The baseline every other path has
@@ -113,23 +212,19 @@ Two consequences that shape the scoring:
 `make probe` prints the shipped inventory and the configured inventory separately,
 because those two numbers get conflated and only the second is what an agent sees.
 
-**Why the eleven stay bound.** Leaving dead tools in `p3_toolbox` looks like a
-handicap, so it is worth saying why it is not. `p3_managed` binds 8 tools;
-`p3_toolbox` binds 23. If you want that held constant, **`p3_matched` is the arm
-for it** — self-hosted, restricted to exactly the managed tool list, same 8 tools
-by name. So the two comparisons are already separated, and each answers a
-different question:
+**Why the eleven stay bound.** They are what a least-privilege deployment of the
+self-hosted offer actually looks like, and removing them would make `p3_toolbox`
+a duplicate of `p3_matched` — leaving nothing to measure the capability
+difference against `p3_managed`. The two arms answer different questions:
 
 | Read this pair | To ask |
 |---|---|
-| `p3_managed` vs `p3_matched` | Same tools, different plumbing — what does the *endpoint* cost? |
-| `p3_managed` vs `p3_toolbox` | What do you actually get if you install each one as shipped? |
+| `p3_managed` vs `p3_matched` | Same tool list, different plumbing — what does the *endpoint* cost? |
+| `p3_managed` vs `p3_toolbox` | What do you actually get from each one as you would deploy it? |
 
-Trimming `p3_toolbox` to the managed eight would collapse the second question
-into the first and leave nothing measuring the capability difference. It would
-also delete the cleanest evidence for the headline below: 23 tools in 18,865
-schema chars against 8 tools in 143,814. The dead tools are not free — they are
-part of what the self-hosted offer costs, and they are counted as such.
+And the handicap is priced: [Is that fair?](#is-that-fair) measures `p3_toolbox`
+against `p3_matched` directly. Carrying the eleven costs within 7% and identical
+tier-1 accuracy.
 
 ## Path 4 — Managed Agent
 

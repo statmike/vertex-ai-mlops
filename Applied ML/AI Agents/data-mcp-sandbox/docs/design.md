@@ -102,6 +102,11 @@ flowchart LR
 
 ### The ten arms
 
+Deploying an LLM against BigQuery involves **three independent choices**, not one:
+where the reasoning runs (local loop vs. cloud service), who hosts the tools
+(Google-managed MCP endpoint vs. self-hosted MCP Toolbox), and which tools you
+bind under that server's ceiling. The arms are a grid over those choices:
+
 | Path | Name | Brain | Managed | Self-hosted | Schema-matched |
 |:----:|------|-------|---------|-------------|----------------|
 | 1 | Raw Data Builder | Local | `p1_managed` | `p1_toolbox` | `p1_matched` |
@@ -113,13 +118,24 @@ The design started at eight arms. The two **`_matched`** arms were added after t
 first full capture, because managed and self-hosted differed on *two* things at
 once — the endpoint and the tool list — so a cost gap could not be assigned to
 either. A matched arm is self-hosted but restricted to exactly the managed tool
-list, holding tool count constant. `p1_managed` and `p1_matched` bind the **same
-five tools** and still differ 40× on schema size, which is what turned "managed
-costs more" into "verbose tool declarations cost more". See
-[`paths.md`](paths.md).
+list, holding tool count constant.
 
-Path 4 has no managed column: Conversational Analytics is reachable only through
-Toolbox, so both its arms are self-hosted (F7 below).
+That decomposition is what makes the comparison fair, and both halves are
+measured. `p1_managed` and `p1_matched` bind the **same five tools** and differ
+**40×** on schema size — so the endpoint is worth 40×. `p3_toolbox` and
+`p3_matched` run on the **same endpoint** with 23 tools against 8 and differ by
+**under 7%** on cost, with identical tier-1 accuracy — so the tool list is worth
+almost nothing. Together those turned "managed costs more" into "verbose tool
+declarations cost more."
+
+Two structural gaps are deliberate rather than missing. Path 4 has no managed
+column because Conversational Analytics is reachable only through Toolbox (F7) —
+it is not a fourth server but a single *tool* on one you already run. Path 2 has
+no matched arm because both its servers expose seven tools and we bind all seven
+on each side, so nothing needed trimming to equalize them. The full grid,
+including the one cell skipped on judgement — Toolbox exactly as it ships, which
+is write-enabled and can start billable scans — is in
+[`paths.md`](paths.md#the-option-space-and-which-of-it-we-ran).
 
 ## 4. Vendor behaviour that shaped the design
 
