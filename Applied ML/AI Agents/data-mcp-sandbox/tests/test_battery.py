@@ -104,15 +104,15 @@ def test_transient_endpoint_failures_are_retried_and_real_ones_are_not():
     # architecture. Anything that could only have come from the arm itself must
     # still be kept: docs/method.md counts those as failures rather than dropping
     # them, because dropping them flatters whichever path crashes most.
-    assert agents._is_transient(Exception(
+    assert agents.is_transient(Exception(
         "ServerError: 503 UNAVAILABLE. {'error': {'code': 503, 'message': "
         "'The service is currently unavailable.', 'status': 'UNAVAILABLE'}}"
     ))
-    assert agents._is_transient(Exception("_ResourceExhaustedError: 429 RESOURCE_EXHAUSTED"))
+    assert agents.is_transient(Exception("_ResourceExhaustedError: 429 RESOURCE_EXHAUSTED"))
 
-    assert not agents._is_transient(Exception("PermissionDenied: 403 lacks bigquery.jobs.create"))
-    assert not agents._is_transient(Exception("BadRequest: 400 Unrecognized name: revenue_amount"))
-    assert not agents._is_transient(Exception("TimeoutError: toolbox server never became ready"))
+    assert not agents.is_transient(Exception("PermissionDenied: 403 lacks bigquery.jobs.create"))
+    assert not agents.is_transient(Exception("BadRequest: 400 Unrecognized name: revenue_amount"))
+    assert not agents.is_transient(Exception("TimeoutError: toolbox server never became ready"))
 
 
 def test_matched_arms_really_match():
@@ -199,6 +199,8 @@ def test_every_outcome_field_reaches_the_cell():
         started_at="2026-01-01T00:00:00+00:00",
         ended_at="2026-01-01T00:01:00+00:00",
         attempts=3,
+        emitted_sql=["SELECT 1"],
+        bq_job_ids=["job_abc"],
     )
     for name in sorted(shared):
         assert getattr(outcome, name), f"fixture leaves Outcome.{name} at its default"

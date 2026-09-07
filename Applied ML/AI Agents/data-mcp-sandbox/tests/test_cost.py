@@ -120,3 +120,31 @@ def test_jobs_view_follows_the_configured_region():
     # A sandbox built in the EU has no `region-us` view at all.
     assert "INFORMATION_SCHEMA.JOBS_BY_PROJECT" in cost.JOBS_VIEW
     assert cost.JOBS_VIEW.startswith("`region-")
+
+
+def test_a_declared_job_id_beats_the_time_window():
+    # The direct CA arms are handed the job id by the service (Amendment B.2).
+    # A job that ran inside a neighbour's window must still be charged to the
+    # cell that declared it — otherwise CA's warehouse work, which starts inside
+    # our call and can finish after it, lands on whichever cell came next.
+    mine = traces.Cell(
+        cell_key="mine", question_id="q1", category="direct", question="?",
+        config="p4_bq_direct", tier=1, run=1, answer="42",
+        started_at="2026-01-01T00:00:00+00:00", ended_at="2026-01-01T00:00:10+00:00",
+        bq_job_ids=["job_late"],
+    )
+    neighbour = traces.Cell(
+        cell_key="neighbour", question_id="q2", category="direct", question="?",
+        config="p1_toolbox", tier=1, run=1, answer="42",
+        started_at="2026-01-01T00:00:11+00:00", ended_at="2026-01-01T00:00:20+00:00",
+    )
+    job = cost.Job(
+        job_id="job_late", user_email="mcp-sandbox-t1@x.iam.gserviceaccount.com",
+        created=datetime.fromisoformat("2026-01-01T00:00:15+00:00"),
+        bytes_billed=1024, statement_type="SELECT",
+    )
+
+    result = cost.attribute([mine, neighbour], [job])
+    assert [j.job_id for j in result.by_cell["mine"]] == ["job_late"]
+    assert result.by_cell["neighbour"] == []
+    assert result.unattributed == []

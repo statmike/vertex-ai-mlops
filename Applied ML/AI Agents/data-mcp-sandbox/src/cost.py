@@ -11,7 +11,7 @@ So cost is reported in three parts, and they are never silently summed:
 | Component | Attributed how | Status |
 |-----------|----------------|--------|
 | Client tokens | `usage.py`, per cell, from the ADK event stream | measured |
-| Warehouse | `INFORMATION_SCHEMA.JOBS_BY_PROJECT`, tier SA + time window | measured |
+| Warehouse | `INFORMATION_SCHEMA.JOBS_BY_PROJECT`, tier SA + job id, else time window | measured |
 | Service-side model | CA's own Gemini usage; the API reports none of it | **not here** |
 
 That third row stays a floor *in this module* and is no longer a dead end. The API
@@ -210,14 +210,26 @@ class Attribution:
 
 
 def attribute(cells: list[traces.Cell], jobs: list[Job]) -> Attribution:
-    """Assign each job to the cell whose window contains it.
+    """Assign each job to the cell that ran it, by id where possible and by window otherwise.
 
-    Unambiguous only because the sweep is strictly sequential (docs/method.md) —
-    with two cells in flight, a job's timestamp would name two possible owners
-    and the whole approach would collapse. Timestamps are recorded to the
-    second, so a job landing exactly on a boundary can go either way; the sweep's
-    ~57s cells make that a rounding error, but jobs matching *no* cell are kept
-    and reported rather than quietly discarded.
+    **By id.** A cell that recorded `bq_job_ids` is not guessing: the direct
+    Conversational Analytics arms are handed the job id by the service itself
+    (Amendment B.2), so those jobs are claimed by name and never enter the
+    window match. This is not merely tidier — it is the only exact attribution
+    available for an arm whose warehouse work happens inside somebody else's
+    process.
+
+    **By window.** Everything else is assigned to the cell whose
+    `[started_at, ended_at]` contains it. Unambiguous only because the sweep is
+    strictly sequential (docs/method.md) — with two cells in flight, a job's
+    timestamp would name two possible owners and the whole approach would
+    collapse. Timestamps are recorded to the second, so a job landing exactly on
+    a boundary can go either way; the sweep's ~57s cells make that a rounding
+    error, but jobs matching *no* cell are kept and reported rather than quietly
+    discarded.
+
+    Nothing in the published capture carries a job id, so every cell there is
+    attributed exactly as it was before this branch existed.
     """
     ordered = sorted(
         (cell for cell in cells if cell.started_at and cell.ended_at),
@@ -231,14 +243,22 @@ def attribute(cells: list[traces.Cell], jobs: list[Job]) -> Attribution:
         )
         for cell in ordered
     ]
+    # Declared ownership wins over inferred ownership. Built over *all* cells,
+    # not just the stamped ones, so a declared job is never double-counted into
+    # a neighbour's window.
+    declared = {
+        job_id: cell.cell_key for cell in cells for job_id in cell.bq_job_ids
+    }
 
     result = Attribution(by_cell={cell.cell_key: [] for cell in ordered})
     for job in jobs:
-        owner = next((key for start, end, key in spans if start <= job.created <= end), None)
+        owner = declared.get(job.job_id)
+        if owner is None:
+            owner = next((key for start, end, key in spans if start <= job.created <= end), None)
         if owner is None:
             result.unattributed.append(job)
         else:
-            result.by_cell[owner].append(job)
+            result.by_cell.setdefault(owner, []).append(job)
     return result
 
 

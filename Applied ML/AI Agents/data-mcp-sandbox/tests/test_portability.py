@@ -54,10 +54,29 @@ def test_every_shipped_arm_is_estimated_from_its_own_measurement():
     # 554,528 the analogy predicted — a 7x over-estimate in the number someone
     # reads before deciding to spend money. Every arm now has its own row, and
     # this fails if a future arm is shipped on a guess.
+    #
+    # An arm that has never been swept is allowed exactly one escape, and it is a
+    # named one: `PENDING_MEASUREMENT`. That is not a loophole in the property —
+    # such an arm is priced at the worst observed rate, never at a twin's — it is
+    # the ledger of what still owes a measurement.
     for key in mcp_clients.CONFIG_KEYS:
         for tier in (0, 1):
             _rate, basis = estimate.rate_for(key, tier)
+            if key in estimate.PENDING_MEASUREMENT:
+                assert basis == "unmeasured", f"{key} tier {tier} is priced by {basis}"
+                continue
             assert basis == "measured", f"{key} tier {tier} is priced by {basis}"
+
+
+def test_a_never_swept_arm_is_priced_at_the_worst_arm_not_at_a_twin():
+    # `p4_bq_direct` has an obvious twin in `p4_bq_ca` and must not borrow it.
+    # The twin pays for a local ADK loop the direct arm does not run, so its
+    # rate is not a conservative prior — it is a cheap one, in the direction that
+    # gets money spent.
+    for key in estimate.PENDING_MEASUREMENT:
+        rate, basis = estimate.rate_for(key, 0)
+        assert basis == "unmeasured"
+        assert rate.tokens == max(r.tokens for r in estimate.OBSERVED.values())
 
 
 def test_an_unknown_arm_over_estimates_rather_than_under():

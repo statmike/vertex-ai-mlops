@@ -45,6 +45,17 @@ MEASURED_ON = "published capture, 1,200 cells, gemini-3.7-flash @ global, 2026-0
 # it is why an analogy is a placeholder for a measurement, never a substitute.
 BY_ANALOGY: dict[str, str] = {}
 
+# Arms that exist in `mcp_clients.CONFIGS` but not yet in any sweep. Listed by
+# name rather than inferred, so adding a config forces a deliberate choice: put
+# it here and price it at the worst observed arm, or measure it. What is not on
+# offer is quietly pricing it off a twin — see BY_ANALOGY above for how that went.
+#
+# The direct-API arms are here because Amendment B added them and their sweep has
+# not run. `p4_bq_ca`'s medians are the closest thing to a prior, and they are
+# precisely the wrong prior: it pays for a local ADK loop that these arms do not
+# have, and neither figure includes the service's own spend.
+PENDING_MEASUREMENT: frozenset[str] = frozenset({"p4_bq_direct", "p4_bq_direct_ctx"})
+
 
 @dataclass(frozen=True)
 class Rate:
@@ -96,16 +107,25 @@ class Estimate:
     tokens: int
     by_analogy: int = 0  # cells priced off a different arm's rate
     unknown: int = 0  # cells priced off FALLBACK
+    unmeasured: int = 0  # cells on an arm no sweep has run yet
 
     @property
     def measured(self) -> int:
-        return self.cells - self.by_analogy - self.unknown
+        return self.cells - self.by_analogy - self.unknown - self.unmeasured
 
 
 def rate_for(config_key: str, tier: int) -> tuple[Rate, str]:
-    """The rate to use for one arm, and how it was arrived at."""
+    """The rate to use for one arm, and how it was arrived at.
+
+    Four bases, and the distinction between the last two is the point.
+    `unmeasured` is an arm we shipped knowing it had never been swept;
+    `unknown` is an arm nobody thought about. Both price at FALLBACK, because
+    over-estimating is the safe direction — but only one of them is a decision.
+    """
     if (config_key, tier) in OBSERVED:
         return OBSERVED[(config_key, tier)], "measured"
+    if config_key in PENDING_MEASUREMENT:
+        return FALLBACK, "unmeasured"
     twin = BY_ANALOGY.get(config_key)
     if twin and (twin, tier) in OBSERVED:
         return OBSERVED[(twin, tier)], "analogy"
@@ -123,6 +143,8 @@ def estimate(arms: list[tuple[str, int]]) -> Estimate:
             total.by_analogy += 1
         elif basis == "unknown":
             total.unknown += 1
+        elif basis == "unmeasured":
+            total.unmeasured += 1
     return total
 
 
@@ -156,6 +178,8 @@ def render(total: Estimate, usd_per_mtok: float | None = None) -> str:
     basis = [f"{total.measured} measured"]
     if total.by_analogy:
         basis.append(f"{total.by_analogy} by analogy to a twin arm")
+    if total.unmeasured:
+        basis.append(f"{total.unmeasured} never swept, priced at the worst observed arm")
     if total.unknown:
         basis.append(f"{total.unknown} unknown, priced at the worst observed arm")
     lines.append(f"           from {', '.join(basis)} ({MEASURED_ON})")

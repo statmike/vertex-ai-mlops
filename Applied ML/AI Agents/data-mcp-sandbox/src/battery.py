@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any
 
 import agents
+import ca_direct
 import catalog_setup
 import config
 import mcp_clients
@@ -138,6 +139,19 @@ def header(current: Plan) -> dict[str, Any]:
     }
 
 
+async def ask(config_key: str, tier: int, question: str) -> agents.Outcome:
+    """Run one cell on whichever transport the arm uses.
+
+    The dispatch lives here rather than inside `agents.ask` because `ca_direct`
+    imports `agents` for the `Outcome` shape and the retry policy; having
+    `agents` reach back would be a cycle. The battery is the one module that
+    already knows about both, so it is the cycle-free place to choose.
+    """
+    if mcp_clients.is_direct(config_key):
+        return await ca_direct.ask(config_key, tier, question)
+    return await agents.ask(config_key, tier, question)
+
+
 async def measure_schemas(config_keys: list[str]) -> dict[str, dict[str, int]]:
     """Serialized size of each config's tool declarations, measured once per sweep.
 
@@ -150,6 +164,9 @@ async def measure_schemas(config_keys: list[str]) -> dict[str, dict[str, int]]:
     """
     sizes: dict[str, dict[str, int]] = {}
     for key in config_keys:
+        if mcp_clients.is_direct(key):
+            sizes[key] = ca_direct.tool_surface(key)
+            continue
         bound = None
         try:
             _agent, bound = agents.build(key, 1)
@@ -193,6 +210,8 @@ def to_cell(
         started_at=outcome.started_at,
         ended_at=outcome.ended_at,
         attempts=outcome.attempts,
+        emitted_sql=outcome.emitted_sql,
+        bq_job_ids=outcome.bq_job_ids,
     )
 
 
@@ -253,7 +272,7 @@ async def run(
         # resolves to this tier's dataset rather than the process default.
         config.set_active_tier(tier)
 
-        outcome = await agents.ask(config_key, tier, question.question)
+        outcome = await ask(config_key, tier, question.question)
         cells[key] = to_cell(question, config_key, tier, replicate, outcome)
         traces.save(results_path, cells, meta)
 

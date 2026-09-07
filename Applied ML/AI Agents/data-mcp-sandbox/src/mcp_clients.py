@@ -121,6 +121,12 @@ class PathConfig:
     managed_urls: dict[str, list[str]] = field(default_factory=dict)  # url -> tool filter
     toolbox_tools: list[str] = field(default_factory=list)
     needs_looker: bool = False
+    # "mcp" for every arm that reaches its data through a tool an ADK agent
+    # calls; "direct" for the arms that call a service's own API and have no
+    # tool surface at all (Amendment B.3). A discriminator rather than a new URL
+    # field because the two transports differ in *who runs the loop*, not in
+    # where the endpoint is: a direct arm builds no Agent and no runner.
+    transport: str = "mcp"
 
 
 CONFIGS: dict[str, PathConfig] = {
@@ -221,6 +227,34 @@ CONFIGS: dict[str, PathConfig] = {
         toolbox_tools=["looker_conversational_analytics"],
         needs_looker=True,
     ),
+    # --- Direct-API arms (Amendment B.3) -------------------------------------
+    #
+    # Same service as `p4_bq_ca`, reached without the MCP tool in between. They
+    # exist because Toolbox's `bigquery-conversational-analytics` takes a
+    # question and returns prose, so the capture holds no SQL and Path 4's
+    # evidence and acquisition metrics print `--`. The API itself streams
+    # `generated_sql` and the `big_query_job` that ran it, verified live, so the
+    # opacity was the transport's rather than the service's.
+    #
+    # One variable per pair, as with the matched arms:
+    #   p4_bq_ca     -> p4_bq_direct       isolates the transport
+    #   p4_bq_direct -> p4_bq_direct_ctx   isolates the context payload
+    "p4_bq_direct": PathConfig(
+        key="p4_bq_direct",
+        path=4,
+        name="Managed Agent",
+        variant="direct",
+        summary="Conversational Analytics called directly. Minimum context: datasources only.",
+        transport="direct",
+    ),
+    "p4_bq_direct_ctx": PathConfig(
+        key="p4_bq_direct_ctx",
+        path=4,
+        name="Managed Agent",
+        variant="direct",
+        summary="Conversational Analytics called directly, with the tier's glossary injected.",
+        transport="direct",
+    ),
 }
 
 CONFIG_KEYS = tuple(CONFIGS)
@@ -229,6 +263,18 @@ CONFIG_KEYS = tuple(CONFIGS)
 # value rather than a hand-written list so adding a Looker-backed config to
 # CONFIGS above cannot forget to update it.
 LOOKER_CONFIG_KEYS = tuple(key for key, cfg in CONFIGS.items() if cfg.needs_looker)
+
+
+def is_direct(config_key: str) -> bool:
+    """Does this arm call a service API instead of binding MCP tools?
+
+    A direct arm has no toolset, so anything derived from a tool surface —
+    schema characters, tool count, the tool-call sequence the Equivalence check
+    compares — is *undefined* for it rather than zero. Callers must print `--`,
+    the same discipline Amendment A.3 applied to Path 4's unmeasurable metrics.
+    """
+    spec = CONFIGS.get(config_key)
+    return spec is not None and spec.transport == "direct"
 
 
 def has_unmeasured_service(config_key: str) -> bool:

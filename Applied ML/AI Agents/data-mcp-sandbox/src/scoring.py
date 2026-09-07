@@ -188,11 +188,22 @@ def _to_float(text: str) -> float | None:
 def evidence_text(cell: traces.Cell) -> str:
     """Everything in the trace that reveals *which fields* the cell queried.
 
-    Three shapes, because the paths show their work three different ways: SQL as
-    a tool argument (BigQuery `execute_sql`), a structured field list as a tool
-    argument (Looker MCP), and SQL buried in a tool result (`query_sql` compiles
-    rather than executes; CA narrates).
+    Four shapes, because the paths show their work four different ways: SQL the
+    service reported about itself (`emitted_sql`, direct API), SQL as a tool
+    argument (BigQuery `execute_sql`), a structured field list as a tool argument
+    (Looker MCP), and SQL buried in a tool result (`query_sql` compiles rather
+    than executes; CA narrates).
+
+    `emitted_sql` comes first and short-circuits, because it is the only one of
+    the four that is not an inference. The other three are the trace we scraped;
+    this one is the query the service says it ran, carried alongside the job id
+    that ran it (Amendment B.4.3). It is empty on every arm that predates the
+    direct transport, so the fallback below is what scores the published capture
+    — unchanged, and re-scoring it must keep producing the same numbers.
     """
+    if cell.emitted_sql:
+        return "\n".join(cell.emitted_sql)
+
     parts: list[str] = []
     for call in cell.tool_calls:
         for key in SQL_ARG_KEYS:
@@ -264,9 +275,16 @@ def rules_acquired(cell: traces.Cell, required: list[str]) -> tuple[list[str], b
 
     That is a property of the *tool*, not of Conversational Analytics. Toolbox's
     `bigquery-conversational-analytics` returns prose; the API beneath it streams
-    a `DataMessage` carrying `generated_sql` and `big_query_job` (verified live,
-    SDK 0.13.2 — docs/paths.md). A direct-API arm would make these cells scorable
-    and is on the roadmap; until one exists this function is correct as written.
+    a `DataMessage` carrying `generated_sql` and `big_query_job` (SDK 0.13.2 —
+    docs/paths.md). `evidence_text` reads that SQL, so the direct arms *are*
+    scorable for evidence.
+
+    Acquisition is a different question and stays unobservable on them, which is
+    why this function needs no direct-arm branch: it looks for governed text in
+    tool results, and a direct arm has no tools. On `p4_bq_direct_ctx` the
+    glossary is injected by construction rather than discovered, so there is
+    nothing to measure — reporting it as acquired would be scoring our own
+    request payload back to ourselves.
     """
     bodies = [
         (call.result or "").lower()
@@ -326,9 +344,13 @@ def score_cell(
         result.evidence_recall = recall
         result.evidence_precision = precision
         result.used_distractor = used_decoy
-    elif used_ca:
+    elif used_ca or mcp_clients.is_direct(cell.config):
         # The path answered through an opaque service that did not disclose its
-        # query. Unmeasured, not zero.
+        # query. Unmeasured, not zero. A direct arm reaches that same service
+        # with no tool call to detect it by, so the config is what identifies it
+        # — without this, a direct cell that disclosed nothing would fall to the
+        # branch below and be scored 0.0 for having "skipped the data", which is
+        # the exact confusion Amendment A.3 built this split to prevent.
         result.notes.append("no inspectable query - CA did not disclose one")
     else:
         # A transparent path that wrote no query at all really did skip the data

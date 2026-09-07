@@ -65,6 +65,16 @@ class Cell:
     # `latency_s` by up to ~300s, so latency is only comparable across cells with
     # `attempts == 1` (Amendment A.3.2).
     attempts: int = 1
+    # What a service disclosed about its own work. Empty on every MCP arm, where
+    # SQL already sits in a tool result and BigQuery jobs are attributed by the
+    # window above. Populated by the direct Conversational Analytics arms, which
+    # are the only place the service hands back its query plan and the job id
+    # that ran it, making Path 4's BigQuery cost exact per cell rather than
+    # estimated per block (Amendment B.4.2). Both default to empty so the
+    # published capture, written before these fields existed, still deserializes
+    # and re-scores unchanged.
+    emitted_sql: list[str] = field(default_factory=list)
+    bq_job_ids: list[str] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:

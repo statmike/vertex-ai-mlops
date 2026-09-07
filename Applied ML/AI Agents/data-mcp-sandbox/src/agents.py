@@ -71,9 +71,17 @@ class Outcome:
     started_at: str = ""
     ended_at: str = ""
     attempts: int = 1
+    # SQL a service disclosed about its own work, and the BigQuery jobs it ran.
+    # Empty for every MCP arm, where SQL is already visible in the tool results
+    # and jobs are attributed by time window. Populated by the direct
+    # Conversational Analytics arms, which are the only place a service hands
+    # back its query plan (Amendment B.4.2). Defaulted so the published capture
+    # deserializes and re-scores unchanged.
+    emitted_sql: list[str] = field(default_factory=list)
+    bq_job_ids: list[str] = field(default_factory=list)
 
 
-def _now() -> str:
+def now() -> str:
     """RFC3339 UTC. The join key for post-hoc BigQuery job attribution."""
     return datetime.now(UTC).isoformat(timespec="seconds")
 
@@ -124,7 +132,7 @@ RETRY_ATTEMPTS = 5
 RETRY_BACKOFF_S = 20
 
 
-def _is_transient(error: BaseException) -> bool:
+def is_transient(error: BaseException) -> bool:
     """Whether a failure is the endpoint misbehaving rather than a real result.
 
     Matched on text because ADK re-wraps the Vertex error in its own
@@ -152,7 +160,7 @@ async def ask(config_key: str, tier: int, question: str) -> Outcome:
     failure instead of dropping it, which would flatter whichever architecture
     crashes most. A 429 or a 503 is the opposite: it says nothing about the
     architecture, so keeping it would poison exactly the comparison the sweep
-    exists to make. See `_is_transient` for where that line is drawn.
+    exists to make. See `is_transient` for where that line is drawn.
 
     The retry restarts the *whole* cell — fresh agent, fresh runner, fresh
     session. A 429 can land mid-stream, after some tool calls have been
@@ -162,7 +170,7 @@ async def ask(config_key: str, tier: int, question: str) -> Outcome:
     for attempt in range(1, RETRY_ATTEMPTS + 1):
         outcome = await _attempt(config_key, tier, question)
         outcome.attempts = attempt
-        if not outcome.error or not _is_transient(Exception(outcome.error)):
+        if not outcome.error or not is_transient(Exception(outcome.error)):
             return outcome
         if attempt < RETRY_ATTEMPTS:
             await asyncio.sleep(RETRY_BACKOFF_S * 2 ** (attempt - 1))
@@ -172,7 +180,7 @@ async def ask(config_key: str, tier: int, question: str) -> Outcome:
 async def _attempt(config_key: str, tier: int, question: str) -> Outcome:
     """One try at a cell. See `ask` for why failures are captured, not raised."""
     usage.reset()
-    outcome = Outcome(started_at=_now())
+    outcome = Outcome(started_at=now())
     started = time.monotonic()
     bound: mcp_clients.Bound | None = None
 
@@ -196,7 +204,7 @@ async def _attempt(config_key: str, tier: int, question: str) -> Outcome:
         if bound is not None:
             bound.close()
 
-    outcome.ended_at = _now()
+    outcome.ended_at = now()
     outcome.latency_s = round(time.monotonic() - started, 3)
     outcome.usage = usage.get().as_dict()
     return outcome
