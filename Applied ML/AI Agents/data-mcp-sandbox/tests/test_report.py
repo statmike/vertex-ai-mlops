@@ -191,6 +191,29 @@ def test_adherence_covers_every_verdict_value():
         assert value in table
 
 
+def test_a_single_run_capture_still_prints_its_one_commit():
+    line = report._provenance({"git_commit": "834421c3", "started": "2026-09-05T02:07:23+00:00"})
+    assert line == "commit `834421c3`, started 2026-09-05T02:07:23+00:00"
+
+
+def test_a_merged_capture_attributes_each_arm_to_the_code_that_ran_it():
+    # Printing the first commit for all of them would say code that never
+    # touched the direct arms produced their numbers.
+    line = report._provenance({
+        "git_commit": "834421c3",  # present but stale; merged_from wins
+        "started": "2026-09-05T02:07:23+00:00",
+        "merged_from": [
+            {"git_commit": "834421c3", "started": "2026-09-05T02:07:23+00:00",
+             "configs": ["p1_managed"]},
+            {"git_commit": "b987b497", "started": "2026-09-07T14:26:18+00:00",
+             "configs": ["p4_bq_direct", "p4_bq_direct_ctx"]},
+        ],
+    })
+    assert line.startswith("merged from 2 runs:")
+    assert "`b987b497` (p4_bq_direct, p4_bq_direct_ctx, started 2026-09-07T14:26:18+00:00)" in line
+    assert "`834421c3` (p1_managed, started 2026-09-05T02:07:23+00:00)" in line
+
+
 def test_scan_state_keeps_unmeasured_distinct_from_absent():
     # Three states, not two. A capture written before the field existed did not
     # look; reporting that as "absent" would be an unmeasured thing reported as

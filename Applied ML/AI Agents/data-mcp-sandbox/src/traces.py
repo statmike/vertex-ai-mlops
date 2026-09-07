@@ -175,3 +175,103 @@ def read_header(path: Path) -> dict[str, Any]:
         return {}
     header: dict[str, Any] = json.loads(read_text(path)).get("header", {})
     return header
+
+
+# --- Merging two captures ------------------------------------------------------
+
+# Header fields that must agree before two captures may be merged, because the
+# report renders exactly one value for each and a merged file would silently
+# publish one run's setting as if it covered both. `runs`, `tiers` and
+# `question_ids` are here for the same reason a denominator is: a report over
+# cells captured at different replicate counts is not a factorial any more.
+MUST_AGREE = (
+    "project",
+    "agent_model",
+    "model_location",
+    "temperature",
+    "toolbox_version",
+    "use_tier_sa",
+    "runs",
+    "tiers",
+    "question_ids",
+    "quality_scans",
+)
+
+
+def merge_headers(headers: list[dict[str, Any]]) -> dict[str, Any]:
+    """One header describing several runs, refusing to flatten what differs.
+
+    The fields in `MUST_AGREE` are checked rather than picked, because picking
+    is how a merged capture comes to claim the wrong model or the wrong tier
+    fence. Everything that legitimately differs is unioned: `configs` and
+    `tool_schemas` grow, `total_cells` is recomputed, and `started` takes the
+    earliest.
+
+    `git_commit` is the one field that cannot be unioned honestly — different
+    cells were produced by different code — so it is *replaced* by
+    `merged_from`, a per-run record of commit, start and arm list. `report.py`
+    prints that list instead of a single commit whenever it is present, and the
+    top-level `git_commit` is dropped so nothing downstream can read one
+    run's commit as the whole capture's provenance.
+    """
+    if not headers:
+        return {}
+    if len(headers) == 1:
+        return dict(headers[0])
+
+    base = headers[0]
+    for field_name in MUST_AGREE:
+        values = {json.dumps(header.get(field_name), sort_keys=True) for header in headers}
+        if len(values) > 1:
+            raise ValueError(
+                f"cannot merge captures that disagree on {field_name!r}: "
+                f"{sorted(values)}. These runs measured different things."
+            )
+
+    merged = {key: value for key, value in base.items() if key not in ("git_commit", "configs")}
+    merged["started"] = min(str(header.get("started", "")) for header in headers)
+
+    configs: list[str] = []
+    schemas: dict[str, Any] = {}
+    for header in headers:
+        for key in header.get("configs", []):
+            if key in configs:
+                raise ValueError(
+                    f"config {key!r} appears in more than one capture; merging would "
+                    "mix two runs of the same arm into one denominator"
+                )
+            configs.append(key)
+        schemas.update(header.get("tool_schemas") or {})
+    merged["configs"] = configs
+    merged["tool_schemas"] = schemas
+    merged["total_cells"] = sum(int(header.get("total_cells", 0)) for header in headers)
+    merged["merged_from"] = [
+        {
+            "git_commit": header.get("git_commit", "unknown"),
+            "started": header.get("started", ""),
+            "configs": list(header.get("configs", [])),
+            "total_cells": header.get("total_cells", 0),
+        }
+        for header in headers
+    ]
+    return merged
+
+
+def merge_cells(captures: list[dict[str, Cell]]) -> dict[str, Cell]:
+    """Every cell from every capture, refusing a key that appears twice.
+
+    A duplicate is not a merge conflict to resolve quietly — it means the same
+    (question, arm, tier, run) was observed twice, and choosing one silently
+    would let a re-run replace a recorded failure with a success. Re-running a
+    failed cell is what `--resume` is for, in place, against the same file.
+    """
+    merged: dict[str, Cell] = {}
+    for cells in captures:
+        overlap = sorted(set(cells) & set(merged))
+        if overlap:
+            raise ValueError(
+                f"{len(overlap)} cell key(s) appear in more than one capture, "
+                f"starting with {overlap[0]!r}. Use --resume to re-run cells in place."
+            )
+        merged.update(cells)
+    return merged

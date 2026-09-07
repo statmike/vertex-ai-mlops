@@ -409,6 +409,27 @@ def _scan_state(meta: dict[str, Any]) -> str:
     return "not recorded"
 
 
+def _provenance(meta: dict[str, Any]) -> str:
+    """Which code produced these cells, and when.
+
+    A single-run capture has one answer and prints it. A merged one has several,
+    and printing the first would attribute every cell to code that never ran
+    most of them — so `traces.merge_headers` drops the top-level `git_commit`
+    and leaves `merged_from` in its place, which this expands into one clause
+    per run. Arms are named rather than counted because that is the question a
+    reader actually has: *which* numbers came from which commit.
+    """
+    runs = meta.get("merged_from")
+    if not isinstance(runs, list) or not runs:
+        return f"commit `{meta.get('git_commit')}`, started {meta.get('started')}"
+    parts = [
+        f"`{run.get('git_commit')}` ({', '.join(run.get('configs', []))}, "
+        f"started {run.get('started')})"
+        for run in runs
+    ]
+    return f"merged from {len(runs)} runs: " + "; ".join(parts)
+
+
 def _scan_note(meta: dict[str, Any]) -> str:
     """Warn when a capture cannot say which Path 3 environment it was taken in.
 
@@ -510,8 +531,7 @@ def build(
         "",
         f"Model `{meta.get('agent_model')}` at temperature {meta.get('temperature')}, "
         f"{meta.get('runs')} replicates, tier fence "
-        f"{'on' if meta.get('use_tier_sa') else 'OFF'}, commit `{meta.get('git_commit')}`, "
-        f"started {meta.get('started')}. "
+        f"{'on' if meta.get('use_tier_sa') else 'OFF'}, {_provenance(meta)}. "
         f"Dataplex quality scans: {_scan_state(meta)}.",
         "",
         _scan_note(meta),
