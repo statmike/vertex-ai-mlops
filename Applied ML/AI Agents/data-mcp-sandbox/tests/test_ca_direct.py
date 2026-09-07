@@ -164,11 +164,53 @@ def test_a_job_reported_twice_is_counted_once():
     assert outcome.bq_job_ids == ["job_abc"]
 
 
-def test_the_answer_is_the_whole_narration_not_its_last_fragment():
+FINAL = gda.TextMessage.TextType.FINAL_RESPONSE
+THOUGHT = gda.TextMessage.TextType.THOUGHT
+FOLLOWUP = gda.TextMessage.TextType.FOLLOWUP_QUESTIONS
+
+
+def test_a_final_response_split_across_messages_is_reassembled():
     outcome = agents.Outcome()
     for chunk in ("The net revenue is", "**1,234.00**."):
-        ca_direct._collect(_message({"text": {"parts": [chunk]}}), outcome)
+        ca_direct._collect(
+            _message({"text": {"parts": [chunk], "text_type": FINAL}}), outcome
+        )
     assert scoring.extract_number(outcome.answer) == 1234.0
+
+
+def test_progress_narration_never_reaches_the_answer():
+    # Verbatim from the B.6 pre-flight, which is where this was caught. CA
+    # narrates its work as THOUGHT and closes with FOLLOWUP_QUESTIONS. An
+    # earlier cut concatenated all three, and `extract_number` returned 3.0 off
+    # "Retrieved context for 3 tables" on a cell whose answer was 5,000 — every
+    # direct cell would have scored against narration, making our parsing bug
+    # look like the API being inaccurate.
+    outcome = agents.Outcome()
+    stream = [
+        (THOUGHT, ["Analyzing context", "Retrieved context for 3 tables."]),
+        (THOUGHT, ["Running a query", "SELECT COUNT(DISTINCT user_id) FROM t"]),
+        (THOUGHT, ["Query execution completed", "Query returned 1 row in 1.12s."]),
+        (FINAL, ["There are 5,000 registered users."]),
+        (FOLLOWUP, ["How many active users?", "What is the revenue by region?"]),
+    ]
+    for text_type, parts in stream:
+        ca_direct._collect(
+            _message({"text": {"parts": parts, "text_type": text_type}}), outcome
+        )
+
+    assert outcome.answer == "There are 5,000 registered users."
+    assert scoring.extract_number(outcome.answer) == 5000.0
+    assert "3 tables" not in outcome.answer
+    assert "active users" not in outcome.answer, "follow-up suggestions are not an answer"
+
+
+def test_an_unlabelled_text_message_is_dropped_rather_than_trusted():
+    # Failing loud beats failing silent: an empty answer is already counted as a
+    # cell failure, where narration admitted by default parses as a number and
+    # looks perfectly healthy.
+    outcome = agents.Outcome()
+    ca_direct._collect(_message({"text": {"parts": ["Analyzing context"]}}), outcome)
+    assert not outcome.answer
 
 
 def test_a_service_error_is_recorded_not_raised():

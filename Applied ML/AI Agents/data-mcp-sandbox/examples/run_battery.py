@@ -9,10 +9,10 @@
 **This costs money and takes hours.** Every cell is a live model call against
 live Google Cloud services. `--dry-run` prints the plan *and a measured estimate
 of time and tokens*, which is the number to look at before committing. Then
-`make smoke` (10 cells) to check the wiring, then `--runs 1`, then the sweep.
+`make smoke` (12 cells) to check the wiring, then `--runs 1`, then the sweep.
 
 Looker is optional. It is the only component behind an annual-commitment
-purchase, so `--skip-looker` drops the three arms that need one and leaves seven
+purchase, so `--skip-looker` drops the three arms that need one and leaves nine
 that run on BigQuery alone.
 
 Capture only — scoring is `build_results.py`, run afterwards over the same file.
@@ -41,7 +41,7 @@ def parse_args() -> argparse.Namespace:
         nargs="+",
         default=list(mcp_clients.CONFIG_KEYS),
         choices=list(mcp_clients.CONFIG_KEYS),
-        help="Which path configurations to run (default: all 8).",
+        help="Which path configurations to run (default: every arm).",
     )
     parser.add_argument(
         "--tiers",
@@ -90,7 +90,7 @@ def parse_args() -> argparse.Namespace:
 def select_configs(config_keys: list[str], skip_looker: bool) -> list[str]:
     """Drop the Looker arms on request, and say which ones went.
 
-    Silently running seven arms when the operator asked for ten would make the
+    Silently running nine arms when the operator asked for twelve would make the
     results file quietly non-comparable with a full sweep, so this always prints.
     """
     if not skip_looker:
@@ -134,7 +134,7 @@ def preflight(config_keys: list[str]) -> None:
         raise SystemExit(
             "Looker configs were requested but LOOKER_BASE_URL is unset or still the "
             "placeholder. Set it in .env, or re-run with --skip-looker to run the "
-            "seven BigQuery-only arms."
+            "nine BigQuery-only arms."
         )
 
     if not config.USE_TIER_SA:

@@ -132,10 +132,9 @@ def _collect(message: gda.Message, outcome: agents.Outcome) -> None:
     """Fold one streamed message into the outcome.
 
     Three of the stream's message kinds matter and the rest are progress. `text`
-    accumulates because CA narrates across several messages and the answer is
-    the whole narration, not its last fragment — taking only the last one lost
-    the number on roughly half the probe runs. `data` is the payload this arm
-    exists for: `generated_sql` is the evidence the MCP transport discards, and
+    keeps **only** the parts the service labels `FINAL_RESPONSE`; `data` is the
+    payload this arm exists for: `generated_sql` is the evidence the MCP
+    transport discards, and
     `big_query_job` turns Path 4's BigQuery cost from a time-window estimate
     into a per-cell fact. `error` is captured rather than raised, matching
     `agents._attempt` — a cell that fails on its own merits is an observation.
@@ -146,12 +145,34 @@ def _collect(message: gda.Message, outcome: agents.Outcome) -> None:
     `emitted_sql` is not the query that ran as job `i`. Nothing downstream needs
     that pairing — evidence reads the SQL in bulk and cost sums the jobs — but
     anything that starts to would need the `group_id` on the enclosing
-    `SystemMessage` to reconstruct it.
+    `SystemMessage` to reconstruct it. (`group_id` is 0 on every message of a
+    single-turn stateless chat, so it cannot stand in as a stage marker.)
+
+    **Only `FINAL_RESPONSE` text is the answer.** CA narrates its work as
+    `THOUGHT` messages and closes with `FOLLOWUP_QUESTIONS` suggestions, and an
+    earlier cut concatenated all three. The result parsed as an answer and was
+    wrong: "Analyzing context / Retrieved context for 3 tables. / ... / There
+    are 5,000 registered users." made `scoring.extract_number` return **3.0**,
+    off "3 tables", on a cell whose answer was 5,000. Every direct cell would
+    have scored against narration rather than the answer, and the arm would
+    have looked far less accurate than it is — a defect of ours published as a
+    property of the API. The service labels each message itself; take its word
+    rather than reconstructing intent from the prose.
+
+    An unlabelled (`TEXT_TYPE_UNSPECIFIED`) message is dropped too, which is the
+    deliberate direction to fail in. Dropping one costs an empty answer, and an
+    empty answer is already a *loud* failure — `cell.ok` is False, it lands in
+    `capture_health` as failed, and it counts against the arm. Admitting one
+    risks the silent version, where narration parses as a number and the cell
+    looks perfectly healthy. Accumulation still spans messages, so a
+    `FINAL_RESPONSE` split across several is reassembled in order.
     """
     system = message.system_message
     kind = gda.SystemMessage.pb(system).WhichOneof("kind")
 
     if kind == "text":
+        if system.text.text_type != gda.TextMessage.TextType.FINAL_RESPONSE:
+            return
         parts = [part for part in system.text.parts if part]
         if parts:
             outcome.answer = f"{outcome.answer}\n{' '.join(parts)}".strip()
