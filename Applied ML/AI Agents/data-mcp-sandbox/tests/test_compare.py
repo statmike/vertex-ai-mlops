@@ -87,6 +87,33 @@ def test_tier_order_is_not_a_difference():
     assert "tiers" not in alignment.conflicts
 
 
+def test_comparing_against_a_published_capture_says_to_export_first():
+    # The published capture is scrubbed, so `project` reads `example-project`
+    # while a capture just taken reads the operator's real id. Refusing is right;
+    # refusing without naming the one command that fixes it reads as "these can
+    # never be compared", which would strand every replication attempt.
+    alignment = compare.align(
+        [_header(project=compare.PLACEHOLDER_PROJECT), _header(project="someones-real-project")],
+        axes=("ca_thinking_mode",),
+    )
+    assert "project" in alignment.conflicts
+
+    rendered = compare.render(alignment, compare.Deltas(), [], ("published", "mine"))
+    assert "make export" in rendered
+
+
+def test_a_conflict_that_is_not_the_scrub_gets_no_export_advice():
+    # The hint has to be specific to the placeholder. Suggesting `make export`
+    # for a Toolbox-version conflict would send a reader off to re-export a file
+    # that was never the problem.
+    alignment = compare.align(
+        [_header(toolbox_version="v1.10.0"), _header(toolbox_version="v1.11.0")],
+        axes=("ca_thinking_mode",),
+    )
+    rendered = compare.render(alignment, compare.Deltas(), [], ("a", "b"))
+    assert "make export" not in rendered
+
+
 def test_a_field_added_after_a_capture_was_taken_is_not_a_conflict():
     # The published capture predates `ca_thinking_mode`, so its header has no
     # such key. If a missing field read as a difference, adding the guard would

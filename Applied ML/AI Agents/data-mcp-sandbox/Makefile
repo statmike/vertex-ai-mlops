@@ -187,8 +187,15 @@ service-tokens:
 
 # Freeze goldens into the capture and scrub project identifiers, so the file can
 # be published and the rubric re-run by someone with no project of their own.
+# Defaults to the main capture. Override both for a sibling capture in the C
+# family — every capture must be exported before it can be compared against a
+# published one, because the scrub rewrites `project` and `project` is a
+# MUST_AGREE field.
+#
+#     make export RESULTS=results/raw/thinking-fast.json OUT=results/capture-thinking-fast.json.gz
 export:
-	uv run python scripts/export_capture.py
+	uv run python scripts/export_capture.py \
+		$(if $(RESULTS),--results $(RESULTS)) $(if $(OUT),--out $(OUT))
 
 # Compare two captures that differ on one declared axis. Refuses rather than
 # subtracting captures that disagree on anything else (Amendment C.0).

@@ -248,6 +248,36 @@ def rank_stability(entries: list[Delta], floor: float = NOISE_FLOOR) -> list[Ran
 # --- Rendering -----------------------------------------------------------------
 
 
+# What `scripts/export_capture.py` writes over the real project id on the way to
+# publication. Duplicated rather than imported because `src/` must not depend on
+# `scripts/`, and because the value is a published artifact — it appears in
+# `results/capture.json.gz` and cannot be changed without reissuing that file.
+PLACEHOLDER_PROJECT = "example-project"
+
+
+def _scrub_hint(conflicts: dict[str, list[Any]]) -> list[str]:
+    """Tell a `project` conflict apart from an unexported capture.
+
+    The published capture is scrubbed, so its `project` reads `example-project`
+    while a capture just taken reads the operator's real id. That is a genuine
+    disagreement on a `MUST_AGREE` field and the refusal is correct — but the
+    reader's next move is one command, not an investigation, and a refusal that
+    does not say so reads as "these can never be compared".
+    """
+    values = conflicts.get("project")
+    if not values or PLACEHOLDER_PROJECT not in values:
+        return []
+    return [
+        f"`project` differs only because one side is scrubbed. `{PLACEHOLDER_PROJECT}` is "
+        "the placeholder `make export` writes over the real id on the way to publication, "
+        "so this is a publication difference rather than a measured one — but the "
+        "comparator cannot tell the two apart from the header alone, and guessing is how "
+        "captures from two different projects get subtracted. Export the unscrubbed side "
+        "first (`make export RESULTS=<raw> OUT=<exported>`) and compare the exported files.",
+        "",
+    ]
+
+
 def render(
     alignment: Alignment,
     result: Deltas,
@@ -278,6 +308,7 @@ def render(
                  for name, values in sorted(alignment.conflicts.items())],
             ),
             "",
+            *_scrub_hint(alignment.conflicts),
         ]
         return "\n".join(lines)
 
