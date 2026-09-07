@@ -743,6 +743,7 @@ dependencies = [
     { name = "google-adk", extra = ["mcp"] },
     { name = "google-cloud-bigquery" },
     { name = "google-cloud-dataplex" },
+    { name = "google-cloud-geminidataanalytics" },
     { name = "google-cloud-monitoring" },
     { name = "google-cloud-resource-manager" },
     { name = "google-genai" },
@@ -767,6 +768,7 @@ requires-dist = [
     { name = "google-adk", extras = ["mcp"], specifier = ">=2.6,<3" },
     { name = "google-cloud-bigquery", specifier = ">=3.44.0" },
     { name = "google-cloud-dataplex", specifier = ">=2.20.0" },
+    { name = "google-cloud-geminidataanalytics", specifier = ">=0.13.2" },
     { name = "google-cloud-monitoring", specifier = ">=2.31.0" },
     { name = "google-cloud-resource-manager", specifier = ">=1.18.0" },
     { name = "google-genai", specifier = ">=2.20" },
@@ -1138,6 +1140,23 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/96/41/695b333dad5c3bda1df09c0744b574d14ed1cc5f8d933863723d95476ea5/google_cloud_dataplex-2.20.0.tar.gz", hash = "sha256:cbdc55ec184a58c6d444f6d37fcc9070664a345a8e110f34dd7233ed37f92047", size = 894255, upload-time = "2026-06-03T15:28:01.155Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ba/9f/ca0ca400de2a1a1dbf264a5c7b1c67deb17ddf0e941598a90da759c97751/google_cloud_dataplex-2.20.0-py3-none-any.whl", hash = "sha256:920bbc466eea3ce0168f9fefc4a16fd33e6ddb70537588666ce8e6609f1e1553", size = 691436, upload-time = "2026-06-03T15:27:10.355Z" },
+]
+
+[[package]]
+name = "google-cloud-geminidataanalytics"
+version = "0.13.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "google-api-core", extra = ["grpc"] },
+    { name = "google-auth" },
+    { name = "grpc-google-iam-v1" },
+    { name = "grpcio" },
+    { name = "proto-plus" },
+    { name = "protobuf" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/21/a9/3cb91440503ef220f0eb432fc70cef60c13dad7256541af996a897614db1/google_cloud_geminidataanalytics-0.13.2.tar.gz", hash = "sha256:b21e9f6892083e9dcd956f4edcc082b3b1c2d37e683522e891e0c32ec1d0d33e", size = 495779, upload-time = "2026-09-03T22:31:13.466Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3d/49/173d754edf0b2511ad82c67d4252f68c70cbfd191cf6314558cecf0baeec/google_cloud_geminidataanalytics-0.13.2-py3-none-any.whl", hash = "sha256:3708be430816201fdf484f1fc66a5076a9ebc80f18175641adc8de31db35a0fd", size = 436987, upload-time = "2026-09-03T22:30:33.93Z" },
 ]
 
 [[package]]
