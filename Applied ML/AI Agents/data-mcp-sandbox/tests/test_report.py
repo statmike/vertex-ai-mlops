@@ -62,6 +62,50 @@ def test_coverage_distinguishes_unpriced_from_incomplete():
     assert report._coverage([]) == report.DASH
     assert report._coverage(priced) == "full"
     assert report._coverage(opaque) == "floor"
+    assert report._coverage(priced, no_local_model=True) == report.SERVICE_ONLY
+
+
+def test_an_arm_with_no_local_model_turn_reports_dashes_not_zero_tokens():
+    # The direct-API arms never call a model in this process, so `usage.py`
+    # honestly records 0. Printing that 0 would put the arm at the top of every
+    # "cheapest" sort while its entire model bill sits on a meter this report
+    # cannot read — the exact inversion `cost.py` exists to prevent.
+    direct = {
+        f"c{i}": _score(f"c{i}", config="p4_bq_direct", answered=True, correct=True,
+                        model_calls=0, total_tokens=0, prompt_tokens=0, output_tokens=0)
+        for i in range(4)
+    }
+    costs = {
+        key: cost.CellCost(cell_key=key, config="p4_bq_direct", tier=1,
+                           service_side_unmeasured=True)
+        for key in direct
+    }
+    spend = report.spend(direct, costs, cost.DEFAULT_PRICES)
+    row = [line for line in spend.splitlines() if line.startswith("| p4_bq_direct")][0]
+    assert row.count(report.DASH) >= 3, row
+    assert report.SERVICE_ONLY in row
+    assert report.SERVICE_ONLY in spend, "the legend must explain the state it printed"
+
+    headline = report.headline(direct, costs)
+    tokens_in, tokens_out = headline.splitlines()[-1].split("|")[4:6]
+    assert tokens_in.strip() == report.DASH
+    assert tokens_out.strip() == report.DASH
+
+
+def test_a_capture_that_never_recorded_model_calls_keeps_its_token_numbers():
+    # `model_calls=None` is *not recorded*; only 0 means "no local turn". The
+    # first cut defaulted the field to 0, so re-rendering the published
+    # scores.json — written before the field existed — blanked the token columns
+    # on all twenty arm/tier rows while every underlying number was intact.
+    legacy = {
+        f"c{i}": _score(f"c{i}", answered=True, correct=True, model_calls=None,
+                        total_tokens=5000, prompt_tokens=4000, output_tokens=1000)
+        for i in range(4)
+    }
+    assert not report._no_local_model(list(legacy.values()))
+    spend = report.spend(legacy, {}, cost.DEFAULT_PRICES)
+    assert "5000" in spend
+    assert report.SERVICE_ONLY not in spend, "a legend for an absent state is noise"
 
 
 def test_headline_note_names_the_floor_arms_and_stays_silent_without_them():

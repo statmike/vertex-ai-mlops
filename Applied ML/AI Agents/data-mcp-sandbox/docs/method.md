@@ -126,7 +126,15 @@ the shared quota pool, not the arm.
 
 The rule that outranks the others: a metric an arm was not eligible for prints
 `--`, not `0.0`. Ranking an arm bottom on something it could never have scored is
-a false finding rather than a conservative one. See
+a false finding rather than a conservative one.
+
+It cuts the other way too. A direct-API arm never calls a model in this process,
+so its token count is a truthful `0` — and printing it would sort the arm to the
+top of every "cheapest" list while its whole model bill sits on a meter this
+report cannot read. Those columns print `--` and the coverage column reads
+**service only**, decided from the capture's own `model_calls` rather than from a
+list of arm names. A capture that predates that field records `None`, which means
+*not recorded* and keeps its numbers. See
 [Unmeasured is not zero](questions.md#unmeasured-is-not-zero) for the cases and
 [Reading Path 4's numbers fairly](paths.md#reading-path-4s-numbers-fairly) for the
 arm it bites hardest.

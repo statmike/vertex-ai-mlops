@@ -28,6 +28,9 @@ import service_tokens
 import traces
 
 DASH = "--"
+# The fourth coverage state. Named once so the table cell and the legend that
+# explains it cannot drift out of agreement.
+SERVICE_ONLY = "service only"
 
 
 def fmt(value: float | None, spec: str = ".2f") -> str:
@@ -88,13 +91,33 @@ def _per(total: float | None, correct: int, present: object = True) -> float | N
     return total / correct
 
 
-def _coverage(entries: list[cost_module.CellCost]) -> str:
-    """How complete an arm's cost picture is. Three states, never collapsed to two.
+def _no_local_model(group: list[scoring.Score]) -> bool:
+    """True when nothing in this arm ever called a model *in this process*.
+
+    The direct-API arms hand the whole question to Conversational Analytics and
+    read back an answer; no local turn happens, so `usage.py` correctly records
+    zero. Reporting that zero as a token count would make the least visible arm
+    look like the cheapest one — the exact accounting artifact `cost.py` exists
+    to prevent. Derived from the capture rather than from a list of arm names,
+    so a future transport that behaves the same way is covered without an edit.
+
+    `model_calls is None` means *not recorded*, and never satisfies this — a
+    capture or a `scores.json` predating the field must keep its token numbers.
+    """
+    return bool(group) and all(s.model_calls == 0 for s in group)
+
+
+def _coverage(entries: list[cost_module.CellCost], no_local_model: bool = False) -> str:
+    """How complete an arm's cost picture is. Four states, never collapsed.
 
     `--` (no attribution pass ran) is not the same as `full` (everything this
     sweep can see, it saw), and neither is the same as `floor` (a service spent
-    money on our behalf and did not tell us how much).
+    money on our behalf and did not tell us how much). `service only` is the
+    strongest form of `floor`: not an understatement of the model bill but the
+    whole of it, because the caller never ran a model.
     """
+    if no_local_model:
+        return SERVICE_ONLY
     if not entries:
         return DASH
     return "floor" if any(e.service_side_unmeasured for e in entries) else "full"
@@ -216,16 +239,21 @@ def spend(
         # Tokens come off the capture, warehouse bytes off the attribution pass.
         # Keeping them independent means `--no-cost` still yields a token table
         # instead of a table of zeros that reads as "this arm was free".
+        # An arm with no local model turn has no token measurement at all, so
+        # its three token columns are absent rather than zero.
+        absent = _no_local_model(group)
         tokens, tokens_iqr = median_iqr(float(s.total_tokens) for s in group)
         thoughts, _ = median_iqr(float(s.thought_tokens) for s in group)
         mib, _ = median_iqr(e.bytes_billed / 2**20 for e in entries)
         usd = [e.total_usd for e in entries if e.total_usd is not None]
         rows.append([
-            key, str(tier), fmt(tokens, ".0f"), fmt(tokens_iqr, ".0f"),
-            fmt(thoughts, ".0f"),
+            key, str(tier),
+            DASH if absent else fmt(tokens, ".0f"),
+            DASH if absent else fmt(tokens_iqr, ".0f"),
+            DASH if absent else fmt(thoughts, ".0f"),
             fmt(mib, ".1f"),
             fmt(st.mean(usd) if usd else None, ".5f"),
-            _coverage(entries),
+            _coverage(entries, absent),
         ])
     note = (
         f"\n\nPrices: {prices.source or 'none supplied'}"
@@ -242,6 +270,17 @@ def spend(
         f"Monitoring and finds `{service_tokens.MEASURED_ARM}` consumed "
         f"{service_tokens.MEASURED_UNDERSTATEMENT}x the tokens recorded here."
     )
+    # Only explain a state the table actually contains. A legend for an absent
+    # state is noise, and adding it unconditionally would have rewritten the
+    # published report's prose without a single number moving.
+    if any(row[-1] == SERVICE_ONLY for row in rows):
+        note += (
+            f" **{SERVICE_ONLY}** means the arm never called a model in this "
+            "process at all — the direct-API arms hand the question to the "
+            "service and read back an answer — so its token columns read `--`. "
+            "That is absent, not free; the model spend is entirely on the meter "
+            "this report cannot see."
+        )
     return _table(
         ["config", "tier", "tokens (median)", "IQR", "thoughts", "MiB billed",
          "USD (mean)", "unmeasured spend"],
@@ -331,18 +370,21 @@ def headline(
         correct = sum(1 for s in group if s.correct)
         mib = sum(e.bytes_billed for e in entries) / 2**20 if entries else None
         has = entries or None
+        absent = _no_local_model(group)
         rows.append([
             key, str(tier),
             fmt(rate(group, lambda s: s.correct), ".0%"),
             # Tokens and seconds come off the capture (`group`), not the cost pass
             # (`entries`), so `--no-cost` still yields a usage table rather than a
             # row of dashes. Only the warehouse columns need the attribution pass.
-            fmt(_per(sum(s.prompt_tokens for s in group), correct), ".0f"),
-            fmt(_per(sum(s.output_tokens for s in group), correct), ".0f"),
+            # Tokens-per-correct is the column a reader ranks arms on, which is
+            # why an arm with no local model turn must not print a 0 into it.
+            DASH if absent else fmt(_per(sum(s.prompt_tokens for s in group), correct), ".0f"),
+            DASH if absent else fmt(_per(sum(s.output_tokens for s in group), correct), ".0f"),
             fmt(_per(sum(s.latency_s for s in group), correct), ".0f"),
             fmt(_per(sum(e.bq_jobs for e in entries), correct, has), ".1f"),
             fmt(_per(mib, correct), ".1f"),
-            _coverage(entries),
+            _coverage(entries, absent),
         ])
     return _table(
         ["config", "tier", "accuracy (mean)", "tokens in / correct",

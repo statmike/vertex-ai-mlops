@@ -123,6 +123,17 @@ class Score:
     prompt_tokens: int = 0
     output_tokens: int = 0
     thought_tokens: int = 0
+    # How many times *this process* called a model. Zero is meaningful rather
+    # than boring: the direct-API arms have no local model turn at all, so their
+    # token counts are truly 0 while the work still happened — server-side,
+    # unmetered. `report.py` reads this to print `--` instead of `0` there,
+    # because a 0 in a token column sorts to the top of "cheapest".
+    #
+    # `None` is *not recorded* and must never collapse into 0. A `scores.json`
+    # written before this field existed re-renders through `--from-scores`, and
+    # defaulting it to 0 would declare every arm in that file model-free — which
+    # blanked all twenty token rows the first time this was tried.
+    model_calls: int | None = None
     notes: list[str] = field(default_factory=list)
 
     @property
@@ -323,6 +334,11 @@ def score_cell(
         prompt_tokens=int(cell.usage.get("prompt_tokens", 0) or 0),
         output_tokens=int(cell.usage.get("output_tokens", 0) or 0),
         thought_tokens=int(cell.usage.get("thought_tokens", 0) or 0),
+        # No `or 0` — a capture that never recorded this reads None, not zero.
+        model_calls=(
+            None if cell.usage.get("model_calls") is None
+            else int(cell.usage["model_calls"])
+        ),
     )
     result.rules_required = rules_for(evidence)
 
