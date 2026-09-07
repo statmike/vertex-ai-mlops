@@ -2,6 +2,7 @@
 
     uv run python examples/build_results.py --no-judge --no-cost   # free, offline-ish
     uv run python examples/build_results.py                        # the full pass
+    uv run python examples/build_results.py --reuse-verdicts results/scores.json
 
 Reads `results/raw/results.json`, writes `results/report.md` and
 `results/scores.json`. Nothing here re-runs an agent, so a rubric change costs a
@@ -16,7 +17,11 @@ Three passes, each independently skippable because they have different costs:
   dispute this rubric without a project of their own.
 * **Cost** — one `INFORMATION_SCHEMA` query over the sweep window. Needs the
   capture to carry `started_at`/`ended_at`; older captures cannot be attributed.
-* **Judge** — one model call per governed cell. Skip it while iterating.
+* **Judge** — one model call per governed cell. Skip it while iterating, or
+  `--reuse-verdicts` an existing `scores.json` to grade only the cells it has no
+  verdict for. That is what adding an arm to a published capture needs: the
+  judge is a model call, and re-grading settled cells would move published
+  adherence numbers for reasons unrelated to the new arm.
 """
 
 import argparse
@@ -65,6 +70,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--no-cost", action="store_true",
         help="Skip BigQuery job attribution. Cost columns will be empty.",
+    )
+    parser.add_argument(
+        "--reuse-verdicts", type=Path, default=None, metavar="SCORES_JSON",
+        help="Judge only cells this scores.json has no verdict for. For adding an arm.",
     )
     return parser.parse_args()
 
@@ -136,6 +145,22 @@ def judge_requests(
     return requests
 
 
+def reusable_verdicts(
+    path: Path | None, cells: dict[str, traces.Cell]
+) -> dict[str, judge.Verdict]:
+    """Load and report on the verdicts `--reuse-verdicts` can carry over."""
+    if path is None:
+        return {}
+    saved = json.loads(path.read_text())["verdicts"]
+    verdicts = judge.reusable(saved, cells)
+    dropped = len(saved) - len(verdicts)
+    print(
+        f"reusing {len(verdicts)} verdicts from {path}"
+        + (f" ({dropped} for cells not in this capture, dropped)" if dropped else "")
+    )
+    return verdicts
+
+
 def rerender(args: argparse.Namespace) -> int:
     """Rebuild report.md from a previous run's scores.json, changing nothing else.
 
@@ -198,14 +223,15 @@ def main() -> int:
             # and the rest of the report is still worth producing.
             print(f"cost attribution skipped: {e}")
 
-    verdicts: dict[str, judge.Verdict] = {}
+    verdicts = reusable_verdicts(args.reuse_verdicts, cells)
     if not args.no_judge:
-        requests = judge_requests(cells, scores)
+        requests = [r for r in judge_requests(cells, scores) if r["cell_key"] not in verdicts]
         print(f"judging {len(requests)} cells...")
-        verdicts = asyncio.run(judge.judge_all(requests))
-        unclear = sum(1 for v in verdicts.values() if v.adherence == "unclear")
-        failed = sum(1 for v in verdicts.values() if v.rationale.startswith("judge failed"))
-        print(f"judged {len(verdicts)} - {unclear} unclear, {failed} judge errors")
+        fresh = asyncio.run(judge.judge_all(requests))
+        unclear = sum(1 for v in fresh.values() if v.adherence == "unclear")
+        failed = sum(1 for v in fresh.values() if v.rationale.startswith("judge failed"))
+        print(f"judged {len(fresh)} - {unclear} unclear, {failed} judge errors")
+        verdicts |= fresh
 
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / "report.md").write_text(

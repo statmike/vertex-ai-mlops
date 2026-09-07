@@ -22,7 +22,9 @@ Three properties, all of them load-bearing:
 
 import asyncio
 import json
+from collections.abc import Container
 from dataclasses import dataclass
+from typing import Any
 
 from google import genai
 from google.genai import types
@@ -97,6 +99,23 @@ class Verdict:
     adherence: str = "unclear"
     rationale: str = ""
     stated_value: float | None = None
+
+
+def reusable(saved: list[dict[str, Any]], keys: Container[str]) -> dict[str, "Verdict"]:
+    """Verdicts already reached, for cells that are still in the capture.
+
+    Adding an arm to a capture should not re-grade the arms that were already in
+    it. Judging is a model call, so a second pass over a settled cell can reach a
+    different verdict for reasons that have nothing to do with the new arm — and
+    the published adherence numbers would move with no way to tell which movement
+    was the finding and which was the judge changing its mind.
+
+    Trimmed to cells actually present. A `scores.json` from a wider capture would
+    otherwise contribute verdicts for cells this report does not contain; nothing
+    reads them, but a scores file that describes cells it does not score cannot be
+    checked against itself.
+    """
+    return {v["cell_key"]: Verdict(**v) for v in saved if v["cell_key"] in keys}
 
 
 def render(question: str, rule: str, query: str, answer: str) -> str:

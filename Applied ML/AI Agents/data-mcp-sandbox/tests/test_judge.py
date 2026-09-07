@@ -53,3 +53,24 @@ def test_reciting_the_rule_is_not_applying_it():
     # The failure mode this instruction exists for: an agent that quotes the
     # governed definition in prose and then sums the decoy column anyway.
     assert "reciting a definition is not applying it" in judge.SYSTEM
+
+
+def test_settled_verdicts_carry_over_when_an_arm_is_added():
+    # Re-grading a settled cell is a model call that can come back different,
+    # which would move published adherence numbers for reasons unrelated to the
+    # arm being added.
+    saved = [
+        {"cell_key": "a", "adherence": "governed", "rationale": "ok", "stated_value": 1.0},
+        {"cell_key": "b", "adherence": "invented", "rationale": "no", "stated_value": None},
+    ]
+    kept = judge.reusable(saved, {"a", "b", "c"})
+    assert sorted(kept) == ["a", "b"]
+    assert kept["a"].adherence == "governed"
+    assert kept["b"].stated_value is None
+
+
+def test_a_verdict_for_a_cell_that_is_not_here_is_dropped():
+    # A scores.json from a wider capture must not contribute verdicts this
+    # report has no cell for; the file would then describe what it cannot score.
+    saved = [{"cell_key": "gone", "adherence": "governed", "rationale": "", "stated_value": None}]
+    assert judge.reusable(saved, {"a"}) == {}
