@@ -76,7 +76,6 @@ def test_a_merged_capture_names_every_commit_and_claims_none_as_its_own():
         ("runs", 3),
         ("tiers", [0]),
         ("question_ids", ["direct-q2"]),
-        ("quality_scans", False),
         ("project", "other-project"),
         ("toolbox_version", "1.9.0"),
         ("model_location", "us-central1"),
@@ -94,6 +93,26 @@ def test_the_same_arm_twice_is_refused_rather_than_concatenated():
     # computed as a fraction of it.
     with pytest.raises(ValueError, match="p1_managed"):
         traces.merge_headers([_header(), _header(git_commit="b987b497")])
+
+
+def test_scan_state_moves_per_run_instead_of_blocking_the_merge():
+    # Unlike the fields above, this one legitimately differs and the difference
+    # is worth publishing: it changes what `lookup_context` returns on Path 3
+    # tier 1 and nothing else, so a Path 4 run taken after the scans were
+    # provisioned is still comparable to a Path 1-3 run taken before.
+    header = traces.merge_headers([
+        _header(quality_scans=None),
+        _header(git_commit="b987b497", configs=["p4_bq_direct"], quality_scans=True),
+    ])
+    assert "quality_scans" not in header, "one state must not stand in for both runs"
+    assert [run["quality_scans"] for run in header["merged_from"]] == [None, True]
+
+
+def test_runs_that_agree_on_scans_still_say_so_once():
+    header = traces.merge_headers([
+        _header(), _header(git_commit="b987b497", configs=["p4_bq_direct"]),
+    ])
+    assert header["quality_scans"] is True
 
 
 def test_a_single_header_merges_to_itself_unchanged():

@@ -195,8 +195,15 @@ MUST_AGREE = (
     "runs",
     "tiers",
     "question_ids",
-    "quality_scans",
 )
+
+# Not on that list, because it legitimately differs and the difference is worth
+# publishing rather than refusing. `quality_scans` says whether this sandbox's
+# Dataplex scans existed, which changes what `lookup_context` returns on Path 3
+# tier 1 and nothing else; a Path 4 run taken after they were provisioned is
+# perfectly comparable to a Path 1-3 run taken before. So it moves per-run
+# instead, and `report._scan_state` says which runs had them.
+PER_RUN = ("git_commit", "started", "configs", "total_cells", "goldens", "quality_scans")
 
 
 def merge_headers(headers: list[dict[str, Any]]) -> dict[str, Any]:
@@ -240,9 +247,13 @@ def merge_headers(headers: list[dict[str, Any]]) -> dict[str, Any]:
                 f"{sorted(values)}. These runs measured different things."
             )
 
-    dropped = ("git_commit", "configs", "goldens")
-    merged = {key: value for key, value in base.items() if key not in dropped}
+    merged = {key: value for key, value in base.items() if key not in PER_RUN}
     merged["started"] = min(str(header.get("started", "")) for header in headers)
+    # Kept at the top level only when every run agrees, so the report's one-line
+    # summary stays a fact. When they disagree it exists per run and nowhere else.
+    scans = {header.get("quality_scans") for header in headers}
+    if len(scans) == 1:
+        merged["quality_scans"] = scans.pop()
 
     configs: list[str] = []
     schemas: dict[str, Any] = {}
@@ -264,6 +275,7 @@ def merge_headers(headers: list[dict[str, Any]]) -> dict[str, Any]:
             "started": header.get("started", ""),
             "configs": list(header.get("configs", [])),
             "total_cells": header.get("total_cells", 0),
+            "quality_scans": header.get("quality_scans"),
             # Absent rather than empty when the run never froze one, so the
             # scorer can tell "this run has no oracle" from "this run's oracle
             # was empty" and refuse rather than silently resolve today's.

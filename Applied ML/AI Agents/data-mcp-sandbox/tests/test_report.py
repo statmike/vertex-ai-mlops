@@ -234,6 +234,43 @@ def test_a_capture_that_cannot_say_carries_the_path3_warning():
     assert report._scan_note({"quality_scans": False}) == ""
 
 
+def _merged(*states):
+    return {
+        "merged_from": [
+            {"git_commit": f"c{i}", "configs": list(configs), "quality_scans": scans}
+            for i, (configs, scans) in enumerate(states)
+        ]
+    }
+
+
+def test_the_path3_warning_names_only_the_arms_it_is_true_of():
+    # A merged capture straddles the provisioning. Warning about all of it would
+    # send a reader to re-check twelve arms when three are in question, and the
+    # header line right above already maps each commit to its arms.
+    meta = _merged(
+        (["p3_managed", "p3_toolbox", "p1_managed"], None),
+        (["p4_bq_direct"], True),
+    )
+    note = report._scan_note(meta)
+    assert "p3_managed, p3_toolbox" in note
+    assert "p1_managed" not in note, "an arm with no lookup_context cannot see a scan verdict"
+    assert "p4_bq_direct" not in note
+    assert report._scan_states(meta) == "not recorded for `c0`; present for `c1`"
+
+
+def test_no_warning_when_the_unlabelled_run_never_read_context():
+    # The B.6 case in reverse: if only the Path 4 arms are unlabelled, the scans
+    # could not have changed a single cell, so there is nothing to caveat.
+    assert report._scan_note(_merged((["p3_toolbox"], True), (["p4_bq_direct"], None))) == ""
+
+
+def test_runs_that_agree_print_one_word_not_a_list():
+    meta = _merged((["p3_toolbox"], True), (["p4_bq_direct"], True))
+    meta["quality_scans"] = True
+    assert report._scan_states(meta) == "present"
+    assert report._scan_note(meta) == ""
+
+
 def test_scored_records_survive_the_scores_json_round_trip():
     # `build_results.py --from-scores` rebuilds report.md from a previous run's
     # scores.json instead of paying for a judge pass. That only stays honest if

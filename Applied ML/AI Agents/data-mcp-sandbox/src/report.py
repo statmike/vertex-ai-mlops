@@ -401,12 +401,37 @@ def _scan_state(meta: dict[str, Any]) -> str:
     cannot claim the scans were absent — it simply did not look, and saying
     "no" would report an unmeasured thing as a zero.
     """
-    present = meta.get("quality_scans", "missing")
+    return _scan_word(meta.get("quality_scans", "missing"))
+
+
+def _scan_word(present: object) -> str:
     if present is True:
         return "present"
     if present is False:
         return "absent"
     return "not recorded"
+
+
+def _scan_states(meta: dict[str, Any]) -> str:
+    """The scan state per run, for a merged capture whose runs disagree.
+
+    A merged capture can straddle the day the scans were provisioned. Printing
+    one word for it would say something untrue about half its cells, and the
+    half it is untrue about is the half a reader cares about — the Path 3 arms.
+
+    Keyed by commit rather than by arm: `_provenance` runs immediately before
+    this in the same sentence and has just spelled out which arms each commit
+    produced, so naming them again costs a line of arm keys to say nothing new.
+    """
+    runs = meta.get("merged_from")
+    if not isinstance(runs, list) or not runs:
+        return _scan_state(meta)
+    if "quality_scans" in meta:
+        return _scan_state(meta)
+    return "; ".join(
+        f"{_scan_word(run.get('quality_scans'))} for `{run.get('git_commit')}`"
+        for run in runs
+    )
 
 
 def _provenance(meta: dict[str, Any]) -> str:
@@ -430,6 +455,23 @@ def _provenance(meta: dict[str, Any]) -> str:
     return f"merged from {len(runs)} runs: " + "; ".join(parts)
 
 
+def _reads_context(config_key: str) -> bool:
+    """Whether this arm can call `lookup_context`, and so can see a scan verdict.
+
+    Derived from the arm's own tool surface rather than from `path == 3`, so an
+    arm that gains or loses the tool changes this answer instead of contradicting
+    it. An arm this does not know about is treated as not reading context: a
+    capture can name an arm the current code has dropped, and warning about a
+    row that is not in the report helps nobody.
+    """
+    arm = mcp_clients.CONFIGS.get(config_key)
+    if arm is None:
+        return False
+    tools = list(arm.toolbox_tools)
+    tools += [tool for allowed in arm.managed_urls.values() for tool in allowed]
+    return "lookup_context" in tools
+
+
 def _scan_note(meta: dict[str, Any]) -> str:
     """Warn when a capture cannot say which Path 3 environment it was taken in.
 
@@ -445,10 +487,37 @@ def _scan_note(meta: dict[str, Any]) -> str:
     """
     if meta.get("quality_scans") in (True, False):
         return ""
+    runs = meta.get("merged_from")
+    if not isinstance(runs, list) or not runs:
+        scope = (
+            "This capture predates the `quality_scans` header field, so it "
+            "cannot state whether this sandbox's Dataplex data-quality scans "
+            "existed when it ran."
+        )
+    else:
+        # A merged capture can straddle the provisioning, so only some of its
+        # arms are affected — and of those, only the ones that call
+        # `lookup_context` at all. Naming them is worth more than the blanket
+        # warning, because the reader's next move is to decide which rows to
+        # distrust and the unnamed ones are fine.
+        affected = sorted(
+            {
+                config_key
+                for run in runs
+                if run.get("quality_scans") not in (True, False)
+                for config_key in run.get("configs", [])
+                if _reads_context(config_key)
+            }
+        )
+        if not affected:
+            return ""
+        scope = (
+            f"The {', '.join(affected)} cells predate the `quality_scans` "
+            "header field, so this capture cannot state whether this sandbox's "
+            "Dataplex data-quality scans existed when they ran."
+        )
     return (
-        "> **Path 3 comparability.** This capture predates the `quality_scans` "
-        "header field, so it cannot state whether this sandbox's Dataplex "
-        "data-quality scans existed when it ran. That matters for Path 3 tier 1 "
+        f"> **Path 3 comparability.** {scope} That matters for Path 3 tier 1 "
         "only: with the scans in place `lookup_context` adds a `qualityStatus` "
         "line per governed table, and all three Path 3 arms call it. Do not merge "
         "tier-1 Path 3 cells from this capture with cells from a fresh "
@@ -532,7 +601,7 @@ def build(
         f"Model `{meta.get('agent_model')}` at temperature {meta.get('temperature')}, "
         f"{meta.get('runs')} replicates, tier fence "
         f"{'on' if meta.get('use_tier_sa') else 'OFF'}, {_provenance(meta)}. "
-        f"Dataplex quality scans: {_scan_state(meta)}.",
+        f"Dataplex quality scans: {_scan_states(meta)}.",
         "",
         _scan_note(meta),
         # Stated rather than left to be counted off the tables: a capture from a
