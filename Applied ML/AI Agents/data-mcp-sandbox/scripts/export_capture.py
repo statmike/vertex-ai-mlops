@@ -131,6 +131,34 @@ def freeze_goldens(cells: dict[str, traces.Cell]) -> dict[str, dict[str, dict[st
     return frozen
 
 
+def embed_goldens(header: dict[str, Any], cells: dict[str, traces.Cell]) -> None:
+    """Put a frozen oracle on the capture, in place, without overwriting one.
+
+    Resolving live is only correct for a run that just finished. A merged
+    capture holds runs from different days and four of this corpus's oracle
+    values are trailing windows, so re-resolving one would replace a run's true
+    answers with today's. Each run therefore keeps whatever it arrived with, and
+    only a run that has none gets one — which, in the merge path, is none of
+    them, because every capture is exported before it is merged.
+    """
+    runs = header.get("merged_from")
+    if not isinstance(runs, list) or not runs:
+        if header.get("goldens"):
+            print("    already frozen; keeping the oracle this capture arrived with")
+            return
+        header["goldens"] = freeze_goldens(cells)
+        return
+
+    by_config = {key: run for run in runs for key in run.get("configs", [])}
+    for run in runs:
+        if run.get("goldens"):
+            print(f"    {', '.join(run.get('configs', []))}: already frozen, kept")
+            continue
+        owned = {k: c for k, c in cells.items() if by_config.get(c.config) is run}
+        print(f"    {', '.join(run.get('configs', []))}: no oracle on file, resolving live")
+        run["goldens"] = freeze_goldens(owned)
+
+
 def check(path: Path, pairs: dict[str, str]) -> int:
     """Fail loudly if any original identifier survived into the exported file.
 
@@ -148,13 +176,29 @@ def check(path: Path, pairs: dict[str, str]) -> int:
         print(f"\n{path} is NOT safe to publish.")
         return 1
 
-    payload = json.loads(text)
-    goldens = payload.get("header", {}).get("goldens", {})
-    if not goldens:
+    header = json.loads(text).get("header", {})
+    # A merged capture keeps one oracle per run, so asking the top-level key
+    # alone would pass a file in which only the first run was ever frozen — and
+    # its later arms would then be scored against an oracle from another day.
+    runs = header.get("merged_from")
+    if isinstance(runs, list) and runs:
+        unfrozen = [run for run in runs if not run.get("goldens")]
+        if unfrozen:
+            names = "; ".join(", ".join(run.get("configs", [])) or "?" for run in unfrozen)
+            print(f"  {path} carries no frozen goldens for {names} - "
+                  "a reader cannot re-score those arms.")
+            return 1
+        tiers = sorted({tier for run in runs for tier in run["goldens"]})
+        scope = f"{len(runs)} merged runs"
+    elif header.get("goldens"):
+        tiers = sorted(header["goldens"])
+        scope = "1 run"
+    else:
         print(f"  {path} carries no frozen goldens - a reader cannot re-score it.")
         return 1
-    print(f"  clean: none of {len(pairs)} identifiers present; "
-          f"goldens frozen for tier(s) {', '.join(sorted(goldens))}")
+
+    print(f"  clean: none of {len(pairs)} identifiers present; goldens frozen for "
+          f"{scope}, tier(s) {', '.join(tiers)}")
     return 0
 
 
@@ -188,7 +232,7 @@ def main() -> int:
     print(f"Exporting {len(cells)} cells from {args.results}")
 
     print("  freezing goldens against live BigQuery:")
-    raw.setdefault("header", {})["goldens"] = freeze_goldens(cells)
+    embed_goldens(raw.setdefault("header", {}), cells)
 
     print(f"  scrubbing {len(pairs)} identifiers")
     # The substitution map itself must not be scrubbed away, so it goes back in

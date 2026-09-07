@@ -54,7 +54,10 @@ def main() -> int:
     # so this writes through a temporary and renames, rather than refusing. A
     # crash mid-write would otherwise destroy the base capture it was reading.
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    staged = args.out.with_suffix(args.out.suffix + ".partial")
+    # The suffix has to survive into the temporary name: `traces.write_text`
+    # decides whether to gzip from it, so a `.partial` ending would write a
+    # `.json.gz` that is not compressed and read back as garbage.
+    staged = args.out.with_name(f"{args.out.stem}.partial{args.out.suffix}")
     payload = {"header": header, "cells": [asdict(cell) for cell in cells.values()]}
     traces.write_text(staged, json.dumps(payload, indent=2))
     staged.replace(args.out)

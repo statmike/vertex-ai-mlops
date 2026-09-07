@@ -12,6 +12,7 @@ reached the agent (the acquisition half of docs/questions.md).
 
 import gzip
 import json
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -213,6 +214,17 @@ def merge_headers(headers: list[dict[str, Any]]) -> dict[str, Any]:
     prints that list instead of a single commit whenever it is present, and the
     top-level `git_commit` is dropped so nothing downstream can read one
     run's commit as the whole capture's provenance.
+
+    **`goldens` moves the same way, and for a sharper reason.** Four of this
+    corpus's oracle values are trailing-window aggregates over data anchored at
+    build time, so the right answer *moves with the calendar* — the active-user
+    count was measured drifting 2,671 → 2,786 across the two days between the
+    published sweep and the direct-API one (`docs/adapting.md`). Carrying the
+    base run's frozen oracle onto a later run's cells would grade correct
+    answers as wrong, at 4% drift against a 0.5% tolerance, and would publish
+    that as the new arm being inaccurate. Each run therefore keeps the oracle
+    that was true when it ran, and no top-level `goldens` survives to be applied
+    to cells it does not belong to.
     """
     if not headers:
         return {}
@@ -228,7 +240,8 @@ def merge_headers(headers: list[dict[str, Any]]) -> dict[str, Any]:
                 f"{sorted(values)}. These runs measured different things."
             )
 
-    merged = {key: value for key, value in base.items() if key not in ("git_commit", "configs")}
+    dropped = ("git_commit", "configs", "goldens")
+    merged = {key: value for key, value in base.items() if key not in dropped}
     merged["started"] = min(str(header.get("started", "")) for header in headers)
 
     configs: list[str] = []
@@ -251,10 +264,45 @@ def merge_headers(headers: list[dict[str, Any]]) -> dict[str, Any]:
             "started": header.get("started", ""),
             "configs": list(header.get("configs", [])),
             "total_cells": header.get("total_cells", 0),
+            # Absent rather than empty when the run never froze one, so the
+            # scorer can tell "this run has no oracle" from "this run's oracle
+            # was empty" and refuse rather than silently resolve today's.
+            **({"goldens": header["goldens"]} if header.get("goldens") else {}),
         }
         for header in headers
     ]
     return merged
+
+
+def goldens_by_config(
+    header: dict[str, Any], configs: Iterable[str]
+) -> dict[str, dict[str, Any]]:
+    """The frozen oracle for each of `configs`, omitting any arm that has none.
+
+    One entry per arm rather than one per capture, because a merged capture has
+    one oracle per *run* and the arms are how a cell knows which run it came
+    from (`merge_headers` refuses to put an arm in two runs, which is what makes
+    that lookup total).
+
+    An unmerged capture answers with its single `goldens` block for every arm
+    asked about, so the published capture re-scores exactly as it did before
+    this existed. The caller passes the arms it actually holds rather than
+    trusting the header's `configs` list, so an arm present in the cells but
+    missing from the header cannot silently come back unscored.
+    """
+    runs = header.get("merged_from")
+    if isinstance(runs, list) and runs:
+        available = {
+            config_key: run["goldens"]
+            for run in runs
+            if run.get("goldens")
+            for config_key in run.get("configs", [])
+        }
+        return {key: available[key] for key in configs if key in available}
+    frozen = header.get("goldens")
+    if not frozen:
+        return {}
+    return {config_key: frozen for config_key in configs}
 
 
 def merge_cells(captures: list[dict[str, Cell]]) -> dict[str, Cell]:

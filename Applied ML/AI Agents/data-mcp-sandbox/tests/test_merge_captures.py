@@ -103,6 +103,49 @@ def test_a_single_header_merges_to_itself_unchanged():
     assert header == _header()
 
 
+def _goldens(active_users):
+    return {"0": {"active_user_count": {"key": "active_user_count", "value": active_users,
+                                        "trap_value": None, "tolerance": 0.005, "trap_name": ""}}}
+
+
+def test_each_run_keeps_the_oracle_that_was_true_when_it_ran():
+    # Four of this corpus's goldens are trailing windows over data anchored at
+    # build time, so the right answer moves with the calendar. Carrying the base
+    # run's oracle onto a later run's cells grades correct answers as wrong.
+    header = traces.merge_headers([
+        _header(goldens=_goldens(2671.0)),
+        _header(git_commit="b987b497", configs=["p4_bq_direct"], goldens=_goldens(2786.0)),
+    ])
+    assert "goldens" not in header, "a merged capture must not have one oracle for all arms"
+    by_config = traces.goldens_by_config(header, ["p1_managed", "p4_bq_direct"])
+    assert by_config["p1_managed"]["0"]["active_user_count"]["value"] == 2671.0
+    assert by_config["p4_bq_direct"]["0"]["active_user_count"]["value"] == 2786.0
+
+
+def test_a_run_that_froze_no_oracle_is_absent_rather_than_empty():
+    # The scorer refuses these by name. An empty dict would read as "frozen,
+    # nothing in it" and score every cell against no golden at all.
+    header = traces.merge_headers([
+        _header(goldens=_goldens(2671.0)),
+        _header(git_commit="b987b497", configs=["p4_bq_direct"]),
+    ])
+    assert "goldens" not in header["merged_from"][1]
+    asked = ["p1_managed", "p4_bq_direct"]
+    assert set(traces.goldens_by_config(header, asked)) == {"p1_managed"}
+
+
+def test_an_unmerged_capture_answers_with_its_one_oracle_for_every_arm():
+    header = _header(configs=["p1_managed", "p1_toolbox"], goldens=_goldens(2671.0))
+    by_config = traces.goldens_by_config(header, ["p1_managed", "p1_toolbox"])
+    assert set(by_config) == {"p1_managed", "p1_toolbox"}
+    assert by_config["p1_toolbox"] == _goldens(2671.0)
+
+
+def test_a_capture_with_no_frozen_oracle_says_so_rather_than_guessing():
+    assert traces.goldens_by_config(_header(), ["p1_managed"]) == {}
+    assert traces.goldens_by_config({}, ["p1_managed"]) == {}
+
+
 def test_every_cell_survives_the_merge():
     merged = traces.merge_cells([
         {"a": _cell("a"), "b": _cell("b")},
