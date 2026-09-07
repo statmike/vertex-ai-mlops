@@ -15,8 +15,9 @@ ambiguous between the two and the oracle cannot score an answer the question did
 not pin down — battery questions must use the trailing-window phrasing.
 """
 
-from collections.abc import Callable
-from dataclasses import dataclass
+from collections.abc import Callable, Iterable
+from dataclasses import asdict, dataclass
+from typing import Any
 
 from google.cloud import bigquery
 
@@ -256,6 +257,29 @@ def resolve_all(client: bigquery.Client, tier: int) -> dict[str, Resolved]:
     are no longer a clean control.
     """
     return {g.key: resolve(client, g.key, tier) for g in GOLDENS}
+
+
+def freeze(tiers: Iterable[int]) -> dict[str, dict[str, dict[str, Any]]]:
+    """The whole oracle, resolved live and shaped for a capture header.
+
+    Keyed by tier as a *string*, because this goes straight into JSON and a
+    round-trip would turn an int key into one anyway — better that every reader
+    sees the same type than that the shape depends on whether the file has been
+    saved yet.
+
+    Called at two moments with very different correctness. `battery.run` calls
+    it when a sweep **starts**, which is the only time the answer is true of the
+    cells it will be used to grade. `export_capture.py` calls it as a fallback
+    for a capture that predates that, and pays for it: four of this corpus's
+    twelve values are trailing windows anchored at build time, so every hour
+    between the sweep and the freeze is drift the oracle cannot see. The
+    measured rate is ~2% a day against a 0.5% tolerance.
+    """
+    client = bigquery.Client(project=config.require_project())
+    return {
+        str(tier): {key: asdict(value) for key, value in resolve_all(client, tier).items()}
+        for tier in sorted(tiers)
+    }
 
 
 def matches(resolved: Resolved, answer: float) -> bool:

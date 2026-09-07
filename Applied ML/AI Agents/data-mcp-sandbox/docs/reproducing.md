@@ -27,6 +27,13 @@ That reads the goldens frozen into the capture's header, so it needs no corpus,
 no project, and no credentials. Change anything in `src/scoring.py` and re-run;
 a rubric change costs a minute.
 
+Those goldens were resolved when each sweep *started* (`goldens_frozen_at` in the
+header, per run in a merged capture), which matters because four of them are
+trailing windows that move with the calendar — see
+[method](method.md#the-oracle-is-frozen-when-the-sweep-starts). The published
+capture predates that fix and carries ~24h of skew on those four; every capture
+taken since is exact.
+
 Read [questions.md](questions.md) first — it lays out the four traps, the twelve
 questions, how a number becomes `correct` or `sprang_trap`, and the judge's
 measured 1.3% verdict wobble, which is the floor on reading anything into a

@@ -26,13 +26,11 @@ import argparse
 import json
 import re
 import sys
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
 import _bootstrap  # noqa: F401 - import for the sys.path side effect
-from google.cloud import bigquery
 
 import battery
 import config
@@ -121,14 +119,21 @@ def scrub(payload: Json, pairs: dict[str, str]) -> Json:
 
 
 def freeze_goldens(cells: dict[str, traces.Cell]) -> dict[str, dict[str, dict[str, Any]]]:
-    """Resolve the oracle against live BigQuery, once per tier in the capture."""
-    client = bigquery.Client(project=config.require_project())
-    frozen = {}
-    for tier in sorted({cell.tier for cell in cells.values()}):
-        resolved = golden.resolve_all(client, tier)
-        frozen[str(tier)] = {key: asdict(value) for key, value in resolved.items()}
-        print(f"    tier {tier}: froze {len(resolved)} golden values")
-    return frozen
+    """Resolve the oracle against live BigQuery, once per tier in the capture.
+
+    **A fallback, and a lossy one.** Since `battery.run` freezes at sweep start,
+    a capture reaching this function was written by older code or by hand, and
+    the values it gets back are today's rather than the sweep's. Kept because
+    refusing would strand every capture taken before the fix, and because a
+    stated approximation beats no oracle at all — but it says so.
+    """
+    tiers = sorted({cell.tier for cell in cells.values()})
+    print(
+        f"    resolving live for tier(s) {', '.join(str(tier) for tier in tiers)} - "
+        "this capture predates sweep-time freezing, so trailing-window\n"
+        "    goldens are today's answers, not the sweep's"
+    )
+    return golden.freeze(tiers)
 
 
 def embed_goldens(header: dict[str, Any], cells: dict[str, traces.Cell]) -> None:

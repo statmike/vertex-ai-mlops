@@ -32,6 +32,7 @@ import agents
 import ca_direct
 import catalog_setup
 import config
+import golden
 import mcp_clients
 import toolbox_server
 import traces
@@ -215,6 +216,64 @@ def to_cell(
     )
 
 
+# How stale a carried-over oracle may be before a resume says so. Four of the
+# twelve golden values are trailing windows anchored at build time, and the
+# measured drift is ~2% a day against a 0.5% tolerance — so a day is roughly
+# where "the same answer" stops being true.
+ORACLE_STALE_HOURS = 24
+
+
+def freeze_oracle(current: Plan, results_path: Path, resume: bool) -> dict[str, Any]:
+    """The oracle to grade this sweep by, resolved now or carried from the file.
+
+    Resolved at sweep **start**, which is the whole point: the corpus anchors
+    its timestamps to build time, so `SELECT` answers move with the calendar and
+    an oracle frozen at export time describes a different day than the cells it
+    grades. The published capture carries ~24h of exactly that skew.
+
+    A resume keeps the oracle the file already has. The alternative — re-freezing
+    — would regrade the cells captured on day one against day two's answers,
+    which is the same error moved from export into resume. What a resume cannot
+    fix is that its *new* cells really did run later, so when the carried oracle
+    is old this says so rather than pretending one number covers both.
+    """
+    if resume:
+        existing = traces.read_header(results_path)
+        frozen = existing.get("goldens")
+        if frozen:
+            since = _hours_since(existing.get("goldens_frozen_at", ""))
+            stale = f", {since:.0f}h ago" if since is not None else ""
+            print(f"oracle: carried over from the interrupted run{stale}")
+            if since is not None and since >= ORACLE_STALE_HOURS:
+                print(
+                    f"         WARNING: that oracle is {since / 24:.1f} days old and four "
+                    "golden values are trailing windows.\n"
+                    "         Cells added by this resume are graded against the older "
+                    "day. Start a fresh sweep for a clean oracle."
+                )
+            return {
+                "goldens": frozen,
+                "goldens_frozen_at": existing.get("goldens_frozen_at", ""),
+            }
+        print("oracle: the interrupted run froze none, resolving now")
+
+    print(f"oracle: resolving {len(golden.GOLDENS)} goldens against tiers "
+          f"{', '.join(str(tier) for tier in current.tiers)}")
+    return {
+        "goldens": golden.freeze(current.tiers),
+        "goldens_frozen_at": datetime.now(UTC).isoformat(timespec="seconds"),
+    }
+
+
+def _hours_since(timestamp: str) -> float | None:
+    """Age of an RFC3339 timestamp in hours, or None when it cannot be read."""
+    try:
+        then = datetime.fromisoformat(timestamp)
+    except (TypeError, ValueError):
+        return None
+    return (datetime.now(UTC) - then).total_seconds() / 3600
+
+
 def _fmt(seconds: float) -> str:
     """Compact duration, for a progress line that has to stay on one row."""
     if seconds < 90:
@@ -256,6 +315,11 @@ async def run(
         for question, config_key, tier, replicate in todo:
             print(f"  {traces.cell_key(question.id, config_key, tier, replicate)}")
         return cells
+
+    # Before anything is spent. Resolving the oracle needs BigQuery, and finding
+    # out it is unreachable should cost seconds at cell 0 rather than produce a
+    # 25-hour capture nobody can grade.
+    meta.update(freeze_oracle(current, results_path, resume))
 
     meta["tool_schemas"] = await measure_schemas(current.config_keys)
     # Environment state, not code state: with these scans in place Path 3's

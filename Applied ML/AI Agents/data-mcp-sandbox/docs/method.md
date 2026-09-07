@@ -111,6 +111,27 @@ the scorer costs a minute, where re-running the sweep costs a day and a live clo
 project. It is also why `results/capture.json.gz` ships — see
 [reproducing](reproducing.md#1-re-scoring-our-capture-no-cloud-account).
 
+### The oracle is frozen when the sweep starts
+
+Scoring is deferred, but the *right answers* cannot be. The corpus anchors its
+timestamps to build time, so four of the twelve goldens are trailing windows
+whose correct value moves with the calendar — measured drift is ~2% a day against
+a 0.5% tolerance. Resolve them at scoring time and you grade Monday's cells
+against Wednesday's answers.
+
+So `battery.run` resolves the whole oracle before it spends a single cell and
+writes it into the header with `goldens_frozen_at`. That is the last moment the
+answers are knowably true of the run they will grade, and doing it first also
+means a BigQuery outage costs seconds at cell 0 rather than a day-long capture
+nobody can score. `make export` has nothing left to resolve; it only falls back
+to resolving live for captures taken before this existed, and says so when it
+does.
+
+A `--resume` keeps the oracle already on the file rather than re-freezing —
+otherwise the restart introduces exactly the skew this removes. What it cannot
+fix is that the resumed cells really did run later, so a carried oracle more than
+a day old prints a warning instead of pretending one number covers both days.
+
 ### What the capture header records
 
 Written by `battery.header()` into every results file, because a number with no
@@ -125,7 +146,7 @@ record of the conditions that produced it cannot be compared to anything later:
 | `runs`, `tiers`, `configs`, `question_ids`, `total_cells` | the subset that ran |
 | `tool_schemas` | serialized size of each arm's tool declarations. A *result*, not diagnostics — schemas are re-sent every turn, so their size sets a floor on prompt tokens, and it predicted the observed cost gap almost exactly |
 | `quality_scans` | whether this sandbox's Dataplex quality scans existed. `true`/`false`/`null`, where `null` means *did not look* — see [reproducing](reproducing.md#path-3-changed-after-the-published-capture-was-taken) |
-| `goldens` | frozen by `make export` only. What lets a reader re-score with no cloud account |
+| `goldens`, `goldens_frozen_at` | the oracle, resolved when the sweep *started*, and when that was. What lets a reader re-score with no cloud account |
 
 ---
 

@@ -203,7 +203,15 @@ MUST_AGREE = (
 # tier 1 and nothing else; a Path 4 run taken after they were provisioned is
 # perfectly comparable to a Path 1-3 run taken before. So it moves per-run
 # instead, and `report._scan_state` says which runs had them.
-PER_RUN = ("git_commit", "started", "configs", "total_cells", "goldens", "quality_scans")
+PER_RUN = (
+    "git_commit",
+    "started",
+    "configs",
+    "total_cells",
+    "goldens",
+    "goldens_frozen_at",
+    "quality_scans",
+)
 
 
 def merge_headers(headers: list[dict[str, Any]]) -> dict[str, Any]:
@@ -280,6 +288,14 @@ def merge_headers(headers: list[dict[str, Any]]) -> dict[str, Any]:
             # scorer can tell "this run has no oracle" from "this run's oracle
             # was empty" and refuse rather than silently resolve today's.
             **({"goldens": header["goldens"]} if header.get("goldens") else {}),
+            # Travels with the oracle it timestamps. On its own it would be a
+            # date with nothing to date; alongside `started` it is the only way a
+            # reader can see how far the grading drifted from the grading run.
+            **(
+                {"goldens_frozen_at": header["goldens_frozen_at"]}
+                if header.get("goldens_frozen_at")
+                else {}
+            ),
         }
         for header in headers
     ]

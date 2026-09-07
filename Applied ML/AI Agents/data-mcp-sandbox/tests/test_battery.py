@@ -6,9 +6,11 @@ afford to discover is broken four hours in.
 """
 
 import json
+from datetime import UTC, datetime, timedelta
 
 import agents
 import battery
+import golden
 import mcp_clients
 import traces
 from agents import _failed
@@ -177,6 +179,97 @@ def test_retried_cells_are_flagged_so_latency_stays_comparable():
                           config="p1_managed", tier=0, run=1, answer="42", attempts=4)
     assert clean.attempts == 1
     assert retried.attempts > 1
+
+
+def _fake_oracle(monkeypatch, tag="fresh"):
+    """Stand in for `golden.freeze`, which needs BigQuery. Returns a call counter."""
+    calls: list[list[int]] = []
+
+    def fake(tiers):
+        calls.append(sorted(tiers))
+        return {str(tier): {"total_users": {"value": tag}} for tier in sorted(tiers)}
+
+    monkeypatch.setattr(golden, "freeze", fake)
+    return calls
+
+
+def _sweep(tmp_path, monkeypatch, header=None, tag="fresh"):
+    """A one-cell plan, a results file holding `header`, and a stubbed oracle."""
+    current = battery.plan(_questions()[:1], ["p1_managed"], [0, 1], 1)
+    path = tmp_path / "results.json"
+    if header is not None:
+        traces.save(path, {}, header)
+    return current, path, _fake_oracle(monkeypatch, tag)
+
+
+def test_a_fresh_sweep_freezes_the_oracle_before_it_spends_anything(tmp_path, monkeypatch):
+    # The whole point of C.1: the oracle must describe the day the cells ran, and
+    # the only moment that is knowably true is sweep start.
+    current, path, calls = _sweep(tmp_path, monkeypatch)
+    frozen = battery.freeze_oracle(current, path, resume=False)
+
+    assert calls == [[0, 1]], "the oracle must be resolved once, for every tier in the plan"
+    assert set(frozen["goldens"]) == {"0", "1"}
+    # Timestamped, or a later reader cannot tell how stale the grading is.
+    assert datetime.fromisoformat(frozen["goldens_frozen_at"]).tzinfo is not None
+
+
+def test_a_resume_carries_the_oracle_rather_than_refreezing_it(tmp_path, monkeypatch):
+    # Re-freezing on resume would regrade day one's cells against day two's
+    # answers — the same error as freezing at export, moved somewhere quieter.
+    yesterday = (datetime.now(UTC) - timedelta(hours=2)).isoformat(timespec="seconds")
+    current, path, calls = _sweep(
+        tmp_path,
+        monkeypatch,
+        header={"goldens": {"0": {"total_users": {"value": "original"}}},
+                "goldens_frozen_at": yesterday},
+    )
+    frozen = battery.freeze_oracle(current, path, resume=True)
+
+    assert calls == [], "a resume that re-resolves the oracle changes the grading mid-sweep"
+    assert frozen["goldens"]["0"]["total_users"]["value"] == "original"
+    assert frozen["goldens_frozen_at"] == yesterday
+
+
+def test_a_stale_carried_oracle_says_so(tmp_path, monkeypatch, capsys):
+    # Four goldens are trailing windows drifting ~2%/day against a 0.5%
+    # tolerance, so a resume days later grades its new cells against the wrong
+    # day. It is still the least-wrong option, but it must not be silent.
+    old = (datetime.now(UTC) - timedelta(hours=battery.ORACLE_STALE_HOURS + 1))
+    current, path, _ = _sweep(
+        tmp_path,
+        monkeypatch,
+        header={"goldens": {"0": {}}, "goldens_frozen_at": old.isoformat(timespec="seconds")},
+    )
+    battery.freeze_oracle(current, path, resume=True)
+    assert "WARNING" in capsys.readouterr().out
+
+
+def test_a_resume_of_a_pre_c1_capture_freezes_rather_than_refusing(tmp_path, monkeypatch):
+    # A run interrupted before this existed has no oracle on file. Today's is
+    # imperfect for its day-one cells and infinitely better than none.
+    current, path, calls = _sweep(tmp_path, monkeypatch, header={"started": "2026-09-05"})
+    frozen = battery.freeze_oracle(current, path, resume=True)
+    assert calls == [[0, 1]]
+    assert frozen["goldens"]
+
+
+def test_a_merged_capture_keeps_each_runs_freeze_time_with_its_oracle():
+    # `goldens_frozen_at` at the top level of a merged file would date one run's
+    # oracle and appear to date both.
+    def header(commit, config_key, frozen_at):
+        return {"agent_model": "m", "runs": 1, "git_commit": commit, "started": "2026-09-05",
+                "configs": [config_key], "total_cells": 1,
+                "goldens": {"0": {}}, "goldens_frozen_at": frozen_at}
+
+    merged = traces.merge_headers([
+        header("aaa", "p1_managed", "2026-09-05T02:07:23+00:00"),
+        header("bbb", "p4_bq_direct", "2026-09-07T14:26:18+00:00"),
+    ])
+    assert "goldens_frozen_at" not in merged
+    assert [run["goldens_frozen_at"] for run in merged["merged_from"]] == [
+        "2026-09-05T02:07:23+00:00", "2026-09-07T14:26:18+00:00",
+    ]
 
 
 def test_every_outcome_field_reaches_the_cell():
