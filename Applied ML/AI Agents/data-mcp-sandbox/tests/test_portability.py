@@ -58,7 +58,7 @@ def test_every_shipped_arm_is_estimated_from_its_own_measurement():
     # An arm that has never been swept is allowed exactly one escape, and it is a
     # named one: `PENDING_MEASUREMENT`. That is not a loophole in the property —
     # such an arm is priced at the worst observed rate, never at a twin's — it is
-    # the ledger of what still owes a measurement.
+    # the ledger of what still owes a measurement, and it is empty.
     for key in mcp_clients.CONFIG_KEYS:
         for tier in (0, 1):
             _rate, basis = estimate.rate_for(key, tier)
@@ -68,15 +68,34 @@ def test_every_shipped_arm_is_estimated_from_its_own_measurement():
             assert basis == "measured", f"{key} tier {tier} is priced by {basis}"
 
 
-def test_a_never_swept_arm_is_priced_at_the_worst_arm_not_at_a_twin():
-    # `p4_bq_direct` has an obvious twin in `p4_bq_ca` and must not borrow it.
-    # The twin pays for a local ADK loop the direct arm does not run, so its
-    # rate is not a conservative prior — it is a cheap one, in the direction that
-    # gets money spent.
-    for key in estimate.PENDING_MEASUREMENT:
-        rate, basis = estimate.rate_for(key, 0)
-        assert basis == "unmeasured"
-        assert rate.tokens == max(r.tokens for r in estimate.OBSERVED.values())
+def test_a_never_swept_arm_is_priced_at_the_worst_arm_not_at_a_twin(monkeypatch):
+    # `p4_bq_direct` had an obvious twin in `p4_bq_ca` and was not allowed to
+    # borrow it: the twin pays for a local ADK loop the direct arm does not run,
+    # so its rate is not a conservative prior — it is a cheap one, in the
+    # direction that gets money spent. The sweep proved the point (32.8s against
+    # 10.3s at tier 1) and in doing so emptied `PENDING_MEASUREMENT`.
+    #
+    # Patched rather than named, for the same reason the analogy test is: this
+    # ran green and vacuous the moment the arm it named got measured, which is
+    # coverage deleted by success.
+    monkeypatch.setattr(estimate, "PENDING_MEASUREMENT", frozenset({"p9_unswept"}))
+    rate, basis = estimate.rate_for("p9_unswept", 0)
+    assert basis == "unmeasured"
+    assert rate.tokens == max(r.tokens for r in estimate.OBSERVED.values())
+
+
+def test_a_measured_zero_is_never_reported_as_a_cheap_sweep():
+    # The direct-API arms record 0 tokens because no model runs in this process,
+    # and 0 is the most misleading number in the table: `make service-tokens`
+    # confirms the CA calls happened and emit nothing on the usage metrics, so
+    # the spend is unmeasured, not absent. The estimate has to say that in words.
+    total = estimate.estimate([("p4_bq_direct", 1), ("p4_bq_direct_ctx", 1)])
+    assert total.tokens == 0
+    assert total.service_only == 2
+    assert total.measured == 2, "a measured zero is measured, not a gap in the table"
+    assert "run no local model" in estimate.render(total)
+    # ...and an ordinary arm must not pick up the caveat.
+    assert "run no local model" not in estimate.render(estimate.estimate([("p1_managed", 1)]))
 
 
 def test_an_unknown_arm_over_estimates_rather_than_under():

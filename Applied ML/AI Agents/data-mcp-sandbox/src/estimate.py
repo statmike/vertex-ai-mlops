@@ -5,22 +5,27 @@
 than against a shrug, and that a reader on someone else's project can see the
 order of magnitude before their first cell.
 
-Every rate here is a **median observed on the published capture** (1,200 cells,
-`gemini-3.7-flash` @ `global`, this corpus, 2026-09-05), not a vendor figure and
-not a guess. Medians rather than means because the token distribution has a long
-right tail: a handful of cells where the agent looped burn 10x the typical cell,
-and a mean lets those set an expectation almost no cell meets.
+Every rate here is a **median observed on the published capture** (1,440 cells,
+`gemini-3.7-flash` @ `global`, this corpus, 2026-09-05 and 2026-09-07), not a
+vendor figure and not a guess. Medians rather than means because the token
+distribution has a long right tail: a handful of cells where the agent looped
+burn 10x the typical cell, and a mean lets those set an expectation almost no
+cell meets.
 
 Treat the output as an order of magnitude. Three known reasons it will be wrong:
 
-* **Arm-to-arm spread is 220x**, so the mix of configs matters far more than the
-  cell count. A 200-cell sweep of `p3_managed` tier 0 costs more than a
-  1,000-cell sweep of any Path 4 arm — by a factor of forty.
-* **Path 4's rates are floors.** Conversational Analytics runs its own Gemini
-  loop server-side and reports none of it, so the two `p4_*` rows predict what
-  your capture will *record*, not what the service will spend. Metering it
-  separately put `p4_looker_ca` 22x above its recorded figure. A Path 4 sweep is
-  the one case where this estimate under-states rather than over-states.
+* **Arm-to-arm spread is 220x** across the arms that record any tokens at all,
+  so the mix of configs matters far more than the cell count. A 200-cell sweep
+  of `p3_managed` tier 0 costs more than a 1,000-cell sweep of any Path 4 arm —
+  by a factor of forty.
+* **Path 4's rates are floors, and two of them are floors of zero.**
+  Conversational Analytics runs its own Gemini loop server-side and reports none
+  of it, so the four `p4_*` rows predict what your capture will *record*, not
+  what the service will spend. Metering it separately put `p4_looker_ca` 22x
+  above its recorded figure. The direct-API arms run no local model at all, so
+  their recorded figure is exactly 0 and `render` says so in words — a Path 4
+  sweep is the one case where this estimate under-states rather than
+  over-states, and on those two arms it under-states by everything.
 * **Quota backoff is not modelled.** A cell retried through dynamic shared quota
   contention carries up to ~300s of sleep that no rate table can predict. The
   seconds below are medians over cells that never retried, for that reason.
@@ -34,7 +39,9 @@ for a go/no-go number, so **add a quarter to whatever this prints.**
 
 from dataclasses import dataclass
 
-MEASURED_ON = "published capture, 1,200 cells, gemini-3.7-flash @ global, 2026-09-05"
+MEASURED_ON = (
+    "published capture, 1,440 cells, gemini-3.7-flash @ global, 2026-09-05 and 2026-09-07"
+)
 
 # Empty, and worth keeping empty rather than deleting. The matched arms once sat
 # here mapped to their managed twins, on the assumption that copying a tool
@@ -50,11 +57,21 @@ BY_ANALOGY: dict[str, str] = {}
 # it here and price it at the worst observed arm, or measure it. What is not on
 # offer is quietly pricing it off a twin — see BY_ANALOGY above for how that went.
 #
-# The direct-API arms are here because Amendment B added them and their sweep has
-# not run. `p4_bq_ca`'s medians are the closest thing to a prior, and they are
-# precisely the wrong prior: it pays for a local ADK loop that these arms do not
-# have, and neither figure includes the service's own spend.
-PENDING_MEASUREMENT: frozenset[str] = frozenset({"p4_bq_direct", "p4_bq_direct_ctx"})
+# Empty since the B.6 sweep. The direct-API arms sat here from the day Amendment
+# B added them until 240 cells measured them, and the reason they were never
+# priced off `p4_bq_ca` in the meantime is now visible in OBSERVED: `p4_bq_ca`
+# pays for a local ADK loop these arms do not have, and its tier-1 median is
+# 32.8s against their 10.3s. An analogy would have over-predicted by 3x.
+PENDING_MEASUREMENT: frozenset[str] = frozenset()
+
+# Arms that record no tokens because no model runs in this process at all — the
+# direct-API arms hand the question to Conversational Analytics and read back an
+# answer. Their `Rate.tokens` is a true 0, and a true 0 here is the most
+# misleading number in the module: it makes a sweep of them look free when the
+# service's own Gemini loop is simply billed somewhere this harness cannot read.
+# Named so `render` can print that in words rather than leave a reader to infer
+# it from a suspiciously small total.
+SERVICE_ONLY: frozenset[str] = frozenset({"p4_bq_direct", "p4_bq_direct_ctx"})
 
 
 @dataclass(frozen=True)
@@ -90,6 +107,13 @@ OBSERVED: dict[tuple[str, int], Rate] = {
     ("p4_bq_ca", 1): Rate(32.8, 4_634),
     ("p4_looker_ca", 0): Rate(146.0, 16_829),
     ("p4_looker_ca", 1): Rate(59.4, 4_228),
+    # Floors of zero, and measured as such: no model runs in this process. The
+    # seconds are real and are the cheapest on the table by 3x, which is the
+    # whole finding of the transport comparison — see SERVICE_ONLY.
+    ("p4_bq_direct", 0): Rate(10.0, 0),
+    ("p4_bq_direct", 1): Rate(10.3, 0),
+    ("p4_bq_direct_ctx", 0): Rate(10.1, 0),
+    ("p4_bq_direct_ctx", 1): Rate(10.3, 0),
 }
 
 # Used only when an arm has neither a measurement nor an analogy — a config added
@@ -108,9 +132,14 @@ class Estimate:
     by_analogy: int = 0  # cells priced off a different arm's rate
     unknown: int = 0  # cells priced off FALLBACK
     unmeasured: int = 0  # cells on an arm no sweep has run yet
+    service_only: int = 0  # cells whose model spend is entirely off this meter
 
     @property
     def measured(self) -> int:
+        # `service_only` cells are measured — their zero is an observation, not a
+        # gap in this table — so they are not subtracted here. They get their own
+        # line in `render` instead, because the zero needs a sentence, not a
+        # reclassification.
         return self.cells - self.by_analogy - self.unknown - self.unmeasured
 
 
@@ -139,6 +168,8 @@ def estimate(arms: list[tuple[str, int]]) -> Estimate:
         rate, basis = rate_for(config_key, tier)
         total.seconds += rate.seconds
         total.tokens += rate.tokens
+        if config_key in SERVICE_ONLY:
+            total.service_only += 1
         if basis == "analogy":
             total.by_analogy += 1
         elif basis == "unknown":
@@ -183,6 +214,15 @@ def render(total: Estimate, usd_per_mtok: float | None = None) -> str:
     if total.unknown:
         basis.append(f"{total.unknown} unknown, priced at the worst observed arm")
     lines.append(f"           from {', '.join(basis)} ({MEASURED_ON})")
+    if total.service_only:
+        # Said in words because the arithmetic cannot say it: these cells
+        # contribute exactly 0 to the token figure above, and a reader comparing
+        # a direct-arm sweep to an MCP one would otherwise read that as cheap
+        # rather than as unmetered.
+        lines.append(
+            f"           {total.service_only} of those cells run no local model - "
+            "their model spend is the service's and is not in the figure above"
+        )
     # The caveat belongs in the output, not only in the docstring. This is read
     # by someone deciding whether to spend, and it reads low: measured against
     # the sweep it was built from, it came in 21% under on both time and tokens.

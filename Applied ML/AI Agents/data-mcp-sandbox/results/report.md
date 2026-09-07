@@ -1,10 +1,10 @@
 # Results
 
-Model `gemini-3.7-flash` at temperature 0.0, 5 replicates, tier fence on, commit `834421c3`, started 2026-09-05T02:07:23+00:00. Dataplex quality scans: not recorded.
+Model `gemini-3.7-flash` at temperature 0.0, 5 replicates, tier fence on, merged from 2 runs: `834421c3` (p1_managed, p1_toolbox, p2_managed, p2_toolbox, p3_managed, p3_toolbox, p1_matched, p3_matched, p4_bq_ca, p4_looker_ca, started 2026-09-05T02:07:23+00:00); `b987b497` (p4_bq_direct, p4_bq_direct_ctx, started 2026-09-07T14:26:18+00:00). Dataplex quality scans: not recorded for `834421c3`; present for `b987b497`.
 
-> **Path 3 comparability.** This capture predates the `quality_scans` header field, so it cannot state whether this sandbox's Dataplex data-quality scans existed when it ran. That matters for Path 3 tier 1 only: with the scans in place `lookup_context` adds a `qualityStatus` line per governed table, and all three Path 3 arms call it. Do not merge tier-1 Path 3 cells from this capture with cells from a fresh `make setup`, which now creates them. See `docs/reproducing.md`.
+> **Path 3 comparability.** The p3_managed, p3_matched, p3_toolbox cells predate the `quality_scans` header field, so this capture cannot state whether this sandbox's Dataplex data-quality scans existed when they ran. That matters for Path 3 tier 1 only: with the scans in place `lookup_context` adds a `qualityStatus` line per governed table, and all three Path 3 arms call it. Do not merge tier-1 Path 3 cells from this capture with cells from a fresh `make setup`, which now creates them. See `docs/reproducing.md`.
 
-1200 cells scored across 20 arm/tier pairs.
+1440 cells scored across 24 arm/tier pairs.
 
 ## Headline
 
@@ -30,8 +30,12 @@ Model `gemini-3.7-flash` at temperature 0.0, 5 replicates, tier fence on, commit
 | p4_bq_ca | 1 | 75% | 7596 | 668 | 54 | 2.6 | 35.3 | floor |
 | p4_looker_ca | 0 | 15% | 177682 | 2170 | 1113 | 16.6 | 184.4 | floor |
 | p4_looker_ca | 1 | 35% | 23467 | 677 | 240 | 3.1 | 46.7 | floor |
+| p4_bq_direct | 0 | 22% | -- | -- | 51 | 6.8 | 64.6 | service only |
+| p4_bq_direct | 1 | 88% | -- | -- | 13 | 1.4 | 18.5 | service only |
+| p4_bq_direct_ctx | 0 | 23% | -- | -- | 50 | 7.1 | 65.7 | service only |
+| p4_bq_direct_ctx | 1 | 95% | -- | -- | 12 | 1.1 | 14.6 | service only |
 
-**Do not sort this table by the cost columns.** `p4_bq_ca`, `p4_looker_ca` carry `floor` coverage: they spend model tokens server-side that the API never reports, so their figures are lower bounds and every other arm's are totals. Comparing them directly compares two different quantities. The gap is not small — `make service-tokens` meters `p4_looker_ca` from Cloud Monitoring at 392,158 tokens per cell against the 18,045 recorded here, a 22x understatement that moves it from the cheapest arm to the third most expensive. The floors are left uncorrected in the table on purpose: the meter attributes by time block, not per cell, and splitting a block across cells that vary in turn count would invent a distribution. Two honest numbers in two places beat one fused number that hides which half was inferred.
+**Do not sort this table by the cost columns.** `p4_bq_ca`, `p4_bq_direct`, `p4_bq_direct_ctx`, `p4_looker_ca` carry `floor` coverage: they spend model tokens server-side that the API never reports, so their figures are lower bounds and every other arm's are totals. Comparing them directly compares two different quantities. The gap is not small — `make service-tokens` meters `p4_looker_ca` from Cloud Monitoring at 392,158 tokens per cell against the 18,045 recorded here, a 22x understatement that moves it from the cheapest arm to the third most expensive. The floors are left uncorrected in the table on purpose: the meter attributes by time block, not per cell, and splitting a block across cells that vary in turn count would invent a distribution. Two honest numbers in two places beat one fused number that hides which half was inferred.
 
 Accuracy, latency and the BigQuery columns are unaffected — those are measured client-side for every arm.
 
@@ -59,6 +63,10 @@ Accuracy, latency and the BigQuery columns are unaffected — those are measured
 | p4_bq_ca | 1 | 60 | 60 | 0 | 0 | 0% |
 | p4_looker_ca | 0 | 60 | 60 | 0 | 0 | 0% |
 | p4_looker_ca | 1 | 60 | 60 | 0 | 0 | 0% |
+| p4_bq_direct | 0 | 60 | 60 | 0 | 0 | 0% |
+| p4_bq_direct | 1 | 60 | 60 | 0 | 0 | 0% |
+| p4_bq_direct_ctx | 0 | 60 | 60 | 0 | 0 | 0% |
+| p4_bq_direct_ctx | 1 | 60 | 60 | 0 | 0 | 0% |
 
 **CA leak** is not a bug in the run — it is a property of the surface being measured. `ask_data_insights` ships inside the Toolbox BigQuery toolset, so `p1_toolbox` and `p3_toolbox` can reach Conversational Analytics and become Path 4 for that cell. The arms are reported as shipped rather than trimmed to be hermetic, so this column says how often it happened instead of hiding it.
 
@@ -86,6 +94,10 @@ Accuracy, latency and the BigQuery columns are unaffected — those are measured
 | p4_bq_ca | 1 | 60 | 75% | 0% | 7% |
 | p4_looker_ca | 0 | 60 | 15% | 5% | 17% |
 | p4_looker_ca | 1 | 60 | 35% | 0% | 3% |
+| p4_bq_direct | 0 | 60 | 22% | 10% | 50% |
+| p4_bq_direct | 1 | 60 | 88% | 0% | 0% |
+| p4_bq_direct_ctx | 0 | 60 | 23% | 8% | 50% |
+| p4_bq_direct_ctx | 1 | 60 | 95% | 0% | 0% |
 
 ## Acquisition vs application
 
@@ -111,6 +123,10 @@ Accuracy, latency and the BigQuery columns are unaffected — those are measured
 | p4_bq_ca | 1 | 50 | 100% | -- | -- |
 | p4_looker_ca | 0 | 50 | 100% | -- | -- |
 | p4_looker_ca | 1 | 50 | 100% | -- | -- |
+| p4_bq_direct | 0 | 50 | 100% | -- | -- |
+| p4_bq_direct | 1 | 50 | 100% | -- | -- |
+| p4_bq_direct_ctx | 0 | 50 | 100% | -- | -- |
+| p4_bq_direct_ctx | 1 | 50 | 100% | -- | -- |
 
 ## Evidence
 
@@ -136,6 +152,10 @@ Accuracy, latency and the BigQuery columns are unaffected — those are measured
 | p4_bq_ca | 1 | 0% | 1.00 | 0.00 | 1.00 |
 | p4_looker_ca | 0 | 42% | 0.40 | 1.00 | 1.00 |
 | p4_looker_ca | 1 | 38% | 1.00 | 0.60 | 1.00 |
+| p4_bq_direct | 0 | 0% | 0.67 | 0.60 | 0.83 |
+| p4_bq_direct | 1 | 0% | 1.00 | 0.00 | 1.00 |
+| p4_bq_direct_ctx | 0 | 0% | 0.67 | 0.60 | 0.88 |
+| p4_bq_direct_ctx | 1 | 0% | 1.00 | 0.00 | 1.00 |
 
 ## Latency
 
@@ -161,6 +181,10 @@ Accuracy, latency and the BigQuery columns are unaffected — those are measured
 | p4_bq_ca | 1 | 60 | 0 | 32.8 | 23.7 | 2.0 |
 | p4_looker_ca | 0 | 60 | 0 | 146.0 | 86.8 | 2.0 |
 | p4_looker_ca | 1 | 60 | 0 | 59.4 | 58.5 | 1.0 |
+| p4_bq_direct | 0 | 60 | 0 | 10.0 | 5.2 | 0.0 |
+| p4_bq_direct | 1 | 60 | 0 | 10.3 | 5.1 | 0.0 |
+| p4_bq_direct_ctx | 0 | 60 | 0 | 10.1 | 5.6 | 0.0 |
+| p4_bq_direct_ctx | 1 | 60 | 0 | 10.3 | 3.8 | 0.0 |
 
 ## Cost
 
@@ -186,10 +210,14 @@ Accuracy, latency and the BigQuery columns are unaffected — those are measured
 | p4_bq_ca | 1 | 4634 | 4974 | 332 | 20.0 | 0.00016 | floor |
 | p4_looker_ca | 0 | 16829 | 19376 | 267 | 20.0 | 0.00016 | floor |
 | p4_looker_ca | 1 | 4228 | 6609 | 230 | 10.0 | 0.00010 | floor |
+| p4_bq_direct | 0 | -- | -- | -- | 10.0 | 0.00008 | service only |
+| p4_bq_direct | 1 | -- | -- | -- | 10.0 | 0.00010 | service only |
+| p4_bq_direct_ctx | 0 | -- | -- | -- | 10.0 | 0.00009 | service only |
+| p4_bq_direct_ctx | 1 | -- | -- | -- | 10.0 | 0.00008 | service only |
 
 Prices: cloud.google.com/bigquery/pricing, US multi-region on-demand list price (verified 2026-09-03). Token rates are unset unless a `prices.json` supplies them, so a `--` in the USD column means *unpriced*, not free. Dollars are the only derived number in this report and the only one that depends on a rate card, which is why every other column is in units consumed.
 
-The last column is how complete the picture is. **full** means everything this sweep spent, it saw. **floor** means the arm also spent model tokens server-side that the API never reported back — Conversational Analytics runs its own Gemini loop on our behalf. A floor is a lower bound, not a total, and it is not small: `make service-tokens` meters it from Cloud Monitoring and finds `p4_looker_ca` consumed 22x the tokens recorded here.
+The last column is how complete the picture is. **full** means everything this sweep spent, it saw. **floor** means the arm also spent model tokens server-side that the API never reported back — Conversational Analytics runs its own Gemini loop on our behalf. A floor is a lower bound, not a total, and it is not small: `make service-tokens` meters it from Cloud Monitoring and finds `p4_looker_ca` consumed 22x the tokens recorded here. **service only** means the arm never called a model in this process at all — the direct-API arms hand the question to the service and read back an answer — so its token columns read `--`. That is absent, not free; the model spend is entirely on the meter this report cannot see.
 
 ## Semantic adherence (judged)
 
@@ -215,6 +243,10 @@ The last column is how complete the picture is. **full** means everything this s
 | p4_bq_ca | 1 | 50 | 80% | 20% | 0% | 0% |
 | p4_looker_ca | 0 | 50 | 0% | 14% | 58% | 28% |
 | p4_looker_ca | 1 | 50 | 30% | 26% | 2% | 42% |
+| p4_bq_direct | 0 | 50 | 2% | 16% | 82% | 0% |
+| p4_bq_direct | 1 | 50 | 82% | 18% | 0% | 0% |
+| p4_bq_direct_ctx | 0 | 50 | 4% | 22% | 74% | 0% |
+| p4_bq_direct_ctx | 1 | 50 | 80% | 20% | 0% | 0% |
 
 ## Equivalence
 
@@ -243,3 +275,5 @@ Schemas are re-sent on every turn, so their size is a per-call floor on prompt t
 | p1_matched | 5 | 3019 |
 | p4_bq_ca | 1 | 882 |
 | p4_looker_ca | 1 | 817 |
+| p4_bq_direct | 0 | 0 |
+| p4_bq_direct_ctx | 0 | 0 |
