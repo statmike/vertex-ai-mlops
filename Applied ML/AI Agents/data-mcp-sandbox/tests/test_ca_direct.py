@@ -59,6 +59,82 @@ def test_an_mcp_arm_cannot_be_assumed_to_have_zero_tools():
     raise AssertionError("tool_surface silently zeroed an arm that really binds tools")
 
 
+# --- the one model knob the service exposes (Amendment C.4) -------------------
+
+
+def test_an_unconfigured_sweep_sends_what_the_published_cells_sent(monkeypatch):
+    # C.4's control arm has to be the published request, not a near-copy of it.
+    # `thinking_mode` is a proto3 enum with no field presence, so omitting it and
+    # setting THINKING_MODE_UNSPECIFIED are the same bytes and the control is
+    # exact either way. Asserted on the serialized message because `to_dict`
+    # prints defaults and would have made this look like a difference.
+    monkeypatch.setattr(config, "CA_THINKING_MODE", "")
+    assert ca_direct.thinking_mode() is None
+
+    baseline = _request(monkeypatch, "p4_bq_direct", 1)
+    explicit = _request(monkeypatch, "p4_bq_direct", 1)
+    explicit.thinking_mode = gda.ChatRequest.ThinkingMode.THINKING_MODE_UNSPECIFIED
+
+    assert gda.ChatRequest.serialize(baseline) == gda.ChatRequest.serialize(explicit)
+
+
+def test_a_mode_that_is_set_really_does_change_the_request(monkeypatch):
+    # The other half of the above: identical bytes for the unset spellings would
+    # be worthless news if FAST also collapsed into them.
+    monkeypatch.setattr(config, "CA_THINKING_MODE", "")
+    baseline = _request(monkeypatch, "p4_bq_direct", 1)
+
+    monkeypatch.setattr(config, "CA_THINKING_MODE", "fast")
+    fast = _request(monkeypatch, "p4_bq_direct", 1)
+
+    assert gda.ChatRequest.serialize(baseline) != gda.ChatRequest.serialize(fast)
+
+
+def test_a_configured_mode_reaches_the_request(monkeypatch):
+    monkeypatch.setattr(config, "CA_THINKING_MODE", "thinking")
+    request = _request(monkeypatch, "p4_bq_direct", 1)
+    assert request.thinking_mode == gda.ChatRequest.ThinkingMode.THINKING
+
+
+def test_a_misspelled_mode_stops_the_sweep_before_it_spends_anything(monkeypatch):
+    # A typo here would otherwise run 240 cells on the default and publish them
+    # under the wrong axis label, which is worse than not running them.
+    monkeypatch.setattr(config, "CA_THINKING_MODE", "fastest")
+    try:
+        ca_direct.thinking_mode()
+    except SystemExit as stop:
+        assert "FAST" in str(stop), "the refusal must name the modes that do work"
+        return
+    raise AssertionError("an unknown thinking mode was accepted")
+
+
+def test_model_is_pinned_by_omission_because_there_is_nothing_to_choose(monkeypatch):
+    # The C.4 finding, as an executable claim rather than a comment: neither
+    # route lets you pick the model. If the SDK ever gains a second selectable
+    # value this fails, which is the notice we want.
+    selectable = [
+        mode.name for mode in gda.ChatRequest.Model if mode.name != "MODEL_UNSPECIFIED"
+    ]
+    assert selectable == ["LATEST_GA_MODEL"]
+
+    assert ca_direct.CA_MODEL == ""
+    request = _request(monkeypatch, "p4_bq_direct", 1)
+    assert request.model == gda.ChatRequest.Model.MODEL_UNSPECIFIED
+
+
+def test_the_thinking_axis_is_recorded_and_guarded(monkeypatch):
+    # Recording it is not enough. Left out of MUST_AGREE, a FAST run would merge
+    # into an unset one and the merged header would claim one mode for both.
+    monkeypatch.setattr(config, "CA_THINKING_MODE", "fast")
+    plan = battery.plan(battery.load_questions(), ["p4_bq_direct"], [1], 1)
+    header = battery.header(plan)
+
+    assert header["ca_thinking_mode"] == "fast"
+    assert header["ca_model"] == ""
+    assert "ca_thinking_mode" in traces.MUST_AGREE
+    assert "ca_model" in traces.MUST_AGREE
+
+
 # --- the two direct arms differ by exactly one thing --------------------------
 
 

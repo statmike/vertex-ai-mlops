@@ -142,6 +142,11 @@ Two properties worth knowing before reading any cross-capture number:
   present in only one capture is dropped and counted, so comparing an n=3 sweep
   against an n=5 one silently changes no denominator — it pairs three replicates
   and reports the other two as unpaired.
+* **A field added after a capture was taken is not a difference.** Every new
+  entry in `MUST_AGREE` is missing from every capture that predates it. Absent
+  and empty therefore collapse to one *unset* value — otherwise adding an axis
+  would make the published capture incomparable to the very sweeps measured
+  against it.
 * **Arm orderings closer than the noise floor are `unresolved`, not ordered.**
   The floor is the measured 1 point from the accidental A/A control (see
   [paths](paths.md)). Rank agreement is computed over resolved pairs only;
@@ -184,6 +189,7 @@ record of the conditions that produced it cannot be compared to anything later:
 | `agent_model`, `temperature`, `model_location` | the model under test |
 | `toolbox_version` | the pinned MCP Toolbox — its tool inventory changes between releases |
 | `use_tier_sa` | whether the IAM tier fence was actually on. The difference between a measured isolation boundary and none |
+| `ca_thinking_mode`, `ca_model` | the two settings the direct-API arms can send. `ca_model` is constant — the enum has one selectable value, so there is nothing to choose — and `ca_thinking_mode` is empty for the service default. Both are recorded on every sweep, including ones with no direct arm |
 | `runs`, `tiers`, `configs`, `question_ids`, `total_cells` | the subset that ran |
 | `tool_schemas` | serialized size of each arm's tool declarations. A *result*, not diagnostics — schemas are re-sent every turn, so their size sets a floor on prompt tokens, and it predicted the observed cost gap almost exactly |
 | `quality_scans` | whether this sandbox's Dataplex quality scans existed. `true`/`false`/`null`, where `null` means *did not look* — see [reproducing](reproducing.md#path-3-changed-after-the-published-capture-was-taken) |

@@ -20,6 +20,8 @@ def _header(**overrides):
         "temperature": 0.0,
         "toolbox_version": "v1.10.0",
         "use_tier_sa": True,
+        "ca_thinking_mode": "",
+        "ca_model": "",
         "runs": 5,
         "tiers": [0, 1],
         "question_ids": ["q1", "q2"],
@@ -83,6 +85,48 @@ def test_tier_order_is_not_a_difference():
         axes=("agent_model",),
     )
     assert "tiers" not in alignment.conflicts
+
+
+def test_a_field_added_after_a_capture_was_taken_is_not_a_conflict():
+    # The published capture predates `ca_thinking_mode`, so its header has no
+    # such key. If a missing field read as a difference, adding the guard would
+    # have made the published capture incomparable to every capture measured
+    # against it — the axis would refuse the one comparison it exists for.
+    published = _header()
+    del published["ca_thinking_mode"]
+
+    alignment = compare.align(
+        [published, _header(ca_thinking_mode="", agent_model="other")],
+        axes=("agent_model",),
+    )
+    assert alignment.ok, alignment.conflicts
+
+
+def test_an_unset_mode_against_a_set_one_is_the_axis_varying():
+    published = _header()
+    del published["ca_thinking_mode"]
+
+    alignment = compare.align(
+        [published, _header(ca_thinking_mode="THINKING")],
+        axes=("ca_thinking_mode",),
+    )
+    assert alignment.ok, alignment.conflicts
+    assert "ca_thinking_mode" in alignment.varied
+
+
+def test_two_unset_captures_do_not_count_as_a_thinking_experiment():
+    # Both omit the field, one by absence and one by empty string. Nothing
+    # varied, so this is inert and the numbers are withheld rather than
+    # published as a thinking_mode result.
+    published = _header()
+    del published["ca_thinking_mode"]
+
+    alignment = compare.align(
+        [published, _header(ca_thinking_mode="")],
+        axes=("ca_thinking_mode",),
+    )
+    assert alignment.inert == ("ca_thinking_mode",)
+    assert not alignment.ok
 
 
 def test_a_ladder_capture_aligns_against_the_published_one_on_tiers():

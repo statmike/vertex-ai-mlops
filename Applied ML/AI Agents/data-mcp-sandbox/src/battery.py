@@ -122,6 +122,17 @@ def header(current: Plan) -> dict[str, Any]:
     `use_tier_sa` is here because it is the difference between a measured
     isolation boundary and none at all. A results file that does not say which
     it was cannot be interpreted later.
+
+    `ca_thinking_mode` and `ca_model` are recorded even on sweeps with no direct
+    arm, where they change nothing. A field that appears only when it mattered is
+    a field a reader has to reason about the absence of, and `compare.align`
+    treats a missing value and an unset one as the same thing anyway.
+
+    `ca_model` is a constant `""` today — the enum has exactly one selectable
+    value, so there is nothing to choose and the request omits the field
+    (Amendment C.4). It is recorded, and in `MUST_AGREE`, so that the day a
+    second value appears the guard is already in place rather than being invented
+    after a capture has silently mixed two of them.
     """
     return {
         "started": datetime.now(UTC).isoformat(timespec="seconds"),
@@ -132,6 +143,8 @@ def header(current: Plan) -> dict[str, Any]:
         "temperature": agents.TEMPERATURE,
         "toolbox_version": toolbox_server.TOOLBOX_VERSION,
         "use_tier_sa": config.USE_TIER_SA,
+        "ca_thinking_mode": config.CA_THINKING_MODE,
+        "ca_model": ca_direct.CA_MODEL,
         "runs": current.runs,
         "tiers": current.tiers,
         "configs": current.config_keys,

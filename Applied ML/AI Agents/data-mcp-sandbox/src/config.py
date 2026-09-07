@@ -51,6 +51,21 @@ MODEL_LOCATION = os.getenv("MODEL_LOCATION", "global")
 os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "TRUE"
 os.environ["GOOGLE_CLOUD_LOCATION"] = MODEL_LOCATION
 
+# The one model knob Conversational Analytics actually exposes (Amendment C.4).
+# Enumerated against SDK 0.13.2, not read from documentation:
+#
+#   ChatRequest.ThinkingMode   THINKING_MODE_UNSPECIFIED=0, FAST=1, THINKING=2
+#   ChatRequest.Model          MODEL_UNSPECIFIED=0, LATEST_GA_MODEL=1
+#
+# `Model` has exactly one selectable value, so going direct buys no choice of
+# model — only a choice of how hard it thinks. That asymmetry against the MCP
+# arms, which expose neither, is the finding C.4 measures.
+#
+# Empty is the published default. The field has no proto presence, so leaving it
+# empty sends the identical bytes every published direct cell sent — which is
+# what makes the published capture a usable control rather than a near-copy.
+CA_THINKING_MODE = os.getenv("CA_THINKING_MODE", "")
+
 # --- Looker ------------------------------------------------------------------
 # Instance-hosted MCP endpoint is LOOKER_BASE_URL + "/mcp" (NOT a googleapis.com
 # host). Credentials come from the environment via looker-sdk's own convention.

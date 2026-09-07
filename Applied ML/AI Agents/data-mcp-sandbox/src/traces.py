@@ -192,6 +192,8 @@ MUST_AGREE = (
     "temperature",
     "toolbox_version",
     "use_tier_sa",
+    "ca_thinking_mode",
+    "ca_model",
     "runs",
     "tiers",
     "question_ids",

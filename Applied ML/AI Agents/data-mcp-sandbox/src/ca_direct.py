@@ -26,7 +26,8 @@ vendor tool schemas do.
 
 import asyncio
 import time
-from typing import Any
+from collections.abc import Iterable
+from typing import Any, cast
 
 from google.cloud import geminidataanalytics as gda
 
@@ -97,6 +98,47 @@ def _glossary_terms(config_key: str, tier: int) -> list[dict[str, str]]:
     ]
 
 
+# The model this arm runs on, as sent. Empty because there is nothing to send:
+# `ChatRequest.Model` enumerates `MODEL_UNSPECIFIED` and `LATEST_GA_MODEL` and
+# nothing else, so the only selectable value is the one omission already gets.
+# Recorded in the capture header regardless — a constant today is the record that
+# tells a future reader which model a capture used, once there is more than one.
+CA_MODEL = ""
+
+
+def thinking_mode() -> gda.ChatRequest.ThinkingMode | None:
+    """The configured thinking mode, or None when the sweep sets none.
+
+    `thinking_mode` is a plain proto3 enum with **no field presence**, so a
+    request that omits it and one that sets `THINKING_MODE_UNSPECIFIED`
+    serialize to identical bytes — checked, not assumed
+    (`test_ca_direct.py`). C.4's baseline is therefore the same request every
+    published direct cell sent, whichever way it is spelled, and the axis has a
+    real control arm rather than an approximate one.
+
+    None is still the right thing to return, because it is a fact about the
+    *sweep* and not only about the wire: it is what `battery.header` records and
+    what `compare.align` reads as "this capture did not vary the axis".
+    """
+    name = config.CA_THINKING_MODE.strip().upper()
+    if not name:
+        return None
+    # Enumerated from the installed SDK rather than listed here, so a release
+    # that adds a mode accepts it without an edit and one that drops a mode
+    # rejects it instead of failing mid-sweep. The cast says what proto-plus
+    # enums already are — genuine `enum.IntEnum` subclasses — which the generated
+    # stubs do not declare, leaving mypy unable to iterate the class.
+    modes: dict[str, gda.ChatRequest.ThinkingMode] = {
+        mode.name: mode for mode in cast("Iterable[Any]", gda.ChatRequest.ThinkingMode)
+    }
+    if name not in modes:
+        raise SystemExit(
+            f"CA_THINKING_MODE={config.CA_THINKING_MODE!r} is not a thinking mode. "
+            f"This SDK accepts: {', '.join(modes)}"
+        )
+    return modes[name]
+
+
 def build_request(config_key: str, tier: int, question: str) -> gda.ChatRequest:
     """The whole arm, as one stateless request.
 
@@ -104,17 +146,26 @@ def build_request(config_key: str, tier: int, question: str) -> gda.ChatRequest:
     asks one question per cell with no history, so a stateful provider would add
     a resource to manage without changing what is measured. CA's stateful modes
     are held for the multi-turn work (Amendment B.3, deferred).
+
+    `model` is never set. It is an enum whose only selectable value is
+    `LATEST_GA_MODEL`, so setting it would pin nothing while implying a choice
+    exists (Amendment C.4). `thinking_mode` is the one real knob, and an
+    unconfigured sweep sends the same bytes the published direct cells did.
     """
     context = gda.Context(
         system_instruction=ANSWER_FORMAT,
         datasource_references={"bq": {"table_references": _table_references(tier)}},
         glossary_terms=_glossary_terms(config_key, tier),
     )
-    return gda.ChatRequest(
+    request = gda.ChatRequest(
         parent=f"projects/{config.require_project()}/locations/{CA_LOCATION}",
         inline_context=context,
         messages=[{"user_message": {"text": question}}],
     )
+    mode = thinking_mode()
+    if mode is not None:
+        request.thinking_mode = mode
+    return request
 
 
 def _client(tier: int) -> gda.DataChatServiceClient:

@@ -315,6 +315,20 @@ thinking mode, and send no example queries — `ExampleQuery` carries a
 `sql_query`, and the only queries we have that are correct and relevant are the
 golden oracle's, so filling that field would leak the answer.
 
+**And "the default model" is the only model.** Going direct is often assumed to
+buy model choice that a managed tool hides. It does not: `ChatRequest.model` is
+an enum, and its one selectable value is `LATEST_GA_MODEL` — a generation
+pointer, not a model id. Enumerated against the pinned SDK (0.13.2), because
+this is exactly the kind of surface that moves between releases.
+
+So the real asymmetry is narrower and worth stating plainly. Neither route lets
+you pick the model. Only the direct route lets you pick how hard it thinks:
+`thinking_mode`, which is `FAST` or `THINKING`. The MCP arms expose neither
+knob, and every published cell here ran the service default — the field has no
+proto presence, so omitting it and sending "unspecified" are the same request.
+`CA_THINKING_MODE` changes it, into a separate capture compared with
+`make compare` (see [method](method.md#one-capture-per-experiment-compared-rather-than-merged)).
+
 ---
 
 ## Managed vs. self-hosted: what actually differs

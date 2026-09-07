@@ -160,6 +160,21 @@ pilot:
 sweep:
 	uv run python examples/run_battery.py $(LOOKER_FLAG)
 
+# The `thinking_mode` axis (Amendment C.4). 240 cells, ~40m, no local tokens —
+# the direct arms spend their model budget inside the service. Its own capture
+# file, never merged: a different thinking mode is a different experiment, and
+# `make compare AXIS=ca_thinking_mode` is how it is read against the published
+# capture. MODE is FAST or THINKING; unset is the published default, which is
+# already measured and does not need re-running.
+#
+#     make sweep-thinking MODE=FAST
+#     make sweep-thinking MODE=THINKING
+sweep-thinking:
+	@test -n "$(MODE)" || { echo "MODE=FAST or MODE=THINKING"; exit 1; }
+	CA_THINKING_MODE=$(MODE) uv run python examples/run_battery.py \
+		--configs p4_bq_direct p4_bq_direct_ctx \
+		--out results/raw/thinking-$(shell echo $(MODE) | tr A-Z a-z).json
+
 report:
 	uv run python examples/build_results.py
 
