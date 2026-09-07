@@ -2,7 +2,7 @@
 
 The protocol. [paths](paths.md) is *what* is compared and [questions](questions.md)
 is *what counts as right*; this page is the part in between — how a cell runs, why
-they run one at a time, what the capture records, and how 1,200 cells become the
+they run one at a time, what the capture records, and how 1,440 cells become the
 handful of numbers in `results/report.md`.
 
 ---
@@ -33,11 +33,38 @@ cannot inherit context — or a token count — from the one before it.
 subset you select; `--questions`, `--configs`, `--tiers` and `--runs` cut it down,
 and `make smoke` (12 cells) and `make pilot` (288) are the pre-cut rungs.
 
-The published capture covers **1,200 of those cells over ten arms**. The two
-direct-API arms (`p4_bq_direct`, `p4_bq_direct_ctx`) were added after the sweep
-and have not been run; `make plan` prices them at the worst arm it has actually
-observed and says so on the line, rather than assuming they behave like
-`p4_bq_ca`.
+The published capture covers **all 1,440**, merged from two runs: ten arms on
+2026-09-05 and the two direct-API arms on 2026-09-07. `make plan` now prices every
+shipped arm off its own measurement — `estimate.PENDING_MEASUREMENT` is empty for
+the first time.
+
+### Merging two runs without flattening them
+
+A merged capture is not a concatenation. Three things have to survive the join,
+and `scripts/merge_captures.py` refuses rather than guesses when they cannot:
+
+* **Provenance.** No single `git_commit` may stand for cells it never produced,
+  so the header keeps one entry per run and the report prints all of them.
+* **The oracle.** Four of the twelve goldens are trailing windows over data
+  anchored at build time, so the right answer moves with the calendar. Between
+  the two runs, `active_user_count` went from 2,671 to 2,786 — a 4.3% drift
+  against a 0.5% tolerance. Carrying the first run's oracle onto the second would
+  have marked correct answers wrong on four questions × two arms × five
+  replicates, and it would have looked like the direct API being inaccurate. Each
+  run therefore keeps the oracle frozen when *it* ran, and a run that froze none
+  is refused rather than scored against today's.
+* **Everything that must not differ.** Model, temperature, replicate count, tier
+  fence, question set, project, Toolbox version: a disagreement on any of these
+  means the two runs measured different things, and the merge fails with the
+  field named. `quality_scans` is deliberately not on that list — it changes what
+  `lookup_context` returns on Path 3 tier 1 and nothing else, so it moves per-run
+  and the report says which arms it is unknown for.
+
+Adding an arm must also not move the published numbers for the other ten. The
+judge is a model call, so re-grading settled cells would shift adherence figures
+for reasons unrelated to the new arm; `build_results.py --reuse-verdicts` grades
+only the cells it has no verdict for. The B.6 merge judged 200 new cells, reused
+1,000, and the report diff was purely additive.
 
 Cells are enumerated **config-major** — arm, then tier, then question, then
 replicate. An interrupted sweep therefore leaves *whole arms* finished rather than

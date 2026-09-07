@@ -419,7 +419,7 @@ def _scan_states(meta: dict[str, Any]) -> str:
     one word for it would say something untrue about half its cells, and the
     half it is untrue about is the half a reader cares about — the Path 3 arms.
 
-    Keyed by commit rather than by arm: `_provenance` runs immediately before
+    Keyed by commit rather than by arm: `provenance` runs immediately before
     this in the same sentence and has just spelled out which arms each commit
     produced, so naming them again costs a line of arm keys to say nothing new.
     """
@@ -434,7 +434,7 @@ def _scan_states(meta: dict[str, Any]) -> str:
     )
 
 
-def _provenance(meta: dict[str, Any]) -> str:
+def provenance(meta: dict[str, Any]) -> str:
     """Which code produced these cells, and when.
 
     A single-run capture has one answer and prints it. A merged one has several,
@@ -600,7 +600,7 @@ def build(
         "",
         f"Model `{meta.get('agent_model')}` at temperature {meta.get('temperature')}, "
         f"{meta.get('runs')} replicates, tier fence "
-        f"{'on' if meta.get('use_tier_sa') else 'OFF'}, {_provenance(meta)}. "
+        f"{'on' if meta.get('use_tier_sa') else 'OFF'}, {provenance(meta)}. "
         f"Dataplex quality scans: {_scan_states(meta)}.",
         "",
         _scan_note(meta),

@@ -8,10 +8,11 @@ questions against the same data through **twelve different ways of reaching the
 warehouse**, at **two governance tiers** over byte-identical corpora, five times
 each. Every answer is scored against a live oracle.
 
-The published capture is **1,200 live cells over ten arms**. The other two —
-Conversational Analytics called as a plain API, with no agent and no MCP server
-in the loop — ship complete but have not been swept yet, and every estimate
-labels them as such rather than borrowing a number from their nearest twin.
+The published capture is **1,440 live cells over all twelve arms**, merged from
+two runs two days apart. Each run keeps the oracle that was true when it ran:
+four of the twelve questions are trailing windows over data anchored at build
+time, so the right answer moves with the calendar and a shared oracle would have
+graded correct answers wrong.
 
 The corpus is built to be hostile in the ways real warehouses are hostile:
 columns named `txn_amt_x2` that are gross-not-net, a `status_flg` boolean whose
@@ -30,6 +31,8 @@ that reads the schema and writes the obvious SQL gets a confident wrong answer.
 | Managed or self-hosted MCP? | **Behaviourally the same, up to 12× apart on cost.** They reach the same verdict on 94–99% of paired cells while sharing a tool-call sequence 0–7% of the time. The gap is 6.9–7.7× on Path 1 and 4.8–4.9× on Path 3 — but only 1.1–1.3× on Path 2, and the schema sizes say why. |
 | Where does the cost come from? | **Tool schema verbosity, not tool count.** Schema characters predict an arm's median tokens at r = 0.97 (tier 0) and r = 0.99 (tier 1); tool count predicts nothing at r = 0.14 and r = 0.10. One managed `get_table_info` declaration is 78,197 chars — 65% of its arm's prompt floor, and 120× the self-hosted equivalent that does the same job. Splitting input from output shows it directly: `p1_managed` spends **1,673,836 input tokens per correct answer against 5,487 output**. Essentially none of the bill is the model thinking. It is tool definitions, re-sent every turn. |
 | How long does it take? | **Latency is a separate axis — it does not track cost.** Tokens against wall clock correlates at r = 0.10 and r = -0.09. Every MCP arm spends 4.1–5.4s per tool call whatever its schema size, so latency is turn count times a constant. Path 4 takes 1–3 calls and pays 21–73s for each, because the loop moved server-side. Measured as **seconds per correct answer**, which is what a user actually waits, tier 1 runs 44–91s for every arm except `p4_looker_ca` at 240s — and at tier 0 that arm needs **19 minutes per right answer**, 3–5× worse than anything else. |
+| Does wrapping a service in MCP cost anything? | **Yes — 13 accuracy points and 3.2× the wall clock, with the service held fixed.** `p4_bq_ca` and `p4_bq_direct` put the same questions to the same Conversational Analytics API over the same BigQuery corpus; one reaches it as a tool inside an ADK agent, the other calls it. At tier 1 the direct arm scores **88% against 75%** and answers in a **10.3s median against 32.8s** — 13s per correct answer against 54s. The wrapper also runs a local model loop the direct call does not: 7,596 input tokens per cell against none. This is the one pair in the experiment where the data source, the service, and the model are all identical and only the transport differs. |
+| Does injecting business context help, and by how much more than noise? | **7 points, against a measured noise floor of 1.** `p4_bq_direct` and `p4_bq_direct_ctx` differ only by a glossary payload, and at tier 0 that payload is empty by design — so those 120 cells send byte-identical requests and are an accidental A/A control. They land **1 point apart** (22% vs 23%). At tier 1 the glossary is worth **7 points** (88% vs 95%), seven times the floor the same pair just measured for itself. Most published context-injection deltas have no such control next to them. |
 | Is the managed agent really cheapest? | **No — that was an accounting artifact, and it inverts once you meter it.** Conversational Analytics bills its own Gemini loop to a line item the API never returns. Read it back from Cloud Monitoring and `p4_looker_ca` goes from 18,045 tokens per cell to **392,158** — a 22× understatement that moves it from the cheapest arm to the third most expensive. Its 207 turns ran 1,220 server-side model calls. `p4_bq_ca` reports nothing on that meter, but it made **306 successful CA calls** on the same API in the same window — its cost is on no meter this project can read, which is not the same as being zero. |
 
 **Cost is reported in units consumed, not dollars** — tokens in, tokens out,
@@ -184,21 +187,27 @@ happened and never judges it; `build_results.py` judges and never re-runs an
 agent. Three scoring passes, independently skippable because they have different
 costs: deterministic (free), BigQuery cost attribution (one
 `INFORMATION_SCHEMA` query), and a blind LLM judge for semantic adherence (one
-model call per governed cell). The protocol — 1,200 cells, five replicates, why
+model call per governed cell). The protocol — 1,440 cells, five replicates, why
 they run strictly one at a time, and what each capture records about the
 conditions it ran under — is in [`docs/method.md`](docs/method.md).
 
-**Unmeasured is never reported as zero.** Nothing in this capture discloses a
-query for Path 4, so evidence recall and rule acquisition are *unmeasurable* on
-those arms — the report prints `--`. That is a limit of the MCP tool we reach
-Conversational Analytics through, not of CA itself: called directly, the API
-returns both the generated SQL and the BigQuery job id, which we
+**Unmeasured is never reported as zero.** No Path 4 cell lets us watch the agent
+*read* a governed rule, because there is no tool call to watch, so rule
+acquisition is *unmeasurable* on those arms and the report prints `--` rather
+than 0%. Ranking an arm bottom on a metric it was never eligible for is a false
+finding, not a conservative one.
+
+Evidence was in the same position and is no longer. Reaching Conversational
+Analytics through an MCP tool leaves only its prose to scrape, which is why
+`p4_looker_ca` discloses no query on 42% of its cells. That is a limit of the
+tool, not of CA: called directly, the API streams the generated SQL and the
+BigQuery job id, which we
 [verified live](docs/paths.md#what-is-opaque-and-what-that-costs-the-measurement).
-`p4_bq_direct` is that call, and it scores through the existing rubric — but its
-sweep has not run, so today's `--` cells are still `--`. Conversational Analytics
-also spends model tokens server-side that it does not report, so its cost is
-published as a floor. Ranking an arm bottom on a metric it was never eligible for
-is a false finding, not a conservative one.
+`p4_bq_direct` is that call, and now that it has been swept the arm scores
+through the existing rubric at **0% undisclosed** and 1.00 median recall at tier
+1. Going direct buys back evidence; it does not buy back acquisition, and the
+report keeps those two apart. Conversational Analytics also spends model tokens
+server-side that it does not report, so its cost is published as a floor.
 
 **A floor is a debt, not a conclusion.** That Path 4 floor turned out to be
 readable after all — not from the API, but from Cloud Monitoring, which meters

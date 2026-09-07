@@ -79,10 +79,12 @@ self-hosted even though the reasoning they invoke is entirely Google's.
 Conversational Analytics API itself. It is in the grid because the tool and the
 API are not equivalent: the tool takes a question and returns prose, while the
 API streams the SQL it generated and the BigQuery job that ran it. That
-difference is why Path 4's evidence and rule-acquisition columns print `--`
-today — a limit of the transport, not of the service. `p4_bq_direct_ctx` is the
-same call with the tier's glossary passed inline, which is a governance channel
-neither the catalog nor LookML provides.
+difference is why `p4_looker_ca` discloses no query on 42% of its cells and the
+direct arms on 0% of theirs — a limit of the transport, not of the service.
+Rule *acquisition* stays `--` on all four Path 4 arms regardless, because there
+is no tool call to observe the agent reading a rule through. `p4_bq_direct_ctx`
+is the same call with the tier's glossary passed inline, which is a governance
+channel neither the catalog nor LookML provides.
 
 **Path 2's seven tools are matched by construction, not by luck.** Looker's
 managed MCP and the Toolbox `looker` source each expose the same seven, and we
@@ -130,13 +132,47 @@ The two together are why the headline is about **schema verbosity, not tool
 count** — and why trimming `p3_toolbox` to match would change the framing without
 changing a number.
 
-**Transport is the third pair, and it is built but not yet measured.**
-`p4_bq_ca` and `p4_bq_direct` reach the same service over different transports;
-`p4_bq_direct` and `p4_bq_direct_ctx` differ only by the glossary passed inline.
-Every number reported for Path 4 today comes from the tool, so if the two
-transports disagree, the published Path 4 result describes Toolbox's wrapper
-rather than Conversational Analytics. That is the outcome worth knowing and the
-one worth least wanting to be true, which is why the arms exist.
+**Transport is the third pair, and it was the outcome worth least wanting.**
+`p4_bq_ca` and `p4_bq_direct` reach the same service over different transports.
+Every Path 4 number published before 2026-09-07 came from the tool, so the
+question was whether that result described Conversational Analytics or Toolbox's
+wrapper around it. The two disagree:
+
+| Same service, same corpus, same model | accuracy | median s | tokens in / cell | sec / correct |
+|---|---:|---:|---:|---:|
+| `p4_bq_ca` · tier 0 | 23% | 62.4 | 8,867 | 287 |
+| `p4_bq_direct` · tier 0 | 22% | **10.0** | 0 | **51** |
+| `p4_bq_ca` · tier 1 | 75% | 32.8 | 4,634 | 54 |
+| `p4_bq_direct` · tier 1 | **88%** | **10.3** | 0 | **13** |
+
+Thirteen accuracy points and 3.2× the wall clock at tier 1, for the transport
+alone. The tokens column is not a saving: the direct arm runs no local model, so
+its 0 is what the harness records rather than what the question costs, and CA's
+own loop is billed where neither arm can read it (see
+[below](#p4_bq_ca-reports-nothing-which-is-not-the-same-as-spending-nothing)).
+The latency and the accuracy are real.
+
+So the Path 4 rows on every other table describe the wrapper as much as the
+service. That is a limit on what this experiment can say about Conversational
+Analytics — and it is exactly the limit the arms were built to expose rather than
+to leave as a footnote.
+
+**The fourth pair carries its own control.** `p4_bq_direct` and
+`p4_bq_direct_ctx` differ only by a glossary passed in the request. That glossary
+is empty at tier 0 by construction — tier 0 is the ungoverned control, and
+injecting definitions there would hand the arm the very thing the other arms have
+to discover. The two arms therefore send **byte-identical requests** across all
+120 tier-0 cells, which makes them an accidental A/A test:
+
+| | tier 0 (identical requests) | tier 1 (glossary injected) |
+|---|---:|---:|
+| `p4_bq_direct` | 22% | 88% |
+| `p4_bq_direct_ctx` | 23% | **95%** |
+
+One point apart when nothing differs; seven points apart when the glossary does.
+The tier-1 effect is seven times the noise floor the same pair measured for
+itself on the same day against the same endpoint — which is a stronger claim than
+a 7-point delta usually gets to make.
 
 ### What this does not cover
 
@@ -324,7 +360,9 @@ time and recorded in every capture's header:
 `p3_toolbox` binds nearly 3× as many tools as `p3_managed` and is **7.6× smaller**.
 Tool *count* does not predict cost; tool *schema verbosity* does.
 
-Across all ten swept arms, against median tokens per cell:
+Across the ten arms that bind tools, against median tokens per cell (the two
+direct-API arms bind none and run no local model, so neither axis exists for
+them — the chart names them rather than dropping them silently):
 
 | Predictor | tier 0 | tier 1 |
 |---|---:|---:|
@@ -364,10 +402,12 @@ cost result. Every capture records its own measured sizes for that reason. See
 
 ## Latency is a separate axis from cost
 
-Tokens do not predict wall clock. Across the ten swept arms, median tokens against
-median latency correlates at **r = 0.10 (tier 0)** and **r = -0.09 (tier 1)** —
-no relationship in either direction. An arm that costs 100× more does not take
-100× longer, and the cheapest arm on tokens is the slowest on the clock.
+Tokens do not predict wall clock. Across the ten arms that spend tokens locally,
+median tokens against median latency correlates at **r = 0.10 (tier 0)** and
+**r = -0.09 (tier 1)** — no relationship in either direction. An arm that costs
+100× more does not take 100× longer, and the cheapest arm on tokens is the
+slowest on the clock. The two direct-API arms are the limiting case: they spend
+no local tokens at all and are the fastest arms in the experiment.
 
 What does predict latency is **how many turns the agent takes**, at a near
 constant price per turn (tier 0, single-attempt cells only, so no retry backoff
@@ -385,6 +425,8 @@ is counted):
 | `p1_matched` | 3,019 | 78,004 | 71.9s | 14.0 | 5.1 |
 | `p4_bq_ca` | 882 | 8,867 | 62.4s | 3.0 | **20.8** |
 | `p4_looker_ca` | 817 | 16,829 | **146.0s** | 2.0 | **73.0** |
+| `p4_bq_direct` | 0 | 0 | **10.0s** | 0.0 | n/a |
+| `p4_bq_direct_ctx` | 0 | 0 | **10.1s** | 0.0 | n/a |
 
 Every MCP arm sits between 4.1 and 5.4 seconds per tool call regardless of how
 verbose its schemas are — a 47× spread in schema size and a 13× spread in tokens
@@ -392,10 +434,15 @@ produce no spread at all in the per-turn rate. Latency is turn count times a
 constant, so the way to make one of these arms faster is to make it take fewer
 steps, not to make its prompt smaller.
 
-**Path 4 is the exception, and that is the finding.** Both CA arms take one to
-three calls and pay 21s and 73s for each. The agent loop did not disappear when
-the token count dropped — it moved into someone else's process. Latency is the
-part of that hidden loop we can still see from outside.
+**Path 4 is the exception, and that is the finding.** Both CA *tool* arms take
+one to three calls and pay 21s and 73s for each. The agent loop did not disappear
+when the token count dropped — it moved into someone else's process. Latency is
+the part of that hidden loop we can still see from outside.
+
+The direct arms have no per-call rate because they make no tool call: one API
+round-trip, 10 seconds, done. That is the same hidden loop `p4_bq_ca` invokes,
+reached without the local agent wrapped around it — and it runs **6× faster**.
+The 52 seconds in between are the wrapper.
 
 ### Seconds per *correct* answer, which is what a user waits
 
@@ -405,7 +452,9 @@ speed with accuracy, and separates the field much further than either alone:
 
 | Arm | Tier 0 | Tier 1 |
 |---|---:|---:|
-| `p2_toolbox` | 279s | **44s** |
+| `p4_bq_direct_ctx` | **50s** | **12s** |
+| `p4_bq_direct` | **51s** | **13s** |
+| `p2_toolbox` | 279s | 44s |
 | `p4_bq_ca` | 287s | 54s |
 | `p2_managed` | 269s | 62s |
 | `p1_toolbox` | 212s | 63s |
@@ -416,15 +465,23 @@ speed with accuracy, and separates the field much further than either alone:
 | `p3_matched` | 297s | 91s |
 | `p4_looker_ca` | **1,113s** | **240s** |
 
-At tier 0 the field is tight — 212s to 341s for every arm except `p4_looker_ca`,
-which needs **19 minutes of wall clock per right answer**, 3–5× worse than
-anything else. It is not merely the slowest per call; it is also the least
+The two direct arms are in a class of their own on this axis: **12–13 seconds per
+correct answer at tier 1, against 44s for the best MCP arm** and 54s for the same
+service reached as a tool. They are fast *and* the most accurate, which is the
+combination the rest of the field has to trade between. At tier 0 they are
+4–7× ahead of everything else for the same reason — one round trip instead of
+thirteen to twenty.
+
+Among the MCP arms the tier-0 field is tight, 212s to 341s, except `p4_looker_ca`,
+which needs **19 minutes of wall clock per right answer** — 3–5× worse than any
+other MCP arm. It is not merely the slowest per call; it is also the least
 accurate, and the two multiply.
 
 Governance is the biggest lever on this axis too. Every arm improves from tier 0
 to tier 1, by 2.5× (`p1_matched`) to 6.3× (`p2_toolbox`), and almost none of that
 is the model getting faster — it is fewer wasted turns and more of them landing
-correct.
+correct. On the direct arms, which take one turn either way, the 4× improvement
+is *entirely* accuracy: same clock, more of the answers right.
 
 ---
 
@@ -523,6 +580,30 @@ window whose preceding baseline had **no CA requests at all**: 14 successful
 `Chat` calls, and every CA metric still read zero. The calls are real and the
 usage meter does not see them.
 
+**The direct arms rule out the tool.** Until 2026-09-07 every BigQuery-backed CA
+call in this experiment went through Toolbox's
+`bigquery-conversational-analytics`, so "the wrapper routes somewhere unmetered"
+remained a live explanation. The direct arms use no Toolbox, no MCP server and no
+agent — `ca_direct.py` calls `DataChatServiceClient.chat` itself — and across
+their 240 cells they made **243 successful `Chat` RPCs and emitted zero on every
+CA usage metric**, exactly like `p4_bq_ca`:
+
+| Arm | Tier | Successful `Chat` RPCs | CA usage meter | On our Vertex quota |
+|---|:-:|--:|--:|--:|
+| `p4_bq_direct` | 0 | 58 | 0 | 0 |
+| `p4_bq_direct` | 1 | 64 | 0 | 0 |
+| `p4_bq_direct_ctx` | 0 | 63 | 0 | 0 |
+| `p4_bq_direct_ctx` | 1 | 58 | 0 | 0 |
+
+So the discriminator is the **data source, not the transport**: Looker-backed
+conversations meter and BigQuery-backed ones do not, however they are invoked.
+That also settles what the direct arms' `service only` coverage means. Their zero
+recorded tokens are not a new gap opened by going direct — they are `p4_bq_ca`'s
+existing unmetered floor with the local agent loop removed, and the local loop is
+the only part that was ever on a meter. The Vertex column is the check: it reads
+0 for arms that run no local model and tracks the harness exactly for the ones
+that do.
+
 **The spend is not on our quota either.** The `on our quota` column of
 `examples/service_tokens.py` reads the Vertex publisher metric
 (`aiplatform.googleapis.com/publisher/online_serving/token_count`) for
@@ -562,9 +643,11 @@ never adds a floor to a full measurement, and neither should a reader.
 
 ## What is opaque, and what that costs the measurement
 
-Evidence recall and rule acquisition are **unmeasurable** on the Path 4 arms
-rather than zero, so the report prints `--`, never `0%`. Ranking an arm bottom on
-a metric it was never eligible for is a false finding, not a conservative one.
+Rule acquisition is **unmeasurable** on all four Path 4 arms rather than zero, so
+the report prints `--`, never `0%`. Ranking an arm bottom on a metric it was never
+eligible for is a false finding, not a conservative one. Evidence recall was in
+the same position and no longer is — the direct arms recovered it, which is what
+the rest of this section is about.
 
 **The opacity is our transport's, not the service's.** The two MCP-transport
 Path 4 arms call Toolbox's `bigquery-conversational-analytics` tool, which takes
@@ -589,15 +672,31 @@ since it applied the refund rule on `status_flg` but summed the gross-not-net
 `txn_amt_x2`. The `job_id` also makes Path 4's warehouse cost attributable per
 *cell* rather than per time window.
 
-So `--` is correct for this capture and the reason behind it was mis-stated: we
-attributed to Conversational Analytics a limitation that belongs to the MCP tool
-we reached it through. `p4_bq_direct` closes it by calling the API directly, and
-scores through the **existing** rubric — the scorer prefers SQL a service
-disclosed about itself and falls back to scraping a tool trace, so every arm that
-still discloses nothing keeps its `--`. Until that sweep runs, the `--` cells in
-the published report stay `--`. *(Verified for the BigQuery datasource only.
-Whether CA over Looker Explores discloses an equivalent query object is
-untested.)*
+The `--` was correct and the reason behind it was mis-stated: we attributed to
+Conversational Analytics a limitation that belongs to the MCP tool we reached it
+through. `p4_bq_direct` closed it by calling the API directly, and it scores
+through the **existing** rubric — the scorer prefers SQL a service disclosed
+about itself and falls back to scraping a tool trace, so every arm that still
+discloses nothing keeps its `--`. Swept, the two direct arms disclose a query on
+**100% of their cells**, against 58–62% for `p4_looker_ca`:
+
+| Arm | Tier | No query disclosed | Recall (median) | Precision |
+|---|:-:|--:|--:|--:|
+| `p4_bq_direct` | 0 | **0%** | 0.67 | 0.83 |
+| `p4_bq_direct` | 1 | **0%** | 1.00 | 1.00 |
+| `p4_bq_direct_ctx` | 0 | **0%** | 0.67 | 0.88 |
+| `p4_bq_direct_ctx` | 1 | **0%** | 1.00 | 1.00 |
+| `p4_looker_ca` | 0 | 42% | 0.40 | 1.00 |
+| `p4_looker_ca` | 1 | 38% | 1.00 | 1.00 |
+
+Acquisition stays `--` on them all the same, and that is not a gap the transport
+can close: acquisition asks whether the agent *read* the governed rule, and a
+direct call has no tool trace to read it in. On `p4_bq_direct_ctx` the glossary is
+injected by construction rather than discovered, so scoring it as acquired would
+be reading our own request payload back to ourselves. Going direct buys back
+evidence; it does not buy back acquisition. *(Verified for the BigQuery
+datasource only. Whether CA over Looker Explores discloses an equivalent query
+object is untested.)*
 
 Its warehouse spend *is* attributable — CA's BigQuery jobs run under our own tier
 service account and were verified per cell. Its **model** spend is not: CA makes

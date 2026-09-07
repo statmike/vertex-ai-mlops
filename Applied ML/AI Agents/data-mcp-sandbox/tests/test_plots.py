@@ -82,6 +82,44 @@ def test_a_floor_is_drawn_as_a_bound_not_a_measurement():
     assert "measured arms" in axes.get_title()
 
 
+def test_an_arm_with_no_cost_axis_is_named_rather_than_dropped():
+    # The direct-API arms record 0 tokens because no model runs in this process,
+    # so they have no x on a cost chart and are skipped. They are also the two
+    # most accurate arms at tier 1 — dropping them without a word leaves a
+    # procurement chart that looks complete and is missing its winners.
+    scores = _scores({"p1_toolbox": 50_000, "p4_bq_direct": 0})
+    figure = plots.cost_vs_accuracy(scores)
+    assert "p4_bq_direct t1" not in {text.get_text() for text in figure.axes[0].texts}
+    note = " ".join(text.get_text() for text in figure.texts)
+    assert "p4_bq_direct" in note and "Not plotted" in note
+    # Excluded at both tiers, named once. The fixture carries two tiers per arm
+    # and the caller appends per cell, so the first draft of this note read
+    # "p4_bq_direct, p4_bq_direct".
+    assert note.count("p4_bq_direct") == 1
+
+
+def test_an_arm_with_tools_and_tokens_gets_no_exclusion_note():
+    # The note must fire on the structural case only. An arm the *header* happens
+    # not to cover is a different bug, already covered above, and labelling it
+    # "binds no tools" would send a reader to look for a cause that is not there.
+    figure = plots.schema_size_vs_cost(
+        _scores({"p1_managed": 500_000, "p1_toolbox": 50_000}),
+        schemas={"p1_managed": {"schema_chars": 120_009},
+                 "p1_toolbox": {"schema_chars": 7_030}},
+    )
+    assert not figure.texts
+
+
+def test_a_toolless_arm_is_named_on_the_schema_chart():
+    figure = plots.schema_size_vs_cost(
+        _scores({"p1_managed": 500_000, "p4_bq_direct": 0}),
+        schemas={"p1_managed": {"schema_chars": 120_009},
+                 "p4_bq_direct": {"tools": 0, "schema_chars": 0}},
+    )
+    note = " ".join(text.get_text() for text in figure.texts)
+    assert "p4_bq_direct" in note and "no tools" in note
+
+
 # (correct, tokens-per-correct) per tier, read off the M6 capture. Rounded shapes
 # would not do: this test only bites at the real geometry, where the top cluster
 # sits just under the frame edge instead of in synthetic headroom.

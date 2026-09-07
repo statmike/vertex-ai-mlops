@@ -93,7 +93,7 @@ def cost_vs_accuracy(scores: dict[str, scoring.Score]) -> Figure:
     """Tokens spent per correct answer against accuracy, log x.
 
     The procurement chart. Log scale because the arms span two orders of
-    magnitude, which is itself the finding — a linear axis collapses nine arms
+    magnitude, which is itself the finding — a linear axis collapses ten arms
     into one indistinguishable column.
 
     **Path 4 is drawn hollow, with an arrow.** Conversational Analytics runs its
@@ -105,10 +105,16 @@ def cost_vs_accuracy(scores: dict[str, scoring.Score]) -> Figure:
     consequential wrong pixel in the whole report. The arrow says *at least*.
     """
     fig, ax = _figure(8, 5)
-    points, floors = [], []
+    points, floors, unpriced = [], [], []
     for (config, tier), cells in sorted(_by_arm(scores.values()).items()):
         correct = sum(cell.correct for cell in cells)
         tokens = sum(cell.total_tokens for cell in cells)
+        if correct and not tokens:
+            # An arm that answered and spent nothing this process could see. It
+            # has no x, and putting it at zero would place the two most accurate
+            # tier-1 arms at "free" on a chart whose whole point is that cheap
+            # and wrong is not cheap.
+            unpriced.append(config)
         if not correct or not tokens:
             continue  # no correct answers means no cost-per-correct, not an infinite one
         x, y = tokens / correct, correct / len(cells)
@@ -141,6 +147,7 @@ def cost_vs_accuracy(scores: dict[str, scoring.Score]) -> Figure:
     ax.set_title(f"Best is top-left: accurate and cheap. "
                  f"{spread:.0f}x spread across the measured arms.")
     _tier_legend(ax, floors=bool(floors))
+    _excluded_note(fig, unpriced, "no model runs in this process, so they have no cost axis")
     _label(fig, ax, points + floors)  # last: it measures the finished axes
     return fig
 
@@ -156,11 +163,16 @@ def schema_size_vs_cost(
     cost almost exactly, across arms that differ in nothing else.
     """
     fig, ax = _figure(7.5, 5)
-    points = []
+    points, toolless = [], []
     for (config, tier), cells in sorted(_by_arm(scores.values()).items()):
         entry = schemas.get(config, {})
         chars = entry.get("schema_chars")
         tokens = [cell.total_tokens for cell in cells if cell.total_tokens]
+        if not chars and not tokens:
+            # Neither axis exists: no tools to declare and no local model to
+            # charge for declaring them. Genuinely not applicable rather than
+            # missing, but a reader counting arms still deserves to be told.
+            toolless.append(config)
         if not chars or not tokens:
             continue
         ax.scatter(chars, float(np.median(tokens)), s=70, color=TIER_COLOR[tier], alpha=0.85)
@@ -184,6 +196,7 @@ def schema_size_vs_cost(
     ax.set_ylabel("median tokens per cell")
     ax.set_title("Schema verbosity, not tool count, predicts what an arm costs")
     _tier_legend(ax)
+    _excluded_note(fig, toolless, "they bind no tools, so neither axis applies")
     _label(fig, ax, points)  # last: it measures the finished axes
     return fig
 
@@ -191,9 +204,13 @@ def schema_size_vs_cost(
 def acquisition_vs_application(scores: dict[str, scoring.Score]) -> Figure:
     """Where governed cells are lost: never acquired the rule, or acquired and misapplied.
 
-    Only arms where acquisition is *observable* appear — Path 4 discloses no tool
-    evidence, so it is excluded rather than drawn as a zero bar, and named in the
-    subtitle so its absence is a statement instead of an omission.
+    Only arms where acquisition is *observable* appear. Acquisition is read off
+    the tool trace — did the agent call `lookup_context` and get a rule back —
+    and no Path 4 arm has one, because the loop runs inside Conversational
+    Analytics. That holds even for the direct-API arms, which do disclose their
+    SQL: evidence and acquisition are different metrics, and recovering one does
+    not recover the other. Excluded rather than drawn as zero bars, and named in
+    the subtitle so the absence is a statement instead of an omission.
     """
     grouped = _by_arm(
         score for score in scores.values() if score.rules_required and score.tier == 1
@@ -223,7 +240,8 @@ def acquisition_vs_application(scores: dict[str, scoring.Score]) -> Figure:
     ax.set_ylabel("governed cells, tier 1")
     ax.set_title("Acquiring the rule is solved. Applying it is not.")
     if opaque:
-        ax.set_xlabel(f"excluded — no tool evidence to inspect: {', '.join(opaque)}", fontsize=8)
+        ax.set_xlabel(f"excluded — no tool trace, so acquisition is unobservable: "
+                      f"{', '.join(opaque)}", fontsize=8)
     ax.legend(frameon=False, fontsize=8)
     return fig
 
@@ -255,7 +273,7 @@ def _label(
 ) -> None:
     """Annotate scatter points, placing each label where nothing else already is.
 
-    The ten swept arms land in two tight clusters on both scatters and their labels
+    The plotted arms land in two tight clusters on both scatters and their labels
     collided. Two heuristics on point *proximity* were tried first and both
     left overlaps, because what collides is the rendered text box — an arm's
     name is ~70px wide, so two points a comfortable distance apart can still
@@ -324,6 +342,29 @@ def _tier_legend(ax: "matplotlib.axes.Axes", floors: bool = False) -> None:
                               markeredgecolor="#555555", color="#555555",
                               label="floor — true cost is further right"))
     ax.legend(handles=handles, frameon=False, fontsize=8, loc="lower right")
+
+
+def _excluded_note(fig: Figure, arms: list[str], because: str) -> None:
+    """Name the arms a chart could not plot, on the chart.
+
+    Both scatters drop an arm with no x value, and after the direct-API arms
+    landed that is two of twelve — including the two most accurate arms at tier
+    1. A `continue` says nothing to a reader, so a chart that silently omits them
+    reads as a chart of every arm that ran. That is the same mistake as printing
+    an unmeasured cell as 0, moved from a table into a picture, and it is harder
+    to catch there because nothing is visibly missing.
+
+    Callers append per *cell*, so an arm excluded at both tiers arrives twice.
+    Deduplicated here rather than at each call site: the note names arms, and
+    "p4_bq_direct, p4_bq_direct" reads as a bug in the chart, which undermines
+    the one thing the note exists to do.
+    """
+    if not arms:
+        return
+    fig.text(
+        0.5, -0.01, f"Not plotted: {', '.join(sorted(set(arms)))} — {because}.",
+        ha="center", va="top", fontsize=7.5, color="#555555",
+    )
 
 
 def _figure(width: float, height: float) -> tuple[Figure, "matplotlib.axes.Axes"]:

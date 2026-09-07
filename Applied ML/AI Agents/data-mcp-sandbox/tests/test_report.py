@@ -192,14 +192,14 @@ def test_adherence_covers_every_verdict_value():
 
 
 def test_a_single_run_capture_still_prints_its_one_commit():
-    line = report._provenance({"git_commit": "834421c3", "started": "2026-09-05T02:07:23+00:00"})
+    line = report.provenance({"git_commit": "834421c3", "started": "2026-09-05T02:07:23+00:00"})
     assert line == "commit `834421c3`, started 2026-09-05T02:07:23+00:00"
 
 
 def test_a_merged_capture_attributes_each_arm_to_the_code_that_ran_it():
     # Printing the first commit for all of them would say code that never
     # touched the direct arms produced their numbers.
-    line = report._provenance({
+    line = report.provenance({
         "git_commit": "834421c3",  # present but stale; merged_from wins
         "started": "2026-09-05T02:07:23+00:00",
         "merged_from": [

@@ -142,7 +142,7 @@ told it is looking at "the governed context arm" will find governance in it.
 
 It does **not** re-decide the number; accuracy is already settled against the
 oracle. A judge call that errors returns `unclear` rather than raising, so one
-bad response cannot void a pass over 1,200 cells.
+bad response cannot void a pass over 1,440 cells.
 
 **Expect it to wobble.** `gemini-3.7-flash` is a reasoning model, so temperature
 0 is not determinism. Re-judging the same capture moved 13 of 1,000 verdicts

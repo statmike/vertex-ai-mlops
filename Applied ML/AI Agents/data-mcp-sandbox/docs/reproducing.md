@@ -14,7 +14,7 @@ Two different things you might want, which need very different amounts of work:
 `results/capture.json.gz` is the raw sweep: every question, every tool call with
 its arguments and result, every answer, every token count. It carries **no
 scores** — that split is deliberate, because the rubric is the part
-most worth arguing with, and re-running 1,200 live cells to try a different
+most worth arguing with, and re-running 1,440 live cells to try a different
 metric would be absurd.
 
 ```bash

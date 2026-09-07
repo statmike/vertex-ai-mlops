@@ -17,7 +17,7 @@ Three properties, all of them load-bearing:
   of the judge and into code.
 * **Failures are verdicts.** A judge call that errors returns `unclear` with the
   error in its rationale rather than raising, so one bad response cannot void a
-  scoring pass over 1,200 cells.
+  scoring pass over 1,440 cells.
 """
 
 import asyncio

@@ -1,7 +1,7 @@
 """What a sweep will cost, before it is run.
 
 `--dry-run` prints this. The point is that the expensive decision — commit to
-1,200 live model calls, or not — should be made against measured numbers rather
+1,440 live model calls, or not — should be made against measured numbers rather
 than against a shrug, and that a reader on someone else's project can see the
 order of magnitude before their first cell.
 
