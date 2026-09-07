@@ -1,7 +1,7 @@
 """Offline invariants for the sweep planner and its capture format.
 
 No cloud calls and no model calls — these guard the properties that make a
-1,200-cell run recoverable and interpretable, which is exactly what you cannot
+1,440-cell run recoverable and interpretable, which is exactly what you cannot
 afford to discover is broken four hours in.
 """
 
@@ -140,7 +140,7 @@ def test_plan_is_the_full_factorial_with_matched_arms():
     # asked on every arm at every tier for every replicate, and no cell key
     # collides. Written against the actual lengths so that editing the battery
     # for another warehouse changes the size without breaking the property.
-    # As shipped that is 12 x 10 x 2 x 5 = 1,200.
+    # As shipped that is 12 x 12 x 2 x 5 = 1,440.
     questions = _questions()
     configs, tiers, runs = list(mcp_clients.CONFIG_KEYS), [0, 1], 5
     current = battery.plan(questions, configs, tiers, runs)

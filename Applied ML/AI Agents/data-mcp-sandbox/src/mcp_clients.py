@@ -382,7 +382,7 @@ def bind(config_key: str, tier: int) -> Bound:
     """Build the toolsets for one config at one tier.
 
     The caller owns the result and must `close()` it, or Toolbox processes leak
-    across a 960-cell sweep.
+    across a 1,440-cell sweep.
     """
     spec = CONFIGS[config_key]
     toolsets: list[McpToolset] = []

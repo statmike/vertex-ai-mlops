@@ -4,9 +4,14 @@
 each way of connecting one to BigQuery cost?**
 
 This is a controlled experiment, not a demo. The same model asks the same twelve
-questions against the same data through **ten different MCP tool surfaces**, at
-**two governance tiers** over byte-identical corpora, five times each. 1,200 live
-cells. Every answer is scored against a live oracle.
+questions against the same data through **twelve different ways of reaching the
+warehouse**, at **two governance tiers** over byte-identical corpora, five times
+each. Every answer is scored against a live oracle.
+
+The published capture is **1,200 live cells over ten arms**. The other two —
+Conversational Analytics called as a plain API, with no agent and no MCP server
+in the loop — ship complete but have not been swept yet, and every estimate
+labels them as such rather than borrowing a number from their nearest twin.
 
 The corpus is built to be hostile in the ways real warehouses are hostile:
 columns named `txn_amt_x2` that are gross-not-net, a `status_flg` boolean whose
@@ -54,8 +59,8 @@ opt-in via `prices.json`.
 **Want it on your own warehouse?** [`docs/adapting.md`](docs/adapting.md) walks it
 in eight rungs — re-score our capture with no cloud account, run it unchanged in
 your project, then move it toward your data one verifiable step at a time, ending
-at your own tables and your own Looker for all ten arms. Start anywhere; stop
-anywhere. Seven of the ten arms need no Looker instance at all.
+at your own tables and your own Looker for all twelve arms. Start anywhere; stop
+anywhere. Nine of the twelve arms need no Looker instance at all.
 
 ---
 
@@ -95,10 +100,10 @@ must not be able to start an annual charge. Add `SKIP_LOOKER=1` to any target:
 
 ```bash
 make bootstrap SKIP_LOOKER=1
-make sweep SKIP_LOOKER=1     # 840 cells instead of 1,200
+make sweep SKIP_LOOKER=1     # 1,080 cells instead of 1,440
 ```
 
-Seven of ten arms remain, at both governance tiers. The central governed-vs-
+Nine of twelve arms remain, at both governance tiers. The central governed-vs-
 ungoverned result survives; you lose the semantic-layer path.
 
 ---
@@ -143,14 +148,16 @@ deliberately left blank rather than scored zero.
 
 ## How it works
 
-**Three independent choices, not one.** Where the reasoning runs — a local agent
-loop (paths 1–3) or a cloud service that owns the loop (path 4). Who hosts the
+**Four independent choices, not one.** Where the reasoning runs — a local agent
+loop (paths 1–3) or a cloud service that owns the loop (path 4). How you reach it
+— as an MCP tool an agent calls, or as an API you call yourself. Who hosts the
 tools — a Google-managed MCP endpoint or a self-hosted MCP Toolbox. And which
 tools you bind under that server's ceiling, which is 9 on the managed side and 32
 on Toolbox. Path 1 is raw BigQuery, Path 2 routes through a Looker semantic
 layer, Path 3 adds the Knowledge Catalog, Path 4 hands the whole question to
 Conversational Analytics — which is not a fourth server but a *single tool* on one
-you already run. The grid, and why four of its cells are empty, is in
+you already run, and also an API you can call with no server at all. The grid, and
+why some of its cells are empty, is in
 [`docs/paths.md`](docs/paths.md#the-option-space-and-which-of-it-we-ran).
 
 **Fairness is decomposed, not asserted.** Managed and self-hosted differ on two
@@ -159,7 +166,10 @@ tool list constant and vary only the endpoint. `p1_managed` and `p1_matched` bin
 the same five tools and differ **40×** on schema size. `p3_toolbox` and
 `p3_matched` share an endpoint with 23 tools against 8 and differ by **under 7%**,
 at identical tier-1 accuracy. The endpoint is the whole cost story; the tool count
-is not.
+is not. The same decomposition now runs one layer down on Path 4: `p4_bq_direct`
+reaches Conversational Analytics without Toolbox's tool in between, so "the
+service" and "the wrapper we reached it through" stop being one variable. Those
+cells are built but not yet swept.
 
 **Tiers are separated by IAM, not by prompt.** Knowledge Catalog search is
 project-wide and content-addressed — `search_entries` takes a query, not a scope
@@ -183,10 +193,12 @@ query for Path 4, so evidence recall and rule acquisition are *unmeasurable* on
 those arms — the report prints `--`. That is a limit of the MCP tool we reach
 Conversational Analytics through, not of CA itself: called directly, the API
 returns both the generated SQL and the BigQuery job id, which we
-[verified live](docs/paths.md#what-is-opaque-and-what-that-costs-the-measurement)
-but have not yet built an arm around. Conversational Analytics spends model tokens server-side that it does not
-report, so its cost is published as a floor. Ranking an arm bottom on a metric it
-was never eligible for is a false finding, not a conservative one.
+[verified live](docs/paths.md#what-is-opaque-and-what-that-costs-the-measurement).
+`p4_bq_direct` is that call, and it scores through the existing rubric — but its
+sweep has not run, so today's `--` cells are still `--`. Conversational Analytics
+also spends model tokens server-side that it does not report, so its cost is
+published as a floor. Ranking an arm bottom on a metric it was never eligible for
+is a false finding, not a conservative one.
 
 **A floor is a debt, not a conclusion.** That Path 4 floor turned out to be
 readable after all — not from the API, but from Cloud Monitoring, which meters

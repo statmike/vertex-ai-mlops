@@ -57,13 +57,15 @@ against an oracle.
 
 Blue is the reasoning engine. It sits **local** for Paths 1–3 and **in the cloud**
 for Path 4 — that relocation is the whole comparison, and it is why Path 4's cost
-is so hard to see.
+is so hard to see. Path 4 is reached two ways, and the difference matters: as a
+tool inside the local agent loop, or as an API with no agent loop at all.
 
 ```mermaid
 flowchart LR
     subgraph Local["Local / uv environment"]
         ADK["ADK client agent<br/>one model, held constant<br/>isolated InMemoryRunner per cell"]
         TB["MCP Toolbox<br/>self-hosted subprocess<br/>generated tools.yaml"]
+        DIR["Direct API client<br/>no agent, no tools<br/>one stateless ChatRequest"]
     end
 
     subgraph Managed["Google-managed remote MCP"]
@@ -90,7 +92,8 @@ flowchart LR
     TB --> BQ
     TB --> DP
     TB --> LK
-    TB -->|"P4 only"| CA
+    TB -->|"P4 as a tool"| CA
+    DIR -->|"P4 as an API"| CA
     CA --> BQ
     CA --> LK
     LK --> BQ
@@ -100,25 +103,35 @@ flowchart LR
     class ADK,CA brain
 ```
 
-### The ten arms
+### The twelve arms
 
-Deploying an LLM against BigQuery involves **three independent choices**, not one:
-where the reasoning runs (local loop vs. cloud service), who hosts the tools
+Deploying an LLM against BigQuery involves **four independent choices**, not one:
+where the reasoning runs (local loop vs. cloud service), how you reach it (an MCP
+tool an agent calls vs. an API you call yourself), who hosts the tools
 (Google-managed MCP endpoint vs. self-hosted MCP Toolbox), and which tools you
 bind under that server's ceiling. The arms are a grid over those choices:
 
-| Path | Name | Brain | Managed | Self-hosted | Schema-matched |
-|:----:|------|-------|---------|-------------|----------------|
-| 1 | Raw Data Builder | Local | `p1_managed` | `p1_toolbox` | `p1_matched` |
-| 2 | Semantic Router | Local | `p2_managed` | `p2_toolbox` | — |
-| 3 | Governed Context | Local | `p3_managed` | `p3_toolbox` | `p3_matched` |
-| 4 | Managed Agent | **Cloud** | *none exists* | `p4_bq_ca` · `p4_looker_ca` | — |
+| Path | Name | Brain | Managed | Self-hosted | Schema-matched | Direct API |
+|:----:|------|-------|---------|-------------|----------------|------------|
+| 1 | Raw Data Builder | Local | `p1_managed` | `p1_toolbox` | `p1_matched` | — |
+| 2 | Semantic Router | Local | `p2_managed` | `p2_toolbox` | — | — |
+| 3 | Governed Context | Local | `p3_managed` | `p3_toolbox` | `p3_matched` | — |
+| 4 | Managed Agent | **Cloud** | *none exists* | `p4_bq_ca` · `p4_looker_ca` | — | `p4_bq_direct` · `p4_bq_direct_ctx` |
 
 The design started at eight arms. The two **`_matched`** arms were added after the
 first full capture, because managed and self-hosted differed on *two* things at
 once — the endpoint and the tool list — so a cost gap could not be assigned to
 either. A matched arm is self-hosted but restricted to exactly the managed tool
 list, holding tool count constant.
+
+The two **`_direct`** arms were added for the same reason one layer down. Every
+Path 4 number we published came through Toolbox's
+`bigquery-conversational-analytics` tool, so "Conversational Analytics" and "that
+tool" were one variable. They are now two: `p4_bq_direct` calls the API itself
+and `p4_bq_direct_ctx` adds the tier's glossary to the request. It is also what
+makes Path 4 scorable — the tool returns prose, the API returns the SQL it ran.
+Both arms are built and tested; neither has been swept, so nothing in the
+published result comes from them.
 
 That decomposition is what makes the comparison fair, and both halves are
 measured. `p1_managed` and `p1_matched` bind the **same five tools** and differ
@@ -130,9 +143,10 @@ declarations cost more."
 
 Two structural gaps are deliberate rather than missing. Path 4 has no managed
 column because Conversational Analytics is reachable only through Toolbox (F7) —
-it is not a fourth server but a single *tool* on one you already run. Path 2 has
-no matched arm because both its servers expose seven tools and we bind all seven
-on each side, so nothing needed trimming to equalize them. The full grid,
+it is not a fourth server but a single *tool* on one you already run, and also an
+API you can call with no server at all. Path 2 has no matched arm because both
+its servers expose seven tools and we bind all seven on each side, so nothing
+needed trimming to equalize them. The full grid,
 including the one cell skipped on judgement — Toolbox exactly as it ships, which
 is write-enabled and can start billable scans — is in
 [`paths.md`](paths.md#the-option-space-and-which-of-it-we-ran).
@@ -150,7 +164,7 @@ several contradict the docs. Where they disagreed, the server won. Reproduce wit
 | F3 | Managed catalog MCP exposes only **3 tools** — but `lookup_context` returns far more than documented: rule text, every column description, profile statistics, and linked glossary terms. 5,035 chars on the governed table vs 1,554 on the control. | Path 3 Managed is **not** an automatic loss on metadata. It must extract statistics from a YAML blob instead of calling a purpose-built tool — a subtler finding than a flat capability gap, and it is what the battery measures. |
 | F4 | **Version-dependent, and it flipped.** On the pinned Toolbox, `--prebuilt dataplex` ships **24** tools against the managed server's 3. An earlier version shipped 5. | The managed-vs-self-hosted asymmetry is large and **lives on the catalog**. We wire the 15 read-only tools and exclude the 9 that mutate or trigger billable scans. Availability is not reachability — see §6. |
 | F5 | There is no glossary *tool*, but glossary links **do** reach the agent: `lookup_context` renders a `terms:` field per linked column. | Business rules reach a Path 3 agent twice — as the table `overview` and per column — a redundancy the scoring must not double-count. |
-| F6 | Looker's MCP server is **instance-hosted**, not a central Google endpoint, and in preview an admin must pre-register the agent by hand. | Looker is a documented manual prerequisite that fails loudly rather than silently degrading. Seven of ten arms need no Looker at all. |
+| F6 | Looker's MCP server is **instance-hosted**, not a central Google endpoint, and in preview an admin must pre-register the agent by hand. | Looker is a documented manual prerequisite that fails loudly rather than silently degrading. Nine of twelve arms need no Looker at all. |
 | F7 | Conversational Analytics is reachable **only** through Toolbox. Its tools also ship inside `--prebuilt bigquery`. | Path 4 has no managed variant. And a Path 1 agent can reach the Path 4 engine, so scoring **flags any cell that called a CA tool outside Path 4** rather than assuming it did not happen. |
 | F8 | Toolbox's `--prebuilt bigquery` is **write-enabled and unscoped** — a `CREATE OR REPLACE TABLE` succeeded, and a tier-0 run read the tier-1 dataset. | We render our own `tools.yaml` with `writeMode: blocked` and a single-dataset allowlist, mirroring the prebuilt tool names so the comparison stays fair. Neither MCP variant can scope the *catalog* at all, so tier isolation is enforced by **per-tier service accounts**, not by instructions. See [`scoping.md`](scoping.md). |
 
@@ -183,10 +197,13 @@ These are the reasons a number here might not mean what it appears to.
 
 | Limit | What it does to the result |
 |---|---|
-| **The numbers are perishable.** | They are pinned to one model version, one Toolbox version, and vendor tool schemas that change without notice — and schema size *is* the headline cost finding. This decays faster than anything else here. |
+| **The numbers are perishable.** | They are pinned to one model version, one Toolbox version, one Conversational Analytics SDK, and vendor tool schemas that change without notice — and schema size *is* the headline cost finding. This decays faster than anything else here. |
 | **Preview surfaces.** | Looker MCP is preview and its agent registration is manual. It blocks Path 2 only; other paths proceed. |
 | **Availability is not reachability.** | A least-privilege identity makes 11 of the 15 wired Dataplex tools inert — three denied by IAM, eight never called. They still cost schema tokens every turn. That is a real result for anyone in a locked-down project, but it means `p3_toolbox`'s tool count overstates its usable surface. |
-| **Nothing in this capture discloses Path 4's SQL.** | Evidence recall and rule acquisition are *unmeasurable* on those arms, so the report prints `--`. Ranking an arm last on a metric it was never eligible for would be a false finding, not a conservative one. The cause is the MCP tool, not the service — called directly the CA API returns the SQL and the BigQuery job id ([verified](paths.md#what-is-opaque-and-what-that-costs-the-measurement)), so this limit is closable and the roadmap closes it. |
+| **Nothing in this capture discloses Path 4's SQL.** | Evidence recall and rule acquisition are *unmeasurable* on those arms, so the report prints `--`. Ranking an arm last on a metric it was never eligible for would be a false finding, not a conservative one. The cause is the MCP tool, not the service — called directly the CA API returns the SQL and the BigQuery job id ([verified](paths.md#what-is-opaque-and-what-that-costs-the-measurement)). `p4_bq_direct` closes this; its cells are not in the published capture yet. |
+| **The published Path 4 result may describe the wrapper.** | `p4_bq_direct` is not guaranteed to reproduce `p4_bq_ca`. If they diverge, everything reported for Path 4 so far is a property of Toolbox's tool rather than of Conversational Analytics. That is the finding most worth having and least worth wanting. |
+| **A direct arm has no tools, so tool metrics are undefined on it.** | Tool count, schema characters, the tool-call sequence the Equivalence check compares, and latency per tool call are all *absent* rather than zero. Schema size is recorded as 0 so the schema-versus-cost correlation keeps its denominator; the rest print `--`. |
+| **Direct-arm cells will come from a later date.** | The arms ship unswept, so whenever they are run it will be against the same corpus but not in the same run as the 1,200-cell capture, carrying whatever the endpoint's condition is that day. Cross-arm comparison against Path 4 will be sound; against a Path 1 latency median it will be weaker than a within-sweep comparison. |
 | **Path 4's cost is partly off-book.** | Conversational Analytics runs its own model loop server-side and does not report it. For the Looker arm Cloud Monitoring recovers it (a 22× understatement). For the BigQuery arm **no meter this project can read reports it at all** — measured, not assumed. See [`paths.md`](paths.md#p4_bq_ca-reports-nothing-which-is-not-the-same-as-spending-nothing). |
 | **One model, one corpus, one scale.** | Path ranking could be model-dependent; the corpus is small enough that query cost never forces a strategy change. Neither is tested. |
 | **Judge variance.** | Most metrics are deterministic. The judged ones run at temperature 0, blind to config, five replicates — measured wobble is 1.3%, which is the floor on reading anything into a small gap. |

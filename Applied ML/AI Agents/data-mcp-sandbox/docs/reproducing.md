@@ -109,8 +109,8 @@ make plan                     # what a sweep would cost, in time and tokens. Fre
 make smoke                    # 10 cells, ~10 min. Proves the wiring end to end.
 ```
 
-Then walk down the rungs — `make smoke` → `make pilot` (240 cells, ~5h) →
-`make sweep` (1,200 cells, ~26h). Each is the same harness at a different size,
+Then walk down the rungs — `make smoke` → `make pilot` (288 cells, ~5h) →
+`make sweep` (1,440 cells, ~26h). Each is the same harness at a different size,
 so a broken credential shows up on the ten-minute rung.
 
 ### Without Looker
@@ -121,13 +121,14 @@ not be able to start an annual charge. Add `SKIP_LOOKER=1` to any target:
 
 ```bash
 make bootstrap SKIP_LOOKER=1
-make sweep SKIP_LOOKER=1      # 840 cells, ~17h
+make sweep SKIP_LOOKER=1      # 1,080 cells, ~20h
 ```
 
-Seven of ten arms remain, covering paths 1, 3 and Conversational Analytics over
-BigQuery, at both governance tiers. **The central result survives**: governed
-versus ungoverned is still measured on every remaining path. What you lose is
-Path 2 — the semantic-layer arm — and the Looker half of the Path 4 comparison.
+Nine of twelve arms remain, covering paths 1, 3 and Conversational Analytics over
+BigQuery — as a tool and as a direct API call — at both governance tiers. **The
+central result survives**: governed versus ungoverned is still measured on every
+remaining path. What you lose is Path 2 — the semantic-layer arm — and the Looker
+half of the Path 4 comparison.
 
 ### Cost is reported in units, not dollars
 
@@ -192,7 +193,7 @@ to move together. That is the honest answer.
 
 But you do not have to do it in one jump, and you should not. **[adapting.md](adapting.md)
 lays out eight rungs** from "re-score our capture" through "bring your own tables"
-to "bring your own Looker" for all ten arms — each independently runnable, each
+to "bring your own Looker" for all twelve arms — each independently runnable, each
 with the check that proves you got it right.
 `make validate` is the fast loop — offline, free, and run automatically before
 `make setup` provisions anything.

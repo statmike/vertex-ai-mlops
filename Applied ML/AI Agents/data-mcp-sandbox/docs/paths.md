@@ -1,4 +1,4 @@
-# The ten arms
+# The twelve arms
 
 The *what* of the comparison. [method](method.md) is how the sweep is run,
 [questions](questions.md) is what counts as a right answer.
@@ -25,32 +25,37 @@ answered from it. See [`scoping.md`](scoping.md).
 
 ## The option space, and which of it we ran
 
-Choosing how to put an LLM in front of BigQuery is not one decision. It is three,
+Choosing how to put an LLM in front of BigQuery is not one decision. It is four,
 and they are independent:
 
 1. **Where the reasoning runs.** A local agent loop that calls tools and writes
    the SQL itself (Paths 1–3), or a cloud service that owns the loop and hands
    back a finished answer (Path 4).
-2. **Who hosts the tools.** A Google-managed MCP endpoint you authenticate to, or
+2. **How you reach it.** As an MCP tool an agent calls, or as an API you call
+   yourself. This is the axis that is easiest to miss, because for most of these
+   options there is only one answer. For Conversational Analytics there are two,
+   and they do not measure the same.
+3. **Who hosts the tools.** A Google-managed MCP endpoint you authenticate to, or
    the **MCP Toolbox for Databases** running as your own process.
-3. **Which tools you bind.** Every server ships more than you should hand an
+4. **Which tools you bind.** Every server ships more than you should hand an
    agent. You pick a subset under its ceiling — and the ceilings are very
    different sizes.
 
 The one that catches people: **Conversational Analytics is not a fourth server.**
-It is an API service that surfaces as a *single tool* on a server you already run.
-"Use the managed agent" is a tool-selection decision, not an infrastructure one —
-which is why Path 4 has no managed column.
+It is an API service that surfaces as a *single tool* on a server you already run
+— and it is also an API you can call with no server at all. "Use the managed
+agent" is a tool-selection decision, not an infrastructure one, which is why
+Path 4 has no managed column.
 
-Crossing choice 2 with choice 3 gives the grid. Ten arms occupy it; the empty
+Crossing choice 3 with choice 4 gives the grid. Twelve arms occupy it; the empty
 cells are empty for stated reasons, not by omission.
 
-| Tool configuration | Managed endpoint | Self-hosted Toolbox |
-|---|---|---|
-| **As shipped, minus write** | `p1_managed` `p2_managed` `p3_managed` | — *(a)* |
-| **Matched to the managed list** | *(b)* | `p1_matched` `p3_matched` |
-| **Curated for a real deployment** | *(c)* | `p1_toolbox` `p2_toolbox` `p3_toolbox` |
-| **One tool that is a whole agent** | *(d)* | `p4_bq_ca` `p4_looker_ca` |
+| Tool configuration | Managed endpoint | Self-hosted Toolbox | No MCP server |
+|---|---|---|---|
+| **As shipped, minus write** | `p1_managed` `p2_managed` `p3_managed` | — *(a)* | n/a |
+| **Matched to the managed list** | *(b)* | `p1_matched` `p3_matched` | n/a |
+| **Curated for a real deployment** | *(c)* | `p1_toolbox` `p2_toolbox` `p3_toolbox` | n/a |
+| **One tool that is a whole agent** | *(d)* | `p4_bq_ca` `p4_looker_ca` | `p4_bq_direct` `p4_bq_direct_ctx` *(e)* |
 
 **(a) Toolbox exactly as it ships is not run, deliberately.** `--prebuilt
 bigquery` is write-enabled and unscoped — a `CREATE OR REPLACE TABLE` succeeded
@@ -66,16 +71,28 @@ vendor's list *is* the deployment list. Self-hosted Toolbox ships 32 (8 + 24), s
 curation is unavoidable there — we cut 9 that mutate or trigger billable scans and
 kept 23.
 
-**(d) Conversational Analytics has no managed MCP endpoint.** It is reachable only
-through Toolbox, so both Path 4 arms are self-hosted even though the reasoning
-they invoke is entirely Google's.
+**(d) Conversational Analytics has no managed MCP endpoint.** Reached as a tool,
+it is reachable only through Toolbox — so both MCP-transport Path 4 arms are
+self-hosted even though the reasoning they invoke is entirely Google's.
 
-**Path 2 has no matched arm because it needs none.** Looker's managed MCP and the
-Toolbox `looker` source each expose seven tools, and we bind all seven on both
-sides. Nothing was trimmed to equalize them. That makes Path 2 an accidental
-control — and it is the pair with the smallest cost gap in the experiment
-(1.1–1.3× against 6.9–7.7× on Path 1), which is exactly what the schema-verbosity
-finding below predicts.
+**(e) The same service with no MCP server anywhere.** `p4_bq_direct` calls the
+Conversational Analytics API itself. It is in the grid because the tool and the
+API are not equivalent: the tool takes a question and returns prose, while the
+API streams the SQL it generated and the BigQuery job that ran it. That
+difference is why Path 4's evidence and rule-acquisition columns print `--`
+today — a limit of the transport, not of the service. `p4_bq_direct_ctx` is the
+same call with the tier's glossary passed inline, which is a governance channel
+neither the catalog nor LookML provides.
+
+**Path 2's seven tools are matched by construction, not by luck.** Looker's
+managed MCP and the Toolbox `looker` source each expose the same seven, and we
+bind all seven on both sides — but the managed toolset is explicitly filtered to
+that list rather than taken whole, because it is a shared instance where an
+admin enabling an eighth tool would un-match the pair without anyone noticing.
+Nothing had to be trimmed; the filter exists so that stays true. That makes
+Path 2 an accidental control — and it is the pair with the smallest cost gap in
+the experiment (1.1–1.3× against 6.9–7.7× on Path 1), which is exactly what the
+schema-verbosity finding below predicts.
 
 ### Is that fair?
 
@@ -113,12 +130,23 @@ The two together are why the headline is about **schema verbosity, not tool
 count** — and why trimming `p3_toolbox` to match would change the framing without
 changing a number.
 
+**Transport is the third pair, and it is built but not yet measured.**
+`p4_bq_ca` and `p4_bq_direct` reach the same service over different transports;
+`p4_bq_direct` and `p4_bq_direct_ctx` differ only by the glossary passed inline.
+Every number reported for Path 4 today comes from the tool, so if the two
+transports disagree, the published Path 4 result describes Toolbox's wrapper
+rather than Conversational Analytics. That is the outcome worth knowing and the
+one worth least wanting to be true, which is why the arms exist.
+
 ### What this does not cover
 
 Stated so the grid is not mistaken for the whole world: one model, one corpus at
 one scale, single-turn questions only, BigQuery as the only warehouse, and
-Toolbox's non-Google sources untested. Those are on the roadmap, not in the
-result. See [`design.md`](design.md#6-threats-to-validity).
+Toolbox's non-Google sources untested. Conversational Analytics is exercised
+stateless only — its `Conversation` and `DataAgent` modes wait on the multi-turn
+work, and its Looker, property-graph and Looker Studio datasources are untried.
+Those are on the roadmap, not in the result. See
+[`design.md`](design.md#6-threats-to-validity).
 
 ---
 
@@ -228,12 +256,28 @@ tier-1 accuracy.
 
 ## Path 4 — Managed Agent
 
-The reasoning moves to the cloud. One tool, one question in, an answer out.
+The reasoning moves to the cloud. One question in, an answer out.
 
-| Arm | Server | Tools |
-|---|---|---|
-| `p4_bq_ca` | Conversational Analytics over BigQuery | 1 |
-| `p4_looker_ca` | Conversational Analytics over Looker Explores | 1 |
+| Arm | Transport | Datasource | Context sent | Tools |
+|---|---|---|---|---|
+| `p4_bq_ca` | Toolbox MCP tool | BigQuery tables | whatever the tool sends | 1 |
+| `p4_looker_ca` | Toolbox MCP tool | Looker Explores | whatever the tool sends | 1 |
+| `p4_bq_direct` | the API itself | BigQuery tables | datasources only | — |
+| `p4_bq_direct_ctx` | the API itself | BigQuery tables | + the tier's glossary | — |
+
+The two direct arms bind no tools at all, which is why that column reads `—`
+rather than `0`: there is no MCP server in the picture to count tools on. They
+change one thing each. `p4_bq_ca → p4_bq_direct` isolates the **transport**;
+`p4_bq_direct → p4_bq_direct_ctx` isolates the **context payload**, passing the
+same business definitions the catalog carries at tier 1 straight into the
+request. At tier 0 the glossary is empty on both, because tier 0 is the
+ungoverned control.
+
+What is deliberately *not* varied: the direct arms are stateless
+(`inline_context`, no `Conversation` or `DataAgent`), run the default model and
+thinking mode, and send no example queries — `ExampleQuery` carries a
+`sql_query`, and the only queries we have that are correct and relevant are the
+golden oracle's, so filling that field would leak the answer.
 
 ---
 
@@ -280,7 +324,7 @@ time and recorded in every capture's header:
 `p3_toolbox` binds nearly 3× as many tools as `p3_managed` and is **7.6× smaller**.
 Tool *count* does not predict cost; tool *schema verbosity* does.
 
-Across all ten arms, against median tokens per cell:
+Across all ten swept arms, against median tokens per cell:
 
 | Predictor | tier 0 | tier 1 |
 |---|---:|---:|
@@ -320,7 +364,7 @@ cost result. Every capture records its own measured sizes for that reason. See
 
 ## Latency is a separate axis from cost
 
-Tokens do not predict wall clock. Across the ten arms, median tokens against
+Tokens do not predict wall clock. Across the ten swept arms, median tokens against
 median latency correlates at **r = 0.10 (tier 0)** and **r = -0.09 (tier 1)** —
 no relationship in either direction. An arm that costs 100× more does not take
 100× longer, and the cheapest arm on tokens is the slowest on the clock.
@@ -522,12 +566,12 @@ Evidence recall and rule acquisition are **unmeasurable** on the Path 4 arms
 rather than zero, so the report prints `--`, never `0%`. Ranking an arm bottom on
 a metric it was never eligible for is a false finding, not a conservative one.
 
-**The opacity is our transport's, not the service's.** Both Path 4 arms call
-Toolbox's `bigquery-conversational-analytics` tool, which takes a question and
-returns prose. The Conversational Analytics API underneath it returns much more.
-Probed live against `google-cloud-geminidataanalytics` 0.13.2, a single
-`inline_context` chat over one governed table streamed back a `DataMessage`
-carrying both the SQL and the BigQuery job that ran it:
+**The opacity is our transport's, not the service's.** The two MCP-transport
+Path 4 arms call Toolbox's `bigquery-conversational-analytics` tool, which takes
+a question and returns prose. The Conversational Analytics API underneath it
+returns much more. Probed live against `google-cloud-geminidataanalytics` 0.13.2,
+one `inline_context` chat over one governed table streamed back the SQL and the
+BigQuery job that ran it:
 
 ```text
 generated_sql   SELECT SUM(txn_amt_x2) AS total_net_revenue
@@ -536,16 +580,24 @@ generated_sql   SELECT SUM(txn_amt_x2) AS total_net_revenue
 big_query_job   job_id=job_ZxxUiB2hEmMxg8M4UaPUcUhfsgXR  location=US
 ```
 
+Two separate messages, not one — `DataMessage.kind` is a `oneof`, so the query
+and the job that ran it can never appear on the same message and must be read
+off the stream as a whole.
+
 That is scorable on both metrics — and it is a partial trap hit worth scoring,
 since it applied the refund rule on `status_flg` but summed the gross-not-net
-`txn_amt_x2`. A `job_id` would also make Path 4's warehouse cost attributable per
+`txn_amt_x2`. The `job_id` also makes Path 4's warehouse cost attributable per
 *cell* rather than per time window.
 
 So `--` is correct for this capture and the reason behind it was mis-stated: we
 attributed to Conversational Analytics a limitation that belongs to the MCP tool
-we reached it through. Closing it needs a direct-API arm, which is on the roadmap
-and not yet built. *(Verified for the BigQuery datasource only. Whether CA over
-Looker Explores discloses an equivalent query object is untested.)*
+we reached it through. `p4_bq_direct` closes it by calling the API directly, and
+scores through the **existing** rubric — the scorer prefers SQL a service
+disclosed about itself and falls back to scraping a tool trace, so every arm that
+still discloses nothing keeps its `--`. Until that sweep runs, the `--` cells in
+the published report stay `--`. *(Verified for the BigQuery datasource only.
+Whether CA over Looker Explores discloses an equivalent query object is
+untested.)*
 
 Its warehouse spend *is* attributable — CA's BigQuery jobs run under our own tier
 service account and were verified per cell. Its **model** spend is not: CA makes

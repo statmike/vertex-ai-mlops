@@ -161,8 +161,8 @@ def extract_number(answer: str) -> float | None:
     """The headline number from a prose answer, or None if there isn't one.
 
     The agent is told to state the number plainly and it almost always bolds it,
-    so a bolded number outside a code fence wins. Validated against the 960-cell
-    M3 capture: every wrong extraction found there was the agent genuinely
+    so a bolded number outside a code fence wins. Validated against the M3
+    capture: every wrong extraction found there was the agent genuinely
     answering with a different number, not a parse error.
     """
     prose = _CODE_FENCE.sub(" ", answer or "")

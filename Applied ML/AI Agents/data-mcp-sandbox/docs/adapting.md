@@ -17,11 +17,11 @@ exactly that.
 3  Ask your own questions   questions.json            offline check
 4  Add your own metric      + golden.py
 5  Write your governance    + corpus.py               the T1 text
-6  Bring your own tables    + 4 more modules          7 BigQuery arms
-7  Bring your own Looker    + lookml.py + a runbook   all 10 arms
+6  Bring your own tables    + 4 more modules          9 BigQuery arms
+7  Bring your own Looker    + lookml.py + a runbook   all 12 arms
 ```
 
-Rungs 1–6 run **seven of the ten arms** — both governance tiers, all three
+Rungs 1–6 run **nine of the twelve arms** — both governance tiers, all three
 BigQuery paths, and the BigQuery half of Path 4. That is enough for the central
 T1-vs-T0 result. Rung 7 adds the semantic-layer path, and it is the only rung
 that needs a product you may not already own.
@@ -80,11 +80,11 @@ do](reproducing.md#what-you-need-to-be-before-you-start) against your actual pro
 rather than making you read a table. `make bootstrap` creates service accounts and IAM
 bindings, and finding out you cannot halfway through is the annoying way to learn it.
 
-Walk the rungs: `make smoke` (10 cells, ~10 min) → `make pilot` (240, ~5 h) →
-`make sweep` (1,200, ~26 h).
+Walk the rungs: `make smoke` (10 cells, ~10 min) → `make pilot` (288, ~5 h) →
+`make sweep` (1,440, ~26 h).
 
-**No Looker instance?** Add `SKIP_LOOKER=1` to any target — 7 arms, 840 cells,
-~17 h. Looker is the one component behind an annual-commitment purchase, so no
+**No Looker instance?** Add `SKIP_LOOKER=1` to any target — 9 arms, 1,080 cells,
+~20 h. Looker is the one component behind an annual-commitment purchase, so no
 script here creates an instance. What you give up is Path 2 entirely (the
 semantic-layer arms `p2_managed`, `p2_toolbox`, and `p4_looker_ca`); what you keep
 is both tiers on every BigQuery path, which is where the largest measured effect

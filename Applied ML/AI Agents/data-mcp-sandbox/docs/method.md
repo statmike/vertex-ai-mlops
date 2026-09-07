@@ -24,14 +24,20 @@ cannot inherit context — or a token count — from the one before it.
 
 | Factor | Levels | |
 |---|---|---|
-| Arm | 10 | `src/mcp_clients.py` `CONFIGS` |
+| Arm | 12 | `src/mcp_clients.py` `CONFIGS` |
 | Question | 12 | `examples/questions.json` |
 | Governance tier | 2 | tier 0 ungoverned, tier 1 governed |
 | Replicate | 5 | `battery.DEFAULT_RUNS` |
 
-**1,200 cells**, about 26 hours. `make plan` prints the estimate for whatever
+**1,440 cells**, about 26 hours. `make plan` prints the estimate for whatever
 subset you select; `--questions`, `--configs`, `--tiers` and `--runs` cut it down,
-and `make smoke` (10 cells) and `make pilot` (240) are the pre-cut rungs.
+and `make smoke` (12 cells) and `make pilot` (288) are the pre-cut rungs.
+
+The published capture covers **1,200 of those cells over ten arms**. The two
+direct-API arms (`p4_bq_direct`, `p4_bq_direct_ctx`) were added after the sweep
+and have not been run; `make plan` prices them at the worst arm it has actually
+observed and says so on the line, rather than assuming they behave like
+`p4_bq_ca`.
 
 Cells are enumerated **config-major** — arm, then tier, then question, then
 replicate. An interrupted sweep therefore leaves *whole arms* finished rather than

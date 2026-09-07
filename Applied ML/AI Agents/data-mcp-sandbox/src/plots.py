@@ -255,7 +255,7 @@ def _label(
 ) -> None:
     """Annotate scatter points, placing each label where nothing else already is.
 
-    Ten arms land in two tight clusters on both scatters and their labels
+    The ten swept arms land in two tight clusters on both scatters and their labels
     collided. Two heuristics on point *proximity* were tried first and both
     left overlaps, because what collides is the rendered text box — an arm's
     name is ~70px wide, so two points a comfortable distance apart can still

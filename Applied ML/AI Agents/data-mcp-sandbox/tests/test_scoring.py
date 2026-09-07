@@ -1,7 +1,7 @@
 """Invariants for the deterministic scorer.
 
 Every test here corresponds to a way the scorer produced a *plausible but false*
-number against the real 960-cell capture. None of them were caught by the code
+number against the real published capture. None of them were caught by the code
 running cleanly — each one printed a tidy table with a wrong finding in it.
 """
 

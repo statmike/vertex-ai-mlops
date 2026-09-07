@@ -166,7 +166,7 @@ def window(cells: list[traces.Cell]) -> tuple[str, str]:
 def fetch_jobs(client: bigquery.Client, start: str, end: str) -> list[Job]:
     """Every tier-SA BigQuery job in the sweep window, in one query.
 
-    One query for the whole window rather than one per cell: 1,200 metadata
+    One query for the whole window rather than one per cell: 1,440 metadata
     queries would cost more to run than the sweep they are measuring, and would
     themselves show up in the jobs table.
     """

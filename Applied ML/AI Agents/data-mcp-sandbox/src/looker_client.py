@@ -93,7 +93,7 @@ def sdk(section: str = ADMIN_SECTION) -> Looker40SDK:
 
 
 # One live session per section. The SDK renews an expired token on its own, so
-# reusing the session keeps a 960-cell sweep from logging in once per request —
+# reusing the session keeps a 1,440-cell sweep from logging in once per request —
 # Looker rate-limits `/login`, and a fresh session per cell would find it.
 _sessions: dict[str, Looker40SDK] = {}
 

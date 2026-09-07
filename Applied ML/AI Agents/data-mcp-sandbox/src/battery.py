@@ -1,11 +1,11 @@
 """Plan and run the evaluation sweep, one cell at a time.
 
 The sweep is a full factorial: every question, on every config, at every tier,
-repeated `runs` times. At the default n=5 that is 12 x 8 x 2 x 5 = 960 cells
+repeated `runs` times. At the default n=5 that is 12 x 12 x 2 x 5 = 1,440 cells
 (docs/method.md).
 
 This module **captures only**. No scoring happens here and none should: the
-rubric will change, and re-running 960 live cells to try a new metric would be
+rubric will change, and re-running 1,440 live cells to try a new metric would be
 absurd. `traces.Cell` is the contract handed to `build_results.py`.
 
 Three properties the sweep depends on, all of them deliberate:
@@ -37,7 +37,7 @@ import toolbox_server
 import traces
 
 QUESTIONS_PATH = Path(config.PROJECT_ROOT) / "examples" / "questions.json"
-# Raw captures, not the scored output. `results/raw/` is gitignored: 960 cells with
+# Raw captures, not the scored output. `results/raw/` is gitignored: 1,440 cells with
 # full tool results is tens of MB and is reproducible with `make sweep`, whereas the
 # scored tables and plots that land beside it are small and tracked.
 RESULTS_PATH = Path(config.PROJECT_ROOT) / "results" / "raw" / "results.json"

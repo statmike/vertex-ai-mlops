@@ -5,10 +5,16 @@ Reusing a runner would let one question's context bleed into the next, and
 running cells concurrently would make per-config latency and token attribution
 meaningless (docs/method.md).
 
-The instruction is deliberately **uniform across all 10 configs and both tiers**.
+The instruction is deliberately **uniform across every agent arm and both tiers**.
 It names the data location and asks for a number; it says nothing about
 governance, refunds, or which revenue column is real. Anything more would hand
 the agent the answer the experiment is trying to measure it discovering.
+
+The two direct-API arms never reach this module — they have no agent and no tool
+loop at all, so `ca_direct.py` carries its own minimal answer-format instruction
+and `battery.ask` routes them there. What they *do* share is this module's
+`Outcome` shape and retry policy, deliberately, so a 503 cannot be forgiven on
+one transport and charged as a defect on the other.
 """
 
 import asyncio

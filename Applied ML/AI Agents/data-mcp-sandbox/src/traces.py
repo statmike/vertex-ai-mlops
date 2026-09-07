@@ -2,7 +2,7 @@
 
 `run_battery.py` captures; `build_results.py` scores. These dataclasses are the
 contract between the two, and they hold **no scores** — only what happened. That
-split is deliberate: the rubric will change, and re-running 960 live cells to
+split is deliberate: the rubric will change, and re-running 1,440 live cells to
 try a new metric would be absurd (docs/method.md).
 
 Everything a scorer could need must therefore be captured here, including tool
@@ -141,7 +141,7 @@ def load(path: Path) -> dict[str, Cell]:
 def save(path: Path, cells: dict[str, Cell], header: dict[str, Any]) -> None:
     """Write every cell plus the reproducibility header (docs/method.md).
 
-    Rewrites the whole file each time rather than appending. At 960 cells the
+    Rewrites the whole file each time rather than appending. At 1,440 cells the
     file is a few MB, and a single valid JSON document is worth far more than
     the saved I/O when the run is interrupted halfway.
     """

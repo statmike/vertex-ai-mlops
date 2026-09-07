@@ -3,7 +3,7 @@
     uv run python examples/run_battery.py --dry-run
     uv run python examples/run_battery.py --configs p1_managed --runs 1
     uv run python examples/run_battery.py --skip-looker    # no Looker instance needed
-    uv run python examples/run_battery.py                  # the full 1,200-cell sweep
+    uv run python examples/run_battery.py                  # the full 1,440-cell sweep
     uv run python examples/run_battery.py --resume         # pick up after an interrupt
 
 **This costs money and takes hours.** Every cell is a live model call against
