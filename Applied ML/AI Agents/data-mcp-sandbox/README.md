@@ -87,7 +87,7 @@ make preflight        # can you provision this? two read-only IAM calls, free
 make bootstrap        # APIs, Toolbox binary, tier identities, corpus, governance
 make verify-isolation # prove tier 0 cannot read tier 1 — do not skip this
 make plan             # what a sweep would cost, in time and tokens. Free.
-make smoke            # 10 cells, ~10 min. Proves the wiring end to end.
+make smoke            # 12 cells, ~10 min. Proves the wiring end to end.
 ```
 
 `make help` lists everything.

@@ -80,7 +80,7 @@ do](reproducing.md#what-you-need-to-be-before-you-start) against your actual pro
 rather than making you read a table. `make bootstrap` creates service accounts and IAM
 bindings, and finding out you cannot halfway through is the annoying way to learn it.
 
-Walk the rungs: `make smoke` (10 cells, ~10 min) → `make pilot` (288, ~5 h) →
+Walk the rungs: `make smoke` (12 cells, ~10 min) → `make pilot` (288, ~5 h) →
 `make sweep` (1,440, ~26 h).
 
 **No Looker instance?** Add `SKIP_LOOKER=1` to any target — 9 arms, 1,080 cells,

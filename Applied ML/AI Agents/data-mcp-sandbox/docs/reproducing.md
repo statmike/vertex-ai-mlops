@@ -106,7 +106,7 @@ make preflight                # read-only: can you provision this? free
 make bootstrap                # APIs, toolbox binary, identities, corpus, governance
 make verify-isolation         # prove tier 0 cannot read tier 1 — do not skip this
 make plan                     # what a sweep would cost, in time and tokens. Free.
-make smoke                    # 10 cells, ~10 min. Proves the wiring end to end.
+make smoke                    # 12 cells, ~10 min. Proves the wiring end to end.
 ```
 
 Then walk down the rungs — `make smoke` → `make pilot` (288 cells, ~5h) →
