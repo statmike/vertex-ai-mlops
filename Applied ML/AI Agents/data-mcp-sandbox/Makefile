@@ -174,3 +174,8 @@ service-tokens:
 # be published and the rubric re-run by someone with no project of their own.
 export:
 	uv run python scripts/export_capture.py
+
+# Compare two captures that differ on one declared axis. Refuses rather than
+# subtracting captures that disagree on anything else (Amendment C.0).
+compare:
+	uv run python scripts/compare_captures.py --base $(BASE) --against $(AGAINST) --axis $(AXIS)

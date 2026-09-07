@@ -111,6 +111,47 @@ the scorer costs a minute, where re-running the sweep costs a day and a live clo
 project. It is also why `results/capture.json.gz` ships — see
 [reproducing](reproducing.md#1-re-scoring-our-capture-no-cloud-account).
 
+### One capture per experiment, compared rather than merged
+
+`MUST_AGREE` holds `agent_model` and `tiers`, so a sweep on a different model, or
+over a different set of governance rungs, **cannot** be merged into the published
+capture. That is not a limitation to work around — those sweeps did not measure
+the same thing, and one accuracy number averaged over two different independent
+variables is not a result.
+
+So the project produces a **family** of captures, each varying one axis and each
+self-describing through its own header — own oracle, own freeze time, own commit:
+
+| File | Varies |
+|---|---|
+| `results/capture.json.gz` | the published twelve-arm factorial |
+| `capture-thinking.json.gz` | `thinking_mode` on the direct arms |
+| `capture-ladder.json.gz` | governance rungs |
+| `capture-model-<id>.json.gz` | the client model |
+
+`scripts/compare_captures.py` is how they are read together. A comparison
+declares the axes it is allowed to vary; anything else in `MUST_AGREE` that
+differs is a **conflict**, and the script prints it and exits non-zero rather
+than emitting a delta. It withholds the numbers in that case, and also when the
+declared axis turns out to be identical in both files — a table printed under a
+warning banner gets quoted as a result with an asterisk.
+
+Two properties worth knowing before reading any cross-capture number:
+
+* **Cells are paired by key, never pooled.** A question, tier or replicate
+  present in only one capture is dropped and counted, so comparing an n=3 sweep
+  against an n=5 one silently changes no denominator — it pairs three replicates
+  and reports the other two as unpaired.
+* **Arm orderings closer than the noise floor are `unresolved`, not ordered.**
+  The floor is the measured 1 point from the accidental A/A control (see
+  [paths](paths.md)). Rank agreement is computed over resolved pairs only;
+  counting the rest as agreement would let a comparison in which nothing
+  separated any arm report perfect stability.
+
+Comparison runs the deterministic scorer only — no judge. The judge is a model
+call with ~1.3% verdict wobble, which would let two captures differ because they
+were graded twice rather than because they measured different things.
+
 ### The oracle is frozen when the sweep starts
 
 Scoring is deferred, but the *right answers* cannot be. The corpus anchors its

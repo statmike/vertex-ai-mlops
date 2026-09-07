@@ -55,7 +55,7 @@ def median_iqr(values: Iterable[float]) -> tuple[float | None, float | None]:
     return st.median(data), quartiles[2] - quartiles[0]
 
 
-def _table(headers: list[str], rows: list[list[str]]) -> str:
+def table(headers: list[str], rows: list[list[str]]) -> str:
     line = "| " + " | ".join(headers) + " |"
     rule = "|" + "|".join("---" for _ in headers) + "|"
     body = ["| " + " | ".join(row) + " |" for row in rows]
@@ -143,7 +143,7 @@ def capture_health(scores: dict[str, scoring.Score]) -> str:
             str(sum(1 for s in group if s.attempts > 1)),
             fmt(rate(group, lambda s: s.ca_leak), ".0%"),
         ])
-    return _table(
+    return table(
         ["config", "tier", "attempted", "scored", "failed", "quota-retried", "CA leak"], rows
     )
 
@@ -159,7 +159,7 @@ def accuracy(scores: dict[str, scoring.Score]) -> str:
             fmt(rate(group, lambda s: s.sprang_trap), ".0%"),
             fmt(rate(group, lambda s: s.used_distractor), ".0%"),
         ])
-    return _table(["config", "tier", "n", "correct", "sprang trap", "used decoy"], rows)
+    return table(["config", "tier", "n", "correct", "sprang trap", "used decoy"], rows)
 
 
 def acquisition(scores: dict[str, scoring.Score]) -> str:
@@ -179,7 +179,7 @@ def acquisition(scores: dict[str, scoring.Score]) -> str:
             fmt(rate(inspectable, lambda s: s.acquired), ".0%"),
             fmt(rate(inspectable, lambda s: s.application_loss), ".0%"),
         ])
-    return _table(
+    return table(
         ["config", "tier", "n", "opaque", "acquired", "application loss"], rows
     )
 
@@ -199,7 +199,7 @@ def evidence(scores: dict[str, scoring.Score]) -> str:
             fmt(rate(group, lambda s: not s.evidence_observable), ".0%"),
             fmt(recall), fmt(recall_iqr), fmt(precision),
         ])
-    return _table(
+    return table(
         ["config", "tier", "no query disclosed", "recall (median)", "IQR", "precision"], rows
     )
 
@@ -221,7 +221,7 @@ def latency(scores: dict[str, scoring.Score]) -> str:
             key, str(tier), str(len(clean)), str(len(group) - len(clean)),
             fmt(median, ".1f"), fmt(iqr, ".1f"), fmt(calls, ".1f"),
         ])
-    return _table(
+    return table(
         ["config", "tier", "clean cells", "excluded", "median s", "IQR", "tool calls"], rows
     )
 
@@ -281,7 +281,7 @@ def spend(
             "That is absent, not free; the model spend is entirely on the meter "
             "this report cannot see."
         )
-    return _table(
+    return table(
         ["config", "tier", "tokens (median)", "IQR", "thoughts", "MiB billed",
          "USD (mean)", "unmeasured spend"],
         rows,
@@ -312,7 +312,7 @@ def adherence(
                 for value in judge_module.ADHERENCE_VALUES
             ],
         ])
-    return _table(["config", "tier", "n", *judge_module.ADHERENCE_VALUES], rows)
+    return table(["config", "tier", "n", *judge_module.ADHERENCE_VALUES], rows)
 
 
 def equivalence(
@@ -335,7 +335,7 @@ def equivalence(
             fmt(result.fraction("same_value"), ".0%"),
             fmt(result.fraction("same_verdict"), ".0%"),
         ])
-    return _table(
+    return table(
         ["config A", "config B", "pairs", "same tool sequence", "same value", "same verdict"],
         rows,
     )
@@ -386,7 +386,7 @@ def headline(
             fmt(_per(mib, correct), ".1f"),
             _coverage(entries, absent),
         ])
-    return _table(
+    return table(
         ["config", "tier", "accuracy (mean)", "tokens in / correct",
          "tokens out / correct", "sec / correct", "BQ jobs / correct",
          "MiB / correct", "coverage"],
@@ -664,6 +664,6 @@ def build(
             "on prompt tokens. Measured live at sweep time, because a vendor can "
             "change them without notice.",
             "",
-            _table(["config", "tools", "schema chars"], schema_rows),
+            table(["config", "tools", "schema chars"], schema_rows),
         ]
     return "\n".join(sections) + "\n"
