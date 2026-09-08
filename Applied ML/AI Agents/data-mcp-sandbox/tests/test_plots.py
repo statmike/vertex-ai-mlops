@@ -177,3 +177,46 @@ def test_labels_do_not_overlap_each_other():
         for i, a in enumerate(boxes) for b in boxes[i + 1:] if a.overlaps(b)
     ]
     assert not overlaps
+
+
+# --- rendering a ladder capture -----------------------------------------------
+
+
+def _ladder_scores():
+    """One arm at every rung, accuracy climbing with the rung."""
+    out = {}
+    for index, tier in enumerate((0, 2, 3, 4, 1)):
+        for replicate in range(2):
+            score = _score("p1_managed", tier, correct=tier != 0,
+                           tokens=1000, index=index * 10 + replicate)
+            out[score.cell_key] = score
+    return out
+
+
+def test_the_headline_chart_draws_every_rung_instead_of_raising_on_the_new_ones():
+    # TIER_COLOR and TIER_LABEL were two-entry dicts, so a ladder capture took
+    # out the chart with a KeyError rather than plotting three-fifths of itself.
+    figure = plots.accuracy_by_tier(_ladder_scores())
+    labels = [text.get_text() for text in figure.axes[0].get_legend().get_texts()]
+    assert len(labels) == 5
+    assert labels == sorted(labels, key=lambda text: int(text.split()[1]))
+    assert labels[0].startswith("rung 0")
+    assert labels[-1].startswith("rung 4")
+
+
+def test_the_published_two_tier_chart_keeps_its_wording_and_its_geometry():
+    # Adding ladder support must not restyle the committed figures. Both the
+    # legend text and the bar width are load-bearing: the width expression is
+    # `0.76 / len(tiers)`, which is exactly the published 0.38 at two tiers.
+    figure = plots.accuracy_by_tier(_scores({"p1_managed": 1000, "p3_toolbox": 2000}))
+    labels = [text.get_text() for text in figure.axes[0].get_legend().get_texts()]
+    assert labels == ["tier 0 · ungoverned", "tier 1 · governed"]
+    assert all(abs(bar.get_width() - 0.38) < 1e-9 for bar in figure.axes[0].patches)
+
+
+def test_rung_colours_are_distinct_so_five_series_stay_tellable_apart():
+    assert len(set(plots.TIER_COLOR[tier] for tier in (0, 2, 3, 4, 1))) == 5
+
+
+def test_tiers_sort_by_rung_and_not_by_the_integer():
+    assert plots._tiers_in(_ladder_scores().values()) == [0, 2, 3, 4, 1]

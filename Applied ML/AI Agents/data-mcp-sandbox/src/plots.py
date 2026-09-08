@@ -31,13 +31,49 @@ from matplotlib.transforms import Bbox
 import mcp_clients
 import scoring
 
+# Names, not the module. `config` is a loop variable throughout this file (it is
+# the arm key), so `import config` would be shadowed inside `cost_vs_accuracy`
+# and read as if it were not.
+from config import TIER_LABELS, carries, rung_key, rung_of
+
 # No `matplotlib.use(...)` here on purpose. Nothing in this module touches
 # pyplot — figures are constructed directly and `_label` attaches its own Agg
 # canvas when it needs to measure text — so the global backend is irrelevant
 # headless, and forcing one would break `%matplotlib inline` in a notebook.
 
-TIER_COLOR = {0: "#c44e52", 1: "#4c72b0"}
+# Keyed by tier integer, ordered by rung: red control, warming through the
+# intermediate rungs, blue at the fully governed top. The two published tiers keep
+# the colours the committed figures already use, so a ladder capture adds rungs to
+# these charts rather than restyling them.
+TIER_COLOR = {0: "#c44e52", 2: "#dd8452", 3: "#c9a227", 4: "#8172b3", 1: "#4c72b0"}
 TIER_LABEL = {0: "tier 0 · ungoverned", 1: "tier 1 · governed"}
+
+
+def _tiers_in(scores: Iterable[scoring.Score]) -> list[int]:
+    """Every tier present, in ladder reading order — never sorted by the integer.
+
+    Read off the capture rather than off `config.TIERS`, because a chart is
+    rendered from a file and the reader's `LADDER` env var says nothing about
+    what that file holds.
+    """
+    return sorted({score.tier for score in scores}, key=rung_key)
+
+
+def _is_ladder(tiers: Iterable[int]) -> bool:
+    """Whether these tiers are a ladder rather than the published pair."""
+    return bool(set(tiers) - {0, 1})
+
+
+def _tier_label(tier: int, ladder: bool) -> str:
+    """A tier's legend entry.
+
+    Two-tier captures keep their published wording verbatim; the ladder prints
+    the rung position and the increment, because `tier 4 · governed` would be
+    wrong twice over — 4 is not the position and the tier is not the top rung.
+    """
+    if not ladder:
+        return TIER_LABEL[tier]
+    return f"rung {rung_of(tier)} · {TIER_LABELS[tier]}"
 
 
 def _by_arm(scores: Iterable[scoring.Score]) -> dict[tuple[str, int], list[scoring.Score]]:
@@ -72,12 +108,19 @@ def accuracy_by_tier(scores: dict[str, scoring.Score]) -> Figure:
     grouped = _by_arm(scores.values())
     configs = sorted({config for config, _ in grouped})
     positions = np.arange(len(configs))
-    width = 0.38
+    tiers = _tiers_in(scores.values())
+    ladder = _is_ladder(tiers)
+    # 0.76 total across however many tiers there are. At two that is 0.38 with
+    # offsets at ∓0.19 — exactly the published geometry, so adding ladder support
+    # does not redraw the committed two-tier figures.
+    width = 0.76 / len(tiers)
 
     fig, ax = _figure(9, 4.5)
-    for offset, tier in ((-width / 2, 0), (width / 2, 1)):
+    for index, tier in enumerate(tiers):
+        offset = (index - (len(tiers) - 1) / 2) * width
         values = [_rate(grouped.get((config, tier), []), "correct") for config in configs]
-        ax.bar(positions + offset, values, width, label=TIER_LABEL[tier], color=TIER_COLOR[tier])
+        ax.bar(positions + offset, values, width,
+               label=_tier_label(tier, ladder), color=TIER_COLOR[tier])
 
     ax.set_xticks(positions)
     ax.set_xticklabels(configs, rotation=30, ha="right")
@@ -146,7 +189,7 @@ def cost_vs_accuracy(scores: dict[str, scoring.Score]) -> Figure:
     spread = max(x for x, _, _ in points) / min(x for x, _, _ in points)
     ax.set_title(f"Best is top-left: accurate and cheap. "
                  f"{spread:.0f}x spread across the measured arms.")
-    _tier_legend(ax, floors=bool(floors))
+    _tier_legend(ax, _tiers_in(scores.values()), floors=bool(floors))
     _excluded_note(fig, unpriced, "no model runs in this process, so they have no cost axis")
     _label(fig, ax, points + floors)  # last: it measures the finished axes
     return fig
@@ -195,7 +238,7 @@ def schema_size_vs_cost(
     ax.set_xlabel("tool schema size (characters, measured at sweep time)")
     ax.set_ylabel("median tokens per cell")
     ax.set_title("Schema verbosity, not tool count, predicts what an arm costs")
-    _tier_legend(ax)
+    _tier_legend(ax, _tiers_in(scores.values()))
     _excluded_note(fig, toolless, "they bind no tools, so neither axis applies")
     _label(fig, ax, points)  # last: it measures the finished axes
     return fig
@@ -212,14 +255,26 @@ def acquisition_vs_application(scores: dict[str, scoring.Score]) -> Figure:
     not recover the other. Excluded rather than drawn as zero bars, and named in
     the subtitle so the absence is a statement instead of an omission.
     """
+    # `carries(tier, "rules")`, not `tier == 1`. Those agree on the published
+    # capture and disagree on the ladder, where rung 3 (`tier4`) is the rung that
+    # *adds* business rules — filtering it out would drop the one rung this chart
+    # exists to explain and leave the top rung claiming the whole effect.
     grouped = _by_arm(
-        score for score in scores.values() if score.rules_required and score.tier == 1
+        score for score in scores.values()
+        if score.rules_required and carries(score.tier, "rules")
     )
     opaque = sorted({
         config for (config, _), cells in grouped.items()
         if not any(cell.acquisition_observable for cell in cells)
     })
-    arms = sorted(key for key in grouped if key[0] not in opaque)
+    # By rung within an arm, not by the tier integer: sorting `(config, tier)`
+    # would put the top rung (`tier1`) to the left of the rung below it (`tier4`).
+    rule_tiers = sorted({tier for _, tier in grouped}, key=rung_key)
+    ladder = _is_ladder(rule_tiers)
+    arms = sorted(
+        (key for key in grouped if key[0] not in opaque),
+        key=lambda key: (key[0], rung_key(key[1])),
+    )
 
     fig, ax = _figure(8, 4.5)
     positions = np.arange(len(arms))
@@ -234,10 +289,17 @@ def acquisition_vs_application(scores: dict[str, scoring.Score]) -> Figure:
            label="other failure", color="#b0b0b0")
 
     ax.set_xticks(positions)
-    ax.set_xticklabels([f"{config}" for config, _ in arms], rotation=30, ha="right")
+    # On the ladder each arm appears once per rule-carrying rung, so the arm name
+    # alone would label two different bars identically.
+    ax.set_xticklabels(
+        [f"{config} · r{rung_of(tier)}" if ladder else f"{config}" for config, tier in arms],
+        rotation=30, ha="right",
+    )
     ax.set_ylim(0, 1)
     ax.yaxis.set_major_formatter(lambda y, _: f"{y:.0%}")
-    ax.set_ylabel("governed cells, tier 1")
+    ax.set_ylabel(
+        "cells carrying the rule, by rung" if ladder else "governed cells, tier 1"
+    )
     ax.set_title("Acquiring the rule is solved. Applying it is not.")
     if opaque:
         ax.set_xlabel(f"excluded — no tool trace, so acquisition is unobservable: "
@@ -323,7 +385,11 @@ def _marker_box(ax: "matplotlib.axes.Axes", x: float, y: float) -> Bbox:
     )
 
 
-def _tier_legend(ax: "matplotlib.axes.Axes", floors: bool = False) -> None:
+def _tier_legend(
+    ax: "matplotlib.axes.Axes",
+    tiers: list[int] | None = None,
+    floors: bool = False,
+) -> None:
     """Name the two colours on charts that carry no labelled series.
 
     The bar charts get a legend from their own artists; the scatters encode tier
@@ -335,8 +401,10 @@ def _tier_legend(ax: "matplotlib.axes.Axes", floors: bool = False) -> None:
     # `x`: without it the top-row arms have nowhere above them to put a label and
     # all fall back to their below-slot, straight into the cluster underneath.
     ax.margins(x=0.14, y=0.10)
+    shown = list(tiers) if tiers else [0, 1]
+    ladder = _is_ladder(shown)
     handles = [Line2D([], [], marker="o", linestyle="", color=TIER_COLOR[tier],
-                      label=TIER_LABEL[tier]) for tier in (0, 1)]
+                      label=_tier_label(tier, ladder)) for tier in shown]
     if floors:
         handles.append(Line2D([], [], marker="o", linestyle="", markerfacecolor="none",
                               markeredgecolor="#555555", color="#555555",

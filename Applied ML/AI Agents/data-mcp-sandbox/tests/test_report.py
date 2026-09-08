@@ -298,3 +298,75 @@ def test_scored_records_survive_the_scores_json_round_trip():
             **json_module.loads(json_module.dumps(dataclasses.asdict(original), default=str))
         )
         assert revived == original, f"{type(original).__name__} does not round-trip"
+
+
+# --- rendering a ladder capture -----------------------------------------------
+#
+# Every test here fails against the two-tier renderer, which hardcoded `(0, 1)`
+# and so dropped three of five rungs from every table without saying so. The
+# governing rule: **what gets rendered is a property of the capture, never of the
+# reader's `LADDER` env var.** A capture is a file, and someone opening a
+# five-rung one must not have to reconfigure their shell to see all of it.
+
+
+def _ladder_scores():
+    """One correct cell per rung, on one arm. Tiers in file order, not rung order."""
+    return {
+        f"c{tier}": _score(f"c{tier}", tier=tier, answered=True, correct=True)
+        for tier in (0, 1, 2, 3, 4)
+    }
+
+
+def test_every_rung_reaches_the_tables_instead_of_being_silently_dropped():
+    scores = _ladder_scores()
+    assert report._tiers_in(scores) == [0, 2, 3, 4, 1]
+    assert len(report._arms(scores)) == 5
+    # The count line must agree with the tables, or a truncation reads as a
+    # narrow sweep rather than as a rendering bug.
+    assert len({(s.config, s.tier) for s in scores.values()}) == 5
+
+
+def test_tiers_are_ordered_by_rung_and_not_by_the_integer():
+    # The whole point of append-don't-renumber: sorted() on the integer puts the
+    # TOP rung second, and a reader tracing the trend left to right gets it
+    # backwards on a chart that looks completely normal.
+    scores = _ladder_scores()
+    assert report._tiers_in(scores) == [0, 2, 3, 4, 1]
+    assert report._tiers_in(scores) != sorted({0, 1, 2, 3, 4})
+
+
+def test_a_ladder_prints_the_rung_and_a_two_tier_capture_prints_the_tier():
+    ladder = _ladder_scores()
+    assert report._tier_head(ladder) == "rung"
+    assert [report._tier_cell(ladder, t) for t in report._tiers_in(ladder)] == \
+        ["0", "1", "2", "3", "4"]
+
+    published = {k: v for k, v in ladder.items() if v.tier in (0, 1)}
+    assert report._tier_head(published) == "tier"
+    assert [report._tier_cell(published, t) for t in report._tiers_in(published)] == ["0", "1"]
+
+
+def test_the_legend_is_the_only_place_the_raw_tier_integer_appears():
+    # `traces.cell_key` embeds the integer, so it cannot be suppressed entirely —
+    # it is confined to one lookup table instead of scattered down a column where
+    # it reads as a rung.
+    legend = report.rungs(_ladder_scores())
+    for tier in (0, 1, 2, 3, 4):
+        assert f"`tier{tier}`" in legend
+    assert "+ business rules" in legend
+
+
+def test_a_two_tier_capture_gets_no_ladder_legend_at_all():
+    # Empty rather than a one-row table: a legend explaining that tier 0 is tier 0
+    # is noise, and an empty section would put a stray blank line into the
+    # published report for a feature it is not using.
+    assert report.rungs({k: v for k, v in _ladder_scores().items() if v.tier in (0, 1)}) == ""
+
+
+def test_an_unknown_tier_is_rendered_last_rather_than_crashing_the_report():
+    # A capture may hold a tier this code has never heard of. Losing the whole
+    # report over it loses the rungs that were perfectly readable.
+    scores = _ladder_scores()
+    scores["c9"] = _score("c9", tier=9, answered=True, correct=True)
+    assert report._tiers_in(scores) == [0, 2, 3, 4, 1, 9]
+    assert report._tier_cell(scores, 9) == "?9"

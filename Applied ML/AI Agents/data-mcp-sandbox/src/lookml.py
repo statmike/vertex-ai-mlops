@@ -73,7 +73,10 @@ def _dimension(column: corpus.Column, primary_key: str) -> str:
 
 def _view(table: corpus.Table, tier: int) -> str:
     """One view. Descriptions and measures appear at tier 1 only."""
-    governed = tier >= 1
+    # Not `tier >= 1`. That is the predicate that granted four tiers the glossary
+    # (DEV_NOTES 2026-09-08); it is correct here only because `LOOKER_TIERS` is a
+    # fixed pair, which is a guard one level up rather than a statement of intent.
+    governed = config.carries(tier, "lookml")
     lines = [
         f"view: {VIEW_NAMES[table.name]} {{",
         f"  sql_table_name: `@{{GCP_PROJECT}}.{config.tier_dataset(tier)}.{table.name}` ;;",

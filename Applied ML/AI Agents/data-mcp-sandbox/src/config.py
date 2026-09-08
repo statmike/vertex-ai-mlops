@@ -183,6 +183,21 @@ def tier_label(tier: int) -> str:
     return f"{tier} · {TIER_LABELS[tier]}"
 
 
+def carries(tier: int, channel: str) -> bool:
+    """Whether a tier carries a governance channel, whatever *this* env provisions.
+
+    The renderer's counterpart to `tiers_with`. `tiers_with` answers for the tiers
+    this config provisions, which is what the provisioning modules need and what
+    a reader must not be subject to: a capture is a file, and someone opening a
+    five-rung capture without `LADDER=1` in their shell must still see rung 3 as
+    the rung that adds business rules. Reading `RUNG_CHANNELS` directly makes the
+    answer a property of the tier rather than of the caller's environment.
+    """
+    if channel not in CHANNELS:
+        raise ValueError(f"Unknown governance channel {channel!r}; expected one of {CHANNELS}")
+    return channel in RUNG_CHANNELS.get(tier, ())
+
+
 def tiers_with(channel: str) -> tuple[int, ...]:
     """Every provisioned tier carrying a governance channel, in tier order.
 
@@ -196,14 +211,26 @@ def tiers_with(channel: str) -> tuple[int, ...]:
     and reads as *"this increment of governance does not pay"*, which is a false
     finding rather than a broken run.
     """
-    if channel not in CHANNELS:
-        raise ValueError(f"Unknown governance channel {channel!r}; expected one of {CHANNELS}")
-    return tuple(tier for tier in TIERS if channel in RUNG_CHANNELS[tier])
+    return tuple(tier for tier in TIERS if carries(tier, channel))
 
 
 def rung_of(tier: int) -> int:
     """Ladder position of a tier — what to sort and plot by, never the integer."""
     return RUNG_ORDER.index(tier)
+
+
+def rung_key(tier: int) -> tuple[int, int]:
+    """Sort key putting tiers in ladder reading order.
+
+    The total-order counterpart to `rung_of`, and the only thing renderers should
+    sort tiers by: sorting on the integer prints the ladder as 0, 1, 2, 3, 4 with
+    the *top* rung second. A tier no rung claims sorts last rather than raising,
+    because a chart is rendered from a file that may hold a tier this code has
+    never heard of, and crashing on it loses the rungs that were readable.
+    """
+    if tier in RUNG_ORDER:
+        return (RUNG_ORDER.index(tier), tier)
+    return (len(RUNG_ORDER), tier)
 
 
 def tier_semantics() -> str:

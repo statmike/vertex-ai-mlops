@@ -20,6 +20,7 @@ import statistics as st
 from collections.abc import Callable, Iterable
 from typing import Any
 
+import config
 import cost as cost_module
 import judge as judge_module
 import mcp_clients
@@ -62,13 +63,51 @@ def table(headers: list[str], rows: list[list[str]]) -> str:
     return "\n".join([line, rule, *body])
 
 
+def _tiers_in(scores: dict[str, scoring.Score]) -> list[int]:
+    """Every tier the capture holds, in ladder reading order.
+
+    Read off the capture, never off `config.TIERS`: a report is rendered from a
+    file, and the reader's `LADDER` env var says nothing about what that file
+    contains. This was `(0, 1)`, which is not a filter but a silent truncation —
+    a five-rung capture rendered as a two-tier one, three rungs missing from
+    every table below and nothing anywhere saying so.
+
+    Ordered by `RUNG_ORDER` because the tier integers are append-only and
+    deliberately not monotone (see config.py); sorting by the integer would print
+    the ladder in the order 0, 1, 2, 3, 4 with rung 4 second.
+    """
+    return sorted({score.tier for score in scores.values()}, key=config.rung_key)
+
+
+def _is_ladder(scores: dict[str, scoring.Score]) -> bool:
+    """Whether this capture is a ladder — asked of the capture, not the environment."""
+    return bool({score.tier for score in scores.values()} - {0, 1})
+
+
+def _tier_head(scores: dict[str, scoring.Score]) -> str:
+    """What the tier column is called. Two tiers have no ladder to be a position in."""
+    return "rung" if _is_ladder(scores) else "tier"
+
+
+def _tier_cell(scores: dict[str, scoring.Score], tier: int) -> str:
+    """A tier's cell in a table.
+
+    A ladder prints the rung. The integers are not monotone, so a column reading
+    0, 2, 3, 4, 1 invites the reader to draw the trend in file order and get it
+    backwards. Nothing is lost: `rungs()` maps rung to `cell_key` once, above.
+    """
+    if not _is_ladder(scores):
+        return str(tier)
+    return str(config.rung_of(tier)) if tier in config.RUNG_ORDER else f"?{tier}"
+
+
 def _arms(scores: dict[str, scoring.Score]) -> list[tuple[str, int]]:
-    """Every (config, tier) present, in the canonical config order."""
+    """Every (config, tier) present, in canonical config order then rung order."""
     seen = {(score.config, score.tier) for score in scores.values()}
     return [
         (key, tier)
         for key in mcp_clients.CONFIG_KEYS
-        for tier in (0, 1)
+        for tier in _tiers_in(scores)
         if (key, tier) in seen
     ]
 
@@ -126,6 +165,33 @@ def _coverage(entries: list[cost_module.CellCost], no_local_model: bool = False)
 # --- tables ------------------------------------------------------------------
 
 
+def rungs(scores: dict[str, scoring.Score]) -> str:
+    """What each rung of the ladder carries. Printed once, so the tables stay narrow.
+
+    Empty for a two-tier capture: there is no ladder to be a position in, and a
+    legend explaining that tier 0 is tier 0 is noise. The `cell key` column is
+    what makes the append-don't-renumber scheme legible — it is the only place
+    the raw integer appears, and anyone reading `traces.cell_key` needs it.
+    """
+    if not _is_ladder(scores):
+        return ""
+    rows = [
+        [
+            _tier_cell(scores, tier),
+            f"`tier{tier}`",
+            config.TIER_LABELS.get(tier, "unknown tier"),
+            ", ".join(config.RUNG_CHANNELS.get(tier, ())) or "nothing",
+        ]
+        for tier in _tiers_in(scores)
+    ]
+    return "\n\n".join([
+        table(["rung", "cell key", "increment", "carries"], rows),
+        "Rungs are cumulative and the tier integers are append-only, so they are "
+        "not in rung order — `tier1` is the top rung, not the second. Every table "
+        "below is sorted by rung.",
+    ])
+
+
 def capture_health(scores: dict[str, scoring.Score]) -> str:
     """What ran and what broke, per arm. Read this before any other table.
 
@@ -138,13 +204,14 @@ def capture_health(scores: dict[str, scoring.Score]) -> str:
         group = _group(scores, key, tier)
         answered = [s for s in group if s.answered]
         rows.append([
-            key, str(tier), str(len(group)), str(len(answered)),
+            key, _tier_cell(scores, tier), str(len(group)), str(len(answered)),
             str(len(group) - len(answered)),
             str(sum(1 for s in group if s.attempts > 1)),
             fmt(rate(group, lambda s: s.ca_leak), ".0%"),
         ])
     return table(
-        ["config", "tier", "attempted", "scored", "failed", "quota-retried", "CA leak"], rows
+        ["config", _tier_head(scores), "attempted", "scored", "failed", "quota-retried", "CA leak"],
+        rows,
     )
 
 
@@ -154,12 +221,12 @@ def accuracy(scores: dict[str, scoring.Score]) -> str:
     for key, tier in _arms(scores):
         group = _group(scores, key, tier)
         rows.append([
-            key, str(tier), str(len(group)),
+            key, _tier_cell(scores, tier), str(len(group)),
             fmt(rate(group, lambda s: s.correct), ".0%"),
             fmt(rate(group, lambda s: s.sprang_trap), ".0%"),
             fmt(rate(group, lambda s: s.used_distractor), ".0%"),
         ])
-    return table(["config", "tier", "n", "correct", "sprang trap", "used decoy"], rows)
+    return table(["config", _tier_head(scores), "n", "correct", "sprang trap", "used decoy"], rows)
 
 
 def acquisition(scores: dict[str, scoring.Score]) -> str:
@@ -174,13 +241,13 @@ def acquisition(scores: dict[str, scoring.Score]) -> str:
         group = [s for s in _group(scores, key, tier) if s.rules_required]
         inspectable = [s for s in group if s.acquisition_observable]
         rows.append([
-            key, str(tier), str(len(group)),
+            key, _tier_cell(scores, tier), str(len(group)),
             fmt(rate(group, lambda s: not s.acquisition_observable), ".0%"),
             fmt(rate(inspectable, lambda s: s.acquired), ".0%"),
             fmt(rate(inspectable, lambda s: s.application_loss), ".0%"),
         ])
     return table(
-        ["config", "tier", "n", "opaque", "acquired", "application loss"], rows
+        ["config", _tier_head(scores), "n", "opaque", "acquired", "application loss"], rows
     )
 
 
@@ -195,12 +262,13 @@ def evidence(scores: dict[str, scoring.Score]) -> str:
             s.evidence_precision for s in observed if s.evidence_precision is not None
         )
         rows.append([
-            key, str(tier),
+            key, _tier_cell(scores, tier),
             fmt(rate(group, lambda s: not s.evidence_observable), ".0%"),
             fmt(recall), fmt(recall_iqr), fmt(precision),
         ])
     return table(
-        ["config", "tier", "no query disclosed", "recall (median)", "IQR", "precision"], rows
+        ["config", _tier_head(scores), "no query disclosed", "recall (median)", "IQR", "precision"],
+        rows,
     )
 
 
@@ -218,11 +286,12 @@ def latency(scores: dict[str, scoring.Score]) -> str:
         median, iqr = median_iqr(s.latency_s for s in clean)
         calls, _ = median_iqr(float(s.tool_calls) for s in clean)
         rows.append([
-            key, str(tier), str(len(clean)), str(len(group) - len(clean)),
+            key, _tier_cell(scores, tier), str(len(clean)), str(len(group) - len(clean)),
             fmt(median, ".1f"), fmt(iqr, ".1f"), fmt(calls, ".1f"),
         ])
     return table(
-        ["config", "tier", "clean cells", "excluded", "median s", "IQR", "tool calls"], rows
+        ["config", _tier_head(scores), "clean cells", "excluded", "median s", "IQR", "tool calls"],
+        rows,
     )
 
 
@@ -247,7 +316,7 @@ def spend(
         mib, _ = median_iqr(e.bytes_billed / 2**20 for e in entries)
         usd = [e.total_usd for e in entries if e.total_usd is not None]
         rows.append([
-            key, str(tier),
+            key, _tier_cell(scores, tier),
             DASH if absent else fmt(tokens, ".0f"),
             DASH if absent else fmt(tokens_iqr, ".0f"),
             DASH if absent else fmt(thoughts, ".0f"),
@@ -282,7 +351,7 @@ def spend(
             "this report cannot see."
         )
     return table(
-        ["config", "tier", "tokens (median)", "IQR", "thoughts", "MiB billed",
+        ["config", _tier_head(scores), "tokens (median)", "IQR", "thoughts", "MiB billed",
          "USD (mean)", "unmeasured spend"],
         rows,
     ) + note
@@ -303,7 +372,7 @@ def adherence(
             continue
         judged = [verdicts[s.cell_key] for s in group]
         rows.append([
-            key, str(tier), str(len(judged)),
+            key, _tier_cell(scores, tier), str(len(judged)),
             *[
                 fmt(
                     sum(1 for v in judged if v.adherence == value) / len(judged),
@@ -312,7 +381,7 @@ def adherence(
                 for value in judge_module.ADHERENCE_VALUES
             ],
         ])
-    return table(["config", "tier", "n", *judge_module.ADHERENCE_VALUES], rows)
+    return table(["config", _tier_head(scores), "n", *judge_module.ADHERENCE_VALUES], rows)
 
 
 def equivalence(
@@ -372,7 +441,7 @@ def headline(
         has = entries or None
         absent = _no_local_model(group)
         rows.append([
-            key, str(tier),
+            key, _tier_cell(scores, tier),
             fmt(rate(group, lambda s: s.correct), ".0%"),
             # Tokens and seconds come off the capture (`group`), not the cost pass
             # (`entries`), so `--no-cost` still yields a usage table rather than a
@@ -387,7 +456,7 @@ def headline(
             _coverage(entries, absent),
         ])
     return table(
-        ["config", "tier", "accuracy (mean)", "tokens in / correct",
+        ["config", _tier_head(scores), "accuracy (mean)", "tokens in / correct",
          "tokens out / correct", "sec / correct", "BQ jobs / correct",
          "MiB / correct", "coverage"],
         rows,
@@ -595,6 +664,8 @@ def build(
         )
     ] if isinstance(schemas, dict) else []
 
+    ladder_legend = rungs(scores)
+
     sections = [
         "# Results",
         "",
@@ -608,7 +679,11 @@ def build(
         # partial or narrowed sweep looks exactly like a full one once it is
         # scored, and every rate below is a fraction of *this* denominator.
         f"{len(scores)} cells scored across "
-        f"{len({(s.config, s.tier) for s in scores.values()})} arm/tier pairs.",
+        f"{len({(s.config, s.tier) for s in scores.values()})} arm/tier pairs."
+        # Appended rather than added as its own section: `rungs` is empty for a
+        # two-tier capture, and an empty section would put a stray blank line
+        # into the published report for a feature it is not using.
+        + (f"\n\n{ladder_legend}" if ladder_legend else ""),
         "",
         "## Headline",
         "",

@@ -234,3 +234,54 @@ def test_the_bootstrap_script_creates_an_identity_for_every_tier_the_ladder_runs
     ]
     assert sorted(config.PROVISIONABLE_TIERS) in branches, "no LADDER=1 branch covers every rung"
     assert [0, 1] in branches, "the ladder-off branch must still be the two published tiers"
+
+
+# --- `carries` vs `tiers_with`: the env/capture split -------------------------
+
+
+def test_what_a_tier_carries_does_not_depend_on_what_this_env_provisions():
+    # `tiers_with` iterates `config.TIERS`, so with the ladder off it answers
+    # `(1,)` for every channel — correct for provisioning, and wrong for a
+    # renderer, which must show rung 3 as the rung that adds business rules even
+    # to a reader who never set LADDER=1. `carries` reads RUNG_CHANNELS directly
+    # and is therefore a property of the tier, not of the caller.
+    assert config.carries(4, "rules")
+    assert not config.carries(4, "glossary")
+    assert config.carries(1, "glossary")
+    assert not config.carries(0, "descriptions")
+
+
+def test_carries_and_tiers_with_agree_on_every_provisioned_tier():
+    for channel in config.CHANNELS:
+        assert config.tiers_with(channel) == tuple(
+            tier for tier in config.TIERS if config.carries(tier, channel)
+        )
+
+
+def test_an_unknown_channel_raises_rather_than_quietly_carrying_nothing():
+    # A typo that provisions nothing produces a rung scoring like the rung below
+    # it, which reads as "this increment does not pay" — a false finding rather
+    # than a broken run.
+    with pytest.raises(ValueError):
+        config.carries(1, "descriptons")
+
+
+def test_rung_key_orders_the_ladder_and_never_the_bare_integer():
+    assert sorted(config.PROVISIONABLE_TIERS, key=config.rung_key) == list(config.RUNG_ORDER)
+    # A tier no rung claims sorts last instead of raising: a capture may hold one,
+    # and crashing on it would lose the rungs that were readable.
+    assert sorted([9, 1, 0], key=config.rung_key) == [0, 1, 9]
+
+
+def test_the_semantic_layer_asks_which_tiers_carry_lookml_not_which_are_above_zero():
+    # `tier >= 1` is the predicate that granted four tiers the glossary. It is
+    # correct in lookml.py only because LOOKER_TIERS is a fixed pair — a guard one
+    # level up, not a statement of intent. Pin the intent.
+    source = (Path(config.PROJECT_ROOT) / "src" / "lookml.py").read_text()
+    # Code lines only — the comment above the fix names the old predicate on
+    # purpose, and a check that forbade saying it would forbid explaining it.
+    code = [line for line in source.splitlines() if not line.lstrip().startswith("#")]
+    assert not [line for line in code if "tier >= 1" in line]
+    assert 'carries(tier, "lookml")' in source
+    # And the guard it was relying on is still there.
+    assert set(config.LOOKER_TIERS) == {0, 1}
