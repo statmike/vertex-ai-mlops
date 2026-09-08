@@ -38,6 +38,18 @@ else
   TIERS=(0 1)
 fi
 
+# Which tiers may read the glossary. This is a *channel*, not "everything above
+# the control": the glossary is one of the six governance surfaces the ladder
+# varies, and only its top rung carries it. `tier != 0` was the same statement
+# while there were two tiers, and is wrong the moment there are five — rungs 1-3
+# would read the governed rule in plain text and the glossary's contribution
+# would measure as zero, credited to whatever rung came first.
+#
+# Must equal `config.tiers_with("glossary")`. This is a cross-LANGUAGE join by
+# string, so nothing at runtime notices when they disagree;
+# `tests/test_ladder.py` parses this line and compares.
+GLOSSARY_TIERS=(1)
+
 # Looker's Google-managed service agent, which fronts every impersonation chain
 # from a Looker connection. Empty unless a Looker instance lives in this project,
 # in which case Path 2 gets the same IAM fence as the other paths (see below).
@@ -126,10 +138,33 @@ for TIER in "${TIERS[@]}"; do
   fi
 
   ROLES=("${PROJECT_ROLES[@]}")
-  # The glossary carries the governed rule, so it is part of the treatment.
-  # Only governed tiers get to read it.
-  if [[ "$TIER" != "0" ]]; then
+  # The glossary carries the governed rule in plain text, so reading it IS the
+  # treatment for that channel. Only the tiers carrying it may.
+  CARRIES_GLOSSARY=""
+  for GTIER in "${GLOSSARY_TIERS[@]}"; do
+    if [[ "$TIER" == "$GTIER" ]]; then
+      CARRIES_GLOSSARY="yes"
+      break
+    fi
+  done
+
+  if [[ -n "$CARRIES_GLOSSARY" ]]; then
     ROLES+=("projects/${PROJECT}/roles/${GLOSSARY_ROLE}")
+  else
+    # Revoke, do not merely skip. This script converges upward by adding roles,
+    # which is enough while the answer only ever grows — and wrong here. A tier
+    # granted the glossary under an earlier configuration keeps it forever, and
+    # a rung silently reading the governed rule flattens the step that rule is
+    # supposed to explain. Same reasoning as `setup.py` stripping descriptions
+    # from tiers that should not carry them, rather than only applying them.
+    # `remove-iam-policy-binding` errors when the binding is absent, which is
+    # the normal case, so a failure here is not news.
+    if gcloud projects remove-iam-policy-binding "$PROJECT" \
+        --member="serviceAccount:${SA}" \
+        --role="projects/${PROJECT}/roles/${GLOSSARY_ROLE}" \
+        --condition=None --quiet &>/dev/null; then
+      echo "  - ${GLOSSARY_ROLE} (revoked: this tier does not carry the glossary)"
+    fi
   fi
 
   for ROLE in "${ROLES[@]}"; do

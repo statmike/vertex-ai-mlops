@@ -10,6 +10,9 @@ part that fails before the 25.8-hour sweep instead of after it.
 module globals it decides — which is also how `run_battery.py` would see them.
 """
 
+import re
+from pathlib import Path
+
 import pytest
 
 import battery
@@ -189,3 +192,45 @@ def test_the_shipped_ladder_vocabulary_can_reach_the_published_capture(ladder):
     # published tiers 0 and 1, which is the check that makes it internally valid.
     assert compare.shared_tiers(["", ladder.tier_semantics()]) == {0, 1}
     assert validate.ladder_problems() == []
+
+
+# --- the shell script is joined to the config by string, across languages -------
+
+
+def _shell_array(name: str) -> list[str]:
+    """Read a `NAME=(a b c)` array out of bootstrap_identities.sh.
+
+    Parsed rather than imported because the script is deliberately standalone —
+    it creates identities and edits project-level IAM, and its header argues
+    that deserves to stay auditable line by line rather than reaching into
+    Python for its values. The cost of that choice is a join nothing at runtime
+    checks, so it is checked here.
+    """
+    script = (Path(config.PROJECT_ROOT) / "scripts" / "bootstrap_identities.sh").read_text()
+    match = re.search(rf"^{name}=\(([^)]*)\)", script, re.MULTILINE)
+    assert match, f"{name} is not a literal array in bootstrap_identities.sh any more"
+    return match.group(1).split()
+
+
+def test_the_bootstrap_script_grants_the_glossary_to_exactly_the_tiers_that_carry_it():
+    # Was `tier != 0`, which is the same statement as "carries the glossary"
+    # while there are two tiers and wrong once there are five. Measured on a
+    # live provision: rungs 1-3 all held mcpSandboxGlossaryReader, so every one
+    # of them could read the Net Revenue rule in plain text and the glossary's
+    # own step would have measured zero.
+    assert [int(t) for t in _shell_array("GLOSSARY_TIERS")] == list(
+        config.tiers_with("glossary")
+    )
+
+
+def test_the_bootstrap_script_creates_an_identity_for_every_tier_the_ladder_runs():
+    # A rung with no service account falls back to the operator's own ADC, which
+    # can read everything. The fence would be missing exactly where the ladder
+    # needs it, and the rung would score like the fully governed tier.
+    script = (Path(config.PROJECT_ROOT) / "scripts" / "bootstrap_identities.sh").read_text()
+    branches = [
+        sorted(int(tier) for tier in body.split())
+        for body in re.findall(r"^\s*TIERS=\(([^)]*)\)", script, re.MULTILINE)
+    ]
+    assert sorted(config.PROVISIONABLE_TIERS) in branches, "no LADDER=1 branch covers every rung"
+    assert [0, 1] in branches, "the ladder-off branch must still be the two published tiers"

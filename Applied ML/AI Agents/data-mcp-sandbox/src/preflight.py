@@ -31,6 +31,7 @@ from google.api_core.exceptions import GoogleAPIError, InvalidArgument, NotFound
 from google.cloud import resourcemanager_v3
 
 import config
+import corpus
 import identity
 
 
@@ -55,7 +56,7 @@ STEPS: tuple[Step, ...] = (
     Step("make apis", "enable 9-11 services", ("serviceusage.services.enable",)),
     Step(
         "make identities",
-        "2 custom roles, 2 service accounts, project bindings",
+        f"2 custom roles, {len(config.TIERS)} service accounts, project bindings",
         (
             "iam.roles.create",
             "iam.roles.update",
@@ -67,7 +68,8 @@ STEPS: tuple[Step, ...] = (
     ),
     Step(
         "make setup (BigQuery)",
-        "2 datasets, 6 tables, per-tier dataset ACLs",
+        f"{len(config.TIERS)} datasets, "
+        f"{len(config.TIERS) * len(corpus.TABLE_NAMES)} tables, per-tier dataset ACLs",
         (
             "bigquery.datasets.create",
             "bigquery.datasets.update",
