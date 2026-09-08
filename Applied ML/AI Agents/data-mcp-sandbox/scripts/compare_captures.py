@@ -10,6 +10,18 @@
         --against results/capture-model-x.json.gz \
         --axis agent_model --axis runs
 
+`--aa` is the opposite mode: two captures that varied *nothing*, compared to
+measure the noise floor rather than to find an effect.
+
+    uv run python scripts/compare_captures.py \
+        --base results/capture.json.gz \
+        --against results/capture-thinking-default.json.gz --aa
+
+That is how `compare.NOISE_FLOOR` was set, and it is the reason this mode is
+shipped rather than done in a scratch script: a floor is a number every other
+comparison is judged against, so a reader has to be able to re-measure it in
+their own project instead of inheriting ours.
+
 The counterpart to `merge_captures.py`, for the case merging is right to refuse.
 `traces.MUST_AGREE` holds `agent_model` and `tiers`, so a cross-model sweep and a
 governance-ladder sweep can never join the published capture — they are
@@ -45,6 +57,10 @@ def parse_args() -> argparse.Namespace:
         "--axis", action="append", dest="axes", default=None, metavar="FIELD",
         help=f"A field allowed to differ. Repeatable. One of: {', '.join(traces.MUST_AGREE)}",
     )
+    parser.add_argument(
+        "--aa", action="store_true",
+        help="A/A mode: assert nothing varied and report the deltas as a noise floor.",
+    )
     parser.add_argument("--out", type=Path, default=None, help="Write markdown here as well.")
     return parser.parse_args()
 
@@ -60,10 +76,16 @@ def scored(path: Path) -> tuple[dict, dict]:
 def main() -> int:
     args = parse_args()
     axes = tuple(args.axes or ())
-    if not axes:
+    if args.aa and axes:
+        raise SystemExit(
+            "--aa and --axis are opposites. An A/A measures what stays the same; "
+            "declaring an axis says something changed. Pick one."
+        )
+    if not axes and not args.aa:
         raise SystemExit(
             "Give at least one --axis. A comparison with no declared axis cannot "
-            "say what a difference is attributable to."
+            "say what a difference is attributable to. To measure the noise floor "
+            "between two captures that varied nothing, use --aa."
         )
     unknown = [axis for axis in axes if axis not in traces.MUST_AGREE]
     if unknown:
@@ -79,7 +101,7 @@ def main() -> int:
     meta_b, scores_b = scored(args.against)
 
     labels = (_label(args.base), _label(args.against))
-    alignment = compare.align([meta_a, meta_b], axes)
+    alignment = compare.align([meta_a, meta_b], axes, aa=args.aa)
     result = compare.deltas(scores_a, scores_b)
     checks = compare.rank_stability(result.entries)
     text = compare.render(alignment, result, checks, labels)
@@ -91,9 +113,17 @@ def main() -> int:
         args.out.write_text(text)
         print(f"wrote {args.out}")
 
+    if alignment.conflicts and args.aa:
+        print(f"REFUSED: not an A/A — these captures differ on "
+              f"{', '.join(sorted(alignment.conflicts))}. The deltas would be an effect "
+              "published under the name of noise, which raises the floor and suppresses "
+              "real findings everywhere downstream.")
+        return 1
     if alignment.conflicts:
         print("REFUSED: these captures differ on more than the declared axis.")
         return 1
+    if args.aa:
+        return 0
     if alignment.inert:
         print(f"REFUSED: {', '.join(alignment.inert)} is identical in both captures, "
               "so this comparison varies nothing.")

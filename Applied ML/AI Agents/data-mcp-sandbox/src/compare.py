@@ -69,19 +69,28 @@ class Alignment:
     declared may differ and did *not* — a comparison whose axis turns out to be
     constant is measuring nothing, and silently reporting all-zero deltas is a
     worse outcome than saying so.
+
+    `aa` inverts that last rule and nothing else. An A/A run *wants* every field
+    constant, because the deltas it produces are the noise floor rather than a
+    finding, so `inert` stops being a refusal. Everything else still holds: a
+    conflict is still fatal, and more so here — an A/A that varied something is
+    not a loose floor, it is a mislabelled experiment.
     """
 
     axes: tuple[str, ...]
     varied: dict[str, list[Any]] = field(default_factory=dict)
     inert: tuple[str, ...] = ()
     conflicts: dict[str, list[Any]] = field(default_factory=dict)
+    aa: bool = False
 
     @property
     def ok(self) -> bool:
+        if self.aa:
+            return not self.conflicts
         return not self.conflicts and not self.inert
 
 
-def align(headers: list[dict[str, Any]], axes: tuple[str, ...]) -> Alignment:
+def align(headers: list[dict[str, Any]], axes: tuple[str, ...], aa: bool = False) -> Alignment:
     """Check that captures differ on the declared axes and nothing else that matters.
 
     Scoped to `traces.MUST_AGREE` on purpose. Fields outside it — `git_commit`,
@@ -95,7 +104,7 @@ def align(headers: list[dict[str, Any]], axes: tuple[str, ...]) -> Alignment:
     not in meaning. Cells are paired by key, so the extra replicates simply go
     unpaired and `Deltas.unpaired` reports how many.
     """
-    result = Alignment(axes=axes)
+    result = Alignment(axes=axes, aa=aa)
     for name in traces.MUST_AGREE:
         values = [header.get(name) for header in headers]
         differs = len({_comparable(value) for value in values}) > 1
@@ -332,6 +341,9 @@ def render(
         ]
         return "\n".join(lines)
 
+    if alignment.aa:
+        return "\n".join(lines + _aa_section(result, labels))
+
     if alignment.inert:
         lines += [
             f"## ⛔ Axis did not vary: {', '.join(alignment.inert)}",
@@ -394,6 +406,73 @@ def render(
     else:
         lines += ["**No ordering reversed** above the noise floor.", ""]
     return "\n".join(lines)
+
+
+def measured_floor(result: Deltas) -> float:
+    """The largest swing an A/A produced, as a fraction — the floor it measured.
+
+    The largest and not the mean. A noise floor exists to stop a false finding,
+    so it has to cover the worst drift actually observed; a floor set at typical
+    drift is exceeded about half the time by definition.
+
+    Entries with nothing paired hold `points is None` and are skipped rather than
+    counted as zero drift — an arm that failed to pair measured no floor, and
+    scoring it as perfect agreement would drag the maximum down.
+    """
+    return max(
+        (abs(entry.points) / 100 for entry in result.entries if entry.points is not None),
+        default=0.0,
+    )
+
+
+def _aa_section(result: Deltas, labels: tuple[str, str]) -> list[str]:
+    """The A/A report: deltas read as a floor rather than as findings.
+
+    Deliberately does *not* print rank stability. Ranks here are noise being
+    sorted, and a `tau` next to an A/A table is an invitation to read
+    reproducible ordering into two captures that measured the same thing.
+    """
+    label_a, label_b = labels
+    floor = measured_floor(result)
+    verdict = (
+        "covers this" if floor <= NOISE_FLOOR
+        else f"is EXCEEDED by this — consider raising it to {floor:.3f}"
+    )
+    return [
+        "## A/A: these captures varied nothing",
+        "",
+        "Every field in `MUST_AGREE` is identical, so the deltas below are what "
+        "the same configuration produces against itself. They are a **noise "
+        "floor**, not a result — read them as the size a real finding has to "
+        "beat.",
+        "",
+        report.table(
+            ["arm", "tier", "pairs", label_a, label_b, "drift (pts)"],
+            [
+                [
+                    entry.config,
+                    str(entry.tier),
+                    str(entry.pairs),
+                    report.fmt(entry.accuracy_a, ".0%"),
+                    report.fmt(entry.accuracy_b, ".0%"),
+                    report.fmt(entry.points, "+.1f"),
+                ]
+                for entry in result.entries
+            ],
+        ),
+        "",
+        _unpaired_note(result, labels),
+        "",
+        f"**Largest drift: {100 * floor:.1f} points.** The floor `compare` "
+        f"currently applies is {100 * NOISE_FLOOR:.1f} points, and it {verdict}.",
+        "",
+        "Two caveats before reusing this number. It is measured on whichever "
+        "arms these captures happen to hold, and an arm running a local model "
+        "has variance of its own. And an A/A taken minutes apart measures less "
+        "than one taken a day apart — the floor grows with the gap it has to "
+        "span, so measure it over the same interval your real comparison spans.",
+        "",
+    ]
 
 
 def _unpaired_note(result: Deltas, labels: tuple[str, str]) -> str:

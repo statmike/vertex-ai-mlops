@@ -1,7 +1,8 @@
 .PHONY: help install toolbox check lint types test setup teardown golden lookml probe \
 	preflight \
 	identities identities-down verify-isolation looker-plan looker-apply \
-	bootstrap apis plan smoke pilot sweep report export service-tokens
+	bootstrap apis plan smoke pilot sweep sweep-thinking report export service-tokens \
+	compare compare-aa
 
 help:
 	@echo "Start here"
@@ -37,6 +38,11 @@ help:
 	@echo "  make export     Scrub + freeze goldens into a publishable capture"
 	@echo ""
 	@echo "  Add SKIP_LOOKER=1 to any of the above to run BigQuery-only arms."
+	@echo ""
+	@echo "Vary one axis instead of re-running everything"
+	@echo "  make sweep-thinking MODE=FAST|THINKING|DEFAULT   240 cells, ~40 min."
+	@echo "  make compare BASE=.. AGAINST=.. AXIS=..   Delta on one declared axis"
+	@echo "  make compare-aa BASE=.. AGAINST=..        Noise floor from two identical runs"
 	@echo ""
 	@echo "Inspect"
 	@echo "  make golden     Print live golden-truth values for every tier"
@@ -208,3 +214,12 @@ export:
 # subtracting captures that disagree on anything else (Amendment C.0).
 compare:
 	uv run python scripts/compare_captures.py --base $(BASE) --against $(AGAINST) --axis $(AXIS)
+
+# Measure the noise floor: two captures that varied NOTHING, differenced. This
+# is where `compare.NOISE_FLOOR` comes from, and re-running it in your own
+# project is how you find out whether ours travels there.
+#
+#     make compare-aa BASE=results/capture.json.gz \
+#                     AGAINST=results/capture-thinking-default.json.gz
+compare-aa:
+	uv run python scripts/compare_captures.py --base $(BASE) --against $(AGAINST) --aa

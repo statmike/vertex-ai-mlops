@@ -167,7 +167,11 @@ Two properties worth knowing before reading any cross-capture number:
   the floor's job is to stop a false finding rather than to describe typical
   drift. This one is measured on the two direct arms at n=5; a comparison
   turning on a delta near the floor should measure its own A/A rather than
-  inherit theirs.
+  inherit theirs — `make compare-aa` is that, and it is where the 6.7 came
+  from. It is the mirror image of a normal comparison: every `MUST_AGREE` field
+  identical is the *valid* case, a difference is fatal, and the output is
+  labelled a floor with no ranking table, because ranking noise invites reading
+  an order into it.
 
 Comparison runs the deterministic scorer only — no judge. The judge is a model
 call with ~1.3% verdict wobble, which would let two captures differ because they

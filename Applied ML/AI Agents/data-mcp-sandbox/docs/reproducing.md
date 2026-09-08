@@ -248,6 +248,28 @@ another day mixes the effect you are testing with how loaded the service was.
 `make sweep-thinking MODE=DEFAULT` exists for this: it re-runs the published
 setting alongside your other captures so the baseline is contemporaneous.
 
+**And measure your own noise floor before you believe a small delta.** That
+`MODE=DEFAULT` capture has a second job: paired against ours, it varies nothing
+at all, which makes it an A/A test.
+
+```bash
+make compare-aa BASE=results/capture.json.gz \
+                AGAINST=results/capture-thinking-default.json.gz
+```
+
+This is the mode where two identical captures are the *valid* input — a
+`MUST_AGREE` difference is fatal instead, since an A/A that varied something
+publishes an effect under the name of noise and suppresses real findings
+everywhere downstream. It reports the largest drift it saw, compares that to the
+floor `compare` currently applies, and tells you to raise it if yours is worse.
+It prints no ranking table; ranking noise invites reading an order into it.
+
+Our floor is **6.7 points**, and it is the number that decides whether any
+cross-capture delta on this page is `resolved`. Do not inherit it blindly. It
+was measured on two direct-API arms a day apart at n=5, and an arm that runs a
+local model, a shorter interval, or a different replicate count will not have
+the same one.
+
 ---
 
 ## What will not reproduce, and why

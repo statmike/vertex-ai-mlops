@@ -191,6 +191,68 @@ def test_differing_replicate_counts_are_declarable_rather_than_fatal():
     assert compare.align([_header(), _header(agent_model="other", runs=3)], axes=axes).ok
 
 
+# --- A/A mode ------------------------------------------------------------------
+
+
+def test_an_aa_wants_everything_identical_rather_than_refusing_it():
+    # The same two headers that are `inert` and refused in axis mode are the
+    # *valid* case here. Without this, the floor every other comparison is judged
+    # against could only be measured by a scratch script — which is how the
+    # 1-point within-run figure ended up standing in for the cross-capture one.
+    alignment = compare.align([_header(), _header()], axes=(), aa=True)
+    assert alignment.ok
+    assert not alignment.conflicts
+
+
+def test_an_aa_that_varied_something_is_refused_harder_than_a_normal_conflict():
+    # A conflict in axis mode means "unattributable". In A/A mode it means the
+    # numbers are a real effect about to be published as noise, which would raise
+    # the floor and suppress genuine findings everywhere downstream.
+    alignment = compare.align(
+        [_header(), _header(ca_thinking_mode="THINKING")], axes=(), aa=True
+    )
+    assert not alignment.ok
+    assert "ca_thinking_mode" in alignment.conflicts
+
+
+def test_the_aa_report_reads_as_a_floor_and_not_as_a_result():
+    scores_a = _scores({("q1", "p4_bq_direct", 0, run): run < 13 for run in range(60)})
+    scores_b = _scores({("q1", "p4_bq_direct", 0, run): run < 17 for run in range(60)})
+    result = compare.deltas(scores_a, scores_b)
+    alignment = compare.align([_header(), _header()], axes=(), aa=True)
+    text = compare.render(alignment, result, compare.rank_stability(result.entries), ("a", "b"))
+
+    assert "noise" in text.lower()
+    assert "Largest drift: 6.7 points" in text
+    assert "Axis did not vary" not in text, "an A/A is not the inert-axis refusal"
+    assert "resolved" not in text, "'resolved' would frame drift as a finding"
+    assert "Rank stability" not in text, "ranking noise invites reading order into it"
+
+
+def test_an_aa_that_exceeds_the_current_floor_says_so():
+    # The floor is a published constant. An A/A that beats it is the signal to
+    # raise it, and a report that printed the drift without saying that leaves
+    # the reader to notice the comparison themselves.
+    scores_a = _scores({("q1", "p4_bq_direct", 0, run): run < 10 for run in range(60)})
+    scores_b = _scores({("q1", "p4_bq_direct", 0, run): run < 30 for run in range(60)})
+    result = compare.deltas(scores_a, scores_b)
+    assert compare.measured_floor(result) > compare.NOISE_FLOOR
+
+    alignment = compare.align([_header(), _header()], axes=(), aa=True)
+    text = compare.render(alignment, result, [], ("a", "b"))
+    assert "EXCEEDED" in text
+
+
+def test_a_floor_is_the_worst_drift_not_the_average():
+    # Averaging would set the floor below half the drift it has just seen.
+    result = compare.Deltas()
+    result.entries = [
+        compare.Delta(config="a", tier=0, pairs=60, correct_a=13, correct_b=17),
+        compare.Delta(config="a", tier=1, pairs=60, correct_a=53, correct_b=54),
+    ]
+    assert compare.measured_floor(result) == pytest.approx(0.0667, abs=1e-4)
+
+
 # --- deltas --------------------------------------------------------------------
 
 
