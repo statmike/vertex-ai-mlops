@@ -125,9 +125,17 @@ self-describing through its own header — own oracle, own freeze time, own comm
 | File | Varies |
 |---|---|
 | `results/capture.json.gz` | the published twelve-arm factorial |
-| `capture-thinking.json.gz` | `thinking_mode` on the direct arms |
+| `capture-thinking-fast.json.gz`, `capture-thinking-thinking.json.gz`, `capture-thinking-default.json.gz` | `thinking_mode` on the direct arms |
 | `capture-ladder.json.gz` | governance rungs |
 | `capture-model-<id>.json.gz` | the client model |
+
+Note the third thinking capture. It re-runs the *published* setting — no
+`thinking_mode` at all — in the same window as the other two, and it is not
+redundant with the published capture it duplicates. Wall-clock latency is
+measured against a shared service, so a baseline taken a day earlier confounds
+"this is what the default does" with "the service was differently loaded then".
+A capture family compared on latency needs its control inside the window, which
+is the same argument the governance ladder's rung-0-last control rests on.
 
 `scripts/compare_captures.py` is how they are read together. A comparison
 declares the axes it is allowed to vary; anything else in `MUST_AGREE` that

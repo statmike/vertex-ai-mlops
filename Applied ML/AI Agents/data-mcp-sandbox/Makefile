@@ -167,11 +167,18 @@ sweep:
 # capture. MODE is FAST or THINKING; unset is the published default, which is
 # already measured and does not need re-running.
 #
+# MODE=DEFAULT sends no thinking_mode, reproducing the published direct arms. It
+# is not redundant with the published capture: run in the same window as FAST and
+# THINKING, it is the temporal control that separates "this is what the default
+# resolves to" from "the service was differently loaded a day ago".
+#
 #     make sweep-thinking MODE=FAST
 #     make sweep-thinking MODE=THINKING
+#     make sweep-thinking MODE=DEFAULT
 sweep-thinking:
-	@test -n "$(MODE)" || { echo "MODE=FAST or MODE=THINKING"; exit 1; }
-	CA_THINKING_MODE=$(MODE) uv run python examples/run_battery.py \
+	@test -n "$(MODE)" || { echo "MODE=FAST, THINKING, or DEFAULT"; exit 1; }
+	CA_THINKING_MODE=$(if $(filter DEFAULT,$(MODE)),,$(MODE)) \
+	uv run python examples/run_battery.py \
 		--configs p4_bq_direct p4_bq_direct_ctx \
 		--out results/raw/thinking-$(shell echo $(MODE) | tr A-Z a-z).json
 
