@@ -446,7 +446,7 @@ def main() -> int:
         # Rotation only. Running the provisioning pass as well would be harmless
         # but misleading: every object would report "already present" alongside a
         # credential revocation, and the one destructive line would be buried.
-        for tier in config.TIERS:
+        for tier in config.LOOKER_TIERS:
             rotate_user_keys(sdk, tier, args.apply, report)
         _print_report(args.apply, report)
         return 0
@@ -454,7 +454,10 @@ def main() -> int:
     ensure_project(sdk, args.apply, report)
     ensure_git(sdk, args.apply, report)
     permission_set_id = ensure_permission_set(sdk, args.apply, report)
-    for tier in config.TIERS:
+    # LOOKER_TIERS, not TIERS: the ladder's intermediate rungs have no Looker
+    # model, and provisioning a user and role for one on a shared instance would
+    # add content that nothing in this experiment ever reads.
+    for tier in config.LOOKER_TIERS:
         ensure_connection(sdk, tier, args.apply, report)
         ensure_model(sdk, tier, args.apply, report)
         model_set_id = ensure_model_set(sdk, tier, args.apply, report)

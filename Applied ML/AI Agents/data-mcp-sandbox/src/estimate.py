@@ -39,6 +39,8 @@ for a go/no-go number, so **add a quarter to whatever this prints.**
 
 from dataclasses import dataclass
 
+import config
+
 MEASURED_ON = (
     "published capture, 1,440 cells, gemini-3.7-flash @ global, 2026-09-05 and 2026-09-07"
 )
@@ -121,6 +123,22 @@ OBSERVED: dict[tuple[str, int], Rate] = {
 # an unknown arm over-estimates rather than under-estimates.
 FALLBACK = max(OBSERVED.values(), key=lambda rate: rate.tokens)
 
+# The ladder's intermediate rungs have never been swept, and pricing them at
+# FALLBACK — the worst arm on the whole table — would put `make plan` off by
+# several multiples and make a real budget unreadable (Amendment C.2).
+#
+# A rung is the *same arm* at an adjacent governance level, which is a much
+# tighter analogy than the twin-arm one below: the arm's tool surface, transport
+# and turn count are unchanged, and only the amount of governance text moves. So
+# a rung is priced off its own arm's tier-1 rate with headroom.
+#
+# Tier 1 is the most governed rung, so rungs 1-3 carry strictly *less* context
+# than the rate they are priced at, and the headroom is on top of that. This
+# over-estimates on purpose — the same direction FALLBACK errs in, for the same
+# reason: a plan that reads high costs an argument, and one that reads low costs
+# a sweep that stops halfway.
+RUNG_HEADROOM = 1.25
+
 
 @dataclass
 class Estimate:
@@ -130,6 +148,7 @@ class Estimate:
     seconds: float
     tokens: int
     by_analogy: int = 0  # cells priced off a different arm's rate
+    by_rung: int = 0  # cells priced off the same arm's tier-1 rate, plus headroom
     unknown: int = 0  # cells priced off FALLBACK
     unmeasured: int = 0  # cells on an arm no sweep has run yet
     service_only: int = 0  # cells whose model spend is entirely off this meter
@@ -140,21 +159,29 @@ class Estimate:
         # gap in this table — so they are not subtracted here. They get their own
         # line in `render` instead, because the zero needs a sentence, not a
         # reclassification.
-        return self.cells - self.by_analogy - self.unknown - self.unmeasured
+        return self.cells - self.by_analogy - self.by_rung - self.unknown - self.unmeasured
 
 
 def rate_for(config_key: str, tier: int) -> tuple[Rate, str]:
     """The rate to use for one arm, and how it was arrived at.
 
-    Four bases, and the distinction between the last two is the point.
+    Five bases, and the distinction between the last two is the point.
     `unmeasured` is an arm we shipped knowing it had never been swept;
     `unknown` is an arm nobody thought about. Both price at FALLBACK, because
     over-estimating is the safe direction — but only one of them is a decision.
+
+    `rung` sits between measured and analogy. A ladder rung is the same arm at an
+    adjacent governance level, so its rate is its own tier-1 rate with headroom —
+    tried before the twin-arm analogy, because the same arm one rung away is a
+    closer neighbour than a different arm at the same tier.
     """
     if (config_key, tier) in OBSERVED:
         return OBSERVED[(config_key, tier)], "measured"
     if config_key in PENDING_MEASUREMENT:
         return FALLBACK, "unmeasured"
+    if tier in config.LADDER_RUNGS and (config_key, 1) in OBSERVED:
+        top = OBSERVED[(config_key, 1)]
+        return Rate(top.seconds * RUNG_HEADROOM, int(top.tokens * RUNG_HEADROOM)), "rung"
     twin = BY_ANALOGY.get(config_key)
     if twin and (twin, tier) in OBSERVED:
         return OBSERVED[(twin, tier)], "analogy"
@@ -172,6 +199,8 @@ def estimate(arms: list[tuple[str, int]]) -> Estimate:
             total.service_only += 1
         if basis == "analogy":
             total.by_analogy += 1
+        elif basis == "rung":
+            total.by_rung += 1
         elif basis == "unknown":
             total.unknown += 1
         elif basis == "unmeasured":
@@ -209,6 +238,11 @@ def render(total: Estimate, usd_per_mtok: float | None = None) -> str:
     basis = [f"{total.measured} measured"]
     if total.by_analogy:
         basis.append(f"{total.by_analogy} by analogy to a twin arm")
+    if total.by_rung:
+        basis.append(
+            f"{total.by_rung} on an unswept ladder rung, priced at the same arm's "
+            f"tier-1 rate +{RUNG_HEADROOM - 1:.0%}"
+        )
     if total.unmeasured:
         basis.append(f"{total.unmeasured} never swept, priced at the worst observed arm")
     if total.unknown:

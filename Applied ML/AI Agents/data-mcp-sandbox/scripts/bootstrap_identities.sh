@@ -30,7 +30,13 @@ set -euo pipefail
 PROJECT="${1:-$(gcloud config get-value project 2>/dev/null)}"
 OPERATOR="$(gcloud config get-value account 2>/dev/null)"
 PREFIX="${TIER_SA_PREFIX:-mcp-sandbox}"
-TIERS=(0 1)
+# The ladder's intermediate rungs need identities too, and the fence is only a
+# fence if every tier has one. Set LADDER=1 to create all five (Amendment C.2).
+if [[ "${LADDER:-false}" =~ ^(1|true|yes)$ ]]; then
+  TIERS=(0 1 2 3 4)
+else
+  TIERS=(0 1)
+fi
 
 # Looker's Google-managed service agent, which fronts every impersonation chain
 # from a Looker connection. Empty unless a Looker instance lives in this project,

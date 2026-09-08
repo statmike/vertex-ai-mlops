@@ -60,6 +60,28 @@ import traces
 # on a delta near the floor should measure its own A/A rather than trust this.
 NOISE_FLOOR = 0.067
 
+# Which tiers two different tier vocabularies are declared to agree on.
+#
+# `tier_semantics` says what the integers in `tiers` mean. Under plain equality a
+# ladder capture (`ladder-v1`) could never be compared to the published one
+# (unset) on any tier — which would defeat the reason the ladder appends rungs as
+# 2/3/4 instead of renumbering. Tiers 0 and 1 were held fixed *precisely* so the
+# two remain comparable, and a guard that forbids it is enforcing the opposite of
+# the invariant it was built for.
+#
+# So compatibility is declared per pair and per tier, not assumed. Keyed by the
+# unordered pair of scheme names; the value is the tiers on which they mean the
+# same condition. A pair not on this table shares nothing and is refused — the
+# default is refusal, and adding a scheme means stating what it is compatible
+# with rather than inheriting compatibility by silence.
+#
+# `""` is the original two-tier scheme. It is spelled empty rather than
+# `tiers-v1` so it collapses with the published capture's *missing* field, which
+# predates this field existing at all.
+SEMANTICS_SHARE: dict[frozenset[str], tuple[int, ...]] = {
+    frozenset({"", "ladder-v1"}): (0, 1),
+}
+
 
 @dataclass
 class Alignment:
@@ -75,6 +97,10 @@ class Alignment:
     finding, so `inert` stops being a refusal. Everything else still holds: a
     conflict is still fatal, and more so here — an A/A that varied something is
     not a loose floor, it is a mislabelled experiment.
+
+    `restricted` names the tiers the comparison was narrowed to, and is carried
+    here rather than left to the caller because it changes what the numbers
+    below mean. A floor measured on tier 0 alone is a tier-0 floor.
     """
 
     axes: tuple[str, ...]
@@ -82,6 +108,7 @@ class Alignment:
     inert: tuple[str, ...] = ()
     conflicts: dict[str, list[Any]] = field(default_factory=dict)
     aa: bool = False
+    restricted: tuple[int, ...] = ()
 
     @property
     def ok(self) -> bool:
@@ -90,7 +117,19 @@ class Alignment:
         return not self.conflicts and not self.inert
 
 
-def align(headers: list[dict[str, Any]], axes: tuple[str, ...], aa: bool = False) -> Alignment:
+def restrict(scores: dict[str, scoring.Score], tiers: tuple[int, ...]) -> dict[str, scoring.Score]:
+    """The subset of a capture's scores at the named tiers. Empty means all of them."""
+    if not tiers:
+        return scores
+    return {key: score for key, score in scores.items() if score.tier in tiers}
+
+
+def align(
+    headers: list[dict[str, Any]],
+    axes: tuple[str, ...],
+    aa: bool = False,
+    restricted: tuple[int, ...] = (),
+) -> Alignment:
     """Check that captures differ on the declared axes and nothing else that matters.
 
     Scoped to `traces.MUST_AGREE` on purpose. Fields outside it — `git_commit`,
@@ -103,10 +142,41 @@ def align(headers: list[dict[str, Any]], axes: tuple[str, ...], aa: bool = False
     replicate counts still yield comparable *rates*; they differ in precision,
     not in meaning. Cells are paired by key, so the extra replicates simply go
     unpaired and `Deltas.unpaired` reports how many.
+
+    **`restricted` changes how the two tier fields are checked**, and only for
+    the tiers named. A capture holding tiers `(0, 2, 3, 4, 1)` and one holding
+    `(0,)` describe different sweeps, but their tier-0 cells describe the same
+    condition, and a comparison restricted to tier 0 looks at nothing else. C.2
+    cannot run without this: the ladder's replication check is its rungs 0 and 4
+    against the published capture's tiers 0 and 1, and the ladder declares five
+    tiers where the published capture declares two.
+
+    * `tiers` — *which* tiers ran — goes from equality to **presence**. A tier
+      asked for and absent from either side is a conflict, not an empty result;
+      a restriction that silently matches nothing pairs zero cells and reports
+      0.0 drift, which is the "unmeasured reported as zero" mistake in its most
+      convincing disguise.
+    * `tier_semantics` — what the integers **mean** — goes from equality to
+      **declared compatibility on the restricted tiers**, via `SEMANTICS_SHARE`.
+      Not to presence, and not waived. It is the field that catches a capture
+      whose `tier1` is a different condition, so relaxing it wholesale would
+      remove the only thing making the `tiers` relaxation safe.
+
+    Unrestricted, both stay under plain equality. Comparing two whole captures
+    that ran different tier sets is still refused, because then the tier sets
+    are part of what is being claimed to match.
     """
-    result = Alignment(axes=axes, aa=aa)
+    result = Alignment(axes=axes, aa=aa, restricted=restricted)
     for name in traces.MUST_AGREE:
         values = [header.get(name) for header in headers]
+        if name == "tiers" and restricted:
+            if any(set(restricted) - _tier_set(value) for value in values):
+                result.conflicts[name] = values
+            continue
+        if name == "tier_semantics" and restricted:
+            if not set(restricted) <= shared_tiers(values):
+                result.conflicts[name] = values
+            continue
         differs = len({_comparable(value) for value in values}) > 1
         if name in axes:
             if differs:
@@ -116,6 +186,53 @@ def align(headers: list[dict[str, Any]], axes: tuple[str, ...], aa: bool = False
         elif differs:
             result.conflicts[name] = values
     return result
+
+
+ALL_TIERS = frozenset(range(1000))
+
+
+def shared_tiers(values: list[Any]) -> set[int]:
+    """The tiers on which every capture's tier vocabulary means the same thing.
+
+    All one scheme — the overwhelmingly common case, including two runs of the
+    same harness — means every tier is shared. Otherwise the pair has to be on
+    `SEMANTICS_SHARE`, and anything not declared there shares nothing.
+
+    Unknown schemes returning the empty set rather than raising is deliberate:
+    a capture from someone else's fork declares a name this table has never
+    heard of, and the right answer is "these cannot be compared", printed, not
+    a traceback.
+    """
+    schemes = {_scheme(value) for value in values}
+    if len(schemes) <= 1:
+        return set(ALL_TIERS)
+    shared = set(ALL_TIERS)
+    for pair in combinations(sorted(schemes), 2):
+        shared &= set(SEMANTICS_SHARE.get(frozenset(pair), ()))
+    return shared
+
+
+def _scheme(value: object) -> str:
+    """A capture's tier vocabulary, with unset spelled one way."""
+    return "" if value is None else str(value)
+
+
+def _tier_set(value: object) -> set[int]:
+    """A header's `tiers` field as integers, tolerating the JSON round trip.
+
+    A capture read back from gzipped JSON can hold these as strings; comparing
+    `{0}` against `{"0"}` would report the published control as absent and
+    refuse the comparison this exists to allow.
+    """
+    if not isinstance(value, list):
+        return set()
+    found = set()
+    for item in value:
+        try:
+            found.add(int(item))
+        except (TypeError, ValueError):
+            continue
+    return found
 
 
 def _comparable(value: object) -> str:
@@ -307,6 +424,55 @@ def _scrub_hint(conflicts: dict[str, list[Any]]) -> list[str]:
     ]
 
 
+def _restriction_hint(alignment: Alignment) -> list[str]:
+    """Say which requested tier is missing, rather than printing two tier lists.
+
+    Under `restricted`, a `tiers` conflict means one side does not hold a tier
+    that was asked for — not that the sweeps disagree. The generic conflict
+    table shows `[0, 2, 3, 4, 1]` against `[0, 1]` and leaves the reader to
+    work out which of the five was the problem.
+    """
+    if not alignment.restricted:
+        return []
+    hint: list[str] = []
+
+    if "tiers" in alignment.conflicts:
+        missing_lines = []
+        for value in alignment.conflicts["tiers"]:
+            missing = sorted(set(alignment.restricted) - _tier_set(value))
+            if missing:
+                missing_lines.append(
+                    f"- a capture declaring `tiers = {value}` is missing tier(s) {missing}"
+                )
+        hint += [
+            "The restriction asked for tiers that are not in both captures:",
+            "",
+            *missing_lines,
+            "",
+            "Restrict to a tier both sides actually ran. An absent tier pairs zero cells, "
+            "and a comparison over zero cells reports 0.0 drift — a missing measurement "
+            "rendered as a perfect one.",
+            "",
+        ]
+
+    if "tier_semantics" in alignment.conflicts:
+        schemes = sorted({_scheme(v) or "(unset)" for v in alignment.conflicts["tier_semantics"]})
+        shared = sorted(shared_tiers(alignment.conflicts["tier_semantics"]))
+        hint += [
+            f"These captures number their tiers differently — {' vs '.join(schemes)} — and "
+            f"`compare.SEMANTICS_SHARE` declares them to agree on "
+            f"{'tier(s) ' + str(shared) if shared else '**no tiers at all**'}, "
+            f"not on {list(alignment.restricted)}.",
+            "",
+            "A restriction cannot bridge that. Two files whose `tier2` means different "
+            "things would pair a rung against a condition it never ran, and report the "
+            "difference as a finding. Either restrict to a tier the two schemes share, "
+            "or declare the compatibility in `SEMANTICS_SHARE` if it is genuinely true.",
+            "",
+        ]
+    return hint
+
+
 def render(
     alignment: Alignment,
     result: Deltas,
@@ -324,6 +490,15 @@ def render(
     label_a, label_b = labels
     lines = [f"# {label_a} vs {label_b}", ""]
 
+    if alignment.restricted:
+        tiers = ", ".join(str(tier) for tier in alignment.restricted)
+        lines += [
+            f"Restricted to **tier {tiers}**. Cells at every other tier are excluded "
+            "from the pairing, so the numbers below describe that tier and no other — "
+            "a floor measured here is a tier-specific floor.",
+            "",
+        ]
+
     if alignment.conflicts:
         lines += [
             "## ⛔ Not comparable",
@@ -338,6 +513,7 @@ def render(
             ),
             "",
             *_scrub_hint(alignment.conflicts),
+            *_restriction_hint(alignment),
         ]
         return "\n".join(lines)
 

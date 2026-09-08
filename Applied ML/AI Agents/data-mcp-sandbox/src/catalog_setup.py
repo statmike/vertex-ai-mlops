@@ -41,8 +41,16 @@ from google.cloud import dataplex_v1
 import config
 import corpus
 
-# Governance is published only at these tiers. Tier 0 is the control.
-GOVERNED_TIERS = tuple(t for t in config.TIERS if t >= 1)
+# Which tiers get which governance is `config.RUNG_CHANNELS`, asked per channel
+# at each call site rather than held in one constant here. That constant was
+# `tier >= 1`, which is true while governance is one switch and quietly wrong the
+# moment the ladder splits it into six (Amendment C.2) — every rung would have
+# been provisioned with everything instead of its own increment, and the ladder
+# would have measured a flat line.
+#
+# Teardown is the exception and uses `config.PROVISIONABLE_TIERS`: deleting only
+# what the current config would create leaves a ladder run's scans orphaned and
+# billing after a non-ladder teardown.
 
 GLOSSARY_ID = config.bounded_id(f"{config.RESOURCE_PREFIX}-glossary")
 
@@ -86,7 +94,8 @@ def create_and_run_profile_scans(wait: bool = True) -> None:
     parent = f"projects/{config.require_project()}/locations/{config.DATAPLEX_LOCATION}"
     jobs: list[tuple[str, str]] = []
 
-    targets = [(tier, table) for tier in GOVERNED_TIERS for table in corpus.TABLE_NAMES]
+    targets = [(tier, table)
+               for tier in config.tiers_with("profiles") for table in corpus.TABLE_NAMES]
     for i, (tier, table) in enumerate(targets):
         if i > 0:
             time.sleep(SCAN_THROTTLE_SECONDS)
@@ -150,7 +159,7 @@ def delete_profile_scans() -> None:
     """Tear down every profile scan this project created."""
     client = dataplex_v1.DataScanServiceClient()
     parent = f"projects/{config.require_project()}/locations/{config.DATAPLEX_LOCATION}"
-    for tier in GOVERNED_TIERS:
+    for tier in config.PROVISIONABLE_TIERS:
         for table in corpus.TABLE_NAMES:
             scan_id = config.profile_scan_id(tier, table)
             try:
@@ -273,7 +282,8 @@ def create_and_run_quality_scans(wait: bool = True) -> None:
     parent = f"projects/{config.require_project()}/locations/{config.DATAPLEX_LOCATION}"
     jobs: list[tuple[str, str]] = []
 
-    targets = [(tier, table) for tier in GOVERNED_TIERS for table in QUALITY_SCAN_TABLES]
+    targets = [(tier, table)
+               for tier in config.tiers_with("quality") for table in QUALITY_SCAN_TABLES]
     for i, (tier, table) in enumerate(targets):
         if i > 0:
             time.sleep(SCAN_THROTTLE_SECONDS)
@@ -333,7 +343,7 @@ def delete_quality_scans() -> None:
     """Tear down every data-quality scan this project created."""
     client = dataplex_v1.DataScanServiceClient()
     parent = f"projects/{config.require_project()}/locations/{config.DATAPLEX_LOCATION}"
-    for tier in GOVERNED_TIERS:
+    for tier in config.PROVISIONABLE_TIERS:
         for table in QUALITY_SCAN_TABLES:
             scan_id = config.quality_scan_id(tier, table)
             try:
@@ -360,7 +370,7 @@ def quality_scans_present() -> bool | None:
     try:
         client = dataplex_v1.DataScanServiceClient()
         parent = f"projects/{config.require_project()}/locations/{config.DATAPLEX_LOCATION}"
-        for tier in GOVERNED_TIERS:
+        for tier in config.tiers_with("quality"):
             for table in QUALITY_SCAN_TABLES:
                 scan_id = config.quality_scan_id(tier, table)
                 try:
@@ -388,7 +398,7 @@ def attach_business_rules() -> None:
     should not have to read around tags.
     """
     client = dataplex_v1.CatalogServiceClient()
-    for tier in GOVERNED_TIERS:
+    for tier in config.tiers_with("rules"):
         for table, text in corpus.GUIDELINES.items():
             entry = dataplex_v1.Entry(name=config.dataplex_entry_name(tier, table))
             entry.aspects[OVERVIEW_ASPECT_KEY] = dataplex_v1.Aspect(
@@ -513,7 +523,7 @@ def create_glossary_and_links() -> None:
                 raise
             print(f"    Term exists:  {term.term_id}")
 
-    for tier in GOVERNED_TIERS:
+    for tier in config.tiers_with("glossary"):
         for term in corpus.GLOSSARY_TERMS:
             term_entry = (
                 f"projects/{config.PROJECT_ID}/locations/{loc}/entryGroups/@dataplex"
@@ -579,7 +589,7 @@ def delete_glossary() -> None:
         f"projects/{config.require_project()}/locations/{config.CATALOG_LOCATION}"
         f"/entryGroups/@bigquery"
     )
-    for tier in GOVERNED_TIERS:
+    for tier in config.PROVISIONABLE_TIERS:
         for term in corpus.GLOSSARY_TERMS:
             for table, columns in term.columns.items():
                 for column in columns:

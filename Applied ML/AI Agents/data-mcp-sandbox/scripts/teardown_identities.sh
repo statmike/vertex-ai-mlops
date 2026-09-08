@@ -16,7 +16,10 @@ set -euo pipefail
 
 PROJECT="${1:-$(gcloud config get-value project 2>/dev/null)}"
 PREFIX="${TIER_SA_PREFIX:-mcp-sandbox}"
-TIERS=(0 1)
+# Every tier this project can ever create, not just the ones the current config
+# would create. Teardown that skips the ladder rungs leaves service accounts
+# behind holding dataViewer on datasets nobody is looking at any more.
+TIERS=(0 1 2 3 4)
 
 SEARCH_ROLE="mcpSandboxCatalogSearch"
 GLOSSARY_ROLE="mcpSandboxGlossaryReader"

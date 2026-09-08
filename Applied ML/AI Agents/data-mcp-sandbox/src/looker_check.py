@@ -121,7 +121,7 @@ def check() -> LookerStatus:
             models_found=[],
         )
 
-    for tier in config.TIERS:
+    for tier in config.LOOKER_TIERS:
         model = config.looker_model(tier)
         section = looker_client.tier_section(tier)
 

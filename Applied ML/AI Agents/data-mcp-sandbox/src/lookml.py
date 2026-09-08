@@ -170,7 +170,7 @@ def render(tier: int) -> dict[str, str]:
 def render_all() -> dict[str, str]:
     """Every LookML file for every tier, plus the shared manifest."""
     files = {"manifest.lkml": _manifest()}
-    for tier in config.TIERS:
+    for tier in config.LOOKER_TIERS:
         files.update(render(tier))
     return files
 
@@ -185,7 +185,7 @@ def _manifest() -> str:
         f"constant: LOOKER_CONNECTION_T{tier} {{\n"
         f'  value: "{config.looker_connection(tier)}"\n'
         "}"
-        for tier in config.TIERS
+        for tier in config.LOOKER_TIERS
     )
     return (
         "# Constants referenced by the tier models. Generated — do not hand-edit.\n"

@@ -367,3 +367,105 @@ def test_every_cell_pairing_is_stated_even_when_nothing_was_dropped():
     text = compare.render(alignment, result, compare.rank_stability(result.entries),
                           ("base", "new"))
     assert "Every cell paired." in text
+
+
+# --- --tier restriction ----------------------------------------------------------
+
+
+def test_a_ladder_capture_cannot_be_compared_to_the_published_one_without_a_restriction():
+    # The wall C.2 hits. `tiers` is in MUST_AGREE, so five-tier vs two-tier is a
+    # conflict — and the ladder's whole replication check is its rungs 0 and 4
+    # against the published tiers 0 and 1.
+    ladder = _header(tiers=[0, 2, 3, 4, 1], tier_semantics="ladder-v1")
+    assert "tiers" in compare.align([_header(), ladder], axes=(), aa=True).conflicts
+
+
+def test_restricting_to_a_shared_tier_makes_that_comparison_possible():
+    ladder = _header(tiers=[0, 2, 3, 4, 1], tier_semantics="ladder-v1")
+    alignment = compare.align([_header(), ladder], axes=(), aa=True, restricted=(0, 1))
+    assert alignment.ok
+    assert alignment.restricted == (0, 1)
+
+
+def test_the_restriction_relaxes_tiers_and_nothing_else():
+    # In particular not `tier_semantics`. That field is what says tier 0 means
+    # the same condition in both files; relaxing `tiers` is only safe because it
+    # does not move.
+    ladder = _header(tiers=[0, 2, 3, 4, 1], tier_semantics="renumbered-v2")
+    conflicts = compare.align(
+        [_header(tier_semantics="ladder-v1"), ladder], axes=(), aa=True, restricted=(0,)
+    ).conflicts
+    assert "tier_semantics" in conflicts
+    assert "tiers" not in conflicts
+
+    model = _header(tiers=[0, 2, 3, 4, 1], agent_model="other")
+    assert "agent_model" in compare.align(
+        [_header(), model], axes=(), aa=True, restricted=(0,)
+    ).conflicts
+
+
+def test_asking_for_a_tier_a_capture_never_ran_is_refused_not_scored_as_zero_drift():
+    # An absent tier pairs no cells, and no cells reports 0.0 drift — which is a
+    # missing measurement rendered as a perfect one, the exact mistake the rest
+    # of this harness refuses.
+    alignment = compare.align([_header(), _header()], axes=(), aa=True, restricted=(3,))
+    assert "tiers" in alignment.conflicts
+    text = compare.render(alignment, compare.Deltas(), [], ("base", "new"))
+    assert "missing tier(s) [3]" in text
+
+
+def test_a_tier_list_that_survived_json_as_strings_still_matches():
+    published = _header(tiers=["0", "1"])
+    assert compare.align([published, _header()], axes=(), aa=True, restricted=(0, 1)).ok
+
+
+def test_restrict_drops_the_other_tiers_cells_rather_than_pooling_them():
+    scores = _scores({
+        ("q1", "p1_managed", 0, 1): True,
+        ("q1", "p1_managed", 3, 1): False,
+        ("q1", "p1_managed", 1, 1): True,
+    })
+    kept = compare.restrict(scores, (0,))
+    assert {score.tier for score in kept.values()} == {0}
+    assert len(kept) == 1
+    assert compare.restrict(scores, ()) == scores
+
+
+def test_a_restricted_report_says_which_tier_it_describes():
+    # A floor measured on tier 0 alone is a tier-0 floor, and tier 0 is the
+    # noisiest condition in this sandbox. A reader who cannot see the
+    # restriction will read it as the floor for everything.
+    a = _scores({("q1", "p1_managed", 0, 1): True})
+    result = compare.deltas(a, dict(a))
+    alignment = compare.align([_header(), _header()], axes=(), aa=True, restricted=(0,))
+    text = compare.render(alignment, result, [], ("base", "new"))
+    assert "Restricted to **tier 0**" in text
+
+
+def test_the_ladder_and_the_published_scheme_are_compatible_on_the_two_shared_tiers():
+    # The append-don't-renumber decision only pays off if this holds. Tiers 0
+    # and 1 were frozen so a ladder capture stays checkable against the
+    # published one; equality on `tier_semantics` would have forbidden exactly
+    # that, which is enforcing the opposite of the invariant.
+    assert compare.shared_tiers([None, "ladder-v1"]) == {0, 1}
+    assert compare.shared_tiers(["", "ladder-v1"]) == {0, 1}
+
+
+def test_the_ladders_own_rungs_are_not_shared_with_the_published_scheme():
+    # Tier 3 exists only in the ladder. Comparing it against a two-tier capture
+    # would pair it with nothing, and a restriction must not make that look
+    # legitimate.
+    assert 3 not in compare.shared_tiers(["", "ladder-v1"])
+
+
+def test_two_captures_on_the_same_scheme_share_every_tier():
+    assert compare.shared_tiers(["ladder-v1", "ladder-v1"]) >= {0, 1, 2, 3, 4}
+    assert compare.shared_tiers([None, ""]) >= {0, 1}
+
+
+def test_an_undeclared_scheme_pairing_shares_nothing_rather_than_guessing():
+    # A capture from a fork declares a name this table has never heard of. The
+    # answer is "cannot be compared", not a traceback and not a default of
+    # compatible.
+    assert compare.shared_tiers(["ladder-v1", "someone-elses-v9"]) == set()
+    assert compare.shared_tiers(["", "renumbered-v2"]) == set()

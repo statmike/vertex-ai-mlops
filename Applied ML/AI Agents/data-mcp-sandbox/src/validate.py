@@ -24,6 +24,7 @@ provision an incoherent set.
 import json
 from pathlib import Path
 
+import compare
 import config
 import corpus
 import golden
@@ -86,6 +87,99 @@ def looker_problems() -> list[str]:
     return found
 
 
+def ladder_problems() -> list[str]:
+    """Check the governance ladder is a ladder before anything is provisioned.
+
+    `RUNG_CHANNELS` is a hand-written table joined to the provisioning code by
+    string, which is the same join this module exists to police everywhere else.
+    Its failures are the quiet kind: a rung that carries the wrong channels does
+    not error, it produces a step of zero and reads as *"this increment of
+    governance does not pay"* — a false finding at the end of a 25.8-hour sweep
+    rather than a message before it starts.
+
+    Runs whether or not the ladder is enabled. The table is wrong the same way
+    either way, and the run that discovers it should not be the expensive one.
+    """
+    found: list[str] = []
+    order, channels = config.RUNG_ORDER, config.RUNG_CHANNELS
+
+    if set(order) != set(channels):
+        found.append(
+            f"ladder: RUNG_ORDER covers tiers {sorted(order)} but RUNG_CHANNELS "
+            f"defines {sorted(channels)}"
+        )
+    if len(set(order)) != len(order):
+        found.append(f"ladder: RUNG_ORDER repeats a tier: {order}")
+
+    # The published tiers keep their published meaning, or every existing capture
+    # is silently re-interpreted: 1,440 shipped cells are keyed on tier0/tier1.
+    if order and order[0] != 0:
+        found.append(f"ladder: rung 0 must be tier 0 (the published control), not {order[0]}")
+    if order and order[-1] != 1:
+        found.append(
+            f"ladder: the top rung must be tier 1 (the published governed tier), not {order[-1]}"
+        )
+    if channels.get(0):
+        found.append(f"ladder: tier 0 is the ungoverned control but carries {channels[0]}")
+    if set(channels.get(1, ())) != set(config.CHANNELS):
+        found.append(
+            "ladder: tier 1 must carry every channel — it is the published governed "
+            f"tier, and the ladder's top rung has to reproduce it. Missing: "
+            f"{sorted(set(config.CHANNELS) - set(channels.get(1, ())))}"
+        )
+
+    for tier, names in channels.items():
+        unknown = [name for name in names if name not in config.CHANNELS]
+        if unknown:
+            found.append(f"ladder: tier {tier} names unknown channels {unknown}")
+        if len(set(names)) != len(names):
+            found.append(f"ladder: tier {tier} repeats a channel: {names}")
+
+    # Cumulative, and strictly so. A rung that adds nothing is a rung that costs
+    # 432 cells to measure a step that cannot exist.
+    for lower, upper in zip(order, order[1:], strict=False):
+        below, above = set(channels.get(lower, ())), set(channels.get(upper, ()))
+        if not below < above:
+            found.append(
+                f"ladder: tier {upper} (rung {config.rung_of(upper)}) must add to tier "
+                f"{lower} (rung {config.rung_of(lower)}) and carry everything it has. "
+                f"Has {sorted(above)}, below has {sorted(below)}"
+            )
+
+    if set(order) - {0, 1} != set(config.LADDER_RUNGS):
+        found.append(
+            f"ladder: LADDER_RUNGS says the ladder adds {sorted(config.LADDER_RUNGS)} but "
+            f"RUNG_ORDER adds {sorted(set(order) - {0, 1})}. `estimate.rate_for` prices "
+            "off LADDER_RUNGS, so a rung missing from it is priced at the worst arm on "
+            "the table and one wrongly in it is priced off a tier it does not resemble."
+        )
+
+    # The capture this config would produce has to be comparable to the published
+    # one, or the ladder's replication check is impossible — and that is decided
+    # by a table in `compare.py`, edited separately from the name here. Renaming
+    # the scheme without adding the pair is not an error at capture time, at merge
+    # time, or at export time. It surfaces as a refusal from `compare_captures.py`
+    # after the sweep, which is the most expensive possible moment to find out.
+    scheme = config.tier_semantics()
+    if scheme and 0 not in compare.shared_tiers(["", scheme]):
+        found.append(
+            f"ladder: tier vocabulary {scheme!r} is not declared compatible with the "
+            "published scheme in `compare.SEMANTICS_SHARE`, so no capture taken with "
+            "this config could be compared against the published one on any tier. Add "
+            f"`frozenset({{'', {scheme!r}}}): (0, 1)` if tiers 0 and 1 still mean what "
+            "they mean there."
+        )
+
+    # Looker is excluded from the ladder by design — a shared instance this
+    # project is a guest on. A rung that reached it would be adding content to
+    # someone else's Looker, which is the one thing this project must never do.
+    strays = [tier for tier in config.LOOKER_TIERS if tier not in (0, 1)]
+    if strays:
+        found.append(f"ladder: LOOKER_TIERS must stay (0, 1); the ladder cannot reach {strays}")
+
+    return found
+
+
 def problems(path: Path = QUESTIONS_PATH, include_looker: bool = True) -> list[str]:
     """Every inconsistency found, as readable lines. Empty means coherent.
 
@@ -96,6 +190,8 @@ def problems(path: Path = QUESTIONS_PATH, include_looker: bool = True) -> list[s
     found: list[str] = []
     questions = json.loads(path.read_text())
     known = corpus_names()
+
+    found += ladder_problems()
 
     # --- corpus internal consistency ---
     # Tier-1 governance is built from these, so a gap here silently weakens the

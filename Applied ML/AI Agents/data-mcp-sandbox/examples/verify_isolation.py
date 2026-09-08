@@ -500,12 +500,32 @@ async def main_async(skip_toolbox: bool, skip_looker: bool) -> int:
 
     report = Report()
     verify_blast_radius(report)
+    if len(config.TIERS) > 2:
+        print(
+            f"\n{len(config.TIERS)} tiers are provisioned, so there are "
+            f"{len(config.TIERS) * (len(config.TIERS) - 1)} ordered pairs and this checks "
+            f"{len(config.TIERS)} of them: each tier against the most-governed other tier.\n"
+            "That is the worst case, not the whole space — the leak this fence exists to "
+            "close is an under-governed tier reading a better-governed tier's catalog "
+            "entries, and richer governance is what makes an entry worth leaking. The\n"
+            "pairwise property itself comes from the dataset ACLs, which `bq_setup."
+            "grant_tier_access` writes so that each tier's identity appears on exactly one\n"
+            "dataset; these calls are the live confirmation on the pair where it matters."
+        )
     for tier in config.TIERS:
-        other = next(t for t in config.TIERS if t != tier)
+        # The most-governed tier that is not this one. With two tiers this is
+        # exactly the old behaviour; with the ladder it stops being whichever
+        # tier the iterator happened to reach first, which would have left the
+        # rungs checked only against the ungoverned control.
+        other = max((t for t in config.TIERS if t != tier), key=config.rung_of)
         await verify_managed(tier, other, report)
         if not skip_toolbox:
             await verify_toolbox(tier, other, report)
-        if not skip_looker and config.looker_configured():
+        # Looker only exists at tiers 0 and 1 — the ladder's rungs have no model
+        # on a shared instance we are guests on — so both sides of the pair have
+        # to be Looker tiers or there is nothing to check across.
+        looker_pair = tier in config.LOOKER_TIERS and other in config.LOOKER_TIERS
+        if not skip_looker and looker_pair and config.looker_configured():
             verify_looker(tier, other, report)
 
     print(f"\n{'FAILED' if report.bad else 'OK'} — {report.bad} check(s) not passing")

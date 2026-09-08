@@ -2,6 +2,7 @@
 	preflight \
 	identities identities-down verify-isolation looker-plan looker-apply \
 	bootstrap apis plan smoke pilot sweep sweep-thinking report export service-tokens \
+	sweep-ladder sweep-ladder-control \
 	compare compare-aa
 
 help:
@@ -41,8 +42,11 @@ help:
 	@echo ""
 	@echo "Vary one axis instead of re-running everything"
 	@echo "  make sweep-thinking MODE=FAST|THINKING|DEFAULT   240 cells, ~40 min."
+	@echo "  LADDER=1 make sweep-ladder   Governance one channel at a time. 1,800 cells."
+	@echo "  LADDER=1 make sweep-ladder-control   Rung 0 again, last. The temporal control."
 	@echo "  make compare BASE=.. AGAINST=.. AXIS=..   Delta on one declared axis"
 	@echo "  make compare-aa BASE=.. AGAINST=..        Noise floor from two identical runs"
+	@echo "      Add TIER=\"0 1\" to either, to compare captures that ran different tiers"
 	@echo ""
 	@echo "Inspect"
 	@echo "  make golden     Print live golden-truth values for every tier"
@@ -188,6 +192,41 @@ sweep-thinking:
 		--configs p4_bq_direct p4_bq_direct_ctx \
 		--out results/raw/thinking-$(shell echo $(MODE) | tr A-Z a-z).json
 
+# The governance ladder (Amendment C.2). Five rungs across six arms, 1,800 cells,
+# 24h21m estimated. Needs LADDER=1 on `make identities` and `make setup` first —
+# the three intermediate rungs are real datasets with real service accounts, and
+# a sweep against unprovisioned rungs measures an empty dataset rather than
+# failing.
+#
+# `p2_*` and `p4_looker_ca` are excluded by design: LookML arrives as one lump at
+# the top rung and laddering it means semantic-model surgery on a shared Looker
+# instance this project is a guest on.
+#
+#     LADDER=1 make identities && LADDER=1 make setup
+#     LADDER=1 make plan     # check the number before spending a day on it
+#     LADDER=1 make sweep-ladder
+LADDER_ARMS = p1_managed p1_matched p3_managed p3_matched p3_toolbox p4_bq_ca
+
+sweep-ladder:
+	@test "$(LADDER)" = "1" || { echo "Set LADDER=1 — the rungs must be provisioned first."; exit 1; }
+	uv run python examples/run_battery.py \
+		--configs $(LADDER_ARMS) --out results/raw/ladder.json
+
+# The temporal control: rung 0 again, at the END of the ladder. Its own capture,
+# because re-running the same cells into `ladder.json` would collide on cell keys.
+# Read with `make compare-aa` against the ladder's own rung 0 — anything the pair
+# disagrees on is drift accumulated over the sweep's day, not governance, and it
+# is the only thing that can tell the two apart.
+#
+# 360 cells but 7h59m, not the 4.3h a sixth of the ladder suggests: rung 0 is the
+# *expensive* condition. Ungoverned, the agent explores, and `p3_managed` spends
+# 207k tokens at tier 0 against 34k at tier 1. Budget the control off its own
+# measured rate, never off the ladder's average.
+sweep-ladder-control:
+	@test "$(LADDER)" = "1" || { echo "Set LADDER=1 — the rungs must be provisioned first."; exit 1; }
+	uv run python examples/run_battery.py \
+		--configs $(LADDER_ARMS) --tiers 0 --out results/raw/ladder-rung0-last.json
+
 report:
 	uv run python examples/build_results.py
 
@@ -213,7 +252,8 @@ export:
 # Compare two captures that differ on one declared axis. Refuses rather than
 # subtracting captures that disagree on anything else (Amendment C.0).
 compare:
-	uv run python scripts/compare_captures.py --base $(BASE) --against $(AGAINST) --axis $(AXIS)
+	uv run python scripts/compare_captures.py --base $(BASE) --against $(AGAINST) --axis $(AXIS) \
+		$(foreach t,$(TIER),--tier $(t))
 
 # Measure the noise floor: two captures that varied NOTHING, differenced. This
 # is where `compare.NOISE_FLOOR` comes from, and re-running it in your own
@@ -221,5 +261,13 @@ compare:
 #
 #     make compare-aa BASE=results/capture.json.gz \
 #                     AGAINST=results/capture-thinking-default.json.gz
+#
+# TIER="0 1" narrows both sides to those tiers, which is how the ladder capture
+# is read against the published two-tier one — otherwise the `tiers` header
+# differs and the comparison is refused.
+#
+#     make compare-aa BASE=results/capture.json.gz \
+#                     AGAINST=results/capture-ladder.json.gz TIER="0 1"
 compare-aa:
-	uv run python scripts/compare_captures.py --base $(BASE) --against $(AGAINST) --aa
+	uv run python scripts/compare_captures.py --base $(BASE) --against $(AGAINST) --aa \
+		$(foreach t,$(TIER),--tier $(t))

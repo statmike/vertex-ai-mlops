@@ -19,7 +19,7 @@ import golden
 def main() -> int:
     client = bigquery.Client(project=config.require_project())
     for tier in config.TIERS:
-        print(f"\nTier {tier} — {config.TIER_LABELS[tier]}  ({config.tier_dataset(tier)})")
+        print(f"\n{config.tier_label(tier)}  ({config.tier_dataset(tier)})")
         for key, r in golden.resolve_all(client, tier).items():
             print(f"  {key:32s} {r.value:>16,.2f}")
             if r.trap_value is not None:

@@ -195,6 +195,12 @@ MUST_AGREE = (
     "ca_thinking_mode",
     "ca_model",
     "runs",
+    # What the integers in `tiers` mean. Ladder captures append rungs as tiers
+    # 2, 3, 4 rather than renumbering (Amendment C.2), so shared integers keep
+    # their published meaning — but a file that did renumber would pair `tier1`
+    # against a different condition and report a finding. This field is what
+    # makes that refusable instead of invisible.
+    "tier_semantics",
     "tiers",
     "question_ids",
 )

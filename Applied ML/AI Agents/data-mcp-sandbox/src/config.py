@@ -100,12 +100,130 @@ RESOURCE_PREFIX = os.getenv("RESOURCE_PREFIX", "data_mcp_sandbox")
 # The identical corpus is replicated into one dataset per tier, differing ONLY in
 # governance. T0 is the ungoverned control; T1 carries descriptions, catalog
 # enrichment, and a semantic LookML model. See docs/paths.md.
-TIERS: tuple[int, ...] = (0, 1)
+#
+# The ladder (Amendment C.2) adds three intermediate tiers between them. It is
+# opt-in because turning it on triples the provisioned surface and would change
+# what `make sweep` means: the published 1,440-cell factorial is two tiers, and a
+# five-tier default would silently stop reproducing it.
+LADDER = os.getenv("LADDER", "false").lower() in ("1", "true", "yes")
 
-TIER_LABELS = {
-    0: "0 · ungoverned control",
-    1: "1 · governed",
+TIERS: tuple[int, ...] = (0, 1, 2, 3, 4) if LADDER else (0, 1)
+
+# Every tier this project can ever provision, whether or not it is provisioning
+# them today. Teardown iterates this rather than `TIERS`: a `make teardown` run
+# with the ladder off must still delete the scans a ladder run created, or they
+# are orphaned and keep billing under a name nothing left in the config mentions.
+PROVISIONABLE_TIERS: tuple[int, ...] = (0, 1, 2, 3, 4)
+
+# The tiers the ladder *adds*. Tiers 0 and 1 are excluded because they are the
+# published ones: anything that treats them as unmeasured neighbours rather than
+# as measurements is a guess wearing a measurement's clothes. `estimate.rate_for`
+# is the case that bit — pricing an unmeasured tier 0 off tier 1 would have read
+# 6x low, since tier 0 is the *expensive* condition (more turns spent hunting for
+# context that is not there).
+LADDER_RUNGS: tuple[int, ...] = (2, 3, 4)
+
+# -----------------------------------------------------------------------------
+# The governance ladder — which increment of governance actually pays.
+#
+# Governance is not one switch. It arrives through six channels a real team
+# installs separately and in some order, and tier 1 is all of them at once, which
+# is why the published result can say governance doubles accuracy but not which
+# part of it did.
+#
+# **The tier integers are deliberately not the rung positions.**
+# `traces.cell_key` embeds the tier, and 1,440 published cells are keyed on
+# `tier0` / `tier1`. Renumbering so the rungs read 0..4 in order would make every
+# published key unreadable to new code, and a second file in which `tier1` means
+# something else would be worse still. So the new rungs are *appended* as 2, 3, 4
+# and never reordered; `RUNG_ORDER` states the reading order once, here, and
+# everything that renders a ladder sorts by it rather than by the integer.
+#
+# The cost is that the tier integer stops reading as monotone governance. That is
+# a documentation problem, and the alternative was a correctness problem.
+# -----------------------------------------------------------------------------
+CHANNELS = ("descriptions", "profiles", "rules", "glossary", "quality", "lookml")
+
+# Ladder position -> tier integer. Rung 0 is today's tier 0, rung 4 today's tier 1.
+RUNG_ORDER: tuple[int, ...] = (0, 2, 3, 4, 1)
+
+# Cumulative: each rung carries everything below it, because that is how
+# governance is actually adopted and a non-cumulative rung would measure a
+# configuration nobody runs.
+RUNG_CHANNELS: dict[int, tuple[str, ...]] = {
+    0: (),
+    2: ("descriptions",),
+    3: ("descriptions", "profiles"),
+    4: ("descriptions", "profiles", "rules"),
+    1: CHANNELS,
 }
+
+# What each tier actually carries. Written as the *increment* over the rung
+# below, because that is the thing the ladder measures and the thing an operator
+# needs to recognise when a `make setup` summary scrolls past.
+TIER_LABELS = {
+    0: "ungoverned control",
+    2: "+ column descriptions",
+    3: "+ profile scans",
+    4: "+ business rules",
+    1: "+ glossary, quality scans, LookML — the published governed tier",
+}
+
+
+def tier_label(tier: int) -> str:
+    """A tier for human eyes, carrying its rung position only when there is one.
+
+    With the ladder off there are two tiers and no ladder to be a position in, so
+    printing `rung 4` at someone who never enabled it is noise about a feature
+    they are not using. With it on the rung is the *only* useful ordering, since
+    the integers are not monotone.
+    """
+    if LADDER:
+        return f"rung {rung_of(tier)} (tier {tier}) · {TIER_LABELS[tier]}"
+    return f"{tier} · {TIER_LABELS[tier]}"
+
+
+def tiers_with(channel: str) -> tuple[int, ...]:
+    """Every provisioned tier carrying a governance channel, in tier order.
+
+    The provisioning modules ask this instead of testing `tier >= 1`, which was
+    true when governance was one switch and quietly wrong the moment it became
+    five. With the ladder off this returns `(1,)` for every channel — exactly the
+    old behaviour — so the published tiers keep their published meaning.
+
+    An unknown channel raises rather than returning empty. A typo that provisions
+    nothing does not fail; it produces a rung that scores like the rung below it
+    and reads as *"this increment of governance does not pay"*, which is a false
+    finding rather than a broken run.
+    """
+    if channel not in CHANNELS:
+        raise ValueError(f"Unknown governance channel {channel!r}; expected one of {CHANNELS}")
+    return tuple(tier for tier in TIERS if channel in RUNG_CHANNELS[tier])
+
+
+def rung_of(tier: int) -> int:
+    """Ladder position of a tier — what to sort and plot by, never the integer."""
+    return RUNG_ORDER.index(tier)
+
+
+def tier_semantics() -> str:
+    """The tier vocabulary this capture uses, recorded in its header.
+
+    Two captures can both hold `tier1` and mean the same thing while one of them
+    also holds a `tier3` that the other has never heard of. A file that declares
+    its vocabulary can be read without inferring it from which integers happen to
+    be present — and `MUST_AGREE` can then refuse to difference two files that
+    number their tiers differently, which is the failure this naming scheme was
+    chosen to avoid and would otherwise reintroduce at comparison time.
+
+    The two-tier case returns `""`, not `"tiers-v1"`. Every capture taken before
+    this field existed has no value for it and reads as unset, and `compare`
+    collapses unset with empty — so an empty string keeps the published capture
+    comparable to a two-tier sweep taken today, which is the single most likely
+    comparison anyone will run. A `"tiers-v1"` string would have made the guard
+    fire on the replication it exists to permit.
+    """
+    return "ladder-v1" if LADDER else ""
 
 
 def tier_dataset(tier: int) -> str:
@@ -151,13 +269,39 @@ def tier_service_account(tier: int) -> str:
     return f"{TIER_SA_PREFIX}-t{tier}@{require_project()}.iam.gserviceaccount.com"
 
 
+# Looker is not laddered, whatever `TIERS` says. LookML arrives as one lump at
+# rung 4, and splitting it into rungs means semantic-model surgery on a shared
+# instance this project is a guest on — out of scope by the standing rule against
+# touching content that is not ours (Amendment C.2 excludes `p2_*` and
+# `p4_looker_ca` for exactly this reason).
+LOOKER_TIERS: tuple[int, ...] = (0, 1)
+
+
+def _require_looker_tier(tier: int) -> None:
+    """Refuse to name a Looker object for a tier that has none.
+
+    Both lookups below were `T0 if tier == 0 else T1`, which answers *every*
+    other integer with the tier-1 semantic model. Under the ladder that is a
+    silent wrong answer, not an error: rung 2 would be pointed at the fully
+    governed LookML and score like rung 4, and the ladder would report that
+    profile scans deliver the whole benefit of the semantic layer.
+    """
+    if tier not in LOOKER_TIERS:
+        raise ValueError(
+            f"Tier {tier} has no Looker model. Looker runs at tiers {LOOKER_TIERS} only "
+            f"— the ladder's intermediate rungs exclude the Path 2 and Looker CA arms."
+        )
+
+
 def looker_model(tier: int) -> str:
     """LookML model name for a tier (t0 = raw passthrough, t1 = semantic)."""
+    _require_looker_tier(tier)
     return LOOKER_MODEL_T0 if tier == 0 else LOOKER_MODEL_T1
 
 
 def looker_connection(tier: int) -> str:
     """Looker BigQuery connection name for a tier. Impersonates `tier_service_account`."""
+    _require_looker_tier(tier)
     return LOOKER_CONNECTION_T0 if tier == 0 else LOOKER_CONNECTION_T1
 
 

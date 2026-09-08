@@ -22,6 +22,15 @@ shipped rather than done in a scratch script: a floor is a number every other
 comparison is judged against, so a reader has to be able to re-measure it in
 their own project instead of inheriting ours.
 
+`--tier N` narrows a comparison to one tier on both sides. Two captures that ran
+different tier *sets* still measured the same thing at a tier they share, and
+without this the governance ladder — five tiers — could never be checked against
+the published two-tier capture at all.
+
+    uv run python scripts/compare_captures.py \
+        --base results/capture.json.gz \
+        --against results/capture-ladder.json.gz --tier 0 --tier 1 --aa
+
 The counterpart to `merge_captures.py`, for the case merging is right to refuse.
 `traces.MUST_AGREE` holds `agent_model` and `tiers`, so a cross-model sweep and a
 governance-ladder sweep can never join the published capture — they are
@@ -61,6 +70,12 @@ def parse_args() -> argparse.Namespace:
         "--aa", action="store_true",
         help="A/A mode: assert nothing varied and report the deltas as a noise floor.",
     )
+    parser.add_argument(
+        "--tier", action="append", dest="tiers", type=int, default=None, metavar="N",
+        help="Compare only cells at this tier. Repeatable. Relaxes the `tiers` header "
+             "check from equality to presence, which is what lets a ladder capture be "
+             "compared against the two-tier published one.",
+    )
     parser.add_argument("--out", type=Path, default=None, help="Write markdown here as well.")
     return parser.parse_args()
 
@@ -76,6 +91,13 @@ def scored(path: Path) -> tuple[dict, dict]:
 def main() -> int:
     args = parse_args()
     axes = tuple(args.axes or ())
+    tiers = tuple(dict.fromkeys(args.tiers or ()))
+    if "tiers" in axes and tiers:
+        raise SystemExit(
+            "--axis tiers and --tier are opposites. Declaring `tiers` as an axis says "
+            "the tier set is the thing being varied; --tier says compare one tier and "
+            "ignore the rest. Pick one."
+        )
     if args.aa and axes:
         raise SystemExit(
             "--aa and --axis are opposites. An A/A measures what stays the same; "
@@ -101,8 +123,10 @@ def main() -> int:
     meta_b, scores_b = scored(args.against)
 
     labels = (_label(args.base), _label(args.against))
-    alignment = compare.align([meta_a, meta_b], axes, aa=args.aa)
-    result = compare.deltas(scores_a, scores_b)
+    alignment = compare.align([meta_a, meta_b], axes, aa=args.aa, restricted=tiers)
+    result = compare.deltas(
+        compare.restrict(scores_a, tiers), compare.restrict(scores_b, tiers)
+    )
     checks = compare.rank_stability(result.entries)
     text = compare.render(alignment, result, checks, labels)
 

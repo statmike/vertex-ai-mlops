@@ -133,6 +133,15 @@ def header(current: Plan) -> dict[str, Any]:
     (Amendment C.4). It is recorded, and in `MUST_AGREE`, so that the day a
     second value appears the guard is already in place rather than being invented
     after a capture has silently mixed two of them.
+
+    `tier_semantics` declares the *vocabulary* the `tiers` list is written in.
+    The ladder appends rungs as tiers 2, 3, 4 rather than renumbering, so two
+    captures can both hold `tier1` and mean the same thing while one of them also
+    holds tiers the other has never heard of (Amendment C.2). A file that states
+    its vocabulary can be read without inferring it from which integers are
+    present — and because the field is in `MUST_AGREE`, the comparator refuses to
+    difference two files that number their tiers differently instead of pairing
+    `tier3` against nothing and reporting the result as unpaired cells.
     """
     return {
         "started": datetime.now(UTC).isoformat(timespec="seconds"),
@@ -146,6 +155,7 @@ def header(current: Plan) -> dict[str, Any]:
         "ca_thinking_mode": config.CA_THINKING_MODE,
         "ca_model": ca_direct.CA_MODEL,
         "runs": current.runs,
+        "tier_semantics": config.tier_semantics(),
         "tiers": current.tiers,
         "configs": current.config_keys,
         "question_ids": [question.id for question in current.questions],

@@ -34,11 +34,17 @@ def provision_bigquery(client: bigquery.Client) -> None:
     bq_setup.copy_to_other_tiers(client)
 
     print("\n[3/5] Applying governance to schemas:")
+    # Strip first on every tier that should not carry descriptions, rather than
+    # only on tier 0. The rungs are provisioned into the same datasets across
+    # runs, so a tier that carried descriptions under an earlier configuration
+    # keeps them unless something takes them away — and a rung silently holding
+    # the rung above's governance flattens the step without failing anything.
+    with_descriptions = config.tiers_with("descriptions")
     for tier in config.TIERS:
-        if tier == 0:
-            bq_setup.strip_descriptions(client, tier)
-        else:
+        if tier in with_descriptions:
             bq_setup.apply_descriptions(client, tier)
+        else:
+            bq_setup.strip_descriptions(client, tier)
 
 
 def verify_corpus(client: bigquery.Client) -> bool:
@@ -85,10 +91,15 @@ def verify_governance() -> bool:
     the governance is actually there, and the whole T1-T0 contrast rests on it.
     """
     ok = True
+    with_rules = config.tiers_with("rules")
     for tier in config.TIERS:
         for table in corpus.TABLE_NAMES:
             rule = catalog_setup.read_business_rule(tier, table)
-            expected = corpus.GUIDELINES[table] if tier in catalog_setup.GOVERNED_TIERS else None
+            # Every tier is read back, including the rungs that should have no
+            # rules. A rung that carries governance it was not meant to carry
+            # collapses the step above it, and unlike a missing rule that shows
+            # up as a low score, an extra one shows up as no finding at all.
+            expected = corpus.GUIDELINES[table] if tier in with_rules else None
             if rule != expected:
                 got = f"{rule[:60]!r}..." if rule else "nothing"
                 print(f"    WRONG {config.tier_dataset(tier)}.{table}: stored {got}")
@@ -116,7 +127,9 @@ def main() -> int:
 
     project = config.require_project()
     print(f"\nProvisioning data-mcp-sandbox in {project}")
-    print(f"  Tiers:  {', '.join(config.TIER_LABELS[t] for t in config.TIERS)}")
+    for tier in config.RUNG_ORDER:
+        if tier in config.TIERS:
+            print(f"  Tier:   {config.tier_label(tier)}")
     print(f"  Corpus: {len(corpus.CORPUS)} tables x {len(config.TIERS)} tiers")
 
     client = bigquery.Client(project=project)

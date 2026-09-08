@@ -47,9 +47,14 @@ def parse_args() -> argparse.Namespace:
         "--tiers",
         nargs="+",
         type=int,
-        default=list(config.TIERS),
+        # Defaulted in ladder reading order, not integer order. Cells run
+        # tier-major within an arm, so an interrupted sweep leaves whole rungs
+        # finished — and with the ladder on, integer order would finish rung 4
+        # second and leave the ladder's middle missing, which is the one shape a
+        # partial ladder capture cannot be read from.
+        default=[tier for tier in config.RUNG_ORDER if tier in config.TIERS],
         choices=list(config.TIERS),
-        help="Which governance tiers to run (default: both).",
+        help="Which governance tiers to run (default: all provisioned, in rung order).",
     )
     parser.add_argument(
         "--questions",
