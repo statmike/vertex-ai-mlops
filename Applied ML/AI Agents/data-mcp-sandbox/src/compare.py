@@ -33,12 +33,32 @@ import report
 import scoring
 import traces
 
-# One accuracy point, measured rather than assumed. `p4_bq_direct` and
-# `p4_bq_direct_ctx` differ only by a glossary payload, and at tier 0 that
-# payload is empty by design — so those 120 cells send byte-identical requests
-# and are an accidental A/A control. They land 1 point apart, 22% vs 23%
-# (docs/paths.md). Any difference smaller than this is not a difference.
-NOISE_FLOOR = 0.01
+# The floor a CROSS-CAPTURE delta has to clear, measured rather than assumed.
+#
+# The published 1-point A/A floor is the wrong one for this module, and using it
+# here was a defect. That figure comes from `p4_bq_direct` and `p4_bq_direct_ctx`
+# at tier 0, which send byte-identical requests and land 1 point apart (22% vs
+# 23%, docs/paths.md) — but they do so *inside a single run*, sharing a sweep, an
+# oracle and an hour of service weather. Two captures share none of that.
+#
+# C.4 measured the real thing. `capture-thinking-default` re-runs the published
+# direct arms with the identical configuration a day later, so it is a true A/A
+# across captures. Same arms, same tiers, same 240 cells:
+#
+#     p4_bq_direct      tier 0    21.7% → 28.3%    +6.7
+#     p4_bq_direct_ctx  tier 0    23.3% → 28.3%    +5.0
+#     p4_bq_direct_ctx  tier 1    95.0% → 90.0%    -5.0
+#     p4_bq_direct      tier 1    88.3% → 90.0%    +1.7
+#
+# Nothing varied but the day. So a cross-capture delta under ~7 points is inside
+# the noise, and the 1-point floor was quietly promoting several of those to
+# "resolved". Set from the largest observed swing, not the mean, because the
+# floor's job is to stop a false finding rather than to describe typical drift.
+#
+# Measured on the two direct arms at n=5. Sweeps whose arms run a local model
+# have their own variance and this may understate them; a comparison that turns
+# on a delta near the floor should measure its own A/A rather than trust this.
+NOISE_FLOOR = 0.067
 
 
 @dataclass
@@ -220,9 +240,9 @@ def rank_stability(entries: list[Delta], floor: float = NOISE_FLOOR) -> list[Ran
     """Per tier, how many arm orderings held across the axis change.
 
     A pair is `unresolved` when either capture separates the two arms by less
-    than the noise floor. That is not a hedge: with a measured 1-point A/A
-    floor, calling a 0.4-point gap an ordering and then calling its reversal an
-    inversion manufactures a finding out of resampling noise.
+    than the noise floor. That is not a hedge: against a ~7-point cross-capture
+    floor, calling a 3-point gap an ordering and then calling its reversal an
+    inversion manufactures a finding out of day-to-day drift.
     """
     checks: list[RankCheck] = []
     for tier in sorted({entry.tier for entry in entries}):
@@ -341,7 +361,7 @@ def render(
                     report.fmt(entry.accuracy_a, ".0%"),
                     report.fmt(entry.accuracy_b, ".0%"),
                     report.fmt(entry.points, "+.1f"),
-                    "yes" if entry.resolved else f"< {100 * NOISE_FLOOR:.0f} pt floor",
+                    "yes" if entry.resolved else f"< {100 * NOISE_FLOOR:.1f} pt floor",
                 ]
                 for entry in result.entries
             ],

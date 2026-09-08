@@ -156,10 +156,18 @@ Two properties worth knowing before reading any cross-capture number:
   would make the published capture incomparable to the very sweeps measured
   against it.
 * **Arm orderings closer than the noise floor are `unresolved`, not ordered.**
-  The floor is the measured 1 point from the accidental A/A control (see
-  [paths](paths.md)). Rank agreement is computed over resolved pairs only;
-  counting the rest as agreement would let a comparison in which nothing
-  separated any arm report perfect stability.
+  Rank agreement is computed over resolved pairs only; counting the rest as
+  agreement would let a comparison in which nothing separated any arm report
+  perfect stability.
+* **The floor here is the cross-capture one: ~7 points, not 1.** The 1-point A/A
+  control in [paths](paths.md) is measured *within* a run, between two arms
+  sharing a sweep, an oracle and an hour of the service's weather. Two captures
+  share none of that: re-running one configuration unchanged a day later moved
+  it 6.7 points. `compare.NOISE_FLOOR` is set from the larger figure, because
+  the floor's job is to stop a false finding rather than to describe typical
+  drift. This one is measured on the two direct arms at n=5; a comparison
+  turning on a delta near the floor should measure its own A/A rather than
+  inherit theirs.
 
 Comparison runs the deterministic scorer only — no judge. The judge is a model
 call with ~1.3% verdict wobble, which would let two captures differ because they

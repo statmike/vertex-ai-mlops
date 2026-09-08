@@ -205,6 +205,49 @@ with the check that proves you got it right.
 `make validate` is the fast loop — offline, free, and run automatically before
 `make setup` provisions anything.
 
+### Replicating one axis instead of the whole sweep
+
+The full factorial is a day. A single **axis** is usually not, and it is the
+cheaper way to ask a question this sandbox did not already answer — or to check
+one of ours against your own environment.
+
+The pattern is three commands. Take a capture with one thing changed, export it
+so it carries its own frozen oracle and no project identifiers, then compare:
+
+```bash
+make sweep-thinking MODE=THINKING          # 240 cells, ~40m, no local tokens
+make export RESULTS=results/raw/thinking-thinking.json \
+            OUT=results/capture-thinking-thinking.json.gz
+make compare BASE=results/capture.json.gz \
+             AGAINST=results/capture-thinking-thinking.json.gz \
+             AXIS=ca_thinking_mode
+```
+
+Three things make this safe to read, and each of them is a refusal rather than
+a convenience:
+
+* **`make export` is not optional.** The published capture is scrubbed, so its
+  `project` reads `example-project` while yours reads your real id — and
+  `project` is a field the comparison is not allowed to vary. Compare exported
+  files with exported files.
+* **The comparison names its axis, and only that axis may differ.** Anything
+  else in `MUST_AGREE` that disagrees is printed and the command exits non-zero
+  with no numbers. So it will refuse if your model, Toolbox version, replicate
+  count or tier fence differs from ours — which they may well, and which is
+  exactly when a delta would be meaningless.
+* **A declared axis that did not actually vary is also a refusal.** Otherwise a
+  misconfigured run reports zeros and they read as a null result.
+
+Cells are paired by key and unpaired ones are counted, not pooled, so a smaller
+replicate count than ours costs precision rather than correctness. Comparison
+runs the deterministic scorer only, never the judge.
+
+**Latency needs its control inside the same window.** Wall clock is measured
+against a shared service, so comparing your latency to a capture taken on
+another day mixes the effect you are testing with how loaded the service was.
+`make sweep-thinking MODE=DEFAULT` exists for this: it re-runs the published
+setting alongside your other captures so the baseline is contemporaneous.
+
 ---
 
 ## What will not reproduce, and why

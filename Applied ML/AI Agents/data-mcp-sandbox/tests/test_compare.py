@@ -6,6 +6,8 @@ Toolbox versions is worse than no comparator, because its output looks like a
 result.
 """
 
+import pytest
+
 import compare
 import scoring
 import traces
@@ -85,6 +87,22 @@ def test_tier_order_is_not_a_difference():
         axes=("agent_model",),
     )
     assert "tiers" not in alignment.conflicts
+
+
+def test_the_floor_is_the_cross_capture_one_not_the_within_run_one():
+    # This shipped wrong once. `compare` was built with the 1-point A/A floor
+    # from docs/paths.md, which is measured inside a single run — two arms
+    # sharing a sweep, an oracle, and an hour of service weather. C.4 then
+    # re-ran one configuration a day later and it moved 6.7 points with nothing
+    # varied but the date. A 5-point cross-capture delta is drift, and the old
+    # floor was reporting it as a resolved finding.
+    drift = compare.Delta(config="p4_bq_direct", tier=0, pairs=60, correct_a=13, correct_b=16)
+    assert abs(drift.points) == pytest.approx(5.0)
+    assert not drift.resolved, "a 5-point cross-capture delta is inside measured day-to-day drift"
+
+    real = compare.Delta(config="p4_bq_direct_ctx", tier=1, pairs=60, correct_a=57, correct_b=48)
+    assert abs(real.points) == pytest.approx(15.0)
+    assert real.resolved
 
 
 def test_comparing_against_a_published_capture_says_to_export_first():

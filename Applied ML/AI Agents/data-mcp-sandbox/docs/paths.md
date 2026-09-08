@@ -174,6 +174,11 @@ The tier-1 effect is seven times the noise floor the same pair measured for
 itself on the same day against the same endpoint — which is a stronger claim than
 a 7-point delta usually gets to make.
 
+That "same day, same endpoint" is load-bearing, and this floor does not travel.
+It is a **within-run** figure: the two arms share a sweep, an oracle, and an hour
+of the service's weather. Comparing numbers across two *different* captures gets
+a much larger floor — [~7 points, measured](#the-cross-capture-noise-floor-is-7-points-not-1).
+
 ### What this does not cover
 
 Stated so the grid is not mistaken for the whole world: one model, one corpus at
@@ -328,6 +333,89 @@ knob, and every published cell here ran the service default — the field has no
 proto presence, so omitting it and sending "unspecified" are the same request.
 `CA_THINKING_MODE` changes it, into a separate capture compared with
 `make compare` (see [method](method.md#one-capture-per-experiment-compared-rather-than-merged)).
+
+### What the thinking knob is actually worth
+
+Three captures, 720 cells, zero failures: `FAST`, `THINKING`, and a same-window
+re-run of the default. All at n=5 over both direct arms and both tiers.
+
+**The default is not an alias for either mode.** It is adaptive — it spends
+deliberation in proportion to how hard the question is, which neither explicit
+setting does. Median latency per question, pooled over both arms and tiers:
+
+| question | FAST | default | THINKING |
+|---|---:|---:|---:|
+| `direct-q1` (easiest) | 6.5s | 6.7s | 9.9s |
+| `metadata-q1` | 6.7s | 7.8s | 10.7s |
+| `semantic-q2` | 7.2s | 10.2s | 17.7s |
+| `governed-q2` | 7.7s | 12.8s | 19.7s |
+| `trap-q1` (hardest) | 6.7s | 14.7s | 23.5s |
+
+Read the FAST column first: **6.5–7.7s no matter what you ask.** Question
+difficulty does not move it. The default ranges 6.7–14.7s over the same
+questions, tracking THINKING's ordering at roughly half its cost.
+
+It is not routing each request to one of the two modes either — that would show
+up as a bimodal split, part of the distribution sitting on FAST's ~7s. On
+`trap-q1` the default's 20 cells run continuously from 8.2s to 24.1s with
+nothing at FAST's baseline.
+
+The gap is deliberation, not warehouse work: all three modes issue ~1.0
+BigQuery jobs per cell with comparable SQL length, so nothing here is explained
+by one mode querying more.
+
+**On accuracy, almost nothing survives the noise floor.** Two effects clear it:
+
+* **FAST costs ~12 points at tier 0** on both arms (28% → 17%), where there is
+  no governance to lean on. At tier 1 it is indistinguishable from the default
+  (+1.7, +3.3 — both inside the floor) while running ~30% faster. On a governed
+  warehouse, FAST is close to free.
+* **THINKING costs 10 points on `p4_bq_direct_ctx` at tier 1** (90% → 80%), and
+  13 against FAST. This is the one large, well-resolved accuracy effect in the
+  axis, and it is worth understanding before reading it as "deliberation is
+  bad".
+
+#### The one place deliberation hurts, and why it is not what it looks like
+
+All of the tier-1 loss is on the **trap** questions: `trap-q1` goes 5/5 to 0/5.
+The obvious reading — that more reasoning talks the model out of the governed
+definition — is wrong. It applies the definition *harder*:
+
+> "I excluded refunded transactions, as the business definition of net revenue
+> requires their exclusion."
+
+`NET_REVENUE_RULE` says Net Revenue "MUST exclude refunded transactions". That
+is a claim about the **aggregate metric**. `trap-q1` asks a **per-row**
+question — how many transactions have a list price more than 100× *the net
+revenue recorded for that transaction* — where refund status is irrelevant, and
+the golden applies no such filter. THINKING answers 212 against an oracle of
+235 by taking a MUST literally.
+
+The control is what makes this attributable. `p4_bq_direct` reads the same rule
+through catalog metadata and holds at 4–5/5 under THINKING; only
+`p4_bq_direct_ctx`, which receives the rule as text pasted into the request,
+collapses. So the effect is **injected context × deliberation**, not
+deliberation alone — the more prominently a rule is placed, the more literally a
+deliberating model applies it, including where it does not apply.
+
+Two honest caveats. Our rule wording genuinely is ambiguous between the metric
+and a row value, so part of this is a property of this corpus rather than of the
+service. And the oracle encodes one of two defensible readings. Neither changes
+the measured interaction, and the rule is deliberately left as-is: it is read by
+every governed arm, so editing it would invalidate every capture taken against
+the old wording.
+
+#### The cross-capture noise floor is ~7 points, not 1
+
+This sandbox's headline A/A floor is 1 point, from two arms at tier 0 that send
+byte-identical requests. That is a **within-run** figure — those arms share a
+sweep, an oracle and an hour of the service's weather.
+
+Re-running one configuration unchanged a day later moves it up to **6.7 points**
+(`p4_bq_direct` tier 0, 21.7% → 28.3%). Nothing varied but the date. So any
+comparison *between* captures needs the larger floor, and `compare.NOISE_FLOOR`
+uses it. Under the 1-point floor, several deltas in this axis read as findings
+that are in fact day-to-day drift.
 
 ---
 
