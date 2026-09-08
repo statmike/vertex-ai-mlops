@@ -26,7 +26,7 @@ cannot inherit context — or a token count — from the one before it.
 |---|---|---|
 | Arm | 12 | `src/mcp_clients.py` `CONFIGS` |
 | Question | 12 | `examples/questions.json` |
-| Governance tier | 2 | tier 0 ungoverned, tier 1 governed |
+| Governance tier | 2 | tier 0 ungoverned, tier 1 governed (5 with `LADDER=1`, below) |
 | Replicate | 5 | `battery.DEFAULT_RUNS` |
 
 **1,440 cells**, about 26 hours. `make plan` prints the estimate for whatever
@@ -37,6 +37,51 @@ The published capture covers **all 1,440**, merged from two runs: ten arms on
 2026-09-05 and the two direct-API arms on 2026-09-07. `make plan` now prices every
 shipped arm off its own measurement — `estimate.PENDING_MEASUREMENT` is empty for
 the first time.
+
+### Governance is one switch by default, and six channels on request
+
+Tier 1 turns on everything at once: column descriptions, profile scans, business
+rules, a glossary, quality scans, and a LookML semantic layer. That answers *does
+governance pay* and cannot answer *which part of it pays* — a question anyone
+deciding what to fund asks immediately, since those six cost wildly different
+amounts of effort to produce.
+
+`LADDER=1` splits the switch into six channels and interpolates three rungs:
+
+| Rung | Tier | Carries |
+|---:|---:|---|
+| 0 | `tier0` | nothing — the ungoverned control |
+| 1 | `tier2` | + column descriptions |
+| 2 | `tier3` | + profile scans |
+| 3 | `tier4` | + business rules |
+| 4 | `tier1` | + glossary, quality scans, LookML — the published governed tier |
+
+**The tier integer is not the rung position, and that is deliberate.** 1,440
+published cells are keyed on `tier0`/`tier1`, so renumbering would silently
+re-interpret every one of them; rungs are *appended* as 2, 3, 4 and the two
+published tiers keep their meaning. `config.RUNG_ORDER = (0, 2, 3, 4, 1)` states
+the reading order once, `config.rung_of()` converts, and the raw integer is never
+rendered in a chart or a table — a reader who sees `tier4` next to `tier1` and
+infers more governance has been misled by the numbering, not by the data.
+
+Each rung carries everything below it, checked as a strict subset chain by
+`validate.ladder_problems()`. That check is not ceremony: the rung table is
+joined to the provisioning code by string, and a rung provisioned with the wrong
+channels does not raise — it produces a step of zero and reads as *"this
+increment of governance does not pay"*, which is a false finding at the end of a
+day-long sweep rather than a message before it starts.
+
+Two arms are excluded. Path 2 and `p4_looker_ca` need a Looker semantic model,
+LookML arrives as one lump at the top rung, and laddering it means semantic-model
+surgery on a shared instance this project is a guest on. Asking for a Looker
+model at rungs 1–3 raises rather than quietly returning the tier-1 one, which
+would have made rung 1 score like rung 4 and reported that column descriptions
+deliver the whole semantic layer.
+
+The ladder is 1,800 cells at n=5 plus a 360-cell rung-0-last control. Not n=3:
+the interesting claim is not "the line rises" but "*this* rung is the one that
+pays", which is a per-step comparison against the noise floor, and at n=3 most
+single-rung steps would have to be published as unresolved.
 
 ### Merging two runs without flattening them
 
@@ -150,6 +195,19 @@ Two properties worth knowing before reading any cross-capture number:
   present in only one capture is dropped and counted, so comparing an n=3 sweep
   against an n=5 one silently changes no denominator — it pairs three replicates
   and reports the other two as unpaired.
+* **Captures that ran different tiers are compared on the tiers they share, or
+  not at all.** `tiers` is in `MUST_AGREE`, so the five-tier ladder capture and
+  the two-tier published one are refused outright — which would forbid the exact
+  comparison the append-don't-renumber scheme was built to permit. `--tier N`
+  narrows both sides, and then two things are checked instead of one. `tiers`
+  becomes presence: a tier asked for and absent is a refusal, never an empty
+  pairing reported as 0.0 drift. `tier_semantics` becomes *declared*
+  compatibility — `compare.SEMANTICS_SHARE` says the ladder and the published
+  scheme agree on tiers 0 and 1 and nothing else — because that field is what
+  makes relaxing `tiers` safe, and waiving both would leave nothing checking that
+  `tier1` means the same condition in both files. A vocabulary not on the table
+  shares no tiers, so a capture from a fork is refused rather than assumed
+  compatible.
 * **A field added after a capture was taken is not a difference.** Every new
   entry in `MUST_AGREE` is missing from every capture that predates it. Absent
   and empty therefore collapse to one *unset* value — otherwise adding an axis

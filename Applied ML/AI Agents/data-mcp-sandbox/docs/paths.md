@@ -189,6 +189,18 @@ work, and its Looker, property-graph and Looker Studio datasources are untried.
 Those are on the roadmap, not in the result. See
 [`design.md`](design.md#6-threats-to-validity).
 
+**And governance here is one switch, not a dial.** Tier 1 turns on column
+descriptions, profile scans, business rules, a glossary, quality scans and a
+LookML layer *together*, so every governance number on this page answers "does
+the lot of it pay" and none of them answers "which part". Those six cost
+wildly different amounts of effort to produce, so the second question is
+usually the one being asked. The harness can now ask it — `LADDER=1` splits the
+switch into six channels over five rungs
+([method](method.md#governance-is-one-switch-by-default-and-six-channels-on-request),
+[reproducing](reproducing.md#running-the-governance-ladder)) — but **that sweep
+has not been run, so there is no result here to read.** Anyone attributing the
+tier-1 gain to a particular surface is guessing, including us.
+
 ---
 
 ## Path 1 — Raw Data Builder

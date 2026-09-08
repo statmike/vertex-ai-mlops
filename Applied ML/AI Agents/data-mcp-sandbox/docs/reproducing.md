@@ -270,6 +270,64 @@ was measured on two direct-API arms a day apart at n=5, and an arm that runs a
 local model, a shorter interval, or a different replicate count will not have
 the same one.
 
+The floor is also not one number across tiers. Restricting the same A/A shows
+tier 0 drifting 6.7 points and tier 1 drifting 5.0 — the ungoverned condition
+moves most, which is what you would expect when accuracy sits near 25% and every
+arm is guessing more:
+
+```bash
+make compare-aa BASE=results/capture.json.gz \
+                AGAINST=results/capture-thinking-default.json.gz TIER=0
+```
+
+### Running the governance ladder
+
+The published experiment has two tiers, ungoverned and fully governed, and so it
+can say whether governance pays but not which part of it does. `LADDER=1` splits
+governance into six channels over five rungs — see
+[method](method.md#governance-is-one-switch-by-default-and-six-channels-on-request)
+for the rung table and why the tier integers are not the rung positions.
+
+It has to be set consistently, because it changes what gets built as well as what
+gets measured: three more datasets, three more service accounts, more Dataplex
+scans.
+
+```bash
+LADDER=1 make identities        # privileged, one-time
+LADDER=1 make setup
+LADDER=1 make plan              # read the number before spending a day on it
+LADDER=1 make sweep-ladder      # 1,800 cells
+LADDER=1 make sweep-ladder-control   # 360 cells: rung 0 again, LAST
+```
+
+The control is not optional and not a formality. Five rungs run in sequence over
+a day, so the highest rung is measured many hours after the lowest, and *elapsed
+time is confounded with governance* — a rising line is what both a real effect
+and a drifting service produce. Re-running rung 0 at the end and differencing it
+against the ladder's own rung 0 separates them, and nothing else in the design
+can.
+
+It costs 360 cells but **eight hours, not the four** a sixth of the ladder
+suggests. Rung 0 is the *expensive* condition: ungoverned, the agent explores,
+and `p3_managed` spends 207k tokens at tier 0 against 34k at tier 1. Budget the
+control off its own measured rate.
+
+Reading the ladder against the published capture needs `TIER`, because the two
+files declare different tier sets and `tiers` is a field a comparison may not
+vary:
+
+```bash
+make export RESULTS=results/raw/ladder.json OUT=results/capture-ladder.json.gz
+make compare-aa BASE=results/capture.json.gz \
+                AGAINST=results/capture-ladder.json.gz TIER="0 1"
+```
+
+That is the ladder's replication check: its rungs 0 and 4 are the published tiers
+0 and 1, re-run, so agreement within the floor says the ladder measured the same
+thing the published capture did before you read anything into the rungs between.
+Tiers 2, 3 and 4 exist in only one of the two files and asking for them is
+refused rather than paired against nothing.
+
 ---
 
 ## What will not reproduce, and why
