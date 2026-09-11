@@ -44,6 +44,33 @@ These functions answer analytical "why" questions over structured data — expla
 
 **Key relationships:**
 - `AI.KEY_DRIVERS` performs contribution / key-driver analysis: it compares an interest set against a reference set and surfaces the data segments that most explain the difference in a summable metric. It is the simplified, model-free equivalent of creating a contribution analysis model and calling `ML.GET_INSIGHTS`.
+- `AI.CAUSAL_EFFECT` performs intervention analysis: given one series and one intervention timestamp, it forecasts the counterfactual from the pre-intervention history and reports the gap. **Documented in the sibling project** — see the pointer below.
+
+**The two are not variants of each other.** Google files them under the same "Augmented analytics" heading, which invites the assumption that one is a time-series version of the other. They ask different questions and share no machinery:
+
+| | `AI.KEY_DRIVERS` | `AI.CAUSAL_EFFECT` |
+|---|---|---|
+| Question | *Which segments* explain a metric difference? | *Did this intervention* change the metric? |
+| Input | two sets (interest vs reference) + dimensions | one series + one timestamp |
+| Answer | ranked segments with contribution shares | one effect size + p-value |
+| Comparison group | the reference set you supply | none — the series' own extrapolated past |
+| Engine | contribution analysis (equivalent to `ML.GET_INSIGHTS`) | `ARIMA_PLUS` (verified bit-for-bit) |
+
+Neither substitutes for the other, and running `AI.KEY_DRIVERS` on before/after periods does **not** give you a causal estimate — it tells you where a change concentrated, not whether anything caused it.
+
+---
+
+## `AI.CAUSAL_EFFECT` — covered in `bq-ml`
+
+Full entry: **[`bq-ml/reference/model-free-functions.md#aicausal_effect`](../../bq-ml/reference/model-free-functions.md#aicausal_effect)**
+Tested example: **[`bq-ml/workflows/causal_effect/`](../../bq-ml/workflows/causal_effect/)**
+
+This is a deliberate exception to the usual rule that every `AI.*` function is documented in this project. The dividing line between the two projects is *"does the reader manage a model artifact,"* not *"does the name start with `AI.`"* — and by that test this one belongs there:
+
+- Its subject is **causal inference**, which `bq-ml/workflows/` already covers five other ways ([DiD](../../bq-ml/workflows/difference_in_differences/), [synthetic control](../../bq-ml/workflows/synthetic_control/), [propensity score matching](../../bq-ml/workflows/propensity_score_matching/), [uplift/CATE](../../bq-ml/workflows/uplift_cate/), [double ML](../../bq-ml/workflows/price_elasticity_dml/)). The only way to judge its estimate is against those, on the same data — which is exactly what the linked notebook does, and it finds a ~2.9× magnitude disagreement.
+- It is **not foundation-model backed**. Unlike every other function in this project, its counterfactual is measurably plain `ARIMA_PLUS` + `ML.FORECAST` on default options — identical to the last digit — and it rejects the `model` argument the TimesFM functions accept. It is also fully deterministic, which none of the TimesFM functions are.
+
+It stays listed in this project's [function catalog](../README.md#augmented-analytics--find-what-drives-metric-changes) so that catalog remains a complete inventory of the `AI.*` surface.
 
 ---
 

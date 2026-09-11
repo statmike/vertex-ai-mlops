@@ -9,6 +9,7 @@
 - Reach for `AI.KEY_DRIVERS` when you're answering "why did this metric move?" questions — e.g., comparing this month vs. last, test vs. control, or attributing a revenue/usage change to segments, geographies, or product categories — and you have **12 or fewer dimension columns** and a **summable metric** (expressed as `SUM(column)` or a bare `column` reference). It's simpler syntax, faster results, automatic redundancy pruning, and no model lifecycle to manage.
 - Reach for `../../bq-ml/models/contribution_analysis/` (`CREATE MODEL ... OPTIONS(model_type='CONTRIBUTION_ANALYSIS')` + `ML.GET_INSIGHTS`) instead when you need **more than 12 dimensions**, or a metric type other than plain-summable — contribution analysis models additionally support **summable-by-ratio** and **summable-by-category** metrics, which `AI.KEY_DRIVERS` does not support at all.
 - `AI.KEY_DRIVERS` is Preview and scoped to **US and EU multi-regions only** — check region availability before defaulting to it in a pipeline that runs elsewhere.
+- Don't confuse it with `AI.CAUSAL_EFFECT`, the other (Preview) model-free augmented-analytics TVF. `AI.KEY_DRIVERS` asks **which segments** account for a metric change, comparing an interest set against a reference set drawn from the same table. `AI.CAUSAL_EFFECT` asks **how big** a single intervention's effect was on one time series, comparing the observed post-intervention path against a forecast counterfactual. Different question, different input shape, different output. See the routing note below.
 
 ## Gotchas verified in this repo
 
@@ -42,6 +43,24 @@ FROM AI.KEY_DRIVERS(
 )
 ORDER BY contribution DESC;
 ```
+
+## `AI.CAUSAL_EFFECT` — covered by the `bigquery-ml` skill
+
+`AI.CAUSAL_EFFECT` is an `AI.*` function, but this repo documents and demonstrates it in the **`bq-ml`** sub-project, not here — because the reader's real question is "which causal estimator should I use?", and its two natural comparisons (`difference_in_differences`, `synthetic_control`) both live there. There is no notebook for it in `bq-ai-functions`, so there is no narrative for it in this skill.
+
+Route to the `bigquery-ml` skill: `reference/workflows-and-pipelines.md` (the `causal_effect` row, which places it against the other two causal estimators) and `narrative/causal_effect.md` (source: `workflows/causal_effect/`). In the source repo, the full syntax/options entry is `bq-ml/reference/model-free-functions.md`.
+
+What to know before you route there:
+
+| | `AI.KEY_DRIVERS` | `AI.CAUSAL_EFFECT` |
+|---|---|---|
+| Question | Which segments drove the change? | How large was this intervention's effect? |
+| Input | One table, dimensions + a summable metric + a BOOL interest flag | A timestamp column, a data column, and a literal `intervention_timestamp` |
+| Comparison group | A reference subset of the same table | A forecast counterfactual of the same series |
+| Output | One row per segment (`drivers`, `difference`, `contribution`) | `absolute_effect` (**cumulative**, not per-period), `relative_effect`, `p_value`, `prob_causal_effect` |
+| Engine | Apriori-style segment search | Verified bit-for-bit as `ARIMA_PLUS` + `ML.FORECAST` on defaults; the `p_value` is not reconstructable and does not move with `confidence_level` |
+
+Both are Preview and neither creates a model artifact.
 
 ## Go deeper
 

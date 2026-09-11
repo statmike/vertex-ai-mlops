@@ -15,7 +15,7 @@ This skill packages a verified, field-tested reference distilled from a project 
 2. **Do you want a fixed-shape judgment per row** (a boolean condition, a numeric score, a category label, or a group-level summary)? → `reference/classification-and-scoring.md`
 3. **Do you need to turn content into vectors, compare things for similarity, or search a corpus?** → `reference/embeddings-and-search.md`
 4. **Do you need to predict something with no training step** — forecast a time series, detect anomalies in one, or predict a value/category from tabular rows? → `reference/predictive-ai.md`
-5. **Do you need to explain why a metric moved (driver/key-factor analysis)?** → `reference/driver-analysis.md`
+5. **Do you need to explain why a metric moved (driver/key-factor analysis), or size the effect of a specific intervention?** → `reference/driver-analysis.md` (the second question is `AI.CAUSAL_EFFECT`, which that file routes out to the sibling `bigquery-ml` skill)
 6. **Are you extracting data from documents, or need to pass images/PDFs/audio/video into any of the above?** → `reference/document-processing.md`
 7. **Are you composing several of these into a real end-to-end task** (RAG, moderation, log triage, etc.)? → `reference/workflows.md`
 
@@ -23,7 +23,7 @@ If the ask is ambiguous between these generative functions and BigQuery ML's tra
 
 ## Cross-cutting gotchas (apply across most functions)
 
-- **Almost everything here is Preview, not GA** — the four managed functions (`AI.IF`/`AI.SCORE`/`AI.CLASSIFY`/`AI.AGG`), the typed generation shortcuts (`AI.GENERATE_BOOL`/`DOUBLE`/`INT`), `AI.KEY_DRIVERS`, `AI.PREDICT`, and `AI.PARSE_DOCUMENT` are all Preview. `AI.SEARCH` went GA, though its `mode` argument (which enables hybrid search) is still Preview. Don't assume GA stability guarantees; expect the "contact bqml-feedback@google.com" support model rather than a standard support case.
+- **Almost everything here is Preview, not GA** — the four managed functions (`AI.IF`/`AI.SCORE`/`AI.CLASSIFY`/`AI.AGG`), the typed generation shortcuts (`AI.GENERATE_BOOL`/`DOUBLE`/`INT`), `AI.KEY_DRIVERS`, `AI.CAUSAL_EFFECT`, `AI.PREDICT`, and `AI.PARSE_DOCUMENT` are all Preview. `AI.SEARCH` went GA, though its `mode` argument (which enables hybrid search) is still Preview. Don't assume GA stability guarantees; expect the "contact bqml-feedback@google.com" support model rather than a standard support case.
 - **`AI.PARSE_DOCUMENT` is offline and its documentation has been withdrawn** — taken down for revision on 2026-06-01, and as of 2026-09-01 its reference page returns HTTP 404, it is absent from the AI functions navigation tree, and it is absent from the generative AI overview. Do not recommend it as a working option. Use `ML.PROCESS_DOCUMENT` instead (it needs a Document AI remote model and a `CREATE MODEL` step, and returns one JSON column rather than typed chunk fields). There's precedent (`AI.AGG` had a similar April–May 2026 outage) for these Preview functions being pulled and re-enabled, so re-check before ruling it out permanently.
 - **`output_schema` replaces the `result` field entirely**, in both `AI.GENERATE` and `AI.GENERATE_TABLE` — code expecting a `result` field breaks the moment a schema is added.
 - **`LIMIT`/`OFFSET` does not reduce billed work** — the full input is evaluated before a limit is applied on any of these row-by-row functions. Materialize the intended subset to a table first if you're testing on a sample.
@@ -42,7 +42,7 @@ If the ask is ambiguous between these generative functions and BigQuery ML's tra
 - `reference/classification-and-scoring.md` — AI.IF, AI.SCORE, AI.CLASSIFY, AI.AGG
 - `reference/embeddings-and-search.md` — AI.EMBED, AI.GENERATE_EMBEDDING, legacy ML.GENERATE_EMBEDDING, AI.SIMILARITY, VECTOR_SEARCH, AI.SEARCH, and hybrid search (a capability of the last two, not a function)
 - `reference/predictive-ai.md` — AI.FORECAST, AI.DETECT_ANOMALIES, AI.PREDICT, AI.EVALUATE (TimesFM and TabFM); also routes "where did this series change?" out to the sibling `bigquery-ml` skill's model-free `ML.TREND`/`ML.SEASONALITY`/`ML.DETECT_CHANGE_POINTS`, which answer a different question than anomaly detection
-- `reference/driver-analysis.md` — AI.KEY_DRIVERS
+- `reference/driver-analysis.md` — AI.KEY_DRIVERS; also routes AI.CAUSAL_EFFECT out to the sibling `bigquery-ml` skill, which documents it alongside `difference_in_differences` and `synthetic_control` (this repo has no `bq-ai-functions` notebook for it, by design)
 - `reference/document-processing.md` — ML.PROCESS_DOCUMENT, AI.PARSE_DOCUMENT (offline, docs withdrawn), Object Tables, OBJ.MAKE_REF/FETCH_METADATA/GET_ACCESS_URL
 - `reference/workflows.md` — 14 composed workflows (RAG, hybrid catalog search, tabular prediction, content moderation, semantic search, time series intelligence, etc.) as worked starting templates
 

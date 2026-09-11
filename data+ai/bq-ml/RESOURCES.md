@@ -56,7 +56,7 @@ For each item we collect: a description and use cases, the documentation URL (a 
 - **[Comparison Tables](reference/comparison-tables.md)** — the fast answer to "which model / which function?" — `model_type` catalog, metric columns by task, capability matrix, explainability and connection matrices
 - **[CREATE MODEL — Model Types](reference/create-model-model-types.md)** — every `model_type`, from `LINEAR_REG` through `ARIMA_PLUS_XREG`, imported (TensorFlow/ONNX/XGBoost), `REMOTE`, and `TRANSFORM_ONLY`
 - **[Model Lifecycle Functions](reference/model-lifecycle-functions.md)** — the `ML.*` functions that act on a trained model — evaluate, predict, explain, weights, introspection, forecasting, `ML.TRANSFORM`
-- **[Model-Free Functions](reference/model-free-functions.md)** — the `ML.*` functions that need no model — scalers, bucketizing, encoders, imputation, feature crosses, text, distance, image, time-series decomposition, and `ML.METRICS` for scoring saved predictions
+- **[Model-Free Functions](reference/model-free-functions.md)** — the `ML.*` functions that need no model — scalers, bucketizing, encoders, imputation, feature crosses, text, distance, image, time-series decomposition, `AI.CAUSAL_EFFECT` for intervention analysis, and `ML.METRICS` for scoring saved predictions
 - **[Model Management & Monitoring](reference/model-management-monitoring.md)** — `EXPORT MODEL`, plus data description, skew/drift validation, and the TFDV functions
 - [BigFrames (Python)](#bigframes-python) — the `bigframes.ml` surface that trains these same models from Python *(on this page)*
 
@@ -78,6 +78,12 @@ Its sibling project **[`../bq-ai-functions/`](../bq-ai-functions/RESOURCES.md)**
 | Remote-model LLM endpoints | [the remote-model LLM pattern](../bq-ai-functions/RESOURCES.md) |
 
 **Nuances kept in-scope here:** `ML.GENERATE_EMBEDDING` used to extract embeddings *from a trained `PCA` / `AUTOENCODER` / `MATRIX_FACTORIZATION` model* is a lifecycle use of a BQML model and is documented here; the foundation-model (text/multimodal) use cross-links out. The remote-model *mechanism* (`CREATE MODEL ... REMOTE WITH CONNECTION` querying a custom Vertex AI endpoint with `ML.PREDICT`) is documented here; LLM endpoint *usage* cross-links out.
+
+**One `AI.*` function is owned here, not there.** The dividing line is *"does the reader manage a model artifact,"* not *"does the name start with `AI.`"*:
+
+| Topic | Owned here, linked from bq-ai-functions |
+|---|---|
+| Intervention / causal-impact analysis | [`AI.CAUSAL_EFFECT`](reference/model-free-functions.md#aicausal_effect) — creates no model, and its subject is causal inference, which [`workflows/`](README.md#workflows) already covers in five other places. Its counterfactual is measurably plain `ARIMA_PLUS`. The sibling project keeps a pointer so its `AI.*` list stays complete. |
 
 ---
 

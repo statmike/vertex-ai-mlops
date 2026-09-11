@@ -193,6 +193,9 @@ Two built-in foundation models sit behind these functions: **TimesFM** for time 
 | Function | Examples | Type | Status | Multimodal | What It Does |
 |----------|----------|------|--------|------------|--------------|
 | `AI.KEY_DRIVERS` | [notebook](functions/ai_key_drivers/ai_key_drivers.ipynb) · [sql](functions/ai_key_drivers/ai_key_drivers.sql) | TVF | Preview | — | Key driver / contribution analysis — find the segments that drive a metric change between an interest and reference set. No model or connection. |
+| `AI.CAUSAL_EFFECT` | **covered in the sibling project** → [notebook](../bq-ml/workflows/causal_effect/causal_effect.ipynb) · [sql](../bq-ml/workflows/causal_effect/causal_effect.sql) · [reference](../bq-ml/reference/model-free-functions.md#aicausal_effect) | TVF | Preview | — | Intervention / causal-impact analysis — fit a counterfactual on one series' own pre-intervention history and measure the gap afterward. No model or connection. |
+
+> **Why `AI.CAUSAL_EFFECT` lives in [`bq-ml`](../bq-ml/)**, and is listed here anyway so this catalog stays complete: the split between these two projects is *"does the reader manage a model artifact,"* not *"does the name start with `AI.`"* — and this function's real subject is causal inference, which `bq-ml/workflows/` already covers in five other places ([DiD](../bq-ml/workflows/difference_in_differences/), [synthetic control](../bq-ml/workflows/synthetic_control/), [propensity score matching](../bq-ml/workflows/propensity_score_matching/), [uplift/CATE](../bq-ml/workflows/uplift_cate/), [double ML](../bq-ml/workflows/price_elasticity_dml/)). It is also the one `AI.*` function whose engine is measurably *not* a foundation model: its counterfactual reproduces bit-for-bit as a plain `ARIMA_PLUS` forecast, and it rejects the `model` argument the TimesFM functions accept. Placing it beside the estimators it should be compared against is worth one outbound link.
 
 ---
 
@@ -264,6 +267,11 @@ Two built-in foundation models sit behind these functions: **TimesFM** for time 
 │  AI.KEY_DRIVERS          │
 │       contribution /     │
 │       key driver analysis│
+│                          │
+│  AI.CAUSAL_EFFECT        │
+│       intervention /     │
+│       causal impact      │
+│       → covered in bq-ml │
 │  No model / no connection│
 └──────────────────────────┘
 ```

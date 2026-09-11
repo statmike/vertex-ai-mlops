@@ -196,6 +196,7 @@ print(f'Average post-period gap (synthetic control ATT): {att_synthetic:.2f}')
 ## Related content
 
 - `workflows/difference_in_differences` (`workflows/difference_in_differences/`) — this workflow's direct prerequisite; builds the panel and the single-comparison-state estimate this notebook extends and cross-checks.
+- `workflows/causal_effect` (`workflows/causal_effect/`) — the same Texas panel with **no** control units at all: `AI.CAUSAL_EFFECT` extrapolates Texas's own pre-period instead. It re-derives this notebook's -19.28 for comparison and lands ~2.9x larger, which is what a donor pool buys you.
 - `workflows/propensity_score_matching` (`workflows/propensity_score_matching/`) and `workflows/uplift_cate` (`workflows/uplift_cate/`) — this project's other causal-inference workflows.
 
 ---

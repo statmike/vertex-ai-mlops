@@ -62,7 +62,7 @@ Function Name
 - **[Managed Functions](reference/managed-functions.md)** — `AI.IF`, `AI.SCORE`, `AI.CLASSIFY`, `AI.AGG` — managed endpoints, no connection or model object to create
 - **[Embedding Generation and Semantic Search](reference/embedding-generation-and-semantic-search.md)** — `AI.EMBED`, `AI.GENERATE_EMBEDDING`, `ML.GENERATE_EMBEDDING`, `AI.SIMILARITY`, `VECTOR_SEARCH`, `AI.SEARCH`, and hybrid search
 - **[Predictive AI](reference/predictive-ai.md)** — `AI.FORECAST`, `AI.DETECT_ANOMALIES`, `AI.PREDICT`, `AI.EVALUATE` — the TimesFM and TabFM foundation models
-- **[Augmented Analytics](reference/augmented-analytics.md)** — `AI.KEY_DRIVERS` — model-free contribution analysis
+- **[Augmented Analytics](reference/augmented-analytics.md)** — `AI.KEY_DRIVERS` — model-free contribution analysis, plus the pointer to `AI.CAUSAL_EFFECT`, which is [documented in `bq-ml`](../bq-ml/reference/model-free-functions.md#aicausal_effect) alongside the other causal estimators
 - **[Document Processing](reference/document-processing.md)** — `ML.PROCESS_DOCUMENT` and `AI.PARSE_DOCUMENT`
 - **[Unstructured Data Infrastructure](reference/unstructured-data-infrastructure.md)** — object tables, the `OBJ.*` functions, the ObjectRef / ObjectRefRuntime schema reference, and multimodal input patterns by function
 

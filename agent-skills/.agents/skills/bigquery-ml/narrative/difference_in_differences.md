@@ -255,6 +255,7 @@ print(simple_att)
 ## Related content
 
 - `workflows/synthetic_control` (`workflows/synthetic_control/`) — builds directly on this workflow's panel and donor pool, replacing the single arbitrary comparison state (Georgia) with a weighted combination of several, and cross-checks against this notebook's own DiD estimate.
+- `workflows/causal_effect` (`workflows/causal_effect/`) — the same panel with the comparison state removed entirely: `AI.CAUSAL_EFFECT` builds its counterfactual from Texas's own pre-period. It re-derives this notebook's -19.29 side by side and lands ~2.9x larger, which is the concrete value of having a control unit at all.
 - `workflows/propensity_score_matching` (`workflows/propensity_score_matching/`) and `workflows/uplift_cate` (`workflows/uplift_cate/`) — this project's other causal-inference workflows, each handling a different confounding problem (cross-sectional selection vs. panel/before-after comparison).
 
 ---

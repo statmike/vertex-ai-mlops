@@ -1,9 +1,9 @@
 {
   "name": "bigquery-ml",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "source_project": "data+ai/bq-ml",
   "generated_date": "2026-09-11",
-  "source_commit": "3434d16a",
+  "source_commit": "250469a8",
   "reference_files": [
     "classification.md",
     "model-management.md",
@@ -23,6 +23,7 @@
     "boosted_tree_classifier.md",
     "boosted_tree_regressor.md",
     "bucketizing.md",
+    "causal_effect.md",
     "churn_retention.md",
     "cloud_workflows.md",
     "composer_airflow.md",

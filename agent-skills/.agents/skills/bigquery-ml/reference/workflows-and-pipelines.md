@@ -5,6 +5,8 @@ A single `CREATE MODEL` is rarely the whole task. Two layers build on the model 
 - **Workflows** compose model-free preprocessing + a model lifecycle into a real business question.
 - **Pipelines** take a workflow's SQL and operationalize it: scheduled drift detection, conditional retraining, and scoring, through a real orchestrator.
 
+Contents: [Workflows](#workflows-whats-already-built) · [Pipelines](#pipelines-choosing-an-orchestrator) · [Gotchas](#gotchas-verified-in-this-repo) · [Go deeper](#go-deeper)
+
 ## Workflows: what's already built
 
 | Workflow | Models used | Real finding worth knowing before you copy the pattern |
@@ -24,7 +26,8 @@ A single `CREATE MODEL` is rarely the whole task. Two layers build on the model 
 | `price_elasticity_dml` | `LINEAR_REG`, `BOOSTED_TREE_REGRESSOR` (Double ML nuisance models) | Naive price/quantity regression is confounded (distribution breadth correlates with both) — Double Machine Learning fixes it fully natively: two `BOOSTED_TREE_REGRESSOR` models + 5-fold cross-fitting + a residual regression. Naive elasticity ~-1.4 vs. DML-corrected ~-0.7 — roughly half the naive estimate was confounding, not a true price effect. |
 | `uplift_cate` | `BOOSTED_TREE_CLASSIFIER` (T-learner: two independent models) | A single average treatment effect can hide real heterogeneity — a T-learner (one model per treatment arm, score every unit with both) estimates per-session CATE, fully native. Verified real heterogeneity (desktop uplift ~10x tablet's) and a Qini curve showing the ranking beats random targeting. |
 | `difference_in_differences` | `LINEAR_REG` | Naive two-way-fixed-effects DiD is unreliable under staggered treatment timing (2021+ econometrics finding) — proven with real data, not asserted. A single-date design (`LINEAR_REG` with an interaction term) is fully native and reliable when checked across multiple post-period horizons; staggered designs need a modern estimator (`differences` package) outside BigQuery. |
-| `synthetic_control` | `LINEAR_REG` (native, unconstrained approximation) | Extends `difference_in_differences`'s one arbitrary comparison unit into an optimized weighted blend of several — the real constrained fit (weights ≥0, sum to 1) is a quadratic program no `CREATE MODEL` option expresses; `scipy.optimize`/`pysyncon` do the real fit outside BigQuery. Two independently-built counterfactuals (DiD and synthetic control) landed within a rounding error of each other. |
+| `synthetic_control` | `LINEAR_REG` (native, unconstrained approximation) | Extends `difference_in_differences`'s one arbitrary comparison unit into an optimized weighted blend of several — the real constrained fit (weights ≥0, sum to 1) is a quadratic program no `CREATE MODEL` option expresses; `scipy.optimize`/`pysyncon` do the real fit outside BigQuery. Two independently-built counterfactuals (DiD and synthetic control) landed within a rounding error of each other — a third estimator, `AI.CAUSAL_EFFECT` (see `causal_effect` below), does *not* agree with them on magnitude. |
+| `causal_effect` | **none** — `AI.CAUSAL_EFFECT` is a model-free TVF (Preview) | The one `AI.*` function documented in this project rather than in `bq-ai-functions`, because it answers the same question as `difference_in_differences` and `synthetic_control` on the same data. Its counterfactual reproduces bit-for-bit as `ARIMA_PLUS` + `ML.FORECAST` on defaults, and both effect columns are plain sums over the post-intervention window — but the `p_value` resists reconstruction under six different standard-error constructions, is deterministic across cache-disabled repeats, and does not move with `confidence_level`. On the same Texas panel the three estimators point the same direction but not the same size (per-week: DiD −19.29, synthetic control −19.28, `AI.CAUSAL_EFFECT` −56.52) — the AI function's `absolute_effect` is *cumulative*, and its counterfactual is univariate (no donor pool), so it is not a drop-in substitute. |
 
 Go deeper: `workflows/<name>/`.
 
@@ -86,6 +89,7 @@ Full extracted notebook walkthroughs live in this skill's `narrative/` folder:
 - [`narrative/uplift_cate.md`](../narrative/uplift_cate.md) (source: `workflows/uplift_cate/`)
 - [`narrative/difference_in_differences.md`](../narrative/difference_in_differences.md) (source: `workflows/difference_in_differences/`)
 - [`narrative/synthetic_control.md`](../narrative/synthetic_control.md) (source: `workflows/synthetic_control/`)
+- [`narrative/causal_effect.md`](../narrative/causal_effect.md) (source: `workflows/causal_effect/`)
 
 **Pipelines** (each has its own notebook + supporting files — DAGs, workflow YAML, dbt project, KFP pipeline spec, etc. — not captured in the narrative extract, which covers the notebook's own markdown+code):
 - [`narrative/sql_scripting.md`](../narrative/sql_scripting.md) (source: `pipelines/sql_scripting/`)
