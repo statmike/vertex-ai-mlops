@@ -1,6 +1,6 @@
 ---
 name: bigquery-ai-functions
-description: Use when calling Gemini or other generative AI models directly from BigQuery SQL — text/structured generation, classification/scoring, embeddings and semantic search, zero-training forecasting/anomaly detection, driver analysis, or document/image processing via AI.* and ML.* functions and Object Tables/ObjectRef. Covers all 25 functions in this family plus 14 composed workflows (RAG, hybrid catalog search, zero-shot tabular prediction, content moderation, log triage, etc.).
+description: Use when calling Gemini or other generative AI models directly from BigQuery SQL — text/structured generation, classification/scoring, embeddings and semantic search, zero-training forecasting/anomaly detection, driver analysis, or document/image processing via AI.* and ML.* functions and Object Tables/ObjectRef. Also covers the pre-trained Cloud AI services reached through a remote model — ML.TRANSLATE, ML.UNDERSTAND_TEXT, ML.ANNOTATE_IMAGE, ML.TRANSCRIBE, ML.PROCESS_DOCUMENT. Covers all 29 functions in this family plus 14 composed workflows (RAG, hybrid catalog search, zero-shot tabular prediction, content moderation, log triage, etc.).
 ---
 
 # BigQuery AI Functions
@@ -17,7 +17,8 @@ This skill packages a verified, field-tested reference distilled from a project 
 4. **Do you need to predict something with no training step** — forecast a time series, detect anomalies in one, or predict a value/category from tabular rows? → `reference/predictive-ai.md`
 5. **Do you need to explain why a metric moved (driver/key-factor analysis), or size the effect of a specific intervention?** → `reference/driver-analysis.md` (the second question is `AI.CAUSAL_EFFECT`, which that file routes out to the sibling `bigquery-ml` skill)
 6. **Are you extracting data from documents, or need to pass images/PDFs/audio/video into any of the above?** → `reference/document-processing.md`
-7. **Are you composing several of these into a real end-to-end task** (RAG, moderation, log triage, etc.)? → `reference/workflows.md`
+7. **Do you want a pre-trained Cloud AI service rather than a Gemini prompt** — translate text, run Cloud Natural Language over it, annotate images with Cloud Vision, transcribe audio with Speech-to-Text, or extract with Document AI? → `reference/cloud-ai-service-models.md`. Pick these when the output has to be a *record* (fixed API version, published per-unit price, closed vocabulary, a per-row status column when it fails) rather than a generated answer.
+8. **Are you composing several of these into a real end-to-end task** (RAG, moderation, log triage, etc.)? → `reference/workflows.md`
 
 If the ask is ambiguous between these generative functions and BigQuery ML's trained models (`CREATE MODEL` + `ML.*` — the sibling `bigquery-ml` skill), and you have access to it, consult the `choosing-a-bigquery-ai-approach` skill first — it triages between the two and encodes specific head-to-head comparisons already worked out in this project (e.g. `AI.FORECAST` vs. `ARIMA_PLUS`, `AI.PREDICT` vs. `LINEAR_REG`/`BOOSTED_TREE_*`, `AI.KEY_DRIVERS` vs. `CONTRIBUTION_ANALYSIS`). If that skill isn't available, ask directly: does the user need training-time control / scheduled retraining / interpretable coefficients (→ BigQuery ML), or a fast, zero-setup, prompt-driven answer (→ these functions)?
 
@@ -35,6 +36,7 @@ If the ask is ambiguous between these generative functions and BigQuery ML's tra
 - **`AI.COUNT_TOKENS` is the free pre-flight check** — always available to size/cost a batch before running a paid function over it; note it counts input tokens only (not thinking/output tokens).
 - **Managed functions (`AI.IF`/`AI.SCORE`/`AI.CLASSIFY`/`AI.AGG`) trade control for convenience** — no model-parameter control, DSQ-only (no Provisioned Throughput), return `NULL` on error rather than detailed status. Drop to `AI.GENERATE`(`_BOOL`/`_DOUBLE`/`_TABLE`) when you need model params, a pinned endpoint, or a shape these four don't cover.
 - **Cross-region and same-project constraints are real and easy to hit**: `AI.GENERATE_TEXT`/`AI.GENERATE_TABLE` require model and input table in the same region; object-table-based generation requires the GCS bucket in the same project as the model.
+- **Not everything here is Gemini** — `ML.TRANSLATE`, `ML.UNDERSTAND_TEXT`, `ML.ANNOTATE_IMAGE`, `ML.TRANSCRIBE`, and `ML.PROCESS_DOCUMENT` reach a *pre-trained Cloud AI service* through a `REMOTE_SERVICE_TYPE` model object. That object is a handle: nothing trains, `ML.EVALUATE` is rejected outright, and the models never appear in `INFORMATION_SCHEMA`. **`CREATE MODEL` succeeding proves nothing about permissions** — creation never contacts the service, so the first failure arrives at call time, and `roles/serviceusage.serviceUsageConsumer` on the *connection's* service account is the grant people miss. **Failures are per row while the job succeeds**: always select the `<function>_status` column, or a pipeline records a failure as a result. Details, the per-service IAM matrix, and when to prefer one of these over an `AI.*` prompt: `reference/cloud-ai-service-models.md`.
 
 ## Reference files
 
@@ -44,6 +46,7 @@ If the ask is ambiguous between these generative functions and BigQuery ML's tra
 - `reference/predictive-ai.md` — AI.FORECAST, AI.DETECT_ANOMALIES, AI.PREDICT, AI.EVALUATE (TimesFM and TabFM); also routes "where did this series change?" out to the sibling `bigquery-ml` skill's model-free `ML.TREND`/`ML.SEASONALITY`/`ML.DETECT_CHANGE_POINTS`, which answer a different question than anomaly detection
 - `reference/driver-analysis.md` — AI.KEY_DRIVERS; also routes AI.CAUSAL_EFFECT out to the sibling `bigquery-ml` skill, which documents it alongside `difference_in_differences` and `synthetic_control` (this repo has no `bq-ai-functions` notebook for it, by design)
 - `reference/document-processing.md` — ML.PROCESS_DOCUMENT, AI.PARSE_DOCUMENT (offline, docs withdrawn), Object Tables, OBJ.MAKE_REF/FETCH_METADATA/GET_ACCESS_URL
+- `reference/cloud-ai-service-models.md` — ML.TRANSLATE, ML.UNDERSTAND_TEXT, ML.ANNOTATE_IMAGE, ML.TRANSCRIBE and ML.PROCESS_DOCUMENT (the fifth member, detailed on the document-processing page): the `REMOTE_SERVICE_TYPE` model object, the per-service API/IAM matrix, per-row status handling, and the service-vs-`AI.*` trade
 - `reference/workflows.md` — 14 composed workflows (RAG, hybrid catalog search, tabular prediction, content moderation, semantic search, time series intelligence, etc.) as worked starting templates
 
 ## Go deeper (only resolves inside this repo)

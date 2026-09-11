@@ -1701,7 +1701,9 @@ reservation pricing only when serving against an object table.
   - Cloud Resource Connection: https://cloud.google.com/bigquery/docs/create-cloud-resource-connection
   - `ML.PREDICT`: https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-predict
 
-> **Scope note (foundation / LLM endpoints):** Remote models over Vertex AI **foundation/LLM** endpoints (Gemini text generation, foundation-model embeddings, Cloud AI services, fine-tuned Gemini) are documented in `../bq-ai-functions/` — see the remote-model LLM pattern there, plus `ML.GENERATE_TEXT`, `AI.GENERATE_*`, foundation-model `ML.GENERATE_EMBEDDING` / `AI.GENERATE_EMBEDDING`, and `ML.DOCUMENT_PROCESS`. This entry covers ONLY the custom-endpoint mechanism queried with `ML.PREDICT`.
+> **Scope note (foundation / LLM endpoints):** Remote models over Vertex AI **foundation/LLM** endpoints (Gemini text generation, foundation-model embeddings, fine-tuned Gemini) are documented in [`../bq-ai-functions/`](../../bq-ai-functions/) — see the remote-model LLM pattern there, plus `ML.GENERATE_TEXT`, `AI.GENERATE_*`, and foundation-model `ML.GENERATE_EMBEDDING` / `AI.GENERATE_EMBEDDING`. This entry covers ONLY the custom-endpoint mechanism queried with `ML.PREDICT`.
+>
+> **Scope note (Cloud AI services):** The same DDL with `REMOTE_SERVICE_TYPE` in place of `endpoint` points at a **pre-trained Cloud AI service** rather than an endpoint you deployed — `CLOUD_AI_TRANSLATE_V3`, `CLOUD_AI_NATURAL_LANGUAGE_V1`, `CLOUD_AI_VISION_V1`, `CLOUD_AI_SPEECH_TO_TEXT_V2`, `CLOUD_AI_DOCUMENT_V1`. Nothing trains, nothing is deployed, and the consuming function is `ML.TRANSLATE` / `ML.UNDERSTAND_TEXT` / `ML.ANNOTATE_IMAGE` / `ML.TRANSCRIBE` / `ML.PROCESS_DOCUMENT` rather than `ML.PREDICT`. All five are documented in the sibling project: [Cloud AI Service Models](../../bq-ai-functions/reference/cloud-ai-service-models.md).
 
 **CREATE MODEL syntax:**
 ```sql

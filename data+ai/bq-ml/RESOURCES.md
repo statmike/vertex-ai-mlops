@@ -56,7 +56,7 @@ For each item we collect: a description and use cases, the documentation URL (a 
 - **[Comparison Tables](reference/comparison-tables.md)** — the fast answer to "which model / which function?" — `model_type` catalog, metric columns by task, capability matrix, explainability and connection matrices
 - **[CREATE MODEL — Model Types](reference/create-model-model-types.md)** — every `model_type`, from `LINEAR_REG` through `ARIMA_PLUS_XREG`, imported (TensorFlow/ONNX/XGBoost), `REMOTE`, and `TRANSFORM_ONLY`
 - **[Model Lifecycle Functions](reference/model-lifecycle-functions.md)** — the `ML.*` functions that act on a trained model — evaluate, predict, explain, weights, introspection, forecasting, `ML.TRANSFORM`
-- **[Model-Free Functions](reference/model-free-functions.md)** — the `ML.*` functions that need no model — `ML.DESCRIBE_DATA` / `ML.CORRELATION` for exploratory data analysis, scalers, bucketizing, encoders, imputation, feature crosses, text, distance, image, time-series decomposition, `AI.CAUSAL_EFFECT` for intervention analysis, `ML.METRICS` for scoring saved predictions, and `ML.FEATURES_AT_TIME` / `ML.ENTITY_FEATURES_AT_TIME` for point-in-time feature retrieval
+- **[Model-Free Functions](reference/model-free-functions.md)** — the `ML.*` functions that need no model — `ML.DESCRIBE_DATA` / `ML.CORRELATION` for exploratory data analysis, `ML.METRICS` for scoring predictions with no model object, `ML.FEATURES_AT_TIME` / `ML.ENTITY_FEATURES_AT_TIME` for point-in-time feature retrieval, scalers, bucketizing, encoders, imputation, feature crosses, text, distance, image, time-series decomposition, `AI.CAUSAL_EFFECT` for intervention analysis, `ML.METRICS` for scoring saved predictions, and `ML.FEATURES_AT_TIME` / `ML.ENTITY_FEATURES_AT_TIME` for point-in-time feature retrieval
 - **[Model Management & Monitoring](reference/model-management-monitoring.md)** — `EXPORT MODEL`, plus skew/drift validation and the TFDV functions (dataset *profiling* lives with the [model-free functions](reference/model-free-functions.md#exploratory-data-analysis-mldescribe_data-mlcorrelation))
 - [BigFrames (Python)](#bigframes-python) — the `bigframes.ml` surface that trains these same models from Python *(on this page)*
 
@@ -72,7 +72,8 @@ Its sibling project **[`../bq-ai-functions/`](../bq-ai-functions/RESOURCES.md)**
 |---|---|
 | Contribution analysis (`CONTRIBUTION_ANALYSIS` model) | [`AI.KEY_DRIVERS`](../bq-ai-functions/RESOURCES.md) — the model-free equivalent |
 | TimesFM forecasting (built-in foundation forecaster) | [`AI.FORECAST`, `AI.EVALUATE`, `AI.DETECT_ANOMALIES`](../bq-ai-functions/RESOURCES.md) |
-| Document processing | [`ML.DOCUMENT_PROCESS`](../bq-ai-functions/RESOURCES.md) |
+| Document processing | [`ML.PROCESS_DOCUMENT`, `AI.PARSE_DOCUMENT`](../bq-ai-functions/reference/document-processing.md) |
+| `CREATE MODEL ... REMOTE` over a **pre-trained Cloud AI service** (`REMOTE_SERVICE_TYPE`, not `endpoint`) | [`ML.TRANSLATE`, `ML.UNDERSTAND_TEXT`, `ML.ANNOTATE_IMAGE`, `ML.TRANSCRIBE`, `ML.PROCESS_DOCUMENT`](../bq-ai-functions/reference/cloud-ai-service-models.md) — the model object is a handle, nothing trains, and the reader never manages an artifact. [`models/remote/`](models/remote/) covers the other branch: your own Vertex AI Endpoint, consumed with `ML.PREDICT` |
 | LLM text generation | [`ML.GENERATE_TEXT`, `AI.GENERATE_*`](../bq-ai-functions/RESOURCES.md) |
 | Foundation-model embeddings | [foundation `ML.GENERATE_EMBEDDING` / `AI.GENERATE_EMBEDDING`](../bq-ai-functions/RESOURCES.md) |
 | Remote-model LLM endpoints | [the remote-model LLM pattern](../bq-ai-functions/RESOURCES.md) |

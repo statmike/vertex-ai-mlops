@@ -17,7 +17,7 @@ _FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 _NAME_RE = re.compile(r"^name:\s*(.+)$", re.MULTILINE)
 _DESCRIPTION_RE = re.compile(r"^description:\s*(.+)$", re.MULTILINE)
 _VALID_NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
-_LINK_RE = re.compile(r"\[([^\]]+)\]\((?!https?://)([^)#]+)\)")
+_LINK_RE = re.compile(r"\[([^\]\n]+)\]\((?!https?://)([^)#\n]+)\)")
 
 SKILL_MD_LINE_BUDGET = 500
 REFERENCE_FILE_LINE_BUDGET = 100

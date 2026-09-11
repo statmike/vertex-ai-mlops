@@ -65,7 +65,9 @@ The fastest way to answer "which model / which function do I use?" Detailed entr
 | `TRANSFORM_ONLY` | Preprocessing-only | `ML.TRANSFORM` | No | GA |
 | TimesFM (built-in) → `AI.FORECAST` | Time series (foundation) | `AI.FORECAST` | No | GA — see [bq-ai-functions](../../bq-ai-functions/RESOURCES.md) |
 
-\* AutoML trains via an `ML_EXTERNAL` Vertex AI job but needs no `CREATE CONNECTION` object. \*\* Matrix factorization needs reservation/Editions (capacity) slots, not on-demand pricing — but no connection. \*\*\* Imported models need a connection only when served over an object table (reservation pricing).
+\* AutoML trains via an `ML_EXTERNAL` Vertex AI job but needs no `CREATE CONNECTION` object. \*\* Matrix factorization needs reservation/Editions (capacity) slots, not on-demand pricing — but no connection. \*\*\* The imported model itself needs no connection; the **object table** it is served over does (its service account needs `roles/storage.objectViewer` on the bucket), and the `ML.DECODE_IMAGE` family that prepares object-table images needs a **reservation** — two separate requirements, verified live in [`functions/image/`](../functions/image/).
+
+**Reservation (Editions) required, not just recommended:** `MATRIX_FACTORIZATION` and the four image-preprocessing functions (`ML.DECODE_IMAGE`, `ML.RESIZE_IMAGE`, `ML.CONVERT_COLOR_SPACE`, `ML.CONVERT_IMAGE_TYPE`) are the only things in this project that fail outright under on-demand pricing. Everything else in these tables runs on-demand. Neither requirement needs a *commitment* — a small `ENTERPRISE` autoscale reservation with 0 baseline slots is enough, and both [`models/matrix_factorization/`](../models/matrix_factorization/) and [`functions/image/`](../functions/image/) create one in Setup and delete it in Cleanup.
 
 ## 2. Task → `ML.EVALUATE` metric columns
 

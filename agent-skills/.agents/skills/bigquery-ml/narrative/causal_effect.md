@@ -476,7 +476,7 @@ The plot shows why, and it is not a defect in any of the three. Georgia and the 
 | `intervention_timestamp` | `TIMESTAMP` **literal**, required | splits pre from post |
 | `id_cols` | `ARRAY<STRING>`, optional | `STRING`/`INT64` columns identifying separate series; each combination is analyzed independently and returns its own row |
 | `num_post_intervention_points` | `INT64`, optional | cap on post-intervention points; defaults to everything through the end of the series |
-| `confidence_level` | `FLOAT64` in ``workflows/difference_in_differences` (0, 1)`, default `0.95` | affects `lower_bound`/`upper_bound` only — **not** `p_value`, as Step 7 measured |
+| `confidence_level` | `FLOAT64` in `[0, 1)`, default `0.95` | affects `lower_bound`/`upper_bound` only — **not** `p_value`, as Step 7 measured |
 | `output_time_series` | `BOOL`, default `FALSE` | `TRUE` adds the pointwise columns |
 
 **Gotchas**
@@ -486,7 +486,7 @@ The plot shows why, and it is not a defect in any of the three. Georgia and the 
 - **No `ARIMA_PLUS` options are reachable** — no `holiday_region`, no `data_frequency`, no manual order. Defaults or nothing.
 - **The three-point minimum is a floor, not a recommendation.** `status` returns *"The time series data is too short"* below three points. This notebook's 9 pre-period points already yield a counterfactual with no seasonal structure and week-5 intervals of ±200.
 - **`absolute_effect` is cumulative, not per-period** — the single easiest number here to misquote by a factor of the horizon length.
-- **A univariate counterfactual cannot see a common shock**, which is Step 8's whole finding and the reason to reach for [`difference_in_differences`) or `workflows/synthetic_control` (`synthetic_control`) whenever a credible control unit exists.
+- **A univariate counterfactual cannot see a common shock**, which is Step 8's whole finding and the reason to reach for `workflows/difference_in_differences` (`difference_in_differences`) or `workflows/synthetic_control` (`synthetic_control`) whenever a credible control unit exists.
 
 **Preview status.** `AI.CAUSAL_EFFECT` is in Preview; arguments and output columns can change. The behaviors measured here were verified on 2026-09-11.
 

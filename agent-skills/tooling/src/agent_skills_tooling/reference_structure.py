@@ -21,7 +21,7 @@ from agent_skills_tooling.markdown_anchors import headings, slugify
 INDEX_FILENAME = "RESOURCES.md"
 REFERENCE_DIRNAME = "reference"
 
-_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
+_LINK_RE = re.compile(r"\[[^\]\n]*\]\(([^)\s]+)\)")
 
 
 @dataclass

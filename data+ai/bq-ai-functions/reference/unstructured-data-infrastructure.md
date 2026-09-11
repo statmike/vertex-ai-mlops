@@ -125,6 +125,8 @@ OPTIONS (
 
 There is also a `data` pseudocolumn containing raw file bytes, used by `ML.DECODE_IMAGE`. It cannot be directly queried.
 
+> **The image-preprocessing family lives in the sibling project** — `ML.DECODE_IMAGE`, `ML.RESIZE_IMAGE`, `ML.CONVERT_COLOR_SPACE`, `ML.CONVERT_IMAGE_TYPE`, documented in [`bq-ml/reference/model-free-functions.md`](../../bq-ml/reference/model-free-functions.md#image-preprocessing-functions-mldecode_image-mlresize_image-mlconvert_image_type-mlconvert_color_space) with a tested example in [`bq-ml/functions/image/`](../../bq-ml/functions/image/). Two things carry over to any object-table work here: those four functions **require a BigQuery Editions reservation** and fail outright on on-demand pricing (verified live 2026-09-11; no official page says so), and `ML.DECODE_IMAGE` accepts **any** `BYTES` value, so the `data` pseudocolumn is the usual source rather than the only one.
+
 **CREATE parameters:**
 
 | Parameter | Type | Required | Default | Description |

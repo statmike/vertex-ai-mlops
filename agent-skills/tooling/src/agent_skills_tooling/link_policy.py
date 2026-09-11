@@ -37,7 +37,7 @@ from pathlib import Path
 
 from agent_skills_tooling.markdown_anchors import anchors_of
 
-_LINK_RE = re.compile(r"\[([^\]]*)\]\(((?:[^()\s]|\([^()]*\))+)\)")
+_LINK_RE = re.compile(r"\[([^\]\n]*)\]\(((?:[^()\s]|\([^()]*\))+)\)")
 _MENTION_RE = re.compile(r"`([^`\n]+)`")
 _SKIP_DIRS = {".venv", ".ipynb_checkpoints", "__pycache__", ".git", "node_modules"}
 _SCANNED_SUFFIXES = {".ipynb", ".md", ".sql", ".py"}

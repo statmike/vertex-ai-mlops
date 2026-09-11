@@ -163,7 +163,7 @@ ML.PREDICT(
 
 **Limitations:**
 - Not for time-series (`ML.FORECAST`) or matrix-factorization (`ML.RECOMMEND`) models.
-- Object-table / image inputs must be decoded with `ML.DECODE_IMAGE`; imported-model inputs must coerce to the model's expected types.
+- Object-table / image inputs must be decoded with `ML.DECODE_IMAGE`; imported-model inputs must coerce to the model's expected types. **An `ML.PREDICT` whose input expression contains any of the four image functions inherits their reservation requirement** and fails on on-demand pricing — see [model-free-functions.md](model-free-functions.md#image-preprocessing-functions-mldecode_image-mlresize_image-mlconvert_image_type-mlconvert_color_space) and [`functions/image/`](../functions/image/). The same applies to a `TRANSFORM` clause that embeds them.
 - `keep_original_columns` applies to k-means only.
 - **GOTCHA, verified live: joining multiple models' `ML.PREDICT` outputs back together on raw feature columns (instead of a stable row ID) can silently fan out.** When stacking several models' predictions into one meta-feature table (see `workflows/ensembling/`), joining on the full feature-column set duplicated rows — a 6,587-row split fanned out to 11,027 rows, because different source rows shared identical values across every feature column. Add a synthetic `ROW_NUMBER()` row ID when the source table first materializes (before training any model) and join every downstream `ML.PREDICT` output on that instead — then sanity-check the joined row count against the expected pre-join count rather than assuming a 1:1 join.
 

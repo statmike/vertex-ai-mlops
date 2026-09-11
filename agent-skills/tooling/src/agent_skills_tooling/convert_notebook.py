@@ -26,7 +26,10 @@ MAGIC_LANG_MAP = {
 }
 
 _HEADER_TABLE_MARKERS = ("tracker", "header table")
-_LINK_RE = re.compile(r"\[([^\]]+)\]\((?!https?://)([^)]+)\)")
+# Newlines are excluded from both halves on purpose: an unpaired "[" in prose -- a math
+# interval such as "[0, 1)" -- otherwise lets the match run to the next "](" anywhere later
+# in the document and rewrite the paragraphs in between as if they were link text.
+_LINK_RE = re.compile(r"\[([^\]\n]+)\]\((?!https?://)([^)\n]+)\)")
 
 
 def _is_header_table(cell) -> bool:

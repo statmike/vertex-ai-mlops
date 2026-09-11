@@ -64,6 +64,7 @@ Function Name
 - **[Predictive AI](reference/predictive-ai.md)** — `AI.FORECAST`, `AI.DETECT_ANOMALIES`, `AI.PREDICT`, `AI.EVALUATE` — the TimesFM and TabFM foundation models
 - **[Augmented Analytics](reference/augmented-analytics.md)** — `AI.KEY_DRIVERS` — model-free contribution analysis, plus the pointer to `AI.CAUSAL_EFFECT`, which is [documented in `bq-ml`](../bq-ml/reference/model-free-functions.md#aicausal_effect) alongside the other causal estimators
 - **[Document Processing](reference/document-processing.md)** — `ML.PROCESS_DOCUMENT` and `AI.PARSE_DOCUMENT`
+- **[Cloud AI Service Models](reference/cloud-ai-service-models.md)** — `ML.TRANSLATE`, `ML.UNDERSTAND_TEXT`, `ML.ANNOTATE_IMAGE`, `ML.TRANSCRIBE` and `ML.PROCESS_DOCUMENT` — remote models over pre-trained Cloud AI services rather than Gemini, with the per-service API and IAM matrix
 - **[Unstructured Data Infrastructure](reference/unstructured-data-infrastructure.md)** — object tables, the `OBJ.*` functions, the ObjectRef / ObjectRefRuntime schema reference, and multimodal input patterns by function
 
 ---

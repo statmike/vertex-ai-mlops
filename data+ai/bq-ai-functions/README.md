@@ -173,6 +173,20 @@ When unsure, default to `RETRIEVAL_DOCUMENT` / `RETRIEVAL_QUERY`. See the [`AI.E
 | `ML.PROCESS_DOCUMENT` | [notebook](functions/ml_process_document/ml_process_document.ipynb) · [sql](functions/ml_process_document/ml_process_document.sql) | TVF | GA | Yes | Object table | Extract structured data from documents in Cloud Storage using Document AI processors. |
 | `AI.PARSE_DOCUMENT` ⚠️ | [notebook](functions/ai_parse_document/ai_parse_document.ipynb) · [sql](functions/ai_parse_document/ai_parse_document.sql) | TVF | Preview (⚠️ **offline** since 2026-06-01; **reference docs withdrawn**) | No* | Object table | OCR + layout parsing + chunking via Document AI Layout Parser. No `CREATE MODEL` needed. **Does not execute, and its reference page now returns 404. Use `ML.PROCESS_DOCUMENT` in the meantime — see notebook.** |
 
+`ML.PROCESS_DOCUMENT` is also a member of the family below — everything there about connections, IAM, per-row failures and the model object applies to it.
+
+### Cloud AI Service Models — Pre-trained Cloud AI services through a remote model
+
+These five call a **pre-trained Google Cloud AI service** rather than a Gemini endpoint. Each needs a `CREATE MODEL … REMOTE` handle that trains nothing, returns per-row `*_result` (JSON) and `*_status` columns, and rejects `ML.EVALUATE`. They are the stable option: the answer comes from a fixed, versioned API, so nothing about it moves when a Gemini default does. Setup, the per-service API and IAM matrix, and the member-by-member gotchas are in [Cloud AI Service Models](reference/cloud-ai-service-models.md).
+
+| Function | Examples | Type | Status | Requires Model | Multimodal | What It Does |
+|----------|----------|------|--------|----------------|------------|--------------|
+| `ML.TRANSLATE` | [notebook](functions/ml_translate/ml_translate.ipynb) · [sql](functions/ml_translate/ml_translate.sql) | TVF | GA | Yes | — | Translate a `text_content` column, or detect its language, through the Cloud Translation V3 API. One target language per call. |
+| `ML.UNDERSTAND_TEXT` | [notebook](functions/ml_understand_text/ml_understand_text.ipynb) · [sql](functions/ml_understand_text/ml_understand_text.sql) | TVF | GA | Yes | — | Sentiment, entities, entity sentiment, syntax or classification over a `text_content` column via Cloud Natural Language. Closed vocabularies, and language support that differs per analysis. |
+| `ML.ANNOTATE_IMAGE` | [notebook](functions/ml_annotate_image/ml_annotate_image.ipynb) · [sql](functions/ml_annotate_image/ml_annotate_image.sql) | TVF | GA | Yes | Object table | Annotate images with the Cloud Vision API — labels, objects with boxes, text, landmarks with coordinates, logos, faces, colors. Many features in one call. |
+| `ML.TRANSCRIBE` | [notebook](functions/ml_transcribe/ml_transcribe.ipynb) · [sql](functions/ml_transcribe/ml_transcribe.sql) | TVF | GA | Yes | Object table | Transcribe audio with Speech-to-Text V2, returning finished text in a `transcripts` column. Billed by seconds of audio; takes a **named** `recognition_config` argument, not a `STRUCT`. |
+| `ML.PROCESS_DOCUMENT` | [notebook](functions/ml_process_document/ml_process_document.ipynb) · [sql](functions/ml_process_document/ml_process_document.sql) | TVF | GA | Yes | Object table | *Also listed under Document Processing above.* Extract structured data from documents using Document AI processors. |
+
 ### Predictive AI — Forecasting, anomaly detection, regression, classification, and evaluation
 
 Two built-in foundation models sit behind these functions: **TimesFM** for time series and **TabFM** for tabular data. Neither requires `CREATE MODEL`, a connection, or an endpoint.
@@ -274,6 +288,17 @@ Two built-in foundation models sit behind these functions: **TimesFM** for time 
 │       → covered in bq-ml │
 │  No model / no connection│
 └──────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────┐
+│  CLOUD AI SERVICE MODELS - pre-trained Cloud AI services, not Gemini │
+│                                                                      │
+│  ML.TRANSLATE          ML.ANNOTATE_IMAGE     ML.PROCESS_DOCUMENT     │
+│  ML.UNDERSTAND_TEXT    ML.TRANSCRIBE              (also above)       │
+│                                                                      │
+│  All need CREATE MODEL ... REMOTE. Nothing trains, ML.EVALUATE is    │
+│  rejected, and failures arrive per row in a *_status column while    │
+│  the job succeeds.                                                   │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 **Key distinctions:**
@@ -314,6 +339,10 @@ bq-ai-functions/
 │   ├── ai_key_drivers/
 │   ├── ml_process_document/
 │   ├── ai_parse_document/
+│   ├── ml_translate/
+│   ├── ml_understand_text/
+│   ├── ml_annotate_image/
+│   ├── ml_transcribe/
 │   └── ... (+ legacy/variant functions)
 └── workflows/               ◄ End-to-end composed workflows
     ├── data_enrichment/

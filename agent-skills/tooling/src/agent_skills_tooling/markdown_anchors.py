@@ -19,7 +19,7 @@ from pathlib import Path
 _FENCE_RE = re.compile(r"^\s*(`{3,}|~{3,})")
 _HEADING_RE = re.compile(r"^(#{1,6})\s+(.*?)\s*$")
 _INLINE_HTML_RE = re.compile(r"<[^>]*>")
-_MARKDOWN_LINK_RE = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+_MARKDOWN_LINK_RE = re.compile(r"\[([^\]\n]*)\]\([^)\n]*\)")
 
 
 def slugify(title: str) -> str:

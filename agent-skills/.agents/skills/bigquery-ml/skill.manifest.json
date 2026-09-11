@@ -1,13 +1,13 @@
 {
   "name": "bigquery-ml",
-  "version": "0.3.4",
+  "version": "0.3.6",
   "source_project": "data+ai/bq-ml",
   "narrative_sources": {
     "feature_store.md": "functions/feature_store/feature_store.ipynb",
     "feature_store_workflow.md": "workflows/feature_store/feature_store.ipynb"
   },
   "generated_date": "2026-09-11",
-  "source_commit": "53ee5aa3",
+  "source_commit": "a280b037",
   "reference_files": [
     "classification.md",
     "model-management.md",
@@ -52,6 +52,7 @@
     "feature_store_workflow.md",
     "ga4_churn_prediction.md",
     "hierarchical_forecasting.md",
+    "image.md",
     "imported.md",
     "kmeans.md",
     "linear_regression.md",

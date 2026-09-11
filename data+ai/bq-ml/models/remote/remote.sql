@@ -21,6 +21,18 @@
 --   CREATE MODEL (remote, custom endpoint): https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-create-remote-model-https
 --   Cloud Resource Connection:              https://cloud.google.com/bigquery/docs/create-cloud-resource-connection
 --   ML.PREDICT:                             https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-predict
+--
+-- THE OTHER KIND OF REMOTE MODEL: the same DDL with REMOTE_SERVICE_TYPE in
+-- place of endpoint points at a pre-trained Cloud AI service instead of an
+-- endpoint you deployed. Nothing trains, nothing is billed by the hour, and
+-- the consuming function is named after the service:
+--   CLOUD_AI_TRANSLATE_V3         -> ML.TRANSLATE
+--   CLOUD_AI_NATURAL_LANGUAGE_V1  -> ML.UNDERSTAND_TEXT
+--   CLOUD_AI_VISION_V1            -> ML.ANNOTATE_IMAGE
+--   CLOUD_AI_SPEECH_TO_TEXT_V2    -> ML.TRANSCRIBE
+--   CLOUD_AI_DOCUMENT_V1          -> ML.PROCESS_DOCUMENT
+-- Those five live in the sibling project:
+--   ../../../bq-ai-functions/reference/cloud-ai-service-models.md
 
 
 -- =============================================================================

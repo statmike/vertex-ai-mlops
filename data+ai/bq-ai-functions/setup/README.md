@@ -164,8 +164,14 @@ Not all AI functions require the same setup. Here's a quick reference:
 | `VECTOR_SEARCH` | No | No | No | Operates on pre-computed embeddings |
 | `AI.SEARCH` | Configured on table | No | Configured on table | Requires autonomous embedding generation |
 | `ML.PROCESS_DOCUMENT` | Yes (via model + object table) | **Yes** | N/A | Also needs object table + Document AI processor |
+| `ML.TRANSLATE` | Yes (via model) | **Yes** | N/A | `REMOTE_SERVICE_TYPE = 'CLOUD_AI_TRANSLATE_V3'`; input column must be named `text_content` |
+| `ML.UNDERSTAND_TEXT` | Yes (via model) | **Yes** | N/A | `REMOTE_SERVICE_TYPE = 'CLOUD_AI_NATURAL_LANGUAGE_V1'`; input column must be named `text_content` |
+| `ML.ANNOTATE_IMAGE` | Yes (via model + object table) | **Yes** | N/A | `REMOTE_SERVICE_TYPE = 'CLOUD_AI_VISION_V1'`; also needs an object table of images |
+| `ML.TRANSCRIBE` | Yes (via model + object table) | **Yes** | N/A | `REMOTE_SERVICE_TYPE = 'CLOUD_AI_SPEECH_TO_TEXT_V2'`; also needs an object table of audio |
 
 **Summary:** The newer `AI.*` scalar functions (AI.GENERATE, AI.IF, AI.SCORE, AI.CLASSIFY, AI.EMBED, AI.SIMILARITY) and the forecasting functions (AI.FORECAST, AI.DETECT_ANOMALIES, AI.EVALUATE) require minimal or no setup. The table-valued generation and embedding functions (AI.GENERATE_TEXT, AI.GENERATE_TABLE, AI.GENERATE_EMBEDDING) require creating a connection and a remote model first. `ML.PROCESS_DOCUMENT` additionally requires an object table pointing to documents in Cloud Storage and a Document AI processor.
+
+The five **Cloud AI service models** — `ML.TRANSLATE`, `ML.UNDERSTAND_TEXT`, `ML.ANNOTATE_IMAGE`, `ML.TRANSCRIBE` and `ML.PROCESS_DOCUMENT` — share a setup story of their own: a remote model that trains nothing, one service API to enable, and a service-specific role that is not the same for any two of them. That story is collected in [Cloud AI Service Models](../reference/cloud-ai-service-models.md), and each function's notebook performs its own grants and offers a matching teardown.
 
 ---
 
@@ -240,13 +246,15 @@ SELECT AI.GENERATE(
 
 A [remote model](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-create-remote-model) is a BigQuery ML model object that points to an external AI model hosted on Vertex AI. It stores the connection and endpoint configuration so you don't repeat them in every query.
 
+A second kind points at a **pre-trained Cloud AI service** instead of a Vertex AI endpoint — `REMOTE_SERVICE_TYPE` in place of `endpoint`. Those models carry no endpoint, train nothing, and serve the five functions collected in [Cloud AI Service Models](../reference/cloud-ai-service-models.md).
+
 ### When do you need one?
 
 Only for the table-valued functions:
 - `AI.GENERATE_TEXT` / `ML.GENERATE_TEXT`
 - `AI.GENERATE_TABLE`
 - `AI.GENERATE_EMBEDDING` / `ML.GENERATE_EMBEDDING`
-- `ML.PROCESS_DOCUMENT`
+- `ML.PROCESS_DOCUMENT`, `ML.TRANSLATE`, `ML.UNDERSTAND_TEXT`, `ML.ANNOTATE_IMAGE`, `ML.TRANSCRIBE` — the Cloud AI service models, with `REMOTE_SERVICE_TYPE` rather than an endpoint
 
 You do **not** need a remote model for:
 - AI.GENERATE, AI.GENERATE_BOOL/DOUBLE/INT (specify endpoint directly)
@@ -294,6 +302,14 @@ CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.invoice_parser`
     DOCUMENT_PROCESSOR = 'projects/PROJECT_NUMBER/locations/us/processors/PROCESSOR_ID'
   );
 ```
+
+**For the other Cloud AI services** — one model per service, and nothing to configure beyond the type:
+```sql
+CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.translate_model`
+  REMOTE WITH CONNECTION `PROJECT_ID.LOCATION.CONNECTION_NAME`
+  OPTIONS (REMOTE_SERVICE_TYPE = 'CLOUD_AI_TRANSLATE_V3');
+```
+Swap the type for `CLOUD_AI_NATURAL_LANGUAGE_V1` (`ML.UNDERSTAND_TEXT`), `CLOUD_AI_VISION_V1` (`ML.ANNOTATE_IMAGE`) or `CLOUD_AI_SPEECH_TO_TEXT_V2` (`ML.TRANSCRIBE`). These statements do not contact the service, so one succeeding is not evidence that the connection can call anything.
 
 ### Model and data co-location
 
@@ -380,12 +396,26 @@ The user running the query needs:
 - `roles/bigquery.user` or `roles/bigquery.jobUser` — to run queries
 - `roles/bigquery.connectionUser` — to use the connection
 
-### For ML.PROCESS_DOCUMENT
+### For the Cloud AI service models
 
-The connection's service account needs additional roles beyond `roles/aiplatform.user`:
-- `roles/storage.objectViewer` — to read documents from Cloud Storage via the object table
-- `roles/documentai.apiUser` — to call Document AI processors at runtime
-- `roles/documentai.viewer` — to read processor metadata when creating the remote model
+`ML.TRANSLATE`, `ML.UNDERSTAND_TEXT`, `ML.ANNOTATE_IMAGE`, `ML.TRANSCRIBE` and `ML.PROCESS_DOCUMENT` call a Cloud AI service rather than a Vertex AI endpoint, so their roles are different — and different from each other. Two are shared by all five:
+
+- `roles/serviceusage.serviceUsageConsumer` — lets the service account consume an API in this project. **Without it every call fails**, even though `CREATE MODEL` succeeds. The easiest one to miss.
+- `roles/bigquery.connectionUser` — lets the service account use the connection it belongs to.
+
+Then, per function:
+
+| Function | Service API to enable | Service-specific role | Object table |
+|---|---|---|---|
+| `ML.TRANSLATE` | `translate.googleapis.com` | `roles/cloudtranslate.user` | — |
+| `ML.UNDERSTAND_TEXT` | `language.googleapis.com` | *none exists* | — |
+| `ML.ANNOTATE_IMAGE` | `vision.googleapis.com` | *none exists* | `roles/storage.objectViewer` |
+| `ML.TRANSCRIBE` | `speech.googleapis.com` | `roles/speech.client` | `roles/storage.objectViewer` |
+| `ML.PROCESS_DOCUMENT` | `documentai.googleapis.com` | `roles/documentai.apiUser` (runtime) and `roles/documentai.viewer` (processor metadata at `CREATE MODEL`) | `roles/storage.objectViewer` |
+
+Cloud Vision and Cloud Natural Language have no predefined IAM role of their own — `serviceusage.services.use` is the permission that gates them — so for those two the shared pair is the whole list. `roles/aiplatform.user` is **not** needed by any of these functions; each notebook grants it only for the `AI.*` comparison examples it runs alongside them.
+
+Each of these notebooks creates the connection, grants what it needs, and offers a matching teardown that revokes the bindings and deletes the connection. See [Cloud AI Service Models](../reference/cloud-ai-service-models.md) for the full matrix and the failure messages each missing role produces.
 
 ### For AI.SEARCH
 
@@ -412,7 +442,7 @@ An [object table](https://cloud.google.com/bigquery/docs/object-table-introducti
 
 ### When do you need one?
 
-- **Required** for `ML.PROCESS_DOCUMENT` — the function reads documents through an object table
+- **Required** for `ML.PROCESS_DOCUMENT`, `ML.ANNOTATE_IMAGE` and `ML.TRANSCRIBE` — these functions read their documents, images and audio through an object table
 - Useful for any workflow that processes unstructured files from Cloud Storage within BigQuery
 
 ### How to create one

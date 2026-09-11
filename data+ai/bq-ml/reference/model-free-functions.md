@@ -737,14 +737,49 @@ clause of `CREATE MODEL` so the preprocessing re-applies automatically at predic
 > `ML.GENERATE_TEXT`/`AI.GENERATE_*` over images — is owned by `../bq-ai-functions/`; cross-link there,
 > do not duplicate.
 
-> **Output-size gotcha (all four):** an image `STRUCT` can be large (decoded value must be `<= 60 MB`).
-> Referencing these functions directly in the BigQuery editor can fail to display; write results to a
-> table instead. Object-table image files must be `< 20 MB`, JPEG/PNG/BMP, and total `< 1 TB`.
+> **RESERVATION GOTCHA (all four) — verified live, undocumented.** These functions **cannot run under
+> on-demand (per-byte) pricing**. Every one of them fails with:
+> `BigQuery's ML image-processing functions requires reservation, but no reservation was assigned for job type `QUERY`, to project `<project>` or its parent, in location `<location>`.`
+> None of the four reference pages says this, and neither do the
+> [manual preprocessing](https://cloud.google.com/bigquery/docs/manual-preprocessing) or
+> [object table inference](https://cloud.google.com/bigquery/docs/object-table-inference) pages that
+> tell you to use them. `MATRIX_FACTORIZATION` is the only other thing in this project with the same
+> requirement. The fix is a small **`ENTERPRISE` autoscale reservation** (0 baseline slots) — not a
+> capacity commitment. `functions/image/` creates one in Setup and deletes it in Cleanup.
+> **Assignment propagation is not atomic** — verified: after a fixed 90-second wait a probe query
+> succeeded and the very next query, seconds later, failed with the identical error. Wait on several
+> consecutive successes, not on a clock.
+
+> **Output-size gotcha (all four):** referencing these functions directly in the BigQuery editor can
+> fail to display; write results to a table instead. The documented hard limits are `<= 10 MB`
+> (10,000,000 bytes) for the `BYTES` value passed to `ML.DECODE_IMAGE`, and `< 20 MB` per object-table
+> image file (JPEG/PNG/BMP, total `< 1 TB`). The decoded `STRUCT`'s **60 MB ceiling is not a hard
+> limit** — the docs say a struct larger than 60 MB "is downscaled to that size while preserving
+> aspect ratio," i.e. a silently resized input rather than a failed query. (Not exercised in
+> `functions/image/`, whose images are a few pixels each.) Pin large images with an explicit
+> `ML.RESIZE_IMAGE` rather than relying on that ceiling.
+
+> **The struct's fields are `dimensions` and `values`** — verified against the engine's own signature
+> error text. `dimensions` is `[height, width, channels]`; `values` is flattened **row-major in HWC
+> order**. The reference pages leave the fields unnamed (`STRUCT<ARRAY<INT64>, ARRAY<FLOAT64>>`);
+> earlier revisions of this file guessed `shape`, and selecting `.shape` errors.
+
+> **All four are TensorFlow image ops.** Diffed live against TensorFlow 2.21.0 in `functions/image/`:
+> `ML.CONVERT_COLOR_SPACE(..., 'HSV')` and `ML.RESIZE_IMAGE` (bilinear) match `tf.image.rgb_to_hsv` and
+> `tf.image.resize` **bit-exactly**; `YIQ`/`YUV` match `tf.image.rgb_to_yiq`/`rgb_to_yuv` to one ULP of
+> a double; `'GRAYSCALE'` is the one row that differs, by ~1.6e-8, because `tf.image.rgb_to_grayscale`
+> casts to **float32** before applying the weights (`convert_image_dtype(images, dtypes.float32)` in its
+> source) while BigQuery stays in double — apply the same weights in float64 and the gap collapses to one
+> ULP. Where these pages are silent or wrong — channel count, range endpoints, rounding rule,
+> luma weights, interpolation convention — **`tf.image`'s documented behavior is the answer**.
+> **If you run this diff yourself, pin the reference tensor** with `tf.constant(x, tf.float64)`: handing
+> `tf.image` a bare NumPy `float64` array can return float32, which manufactures a ~1e-8 "finding" out of
+> a bit-exact function.
 
 ---
 
 ## `ML.DECODE_IMAGE`
-- **Description:** Converts image bytes (from an object table's `data` column) into a multi-dimensional `STRUCT` of shape + pixel values that downstream image functions and vision models consume. This is the required entry point of the image pipeline.
+- **Description:** Converts image bytes into a multi-dimensional `STRUCT` of dimensions + pixel values that downstream image functions and vision models consume. This is the required entry point of the image pipeline. The argument is **any `BYTES` value** — an object table's `data` pseudocolumn is the usual source, but a `FROM_BASE64(...)` literal or a `BYTES` table column works identically (verified).
 - **Use cases:**
   - Decode JPEG/PNG/BMP bytes from an object table before inference with an imported/remote vision model.
   - Produce a reusable decoded-image column to feed `ML.RESIZE_IMAGE` / `ML.CONVERT_*`.
@@ -761,22 +796,27 @@ ML.DECODE_IMAGE(image_bytes)
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `image_bytes` | BYTES | Yes | — | Image bytes, typically the `data` column of an object table over JPEG/PNG/BMP files. |
+| `image_bytes` | BYTES | Yes | — | Any `BYTES` value holding a JPEG/PNG/BMP image — typically an object table's `data` pseudocolumn. Must be `<= 10 MB`. |
 
 **Outputs:**
 
 | Column | Type | Description |
 |--------|------|-------------|
-| (result) | STRUCT\<ARRAY\<INT64\> shape, ARRAY\<FLOAT64\> values\> | Decoded image: a shape array (e.g. `[height, width, channels]`) plus flattened pixel values. Must be `<= 60 MB`. |
+| (result) | STRUCT\<ARRAY\<INT64\> dimensions, ARRAY\<FLOAT64\> values\> | Decoded image. `dimensions` is `[height, width, channels]`; `values` is `H × W × C` floats, **row-major HWC**, each `pixel / 255` on the **closed** interval `[0, 1]`. |
 
 **Best practices:**
 - When passing `ML.DECODE_IMAGE` output **directly** into `ML.PREDICT`, alias it with the model's expected input field name (e.g. `... AS input`).
 - For repeated use, persist the decoded column to a table to avoid re-decoding.
 **Limitations:**
-- Output `STRUCT` must be `<= 60 MB`; large images can exceed editor display limits — write to a table.
-- Only JPEG/PNG/BMP object-table files are supported.
+- **Requires a reservation** — see the family gotcha above.
+- **Channels is always 3.** Verified: an RGBA PNG comes back `[1, 2, 3]` with the alpha channel **dropped, not composited** (an `alpha = 128` pixel returns its raw RGB unchanged), and a single-channel grayscale PNG is **replicated into three identical channels**. There is no way to get 1 or 4 channels out of this function; do alpha compositing before the bytes reach BigQuery.
+- The documented range `[0, 1)` is **wrong at the top end** — a pure-white pixel returns exactly `1.0` (verified). The interval is closed.
+- Values are float64-exact: `values` matches `pixel / 255` computed in float64 with a maximum absolute difference of `0.0` (verified).
+- Only JPEG, PNG, and BMP decode. Anything else — including a GIF, a WebP, or non-image bytes — fails with `Input image bytes could not be decoded. Expected valid image of type PNG, JPEG, or BMP; error in ML.DECODE_IMAGE expression`. `content_type` on an object table is upload-time metadata and is **not** validation; this error is the only real check.
+- JPEG is lossy and is not close at small sizes: a 1×2 image of `(200,100,50),(0,128,255)` round-trips through JPEG as `(105,123,159),(86,104,140)` (Pillow's encoder at its default quality; a different encoder or quality gives different numbers, which is the point). PNG round-trips exactly. Use PNG for anything where pixel values matter.
+- Large images can exceed editor display limits — write to a table.
 **BigFrames API:** No direct equivalent (use SQL / object tables).
-**Repo example (tested):** None — this project's preprocessing coverage (`functions/scalers/`, `functions/bucketizing/`, `functions/encoding/`, `functions/feature_engineering/`, `functions/text/`) is tabular and text only; no example exercises the image preprocessing functions. Doc pattern: `ML.DECODE_IMAGE(data)` over an object table's `data` column.
+**Repo example (tested):** [`functions/image/`](../functions/image/) — Steps 1–3 decode from `FROM_BASE64` literals and prove the field names, the channel rule, the closed range, the format list, and JPEG loss; Step 8 runs the object-table `data` path end to end.
 
 ---
 
@@ -801,23 +841,30 @@ ML.RESIZE_IMAGE(decoded_image, target_height, target_width, preserve_aspect_rati
 | `decoded_image` | STRUCT (from `ML.DECODE_IMAGE`) | Yes | — | The decoded image to resize. |
 | `target_height` | INT64 | Yes | — | Target height in pixels (max height if `preserve_aspect_ratio = TRUE`). |
 | `target_width` | INT64 | Yes | — | Target width in pixels (max width if `preserve_aspect_ratio = TRUE`). |
-| `preserve_aspect_ratio` | BOOL | Yes | — | If `TRUE`, returns the largest image within the height/width bounds that keeps the original aspect ratio. |
+| `preserve_aspect_ratio` | BOOL | Yes | — | If `TRUE`, the two targets are a **bounding box, not a size**: scale = `min(target_h / h, target_w / w)`, and each output dimension is that scale times the source rounded **half-to-even**. |
 
 **Outputs:**
 
 | Column | Type | Description |
 |--------|------|-------------|
-| (result) | STRUCT (same form as input image) | The resized image. |
+| (result) | STRUCT (same form as input image) | The resized image. **Type-preserving**: `FLOAT64` in → `FLOAT64` out, `INT64` in → `INT64` out. |
 
-**Best practices:** Resize to the model's exact expected dimensions; use `preserve_aspect_ratio = TRUE` when distortion would hurt accuracy.
-**Limitations:** Output-size/display gotcha as above; takes a decoded image (chain after `ML.DECODE_IMAGE`).
+**Best practices:**
+- Resize to the model's exact expected dimensions; use `preserve_aspect_ratio = TRUE` when distortion would hurt accuracy — but read the bounding-box rule above, because `TRUE` does not give you the size you asked for.
+- **Resize before `ML.CONVERT_IMAGE_TYPE`, not after.** Resize is type-preserving, so integers in means integers out and every resize step re-quantizes (verified: a 1×2 → 1×1 fit whose true blue-channel mean is `152.5` returns `152`, half-to-even). Keep the pipeline in floats and convert last.
+**Limitations:**
+- **Requires a reservation** — see the family gotcha above.
+- **It returns float32-precision values**, unlike decode and color-space conversion, which are float64-exact. Verified: `16/255` comes back as `0.062745101749897`, exactly `float32(16/255)`. Do not diff resize output against a float64 reference and expect zero.
+- **A degenerate aspect-preserved fit fails with an internal error, deterministically.** Whenever `min(target_h / h, target_w / w)` scales either source dimension below `0.5` — i.e. rounds it to zero — the query fails with `An internal error occurred ... Error: 80038528`. Verified on two differently-shaped sources; the same target size on the same image succeeds when the fit is non-degenerate, so it is the rounding-to-zero and not the small target. The message's "usually caused by a transient issue" is misleading here: **`google-cloud-bigquery`'s default job-retry believes it and resubmits for minutes.** Pass `job_retry=None`, and guard the input with `min(th/h, tw/w) * min(h, w) >= 0.5` or use `FALSE`.
+- The exception class varies run to run for that same failure — `InternalServerError` (500) and `BadRequest` (400) have both been observed, and the 400 form omits the `Error: 80038528` code. Catch `GoogleAPICallError` and read `job.error_result['message']`.
+- Output-size/display gotcha as above; takes a decoded image (chain after `ML.DECODE_IMAGE`).
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** None — not used in this repo's notebooks. Doc pattern: `ML.RESIZE_IMAGE(ML.DECODE_IMAGE(data), 480, 480, FALSE) AS input`.
+**Repo example (tested):** [`functions/image/`](../functions/image/) Step 6 — the bounding-box rounding table, the float32 finding, type preservation, and the deterministic internal error; Step 8 uses it in the object-table pipeline.
 
 ---
 
 ## `ML.CONVERT_IMAGE_TYPE`
-- **Description:** Converts the floating-point pixel values produced by `ML.DECODE_IMAGE` into integers in the range `[0, 255)`, as required by some models.
+- **Description:** Converts the floating-point pixel values produced by `ML.DECODE_IMAGE` into integers on the **closed** range `[0, 255]`, as required by some models.
 - **Use cases:**
   - Feed integer-input vision models (e.g. SSD MobileNet V2, which expects `tf.uint8`).
 - **documentation:** [ML.CONVERT_IMAGE_TYPE](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-convert-image-type)
@@ -833,18 +880,23 @@ ML.CONVERT_IMAGE_TYPE(decoded_image)
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `decoded_image` | STRUCT (from `ML.DECODE_IMAGE`) | Yes | — | Image whose float pixel values are converted to integers `[0, 255)`. |
+| `decoded_image` | STRUCT with `ARRAY<FLOAT64> values` | Yes | — | Image whose float pixel values are converted to integers on `[0, 255]`. **Only the float form is accepted** — see below. |
 
 **Outputs:**
 
 | Column | Type | Description |
 |--------|------|-------------|
-| (result) | STRUCT (same form, integer pixel values) | Image with integer pixel values. |
+| (result) | STRUCT\<ARRAY\<INT64\> dimensions, ARRAY\<INT64\> values\> | Image with integer pixel values. |
 
-**Best practices:** Apply only when the target model requires integer pixels; leave float output for models trained on `[0,1]` floats.
-**Limitations:** Output-size/display gotcha as above; integer range is `[0, 255)`.
+**Best practices:** Apply only when the target model requires integer pixels; leave float output for models trained on `[0,1]` floats. Make it the **last** step of the pipeline — `ML.RESIZE_IMAGE` is type-preserving and will re-quantize integers at every subsequent resize.
+**Limitations:**
+- **Requires a reservation** — see the family gotcha above.
+- **It is one-way.** There is no inverse and no overload for integer input; feeding it its own output fails with `No matching signature for function ML.CONVERT_IMAGE_TYPE / Argument types: STRUCT<dimensions ARRAY<INT64>, values ARRAY<INT64>> / Signature: ML.CONVERT_IMAGE_TYPE(STRUCT<dimensions ARRAY<INT64>, values ARRAY<FLOAT64>>)`. (That error is also the authoritative statement of the struct's field names.)
+- The documented range `[0, 255)` is **wrong at the top end** — a pure-white pixel returns exactly `255` (verified). The interval is closed.
+- Matches `tf.image.convert_image_dtype(..., tf.uint8)` exactly (verified against TensorFlow 2.21.0).
+- Output-size/display gotcha as above.
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** None — not used in this repo's notebooks. Doc pattern: `ML.CONVERT_IMAGE_TYPE(ML.DECODE_IMAGE(data)) AS image`.
+**Repo example (tested):** [`functions/image/`](../functions/image/) Steps 3–4 — the closed range, the one-way signature error, and the pipeline-ordering consequence; Step 8 ends its feature pipeline with it.
 
 ---
 
@@ -865,27 +917,34 @@ ML.CONVERT_COLOR_SPACE(rgb_image, target_color_space)
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `rgb_image` | STRUCT (RGB, from `ML.DECODE_IMAGE`/`ML.RESIZE_IMAGE`) | Yes | — | Image in RGB color space. |
+| `rgb_image` | STRUCT (RGB, from `ML.DECODE_IMAGE`/`ML.RESIZE_IMAGE`) | Yes | — | Image in RGB color space. Accepts **either** value type — `ARRAY<FLOAT64>` or the `ARRAY<INT64>` produced by `ML.CONVERT_IMAGE_TYPE`. |
 | `target_color_space` | STRING | Yes | — | Target color space: `'HSV'`, `'YIQ'`, `'YUV'`, or `'GRAYSCALE'`. |
 
 **Outputs:**
 
 | Column | Type | Description |
 |--------|------|-------------|
-| (result) | STRUCT (same form, converted color space) | Image in the requested color space. |
+| (result) | STRUCT\<ARRAY\<INT64\> dimensions, ARRAY\<FLOAT64\> values\> | Image in the requested color space. Always `FLOAT64`, whichever value type went in. `'GRAYSCALE'` returns **1 channel**; the other three return 3. |
 
 **Best practices:** Only convert when the model expects a non-RGB color space; input must be RGB.
-**Limitations:** Source must be RGB; only `HSV` / `YIQ` / `YUV` / `GRAYSCALE` targets. Output-size/display gotcha as above.
+**Limitations:**
+- **Requires a reservation** — see the family gotcha above.
+- **`'GRAYSCALE'` changes the channel count to 1** (verified: a 1×2 RGB image converts to `[1, 2, 1]`, two values). This is the reverse of `ML.DECODE_IMAGE`, which replicates a grayscale source *up* to 3 channels — so a decode-then-grayscale pipeline goes 1 → 3 → 1, and the channel count of a feature vector is set by the last function in the chain, not by the source image. `'HSV'`, `'YIQ'`, and `'YUV'` return 3 distinct channels.
+- **`'GRAYSCALE'` and `'YIQ'`'s Y channel are two different lumas.** `'GRAYSCALE'` uses `[0.2989, 0.5870, 0.1140]` — the 4-decimal rounding `tf.image.rgb_to_grayscale` hardcodes. `'YIQ'`'s Y uses the true BT.601 `[0.299, 0.587, 0.114]`. On RGB `(200, 100, 50)` they give `0.48698039215686273` and `0.4870588235294117`, a gap of `0.02` of one 8-bit level. Invisible, and enough to break a bit-for-bit reproducibility check against a reimplementation — pick the right one deliberately.
+- **`'HSV'`'s hue is on `[0, 1]`, not degrees.** `(200, 100, 50)` → hue `0.05555555555555555`, which is 20°/360. A threshold written in degrees is off by 360×.
+- **Integer input is normalized, not misread.** `ML.CONVERT_COLOR_SPACE(ML.CONVERT_IMAGE_TYPE(img), 'HSV')` is bit-identical to the float path — it divides by 255 on the way in rather than treating a `200` as already-scaled.
+- An unsupported target is rejected by name: `Color space LAB is not supported; error in ML.CONVERT_COLOR_SPACE expression`.
+- Output-size/display gotcha as above.
 **BigFrames API:** No direct equivalent.
-**Repo example (tested):** None — not used in this repo's notebooks. Doc pattern: `ML.CONVERT_COLOR_SPACE(ML.RESIZE_IMAGE(ML.DECODE_IMAGE(data), 224, 280, TRUE), 'YIQ') AS input`.
+**Repo example (tested):** [`functions/image/`](../functions/image/) Step 5 — the channel-count change, the two lumas, the `[0, 1]` hue, integer normalization, and the rejected target; Step 7 diffs `'HSV'`/`'YIQ'`/`'YUV'` against TensorFlow.
 
 ---
 
-**Status:** All four are **GA**. **Connection required:** No (the function itself; the object table over the image files and the vision model may require a connection — see the model entry).
+**Status:** All four are **GA**. **Reservation required: YES** — see the family gotcha at the top of this section; this is the one thing about them that no official page states. **Connection required:** No for the functions themselves; the *object table* over the image files needs a Cloud Resource Connection whose service account holds `roles/storage.objectViewer` on the bucket, and the vision model may need one too (see the model entry).
 
 **TRANSFORM-clause behavior:** All four are exportable preprocessing functions usable inside `TRANSFORM`, so the decode/resize/type/color-space steps are stored with the model and re-applied automatically at `ML.PREDICT`. Because they are scalar (no `OVER()`), they nest directly and impose no analytic-window constraints — unlike the analytic scalers/encoders/text functions documented in this folder.
 
-**Typical pipeline:** object table (`data` BYTES) → `ML.DECODE_IMAGE` → optional `ML.RESIZE_IMAGE` → optional `ML.CONVERT_IMAGE_TYPE` / `ML.CONVERT_COLOR_SPACE` → vision model via `ML.PREDICT` (or all of it inside `TRANSFORM`).
+**Typical pipeline:** object table (`data` BYTES) → `ML.DECODE_IMAGE` → `ML.RESIZE_IMAGE` → `ML.CONVERT_COLOR_SPACE` → `ML.CONVERT_IMAGE_TYPE` → vision model via `ML.PREDICT` (or all of it inside `TRANSFORM`). **The order is not arbitrary:** `ML.CONVERT_IMAGE_TYPE` is one-way and has no integer→float signature, and `ML.RESIZE_IMAGE` is type-preserving, so converting early quantizes at every later resize. Convert last.
 
 **Sources:** [ML.DECODE_IMAGE](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-decode-image) · [ML.RESIZE_IMAGE](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-resize-image) · [ML.CONVERT_IMAGE_TYPE](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-convert-image-type) · [ML.CONVERT_COLOR_SPACE](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-convert-color-space) · [Run inference on image object tables](https://cloud.google.com/bigquery/docs/object-table-inference)
 

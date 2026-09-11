@@ -92,14 +92,30 @@ Both `ML.BAG_OF_WORDS`/`ML.TF_IDF` share the same `top_k`/`frequency_threshold` 
 
 ### Image preprocessing
 
+> **Before anything else: all four require a BigQuery Editions reservation.** They fail on on-demand pricing with `BigQuery's ML image-processing functions requires reservation, but no reservation was assigned for job type QUERY...`. **No official reference page mentions this.** If a user's image-preprocessing query fails that way, the answer is a small `ENTERPRISE` autoscale reservation (0 baseline slots — *not* a capacity commitment), and assignment propagation is not atomic, so wait on several consecutive successful probes rather than a fixed sleep. `MATRIX_FACTORIZATION` is the only other thing in BigQuery ML with this requirement.
+
 | Function | What it does | When to reach for it vs. siblings |
 |---|---|---|
-| `ML.DECODE_IMAGE` | Image bytes → decoded `STRUCT{shape, values}` | Always the required entry point; every other image function consumes its output. |
-| `ML.RESIZE_IMAGE` | Resize decoded image to target height/width | Match the model's expected input resolution; optional `preserve_aspect_ratio`. |
-| `ML.CONVERT_IMAGE_TYPE` | Float pixel values → integers `[0, 255)` | Model expects integer/`uint8` pixels (e.g. SSD MobileNet V2) instead of the float output of `ML.DECODE_IMAGE`. |
-| `ML.CONVERT_COLOR_SPACE` | RGB → `HSV`/`YIQ`/`YUV`/`GRAYSCALE` | Model was trained on a non-RGB color space; input must already be RGB. |
+| `ML.DECODE_IMAGE` | Image bytes → decoded `STRUCT<ARRAY<INT64> dimensions, ARRAY<FLOAT64> values>` | Always the required entry point; every other image function consumes its output. Takes **any** `BYTES` (a `FROM_BASE64` literal works), not only an object table's `data`. |
+| `ML.RESIZE_IMAGE` | Resize decoded image to target height/width | Match the model's expected input resolution. `preserve_aspect_ratio = TRUE` is a **bounding box**, not a size. |
+| `ML.CONVERT_IMAGE_TYPE` | Float pixel values → integers `[0, 255]` | Model expects integer/`uint8` pixels (e.g. SSD MobileNet V2). **One-way — put it last.** |
+| `ML.CONVERT_COLOR_SPACE` | RGB → `HSV`/`YIQ`/`YUV`/`GRAYSCALE` | Model was trained on a non-RGB color space. `'GRAYSCALE'` returns **1 channel**. |
 
-All four are scalar/row-wise (no `OVER()`) and nest freely, e.g. `ML.CONVERT_COLOR_SPACE(ML.RESIZE_IMAGE(ML.DECODE_IMAGE(data), 224, 280, TRUE), 'YIQ')`.
+All four are scalar/row-wise (no `OVER()`) and nest freely. **The order matters:** decode → resize → color space → convert type, e.g. `ML.CONVERT_IMAGE_TYPE(ML.CONVERT_COLOR_SPACE(ML.RESIZE_IMAGE(ML.DECODE_IMAGE(data), 224, 280, FALSE), 'GRAYSCALE'))`. `ML.CONVERT_IMAGE_TYPE` has no integer→float signature, and `ML.RESIZE_IMAGE` is type-preserving, so converting early re-quantizes at every later resize.
+
+**The struct's fields are `dimensions` and `values`** (`.shape` errors). `dimensions` is `[height, width, channels]`; `values` is flattened **row-major HWC**.
+
+**Channel count is set by the last function in the chain, not by the image.** Decoding always returns **3** channels — an RGBA image's alpha is **dropped, not composited**, and a single-channel grayscale PNG is replicated into three identical channels. `ML.CONVERT_COLOR_SPACE(..., 'GRAYSCALE')` then returns **1**. Do alpha compositing before the bytes reach BigQuery; there is no flag and no warning.
+
+**Both documented ranges are wrong at the top end.** `ML.DECODE_IMAGE`'s `[0, 1)` and `ML.CONVERT_IMAGE_TYPE`'s `[0, 255)` are both **closed** — a pure-white pixel returns exactly `1.0` and exactly `255`.
+
+**Two different lumas.** `'GRAYSCALE'` uses `[0.2989, 0.5870, 0.1140]` (TensorFlow's rounded constants); `'YIQ'`'s Y uses true BT.601 `[0.299, 0.587, 0.114]`. They differ by 0.02 of an 8-bit level — invisible, and enough to break a bit-for-bit reproducibility check. `'HSV'`'s hue is on **`[0, 1]`, not degrees**.
+
+**`ML.RESIZE_IMAGE` is float32 and type-preserving** while decode and color-space conversion are float64-exact. With `preserve_aspect_ratio = TRUE`, scale = `min(th/h, tw/w)` and dimensions round **half-to-even**. If that scale rounds a source dimension below `0.5`, the query fails **deterministically** with internal error `80038528` — and `google-cloud-bigquery`'s default job-retry resubmits it for minutes. Pass `job_retry=None`, catch `GoogleAPICallError` (the surfaced class varies between `InternalServerError` and `BadRequest`), and read `job.error_result['message']`.
+
+**All four are TensorFlow image ops.** `'HSV'` and bilinear resize match `tf.image` **bit-exactly**; `'YIQ'`/`'YUV'` match to one ULP of a double; `'GRAYSCALE'` misses by ~1.6e-8 only because `tf.image.rgb_to_grayscale` casts to **float32** before applying the weights while BigQuery stays in double. Where BigQuery's docs are silent or wrong, `tf.image`'s documented behavior is the answer. If you reproduce this diff, pin the reference with `tf.constant(x, tf.float64)` — a bare NumPy `float64` array can come back float32 and manufacture a ~1e-8 gap out of a bit-exact function.
+
+Object tables over Cloud Storage are the production input path, and they **do** need a Cloud Resource connection whose service account holds `roles/storage.objectViewer` on the bucket — orthogonal to the reservation requirement. Expect minutes of IAM propagation; retry the first query on a permission error rather than sleeping longer.
 
 ---
 
@@ -135,7 +151,8 @@ All four are scalar/row-wise (no `OVER()`) and nest freely, e.g. `ML.CONVERT_COL
 - **`ML.MIN_MAX_SCALER` caps prediction-time inputs to `[0, 1]`** when a serving value falls outside the training min/max — verified live via `CREATE MODEL` + `ML.TRANSFORM`.
 - **Analytic functions cannot nest inside other analytic functions** (all the `OVER()`-requiring functions above), but scalar results (`ML.NORMALIZER`, `ML.IMPUTER` output, etc.) can be nested as arguments to other scalar functions — e.g. `ML.POLYNOMIAL_EXPAND(STRUCT(ML.IMPUTER(x, 'mean') OVER() AS x_imputed))` works because `ML.POLYNOMIAL_EXPAND` is scalar even though its argument came from an analytic call.
 - **There is no `ML.TRANSPOSE` function** — a repo notebook of that name refers to using the `TRANSFORM` clause technique itself, not a callable function.
-- **Image `STRUCT` outputs (`ML.DECODE_IMAGE` and downstream) can be large (up to 60 MB) and can fail to render in the BigQuery editor** — write results to a table rather than `SELECT`ing them directly for inspection.
+- **The image-preprocessing family requires a BigQuery Editions reservation** (verified live, `functions/image/`) — on-demand pricing fails outright and no official page says so. See [Image preprocessing](#image-preprocessing) above for the full list of measured behaviors, several of which contradict the reference pages.
+- **Image `STRUCT` outputs (`ML.DECODE_IMAGE` and downstream) can be large and can fail to render in the BigQuery editor** — write results to a table rather than `SELECT`ing them directly. The documented hard caps are `<= 10 MB` for the `BYTES` input and `< 20 MB` per object-table file; the decoded struct's 60 MB figure is **not** a rejection threshold — a larger struct is silently downscaled preserving aspect ratio, so pin the size with an explicit `ML.RESIZE_IMAGE`.
 
 ## Canonical snippets
 
@@ -208,6 +225,5 @@ These functions are documented in full (option tables, syntax, defaults, BigFram
 - [`narrative/text.md`](../narrative/text.md) (source: `functions/text/`) — ML.NGRAMS, ML.TF_IDF, ML.BAG_OF_WORDS on real thelook_ecommerce.products name tokens
 - [`narrative/distance.md`](../narrative/distance.md) (source: `functions/distance/`) — ML.DISTANCE and ML.LP_NORM together, including the Jaccard-derivation and ML.NORMALIZER-equivalence proofs
 - [`narrative/feature_store.md`](../narrative/feature_store.md) (source: `functions/feature_store/`) — ML.FEATURES_AT_TIME and ML.ENTITY_FEATURES_AT_TIME across all three table shapes (dense/sparse/EAV), the ignore_feature_nulls proof in both directions, the QUALIFY equivalence and its alias-shadowing trap, and the cold-start inner-join check
+- [`narrative/image.md`](../narrative/image.md) (source: `functions/image/`) — all four image functions measured against a live reservation and diffed against TensorFlow, including the undocumented reservation requirement, the `dimensions`/`values` field names, the closed ranges, the channel-count rules in both directions, the two lumas, and the deterministic `80038528` resize failure
 - [`narrative/transform_only.md`](../narrative/transform_only.md) (source: `models/transform_only/`) — the fullest cross-function combination: ML.IMPUTER + scalers + ML.ONE_HOT_ENCODER feeding a downstream LOGISTIC_REG
-
-There is no repo notebook exercising the image-preprocessing family (`ML.DECODE_IMAGE`/`ML.RESIZE_IMAGE`/`ML.CONVERT_IMAGE_TYPE`/`ML.CONVERT_COLOR_SPACE`) — those entries in `bq-ml/reference/model-free-functions.md` are documentation-pattern only, unverified live in this repo.

@@ -11,7 +11,7 @@ Packaged, cross-tool [Agent Skills](https://code.claude.com/docs/en/skills.md) d
 | Skill | Scope | Path |
 |---|---|---|
 | [`bigquery-ml`](.agents/skills/bigquery-ml/SKILL.md) | Training, evaluating, deploying, and monitoring BigQuery ML models | `.agents/skills/bigquery-ml/` |
-| [`bigquery-ai-functions`](.agents/skills/bigquery-ai-functions/SKILL.md) | Calling Gemini / generative AI functions from BigQuery SQL | `.agents/skills/bigquery-ai-functions/` |
+| [`bigquery-ai-functions`](.agents/skills/bigquery-ai-functions/SKILL.md) | Calling Gemini / generative AI functions from BigQuery SQL, plus the pre-trained Cloud AI services reached through a remote model | `.agents/skills/bigquery-ai-functions/` |
 | [`choosing-a-bigquery-ai-approach`](.agents/skills/choosing-a-bigquery-ai-approach/SKILL.md) | Triages between the two above when it's unclear which fits | `.agents/skills/choosing-a-bigquery-ai-approach/` |
 
 More are planned from this repo's broader MLOps content — see `PLANS.md` for the backlog and authoring standard.

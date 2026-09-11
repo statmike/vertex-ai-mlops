@@ -18,6 +18,26 @@ This notebook is the **full round trip**, picking up exactly where `models/expor
 **References:** `RESOURCES.md` (Full reference) | [CREATE MODEL (remote, custom endpoint) docs](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-create-remote-model-https) | [Cloud Resource Connection](https://cloud.google.com/bigquery/docs/create-cloud-resource-connection) | `setup` (Setup guide)
 
 ---
+## The other kind of remote model
+
+`CREATE MODEL ... REMOTE WITH CONNECTION` builds two different things, and only one of them is this notebook's subject.
+
+- **`endpoint = 'https://...'`** — a Vertex AI Endpoint you deployed and pay for by the hour. Your model, your infrastructure, `ML.PREDICT`. That is everything below.
+- **`REMOTE_SERVICE_TYPE = '...'`** — a **pre-trained Google Cloud AI service**. Nothing is deployed, nothing trains, and there is no endpoint to clean up. The model object is a handle, and the function that consumes it is named after the service rather than `ML.PREDICT`.
+
+Five functions use the second form, and they live in the sibling `bq-ai-functions` (`bq-ai-functions`) project because the reader never manages a model artifact:
+
+| Function | `REMOTE_SERVICE_TYPE` | Service |
+|---|---|---|
+| `bq-ai-functions/functions/ml_translate` (`ML.TRANSLATE`) | `CLOUD_AI_TRANSLATE_V3` | Cloud Translation |
+| `bq-ai-functions/functions/ml_understand_text` (`ML.UNDERSTAND_TEXT`) | `CLOUD_AI_NATURAL_LANGUAGE_V1` | Cloud Natural Language |
+| `bq-ai-functions/functions/ml_annotate_image` (`ML.ANNOTATE_IMAGE`) | `CLOUD_AI_VISION_V1` | Cloud Vision |
+| `bq-ai-functions/functions/ml_transcribe` (`ML.TRANSCRIBE`) | `CLOUD_AI_SPEECH_TO_TEXT_V2` | Speech-to-Text V2 |
+| `bq-ai-functions/functions/ml_process_document` (`ML.PROCESS_DOCUMENT`) | `CLOUD_AI_DOCUMENT_V1` | Document AI |
+
+They share this notebook's connection and IAM mechanics — a Cloud Resource connection, a service account that is not you, roles granted at project level — and diverge everywhere else: no training, no `ML.EVALUATE`, no endpoint, and failures that arrive per row in a `*_status` column while the job succeeds. The family page is `bq-ai-functions/reference/cloud-ai-service-models.md` (Cloud AI Service Models).
+
+---
 ## Setup
 
 Set your project and location, authenticate, and create a shared dataset for the model.

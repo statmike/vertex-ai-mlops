@@ -10,6 +10,17 @@
 **Alternatives:**
 - `functions/ai_generate` (`AI.GENERATE`) — Multimodal Gemini prompts for ad-hoc document understanding (no Document AI processor required)
 
+**It has four siblings.** `ML.PROCESS_DOCUMENT` is one of five functions that reach a pre-trained Cloud AI service through a remote model, rather than a Gemini endpoint. The other four work the same way — a `CREATE MODEL … REMOTE` handle that trains nothing, a JSON `*_result` column, a per-row `*_status` column, and no `ML.EVALUATE`:
+
+| Function | Service | Input |
+|---|---|---|
+| `functions/ml_translate` (`ML.TRANSLATE`) | Cloud Translation | a `text_content` column |
+| `functions/ml_understand_text` (`ML.UNDERSTAND_TEXT`) | Cloud Natural Language | a `text_content` column |
+| `functions/ml_annotate_image` (`ML.ANNOTATE_IMAGE`) | Cloud Vision | an object table of images |
+| `functions/ml_transcribe` (`ML.TRANSCRIBE`) | Speech-to-Text V2 | an object table of audio |
+
+What they share, where their IAM differs, and what each one's argument shape is: `reference/cloud-ai-service-models.md` (Cloud AI Service Models).
+
 **Limits:**
 - Up to **130 pages** per document (pages beyond this are not processed)
 - **120-second** timeout per document processing request
@@ -72,7 +83,9 @@ r = _sp.run(['bq', 'show', '--connection', '--format=json',
 sa = _json.loads(r.stdout)['cloudResource']['serviceAccountId']
 
 # Grant required roles to connection service account
-for role in ['roles/aiplatform.user', 'roles/storage.objectViewer', 'roles/documentai.apiUser', 'roles/documentai.viewer']:
+for role in ['roles/serviceusage.serviceUsageConsumer', 'roles/bigquery.connectionUser',
+             'roles/storage.objectViewer', 'roles/documentai.apiUser', 'roles/documentai.viewer',
+             'roles/aiplatform.user']:  # the last one is for the AI.PARSE_DOCUMENT comparison
     _sp.run(['gcloud', 'projects', 'add-iam-policy-binding', PROJECT_ID,
              f'--member=serviceAccount:{sa}', f'--role={role}', '--quiet'],
             capture_output=True, text=True)
