@@ -80,9 +80,26 @@ hunting the seeded gross-price outliers.
 The two `direct` questions are the control. An arm that misses those is broken,
 not ungoverned, and `report.capture_health` is where that shows up.
 
-Every question is phrased as a **trailing N days** window, never "last month".
-The oracle cannot score an answer to a question that did not pin its own window
-down, and "last month" is ambiguous between calendar and trailing.
+Every question is phrased as a **trailing N days** window, never "last month",
+because "last month" is ambiguous between calendar and trailing and the oracle
+cannot score an answer to a question that did not pin its own window down.
+
+⚠️ **That is not sufficient, and the governance ladder measured it.** "Trailing
+30 days" fixes the window's *length* and not its *anchor*. On `semantic-q2` the
+agents produce three discrete, repeatable answers over governed data — 299,808
+anchored to `CURRENT_TIMESTAMP()`, 308,801 anchored to `MAX(txn_ts)` in the
+table, and 289,738 from a third window. All three are competent SQL over the
+right column; the oracle accepts one, because `golden.py` anchors to now.
+
+Anchoring to the data's own maximum timestamp is a defensible and common
+analyst habit, so the other two are graded wrong for a reason that has nothing
+to do with governance or with the arm. `semantic-q2` therefore reports a
+question-design defect on top of whatever it reports about the agent, and
+[paths](paths.md#one-question-is-ambiguous-and-it-is-excluded-above) excludes it
+where that would contaminate a finding. The fix is to pin the anchor in the
+question wording; it is not applied here because changing a question invalidates
+comparison with every capture already published, which is the more expensive
+loss.
 
 ---
 
