@@ -2,6 +2,8 @@
 
 Zero-training prediction from two pre-trained foundation models: **TimesFM** for time series (`AI.FORECAST`, `AI.DETECT_ANOMALIES`, and the forecast branch of `AI.EVALUATE`) and **TabFM** for tabular rows (`AI.PREDICT`, and the tabular branch of `AI.EVALUATE`). Neither requires `CREATE MODEL`, a connection, an endpoint, or any persisted model object.
 
+Contents: [Options](#options) · [Choosing among them](#choosing-among-them) · [Gotchas verified in this repo](#gotchas-verified-in-this-repo) · [Canonical snippets](#canonical-snippets) · [Go deeper](#go-deeper)
+
 ## Options
 
 | Function | What it does | Use this when |
@@ -56,6 +58,7 @@ Zero-training prediction from two pre-trained foundation models: **TimesFM** for
 - The tabular branch is just `AI.PREDICT`'s two relations plus `label_col`; the correspondence is exact, which makes it easy to score a prediction you already wrote.
 - **Only the TimesFM branch returns `ai_evaluate_status`.** The tabular branch's output has no status column — don't write a per-row status check against it.
 - The tabular branch returns **no `log_loss`, no `roc_auc`, and no confusion matrix** for classification. If you need those, use BigQuery ML's `ML.EVALUATE` on a trained classifier instead.
+- **The label column's TYPE silently decides what `precision`/`recall`/`f1_score` mean, and nothing in the output says which convention you got.** A `BOOL` `label_col` is scored **binary** — the positive (`TRUE`) class alone. The `STRING` rendering of the identical values is scored **multiclass and macro-averaged**, even at two classes. `accuracy` is the same either way. Measured on one imbalanced problem (12 positives of 62 rows; TabFM confusion matrix TP 12 / FP 11 / FN 0 / TN 39): `BOOL` returned precision `0.5217` and recall `1.0`, `STRING` returned `0.7609` and `0.89` — the two-class means. Four isolated runs of each agreed. **This is a BigQuery-wide convention rather than an `AI.EVALUATE` behavior** — BigQuery ML's `ML.METRICS` follows the identical rule, measured side by side (see the sibling `bigquery-ml` skill's `narrative/evaluation.md`). On balanced data the two nearly coincide, which is how it hides until the classes are lopsided; fix the type deliberately and say which convention a published number uses.
 
 ## Canonical snippets
 

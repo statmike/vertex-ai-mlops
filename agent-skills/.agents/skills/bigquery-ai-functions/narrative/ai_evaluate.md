@@ -260,7 +260,7 @@ df
 
 Same two relations, same call — only `label_col` changes. `sex` is a `STRING`, so TabFM evaluates classification and returns four metrics instead of six.
 
-`precision`, `recall`, and `f1_score` are **macro-averaged across classes**: the metric is computed per class and then averaged with equal weight, so a rare class counts exactly as much as a common one. `accuracy` is the plain fraction of correct predictions across all rows. There is no `log_loss` and no `roc_auc` here — `ML.EVALUATE` on a trained classification model returns those two, the TabFM branch does not.
+`precision`, `recall`, and `f1_score` are **macro-averaged across classes** *when the label column is a `STRING`*: the metric is computed per class and then averaged with equal weight, so a rare class counts exactly as much as a common one. **A `BOOL` label is not averaged at all** — it is scored as binary, reporting the positive (`TRUE`) class alone. Same rows, same predictions, different numbers: measured side by side in `bq-ml/functions/evaluation` (Evaluation Without a Model), where an imbalanced problem reads precision **0.5217** as `BOOL` and **0.7609** as `STRING`. `accuracy` is the plain fraction of correct predictions across all rows and is identical under either type. There is no `log_loss` and no `roc_auc` here — `ML.EVALUATE` on a trained classification model returns those two, the TabFM branch does not.
 
 **Limits:** at most 20 feature columns and at most 10 classes. Both are documented on the `AI.PREDICT` reference page and are not restated on the `AI.EVALUATE` page, but the TabFM branch runs the same model on the same inputs. Penguins has 6 feature columns, and `sex` has 2 classes.
 

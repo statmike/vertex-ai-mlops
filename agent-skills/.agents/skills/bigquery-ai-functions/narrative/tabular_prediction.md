@@ -203,7 +203,8 @@ client.query(f"""
 | Label type | Metrics returned |
 |---|---|
 | `INT64`, `FLOAT64`, `NUMERIC`, `BIGNUMERIC` | `mean_absolute_error`, `mean_squared_error`, `mean_squared_log_error`, `median_absolute_error`, `r2_score`, `explained_variance` |
-| `STRING`, `BOOL` | `precision`, `recall`, `accuracy`, `f1_score` (the first three macro-averaged across classes) |
+| `STRING` | `precision`, `recall`, `accuracy`, `f1_score` — the first three macro-averaged across classes |
+| `BOOL` | the same four names, but scored as **binary**: `precision`, `recall` and `f1_score` describe the `TRUE` class alone, not an average. See `bq-ml/functions/evaluation` (Evaluation Without a Model), which measures the gap on one table. |
 
 Two things worth noticing. The regression names are **identical to `ML.EVALUATE`'s**, so the head-to-head at the end of this notebook lines up column for column — the metric *names* match, even though the evaluation samples do not. And the classification branch is thin: **no** `log_loss`, **no** `roc_auc`, **no** confusion matrix, and — unlike the forecasting branch — **no** `ai_evaluate_status` column at all. Four numbers, and threshold tuning is not something you can do with them.
 

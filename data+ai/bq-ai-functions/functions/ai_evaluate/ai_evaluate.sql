@@ -17,8 +17,17 @@
 --          mean_absolute_scaled_error, ai_evaluate_status
 -- Returns (TabFM, numeric label): mean_absolute_error, mean_squared_error,
 --          mean_squared_log_error, median_absolute_error, r2_score, explained_variance
--- Returns (TabFM, STRING or BOOL label): precision, recall, accuracy, f1_score
---          (precision, recall and f1_score are macro-averaged across all classes)
+-- Returns (TabFM, STRING label): precision, recall, accuracy, f1_score
+--          (precision, recall and f1_score macro-averaged across all classes)
+-- Returns (TabFM, BOOL label): the same four names, but NOT averaged -- BOOL is
+--          scored as binary, so precision, recall and f1_score describe the
+--          positive (TRUE) class alone. accuracy is identical under either type.
+--          Measured on one imbalanced problem (12 positives of 62): the BOOL
+--          label returned precision 0.5217391304347826 and recall 1.0, while the
+--          STRING rendering of the identical values returned 0.7608695652173914
+--          and 0.89 -- the two-class means. Four isolated runs of each agreed.
+--          ML.METRICS follows the same rule; the side-by-side lives in
+--          ../../../bq-ml/functions/evaluation/evaluation.sql
 -- Note: the TabFM branch returns no ai_evaluate_status column and no RMSE.
 --
 -- TabFM limits (documented on the AI.PREDICT page): at most 20 feature columns

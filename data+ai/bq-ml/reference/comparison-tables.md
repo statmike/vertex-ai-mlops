@@ -82,6 +82,16 @@ The fastest way to answer "which model / which function do I use?" Detailed entr
 
 A `trial_id` column is prepended for hyperparameter-tuned models.
 
+**Which evaluator?**
+
+| You have | Function | Returns |
+|---|---|---|
+| A trained model and an eval set | [`ML.EVALUATE`](model-lifecycle-functions.md#mlevaluate) | The table above, including `log_loss` and `roc_auc` |
+| Two columns: actual and predicted (no model) | [`ML.METRICS`](model-free-functions.md#mlmetrics) | The regression six, or `precision`/`recall`/`accuracy`/`f1_score`. No `log_loss`, no `roc_auc` |
+| Raw data and no model at all | [`AI.EVALUATE`](../../bq-ai-functions/RESOURCES.md) | Same names as `ML.METRICS`, but trains TabFM/TimesFM internally and is not reproducible run to run |
+
+> For `ML.METRICS` and `AI.EVALUATE` alike, `precision`/`recall`/`f1_score` on a **`BOOL`** label describe the positive (`TRUE`) class alone, while the **`STRING`** rendering of the same values is macro-averaged across classes. `accuracy` is identical either way. Measured on one table: precision `0.5238` versus `0.7497`.
+
 ## 3. Capability matrix (per model type)
 
 | Model type | TRANSFORM | HP tuning | `enable_global_explain` | Weights fn | Feature attributions | `ML.DETECT_ANOMALIES` |

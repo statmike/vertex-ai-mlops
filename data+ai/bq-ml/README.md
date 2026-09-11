@@ -96,7 +96,7 @@ Per-model-type deep dives covering the full lifecycle (create → evaluate → p
 
 ## Functions
 
-Model-free `ML.*` utilities that transform data directly (no model required).
+Model-free `ML.*` utilities that transform or score data directly (no model required).
 
 | Function | Category | Status | What it does |
 |----------|----------|--------|--------------|
@@ -108,6 +108,7 @@ Model-free `ML.*` utilities that transform data directly (no model required).
 | [Text](functions/text/) | `ML.NGRAMS` / `ML.TF_IDF` / `ML.BAG_OF_WORDS` | GA | Turn tokenized text into features; `ML.TF_IDF`/`ML.BAG_OF_WORDS` had no prior repo example — verified they share the same `frequency_threshold=5` default gotcha as the encoders |
 | [Data Quality](functions/data_quality/) | `ML.DESCRIBE_DATA` / `ML.VALIDATE_DATA_SKEW` / `ML.VALIDATE_DATA_DRIFT` / `ML.TFDV_DESCRIBE` / `ML.TFDV_VALIDATE` | GA | Dataset-level distribution monitoring (distinct from row-level `ML.DETECT_ANOMALIES`); verified live that naive `LIMIT`-based sampling (no `ORDER BY`) triggers a false-positive skew alarm on a non-randomly-ordered public table — fixed with `WHERE RAND() < p` |
 | [Time Series](functions/time_series/) | `ML.TREND` / `ML.SEASONALITY` / `ML.DETECT_CHANGE_POINTS` | Preview | Decompose a series with no `CREATE MODEL`. Head-to-head against [ARIMA_PLUS](models/arima_plus/) on the identical series shows `ML.SEASONALITY`'s components are **bit-identical** to the model's (mean abs diff 0.0) while `ML.TREND` only reaches 0.9955 correlation — and that `adjust_step_changes` defaults to `FALSE` here but `TRUE` in the model. The headline gotcha: all three gap-fill first, so on a series with an ingestion outage the interpolation **manufactures** the structural break — **6 of 7** detected change points across five stations turned out to be gap edges, not ridership changes |
+| [Evaluation](functions/evaluation/) | `ML.METRICS` | Preview | Compute evaluation metrics from a table of actual and predicted columns — no model argument, so predictions from Vertex AI, a vendor API, or a model that has since been deleted all score with the same definitions. Verified live: after `DROP MODEL`, `ML.EVALUATE` fails with *Not found: Model* while `ML.METRICS` returns the same six metrics, agreeing to at least 13 significant digits. The headline gotcha: the **column type silently changes what the metric means** — the identical 62 predictions score precision **0.5238** as `BOOL` (positive class only) and **0.7497** as `STRING` (macro-averaged), and [`AI.EVALUATE`](../bq-ai-functions/functions/ai_evaluate/) was measured to follow the same rule. Also documents internal error `80038528` on the `(QUERY)` form, with six candidate mechanisms ruled out by direct test and `TABLE` as the reliable workaround |
 
 `ML.STANDARD_SCALER` is also demonstrated inline in the [Logistic Regression](models/logistic_regression/) notebook (the `TRANSFORM` clause), and `ML.IMPUTER`/scalers/`ML.ONE_HOT_ENCODER` are composed together in [Transform-Only](models/transform_only/).
 

@@ -1,9 +1,9 @@
 {
   "name": "bigquery-ml",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "source_project": "data+ai/bq-ml",
-  "generated_date": "2026-09-04",
-  "source_commit": "0811fb10",
+  "generated_date": "2026-09-11",
+  "source_commit": "3434d16a",
   "reference_files": [
     "classification.md",
     "model-management.md",
@@ -39,6 +39,7 @@
     "embeddings_classification.md",
     "encoding.md",
     "ensembling.md",
+    "evaluation.md",
     "export.md",
     "feature_engineering.md",
     "ga4_churn_prediction.md",

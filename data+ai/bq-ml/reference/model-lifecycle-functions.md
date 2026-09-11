@@ -88,6 +88,8 @@ ML.EVALUATE(
 
 > A `trial_id` column is prepended to the output when the model was trained with hyperparameter tuning.
 
+> **No model? Use [`ML.METRICS`](model-free-functions.md#mlmetrics).** It computes the regression and classification metric sets above from a table of actual and predicted columns, with no model argument — the case `ML.EVALUATE` structurally cannot cover, such as predictions from Vertex AI, a vendor API, or a model that has since been dropped. Measured on the same predictions, every regression metric agrees with `ML.EVALUATE`'s to at least 13 significant digits (relative gaps ~1e-16 — floating-point summation order, not a difference in definition). It does **not** return `log_loss` or `roc_auc`, and its `precision`/`recall`/`f1_score` are defined by the column type (`BOOL` binary, `STRING` macro-averaged) rather than by the model task.
+
 **Best practices:**
 - Run with no input data first to get the training eval-split metrics for free, then pass TEST/VALIDATE data to confirm generalization.
 - Stack splits with `SELECT 'TEST' AS SPLIT, * FROM ML.EVALUATE(...) UNION ALL ...` to compare TRAIN/VALIDATE/TEST side by side (see repo example).

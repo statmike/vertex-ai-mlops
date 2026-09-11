@@ -388,10 +388,12 @@ The TabFM branch accepts no `model`, `horizon`, `id_cols`, `context_window`, `da
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `precision` | FLOAT64 | Macro-average precision across all classes |
-| `recall` | FLOAT64 | Macro-average recall across all classes |
-| `accuracy` | FLOAT64 | Accuracy of the prediction |
-| `f1_score` | FLOAT64 | Macro-average F1 score across all classes |
+| `precision` | FLOAT64 | Precision -- macro-averaged across classes for a `STRING` label, the positive (`TRUE`) class alone for a `BOOL` label |
+| `recall` | FLOAT64 | Recall -- same rule as `precision` |
+| `accuracy` | FLOAT64 | Accuracy of the prediction; identical under either label type |
+| `f1_score` | FLOAT64 | F1 -- same rule as `precision`. When macro-averaged it is the mean of the per-class F1s, not the F1 of the macro precision and recall |
+
+> **GOTCHA -- the label column's TYPE decides which convention you get, and it is not announced anywhere in the output.** A `BOOL` `label_col` is scored as **binary**: `precision`, `recall` and `f1_score` describe the positive (`TRUE`) class only. The `STRING` rendering of the identical values is scored as **multiclass and macro-averaged**, even with exactly two classes. `accuracy` is the same either way. Measured on one imbalanced problem (12 positives of 62 rows, TabFM confusion matrix TP 12 / FP 11 / FN 0 / TN 39): the `BOOL` label returned precision `0.5217391304347826` and recall `1.0`, the `STRING` label returned `0.7608695652173914` and `0.89` -- the two-class means. Four isolated runs of each agreed. On balanced data the two nearly coincide, which is how this hides until the classes are lopsided. **This is a BigQuery-wide convention, not an `AI.EVALUATE` behavior** -- `ML.METRICS` follows the identical rule, measured side by side in [`bq-ml/functions/evaluation/`](../../bq-ml/functions/evaluation/).
 
 > Note what is **missing** relative to `ML.EVALUATE` on a trained classification model: TabFM's AI.EVALUATE returns no `log_loss` and no `roc_auc`, and no confusion matrix. If you need threshold-tuning or ranking metrics, this function will not give them to you.
 
