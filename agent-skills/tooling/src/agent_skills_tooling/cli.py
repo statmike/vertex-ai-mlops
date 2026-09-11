@@ -70,7 +70,7 @@ def _cmd_check_narratives(args: argparse.Namespace) -> int:
             print(f"STALE [{name}] narrative/{stale} — regenerate with convert-notebook")
             exit_code = 1
         for missing in result.missing_source:
-            print(f"ERROR [{name}] narrative/{missing} has no source notebook")
+            print(f"ERROR [{name}] narrative/{missing}")
             exit_code = 1
         if result.ok:
             print(f"OK    [{name}] {result.checked} narratives current")

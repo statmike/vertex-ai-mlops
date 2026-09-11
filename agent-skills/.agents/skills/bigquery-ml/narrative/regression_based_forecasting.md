@@ -229,6 +229,8 @@ print('Model regression_forecast_ex2 created (BQML mean-imputes the NULL lags in
 - **TRUNCATED** — null out `lag_1day`/`lag_1week` wherever they'd fall inside the TEST horizon itself (not truly knowable yet). Honest about what's missing, but BQML's NULL-handling isn't the same as actually forecasting a lag — likely too pessimistic.
 - **RECURSIVE** — the way this model would actually be used: forecast one day at a time, feeding each forecast back in as the next day's lag input.
 
+LEAKED is the *time-series* form of a mistake that shows up everywhere features are built from history. Its cross-sectional twin — aggregating an entity's whole history into a feature and joining it onto rows that predate the aggregation — is measured end to end in `workflows/feature_store` (`workflows/feature_store/`), where it is worth `roc_auc` 0.9387 against a correct 0.5194 and then evaporates in production. The retrieval functions that avoid it are covered in `functions/feature_store` (`functions/feature_store/`); the reason they do not apply directly here is that this notebook's entity is a *single* series, so its as-of cutoff is the forecast origin rather than a per-entity timestamp.
+
 ```python
 # LEAKED: straight prediction against the TEST split's real (future) lag values
 query = f"""

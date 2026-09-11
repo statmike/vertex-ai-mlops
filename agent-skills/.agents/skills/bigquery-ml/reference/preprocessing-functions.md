@@ -15,6 +15,25 @@ The step before preprocessing: find out what is in the table and what moves with
 
 Options worth setting explicitly: `ML.DESCRIBE_DATA`'s `top_k` defaults to **1** (the mode and nothing else) and `num_quantiles` to **2** (min/median/max only). Both are usually too low to be useful.
 
+### Point-in-time feature retrieval
+
+Two table-valued functions that answer "what did we know about this entity at this moment?" — the question a feature store exists to answer, with no feature store to provision. The feature table is an ordinary BigQuery table; neither function trains anything or needs a connection. Both **GA**.
+
+| Function | What it does | When to reach for it vs. siblings |
+|---|---|---|
+| `ML.FEATURES_AT_TIME` | Every entity's most recent feature row(s) as of **one shared** timestamp | Online serving (`time` defaults to `CURRENT_TIMESTAMP()`), or one snapshot date for backtesting. `time` takes a **single** timestamp — an array fails with `Unable to coerce type ARRAY<TIMESTAMP> to expected type TIMESTAMP`. |
+| `ML.ENTITY_FEATURES_AT_TIME` | Each entity's feature row(s) as of **its own** timestamp, supplied by a second relation | Building a training set — one row per labeled event, features as of that event. This is what prevents label leakage. The entity relation needs `entity_id` and a column named **`time`** (not `feature_timestamp`), and is capped at **100 MB**. |
+
+Both require the feature table to have a `STRING` column named `entity_id` and a `TIMESTAMP` column named `feature_timestamp`, in wide format (one column per feature). Names are **case-insensitive**; types are not negotiable.
+
+**The decision that matters is `ignore_feature_nulls`, and it is decided by your table's shape, not by preference:**
+
+| Feature table shape | One row is… | A `NULL` means… | `ignore_feature_nulls => TRUE` |
+|---|---|---|---|
+| **Sparse** (assembled from independent event streams) | one *update* touching a subset of features | this update had nothing to say about that feature | **Required** — reassembles the vector |
+| **Dense** (one row per complete observation) | a complete observation | genuinely unknown or not applicable — a *fact* | **Harmful** — fabricates values |
+| **EAV** (`entity_key, feature_timestamp, feature_name, feature_value STRUCT<…>`) | one *observation* of one feature | absent rather than `NULL` | Pivots to the sparse shape, so **required** |
+
 ### Numerical scaling
 
 | Function | What it does | When to reach for it vs. siblings |
@@ -95,6 +114,13 @@ All four are scalar/row-wise (no `OVER()`) and nest freely, e.g. `ML.CONVERT_COL
 - **Projecting `ML.CORRELATION`'s `segment` column changes the value of `correlation`** in its last three digits, reproducibly, with the query cache off — column pruning changes the plan, which changes the float summation order. The gap lands in the sixteenth decimal place. Never compare this output across queries with `=`; round first.
 - **`dimension_cols` is `GROUP BY CUBE`, exactly** — 134 output rows against 134 CUBE cells on a three-dimension census query, degenerate single-row cells included with `correlation = NULL` rather than dropped. It also silently accepts `INT64`: passing a continuous column gives one segment per distinct value (73 distinct ages → 74 rows, no error). Bucketize first.
 - **A dimension column being `NULL` means one of two different things** — the row is a rollup over that dimension, or the segment *is* the genuine-`NULL` group. The `segment` array disambiguates: a rolled-up dimension is **absent** from it; a genuine-`NULL` group is **present** with `dimension_value` = JSON `null`. Without that test the two rows sort next to each other looking identical.
+- **`ignore_feature_nulls` is required on one table shape and harmful on another, with no error either way.** Measured on `thelook_ecommerce` at a fixed cutoff over 26,979 customers: on a **sparse** history the flag repaired 17,440 entities whose `lifetime_orders` came back `NULL` only because their most recent row was a shipment or delivery (down to 0, genuine absences surviving). On a **dense** table the identical flag invented a delivery duration for 1,572 customers whose latest order was cancelled, processing, or shipped-but-not-arrived — a real measurement of a *different, earlier* order. Neither call errors and neither output looks obviously wrong; a spot check of a few rows passes in both cases.
+- **`ML.FEATURES_AT_TIME`'s output `feature_timestamp` is the time you asked for, not the time the source row was written.** Provenance is discarded on every row. With `ignore_feature_nulls => TRUE` the returned row is assembled from several source rows at different instants, so no single source time would even be correct. Carry a copy of the event time as an ordinary feature column if you need it.
+- **`num_rows > 1` returns more history and erases which row is which.** All returned rows carry the same requested `feature_timestamp`, so nothing distinguishes them and there is nothing to `ORDER BY`. It supports *aggregating* recent history, not *sequencing* it.
+- **The hand-written `QUALIFY` equivalent has an alias-shadowing trap the function cannot have.** The default call is provably `QUALIFY ROW_NUMBER() OVER (PARTITION BY entity_id ORDER BY feature_timestamp DESC) = 1` then overwriting the timestamp (verified: two-way `EXCEPT DISTINCT` returns 0 and 0). But BigQuery resolves `QUALIFY` **after** the SELECT list, so `TIMESTAMP 'x' AS feature_timestamp` in that same SELECT makes the window order by the **constant** — every row ties, `ROW_NUMBER` picks arbitrarily, and roughly 46% of entities get a wrong vector from a query that runs cleanly. The exact count *moves between runs*, which is the tell.
+- **Output column order IS preserved — the opposite is easy to believe.** `bq --format=json` sorts field names when serializing a row, which makes the output look alphabetized. Read the order off the schema, not off a serialized row.
+- **`ML.ENTITY_FEATURES_AT_TIME` drops the entity table's extra columns and is an INNER join.** Only `entity_id` and the requested time come back, so the label must be joined back on `(entity_id, feature_timestamp)`. And an entity with no feature row at or before its instant is **omitted**, not returned with `NULL` features — verified: 26,979 requests placed one day before each customer's first event returned **0** rows. The dropped rows are precisely the cold-start cases, so the omission makes a training set look cleaner while removing the population the model will most be asked about.
+- **Duplicate `(entity_id, feature_timestamp)` pairs make "most recent row" ambiguous** and the tie is broken arbitrarily — a small, silent source of run-to-run variation. Collapse simultaneous events with a `GROUP BY entity_id, feature_timestamp` when building the feature table.
 - **`ML.STANDARD_SCALER` uses `STDDEV_POP` (÷N), not `STDDEV`/`STDDEV_SAMP` (÷N-1).** A manual sanity check using plain `STDDEV(x)` will not match — verified live in `functions/scalers/`.
 - **`ML.BUCKETIZE`'s `exclude_boundaries=TRUE` does not NULL out-of-range values.** It drops the outermost split points entirely, merging overflow into the nearest interior bin. With split points `[10, 20, 30]`, default gives 4 bins; `exclude_boundaries=TRUE` collapses this to just 2 bins around the single remaining boundary `20` — no value ever becomes NULL from this option.
 - **`ML.ONE_HOT_ENCODER`/`ML.LABEL_ENCODER`/`ML.MULTI_HOT_ENCODER`/`ML.TF_IDF`/`ML.BAG_OF_WORDS` current default is `frequency_threshold = 5`, not the older `0` cited in some repo notebooks.** Verified live: a category/term with fewer than 5 occurrences silently collapses into bucket/index `0`, indistinguishable from NULL or an unseen value at predict time — any rare-but-meaningful category will silently disappear unless `frequency_threshold` is lowered explicitly.
@@ -149,6 +175,27 @@ SELECT * FROM `PROJECT_ID.DATASET.training_table`;
 ```
 The scaler statistics and encoder vocabulary computed here are stored with the model and reapplied automatically by `ML.PREDICT`/`ML.EVALUATE` — no need to repeat the preprocessing at inference time.
 
+**4. Point-in-time retrieval — training set and serving vector from one feature table:**
+```sql
+-- Training: a different as-of instant per row. The entity relation needs
+-- entity_id + a column named `time`. Extra columns (your label) are dropped,
+-- so join them back on (entity_id, feature_timestamp).
+SELECT l.label, f.*
+FROM ML.ENTITY_FEATURES_AT_TIME(
+       TABLE `PROJECT_ID.DATASET.feature_history`,
+       (SELECT entity_id, event_time AS time FROM `PROJECT_ID.DATASET.labels`),
+       num_rows => 1, ignore_feature_nulls => TRUE) f
+JOIN `PROJECT_ID.DATASET.labels` l
+  ON l.entity_id = f.entity_id AND l.event_time = f.feature_timestamp;
+
+-- Serving: one instant shared by everyone. Same table, same feature
+-- definitions, same ignore_feature_nulls -- that is the offline/online parity.
+SELECT * FROM ML.FEATURES_AT_TIME(
+  TABLE `PROJECT_ID.DATASET.feature_history`,
+  time => CURRENT_TIMESTAMP(), num_rows => 1, ignore_feature_nulls => TRUE);
+```
+`ignore_feature_nulls => TRUE` here assumes a **sparse** feature history. On a dense table drop it — see the shape table above.
+
 ## Go deeper
 
 These functions are documented in full (option tables, syntax, defaults, BigFrames equivalents) in the source repo at `bq-ml/reference/model-free-functions.md` — there is no dedicated per-function repo folder structure for these the way there is for model types. Full extracted notebook walkthroughs live in this skill's `narrative/` folder:
@@ -160,6 +207,7 @@ These functions are documented in full (option tables, syntax, defaults, BigFram
 - [`narrative/feature_engineering.md`](../narrative/feature_engineering.md) (source: `functions/feature_engineering/`) — ML.IMPUTER, ML.FEATURE_CROSS, ML.POLYNOMIAL_EXPAND on penguins, including the export-failure proof for the latter two
 - [`narrative/text.md`](../narrative/text.md) (source: `functions/text/`) — ML.NGRAMS, ML.TF_IDF, ML.BAG_OF_WORDS on real thelook_ecommerce.products name tokens
 - [`narrative/distance.md`](../narrative/distance.md) (source: `functions/distance/`) — ML.DISTANCE and ML.LP_NORM together, including the Jaccard-derivation and ML.NORMALIZER-equivalence proofs
+- [`narrative/feature_store.md`](../narrative/feature_store.md) (source: `functions/feature_store/`) — ML.FEATURES_AT_TIME and ML.ENTITY_FEATURES_AT_TIME across all three table shapes (dense/sparse/EAV), the ignore_feature_nulls proof in both directions, the QUALIFY equivalence and its alias-shadowing trap, and the cold-start inner-join check
 - [`narrative/transform_only.md`](../narrative/transform_only.md) (source: `models/transform_only/`) — the fullest cross-function combination: ML.IMPUTER + scalers + ML.ONE_HOT_ENCODER feeding a downstream LOGISTIC_REG
 
 There is no repo notebook exercising the image-preprocessing family (`ML.DECODE_IMAGE`/`ML.RESIZE_IMAGE`/`ML.CONVERT_IMAGE_TYPE`/`ML.CONVERT_COLOR_SPACE`) — those entries in `bq-ml/reference/model-free-functions.md` are documentation-pattern only, unverified live in this repo.

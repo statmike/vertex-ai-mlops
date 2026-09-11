@@ -42,6 +42,12 @@ def build_manifest(skill_dir: Path, version: str | None = None, source_project: 
     `source_project` is the repo-relative project this skill is built from (e.g.
     `data+ai/bq-ml`). It is what lets the narrative drift check find the source
     notebooks without being told where they are.
+
+    `narrative_sources` maps a narrative filename to its project-relative source
+    notebook. It is only needed when the stem-based lookup is ambiguous or does
+    not apply -- two folders sharing a name (`functions/feature_store/` and
+    `workflows/feature_store/`), or a narrative deliberately renamed to keep them
+    apart. Preserved as-is here; the drift check is what reads it.
     """
     reference_files = sorted(p.name for p in (skill_dir / "reference").glob("*.md")) if (skill_dir / "reference").exists() else []
     narrative_files = sorted(p.name for p in (skill_dir / "narrative").glob("*.md")) if (skill_dir / "narrative").exists() else []
@@ -54,11 +60,13 @@ def build_manifest(skill_dir: Path, version: str | None = None, source_project: 
         version = existing.get("version", DEFAULT_VERSION)
     if source_project is None:
         source_project = existing.get("source_project")
+    narrative_sources = existing.get("narrative_sources", {})
 
     return {
         "name": skill_dir.name,
         "version": version,
         "source_project": source_project,
+        "narrative_sources": narrative_sources,
         "generated_date": date.today().isoformat(),
         "source_commit": _git_short_hash(skill_dir),
         "reference_files": reference_files,

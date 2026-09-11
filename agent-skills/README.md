@@ -59,6 +59,11 @@ uv run agent-skills check-narratives ../.agents/skills --repo-root ../..   # nar
 
 `check-narratives` finds each skill's notebooks through `source_project` in its
 `skill.manifest.json`; a skill without that field, or without a `narrative/`, is skipped.
-Each source project's `PLANS.md` documents the policy these checks enforce.
+Within that project a narrative is matched to its notebook by filename stem, which is
+unambiguous until two folders share a name (`functions/feature_store/` and
+`workflows/feature_store/`). That case is an **error**, not a silent first-match pick —
+resolve it with a `narrative_sources` entry in the manifest mapping the narrative's
+filename to its project-relative notebook. Each source project's `PLANS.md` documents
+the policy these checks enforce.
 
 See `PLANS.md` for the authoring standard, the backlog, and what's planned beyond this local-repo phase (external hub repo, GitHub Action sync, Claude Code plugin marketplace, community catalog submissions, PyPI installer).

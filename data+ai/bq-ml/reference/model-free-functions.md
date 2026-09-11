@@ -1301,3 +1301,132 @@ ML.CORRELATION(
 **BigFrames API:** No wrapper. `bigframes.pandas.DataFrame.corr()` is a pandas-shaped equivalent compiled to BigQuery SQL — Pearson only, no dimension slicing, and a matrix rather than a target-vs-columns shape. Reach the SQL function via `bigframes.pandas.read_gbq`.
 
 **Repo example (tested):** [`functions/exploration/`](../functions/exploration/) — establishes `PEARSON` == `CORR()`, reproduces the `SPEARMAN` min-rank convention three ways (pandas, pure SQL, and a tie-free control), confirms `KENDALL` is tau-b against SciPy, measures the Kendall cost curve, matches the `dimension_cols` output row count against `GROUP BY CUBE` exactly, separates the two kinds of dimension `NULL`, and shows `segment_size` overstating the pairwise *n*.
+
+---
+
+## Point-in-time feature retrieval: `ML.FEATURES_AT_TIME`, `ML.ENTITY_FEATURES_AT_TIME`
+
+Two model-free table-valued functions that answer *"what did we know about this entity at this moment?"* — the question a feature store exists to answer. `ML.FEATURES_AT_TIME` retrieves every entity's vector as of **one shared timestamp** (the online-serving shape); `ML.ENTITY_FEATURES_AT_TIME` retrieves each entity's vector as of **its own timestamp** (the training-set shape, and what prevents label leakage). Neither trains a model, neither needs a connection, and neither creates an object to clean up. There is no feature store to provision — the feature table is an ordinary BigQuery table.
+
+Both take the same **feature table contract**: a `STRING` column named `entity_id`, a `TIMESTAMP` column named `feature_timestamp`, and one column per feature (wide format). Column names are **case-insensitive** — verified live, `Entity_ID` and `Feature_TimeStamp` are accepted and the original casing is preserved in the output — but the *types* are not negotiable, and all three violations fail at planning time:
+
+| Violation | Error |
+|---|---|
+| `entity_id` is `INT64` | `feature_table column 'entity_id' can only be String type but found INT64` |
+| `feature_timestamp` is `DATE` | `feature_table column 'feature_timestamp' can only be Timestamp type but found DATE` |
+| `feature_timestamp` absent | `feature_table must include a 'feature_timestamp' column` |
+
+**The one thing to carry away:** `ignore_feature_nulls` is a statement about your table's **shape**, not a tuning knob. It is *required* on a sparse history and *harmful* on a dense one, with no error and no visibly wrong output either way.
+
+| Feature table shape | One row is… | A `NULL` means… | `ignore_feature_nulls => TRUE` |
+|---|---|---|---|
+| **Sparse** (assembled from independent event streams) | one *update* touching a subset of features | this update had nothing to say about that feature | **Required** — reassembles the vector |
+| **Dense** (one row per complete observation) | a complete observation | genuinely unknown or not applicable — a *fact* | **Harmful** — fabricates values |
+| **EAV** (`entity_key, feature_timestamp, feature_name, feature_value STRUCT<…>`) | one *observation* of one feature | absent rather than `NULL` | Pivots to the sparse shape, so **required** |
+
+Measured on `thelook_ecommerce` at a fixed 2024-01-01 cutoff over 26,979 customers: on the sparse table the flag repaired **17,440** entities whose `lifetime_orders` came back `NULL` only because their most recent row was a shipment or a delivery (down to **0**, with the genuine absences surviving). On the dense table the identical flag invented a delivery duration for **1,572** customers whose latest order was cancelled, processing, or shipped-but-not-arrived — a real measurement of a *different, earlier* order.
+
+---
+
+## `ML.FEATURES_AT_TIME`
+- **Description:** Model-free table-valued function returning each entity's most recent feature row(s) as of a single shared point in time. Retrieval only — no model, no connection, no training. **GA.**
+- **Use cases:**
+  - Building the online serving vector for every entity at `CURRENT_TIMESTAMP()`, with the same feature definitions used for training.
+  - Materializing a "state of the world as of date X" snapshot for backtesting or reporting.
+  - Aggregating each entity's last N updates (`num_rows > 1`) into recency features.
+- **documentation:** https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-feature-time
+- **Type:** Table-valued function.
+- **Applies to models:** None — model-free utility.
+
+**Syntax:**
+```sql
+ML.FEATURES_AT_TIME(
+  { TABLE `project.dataset.feature_table` | (QUERY_STATEMENT) }
+  [, time => TIMESTAMP]
+  [, num_rows => INT64]
+  [, ignore_feature_nulls => BOOL])
+```
+
+**Inputs:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| feature relation | `TABLE` reference or `(QUERY_STATEMENT)` | Yes | — | Must satisfy the contract above. The query form is how you pivot an EAV table on the way in. |
+| `time` | `TIMESTAMP` | No | `CURRENT_TIMESTAMP()` | The cutoff. Only rows with `feature_timestamp <= time` are considered. **A single timestamp — not a list.** |
+| `num_rows` | `INT64` | No | `1` | Rows returned per entity, most recent first. |
+| `ignore_feature_nulls` | `BOOL` | No | `FALSE` | Per feature column, walk back to the most recent row where *that* column is non-`NULL`, independently of the others. |
+
+**Outputs:** `entity_id`, `feature_timestamp`, and every feature column of the input, **in the input's column order** (verified — see below). One row per entity, or `num_rows` per entity.
+
+**Best practices:**
+- **Decide `ignore_feature_nulls` from the table's shape, not from the output's appearance.** See the table above. This is the single highest-value decision in using either function.
+- **Collapse simultaneous events on write.** Duplicate `(entity_id, feature_timestamp)` pairs make "the most recent row" ambiguous and the tie is broken arbitrarily — a small, silent source of run-to-run variation. A `GROUP BY entity_id, feature_timestamp` in the feature table's build fixes it structurally.
+- **Carry a copy of the event time as an ordinary feature column** if you need provenance; see the limitation below.
+- Prefer the function to a hand-written `QUALIFY` window even though they are provably equivalent — the hand-written form has a trap the function cannot have (below).
+
+**Limitations:**
+- **`time` takes one timestamp, not a list.** `time => [TIMESTAMP '2023-01-01', TIMESTAMP '2024-01-01']` fails with `Unable to coerce type ARRAY<TIMESTAMP> to expected type TIMESTAMP`. For many cutoffs, use `ML.ENTITY_FEATURES_AT_TIME` or `UNION ALL` the calls.
+- **The output `feature_timestamp` is the time you asked for, not the time the source row was written.** Provenance is discarded on every row. With `ignore_feature_nulls => TRUE` the returned row is assembled from several source rows at different instants, so no single source time would even be correct — but you also cannot recover when any value was true.
+- **`num_rows > 1` returns more history and erases which row is which.** All returned rows carry the same requested `feature_timestamp` and nothing else distinguishes them, so there is nothing to `ORDER BY`. It supports *aggregating* recent history; it cannot support *sequencing* it.
+- **The `QUALIFY` equivalent has an alias-shadowing trap.** The default call is exactly `QUALIFY ROW_NUMBER() OVER (PARTITION BY entity_id ORDER BY feature_timestamp DESC) = 1` followed by overwriting the timestamp — verified with a two-way `EXCEPT DISTINCT` returning 0 and 0. But BigQuery resolves `QUALIFY` **after** the SELECT list, so writing `TIMESTAMP '2024-01-01' AS feature_timestamp` in that same SELECT makes the window's `ORDER BY feature_timestamp DESC` order by the **constant**. Every row ties, `ROW_NUMBER` picks arbitrarily, and roughly **46%** of 26,979 entities get a different — wrong — vector from a query that runs cleanly and reads correctly. The exact count *moves between runs*, which is the tell. The function has no select list to shadow anything with.
+- **Not a gotcha, but easy to get backwards: output column order is preserved.** Several clients sort field names when rendering a row as JSON — including `bq --format=json` — which makes the output look alphabetized. Read the order off the schema, not off a serialized row.
+
+**BigFrames API:** No wrapper. Reach the SQL function via `bigframes.pandas.read_gbq`.
+
+**Repo example (tested):** [`functions/feature_store/`](../functions/feature_store/) — builds all three table shapes from `thelook_ecommerce` order/shipment/delivery events, captures the three contract errors, proves the `QUALIFY` equivalence and then breaks it with alias shadowing, measures `ignore_feature_nulls` in both directions (repairing 17,440 on sparse, fabricating 1,572 on dense), traces one entity's vector being assembled from three different source rows, and round-trips the EAV pivot to the sparse answer exactly. Used end to end in [`workflows/feature_store/`](../workflows/feature_store/).
+
+---
+
+## `ML.ENTITY_FEATURES_AT_TIME`
+- **Description:** Model-free table-valued function returning each entity's most recent feature row(s) as of **its own** requested point in time, supplied by a second relation. This is the training-set builder: one row per labeled event, features as of that event's instant. **GA.**
+- **Use cases:**
+  - Assembling a leakage-free training set where every row's features predate its own label window.
+  - Backfilling features for an arbitrary set of `(entity, moment)` pairs — an audit sample, a set of support tickets, a batch of decisions to review.
+  - Reconstructing what a scoring system would have seen at each historical decision point.
+- **documentation:** https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-entity-feature-time
+- **Type:** Table-valued function.
+- **Applies to models:** None — model-free utility.
+
+**Syntax:**
+```sql
+ML.ENTITY_FEATURES_AT_TIME(
+  { TABLE `project.dataset.feature_table`     | (FEATURE_QUERY_STATEMENT) },
+  { TABLE `project.dataset.entity_time_table` | (ENTITY_TIME_QUERY_STATEMENT) }
+  [, num_rows => INT64]
+  [, ignore_feature_nulls => BOOL])
+```
+
+**Inputs:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| feature relation | `TABLE` reference or `(QUERY_STATEMENT)` | Yes | — | Same contract as `ML.FEATURES_AT_TIME`: `entity_id STRING`, `feature_timestamp TIMESTAMP`, wide. |
+| entity time relation | `TABLE` reference or `(QUERY_STATEMENT)` | Yes | — | Needs `entity_id STRING` and a `TIMESTAMP` column named **`time`** — *not* `feature_timestamp`. Must be **no larger than 100 MB** (documented). |
+| `num_rows` | `INT64` | No | `1` | Rows returned per row of the entity time table. |
+| `ignore_feature_nulls` | `BOOL` | No | `FALSE` | Same per-column walk-back as `ML.FEATURES_AT_TIME`. |
+
+**Outputs:** `entity_id`, `feature_timestamp` (**the requested instant**, i.e. the entity table's `time`), and the feature columns. Nothing else.
+
+**Best practices:**
+- **Join the label back on `(entity_id, feature_timestamp)`.** The requested instant comes back under the feature table's name for it, which makes the join natural once you expect it.
+- **Assert the row count against the entity table before training.** One line, and it is the only thing standing between you and a silently truncated training set.
+- **`LEFT JOIN` the entity table back on** if cold-start entities matter, and decide explicitly what a missing vector means (a `0`, a global default, or exclusion by choice rather than by accident).
+
+**Limitations:**
+- **There is no `time` argument** — the entity table *is* the time argument. The naming asymmetry (`time` here, `feature_timestamp` there) is the most common first mistake.
+- **The entity table's extra columns are dropped.** Only `entity_id` and the requested time come back. Your label is exactly such a column.
+- **It is an INNER join.** An entity with no feature row at or before its requested instant is **omitted**, not returned with `NULL` features. Verified: 26,979 requests placed one day before each customer's first event returned **0** rows. The dropped rows are not a random sample — they are precisely the cold-start cases (new customers, new products, the first weeks of any entity's life). Dropping them makes a training set look cleaner and a model look better while removing the population it will most often be asked about.
+- **100 MB cap on the entity time relation.** Documented, and a real constraint for large training sets — `entity_id` plus `time` for tens of millions of rows will exceed it. Partition the build by time window or entity range and `UNION ALL` the results.
+- The output `feature_timestamp` carries the same loss of provenance described under `ML.FEATURES_AT_TIME`.
+
+**Related — choosing between the two:**
+
+| You need | Function |
+|---|---|
+| One shared cutoff for every entity (serving *now*, or one snapshot date) | [`ML.FEATURES_AT_TIME`](#mlfeatures_at_time) |
+| A different cutoff per entity (a training set, an audit sample) | `ML.ENTITY_FEATURES_AT_TIME` |
+| Both, against one feature table | That is offline/online parity — see [`workflows/feature_store/`](../workflows/feature_store/) |
+
+**BigFrames API:** No wrapper. Reach the SQL function via `bigframes.pandas.read_gbq`.
+
+**Repo example (tested):** [`functions/feature_store/`](../functions/feature_store/) covers the mechanics — dropped columns, the inner-join cold-start check, and the `time`/`feature_timestamp` asymmetry. [`workflows/feature_store/`](../workflows/feature_store/) measures what it is worth: the same feature history queried with a naive `GROUP BY entity_id` versus point-in-time, on a shared hash split, reports `roc_auc` **0.9387** against **0.5194** — and the leaky model, fed the point-in-time features production can actually supply, collapses to **0.5299**, where the honest model already was.
