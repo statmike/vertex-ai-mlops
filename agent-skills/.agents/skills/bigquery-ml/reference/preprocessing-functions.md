@@ -1,8 +1,19 @@
 # Model-Free Preprocessing Functions in BigQuery ML
 
-Contents: [Options by category](#options-by-category) (numerical scaling, bucketizing, encoding, feature engineering, text, distance, image) · [Gotchas verified in this repo](#gotchas-verified-in-this-repo) · [Canonical snippets](#canonical-snippets) · [Go deeper](#go-deeper)
+Contents: [Options by category](#options-by-category) (exploratory data analysis, numerical scaling, bucketizing, encoding, feature engineering, text, distance, image) · [Gotchas verified in this repo](#gotchas-verified-in-this-repo) · [Canonical snippets](#canonical-snippets) · [Go deeper](#go-deeper)
 
 ## Options by category
+
+### Exploratory data analysis (profiling, correlation)
+
+The step before preprocessing: find out what is in the table and what moves with the target. Both are table-valued functions over a table or subquery; neither needs a model or a connection.
+
+| Function | What it does | When to reach for it vs. siblings |
+|---|---|---|
+| `ML.DESCRIBE_DATA` | One row per input column: `num_rows`/`num_values`/`num_nulls`/`num_zeros`, `min`/`max`, `mean`/`stddev`/`median`, `quantiles`, `unique`, `avg_string_length`, `top_values`, and array-length statistics | Profiling a dataset you are about to model. **Not** the same job as `ML.VALIDATE_DATA_SKEW`/`ML.VALIDATE_DATA_DRIFT`, which compare two relations — this describes one. |
+| `ML.CORRELATION` | One target column against many numeric columns; `PEARSON` (default) / `SPEARMAN` / `KENDALL`, optionally sliced by up to 12 `dimension_cols` | Feature ranking, and finding Simpson's-paradox structure: `dimension_cols` gives the whole-table coefficient *and* every segment's in one query. For a single pair, plain `CORR()` is the same number. **Preview.** |
+
+Options worth setting explicitly: `ML.DESCRIBE_DATA`'s `top_k` defaults to **1** (the mode and nothing else) and `num_quantiles` to **2** (min/median/max only). Both are usually too low to be useful.
 
 ### Numerical scaling
 
@@ -75,6 +86,15 @@ All four are scalar/row-wise (no `OVER()`) and nest freely, e.g. `ML.CONVERT_COL
 
 ## Gotchas verified in this repo
 
+- **`ML.DESCRIBE_DATA`'s `num_nulls` counts SQL `NULL` only, so placeholder-encoded missingness is invisible to it.** On `bigquery-public-data.ml_datasets.census_adult_income`, `workclass` reports `num_nulls = 0` while `min` is `' ?'` — 1,836 rows of string-encoded missing data that `mean`, `unique` and `top_values` all treat as a real category. Read `num_nulls` and `min`/`max` together, and repair with `NULLIF(TRIM(col), '?')` before anything statistical.
+- **The documented `ML.DESCRIBE_DATA` output column `stdev` does not exist** — selecting it fails with `Unrecognized name: stdev; Did you mean stddev?`. The real column is `stddev`.
+- **`ML.CORRELATION`'s `SPEARMAN` is not the textbook Spearman.** BigQuery computes it as `CORR()` over SQL `RANK()` — **competition (min) ranks**, where tied observations all take the smallest rank in the group. SciPy, R and pandas default to **mid-ranks**. On tied data the two disagree in the second decimal place (`education_num` vs `hours_per_week` on census: `0.172612` from BigQuery, `0.167215` from `scipy.stats.spearmanr`). Reproduce BigQuery's answer with `pandas.Series.rank(method='min')`; on tie-free data all conventions agree. Undocumented.
+- **`ML.CORRELATION`'s `KENDALL`, in the same function, *is* tie-corrected** — it is tau-b, matched to `scipy.stats.kendalltau(variant='b')` to floating-point noise. So one function ships two opposite tie conventions.
+- **`KENDALL` is genuinely O(n²)** — measured with the cache off, slot time multiplies several-fold per doubling of rows with a fitted exponent near 2, while `PEARSON`/`SPEARMAN` are flat across the same range and return a million rows in about a second. A `KENDALL` on 100,000 rows did not finish inside 12 minutes. Sample or segment first.
+- **`ML.CORRELATION`'s `segment_size` is the segment's row count, not the pairwise *n* the coefficient used.** Rows where either the target or that correlation column is `NULL` are dropped pairwise, so `WHERE segment_size >= 30` does not guarantee 30 usable pairs, and two `corr_col` rows in one segment can rest on different sample sizes with nothing in the output saying so.
+- **Projecting `ML.CORRELATION`'s `segment` column changes the value of `correlation`** in its last three digits, reproducibly, with the query cache off — column pruning changes the plan, which changes the float summation order. The gap lands in the sixteenth decimal place. Never compare this output across queries with `=`; round first.
+- **`dimension_cols` is `GROUP BY CUBE`, exactly** — 134 output rows against 134 CUBE cells on a three-dimension census query, degenerate single-row cells included with `correlation = NULL` rather than dropped. It also silently accepts `INT64`: passing a continuous column gives one segment per distinct value (73 distinct ages → 74 rows, no error). Bucketize first.
+- **A dimension column being `NULL` means one of two different things** — the row is a rollup over that dimension, or the segment *is* the genuine-`NULL` group. The `segment` array disambiguates: a rolled-up dimension is **absent** from it; a genuine-`NULL` group is **present** with `dimension_value` = JSON `null`. Without that test the two rows sort next to each other looking identical.
 - **`ML.STANDARD_SCALER` uses `STDDEV_POP` (÷N), not `STDDEV`/`STDDEV_SAMP` (÷N-1).** A manual sanity check using plain `STDDEV(x)` will not match — verified live in `functions/scalers/`.
 - **`ML.BUCKETIZE`'s `exclude_boundaries=TRUE` does not NULL out-of-range values.** It drops the outermost split points entirely, merging overflow into the nearest interior bin. With split points `[10, 20, 30]`, default gives 4 bins; `exclude_boundaries=TRUE` collapses this to just 2 bins around the single remaining boundary `20` — no value ever becomes NULL from this option.
 - **`ML.ONE_HOT_ENCODER`/`ML.LABEL_ENCODER`/`ML.MULTI_HOT_ENCODER`/`ML.TF_IDF`/`ML.BAG_OF_WORDS` current default is `frequency_threshold = 5`, not the older `0` cited in some repo notebooks.** Verified live: a category/term with fewer than 5 occurrences silently collapses into bucket/index `0`, indistinguishable from NULL or an unseen value at predict time — any rare-but-meaningful category will silently disappear unless `frequency_threshold` is lowered explicitly.
@@ -133,6 +153,7 @@ The scaler statistics and encoder vocabulary computed here are stored with the m
 
 These functions are documented in full (option tables, syntax, defaults, BigFrames equivalents) in the source repo at `bq-ml/reference/model-free-functions.md` — there is no dedicated per-function repo folder structure for these the way there is for model types. Full extracted notebook walkthroughs live in this skill's `narrative/` folder:
 
+- [`narrative/exploration.md`](../narrative/exploration.md) (source: `functions/exploration/`) — `ML.DESCRIBE_DATA` + `ML.CORRELATION` on census_adult_income: the placeholder-null catch, all three correlation methods reproduced against SciPy and pure SQL, the Kendall cost sweep, and the CUBE row-count match
 - [`narrative/scalers.md`](../narrative/scalers.md) (source: `functions/scalers/`) — all five scalers side by side on penguins, including the STDDEV_POP and MIN_MAX_SCALER capping proofs, ending in an embedded LOGISTIC_REG TRANSFORM
 - [`narrative/bucketizing.md`](../narrative/bucketizing.md) (source: `functions/bucketizing/`) — ML.BUCKETIZE/ML.QUANTILE_BUCKETIZE/ML.HASH_BUCKETIZE together, including the exclude_boundaries proof
 - [`narrative/encoding.md`](../narrative/encoding.md) (source: `functions/encoding/`) — all three encoders on penguins, including the frequency_threshold=5 default proof

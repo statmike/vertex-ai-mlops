@@ -56,8 +56,8 @@ For each item we collect: a description and use cases, the documentation URL (a 
 - **[Comparison Tables](reference/comparison-tables.md)** — the fast answer to "which model / which function?" — `model_type` catalog, metric columns by task, capability matrix, explainability and connection matrices
 - **[CREATE MODEL — Model Types](reference/create-model-model-types.md)** — every `model_type`, from `LINEAR_REG` through `ARIMA_PLUS_XREG`, imported (TensorFlow/ONNX/XGBoost), `REMOTE`, and `TRANSFORM_ONLY`
 - **[Model Lifecycle Functions](reference/model-lifecycle-functions.md)** — the `ML.*` functions that act on a trained model — evaluate, predict, explain, weights, introspection, forecasting, `ML.TRANSFORM`
-- **[Model-Free Functions](reference/model-free-functions.md)** — the `ML.*` functions that need no model — scalers, bucketizing, encoders, imputation, feature crosses, text, distance, image, time-series decomposition, `AI.CAUSAL_EFFECT` for intervention analysis, and `ML.METRICS` for scoring saved predictions
-- **[Model Management & Monitoring](reference/model-management-monitoring.md)** — `EXPORT MODEL`, plus data description, skew/drift validation, and the TFDV functions
+- **[Model-Free Functions](reference/model-free-functions.md)** — the `ML.*` functions that need no model — `ML.DESCRIBE_DATA` / `ML.CORRELATION` for exploratory data analysis, scalers, bucketizing, encoders, imputation, feature crosses, text, distance, image, time-series decomposition, `AI.CAUSAL_EFFECT` for intervention analysis, and `ML.METRICS` for scoring saved predictions
+- **[Model Management & Monitoring](reference/model-management-monitoring.md)** — `EXPORT MODEL`, plus skew/drift validation and the TFDV functions (dataset *profiling* lives with the [model-free functions](reference/model-free-functions.md#exploratory-data-analysis-mldescribe_data-mlcorrelation))
 - [BigFrames (Python)](#bigframes-python) — the `bigframes.ml` surface that trains these same models from Python *(on this page)*
 
 ---

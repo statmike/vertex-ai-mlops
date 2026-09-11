@@ -1,16 +1,17 @@
 # Data Quality / Model Monitoring — BigQuery ML Model-Free Functions
 
-Five functions for training/serving **skew** and data **drift** monitoring, plus descriptive-statistics helpers. **Basic tier:** `ML.DESCRIBE_DATA`, `ML.VALIDATE_DATA_SKEW`, `ML.VALIDATE_DATA_DRIFT` (tabular output, `is_anomaly` flags). **Advanced/TFDV-compatible tier:** `ML.TFDV_DESCRIBE`, `ML.TFDV_VALIDATE` (emit/consume a TensorFlow `DatasetFeatureStatisticsList` proto as JSON, for interop with the `tensorflow-data-validation` library). None require a connection.
+Four functions for training/serving **skew** and data **drift** monitoring. **Basic tier:** `ML.VALIDATE_DATA_SKEW`, `ML.VALIDATE_DATA_DRIFT` (tabular output, `is_anomaly` flags). **Advanced/TFDV-compatible tier:** `ML.TFDV_DESCRIBE`, `ML.TFDV_VALIDATE` (emit/consume a TensorFlow `DatasetFeatureStatisticsList` proto as JSON, for interop with the `tensorflow-data-validation` library). None require a connection.
 
 > **Not the same as `ML.DETECT_ANOMALIES`.** This notebook is about **dataset-level** distribution shift — comparing whole datasets or time windows to each other, or to a model's stored training statistics. `ML.DETECT_ANOMALIES` (already covered in `models/kmeans` (K-Means), `models/pca` (PCA), `models/autoencoder` (Autoencoder), `models/arima_plus` (ARIMA_PLUS), `models/arima_plus_xreg` (ARIMA_PLUS_XREG)) is about **row-level** outliers within one dataset. Similar name, different concept — easy to conflate. There is a third question in this family: **window-level** level shifts within one series, which is `functions/time_series` (`functions/time_series/`)'s `ML.DETECT_CHANGE_POINTS`. Whole dataset moved → here; individual row is an outlier → `ML.DETECT_ANOMALIES`; the series stepped to a new level and stayed there → `ML.DETECT_CHANGE_POINTS`.
 
 **When to use these:**
-- `ML.DESCRIBE_DATA` — profile a dataset before/after training, or before formal skew/drift checks.
 - `ML.VALIDATE_DATA_SKEW` — catch serving inputs that have drifted from what a model was actually trained on, using the model's own stored training statistics (no need to keep the original training data around).
 - `ML.VALIDATE_DATA_DRIFT` — compare any two datasets/time windows directly (e.g. this week vs. last week of serving data).
 - `ML.TFDV_DESCRIBE`/`ML.TFDV_VALIDATE` — the same ideas, TFDV-proto-compatible, for teams already using `tensorflow-data-validation` in a TFX pipeline.
 
 **Data:** [`bigquery-public-data.ml_datasets.census_adult_income`](https://console.cloud.google.com/marketplace/product/bigquery-public-datasets) — same dataset as `models/logistic_regression` (Logistic Regression).
+
+**Profile first.** Every one of these functions answers "has this dataset *changed*." The prior question — what is in this dataset at all — is `functions/exploration` (`functions/exploration/`), where `ML.DESCRIBE_DATA` profiles the columns and `ML.CORRELATION` measures what moves with the target. Profile there, monitor here; the census placeholder that notebook finds (`workclass` reporting `num_nulls = 0` while 1,836 rows hold the string `' ?'`) is exactly the kind of thing a drift check will happily call stable forever.
 
 **Related production content:** [MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Model%20Monitoring/bqml-model-monitoring-tutorial.ipynb) and `model_monitoring_job.sql` show the full production pattern — a scheduled retrain/alert loop and real `tfdv.visualize_statistics()`/`display_anomalies()` rendering. This notebook stays focused on the 5 functions' mechanics in isolation.
 
@@ -74,38 +75,7 @@ print('Model data_quality_scratch_model created')
 ```
 
 ---
-## Step 2 — `ML.DESCRIBE_DATA`: descriptive statistics, numeric and categorical
-
-The first step of any monitoring workflow — profile a dataset before doing anything else. `top_k` controls how many top categorical values are returned; `num_quantiles` controls numeric quantile granularity.
-
-```python
-query = """
-SELECT name, num_rows, min, max, mean, stddev, median, quantiles
-FROM ML.DESCRIBE_DATA(
-  TABLE `bigquery-public-data.ml_datasets.census_adult_income`,
-  STRUCT(3 AS top_k, 4 AS num_quantiles)
-)
-WHERE name IN ('age', 'capital_gain')
-"""
-client.query(query).to_dataframe()
-```
-
-Categorical columns populate `unique`/`top_values` instead of the numeric stats columns:
-
-```python
-query = """
-SELECT name, unique, top_values, num_nulls
-FROM ML.DESCRIBE_DATA(
-  TABLE `bigquery-public-data.ml_datasets.census_adult_income`,
-  STRUCT(3 AS top_k, 4 AS num_quantiles)
-)
-WHERE name IN ('workclass', 'income_bracket')
-"""
-client.query(query).to_dataframe()
-```
-
----
-## Step 3 — MAJOR GOTCHA (verified live): naive `LIMIT` sampling looks like severe skew
+## Step 2 — MAJOR GOTCHA (verified live): naive `LIMIT` sampling looks like severe skew
 
 `ML.VALIDATE_DATA_SKEW` compares new (serving) data against the **training statistics stored inside the model** — no need to keep the original training data around. It's genuinely sensitive: the public `census_adult_income` table is **not** randomly ordered, so grabbing "the first N rows" with `LIMIT` (no `ORDER BY`) silently returns a non-representative slice.
 
@@ -146,7 +116,7 @@ client.query(query).to_dataframe()
 **Verified:** every column's divergence drops to near-zero, correctly reporting no skew — confirming the earlier alarm was purely a sampling artifact. **Lesson: how you sample your comparison data matters as much as the function call itself** — a naive `LIMIT` can manufacture a false skew alarm just as easily as it can hide a real one.
 
 ---
-## Step 4 — `ML.VALIDATE_DATA_DRIFT`: real drift between two genuinely different populations
+## Step 3 — `ML.VALIDATE_DATA_DRIFT`: real drift between two genuinely different populations
 
 Unlike `ML.VALIDATE_DATA_SKEW`, this compares **two arbitrary datasets** directly — no model or stored training stats needed (the `MODEL` argument is optional, only adding a Vertex AI visualization link). Compare a random sample of the whole population against a real subgroup — incorporated self-employed workers — to show a genuine, explainable drift signal, not a sampling bug.
 
@@ -232,9 +202,9 @@ client.query(query).to_dataframe()
 **Verified:** `race`'s override (`threshold=0.01`) flags it `is_anomaly=TRUE` even though its actual divergence (~0.08) would pass comfortably under the `categorical_default_threshold=0.3` that `age` still uses. Useful for tightening (or loosening) sensitivity on specific business-critical columns without changing the default for everything else.
 
 ---
-## Step 5 — `ML.TFDV_DESCRIBE` + `ML.TFDV_VALIDATE`: the TFDV-proto tier
+## Step 4 — `ML.TFDV_DESCRIBE` + `ML.TFDV_VALIDATE`: the TFDV-proto tier
 
-Same ideas as Steps 2-4, but emitting/consuming a TensorFlow Data Validation `DatasetFeatureStatisticsList` proto (JSON) instead of tabular rows — for teams already using `tensorflow-data-validation` in a TFX pipeline. `ML.TFDV_DESCRIBE` behaves like `tfdv.generate_statistics_from_csv`.
+Same ideas as Steps 2-3, but emitting/consuming a TensorFlow Data Validation `DatasetFeatureStatisticsList` proto (JSON) instead of tabular rows — for teams already using `tensorflow-data-validation` in a TFX pipeline. `ML.TFDV_DESCRIBE` behaves like `tfdv.generate_statistics_from_csv`.
 
 ```python
 query = """
@@ -249,7 +219,7 @@ df = client.query(query).to_dataframe()
 print(df['dataset_feature_statistics_list'].iloc[0][:500], '...')
 ```
 
-`ML.TFDV_VALIDATE` compares two such protos and returns a TFDV `Anomalies` proto — the TFDV-native equivalent of Step 4's drift check above, same `education_num` signal, different (proto) representation:
+`ML.TFDV_VALIDATE` compares two such protos and returns a TFDV `Anomalies` proto — the TFDV-native equivalent of Step 3's drift check above, same `education_num` signal, different (proto) representation:
 
 ```python
 query = """
@@ -279,9 +249,9 @@ anomalies = json.loads(df['anomalies'].iloc[0])
 print(json.dumps(anomalies['drift_skew_info'], indent=2))
 ```
 
-The `ML.TFDV_DESCRIBE` proto above is truncated for readability (it's a full per-column statistics dump); the `ML.TFDV_VALIDATE` output above is parsed and printed in full — confirming the same `education_num` divergence (~0.18) found by `ML.VALIDATE_DATA_DRIFT` in Step 4, just expressed as a TFDV `drift_skew_info` measurement instead of a tabular row. In a full TFDV Python environment, `json_format.ParseDict` + `tfdv.visualize_statistics()`/`tfdv.display_anomalies()` render both as the familiar TFDV facets/anomaly widgets. See [MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Model%20Monitoring/bqml-model-monitoring-tutorial.ipynb) for that full rendering.
+The `ML.TFDV_DESCRIBE` proto above is truncated for readability (it's a full per-column statistics dump); the `ML.TFDV_VALIDATE` output above is parsed and printed in full — confirming the same `education_num` divergence (~0.18) found by `ML.VALIDATE_DATA_DRIFT` in Step 3, just expressed as a TFDV `drift_skew_info` measurement instead of a tabular row. In a full TFDV Python environment, `json_format.ParseDict` + `tfdv.visualize_statistics()`/`tfdv.display_anomalies()` render both as the familiar TFDV facets/anomaly widgets. See [MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Model%20Monitoring/bqml-model-monitoring-tutorial.ipynb) for that full rendering.
 
-### `ML.TFDV_VALIDATE`'s `'SKEW'` mode: the TFDV-native equivalent of Step 3's skew check
+### `ML.TFDV_VALIDATE`'s `'SKEW'` mode: the TFDV-native equivalent of Step 2's skew check
 
 The prior `ML.TFDV_VALIDATE` call used `'DRIFT'` mode. `'SKEW'` mode is semantically the training-vs-serving comparison — the TFDV-proto counterpart to `ML.VALIDATE_DATA_SKEW`, comparing stats from a "training" sample against a "serving" sample (here, both built manually via `ML.TFDV_DESCRIBE`, since this function works on any two proto statistics regardless of source).
 
@@ -323,18 +293,23 @@ The same operations using IPython magic commands — write SQL directly in cells
 ```sql
 %%bigquery --project {PROJECT_ID}
 
-SELECT name, num_rows, min, max, mean, stddev
-FROM ML.DESCRIBE_DATA(
-  TABLE `bigquery-public-data.ml_datasets.census_adult_income`,
-  STRUCT(3 AS top_k, 4 AS num_quantiles)
+SELECT input, metric, ROUND(value, 4) AS value, threshold, is_anomaly
+FROM ML.VALIDATE_DATA_DRIFT(
+  (SELECT age, education_num, hours_per_week
+   FROM `bigquery-public-data.ml_datasets.census_adult_income`
+   WHERE RAND() < 0.3),
+  (SELECT age, education_num, hours_per_week
+   FROM `bigquery-public-data.ml_datasets.census_adult_income`
+   WHERE workclass = ' Self-emp-inc'),
+  STRUCT(0.1 AS numerical_default_threshold)
 )
-WHERE name = 'hours_per_week'
+ORDER BY input
 ```
 
 ---
 ## Examples — BigFrames
 
-There is **no** direct BigFrames equivalent for any of these five — `bigframes.pandas.DataFrame.describe()` gives comparable (but not identical) profiling to `ML.DESCRIBE_DATA`; there's nothing built in for skew/drift/TFDV.
+There is **no** direct BigFrames equivalent for any of these four — nothing built in for skew, drift, or TFDV protos. (BigFrames does offer `DataFrame.describe()`, which is comparable-but-not-identical profiling; that comparison belongs with `ML.DESCRIBE_DATA` in `functions/exploration` (`functions/exploration/`).)
 
 ```python
 import bigframes.pandas as bpd

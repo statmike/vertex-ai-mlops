@@ -137,13 +137,13 @@ bq extract --model --destination_format ML_XGBOOST_BOOSTER 'DATASET.MODEL_NAME' 
 
 ## Model monitoring & data validation
 
-BigQuery ML ships five built-in functions for **training/serving skew** and **data drift** monitoring,
-plus descriptive-statistics helpers. They are model-light: skew uses statistics saved at training time
+BigQuery ML ships four built-in functions for **training/serving skew** and **data drift** monitoring.
+They are model-light: skew uses statistics saved at training time
 (no original training data needed); drift compares two arbitrary datasets. None require a Cloud resource
 connection. The optional `MODEL` argument only enables a Vertex AI **visualization link** and requires the
 model to be registered in Vertex AI Model Registry. Two tiers exist:
 
-- **Basic** (`ML.DESCRIBE_DATA`, `ML.VALIDATE_DATA_SKEW`, `ML.VALIDATE_DATA_DRIFT`) — tabular output, anomaly flags.
+- **Basic** (`ML.VALIDATE_DATA_SKEW`, `ML.VALIDATE_DATA_DRIFT`) — tabular output, anomaly flags.
 - **Advanced / TFDV-compatible** (`ML.TFDV_DESCRIBE`, `ML.TFDV_VALIDATE`) — emit/consume a TensorFlow
   `DatasetFeatureStatisticsList` proto as JSON, for use with the `tensorflow-data-validation` library.
 
@@ -152,60 +152,10 @@ Status: **GA**. See the [Model monitoring overview](https://cloud.google.com/big
 > Cross-reference: `ML.DETECT_ANOMALIES` (anomaly detection from a trained model) and `AI.DETECT_ANOMALIES`
 > (foundation-model time-series anomalies) are distinct — see the model-type entries / `../bq-ai-functions/`.
 
----
-
-## `ML.DESCRIBE_DATA`
-- **Description:** Computes descriptive statistics (count, min/max, mean, stdev, median, quantiles, unique, top values) for each column of a table or subquery. First step of a monitoring workflow to sanity-check a dataset.
-- **Use cases:**
-  - Profile training or serving data before/after model creation.
-  - Compare two snapshots manually before formal skew/drift checks.
-  - Feature-engineering exploration.
-- **documentation:** https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-describe-data
-- **Type:** Table-valued function.
-- **Applies to models:** N/A (operates on data, not a model).
-
-**Syntax:**
-```sql
-SELECT *
-FROM ML.DESCRIBE_DATA(
-  { TABLE `PROJECT_ID.DATASET.TABLE_NAME` | (query_statement) }
-  [, STRUCT(
-       num_quantiles AS num_quantiles,
-       num_array_length_quantiles AS num_array_length_quantiles,
-       top_k AS top_k
-     )]
-);
-```
-
-**Inputs:**
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| input data | `TABLE` ref or `(query_statement)` | Yes | — | Data to profile. |
-| `num_quantiles` | INT64 | No | 4 | Quantiles for numerical columns. Range \[2, 100000\]. |
-| `num_array_length_quantiles` | INT64 | No | 10 | Quantiles for ARRAY lengths. Range \[1, 100000\]. |
-| `top_k` | INT64 | No | 1 | Top values returned for categorical columns. Range \[1, 10000\]. |
-
-**Outputs:** one row per input column.
-
-| Column | Type | Description |
-|--------|------|-------------|
-| `name` | STRING | Input column name. |
-| `num_rows` | INT64 | Total rows for the column. |
-| `min` / `max` | STRING | MIN / MAX value. |
-| `mean` / `stdev` / `median` | FLOAT64 | Numerical only; NULL for categorical. |
-| `quantiles` | ARRAY\<FLOAT64\> | Numerical only (APPROX_QUANTILES). |
-| `unique` | INT64 | Categorical only (APPROX_COUNT_DISTINCT). |
-| `top_values` | ARRAY\<STRUCT\<value STRING, count INT64\>\> | Categorical only; `top_k` entries. |
-| `min/max/avg/total_array_length` | INT64/FLOAT64 | ARRAY columns only. |
-| `array_length_quantiles` | ARRAY\<INT64\> | ARRAY columns only. |
-
-**Best practices:** Run on a representative slice (filter by date) rather than the full table to control cost.
-**Limitations:** ARRAY columns are unnested before stats; `ARRAY<STRUCT<INT64, numerical>>` treated as sparse `ARRAY<numerical>`.
-**BigFrames API:** Use `bigframes.pandas.DataFrame.describe()` for comparable profiling; no 1:1 wrapper.
-**Repo example (tested):** [`functions/data_quality/`](../functions/data_quality/) Example 1 — `ML.DESCRIBE_DATA(TABLE ..., STRUCT(3 AS top_k, 4 AS num_quantiles))` on `census_adult_income`, run twice to contrast the two output shapes: numeric columns (`age`/`capital_gain`) populate `min`/`max`/`mean`/`stddev`/`median`/`quantiles`, while categorical columns (`workclass`/`income_bracket`) populate `unique`/`top_values`/`num_nulls` instead.
-
----
+> **Profiling moved.** `ML.DESCRIBE_DATA` used to be listed here as a fifth, Basic-tier function. It answers a
+> different question — *what is in this dataset*, not *has this dataset changed* — so its entry now lives with
+> `ML.CORRELATION` under [Model-Free Functions → Exploratory data analysis](model-free-functions.md#exploratory-data-analysis-mldescribe_data-mlcorrelation),
+> demonstrated in [`functions/exploration/`](../functions/exploration/). Profile there, monitor here.
 
 ## `ML.VALIDATE_DATA_SKEW`
 - **Description:** Detects **training/serving skew** — compares statistics of new (serving) data against the **training statistics saved inside the model** at creation time. Original training data is not required.

@@ -1,11 +1,10 @@
 -- Data Quality / Model Monitoring — Progressive SQL Examples (BigQuery ML model-free functions)
 -- =============================================================
--- Five functions for training/serving skew and data-drift monitoring, plus
--- descriptive-statistics helpers. Basic tier: ML.DESCRIBE_DATA,
--- ML.VALIDATE_DATA_SKEW, ML.VALIDATE_DATA_DRIFT (tabular output, anomaly
--- flags). Advanced/TFDV-compatible tier: ML.TFDV_DESCRIBE, ML.TFDV_VALIDATE
--- (emit/consume a TensorFlow DatasetFeatureStatisticsList proto as JSON).
--- None require a connection.
+-- Four functions for training/serving skew and data-drift monitoring.
+-- Basic tier: ML.VALIDATE_DATA_SKEW, ML.VALIDATE_DATA_DRIFT (tabular
+-- output, anomaly flags). Advanced/TFDV-compatible tier: ML.TFDV_DESCRIBE,
+-- ML.TFDV_VALIDATE (emit/consume a TensorFlow DatasetFeatureStatisticsList
+-- proto as JSON). None require a connection.
 --
 -- GOTCHA these functions are model-light but NOT the same as
 -- ML.DETECT_ANOMALIES: this notebook is about DATASET-level distribution
@@ -15,12 +14,16 @@
 -- about ROW-level outliers within one dataset. Different concept, similar
 -- name.
 --
+-- These functions all answer "has this dataset CHANGED." The prior question
+-- -- what is in this dataset at all -- is ../exploration/, where
+-- ML.DESCRIBE_DATA profiles the columns and ML.CORRELATION measures what
+-- moves with the target. Profile there, monitor here.
+--
 -- Data: bigquery-public-data.ml_datasets.census_adult_income (same dataset
 --       as models/logistic_regression/)
 --
 -- Full reference: ../../RESOURCES.md
 -- Official docs:
---   ML.DESCRIBE_DATA:      https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-describe-data
 --   ML.VALIDATE_DATA_SKEW: https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-validate-data-skew
 --   ML.VALIDATE_DATA_DRIFT:https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-validate-data-drift
 --   ML.TFDV_DESCRIBE:      https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-tfdv-describe
@@ -43,26 +46,7 @@ FROM `bigquery-public-data.ml_datasets.census_adult_income`;
 
 
 -- =============================================================================
--- Example 1: ML.DESCRIBE_DATA -- descriptive stats, numeric and categorical
--- =============================================================================
-SELECT name, num_rows, min, max, mean, stddev, median, quantiles
-FROM ML.DESCRIBE_DATA(
-  TABLE `bigquery-public-data.ml_datasets.census_adult_income`,
-  STRUCT(3 AS top_k, 4 AS num_quantiles)
-)
-WHERE name IN ('age', 'capital_gain');
-
--- Categorical columns populate `unique`/`top_values` instead of numeric stats.
-SELECT name, unique, top_values, num_nulls
-FROM ML.DESCRIBE_DATA(
-  TABLE `bigquery-public-data.ml_datasets.census_adult_income`,
-  STRUCT(3 AS top_k, 4 AS num_quantiles)
-)
-WHERE name IN ('workclass', 'income_bracket');
-
-
--- =============================================================================
--- Example 2: MAJOR GOTCHA (verified live) -- naive LIMIT sampling looks like
+-- Example 1: MAJOR GOTCHA (verified live) -- naive LIMIT sampling looks like
 -- severe skew even when it's the exact same data source
 -- =============================================================================
 -- The public census_adult_income table is NOT randomly ordered. Grabbing
@@ -98,7 +82,7 @@ ORDER BY is_anomaly DESC, input;
 
 
 -- =============================================================================
--- Example 3: ML.VALIDATE_DATA_DRIFT -- real drift between two genuinely
+-- Example 2: ML.VALIDATE_DATA_DRIFT -- real drift between two genuinely
 -- different populations (not a sampling artifact this time)
 -- =============================================================================
 SELECT input, metric, ROUND(value, 4) AS value, threshold, is_anomaly
@@ -165,7 +149,7 @@ ORDER BY input;
 
 
 -- =============================================================================
--- Example 4: ML.TFDV_DESCRIBE + ML.TFDV_VALIDATE -- the TFDV-proto tier
+-- Example 3: ML.TFDV_DESCRIBE + ML.TFDV_VALIDATE -- the TFDV-proto tier
 -- =============================================================================
 -- Emits a TensorFlow Data Validation DatasetFeatureStatisticsList proto as
 -- JSON -- same behavior as tfdv.generate_statistics_from_csv, for
@@ -178,7 +162,7 @@ FROM ML.TFDV_DESCRIBE(
 );
 
 -- ML.TFDV_VALIDATE compares two such protos and returns a TFDV Anomalies
--- proto (also JSON) -- the TFDV-native equivalent of Example 3 above.
+-- proto (also JSON) -- the TFDV-native equivalent of Example 2 above.
 WITH base AS (
   SELECT dataset_feature_statistics_list AS stats
   FROM ML.TFDV_DESCRIBE(
@@ -197,7 +181,7 @@ compare AS (
 )
 SELECT ML.TFDV_VALIDATE(base.stats, compare.stats, 'DRIFT') AS anomalies
 FROM base, compare;
--- Same education_num drift signal as Example 3 (~0.18), confirmed by
+-- Same education_num drift signal as Example 2 (~0.18), confirmed by
 -- parsing the JSON and inspecting anomalies.drift_skew_info -- expressed as
 -- a TFDV Anomalies proto instead of a tabular row -- feed this to
 -- tfdv.display_anomalies() in a full TFDV Python environment (see

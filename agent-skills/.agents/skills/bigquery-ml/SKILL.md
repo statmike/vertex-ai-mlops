@@ -16,7 +16,7 @@ This skill packages a verified, field-tested reference distilled from a project 
    - Continuous numeric label → see `reference/regression.md`
    - No label at all (clustering, dimensionality reduction, embeddings, recommendations, time-series forecasting *or* model-free time-series decomposition, or "why did this metric change") → see `reference/unsupervised-and-specialized.md`
 2. **Are you managing, deploying, or monitoring an existing model** (importing one trained elsewhere, calling a Vertex AI endpoint from SQL, exporting a BQML model out, or checking training/serving skew and drift) → see `reference/model-management.md`
-3. **Are you doing feature engineering / preprocessing independent of any model type** (scaling, bucketizing, encoding, imputation, text/image prep) → see `reference/preprocessing-functions.md`
+3. **Are you exploring or preprocessing data independent of any model type** (profiling a table, ranking features by correlation, scaling, bucketizing, encoding, imputation, text/image prep) → see `reference/preprocessing-functions.md`
 4. **Are you composing a real end-to-end task, or operationalizing one on a schedule** (drift-check → conditional retrain → score) → see `reference/workflows-and-pipelines.md`
 5. **Are you estimating the causal effect of an intervention or treatment** (not predicting an outcome) → see the causal cluster in `reference/workflows-and-pipelines.md`: `propensity_score_matching`, `price_elasticity_dml`, `uplift_cate`, `difference_in_differences`, `synthetic_control`, and `causal_effect`. That last one is `AI.CAUSAL_EFFECT` — an `AI.*` function documented in *this* skill, not the sibling `bigquery-ai-functions` skill, because the reader's real question is which causal estimator to use. Don't treat the three intervention estimators as interchangeable: on the same panel they point the same direction but not the same size, and `AI.CAUSAL_EFFECT`'s `absolute_effect` is cumulative while the other two report per-period.
 6. **Do you already have predictions and just need metrics** — scored elsewhere, or scored here by a model that no longer exists → `ML.METRICS` needs no model at all; see the `ML.METRICS` entries in `reference/regression.md` and `reference/classification.md`
@@ -44,7 +44,7 @@ If the ask is ambiguous between BigQuery ML (trained models) and BigQuery's gene
 - `reference/regression.md` — LINEAR_REG, BOOSTED_TREE_REGRESSOR, RANDOM_FOREST_REGRESSOR, DNN_REGRESSOR, DNN_LINEAR_COMBINED_REGRESSOR, AUTOML_REGRESSOR
 - `reference/unsupervised-and-specialized.md` — KMEANS, PCA, AUTOENCODER, MATRIX_FACTORIZATION, CONTRIBUTION_ANALYSIS, ARIMA_PLUS, ARIMA_PLUS_XREG, plus the model-free time-series TVFs (`ML.TREND`, `ML.SEASONALITY`, `ML.DETECT_CHANGE_POINTS`)
 - `reference/model-management.md` — TRANSFORM_ONLY, imported models (TF/TFLite/ONNX/XGBoost), REMOTE models, EXPORT MODEL, data validation/drift functions
-- `reference/preprocessing-functions.md` — scalers, bucketizers, encoders, feature engineering, text, distance, image preprocessing
+- `reference/preprocessing-functions.md` — exploratory data analysis (ML.DESCRIBE_DATA, ML.CORRELATION), scalers, bucketizers, encoders, feature engineering, text, distance, image preprocessing
 - `reference/workflows-and-pipelines.md` — composing a workflow, then choosing among 8 orchestration approaches to operationalize it
 
 ## Go deeper (only resolves inside this repo)
