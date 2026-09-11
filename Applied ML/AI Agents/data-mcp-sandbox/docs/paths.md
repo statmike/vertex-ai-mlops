@@ -235,9 +235,10 @@ them and the pooled curve resolves into two unrelated shapes:
 **98–100% at rung 1**, and rungs 2, 3 and 4 do nothing at all. Column
 descriptions solve this population completely and immediately.
 
-**The ones that need a governed definition.** Three of the four are unambiguous
-(the fourth is discussed below). On those three, the result is not a curve. It
-is a step function:
+**The ones that need a governed definition.** Three of the four are scoreable
+here; `semantic-q2` is dropped because its answers scatter across anchorings the
+oracle cannot arbitrate ([below](#the-trailing-window-questions-are-anchor-ambiguous)).
+On those three, the result is not a curve. It is a step function:
 
 | arm | 0 | 1 · descriptions | 2 · profiles | 3 · rules | 4 · the rest |
 |---|---:|---:|---:|---:|---:|
@@ -312,31 +313,65 @@ at rung 3: the Path 3 arms jump to 78–80% while both Path 1 arms stay at 50%.
 oracle, the acquisition/application split, and a blind judge — put the same
 boundary in the same place.
 
-### One question is ambiguous, and it is excluded above
+### The trailing-window questions are anchor-ambiguous
 
-`semantic-q2` — *"What was our net revenue over the trailing 30 days?"* — admits
-more than one defensible reading, and the agents find them. Across the governed
-rungs its answers are discrete and repeatable:
+This is the sharpest *methodological* finding in the ladder, and it is a defect
+in our corpus rather than a result about any arm. It was found by chasing the
+failed replication check in the next section, and it is reported in full because
+it moves some of the numbers above.
 
-| value | anchoring | graded |
+"Trailing 30 days" fixes the window's **length** but not its **anchor**. A
+competent analyst can anchor to `CURRENT_TIMESTAMP()` or to the latest event in
+the data, and those are different windows over the same governed column. The
+agents pick between them **nondeterministically, run to run, at temperature 0**.
+On `governed-q1` the same arm minutes apart:
+
+| arm | run 1 | run 2 | run 3 | run 4 | run 5 |
+|---|---:|---:|---:|---:|---:|
+| `p3_matched` (ladder) | 2,795 | **2,804** | 2,795 | 2,795 | 2,795 |
+| `p3_managed` (published) | 2,699 | **2,804** | 2,699 | **2,804** | **2,804** |
+
+Not a drift and not a trend — two discrete values, interleaved. So whether an arm
+scores 0% or 100% on one of these questions depends on **where the frozen oracle's
+own anchor happens to fall relative to the agent's**:
+
+| capture | oracle | agent answers | gap | graded |
+|---|---:|---|---:|---|
+| ladder | 2,804 | 2,795 / 2,804 | 0.32% | both **correct** |
+| published | 2,671 | 2,699 / 2,804 | 1.05% / 4.98% | both **wrong** |
+
+Same arms, same architecture, same model, opposite scores. The 0.5% tolerance is
+tighter than the spread between anchorings, so the tolerance cannot absorb it.
+
+It affects the trailing-window questions whose answer is an **extensive**
+quantity — a count or a sum — and not the intensive one:
+
+| question | quantity | anchor-sensitive |
 |---|---|---|
-| 299,808 | `CURRENT_TIMESTAMP()` | correct |
-| 308,801 | `MAX(txn_ts)` in the table | wrong |
-| 289,738 | a third window | wrong |
+| `governed-q1` | count of Active users | **yes** |
+| `governed-q3` | sum of revenue from Active users | **yes** |
+| `semantic-q2` | sum of trailing-30d revenue | **yes** |
+| `governed-q2` | *average* txn value for Active users | no — an average barely moves |
 
-All three are competent SQL over the same governed column; the oracle accepts
-one. This is a defect in the question, not a finding about the arms, and it
-accounts for essentially the whole residual at rung 4 — the arms scoring 75–95%
-rather than 100% on the four-question population are the ones that anchored to
-`MAX(txn_ts)`. It is reported rather than quietly dropped, and it is excluded
-from the step-function table above so that a question-design flaw is not read as
-an architecture result.
+**What this does and does not change.** It does not touch the eight time-stable
+questions, and it does not touch the qualitative finding, because Path 1's
+failure is categorical rather than marginal: `5000` is the total user count and
+`4,032,361` is all-time revenue, and no choice of anchor turns either into ~2,800
+or ~2.7M. The rung-3 step is Path 3 moving from a different-question answer to a
+right-population answer, and that is robust.
 
-Note what this is *not*: clock drift. Four goldens are trailing windows that
-really do move, and they moved during this sweep — the Active-user count was
-frozen at 2,804 and agents late in the run answered 2,795. Both grade correct;
-the 0.5% tolerance absorbs it. Real drift shows up as adjacent values inside
-tolerance, and it did.
+What it does mean is that the **`100%` in the step-function table is flattered by
+an oracle whose anchor happened to agree**, and the published capture's `0%` on
+these questions is correspondingly harsh — its agents were computing a defensible
+window that its oracle did not share. Read those cells as "the governed
+population, up to the anchor" rather than as a perfect score. `semantic-q2` is
+excluded outright above because its anchorings are further apart than the other
+two and no reading dominates.
+
+The fix is to pin the anchor in the question wording. It is deliberately not
+applied here: changing a question invalidates comparison with every capture
+already published, which is the more expensive loss. It is the first thing to
+change in the next corpus version.
 
 ### Governance is also cheaper
 
@@ -406,16 +441,19 @@ check fails, and it is worth showing rather than burying.** Tier 0 agrees
 (−5.0 to 0.0, inside the floor). Tier 1 does not — every arm scores higher in
 the ladder, by +8.3 to +25.0.
 
-It decomposes completely, into two knowable causes and no residual:
+Chasing it is what turned up the anchoring defect above, and the check decomposes
+into two causes with no residual:
 
-- **The four time-anchored questions cannot be compared across captures at all.**
-  The corpus anchors trailing windows to build time, so the true answer moves
-  with the calendar. Between 2026-09-05 and 2026-09-09 the Active-user count
-  went 2,671 → 2,804 — 5%, against a 0.5% tolerance. Each capture's agents
-  computed the correct live value *at their own time*, and each capture's oracle
-  is right about its own day. Grading either against the other's frozen goldens
-  necessarily fails the older one. This is structural, not a defect in either
-  run.
+- **The anchor-ambiguous questions score near-arbitrarily in each capture.**
+  Note this is *not* a matter of grading one capture against the other's oracle —
+  `compare` resolves each capture's own frozen goldens and grades each side
+  against its own. Both sides are scored fairly and they still disagree, because
+  in the published capture the oracle's anchor sits 1.05% and 4.98% from the two
+  answers its agents actually gave, and in the ladder it sits 0.32% and 0.00%
+  from theirs. The published capture therefore scores **0/30 at tier 1** on
+  `governed-q1`, `governed-q3` and `semantic-q2` while the ladder scores 60–67%
+  on the same questions with the same arms. That gap is the oracle's anchor, not
+  the architecture.
 - **The published tier 1 has no Dataplex quality scans and the ladder's rung 4
   does** — a difference already documented, with its date and commit, under
   [Path 3 changed after the published capture was taken](reproducing.md#path-3-changed-after-the-published-capture-was-taken).
@@ -424,9 +462,9 @@ It decomposes completely, into two knowable causes and no residual:
   `lookup_context` is called by the three Path 3 arms and by nobody else. The
   documented scoping holds.
 
-Drop the four time-anchored questions and the check passes cleanly. On the eight
-time-stable ones, tier 1 is **100% against 100%** on five of six arms and −2.5
-on the sixth, against a 6.7-point floor:
+Drop the four trailing-window questions and the check passes cleanly. On the
+eight anchor-free ones, tier 1 is **100% against 100%** on five of six arms and
+−2.5 on the sixth, against a 6.7-point floor:
 
 | arm | published t1 | ladder rung 4 | drift |
 |---|---:|---:|---:|
@@ -437,13 +475,20 @@ on the sixth, against a 6.7-point floor:
 | `p3_toolbox` | 100% | 100% | 0.0 |
 | `p4_bq_ca` | 100% | 100% | 0.0 |
 
-So the ladder measured the same apparatus the published capture did. The lesson
-for anyone reusing this harness is narrower and more useful than "the check
-failed": **a corpus with time-anchored aggregates has a comparison half-life.**
-Within one capture and one frozen oracle it is exact; across captures days apart
-it is exact only on the time-stable subset. The rung findings above rest on a
-single capture with a single oracle and a passing temporal control, which is why
-they survive this and the cross-capture tier-1 numbers do not.
+So the ladder measured the same apparatus the published capture did, and the
+disagreement is confined to the questions whose oracle cannot pin its own window.
+
+The lesson for anyone reusing this harness is more useful than "the check
+failed": **an A/A that fails is worth more than one that passes.** This one was
+run because the method prescribed it, it refused to be explained away, and
+chasing it found a measurement defect that four earlier captures had already
+been quietly carrying. Two habits fall out of it. Give every question an anchor
+the oracle and the agent must both compute the same way — a tolerance cannot
+rescue a question that admits two defensible windows, because the gap between
+anchorings is set by the data, not by the tolerance. And when a comparison fails,
+decompose it per question before attributing it to anything architectural: the
+per-question view showed three questions at exactly 0/30, which is the signature
+of a grading mismatch and never of an agent that is merely worse.
 
 ---
 

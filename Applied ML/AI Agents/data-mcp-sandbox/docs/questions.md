@@ -85,19 +85,27 @@ because "last month" is ambiguous between calendar and trailing and the oracle
 cannot score an answer to a question that did not pin its own window down.
 
 ⚠️ **That is not sufficient, and the governance ladder measured it.** "Trailing
-30 days" fixes the window's *length* and not its *anchor*. On `semantic-q2` the
-agents produce three discrete, repeatable answers over governed data — 299,808
-anchored to `CURRENT_TIMESTAMP()`, 308,801 anchored to `MAX(txn_ts)` in the
-table, and 289,738 from a third window. All three are competent SQL over the
-right column; the oracle accepts one, because `golden.py` anchors to now.
+30 days" fixes the window's *length* and not its *anchor*. Anchoring to the
+data's own latest timestamp is as defensible as anchoring to now, and the agents
+pick between the two **nondeterministically, run to run, at temperature 0** —
+the same arm answered 2,699 and 2,804 Active users in consecutive runs a minute
+apart. `golden.py` anchors to now, so the oracle silently picks a side.
 
-Anchoring to the data's own maximum timestamp is a defensible and common
-analyst habit, so the other two are graded wrong for a reason that has nothing
-to do with governance or with the arm. `semantic-q2` therefore reports a
-question-design defect on top of whatever it reports about the agent, and
-[paths](paths.md#one-question-is-ambiguous-and-it-is-excluded-above) excludes it
-where that would contaminate a finding. The fix is to pin the anchor in the
-question wording; it is not applied here because changing a question invalidates
+Whether that costs an arm anything depends on where the frozen oracle's anchor
+lands relative to the agent's. In the ladder capture the gap was 0.32% and both
+readings scored correct; in the published capture it was 1.05% and 4.98% and
+both scored wrong, giving **0/30 at tier 1** on questions the same arms answer
+competently. The 0.5% tolerance below cannot help — the spread between anchorings
+is set by the data, not by the tolerance.
+
+It bites the trailing-window questions whose answer is an **extensive** quantity
+(`governed-q1`, `governed-q3`, `semantic-q2` — a count or a sum) and spares the
+intensive one (`governed-q2`, an average, which barely moves). These questions
+therefore report a question-design defect on top of whatever they report about
+the agent, and
+[paths](paths.md#the-trailing-window-questions-are-anchor-ambiguous) sets out
+what it does and does not change. The fix is to pin the anchor in the question
+wording; it is not applied here because changing a question invalidates
 comparison with every capture already published, which is the more expensive
 loss.
 
