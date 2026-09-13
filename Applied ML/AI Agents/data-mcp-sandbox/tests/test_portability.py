@@ -7,10 +7,13 @@ this repo points them at. Each of those has a way of failing quietly, and each i
 pinned here.
 """
 
+import ast
 import gzip
+import importlib
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -404,3 +407,66 @@ def test_capture_round_trips_through_gzip(tmp_path: Path):
         traces.save(path, cells, {"agent_model": "m"})
         assert traces.load(path)["a"].answer == "42"
         assert traces.read_header(path)["agent_model"] == "m"
+
+
+def test_every_notebook_call_into_src_still_exists():
+    # `03_results.ipynb` is advertised as the one notebook a reader with no cloud
+    # account can run, and it sat broken: `score_all` and `resolve_goldens` moved
+    # out of `examples/build_results.py` into `src/rescore.py`, and nothing here
+    # noticed. Every other caller is a module the suite imports; a notebook is
+    # not, so a refactor renames past it in silence. Executing the notebooks in
+    # CI would catch strictly more and cost minutes and a live project - this
+    # resolves the names statically instead, which is the part that rots.
+    root = Path(config.PROJECT_ROOT)
+    # Both directories, because the notebooks put both on `sys.path` and the
+    # move that broke `03_results.ipynb` crossed between them. `examples` is not
+    # in pytest's `pythonpath`, so add it here rather than repo-wide - widening
+    # that would change what ruff considers a first-party import everywhere.
+    if str(root / "examples") not in sys.path:
+        sys.path.append(str(root / "examples"))
+    ours = {
+        path.stem
+        for folder in ("src", "examples")
+        for path in (root / folder).glob("*.py")
+        if not path.stem.startswith("_")
+    }
+    listing = subprocess.run(
+        ["git", "ls-files", "-co", "--exclude-standard", "*.ipynb"],
+        cwd=root, capture_output=True, text=True, check=True,
+    )
+    missing, checked = [], 0
+    for name in listing.stdout.split():
+        path = root / name
+        if not path.exists():
+            continue
+        cells = json.loads(path.read_text())["cells"]
+        # Magics and shell escapes are notebook syntax, not Python; drop the line.
+        source = "\n".join(
+            "".join(line for line in cell["source"] if not line.lstrip().startswith(("%", "!")))
+            for cell in cells
+            if cell["cell_type"] == "code"
+        )
+        try:
+            tree = ast.parse(source)
+        except SyntaxError as exc:  # a cell the notebook itself could not run
+            raise AssertionError(f"{name} does not parse: {exc}") from exc
+
+        imported = {
+            alias.asname or alias.name: importlib.import_module(alias.name)
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Import)
+            for alias in node.names
+            if alias.name in ours
+        }
+        checked += len(imported)
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Attribute)
+                and isinstance(node.value, ast.Name)
+                and node.value.id in imported
+                and not hasattr(imported[node.value.id], node.attr)
+            ):
+                missing.append(f"{name}:{node.lineno} {node.value.id}.{node.attr}")
+
+    assert checked, "no notebook imported a module from src/ - this test is vacuous"
+    assert not missing, f"notebooks call names that no longer exist: {sorted(missing)}"
