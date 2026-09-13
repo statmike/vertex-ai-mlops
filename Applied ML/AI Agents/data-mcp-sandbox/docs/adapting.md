@@ -137,12 +137,46 @@ oracle, your questions. Each entry:
 - `evidence` terms must be real table or column names — they are matched against
   the SQL the agent wrote, to measure whether it looked at the right things.
   `distractor` is how you score an agent for reaching at a decoy.
+- `scoreable` defaults to `true`. Setting it `false` — with an
+  `unscoreable_reason` saying why — keeps a question in the sweep and out of
+  every rate. Use it when you discover your own question cannot be graded
+  fairly; `scoring.graded()` is the one place the decision is applied, so a
+  rubric change re-scores captures you already have instead of re-running them.
 
 Then `make validate && make smoke`. There is no hardcoded question count anywhere;
 adding or removing entries is expected.
 
-**Phrase windows as trailing N days, never "last month".** The oracle recomputes
-live and cannot score an answer the question did not pin down.
+### Pin the anchor of any window, not just its length
+
+**State the as-of moment in the question.** This corpus shipped without doing
+that and paid for it. "What was our net revenue over the trailing 30 days?"
+pins the window's *length* and leaves its *anchor* free: `CURRENT_TIMESTAMP()`
+and the timestamp of the latest row in the data are both faithful readings, they
+differ, and at temperature 0 one arm returned 2,699 and 2,804 in consecutive
+runs. The oracle then arbitrates a coin-flip, which looks exactly like an
+accuracy difference between arms and is not one.
+
+The fix is one sentence in front of the question, and it is deliberately *only*
+that — the question body is unchanged, so it still measures what it measured:
+
+```json
+{ "question": "Treat 2026-09-09 00:00:00 UTC as the current time. How many Active users do we have?" }
+```
+
+Do not put the window in the question body ("…events in the 30 days before
+2026-09-09"). That leaks the governed rule into the prompt, and the whole point
+of the tier-0 control is that an ungoverned agent has to discover the rule for
+itself. Replace *now*, not the definition.
+
+The matching oracle anchors to the same literal — see `golden.AS_OF`, which
+should sit just past your own data's last row. An agent that ignores the stated
+as-of now scores a diagnosable wrong answer instead of a coin-flip, which is the
+point: in our pilot, one arm out of six answered with the live-clock number and
+that is a finding about instruction-following, not noise.
+
+The un-anchored originals are still in `questions.json`, carrying
+`scoreable: false` and the reason. They are kept rather than deleted so the
+captures taken before the fix stay readable.
 
 ## Rung 4 — Add your own metric
 
@@ -172,6 +206,13 @@ which is what makes the results legible rather than just low.
 Never cache a golden value. The generator anchors timestamps to build time, so a
 stored number rots — we watched the active-user count drift 2,671 → 2,768 → 2,804
 across four days, which is exactly why the oracle recomputes.
+
+A window golden should use `golden.AS_OF` rather than `CURRENT_TIMESTAMP()`, for
+the reason in rung 3: the oracle and the agent have to be anchored to the same
+moment or the question is not gradeable. `_window_as_of()` returns the half-open
+`[start, AS_OF)` pair as SQL literals. Recomputing is still the rule — what is
+pinned is *where the window ends*, not the number it produces, so a golden
+re-run against a rebuilt corpus still gives that corpus's own answer.
 
 ## Rung 5 — Write your own governance
 

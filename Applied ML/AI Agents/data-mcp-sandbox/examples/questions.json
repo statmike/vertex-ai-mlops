@@ -136,5 +136,38 @@
       "distractor": []
     },
     "golden_key": "gross_minus_net_gap_pct"
+  },
+  {
+    "id": "semantic-q2a",
+    "category": "semantic-ambiguity",
+    "question": "Treat 2026-09-09 00:00:00 UTC as the current time. What was our net revenue over the trailing 30 days?",
+    "evidence": {
+      "must_have": ["txn_amt_x2", "status_flg", "txn_ts"],
+      "nice_to_have": ["transactions_v2_final"],
+      "distractor": ["revenue_amount"]
+    },
+    "golden_key": "net_revenue_30d_as_of"
+  },
+  {
+    "id": "governed-q1a",
+    "category": "governed-logic",
+    "question": "Treat 2026-09-09 00:00:00 UTC as the current time. How many Active users do we have?",
+    "evidence": {
+      "must_have": ["is_active", "raw_events_2026", "event_ts"],
+      "nice_to_have": ["users", "user_id"],
+      "distractor": []
+    },
+    "golden_key": "active_user_count_as_of"
+  },
+  {
+    "id": "governed-q3a",
+    "category": "governed-logic",
+    "question": "Treat 2026-09-09 00:00:00 UTC as the current time. How much of our net revenue comes from Active users?",
+    "evidence": {
+      "must_have": ["txn_amt_x2", "status_flg", "is_active", "raw_events_2026", "event_ts"],
+      "nice_to_have": ["users", "user_id"],
+      "distractor": ["revenue_amount"]
+    },
+    "golden_key": "net_revenue_from_active_users_as_of"
   }
 ]

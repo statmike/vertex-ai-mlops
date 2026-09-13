@@ -2,7 +2,7 @@
 
 The rubric is the part of this experiment most worth arguing with, so it ships
 as data and code you can change rather than as a claim. This page is the map:
-what the corpus hides, what the twelve questions ask, and how an answer becomes
+what the corpus hides, what the questions ask, and how an answer becomes
 a `correct` or a `sprang_trap`.
 
 The *what counts as right*. [paths](paths.md) is what is being compared and
@@ -48,7 +48,9 @@ The separation is enforced by IAM, not by prompt; see [scoping](scoping.md).
 
 ## The twelve questions
 
-`examples/questions.json`. Five categories, chosen so that a single accuracy
+`examples/questions.json`, which holds fifteen entries: these twelve, and the
+three anchored re-issues below that replace the three this corpus turned out
+not to be able to grade. Five categories, chosen so that a single accuracy
 number cannot hide a lopsided result — two of them are answerable without any
 governance at all, which is how you tell a broken arm from a governed one.
 
@@ -104,19 +106,75 @@ intensive one (`governed-q2`, an average, which barely moves).
 
 **All three are therefore marked `scoreable: false`**, each carrying the reason
 in `unscoreable_reason` next to the question it disqualifies. Every accuracy,
-trap, application-loss and equivalence rate in this repo is computed over the
-**nine** that remain; the excluded cells still ran, are still in the capture, and
-still carry a `correct` a reader can inspect. This is a rubric change and not a
-re-run — scores live beside the capture rather than inside it, so `make score`
-republished five existing captures on the new basis without issuing a query.
+trap, application-loss and equivalence rate computed over the twelve is computed
+over the **nine** that remain; the excluded cells still ran, are still in the
+capture, and still carry a `correct` a reader can inspect. This is a rubric
+change and not a re-run — scores live beside the capture rather than inside it,
+so `make score` republished five existing captures on the new basis without
+issuing a query.
 [paths](paths.md#the-trailing-window-questions-are-anchor-ambiguous) sets out
 which published numbers moved.
 
-The cost is paid by one category: `governed-logic` had three questions and now
-has one, so the sharpest claim in the project rests on `governed-q2` alone.
-The real fix is to pin the anchor in the question wording; it is not applied here
-because changing a question invalidates comparison with every capture already
-published, which is the more expensive loss.
+The cost is paid by one category: `governed-logic` had three questions and, over
+the twelve, has one — which would leave the sharpest claim in the project resting
+on `governed-q2` alone. That is what the three questions below buy back.
+
+---
+
+## The three anchored questions
+
+`semantic-q2a`, `governed-q1a`, `governed-q3a`. Same three asks, same evidence
+terms, same traps, same goldens — with the anchor pinned, so they are gradeable.
+
+| id | Category | Question |
+|---|---|---|
+| `semantic-q2a` | semantic-ambiguity | Treat 2026-09-09 00:00:00 UTC as the current time. What was our net revenue over the trailing 30 days? |
+| `governed-q1a` | governed-logic | Treat 2026-09-09 00:00:00 UTC as the current time. How many Active users do we have? |
+| `governed-q3a` | governed-logic | Treat 2026-09-09 00:00:00 UTC as the current time. How much of our net revenue comes from Active users? |
+
+Four design choices are load-bearing, and each one is a way the obvious version
+of this fix goes wrong.
+
+**The anchor replaces *now*, not the definition.** It arrives as a one-sentence
+preamble in front of otherwise unchanged wording. The tempting version — spell
+the window out in the question body, `event_ts >= ... AND event_ts < ...` —
+leaks the governed Active rule and the real column names into the prompt. Tier 0
+is the control precisely because an ungoverned agent has to *discover* the rule;
+handing it over in the question would make both tiers score the same and the
+comparison would measure nothing.
+
+**The rule is unchanged, so nothing is re-provisioned.** The governed rule owns
+the window's *length* — trailing 30 days, stated once in the catalog aspect and
+the LookML — and the question owns where the window *ends*. Splitting it that
+way means the anchored questions run against the exact same tier 0 and tier 1
+environments as everything already published. No re-deploy, no new LookML, no
+second catalog.
+
+**They are new ids, not edits.** Rewording `governed-q1` in place would
+retroactively change what every existing capture claims to have asked. New ids
+leave all five published captures byte-comparable; the comparators pair on
+question id and drop what is unpaired, so a capture that predates the anchored
+trio simply contributes nothing to those three rows.
+
+**The originals stay in the corpus, `scoreable: false`.** They are the documented
+defect. Deleting them would erase the evidence for why the anchored ones exist,
+and would silently re-baseline 1,440 cells that did run.
+
+The anchor itself is `golden.AS_OF = "2026-09-09 00:00:00+00"` — a clean midnight
+just past the last row the generator wrote (`2026-09-08 11:55 UTC`, identical in
+both tiers). `golden._window_as_of()` turns it into the half-open
+`[AS_OF - 30 days, AS_OF)` pair the anchored goldens use, so the timestamp is
+written once and the question text and the SQL cannot disagree about it. Both
+tiers return the same oracle values, which is the control working:
+`net_revenue_30d_as_of` = 299,808, `active_user_count_as_of` = 2,804,
+`net_revenue_from_active_users_as_of` = 2,702,782. That 2,804 is exactly one of
+the two values the same arms were alternating between under the old wording.
+
+The failure mode does not disappear, it becomes *diagnosable*. An arm that
+ignores the preamble and anchors to `CURRENT_TIMESTAMP()` returns a value that is
+recognisably the now-anchored one (2,617,863 against the anchored 2,702,782),
+and scores wrong for a stated reason — instruction-following — rather than
+scoring wrong for a coin flip the rubric cannot see.
 
 ---
 
@@ -141,7 +199,11 @@ number a naive query produces. This is what makes a failure legible. "Wrong" and
 and only the second tells you the governance was the missing piece.
 
 **The oracle is recomputed live**, never cached, because the generator anchors
-timestamps to build time and a stored number rots as the sandbox ages. For
+timestamps to build time and a stored number rots as the sandbox ages. The
+anchored goldens are the exception by construction — their window is pinned to
+`golden.AS_OF`, so they return the same number on any day — but they are
+recomputed on the same path as everything else rather than hard-coded, because a
+typed number and a queried one drift the moment the corpus is regenerated. For
 readers, `make export` freezes the goldens into the capture header — which is
 why re-scoring our capture needs no BigQuery.
 
@@ -203,7 +265,9 @@ deliberately left blank rather than scored:
   a coin-flip rather than grading. They carry `scoreable: false`, and
   `scoring.graded()` is the single place that decision is applied — every rate in
   the repo runs over its output. Marking them zero would have reported our
-  corpus's defect as the agents' error.
+  corpus's defect as the agents' error. The anchored trio asks the same three
+  things in a form the oracle can grade; it does not rescue the cells these three
+  already spent.
 
 Ranking an arm bottom on a metric it was never eligible for is a false finding,
 not a conservative one. The report prints `--`; the charts drop the arm and say
@@ -230,4 +294,7 @@ Swapping in **your own tables** is a bigger job and worth being honest about:
 `corpus.py`, `golden.py` and `questions.json` have to change together, because a
 question is only scoreable against a golden some query can compute. The traps
 are the measurement, not decoration. See
-[reproducing](reproducing.md#pointing-it-at-your-own-data).
+[reproducing](reproducing.md#pointing-it-at-your-own-data), and
+[adapting](adapting.md) for the rung-by-rung version — rung 3 is your questions,
+rung 4 is your goldens, and it carries the anchoring warning above as advice
+rather than as a post-mortem.

@@ -10,9 +10,12 @@ correct, matching `trap_value` is a *diagnosed* failure ("sprang the trap") rath
 than an undifferentiated wrong number, which is what makes the trap taxonomy in
 docs/questions.md legible in the results.
 
-Windows are stated as **trailing N days**, not calendar months. "Last month" is
-ambiguous between the two and the oracle cannot score an answer the question did
-not pin down — battery questions must use the trailing-window phrasing.
+Windows are stated as **trailing N days ending at `AS_OF`**, never as a calendar
+month and never as a bare trailing window. "Trailing 30 days" pins the window's
+*length* and not its *anchor*, which is a defect this corpus shipped with and
+then measured: agents alternate between `CURRENT_TIMESTAMP()` and the latest row
+in the data, run to run, at temperature 0. Both readings are faithful, they
+differ, and the oracle arbitrates a coin-flip. See `AS_OF` below.
 """
 
 from collections.abc import Callable, Iterable
@@ -70,19 +73,48 @@ def _events(tier: int) -> str:
     return _t(tier, corpus.RAW_EVENTS.name)
 
 
+# The anchor every window question states out loud. It sits just past the last
+# row the generator wrote (2026-09-08 11:55 UTC in both tiers), so a 30-day
+# window ending here covers the corpus's whole recent tail and neither endpoint
+# lands mid-day.
+#
+# It is a literal, and that is the point. `CURRENT_TIMESTAMP()` gave the oracle
+# one anchor and left the agent free to pick another; a question that names both
+# endpoints cannot be read two ways, and the answer stops rotting as the sandbox
+# ages. Bringing your own corpus means moving this to just past your own data's
+# last row — `make validate` fails if the window is empty.
+AS_OF = "2026-09-09 00:00:00+00"
+
+
 def _recent(days: int = corpus.ACTIVE_WINDOW_DAYS) -> str:
     return f"TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {days} DAY)"
 
 
-def _active_users_cte(tier: int) -> str:
-    """The governed definition of Active: flagged AND seen in the trailing window."""
+def _window_as_of(days: int = corpus.ACTIVE_WINDOW_DAYS) -> tuple[str, str]:
+    """The half-open `[start, AS_OF)` window, as two SQL literals."""
+    return f'TIMESTAMP_SUB(TIMESTAMP "{AS_OF}", INTERVAL {days} DAY)', f'TIMESTAMP "{AS_OF}"'
+
+
+def _active_users_cte(tier: int, as_of: bool = False) -> str:
+    """The governed definition of Active: flagged AND seen in the trailing window.
+
+    `as_of=True` is the anchored form. The governed *rule* is unchanged — it
+    still says "an event in the trailing 30 days" — because the rule owns the
+    window's length and the question owns where it ends. That split is why the
+    anchored questions need no re-provisioning of the catalog or the LookML.
+    """
+    if as_of:
+        start, end = _window_as_of()
+        recency = f"e.event_ts >= {start} AND e.event_ts < {end}"
+    else:
+        recency = f"e.event_ts >= {_recent()}"
     return f"""
     SELECT u.user_id
     FROM {_users(tier)} u
     WHERE u.is_active
       AND EXISTS (
         SELECT 1 FROM {_events(tier)} e
-        WHERE e.user_id = u.user_id AND e.event_ts >= {_recent()}
+        WHERE e.user_id = u.user_id AND {recency}
       )
     """
 
@@ -175,6 +207,48 @@ GOLDENS: list[Golden] = [
             SELECT SUM(x.txn_amt_x2) AS v
             FROM {_txn(t)} x
             JOIN ({_active_users_cte(t)}) a USING (user_id)
+            WHERE NOT x.status_flg
+        """,
+        trap_sql=lambda t: f"""
+            SELECT SUM(x.txn_amt_x2) AS v
+            FROM {_txn(t)} x
+            JOIN {_users(t)} u USING (user_id)
+            WHERE u.is_active AND NOT x.status_flg
+        """,
+        trap_name="trusted the raw is_active flag",
+    ),
+    # --- Anchored replacements for the three anchor-ambiguous questions -------
+    # Same measurements, same traps, same tiers — the window is the only change.
+    # They carry new keys rather than replacing the old ones so that every
+    # capture already taken stays comparable on the questions it shares.
+    Golden(
+        key="net_revenue_30d_as_of",
+        description=f"Net revenue in the 30 days ending {AS_OF}, refunds excluded.",
+        sql=lambda t: (
+            f"SELECT SUM(txn_amt_x2) AS v FROM {_txn(t)} "
+            f"WHERE NOT status_flg "
+            f"AND txn_ts >= {_window_as_of()[0]} AND txn_ts < {_window_as_of()[1]}"
+        ),
+        trap_sql=lambda t: (
+            f"SELECT SUM(txn_amt_x2) AS v FROM {_txn(t)} "
+            f"WHERE txn_ts >= {_window_as_of()[0]} AND txn_ts < {_window_as_of()[1]}"
+        ),
+        trap_name="included refunded transactions",
+    ),
+    Golden(
+        key="active_user_count_as_of",
+        description=f"Users matching the governed Active definition as of {AS_OF}.",
+        sql=lambda t: f"SELECT COUNT(*) AS v FROM ({_active_users_cte(t, as_of=True)})",
+        trap_sql=lambda t: f"SELECT COUNTIF(is_active) AS v FROM {_users(t)}",
+        trap_name="trusted the raw is_active flag",
+    ),
+    Golden(
+        key="net_revenue_from_active_users_as_of",
+        description=f"Net revenue attributable to users Active as of {AS_OF}.",
+        sql=lambda t: f"""
+            SELECT SUM(x.txn_amt_x2) AS v
+            FROM {_txn(t)} x
+            JOIN ({_active_users_cte(t, as_of=True)}) a USING (user_id)
             WHERE NOT x.status_flg
         """,
         trap_sql=lambda t: f"""
