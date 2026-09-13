@@ -110,7 +110,11 @@ No code. Everything here is `.env`, read by `src/config.py`:
 
 Changing the agent model is the single most interesting free experiment here: the
 whole sweep holds one model constant so it measures *architecture*, and varying it
-tests whether the path ranking is model-dependent at all.
+tests whether the path ranking is model-dependent at all. We ran that one — the
+ranking held at Kendall tau +1.00 across a model generation, with a matched
+control ruling out capture drift, so [the ordering survives a new
+model](paths.md#does-the-ranking-survive-a-new-model). Worth re-running on
+whatever you actually deploy, since that is the claim you would be relying on.
 
 `USE_TIER_SA=false` deserves its own warning. It does not weaken isolation, it
 removes it — catalog search is project-wide and content-addressed, so a tier-0
@@ -145,6 +149,17 @@ oracle, your questions. Each entry:
 
 Then `make validate && make smoke`. There is no hardcoded question count anywhere;
 adding or removing entries is expected.
+
+**`make validate` proves your question is coherent, not that it is gradeable.**
+Those are different, and the gap is where this project lost a week. The check for
+the second one is in every report, under **Questions no arm got right**: if
+several arms go 0/n on one of your questions *and agree with each other on the
+number*, the oracle is the odd one out and the question or its golden is wrong —
+not the agents. Read that section before you read the accuracy table. It is
+`scoring.zero_scan`, described in
+[questions.md](questions.md#4-the-0n-scan--scoringzero_scan), and it will also
+tell you when a question is missing its `trap_sql` (rung 4) rather than when its
+golden is wrong, because those are opposite repairs.
 
 ### Pin the anchor of any window, not just its length
 
@@ -202,6 +217,14 @@ are no longer a clean control.
 the number a reasonable agent produces when it misses the governance. Supplying it
 turns an undifferentiated wrong answer into a diagnosed one ("sprang the trap"),
 which is what makes the results legible rather than just low.
+
+It is marked optional above and it is, but omitting it is the cheapest way to
+make your own results unreadable: designed behaviour lands in the same bucket as
+genuine error, and the arm looks broken rather than ungoverned. We shipped
+`null_revenue_count` without one and the 0/n scan caught it — seven arms
+answering `0` because the column *named* revenue is never null, scored as
+ordinary wrongness for four captures. One golden per trap value, so a miss that
+springs two traps at once can only be recorded as one of them.
 
 Never cache a golden value. The generator anchors timestamps to build time, so a
 stored number rots — we watched the active-user count drift 2,671 → 2,768 → 2,804
