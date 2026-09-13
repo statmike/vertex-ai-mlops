@@ -194,6 +194,26 @@ The last column is how complete the picture is. **full** means everything this s
 
 | config | tier | n | governed | partial | invented | unclear |
 |---|---|---|---|---|---|---|
+| p1_managed | 0 | 30 | 10% | 30% | 60% | 0% |
+| p1_managed | 1 | 30 | 50% | 47% | 3% | 0% |
+| p1_toolbox | 0 | 30 | 7% | 20% | 73% | 0% |
+| p1_toolbox | 1 | 30 | 80% | 20% | 0% | 0% |
+| p2_managed | 0 | 30 | 10% | 27% | 63% | 0% |
+| p2_managed | 1 | 30 | 80% | 20% | 0% | 0% |
+| p2_toolbox | 0 | 30 | 10% | 30% | 60% | 0% |
+| p2_toolbox | 1 | 30 | 80% | 20% | 0% | 0% |
+| p3_managed | 0 | 30 | 10% | 30% | 60% | 0% |
+| p3_managed | 1 | 30 | 80% | 20% | 0% | 0% |
+| p3_toolbox | 0 | 30 | 10% | 20% | 70% | 0% |
+| p3_toolbox | 1 | 30 | 80% | 20% | 0% | 0% |
+| p1_matched | 0 | 30 | 10% | 30% | 60% | 0% |
+| p1_matched | 1 | 30 | 50% | 43% | 7% | 0% |
+| p3_matched | 0 | 30 | 10% | 33% | 57% | 0% |
+| p3_matched | 1 | 30 | 80% | 20% | 0% | 0% |
+| p4_bq_ca | 0 | 30 | 3% | 23% | 73% | 0% |
+| p4_bq_ca | 1 | 30 | 80% | 20% | 0% | 0% |
+| p4_looker_ca | 0 | 30 | 0% | 17% | 80% | 3% |
+| p4_looker_ca | 1 | 30 | 50% | 20% | 7% | 23% |
 
 ## Equivalence
 
