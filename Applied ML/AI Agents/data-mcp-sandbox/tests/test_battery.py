@@ -282,7 +282,7 @@ def test_a_merged_capture_keeps_each_runs_freeze_time_with_its_oracle():
     # oracle and appear to date both.
     def header(commit, config_key, frozen_at):
         return {"agent_model": "m", "runs": 1, "git_commit": commit, "started": "2026-09-05",
-                "configs": [config_key], "total_cells": 1,
+                "configs": [config_key], "question_ids": ["direct-q1"], "total_cells": 1,
                 "goldens": {"0": {}}, "goldens_frozen_at": frozen_at}
 
     merged = traces.merge_headers([

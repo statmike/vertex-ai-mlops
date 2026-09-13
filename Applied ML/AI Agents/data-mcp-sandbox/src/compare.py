@@ -185,7 +185,7 @@ def align(
             if not set(restricted) <= shared_tiers(values):
                 result.conflicts[name] = values
             continue
-        differs = len({_comparable(value) for value in values}) > 1
+        differs = len({traces.comparable(value) for value in values}) > 1
         if name in axes:
             if differs:
                 result.varied[name] = values
@@ -241,30 +241,6 @@ def _tier_set(value: object) -> set[int]:
         except (TypeError, ValueError):
             continue
     return found
-
-
-def _comparable(value: object) -> str:
-    """A hashable, order-stable rendering of a header value.
-
-    Header fields hold lists (`tiers`, `configs`, `question_ids`) as well as
-    scalars, and a list is unhashable. Sorting rather than preserving order is
-    deliberate: two captures that declare the same tiers in a different order
-    measured the same thing.
-
-    `None` and `""` collapse to one value, which is what lets this family grow.
-    Every field added to `MUST_AGREE` after a capture was taken is missing from
-    that capture's header and reads as `None`; without this, adding
-    `ca_thinking_mode` would have made the published capture permanently
-    incomparable to everything measured against it — the guard would refuse the
-    exact comparison it was added for. Both spellings mean *unset*, and unset is
-    a real, checkable state: a capture that omitted the field and one that
-    explicitly left it empty sent the same request.
-    """
-    if isinstance(value, list):
-        return repr(sorted(str(item) for item in value))
-    if value is None or value == "":
-        return "<unset>"
-    return repr(value)
 
 
 @dataclass

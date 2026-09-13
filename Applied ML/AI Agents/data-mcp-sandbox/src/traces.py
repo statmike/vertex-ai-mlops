@@ -178,6 +178,35 @@ def read_header(path: Path) -> dict[str, Any]:
     return header
 
 
+def comparable(value: object) -> str:
+    """A hashable, order-stable rendering of a header value.
+
+    Header fields hold lists (`tiers`, `configs`, `question_ids`) as well as
+    scalars, and a list is unhashable. Sorting rather than preserving order is
+    deliberate: two captures that declare the same tiers in a different order
+    measured the same thing.
+
+    `None` and `""` collapse to one value, which is what lets this family grow.
+    Every field added to `MUST_AGREE` after a capture was taken is missing from
+    that capture's header and reads as `None`; without this, adding
+    `ca_thinking_mode` would have made the published capture permanently
+    incomparable to everything measured against it — the guard would refuse the
+    exact comparison it was added for. Both spellings mean *unset*, and unset is
+    a real, checkable state: a capture that omitted the field and one that
+    explicitly left it empty sent the same request.
+
+    Lives here rather than in `compare.py` because `merge_headers` needs the
+    same rule for the same reason: the published capture predates three of the
+    fields in `MUST_AGREE`, and a merge that read "absent" as a disagreement
+    with "empty" would refuse to add anything to it ever again.
+    """
+    if isinstance(value, list):
+        return repr(sorted(str(item) for item in value))
+    if value is None or value == "":
+        return "<unset>"
+    return repr(value)
+
+
 # --- Merging two captures ------------------------------------------------------
 
 # Header fields that must agree before two captures may be merged, because the
@@ -222,6 +251,54 @@ PER_RUN = (
 )
 
 
+def _ordered_union(sequences: Iterable[Iterable[str]]) -> list[str]:
+    """Every element of every sequence, first-seen order, no repeats."""
+    seen: list[str] = []
+    for sequence in sequences:
+        for item in sequence:
+            if item not in seen:
+                seen.append(item)
+    return seen
+
+
+def _question_sets(headers: list[dict[str, Any]]) -> list[set[str]]:
+    """What each run asked, refusing a run that does not say.
+
+    A header with no `question_ids` cannot be placed on the grid at all: there
+    would be no way to tell a run that *extended* the factorial with new
+    questions from a second run of the same cells. Refusing is the conservative
+    reading, and every capture this repo has ever written records the field.
+    """
+    sets = []
+    for header in headers:
+        asked = header.get("question_ids")
+        if not asked:
+            raise ValueError(
+                "cannot merge a capture whose header has no 'question_ids': "
+                "without it, a run that adds questions and a second run of the "
+                "same questions are indistinguishable."
+            )
+        sets.append(set(asked))
+    return sets
+
+
+def _runs_of(header: dict[str, Any]) -> list[dict[str, Any]]:
+    """One header per sweep the file holds, flattening a capture that is already a merge.
+
+    The published capture is itself a merge of two sweeps under two oracles
+    (Amendment B.6). Merging *into* it therefore starts by taking it apart:
+    treated as a single run it would arrive with no `goldens` of its own — a
+    merged header deliberately carries none — and 1,440 cells would come out the
+    far side ungradeable. Each record is re-inflated against the fields the
+    parent holds for every run, so a run view is a header like any other.
+    """
+    runs = header.get("merged_from")
+    if not isinstance(runs, list) or not runs:
+        return [header]
+    shared = {key: value for key, value in header.items() if key != "merged_from"}
+    return [shared | run for run in runs]
+
+
 def merge_headers(headers: list[dict[str, Any]]) -> dict[str, Any]:
     """One header describing several runs, refusing to flatten what differs.
 
@@ -248,20 +325,40 @@ def merge_headers(headers: list[dict[str, Any]]) -> dict[str, Any]:
     that as the new arm being inaccurate. Each run therefore keeps the oracle
     that was true when it ran, and no top-level `goldens` survives to be applied
     to cells it does not belong to.
+
+    **A run may add arms, or add questions to arms already captured, and nothing
+    else.** The second is what lets the three anchored re-issues land inside the
+    published factorial instead of beside it. Both are bounded by one rule: the
+    runs must *tile* the arm-by-question grid — disjoint, and complete. Anything
+    that overlaps is two observations of one cell; anything that leaves a hole
+    is a ragged grid about to be published as a factorial.
     """
     if not headers:
         return {}
     if len(headers) == 1:
         return dict(headers[0])
 
+    # A capture that is already a merge enters as its constituent sweeps, so the
+    # oracle each one froze stays attached to the arms and questions it graded.
+    headers = [run for header in headers for run in _runs_of(header)]
     base = headers[0]
     for field_name in MUST_AGREE:
-        values = {json.dumps(header.get(field_name), sort_keys=True) for header in headers}
+        # `question_ids` is checked below instead, under a rule this loop cannot
+        # express: a run may *add* questions to arms already captured, which is
+        # how the anchored re-issues reach the published factorial without
+        # re-running the twelve. The check that replaces this one is stricter
+        # where it matters — the runs must still tile a complete grid. It stays
+        # in `MUST_AGREE` because the *comparator* differences two captures cell
+        # by cell and must still refuse two that asked different things.
+        if field_name == "question_ids":
+            continue
+        values = {comparable(header.get(field_name)) for header in headers}
         if len(values) > 1:
             raise ValueError(
                 f"cannot merge captures that disagree on {field_name!r}: "
                 f"{sorted(values)}. These runs measured different things."
             )
+    question_sets = _question_sets(headers)
 
     merged = {key: value for key, value in base.items() if key not in PER_RUN}
     merged["started"] = min(str(header.get("started", "")) for header in headers)
@@ -272,17 +369,48 @@ def merge_headers(headers: list[dict[str, Any]]) -> dict[str, Any]:
         merged["quality_scans"] = scans.pop()
 
     configs: list[str] = []
+    claimed: dict[str, set[str]] = {}
     schemas: dict[str, Any] = {}
-    for header in headers:
+    for header, questions in zip(headers, question_sets, strict=True):
         for key in header.get("configs", []):
-            if key in configs:
+            # An arm may appear in two runs only when they asked *different*
+            # questions — that extends the factorial rather than re-running it,
+            # and `merge_cells` still refuses any cell key that repeats. Same arm
+            # asking the same question in two runs is the case this has always
+            # caught: two observations of one cell landing in one denominator.
+            repeated = claimed.get(key, set()) & questions
+            if repeated:
                 raise ValueError(
-                    f"config {key!r} appears in more than one capture; merging would "
-                    "mix two runs of the same arm into one denominator"
+                    f"config {key!r} appears in more than one capture asking "
+                    f"{sorted(repeated)}; merging would mix two runs of the same arm "
+                    "into one denominator"
                 )
-            configs.append(key)
+            if key not in configs:
+                configs.append(key)
+            claimed.setdefault(key, set()).update(questions)
         schemas.update(header.get("tool_schemas") or {})
     merged["configs"] = configs
+    merged["question_ids"] = _ordered_union(
+        header.get("question_ids") or [] for header in headers
+    )
+    # The runs have to *tile* the grid, not merely avoid colliding on it. Each
+    # covers its own arms times its own questions, the loop above proved those
+    # patches are disjoint, so a merge is a complete factorial exactly when the
+    # areas add up to the whole. Without this, two runs that each asked a
+    # different question of a different arm would merge into a 2x2 grid holding
+    # two cells and publish it as a factorial.
+    covered = sum(
+        len(header.get("configs", [])) * len(questions)
+        for header, questions in zip(headers, question_sets, strict=True)
+    )
+    if covered != len(configs) * len(merged["question_ids"]):
+        raise ValueError(
+            f"these captures do not tile a factorial: {covered} arm-question pairs "
+            f"across {len(configs)} arms and {len(merged['question_ids'])} question_ids. "
+            "A run may add arms, or add question_ids to every arm already present, "
+            "but a merge that leaves some arm never asked some question would "
+            "publish a ragged grid as a complete one."
+        )
     merged["tool_schemas"] = schemas
     merged["total_cells"] = sum(int(header.get("total_cells", 0)) for header in headers)
     merged["merged_from"] = [
@@ -290,6 +418,10 @@ def merge_headers(headers: list[dict[str, Any]]) -> dict[str, Any]:
             "git_commit": header.get("git_commit", "unknown"),
             "started": header.get("started", ""),
             "configs": list(header.get("configs", [])),
+            # Which questions this run's oracle is authoritative for. An arm can
+            # now appear in two runs, so the arm alone no longer says which
+            # frozen block grades a cell — see `goldens_by_cell`.
+            "question_ids": list(header.get("question_ids", [])),
             "total_cells": header.get("total_cells", 0),
             "quality_scans": header.get("quality_scans"),
             # Absent rather than empty when the run never froze one, so the
@@ -310,35 +442,48 @@ def merge_headers(headers: list[dict[str, Any]]) -> dict[str, Any]:
     return merged
 
 
-def goldens_by_config(
-    header: dict[str, Any], configs: Iterable[str]
-) -> dict[str, dict[str, Any]]:
-    """The frozen oracle for each of `configs`, omitting any arm that has none.
+def goldens_by_cell(
+    header: dict[str, Any], pairs: Iterable[tuple[str, str]]
+) -> dict[tuple[str, str], dict[str, Any]]:
+    """The frozen oracle for each (arm, question), omitting any pair with none.
 
-    One entry per arm rather than one per capture, because a merged capture has
-    one oracle per *run* and the arms are how a cell knows which run it came
-    from (`merge_headers` refuses to put an arm in two runs, which is what makes
-    that lookup total).
+    One entry per arm *and question* rather than one per capture, because a
+    merged capture has one oracle per **run**, and (arm, question) is what
+    identifies the run a cell came from. Arm alone used to be enough; it stopped
+    being enough when `merge_headers` started allowing a run that adds questions
+    to arms already captured.
 
-    An unmerged capture answers with its single `goldens` block for every arm
+    Keying this finely also disposes of a hazard that would otherwise arrive
+    with those runs. `battery.freeze_oracle` freezes **all** of `golden.GOLDENS`
+    regardless of `--questions`, so a run that asked three questions still
+    carries fifteen values, twelve of them re-measured days later and drifted
+    against the run that actually asked them. Those twelve are never reachable
+    here: a golden key is only ever looked up through the question that uses it,
+    and that question routes to its own run's block.
+
+    An unmerged capture answers with its single `goldens` block for every pair
     asked about, so the published capture re-scores exactly as it did before
-    this existed. The caller passes the arms it actually holds rather than
-    trusting the header's `configs` list, so an arm present in the cells but
-    missing from the header cannot silently come back unscored.
+    this existed. Same for a merged run written before `question_ids` was
+    recorded per run: it answers for every question, which is what it meant when
+    arms could not overlap. The caller passes the pairs it actually holds rather
+    than trusting the header, so a cell present in the capture but missing from
+    the header cannot silently come back unscored.
     """
     runs = header.get("merged_from")
     if isinstance(runs, list) and runs:
-        available = {
-            config_key: run["goldens"]
-            for run in runs
-            if run.get("goldens")
-            for config_key in run.get("configs", [])
-        }
-        return {key: available[key] for key in configs if key in available}
+        available: dict[tuple[str, str], dict[str, Any]] = {}
+        for run in runs:
+            if not run.get("goldens"):
+                continue
+            asked = run.get("question_ids") or header.get("question_ids") or []
+            for config_key in run.get("configs", []):
+                for question_id in asked:
+                    available[(config_key, question_id)] = run["goldens"]
+        return {pair: available[pair] for pair in pairs if pair in available}
     frozen = header.get("goldens")
     if not frozen:
         return {}
-    return {config_key: frozen for config_key in configs}
+    return {pair: frozen for pair in pairs}
 
 
 def merge_cells(captures: list[dict[str, Cell]]) -> dict[str, Cell]:

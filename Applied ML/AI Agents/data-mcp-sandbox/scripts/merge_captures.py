@@ -9,8 +9,14 @@ sweep run into its own file, deliberately, so a defect in a new arm could not
 corrupt a published one. Amendment B.6 was exactly that — 240 direct-API cells
 captured separately, then merged once they had been inspected.
 
+A capture may also add *questions* to arms already swept, which is how the three
+anchored re-issues reached the published factorial without re-running the twelve
+(`docs/questions.md`). What cannot be added is a second observation of a cell
+that already exists.
+
 Merging is refused rather than reconciled whenever two captures disagree about
-what they measured, or when the same arm appears twice. See
+what they measured, when the same arm asks the same question twice, or when the
+runs together leave a hole in the arm-by-question grid. See
 `traces.merge_headers` for the list and why each field is on it.
 """
 
