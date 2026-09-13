@@ -270,6 +270,72 @@ def ungraded_note(scores: dict[str, scoring.Score]) -> str:
     return "\n".join(lines)
 
 
+def grading_mismatch(scores: dict[str, scoring.Score]) -> str:
+    """Questions no arm got right, and whether the grader is the common factor.
+
+    Printed even when nothing is flagged. An automated check that renders only
+    on failure is indistinguishable from an automated check that never ran, and
+    this one exists precisely because a 0/n that nobody looked at cost this
+    project a retracted headline.
+    """
+    scans = scoring.zero_scan(scores.values())
+    if not scans:
+        return (
+            f"**No question shut out {scoring.MIN_ARMS_FOR_ZERO_SCAN} or more arms.** "
+            "Nothing to disambiguate."
+        )
+
+    suspect = [scan for scan in scans if scan.suspect]
+    lines = [
+        table(
+            ["question", "tier", "arms", "shut out", "answered", "distinct answers",
+             "most common", "verdict"],
+            [
+                [
+                    f"`{scan.question_id}`", str(scan.tier), str(scan.arms),
+                    str(scan.shutouts), str(scan.answered), str(scan.clusters or "--"),
+                    fmt(scan.modal_value, ",.0f") + (
+                        f" ({scan.modal_share})" if scan.modal_value is not None else ""
+                    ),
+                    "**suspect**" if scan.suspect else "expected",
+                ]
+                for scan in scans
+            ],
+        ),
+        "",
+    ]
+    lines += [f"* `{scan.question_id}` tier {scan.tier} — {scan.reason}" for scan in scans]
+    lines += [""]
+    if not suspect:
+        lines.append(
+            "**Nothing flagged.** Every shutout above is the corpus working: the arms "
+            "are spread across different wrong answers, or they converged on the trap "
+            "value the question was built to catch."
+        )
+        return "\n".join(lines)
+
+    named = ", ".join(f"`{scan.question_id}` tier {scan.tier}" for scan in suspect)
+    lines.append(
+        f"⚠️ **{len(suspect)} flagged: {named}.** Several arms going 0/n while agreeing "
+        "with each other is a claim about the rubric, not about the agents. There are "
+        "two repairs and they are not interchangeable:"
+    )
+    lines += [
+        "",
+        "* **The golden or the wording is wrong.** Fix the golden if it computes the "
+        "wrong thing; if the question admits two defensible answers instead, mark it "
+        "`scoreable: false` with a reason rather than letting one arbitrary reading "
+        "count as n failures per arm.",
+        "* **The trap is simply not recorded.** A question whose oracle carries no "
+        "trap value cannot report a trap-shaped miss as one, so textbook naive "
+        "behaviour lands in the same bucket as genuine error. Add the `trap_sql` — "
+        "the cells do not need re-running, but a capture that froze its oracle before "
+        "the trap existed will keep flagging until it is re-swept.",
+        "",
+    ]
+    return "\n".join(lines)
+
+
 def acquisition(scores: dict[str, scoring.Score]) -> str:
     """The §9.1 split. `--` means the arm cannot be inspected, not that it failed.
 
@@ -771,6 +837,10 @@ def build(
         accuracy(scores),
         "",
         ungraded_note(scores),
+        "",
+        "### Questions no arm got right",
+        "",
+        grading_mismatch(scores),
         "",
         "## Acquisition vs application",
         "",

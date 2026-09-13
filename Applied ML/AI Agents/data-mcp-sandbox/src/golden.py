@@ -264,6 +264,16 @@ GOLDENS: list[Golden] = [
         key="null_revenue_count",
         description="Transactions with a NULL txn_amt_x2.",
         sql=lambda t: f"SELECT COUNTIF(txn_amt_x2 IS NULL) AS v FROM {_txn(t)}",
+        # T1 again, and it resolves to exactly 0: `bq_setup` never writes a NULL
+        # into `revenue_amount`, so an agent that profiles the column *named*
+        # revenue reports "nothing is missing". This trap was missing until the
+        # 0/n scan flagged seven arms converging on 0 at tier 0 with no trap
+        # recorded — textbook T1 behaviour that was being scored as ordinary
+        # wrongness. A zero-valued trap does mean any answer of 0 counts as
+        # sprung, which is the right reading here: 0 is only reachable by
+        # profiling the wrong column.
+        trap_sql=lambda t: f"SELECT COUNTIF(revenue_amount IS NULL) AS v FROM {_txn(t)}",
+        trap_name="profiled the column named revenue, which is never null",
     ),
     Golden(
         key="refunded_txn_count",

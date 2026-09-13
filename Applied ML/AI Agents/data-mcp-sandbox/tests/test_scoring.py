@@ -216,3 +216,107 @@ def test_an_errored_cell_is_scored_as_a_failure_not_skipped():
     assert not score.answered
     assert not score.correct
     assert score.notes
+
+
+# --- the 0/n scan -------------------------------------------------------------
+
+
+def _zero_scores(
+    question: str, tier: int, arms: list[str], values: list[float],
+    correct_arms: tuple[str, ...] = (), trap_value: float | None = None,
+    runs: int = 5,
+):
+    """One (question, tier) block: `arms` each answering its value `runs` times."""
+    scores = []
+    for config_key, value in zip(arms, values, strict=True):
+        for run in range(1, runs + 1):
+            scores.append(scoring.Score(
+                cell_key=traces.cell_key(question, config_key, tier, run),
+                config=config_key, tier=tier, question_id=question,
+                category="governed-logic", answered=True, value=value,
+                correct=config_key in correct_arms,
+                sprang_trap=trap_value is not None and value == trap_value,
+                trap_known=trap_value is not None,
+            ))
+    return scores
+
+
+def test_arms_agreeing_on_one_wrong_number_is_read_as_a_grading_mismatch():
+    # The signature that cost this project a retracted headline: every arm 0/n,
+    # every arm on the same number, and only the oracle dissenting.
+    scans = scoring.zero_scan(_zero_scores(
+        "governed-q1", 1, ["p1_managed", "p2_toolbox", "p3_toolbox", "p3_managed"],
+        [2804, 2804, 2699, 2804], trap_value=3520,
+    ))
+    assert [scan.suspect for scan in scans] == [True]
+    assert scans[0].shutouts == 4
+    assert scans[0].clusters == 2  # the two defensible window anchors
+    assert scans[0].modal_value == 2804
+
+
+def test_arms_converging_on_the_trap_value_is_the_corpus_working():
+    # Tier 0 is *supposed* to shut every arm out on a governed question. Flagging
+    # that would report the experiment's central finding as a bug in the rubric.
+    scans = scoring.zero_scan(_zero_scores(
+        "governed-q1", 0, ["p1_managed", "p2_toolbox", "p3_toolbox", "p3_managed"],
+        [3520, 3520, 3520, 2699], trap_value=3520,
+    ))
+    assert [scan.suspect for scan in scans] == [False]
+    assert scans[0].by_design
+
+
+def test_varied_wrong_answers_are_ordinary_failure_not_a_shared_cause():
+    scans = scoring.zero_scan(_zero_scores(
+        "trap-q2", 0, ["p1_managed", "p2_toolbox", "p3_toolbox", "p3_managed"],
+        [776, 25, 1250, 99], trap_value=3520,
+    ))
+    assert [scan.suspect for scan in scans] == [False]
+    assert scans[0].clusters == 4
+
+
+def test_a_shutout_is_flagged_even_when_other_arms_scored_normally():
+    # The real defect did not shut out the whole factorial: the two direct arms
+    # were merged in under a second oracle and graded fine, while ten arms went
+    # 0/n. A check that only fired on a unanimous zero would have stayed silent.
+    scans = scoring.zero_scan(_zero_scores(
+        "governed-q1", 1,
+        ["p1_managed", "p2_toolbox", "p3_toolbox", "p4_bq_direct"],
+        [2804, 2804, 2804, 2718], correct_arms=("p4_bq_direct",), trap_value=3520,
+    ))
+    assert [scan.suspect for scan in scans] == [True]
+    assert scans[0].shutouts == 3
+    assert scans[0].arms == 4
+
+
+def test_a_missing_trap_value_is_reported_as_the_missing_trap_and_not_as_a_bad_golden():
+    # `null_revenue_count` had no `trap_sql`, so seven arms profiling the column
+    # *named* revenue and reporting 0 looked like ordinary wrongness. The two
+    # repairs are different, so the diagnosis has to distinguish them.
+    scans = scoring.zero_scan(_zero_scores(
+        "metadata-q1", 0, ["p1_managed", "p2_toolbox", "p3_toolbox"], [0, 0, 0],
+    ))
+    assert scans[0].suspect
+    assert not scans[0].trap_known
+    assert "no trap value" in scans[0].reason
+
+
+def test_too_few_arms_or_one_replicate_is_not_a_shutout():
+    # An arm with n=1 is 0/1 half the time on anything hard.
+    single = _zero_scores(
+        "governed-q1", 1, ["p1_managed", "p2_toolbox", "p3_toolbox"],
+        [2804, 2804, 2804], runs=1,
+    )
+    assert scoring.zero_scan(single) == []
+    two_arms = _zero_scores("governed-q1", 1, ["p1_managed", "p2_toolbox"], [2804, 2804])
+    assert scoring.zero_scan(two_arms) == []
+
+
+def test_the_scan_never_looks_at_a_question_the_rubric_already_excluded():
+    # Otherwise every capture taken before the anchored questions existed would
+    # re-flag the three known-unscoreable ones forever.
+    scores = _zero_scores(
+        "semantic-q2", 1, ["p1_managed", "p2_toolbox", "p3_toolbox"], [2804, 2804, 2804],
+    )
+    for score in scores:
+        score.scoreable = False
+    assert scoring.zero_scan(scores) == []

@@ -107,6 +107,12 @@ class Score:
     correct: bool = False
     sprang_trap: bool = False
     trap_name: str = ""
+    # Whether this question's oracle carries a trap value at all. Only `zero_scan`
+    # reads it, to tell "everyone missed and nobody sprang the recorded trap" from
+    # "everyone missed and there is no recorded trap to spring" — which are
+    # opposite diagnoses. A `scores.json` written before this field existed reads
+    # False and gets the more cautious of the two wordings, never a wrong one.
+    trap_known: bool = False
 
     # Whether `correct` means anything for this question. False marks a question
     # whose wording admits two defensible answers; `correct` is still computed
@@ -375,6 +381,7 @@ def score_cell(
         ),
     )
     result.rules_required = rules_for(evidence)
+    result.trap_known = resolved is not None and resolved.trap_value is not None
 
     if not cell.ok:
         # §9.4: an error cell is a failure, not a missing observation. Dropping
@@ -546,3 +553,174 @@ def compare_arms(
                 f"{cell_a.question_id} tier{cell_a.tier} run{cell_a.run}: only {winner} correct"
             )
     return result
+
+
+# --- the 0/n scan -------------------------------------------------------------
+#
+# The anchor defect cost this project a day of chasing a failed replication check
+# before anyone decomposed the disagreement per question. The signature was in
+# the data the whole time: three questions at exactly 0/n across every arm, with
+# the arms agreeing with each other and disagreeing only with us. This runs that
+# decomposition automatically, so the next rubric bug announces itself.
+
+# An arm can plausibly fail a hard question. Several arms independently landing
+# on the same wrong number cannot be several independent failures, so a shutout
+# is only interesting once enough arms are in it to rule that out.
+MIN_ARMS_FOR_ZERO_SCAN = 3
+# Distinct answer clusters allowed before the misses look like ordinary, varied
+# wrongness rather than one shared cause. Three, not one, because the defect this
+# was built for produced *two* clusters — the agents split between two defensible
+# window anchors.
+MAX_CLUSTERS_FOR_SUSPICION = 3
+
+
+@dataclass
+class ZeroScan:
+    """One (question, tier) and the arms that went 0/n on it.
+
+    Read per arm and not per question, because the defect this was built for did
+    not shut out the whole factorial: ten arms scored 0/n on `governed-q1` at
+    tier 1 while the two direct arms — merged in from a second run under a
+    *second oracle* — scored normally. A check that only fired on a unanimous
+    zero would have stayed silent on exactly that.
+
+    Not every shutout is a bug. Tier 0 is *supposed* to produce them on
+    governed-logic questions; that is the finding the experiment exists to show.
+    What separates a finding from a defect is whether the shut-out arms agree
+    with each other: a trap catches everyone by design, and a question the
+    oracle grades wrongly leaves everyone clustered on a number it rejects.
+    """
+
+    question_id: str
+    tier: int
+    arms: int
+    shutout_arms: tuple[str, ...] = ()
+    answered: int = 0
+    sprang_trap: int = 0
+    trap_known: bool = False
+    clusters: int = 0
+    modal_value: float | None = None
+    modal_share: int = 0
+    modal_arms: int = 0
+
+    @property
+    def shutouts(self) -> int:
+        return len(self.shutout_arms)
+
+    @property
+    def by_design(self) -> bool:
+        """Most of the misses are the trap value — the corpus working, not a bug."""
+        return self.answered > 0 and self.sprang_trap * 2 > self.answered
+
+    @property
+    def suspect(self) -> bool:
+        """The shut-out arms agree with each other and only the oracle dissents."""
+        return (
+            self.shutouts >= MIN_ARMS_FOR_ZERO_SCAN
+            and self.answered > 0
+            and not self.by_design
+            and 0 < self.clusters <= MAX_CLUSTERS_FOR_SUSPICION
+            and self.modal_arms >= MIN_ARMS_FOR_ZERO_SCAN
+        )
+
+    @property
+    def reason(self) -> str:
+        """Why this row is or is not being called a grading mismatch."""
+        if self.shutouts < MIN_ARMS_FOR_ZERO_SCAN:
+            return (
+                f"only {self.shutouts} arm(s) shut out — too few to tell a shared "
+                "cause from a hard question"
+            )
+        if self.answered == 0:
+            return "no shut-out arm produced a number; a failure to answer, not a grading question"
+        if self.by_design:
+            return (
+                f"{self.sprang_trap}/{self.answered} sprang the trap — "
+                "the corpus working as designed"
+            )
+        if self.clusters > MAX_CLUSTERS_FOR_SUSPICION:
+            return f"{self.clusters} distinct answers — varied wrongness, not one shared cause"
+        if self.modal_arms < MIN_ARMS_FOR_ZERO_SCAN:
+            return f"the modal answer spans only {self.modal_arms} arm(s)"
+        partial = (
+            f", while {self.arms - self.shutouts} other arm(s) scored normally"
+            if self.shutouts < self.arms else ""
+        )
+        agreement = (
+            f"{self.modal_arms} shut-out arms agree on {self.modal_value:,.0f} and the "
+            f"oracle rejects it{partial}"
+        )
+        if not self.trap_known:
+            return (
+                f"{agreement} — and this question's oracle records **no trap value**, so a "
+                "trap-shaped miss here cannot be told from ordinary wrongness. Check "
+                "whether that number is the naive answer before reading this as failure"
+            )
+        return f"{agreement} — suspect the golden or the question's wording, not the agents"
+
+
+def _cluster(values: list[float]) -> list[list[int]]:
+    """Group value indices by mutual agreement within the grading tolerance.
+
+    The *same* tolerance the oracle grades with, deliberately: the claim being
+    tested is "these arms computed the same quantity and the oracle disagrees",
+    and that claim is only meaningful at the resolution the oracle itself uses.
+    Greedy single pass — clusters here are far apart or identical, so the
+    pathological chaining case a proper clustering would guard against does not
+    arise, and a legible ten lines beats a correct hundred.
+    """
+    clusters: list[list[int]] = []
+    for index, value in enumerate(values):
+        for group in clusters:
+            if _close(value, values[group[0]]):
+                group.append(index)
+                break
+        else:
+            clusters.append([index])
+    return clusters
+
+
+def zero_scan(scores: Iterable[Score], min_arms: int = MIN_ARMS_FOR_ZERO_SCAN) -> list[ZeroScan]:
+    """Every (question, tier) where `min_arms` or more arms scored a clean 0/n.
+
+    Returns the whole set, suspect or not, rather than only the flagged ones —
+    a reader needs to see that the tier-0 governed questions were checked and
+    cleared, or the check reads as having found nothing because it looked at
+    nothing.
+
+    A single replicate is not a shutout: an arm with n=1 is 0/1 half the time on
+    anything hard, and counting it would flood the scan with noise from pilots.
+    """
+    buckets: dict[tuple[str, int], dict[str, list[Score]]] = {}
+    for score in graded(scores):
+        by_arm = buckets.setdefault((score.question_id, score.tier), {})
+        by_arm.setdefault(score.config, []).append(score)
+
+    results = []
+    for (question_id, tier), by_arm in sorted(buckets.items()):
+        shut_out = {
+            config: replicates for config, replicates in sorted(by_arm.items())
+            if len(replicates) > 1 and not any(score.correct for score in replicates)
+        }
+        if len(shut_out) < min_arms:
+            continue
+        misses = [score for replicates in shut_out.values() for score in replicates]
+        answered = [score for score in misses if score.answered and score.value is not None]
+        scan = ZeroScan(
+            question_id=question_id,
+            tier=tier,
+            arms=len(by_arm),
+            shutout_arms=tuple(shut_out),
+            answered=len(answered),
+            sprang_trap=sum(1 for score in misses if score.sprang_trap),
+            trap_known=any(score.trap_known for score in misses),
+        )
+        clusters = _cluster([score.value for score in answered if score.value is not None])
+        if clusters:
+            modal = max(clusters, key=len)
+            scan.clusters = len(clusters)
+            scan.modal_value = answered[modal[0]].value
+            scan.modal_share = len(modal)
+            scan.modal_arms = len({answered[index].config for index in modal})
+        results.append(scan)
+    return results
