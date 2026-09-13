@@ -286,6 +286,12 @@ make compare-aa BASE=results/capture.json.gz \
                 AGAINST=results/capture-thinking-default.json.gz TIER=0
 ```
 
+**A new question is the other cheap increment**, and it goes the other way: an
+axis produces a sibling capture to compare against, while `--questions` produces
+a strip of the same grid that *merges into* the capture you already have. Three
+of ours were added that way. The commands, and the one rule the merge refuses on,
+are in [adapting.md](adapting.md#adding-a-question-without-re-running-the-sweep).
+
 ### Running the governance ladder
 
 The published experiment has two tiers, ungoverned and fully governed, and so it

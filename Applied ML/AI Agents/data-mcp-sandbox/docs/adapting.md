@@ -193,6 +193,40 @@ The un-anchored originals are still in `questions.json`, carrying
 `scoreable: false` and the reason. They are kept rather than deleted so the
 captures taken before the fix stay readable.
 
+### Adding a question without re-running the sweep
+
+A full factorial is a day. One more question across the same arms is a couple of
+hours, and it merges into the capture you already paid for rather than sitting
+beside it:
+
+```bash
+uv run python examples/run_battery.py --questions my-q1 --runs 5 \
+    --out results/raw/my-q1.json
+make export RESULTS=results/raw/my-q1.json OUT=results/capture-my-q1.json.gz
+uv run python scripts/merge_captures.py \
+    results/capture.json.gz results/capture-my-q1.json.gz \
+    --out results/capture.json.gz
+make report
+```
+
+`--questions` runs the named ids against every arm and tier the sweep normally
+covers, so what comes back is a strip of the same grid. The merge then has one
+rule, and it refuses rather than reconciles: **the runs must tile the
+arm-by-question grid.** Disjoint, so the same arm cannot answer the same
+question in two runs — that is two observations landing in one denominator, and
+it is what `--resume` is for. Complete, so you cannot ask one question of one
+arm and a different question of another and have the union published as a
+factorial with half its cells missing.
+
+Each run keeps the oracle it froze, and the oracle is looked up per *(arm,
+question)*. This is the part that matters if your goldens are trailing windows:
+the capture you are merging into was graded days ago against numbers that have
+since moved, and nothing from your run reaches its cells or the other way round.
+
+The same three commands work for the other direction — a run that adds new
+*arms* across the existing questions, which is how the direct-API paths were
+added after the fact.
+
 ## Rung 4 — Add your own metric
 
 A new question needs a new oracle entry unless it reuses one. Add a `Golden` to
