@@ -34,6 +34,29 @@ def test_questions_file_parses_and_is_complete():
         assert question.evidence["must_have"]
 
 
+def test_an_unscoreable_question_has_to_say_why():
+    # `scoreable: false` removes a question from every accuracy number in the
+    # repo, which is the single largest thing one line of JSON can do to a
+    # published result. An unexplained one would look like a question that
+    # scored badly and got quietly dropped, and there is no way to tell the two
+    # apart after the fact. The reason is what `report.ungraded_note` prints.
+    for question in _questions():
+        if not question.scoreable:
+            assert len(question.unscoreable_reason) > 40, question.id
+        else:
+            assert not question.unscoreable_reason, (
+                f"{question.id} carries a reason but is still scored"
+            )
+
+
+def test_the_battery_still_grades_something_in_every_category():
+    # A rubric change that silences a whole category would leave the report with
+    # a heading and no measurement under it, which reads as a null result rather
+    # than as an absent one.
+    graded = {question.category for question in _questions() if question.scoreable}
+    assert graded == {question.category for question in _questions()}
+
+
 def test_plan_is_config_major_so_an_interrupted_sweep_leaves_whole_configs():
     current = battery.plan(_questions()[:2], ["p1_managed", "p1_toolbox"], [0, 1], 2)
     configs_in_order = [config_key for _, config_key, _, _ in current.cells]

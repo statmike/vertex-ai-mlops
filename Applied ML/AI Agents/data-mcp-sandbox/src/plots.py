@@ -104,8 +104,13 @@ def accuracy_by_tier(scores: dict[str, scoring.Score]) -> Figure:
     Paired bars rather than two panels: the governance effect is a *within-arm*
     difference, and putting the pair side by side is the only layout where that
     reads at a glance.
+
+    Bars run over `scoring.graded` cells, matching the report's accuracy table.
+    A chart is a carrier of a claim just as much as a sentence is, so a figure
+    left on the full battery would keep asserting the retracted numbers after
+    every paragraph citing them had been fixed.
     """
-    grouped = _by_arm(scores.values())
+    grouped = _by_arm(scoring.graded(scores.values()))
     configs = sorted({config for config, _ in grouped})
     positions = np.arange(len(configs))
     tiers = _tiers_in(scores.values())
@@ -149,7 +154,9 @@ def cost_vs_accuracy(scores: dict[str, scoring.Score]) -> Figure:
     """
     fig, ax = _figure(8, 5)
     points, floors, unpriced = [], [], []
-    for (config, tier), cells in sorted(_by_arm(scores.values()).items()):
+    # Gradeable cells on both axes — tokens and correctness are summed over the
+    # same set, for the reason `report.headline` spells out.
+    for (config, tier), cells in sorted(_by_arm(scoring.graded(scores.values())).items()):
         correct = sum(cell.correct for cell in cells)
         tokens = sum(cell.total_tokens for cell in cells)
         if correct and not tokens:
@@ -254,14 +261,24 @@ def acquisition_vs_application(scores: dict[str, scoring.Score]) -> Figure:
     SQL: evidence and acquisition are different metrics, and recovering one does
     not recover the other. Excluded rather than drawn as zero bars, and named in
     the subtitle so the absence is a statement instead of an omission.
+
+    Gradeable governed cells only, which on this corpus leaves one question of
+    the three — the other two define Active over an unanchored window, so an
+    agent can acquire the rule, apply it exactly, and still disagree with the
+    oracle. That is a thin basis and the narrowest claim in the report; it is
+    drawn from one question rather than padded with two that measure a coin-flip.
     """
     # `carries(tier, "rules")`, not `tier == 1`. Those agree on the published
     # capture and disagree on the ladder, where rung 3 (`tier4`) is the rung that
     # *adds* business rules — filtering it out would drop the one rung this chart
     # exists to explain and leave the top rung claiming the whole effect.
+    # `score.scoreable` as well, because the three bars must partition the same
+    # set. `application_loss` is already gated on it, so leaving `correct` on the
+    # full battery would make `applied + lost + missed` add up to something other
+    # than one and silently redistribute the difference into "other failure".
     grouped = _by_arm(
         score for score in scores.values()
-        if score.rules_required and carries(score.tier, "rules")
+        if score.rules_required and score.scoreable and carries(score.tier, "rules")
     )
     opaque = sorted({
         config for (config, _), cells in grouped.items()

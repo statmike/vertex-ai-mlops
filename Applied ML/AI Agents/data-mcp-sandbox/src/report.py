@@ -20,6 +20,7 @@ import statistics as st
 from collections.abc import Callable, Iterable
 from typing import Any
 
+import battery
 import config
 import cost as cost_module
 import judge as judge_module
@@ -216,17 +217,57 @@ def capture_health(scores: dict[str, scoring.Score]) -> str:
 
 
 def accuracy(scores: dict[str, scoring.Score]) -> str:
-    """Correctness, over cells *attempted*. Failures count against the arm."""
+    """Correctness, over cells *attempted*. Failures count against the arm.
+
+    `n` is everything attempted; `graded` is the subset the oracle can arbitrate,
+    and `correct` divides by that. Trap and decoy stay on the full `n` — those
+    are read off the emitted query, not off agreement with a golden value, so an
+    unscoreable question's behaviour there is still observable.
+    """
     rows = []
     for key, tier in _arms(scores):
         group = _group(scores, key, tier)
+        gradeable = scoring.graded(group)
         rows.append([
-            key, _tier_cell(scores, tier), str(len(group)),
-            fmt(rate(group, lambda s: s.correct), ".0%"),
+            key, _tier_cell(scores, tier), str(len(group)), str(len(gradeable)),
+            fmt(rate(gradeable, lambda s: s.correct), ".0%"),
             fmt(rate(group, lambda s: s.sprang_trap), ".0%"),
             fmt(rate(group, lambda s: s.used_distractor), ".0%"),
         ])
-    return table(["config", _tier_head(scores), "n", "correct", "sprang trap", "used decoy"], rows)
+    return table(
+        ["config", _tier_head(scores), "n", "graded", "correct", "sprang trap", "used decoy"],
+        rows,
+    )
+
+
+def ungraded_note(scores: dict[str, scoring.Score]) -> str:
+    """Name every question dropped from the accuracy rates, and why. Empty if none.
+
+    Printed rather than left to be inferred from the gap between `n` and
+    `graded`: a reader comparing this report against an older one needs to see
+    that the denominator moved, and needs the reason in the same place as the
+    number it changed.
+    """
+    reasons = {
+        question.id: question.unscoreable_reason
+        for question in battery.load_questions()
+        if not question.scoreable
+    }
+    dropped = sorted({s.question_id for s in scores.values() if not s.scoreable})
+    if not dropped:
+        return ""
+    total = sum(1 for s in scores.values() if not s.scoreable)
+    lines = [
+        f"**{total} of {len(scores)} cells are excluded from every rate above.** "
+        f"{len(dropped)} of the battery's questions are worded so that two answers "
+        "are equally defensible, which makes the oracle an arbiter of a coin-flip "
+        "rather than a grader. The cells ran, are in the capture, and carry a "
+        "`correct` a reader can inspect — they are *unmeasured*, not zero, the same "
+        "way an opaque path's evidence reads `--`.",
+        "",
+    ]
+    lines += [f"* `{question_id}` — {reasons.get(question_id, '')}" for question_id in dropped]
+    return "\n".join(lines)
 
 
 def acquisition(scores: dict[str, scoring.Score]) -> str:
@@ -235,10 +276,18 @@ def acquisition(scores: dict[str, scoring.Score]) -> str:
     Tier 0 reading 0% is the design working, not a defect: there is no governed
     description at tier 0, so there is nothing to acquire and every miss is an
     acquisition failure by construction.
+
+    Gradeable cells only — for the whole table, not just the loss column. The
+    three columns are one decomposition, and `application loss` cannot be scored
+    on a question the oracle cannot arbitrate. Splitting the denominators would
+    make `acquired` and `application loss` fractions of different sets while
+    printing a single `n` above both, which is the shape of every wrong number
+    this module exists to prevent. `plots.acquisition_vs_application` filters
+    identically, so the figure and the table stay the same measurement.
     """
     rows = []
     for key, tier in _arms(scores):
-        group = [s for s in _group(scores, key, tier) if s.rules_required]
+        group = [s for s in scoring.graded(_group(scores, key, tier)) if s.rules_required]
         inspectable = [s for s in group if s.acquisition_observable]
         rows.append([
             key, _tier_cell(scores, tier), str(len(group)),
@@ -392,6 +441,11 @@ def equivalence(
     `same verdict` is the column that decides a procurement question. Two arms
     that reach identical correctness through different tool sequences are
     interchangeable in practice, whatever their traces look like.
+
+    It is also the only column here that divides by `graded` rather than by
+    `pairs`: whether two arms called the same tools, or landed on the same
+    number, is observed directly. Only the verdict inherits the oracle's choice
+    of anchor, and two arms agreeing about a coin-flip is not equivalence.
     """
     rows = []
     for left, right in pairs:
@@ -399,13 +453,14 @@ def equivalence(
         if not result.pairs:
             continue
         rows.append([
-            left, right, str(result.pairs),
+            left, right, str(result.pairs), str(result.graded_pairs),
             fmt(result.fraction("same_sequence"), ".0%"),
             fmt(result.fraction("same_value"), ".0%"),
             fmt(result.fraction("same_verdict"), ".0%"),
         ])
     return table(
-        ["config A", "config B", "pairs", "same tool sequence", "same value", "same verdict"],
+        ["config A", "config B", "pairs", "graded", "same tool sequence", "same value",
+         "same verdict"],
         rows,
     )
 
@@ -414,6 +469,9 @@ def headline(
     scores: dict[str, scoring.Score], costs: dict[str, cost_module.CellCost]
 ) -> str:
     """Means, per §9.4, and the metric that matters: what a correct answer costs.
+
+    Over the gradeable cells only — see `ungraded_note` under Accuracy for which
+    questions that drops and why.
 
     Cost per *correct answer* rather than per cell, because an arm that is cheap
     and wrong is not cheap. An arm with zero correct answers reports `--`; a
@@ -434,7 +492,13 @@ def headline(
     """
     rows = []
     for key, tier in _arms(scores):
-        group = _group(scores, key, tier)
+        # Both halves of every ratio below run over the gradeable cells only.
+        # Restricting just the denominator would divide the whole battery's
+        # spend by nine questions' worth of correct answers and inflate every
+        # per-correct column; restricting just the numerator would do the
+        # reverse. The honest reading is "what the gradeable nine cost, and how
+        # many of them came back right".
+        group = scoring.graded(_group(scores, key, tier))
         entries = [costs[s.cell_key] for s in group if s.cell_key in costs]
         correct = sum(1 for s in group if s.correct)
         mib = sum(e.bytes_billed for e in entries) / 2**20 if entries else None
@@ -705,6 +769,8 @@ def build(
         "## Accuracy",
         "",
         accuracy(scores),
+        "",
+        ungraded_note(scores),
         "",
         "## Acquisition vs application",
         "",

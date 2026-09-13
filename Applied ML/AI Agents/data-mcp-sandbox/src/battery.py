@@ -54,6 +54,13 @@ class Question:
     question: str
     evidence: dict[str, list[str]]
     golden_key: str
+    # False when the question's wording admits two defensible answers, so the
+    # oracle is arbitrating a coin-flip rather than grading. The cell still runs
+    # and is still captured — only the accuracy aggregate drops it, the same way
+    # an opaque path's evidence reads `--` rather than 0.0. Unmeasured is not
+    # zero, and a question we cannot grade is unmeasured.
+    scoreable: bool = True
+    unscoreable_reason: str = ""
 
 
 def load_questions(path: Path = QUESTIONS_PATH) -> list[Question]:

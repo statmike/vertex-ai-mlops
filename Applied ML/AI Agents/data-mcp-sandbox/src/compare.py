@@ -45,20 +45,28 @@ import traces
 # direct arms with the identical configuration a day later, so it is a true A/A
 # across captures. Same arms, same tiers, same 240 cells:
 #
-#     p4_bq_direct      tier 0    21.7% → 28.3%    +6.7
-#     p4_bq_direct_ctx  tier 0    23.3% → 28.3%    +5.0
-#     p4_bq_direct_ctx  tier 1    95.0% → 90.0%    -5.0
-#     p4_bq_direct      tier 1    88.3% → 90.0%    +1.7
+#     p4_bq_direct      tier 0    28.9% → 37.8%    +8.9
+#     p4_bq_direct_ctx  tier 0    31.1% → 37.8%    +6.7
+#     p4_bq_direct_ctx  tier 1    97.8% → 93.3%    -4.4
+#     p4_bq_direct      tier 1    97.8% → 97.8%    +0.0
 #
-# Nothing varied but the day. So a cross-capture delta under ~7 points is inside
+# Nothing varied but the day. So a cross-capture delta under ~9 points is inside
 # the noise, and the 1-point floor was quietly promoting several of those to
 # "resolved". Set from the largest observed swing, not the mean, because the
 # floor's job is to stop a false finding rather than to describe typical drift.
 #
+# **Re-measured when the rubric dropped the three anchor-ambiguous questions**
+# (`scoring.graded`). It moved 6.7 → 8.9, which is the direction to expect: the
+# same number of flips now divides by 45 cells instead of 60, so each one is
+# worth more. The floor is a *measurement*, so it gets re-measured whenever the
+# thing it measures changes — leaving 6.7 in place would have been the cheaper
+# and wronger option, and would have promoted two Path 2 tier-0 deltas to
+# findings on the strength of a denominator that no longer exists.
+#
 # Measured on the two direct arms at n=5. Sweeps whose arms run a local model
 # have their own variance and this may understate them; a comparison that turns
 # on a delta near the floor should measure its own A/A rather than trust this.
-NOISE_FLOOR = 0.067
+NOISE_FLOOR = 0.089
 
 # Which tiers two different tier vocabularies are declared to agree on.
 #
@@ -268,21 +276,27 @@ class Delta:
     pairs: int
     correct_a: int
     correct_b: int
+    # Of `pairs`, the ones the oracle can arbitrate. `pairs` stays the pairing
+    # count so a reader can still see how much of each capture lined up; every
+    # accuracy below divides by `graded`. Required rather than defaulted: a
+    # default would let a caller silently keep the old denominator, which is the
+    # one mistake this field exists to prevent.
+    graded: int
 
     @property
     def accuracy_a(self) -> float | None:
-        return self.correct_a / self.pairs if self.pairs else None
+        return self.correct_a / self.graded if self.graded else None
 
     @property
     def accuracy_b(self) -> float | None:
-        return self.correct_b / self.pairs if self.pairs else None
+        return self.correct_b / self.graded if self.graded else None
 
     @property
     def points(self) -> float | None:
-        """B minus A, in accuracy points, or None when nothing paired."""
-        if not self.pairs:
+        """B minus A, in accuracy points, or None when nothing gradeable paired."""
+        if not self.graded:
             return None
-        return 100 * (self.correct_b - self.correct_a) / self.pairs
+        return 100 * (self.correct_b - self.correct_a) / self.graded
 
     @property
     def resolved(self) -> bool:
@@ -317,9 +331,18 @@ def deltas(scores_a: dict[str, scoring.Score], scores_b: dict[str, scoring.Score
         score_a, score_b = scores_a[key], scores_b[key]
         entry = grouped.setdefault(
             (score_a.config, score_a.tier),
-            Delta(config=score_a.config, tier=score_a.tier, pairs=0, correct_a=0, correct_b=0),
+            Delta(
+                config=score_a.config, tier=score_a.tier,
+                pairs=0, graded=0, correct_a=0, correct_b=0,
+            ),
         )
         entry.pairs += 1
+        # Scoreability is a property of the question, so the two captures agree
+        # on it by construction unless they were scored under different rubrics.
+        # Reading it off A alone would hide exactly that case, so require both.
+        if not (score_a.scoreable and score_b.scoreable):
+            continue
+        entry.graded += 1
         entry.correct_a += int(score_a.correct)
         entry.correct_b += int(score_b.correct)
 
@@ -540,12 +563,13 @@ def render(
         "## Accuracy delta, on paired cells only",
         "",
         report.table(
-            ["arm", "tier", "pairs", label_a, label_b, "delta (pts)", "resolved"],
+            ["arm", "tier", "pairs", "graded", label_a, label_b, "delta (pts)", "resolved"],
             [
                 [
                     entry.config,
                     str(entry.tier),
                     str(entry.pairs),
+                    str(entry.graded),
                     report.fmt(entry.accuracy_a, ".0%"),
                     report.fmt(entry.accuracy_b, ".0%"),
                     report.fmt(entry.points, "+.1f"),
@@ -623,12 +647,13 @@ def _aa_section(result: Deltas, labels: tuple[str, str]) -> list[str]:
         "beat.",
         "",
         report.table(
-            ["arm", "tier", "pairs", label_a, label_b, "drift (pts)"],
+            ["arm", "tier", "pairs", "graded", label_a, label_b, "drift (pts)"],
             [
                 [
                     entry.config,
                     str(entry.tier),
                     str(entry.pairs),
+                    str(entry.graded),
                     report.fmt(entry.accuracy_a, ".0%"),
                     report.fmt(entry.accuracy_b, ".0%"),
                     report.fmt(entry.points, "+.1f"),

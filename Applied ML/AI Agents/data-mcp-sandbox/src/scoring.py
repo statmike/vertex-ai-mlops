@@ -20,6 +20,12 @@ because the alternative is a fabricated finding:
 * **Acquisition at tier 0.** There is no governed description to acquire, so the
   marker check returns False by construction and every tier-0 miss is an
   acquisition failure. That is the intended reading, not a gap.
+* **Questions whose wording admits two defensible answers.** Three of this
+  corpus's twelve say "trailing 30 days" without pinning what the window trails,
+  and agents alternate between the two readings within one arm at temperature 0.
+  The oracle holds one of them, so `correct` there measures agreement with an
+  arbitrary choice. Those cells still run and are still captured; `graded()`
+  drops them from every accuracy aggregate. See `battery.Question.scoreable`.
 
 Scores live here and never in `traces.Cell`, so a rubric change re-scores the
 existing capture instead of re-running it.
@@ -27,6 +33,7 @@ existing capture instead of re-running it.
 
 import json
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 import corpus
@@ -101,6 +108,12 @@ class Score:
     sprang_trap: bool = False
     trap_name: str = ""
 
+    # Whether `correct` means anything for this question. False marks a question
+    # whose wording admits two defensible answers; `correct` is still computed
+    # and still recorded, but every accuracy aggregate excludes the cell rather
+    # than crediting agreement with an arbitrary choice. See `battery.Question`.
+    scoreable: bool = True
+
     # None means *not measurable on this path*, and must stay distinct from 0.0.
     evidence_recall: float | None = None
     evidence_precision: float | None = None
@@ -151,8 +164,27 @@ class Score:
 
     @property
     def application_loss(self) -> bool:
-        """Acquired the rule and still got it wrong — the §9.1 gap, per cell."""
-        return self.acquired and self.answered and not self.correct
+        """Acquired the rule and still got it wrong — the §9.1 gap, per cell.
+
+        Gated on `scoreable` for the same reason accuracy is: on an
+        anchor-ambiguous question an agent can read the rule, apply it exactly,
+        and still disagree with the oracle. Counting that as a loss would report
+        the corpus's defect as the agent's.
+        """
+        return self.scoreable and self.acquired and self.answered and not self.correct
+
+
+def graded(scores: Iterable["Score"]) -> list["Score"]:
+    """The subset whose `correct` means something.
+
+    Every accuracy aggregate in this repo runs over this rather than over the
+    raw scores, and this is the one place that decision lives. A question whose
+    wording admits two defensible answers is *unmeasured*: the cell ran, is in
+    the capture, and carries a `correct` a reader can inspect — it just does not
+    enter a rate, the same way an opaque path's evidence reads `--` rather than
+    0.0. Unmeasured is not zero.
+    """
+    return [score for score in scores if score.scoreable]
 
 
 # --- number extraction -------------------------------------------------------
@@ -317,9 +349,11 @@ def score_cell(
     cell: traces.Cell,
     evidence: dict[str, list[str]],
     resolved: golden.Resolved | None,
+    scoreable: bool = True,
 ) -> Score:
     """Score one cell deterministically. `resolved` may be None for prose questions."""
     result = Score(
+        scoreable=scoreable,
         cell_key=cell.cell_key,
         config=cell.config,
         tier=cell.tier,
@@ -444,13 +478,19 @@ class ArmComparison:
     config_a: str
     config_b: str
     pairs: int = 0
+    # Of `pairs`, the ones on a gradeable question. `same_verdict` divides by
+    # this and nothing else does: whether two arms ran the same tools, or landed
+    # on the same number, is observable no matter how the question is worded.
+    # Only the *verdict* inherits the oracle's arbitrary anchor choice.
+    graded_pairs: int = 0
     same_sequence: int = 0
     same_value: int = 0
     same_verdict: int = 0
     examples: list[str] = field(default_factory=list)
 
     def fraction(self, attribute: str) -> float | None:
-        return getattr(self, attribute) / self.pairs if self.pairs else None
+        total = self.graded_pairs if attribute == "same_verdict" else self.pairs
+        return getattr(self, attribute) / total if total else None
 
 
 def _close(a: float | None, b: float | None) -> bool:
@@ -495,6 +535,9 @@ def compare_arms(
             result.same_sequence += 1
         if _close(score_a.value, score_b.value):
             result.same_value += 1
+        if not score_a.scoreable:
+            continue
+        result.graded_pairs += 1
         if score_a.correct == score_b.correct:
             result.same_verdict += 1
         elif len(result.examples) < 5:

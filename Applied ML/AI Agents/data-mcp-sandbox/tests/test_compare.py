@@ -96,11 +96,15 @@ def test_the_floor_is_the_cross_capture_one_not_the_within_run_one():
     # re-ran one configuration a day later and it moved 6.7 points with nothing
     # varied but the date. A 5-point cross-capture delta is drift, and the old
     # floor was reporting it as a resolved finding.
-    drift = compare.Delta(config="p4_bq_direct", tier=0, pairs=60, correct_a=13, correct_b=16)
+    drift = compare.Delta(
+        config="p4_bq_direct", tier=0, pairs=60, graded=60, correct_a=13, correct_b=16
+    )
     assert abs(drift.points) == pytest.approx(5.0)
     assert not drift.resolved, "a 5-point cross-capture delta is inside measured day-to-day drift"
 
-    real = compare.Delta(config="p4_bq_direct_ctx", tier=1, pairs=60, correct_a=57, correct_b=48)
+    real = compare.Delta(
+        config="p4_bq_direct_ctx", tier=1, pairs=60, graded=60, correct_a=57, correct_b=48
+    )
     assert abs(real.points) == pytest.approx(15.0)
     assert real.resolved
 
@@ -247,8 +251,8 @@ def test_a_floor_is_the_worst_drift_not_the_average():
     # Averaging would set the floor below half the drift it has just seen.
     result = compare.Deltas()
     result.entries = [
-        compare.Delta(config="a", tier=0, pairs=60, correct_a=13, correct_b=17),
-        compare.Delta(config="a", tier=1, pairs=60, correct_a=53, correct_b=54),
+        compare.Delta(config="a", tier=0, pairs=60, graded=60, correct_a=13, correct_b=17),
+        compare.Delta(config="a", tier=1, pairs=60, graded=60, correct_a=53, correct_b=54),
     ]
     assert compare.measured_floor(result) == pytest.approx(0.0667, abs=1e-4)
 
@@ -267,6 +271,23 @@ def test_only_cells_present_in_both_captures_are_differenced():
     assert entry.correct_b == 0
     assert result.unpaired_a == 1
     assert result.unpaired_b == 0
+
+
+def test_an_ungradeable_cell_pairs_but_does_not_enter_the_accuracy_denominator():
+    # Both captures ran it and both are on the record, so it counts as a pair —
+    # `pairs` is what says how much of the two captures lined up. It just cannot
+    # move an accuracy, because the oracle is arbitrating a coin-flip on it.
+    ambiguous = traces.cell_key("semantic-q2", "p1_managed", 1, 1)
+    a = _scores({("q1", "p1_managed", 1, 1): True, ("semantic-q2", "p1_managed", 1, 1): True})
+    b = _scores({("q1", "p1_managed", 1, 1): True, ("semantic-q2", "p1_managed", 1, 1): False})
+    for scores in (a, b):
+        scores[ambiguous].scoreable = False
+
+    entry = compare.deltas(a, b).entries[0]
+    assert entry.pairs == 2
+    assert entry.graded == 1
+    assert entry.accuracy_a == 1.0
+    assert entry.points == 0.0, "a flip on an ungradeable question is not a delta"
 
 
 def test_an_arm_present_in_only_one_capture_is_named():
@@ -290,10 +311,11 @@ def test_a_delta_inside_the_noise_floor_is_not_resolved():
 # --- rank stability ------------------------------------------------------------
 
 
-def _delta(config_key, accuracy_a, accuracy_b, pairs=100):
+def _delta(config_key, accuracy_a, accuracy_b, pairs=100, graded=None):
+    graded = pairs if graded is None else graded
     return compare.Delta(
-        config=config_key, tier=1, pairs=pairs,
-        correct_a=round(accuracy_a * pairs), correct_b=round(accuracy_b * pairs),
+        config=config_key, tier=1, pairs=pairs, graded=graded,
+        correct_a=round(accuracy_a * graded), correct_b=round(accuracy_b * graded),
     )
 
 

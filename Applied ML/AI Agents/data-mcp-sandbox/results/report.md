@@ -10,30 +10,30 @@ Model `gemini-3.7-flash` at temperature 0.0, 5 replicates, tier fence on, merged
 
 | config | tier | accuracy (mean) | tokens in / correct | tokens out / correct | sec / correct | BQ jobs / correct | MiB / correct | coverage |
 |---|---|---|---|---|---|---|---|---|
-| p1_managed | 0 | 37% | 1673836 | 5487 | 273 | 34.4 | 297.7 | full |
-| p1_managed | 1 | 67% | 566836 | 2142 | 85 | 11.7 | 134.8 | full |
-| p1_toolbox | 0 | 33% | 245109 | 3504 | 212 | 26.0 | 213.0 | full |
-| p1_toolbox | 1 | 75% | 44167 | 1180 | 63 | 5.1 | 65.3 | full |
-| p2_managed | 0 | 33% | 350525 | 4459 | 269 | 23.3 | 226.5 | full |
-| p2_managed | 1 | 73% | 54658 | 963 | 62 | 4.1 | 55.5 | full |
-| p2_toolbox | 0 | 32% | 467996 | 4898 | 279 | 25.5 | 193.2 | full |
-| p2_toolbox | 1 | 75% | 81864 | 1000 | 44 | 3.9 | 50.0 | full |
-| p3_managed | 0 | 35% | 3139118 | 7281 | 341 | 38.9 | 322.4 | full |
-| p3_managed | 1 | 75% | 621429 | 2035 | 80 | 6.3 | 75.8 | full |
-| p3_toolbox | 0 | 33% | 574456 | 4111 | 287 | 27.5 | 229.0 | full |
-| p3_toolbox | 1 | 75% | 121638 | 1330 | 69 | 5.6 | 68.4 | full |
-| p1_matched | 0 | 35% | 332553 | 4180 | 226 | 30.7 | 232.4 | full |
-| p1_matched | 1 | 67% | 92038 | 1722 | 91 | 10.2 | 116.0 | full |
-| p3_matched | 0 | 35% | 763580 | 5152 | 297 | 32.5 | 260.5 | full |
-| p3_matched | 1 | 75% | 113687 | 1591 | 91 | 5.5 | 66.2 | full |
-| p4_bq_ca | 0 | 23% | 50918 | 2509 | 287 | 16.4 | 160.7 | floor |
-| p4_bq_ca | 1 | 75% | 7596 | 668 | 54 | 2.6 | 35.3 | floor |
-| p4_looker_ca | 0 | 15% | 177682 | 2170 | 1113 | 16.6 | 184.4 | floor |
-| p4_looker_ca | 1 | 35% | 23467 | 677 | 240 | 3.1 | 46.7 | floor |
-| p4_bq_direct | 0 | 22% | -- | -- | 51 | 6.8 | 64.6 | service only |
-| p4_bq_direct | 1 | 88% | -- | -- | 13 | 1.4 | 18.5 | service only |
-| p4_bq_direct_ctx | 0 | 23% | -- | -- | 50 | 7.1 | 65.7 | service only |
-| p4_bq_direct_ctx | 1 | 95% | -- | -- | 12 | 1.1 | 14.6 | service only |
+| p1_managed | 0 | 49% | 1163956 | 3790 | 190 | 24.0 | 201.8 | full |
+| p1_managed | 1 | 89% | 268637 | 1061 | 41 | 5.1 | 61.2 | full |
+| p1_toolbox | 0 | 44% | 175354 | 2528 | 160 | 18.8 | 150.5 | full |
+| p1_toolbox | 1 | 100% | 22267 | 669 | 34 | 2.9 | 36.2 | full |
+| p2_managed | 0 | 44% | 278217 | 3457 | 214 | 18.7 | 179.5 | full |
+| p2_managed | 1 | 98% | 40970 | 722 | 48 | 3.2 | 36.6 | full |
+| p2_toolbox | 0 | 42% | 395521 | 3848 | 215 | 20.3 | 156.3 | full |
+| p2_toolbox | 1 | 100% | 63826 | 750 | 33 | 2.9 | 30.4 | full |
+| p3_managed | 0 | 47% | 2151215 | 5063 | 239 | 27.2 | 219.5 | full |
+| p3_managed | 1 | 100% | 283550 | 965 | 46 | 3.0 | 36.7 | full |
+| p3_toolbox | 0 | 44% | 417432 | 2983 | 190 | 19.5 | 159.5 | full |
+| p3_toolbox | 1 | 100% | 53979 | 699 | 39 | 3.0 | 35.8 | full |
+| p1_matched | 0 | 47% | 252863 | 3066 | 162 | 22.4 | 167.6 | full |
+| p1_matched | 1 | 89% | 36139 | 899 | 44 | 4.8 | 54.8 | full |
+| p3_matched | 0 | 47% | 554297 | 3710 | 208 | 23.5 | 186.2 | full |
+| p3_matched | 1 | 100% | 46360 | 796 | 45 | 3.1 | 34.2 | full |
+| p4_bq_ca | 0 | 31% | 36421 | 1834 | 213 | 11.7 | 109.3 | floor |
+| p4_bq_ca | 1 | 100% | 4613 | 428 | 35 | 1.7 | 20.2 | floor |
+| p4_looker_ca | 0 | 16% | 171902 | 2180 | 1068 | 16.4 | 178.6 | floor |
+| p4_looker_ca | 1 | 47% | 19780 | 531 | 197 | 2.7 | 38.1 | floor |
+| p4_bq_direct | 0 | 29% | -- | -- | 38 | 5.3 | 47.7 | service only |
+| p4_bq_direct | 1 | 98% | -- | -- | 10 | 1.1 | 11.6 | service only |
+| p4_bq_direct_ctx | 0 | 31% | -- | -- | 39 | 6.0 | 54.3 | service only |
+| p4_bq_direct_ctx | 1 | 98% | -- | -- | 10 | 1.1 | 11.4 | service only |
 
 **Do not sort this table by the cost columns.** `p4_bq_ca`, `p4_bq_direct`, `p4_bq_direct_ctx`, `p4_looker_ca` carry `floor` coverage: they spend model tokens server-side that the API never reports, so their figures are lower bounds and every other arm's are totals. Comparing them directly compares two different quantities. The gap is not small — `make service-tokens` meters `p4_looker_ca` from Cloud Monitoring at 392,158 tokens per cell against the 18,045 recorded here, a 22x understatement that moves it from the cheapest arm to the third most expensive. The floors are left uncorrected in the table on purpose: the meter attributes by time block, not per cell, and splitting a block across cells that vary in turn count would invent a distribution. Two honest numbers in two places beat one fused number that hides which half was inferred.
 
@@ -72,61 +72,67 @@ Accuracy, latency and the BigQuery columns are unaffected — those are measured
 
 ## Accuracy
 
-| config | tier | n | correct | sprang trap | used decoy |
-|---|---|---|---|---|---|
-| p1_managed | 0 | 60 | 37% | 33% | 50% |
-| p1_managed | 1 | 60 | 67% | 8% | 30% |
-| p1_toolbox | 0 | 60 | 33% | 18% | 50% |
-| p1_toolbox | 1 | 60 | 75% | 0% | 13% |
-| p2_managed | 0 | 60 | 33% | 33% | 50% |
-| p2_managed | 1 | 60 | 73% | 0% | 0% |
-| p2_toolbox | 0 | 60 | 32% | 32% | 50% |
-| p2_toolbox | 1 | 60 | 75% | 0% | 2% |
-| p3_managed | 0 | 60 | 35% | 33% | 50% |
-| p3_managed | 1 | 60 | 75% | 0% | 18% |
-| p3_toolbox | 0 | 60 | 33% | 12% | 50% |
-| p3_toolbox | 1 | 60 | 75% | 0% | 5% |
-| p1_matched | 0 | 60 | 35% | 33% | 50% |
-| p1_matched | 1 | 60 | 67% | 8% | 18% |
-| p3_matched | 0 | 60 | 35% | 33% | 50% |
-| p3_matched | 1 | 60 | 75% | 0% | 12% |
-| p4_bq_ca | 0 | 60 | 23% | 8% | 50% |
-| p4_bq_ca | 1 | 60 | 75% | 0% | 7% |
-| p4_looker_ca | 0 | 60 | 15% | 5% | 17% |
-| p4_looker_ca | 1 | 60 | 35% | 0% | 3% |
-| p4_bq_direct | 0 | 60 | 22% | 10% | 50% |
-| p4_bq_direct | 1 | 60 | 88% | 0% | 0% |
-| p4_bq_direct_ctx | 0 | 60 | 23% | 8% | 50% |
-| p4_bq_direct_ctx | 1 | 60 | 95% | 0% | 0% |
+| config | tier | n | graded | correct | sprang trap | used decoy |
+|---|---|---|---|---|---|---|
+| p1_managed | 0 | 60 | 45 | 49% | 33% | 50% |
+| p1_managed | 1 | 60 | 45 | 89% | 8% | 30% |
+| p1_toolbox | 0 | 60 | 45 | 44% | 18% | 50% |
+| p1_toolbox | 1 | 60 | 45 | 100% | 0% | 13% |
+| p2_managed | 0 | 60 | 45 | 44% | 33% | 50% |
+| p2_managed | 1 | 60 | 45 | 98% | 0% | 0% |
+| p2_toolbox | 0 | 60 | 45 | 42% | 32% | 50% |
+| p2_toolbox | 1 | 60 | 45 | 100% | 0% | 2% |
+| p3_managed | 0 | 60 | 45 | 47% | 33% | 50% |
+| p3_managed | 1 | 60 | 45 | 100% | 0% | 18% |
+| p3_toolbox | 0 | 60 | 45 | 44% | 12% | 50% |
+| p3_toolbox | 1 | 60 | 45 | 100% | 0% | 5% |
+| p1_matched | 0 | 60 | 45 | 47% | 33% | 50% |
+| p1_matched | 1 | 60 | 45 | 89% | 8% | 18% |
+| p3_matched | 0 | 60 | 45 | 47% | 33% | 50% |
+| p3_matched | 1 | 60 | 45 | 100% | 0% | 12% |
+| p4_bq_ca | 0 | 60 | 45 | 31% | 8% | 50% |
+| p4_bq_ca | 1 | 60 | 45 | 100% | 0% | 7% |
+| p4_looker_ca | 0 | 60 | 45 | 16% | 5% | 17% |
+| p4_looker_ca | 1 | 60 | 45 | 47% | 0% | 3% |
+| p4_bq_direct | 0 | 60 | 45 | 29% | 10% | 50% |
+| p4_bq_direct | 1 | 60 | 45 | 98% | 0% | 0% |
+| p4_bq_direct_ctx | 0 | 60 | 45 | 31% | 8% | 50% |
+| p4_bq_direct_ctx | 1 | 60 | 45 | 98% | 0% | 0% |
+
+**360 of 1440 cells are excluded from every rate above.** 3 of the battery's questions are worded so that two answers are equally defensible, which makes the oracle an arbiter of a coin-flip rather than a grader. The cells ran, are in the capture, and carry a `correct` a reader can inspect — they are *unmeasured*, not zero, the same way an opaque path's evidence reads `--`.
+
+* `governed-q1` — The governed rule defines Active as "had an event in the trailing 30 days", which pins the window's length but not its anchor. The answer is a count - extensive, so the two defensible anchorings differ by more than the 0.5% tolerance. See semantic-q2.
+* `governed-q3` — Inherits the Active definition's unpinned anchor from governed-q1, and sums over it. The answer is an extensive quantity twice over - which users count, and how much they spent - so the two defensible anchorings diverge well past the 0.5% tolerance. See semantic-q2.
+* `semantic-q2` — "trailing 30 days" pins the window's length but not its anchor. Anchoring to the data's latest timestamp is as defensible as anchoring to now, and agents pick between them nondeterministically at temperature 0 - the same arm answered 2,699 and 2,804 in consecutive runs. The answer is an extensive quantity (a sum), so the two readings differ by more than the 0.5% tolerance and the oracle arbitrates a coin-flip.
 
 ## Acquisition vs application
 
 | config | tier | n | opaque | acquired | application loss |
 |---|---|---|---|---|---|
-| p1_managed | 0 | 50 | 0% | 0% | 0% |
-| p1_managed | 1 | 50 | 0% | 100% | 40% |
-| p1_toolbox | 0 | 50 | 0% | 0% | 0% |
-| p1_toolbox | 1 | 50 | 0% | 100% | 30% |
-| p2_managed | 0 | 50 | 0% | 0% | 0% |
-| p2_managed | 1 | 50 | 0% | 100% | 32% |
-| p2_toolbox | 0 | 50 | 0% | 0% | 0% |
-| p2_toolbox | 1 | 50 | 0% | 100% | 30% |
-| p3_managed | 0 | 50 | 0% | 0% | 0% |
-| p3_managed | 1 | 50 | 0% | 100% | 30% |
-| p3_toolbox | 0 | 50 | 0% | 0% | 0% |
-| p3_toolbox | 1 | 50 | 0% | 100% | 30% |
-| p1_matched | 0 | 50 | 0% | 0% | 0% |
-| p1_matched | 1 | 50 | 0% | 100% | 40% |
-| p3_matched | 0 | 50 | 0% | 0% | 0% |
-| p3_matched | 1 | 50 | 0% | 100% | 30% |
-| p4_bq_ca | 0 | 50 | 100% | -- | -- |
-| p4_bq_ca | 1 | 50 | 100% | -- | -- |
-| p4_looker_ca | 0 | 50 | 100% | -- | -- |
-| p4_looker_ca | 1 | 50 | 100% | -- | -- |
-| p4_bq_direct | 0 | 50 | 100% | -- | -- |
-| p4_bq_direct | 1 | 50 | 100% | -- | -- |
-| p4_bq_direct_ctx | 0 | 50 | 100% | -- | -- |
-| p4_bq_direct_ctx | 1 | 50 | 100% | -- | -- |
+| p1_managed | 0 | 35 | 0% | 0% | 0% |
+| p1_managed | 1 | 35 | 0% | 100% | 14% |
+| p1_toolbox | 0 | 35 | 0% | 0% | 0% |
+| p1_toolbox | 1 | 35 | 0% | 100% | 0% |
+| p2_managed | 0 | 35 | 0% | 0% | 0% |
+| p2_managed | 1 | 35 | 0% | 100% | 3% |
+| p2_toolbox | 0 | 35 | 0% | 0% | 0% |
+| p2_toolbox | 1 | 35 | 0% | 100% | 0% |
+| p3_managed | 0 | 35 | 0% | 0% | 0% |
+| p3_managed | 1 | 35 | 0% | 100% | 0% |
+| p3_toolbox | 0 | 35 | 0% | 0% | 0% |
+| p3_toolbox | 1 | 35 | 0% | 100% | 0% |
+| p1_matched | 0 | 35 | 0% | 0% | 0% |
+| p1_matched | 1 | 35 | 0% | 100% | 14% |
+| p3_matched | 0 | 35 | 0% | 0% | 0% |
+| p3_matched | 1 | 35 | 0% | 100% | 0% |
+| p4_bq_ca | 0 | 35 | 100% | -- | -- |
+| p4_bq_ca | 1 | 35 | 100% | -- | -- |
+| p4_looker_ca | 0 | 35 | 100% | -- | -- |
+| p4_looker_ca | 1 | 35 | 100% | -- | -- |
+| p4_bq_direct | 0 | 35 | 100% | -- | -- |
+| p4_bq_direct | 1 | 35 | 100% | -- | -- |
+| p4_bq_direct_ctx | 0 | 35 | 100% | -- | -- |
+| p4_bq_direct_ctx | 1 | 35 | 100% | -- | -- |
 
 ## Evidence
 
@@ -250,14 +256,14 @@ The last column is how complete the picture is. **full** means everything this s
 
 ## Equivalence
 
-| config A | config B | pairs | same tool sequence | same value | same verdict |
-|---|---|---|---|---|---|
-| p1_managed | p1_toolbox | 120 | 0% | 67% | 94% |
-| p2_managed | p2_toolbox | 120 | 7% | 92% | 97% |
-| p3_managed | p3_toolbox | 120 | 0% | 70% | 99% |
-| p1_managed | p1_matched | 120 | 0% | 91% | 99% |
-| p3_managed | p3_matched | 120 | 0% | 88% | 98% |
-| p4_bq_ca | p4_looker_ca | 120 | 0% | 42% | 72% |
+| config A | config B | pairs | graded | same tool sequence | same value | same verdict |
+|---|---|---|---|---|---|---|
+| p1_managed | p1_toolbox | 120 | 90 | 0% | 67% | 92% |
+| p2_managed | p2_toolbox | 120 | 90 | 7% | 92% | 96% |
+| p3_managed | p3_toolbox | 120 | 90 | 0% | 70% | 99% |
+| p1_managed | p1_matched | 120 | 90 | 0% | 91% | 99% |
+| p3_managed | p3_matched | 120 | 90 | 0% | 88% | 98% |
+| p4_bq_ca | p4_looker_ca | 120 | 90 | 0% | 42% | 66% |
 
 ## Tool surface
 

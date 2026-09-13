@@ -217,16 +217,18 @@ Two properties worth knowing before reading any cross-capture number:
   Rank agreement is computed over resolved pairs only; counting the rest as
   agreement would let a comparison in which nothing separated any arm report
   perfect stability.
-* **The floor here is the cross-capture one: ~7 points, not 1.** The 1-point A/A
-  control in [paths](paths.md) is measured *within* a run, between two arms
+* **The floor here is the cross-capture one: ~9 points, not 2.** The 2.2-point
+  A/A control in [paths](paths.md) is measured *within* a run, between two arms
   sharing a sweep, an oracle and an hour of the service's weather. Two captures
   share none of that: re-running one configuration unchanged a day later moved
-  it 6.7 points. `compare.NOISE_FLOOR` is set from the larger figure, because
+  it 8.9 points. `compare.NOISE_FLOOR` is set from the larger figure, because
   the floor's job is to stop a false finding rather than to describe typical
   drift. This one is measured on the two direct arms at n=5; a comparison
   turning on a delta near the floor should measure its own A/A rather than
-  inherit theirs — `make compare-aa` is that, and it is where the 6.7 came
-  from. It is the mirror image of a normal comparison: every `MUST_AGREE` field
+  inherit theirs — `make compare-aa` is that, and it is where the 8.9 came
+  from. It is a measurement and not a constant: excluding the three
+  anchor-ambiguous questions raised it from 6.7 without a single cell being
+  re-run, because the same disagreements now divide by 45 instead of 60. It is the mirror image of a normal comparison: every `MUST_AGREE` field
   identical is the *valid* case, a difference is fatal, and the output is
   labelled a floor with no ranking table, because ranking noise invites reading
   an order into it.

@@ -26,6 +26,53 @@ def test_unmeasured_prints_as_a_dash_not_a_zero():
     assert report.fmt(0.0) == "0.00"
 
 
+def test_an_unscoreable_cell_moves_the_denominator_rather_than_the_numerator():
+    # Three cells, one of them on a question the oracle cannot arbitrate. The
+    # arm is 1-for-1 on what can be graded. Leaving the ungradeable cell in
+    # would print 50% and read as an arm that fails half the time.
+    scores = {
+        "a": _score("a", answered=True, correct=True),
+        "b": _score("b", answered=True, correct=False, scoreable=False),
+    }
+    table = report.accuracy(scores)
+    row = [line for line in table.splitlines() if "p1_managed" in line][0]
+    assert "| 2 | 1 |" in row, row  # attempted, then gradeable
+    assert "100%" in row
+
+
+def test_the_report_names_every_question_it_dropped():
+    # The gap between `n` and `graded` is visible in the table; *why* it exists
+    # is not, and a reader comparing against an older report needs the reason in
+    # the same place as the number that moved.
+    dropped = scoring.Score(
+        cell_key="b", config="p1_managed", tier=1, question_id="semantic-q2",
+        category="semantic-ambiguity", answered=True, correct=False, scoreable=False,
+    )
+    note = report.ungraded_note({"a": _score("a", answered=True, correct=True), "b": dropped})
+    assert "semantic-q2" in note
+    assert "trailing 30 days" in note  # the reason, read from questions.json
+    assert "1 of 2 cells" in note
+
+
+def test_a_capture_with_nothing_dropped_prints_no_note():
+    # An empty note, not a note saying zero. A report for a corpus with no
+    # ambiguous questions should look exactly as it did before this existed.
+    assert report.ungraded_note({"a": _score("a", answered=True, correct=True)}) == ""
+
+
+def test_cost_per_correct_restricts_both_halves_of_the_ratio():
+    # Dividing the whole battery's tokens by only the gradeable correct answers
+    # would inflate every per-correct column — the ratio a reader ranks arms on.
+    scores = {
+        "a": _score("a", answered=True, correct=True, prompt_tokens=1000, model_calls=1),
+        "b": _score("b", answered=True, correct=False, scoreable=False,
+                    prompt_tokens=9000, model_calls=1),
+    }
+    table = report.headline(scores, {})
+    assert "1000" in table, table
+    assert "10000" not in table
+
+
 def test_headline_usage_survives_without_the_cost_pass():
     # `--no-cost` must still produce a usage table. An earlier draft divided an
     # empty cost list and printed `0 tokens / correct` for every arm. Tokens and

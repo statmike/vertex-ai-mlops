@@ -109,6 +109,65 @@ def test_transparent_path_with_no_query_is_a_real_zero_and_says_so():
     assert "no query text recovered" in score.notes
 
 
+def test_an_unscoreable_question_leaves_the_rate_alone_rather_than_scoring_zero():
+    # The third exception in this module's docstring. `correct` is still computed
+    # and still on the Score — a reader can inspect it — but `graded` is what
+    # every rate divides by, so the cell neither helps nor hurts an arm.
+    graded = scoring.Score(
+        cell_key="a", config="p1_managed", tier=1, question_id="q1",
+        category="direct", answered=True, correct=True,
+    )
+    ungraded = scoring.Score(
+        cell_key="b", config="p1_managed", tier=1, question_id="semantic-q2",
+        category="semantic-ambiguity", answered=True, correct=False, scoreable=False,
+    )
+    assert scoring.graded([graded, ungraded]) == [graded]
+    # Not deleted, not blanked. The disagreement is still on the record.
+    assert ungraded.correct is False
+
+
+def test_an_unscoreable_cell_is_never_an_application_loss():
+    # An agent can acquire the Active rule, apply it exactly, anchor the window
+    # to the data's last timestamp instead of to now, and disagree with the
+    # oracle. Charging that to "acquired the rule and misapplied it" reports our
+    # corpus's defect as the agent's.
+    score = scoring.Score(
+        cell_key="a", config="p1_managed", tier=1, question_id="governed-q1",
+        category="governed-logic", answered=True, correct=False, scoreable=False,
+        acquisition_observable=True, rules_required=["active"], rules_acquired=["active"],
+    )
+    assert score.acquired
+    assert not score.application_loss
+
+
+def test_arm_equivalence_counts_verdicts_over_gradeable_pairs_only():
+    # Two arms that both got an anchor-ambiguous question "wrong" agree, and that
+    # agreement is about the coin landing the same way twice. Counted, it inflates
+    # `same verdict` — the one column a procurement decision reads.
+    cells, scores = {}, {}
+    for index, (question, scoreable) in enumerate(
+        [("q1", True), ("q2", True), ("semantic-q2", False)]
+    ):
+        for config_key, correct in (("p1_managed", index == 0), ("p1_toolbox", False)):
+            key = traces.cell_key(question, config_key, 1, 1)
+            cells[key] = traces.Cell(
+                cell_key=key, question_id=question, category="direct", question="?",
+                config=config_key, tier=1, run=1, answer="42",
+            )
+            scores[key] = scoring.Score(
+                cell_key=key, config=config_key, tier=1, question_id=question,
+                category="direct", answered=True, correct=correct, scoreable=scoreable,
+            )
+
+    result = scoring.compare_arms(cells, scores, "p1_managed", "p1_toolbox")
+    assert result.pairs == 3
+    assert result.graded_pairs == 2
+    # One of the two gradeable questions agrees. Over three pairs it would read 67%.
+    assert result.fraction("same_verdict") == 0.5
+    # Sequence and value stay on all three: those are observed, not arbitrated.
+    assert result.fraction("same_sequence") == 1.0
+
+
 def test_ca_narration_cannot_prove_governance_was_delivered():
     # At tier 0 there is no governed description at all, yet CA confabulated one
     # — and inverted it, calling `txn_amt_x2` the gross list price. That fired the

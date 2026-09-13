@@ -264,15 +264,21 @@ everywhere downstream. It reports the largest drift it saw, compares that to the
 floor `compare` currently applies, and tells you to raise it if yours is worse.
 It prints no ranking table; ranking noise invites reading an order into it.
 
-Our floor is **6.7 points**, and it is the number that decides whether any
+Our floor is **8.9 points**, and it is the number that decides whether any
 cross-capture delta on this page is `resolved`. Do not inherit it blindly. It
 was measured on two direct-API arms a day apart at n=5, and an arm that runs a
 local model, a shorter interval, or a different replicate count will not have
 the same one.
 
+It also moves when the *rubric* moves, which is not obvious. Marking three
+questions unscoreable took this floor from 6.7 to 8.9 points without re-running
+anything: the same A/A disagreements are now counted over 45 cells per arm/tier
+instead of 60, so each one is worth more. If you change what counts as gradeable,
+re-run `make compare-aa` before you trust any `resolved` verdict.
+
 The floor is also not one number across tiers. Restricting the same A/A shows
-tier 0 drifting 6.7 points and tier 1 drifting 5.0 — the ungoverned condition
-moves most, which is what you would expect when accuracy sits near 25% and every
+tier 0 drifting 8.9 points and tier 1 drifting 4.4 — the ungoverned condition
+moves most, which is what you would expect when accuracy sits near 30% and every
 arm is guessing more:
 
 ```bash
@@ -337,7 +343,11 @@ refused rather than paired against nothing.
 
 - **Model version.** Results are specific to `gemini-3.7-flash` at temperature 0.
   Temperature 0 is not determinism — replicate variance is visible in the IQR
-  columns, which is why the design runs five replicates rather than one.
+  columns, which is why the design runs five replicates rather than one. A
+  sibling capture on `gemini-3.8-flash` (`results/model-38flash/`) says the
+  *ordering* of the arms survives a model generation — Kendall tau +1.00 at both
+  tiers, zero inversions above the floor — while the absolute levels move. Re-run
+  before quoting a level; the ranking travels further than the numbers do.
 - **Managed tool schemas are a vendor detail that can change without notice**,
   and they dominate the cost result. Tool declarations are re-sent every turn, so
   their serialized size sets a floor on prompt tokens; one endpoint's

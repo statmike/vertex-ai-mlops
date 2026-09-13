@@ -41,7 +41,9 @@
       "nice_to_have": ["transactions_v2_final"],
       "distractor": ["revenue_amount"]
     },
-    "golden_key": "net_revenue_trailing_30d"
+    "golden_key": "net_revenue_trailing_30d",
+    "scoreable": false,
+    "unscoreable_reason": "\"trailing 30 days\" pins the window's length but not its anchor. Anchoring to the data's latest timestamp is as defensible as anchoring to now, and agents pick between them nondeterministically at temperature 0 - the same arm answered 2,699 and 2,804 in consecutive runs. The answer is an extensive quantity (a sum), so the two readings differ by more than the 0.5% tolerance and the oracle arbitrates a coin-flip."
   },
   {
     "id": "semantic-q3",
@@ -63,7 +65,9 @@
       "nice_to_have": ["users", "user_id"],
       "distractor": []
     },
-    "golden_key": "active_user_count"
+    "golden_key": "active_user_count",
+    "scoreable": false,
+    "unscoreable_reason": "The governed rule defines Active as \"had an event in the trailing 30 days\", which pins the window's length but not its anchor. The answer is a count - extensive, so the two defensible anchorings differ by more than the 0.5% tolerance. See semantic-q2."
   },
   {
     "id": "governed-q2",
@@ -85,7 +89,9 @@
       "nice_to_have": ["users", "user_id"],
       "distractor": ["revenue_amount"]
     },
-    "golden_key": "net_revenue_from_active_users"
+    "golden_key": "net_revenue_from_active_users",
+    "scoreable": false,
+    "unscoreable_reason": "Inherits the Active definition's unpinned anchor from governed-q1, and sums over it. The answer is an extensive quantity twice over - which users count, and how much they spent - so the two defensible anchorings diverge well past the 0.5% tolerance. See semantic-q2."
   },
   {
     "id": "metadata-q1",

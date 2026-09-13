@@ -87,6 +87,9 @@ def score_all(
         if question is None:
             continue
         scores[key] = scoring.score_cell(
-            cell, question.evidence, resolved[(cell.config, cell.tier)].get(question.golden_key)
+            cell,
+            question.evidence,
+            resolved[(cell.config, cell.tier)].get(question.golden_key),
+            scoreable=question.scoreable,
         )
     return scores

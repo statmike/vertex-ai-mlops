@@ -10,28 +10,28 @@ using goldens frozen into the capture (1 oracle across 10 arms)
 
 ## Accuracy delta, on paired cells only
 
-| arm | tier | pairs | base | model-38flash | delta (pts) | resolved |
-|---|---|---|---|---|---|---|
-| p1_managed | 0 | 36 | 36% | 33% | -2.8 | < 6.7 pt floor |
-| p1_managed | 1 | 36 | 67% | 72% | +5.6 | < 6.7 pt floor |
-| p1_matched | 0 | 36 | 36% | 33% | -2.8 | < 6.7 pt floor |
-| p1_matched | 1 | 36 | 67% | 67% | +0.0 | < 6.7 pt floor |
-| p1_toolbox | 0 | 36 | 33% | 31% | -2.8 | < 6.7 pt floor |
-| p1_toolbox | 1 | 36 | 75% | 92% | +16.7 | yes |
-| p2_managed | 0 | 36 | 33% | 42% | +8.3 | yes |
-| p2_managed | 1 | 36 | 75% | 92% | +16.7 | yes |
-| p2_toolbox | 0 | 36 | 31% | 39% | +8.3 | yes |
-| p2_toolbox | 1 | 36 | 75% | 92% | +16.7 | yes |
-| p3_managed | 0 | 36 | 36% | 33% | -2.8 | < 6.7 pt floor |
-| p3_managed | 1 | 36 | 75% | 89% | +13.9 | yes |
-| p3_matched | 0 | 36 | 33% | 33% | +0.0 | < 6.7 pt floor |
-| p3_matched | 1 | 36 | 75% | 75% | +0.0 | < 6.7 pt floor |
-| p3_toolbox | 0 | 36 | 33% | 33% | +0.0 | < 6.7 pt floor |
-| p3_toolbox | 1 | 36 | 75% | 97% | +22.2 | yes |
-| p4_bq_ca | 0 | 36 | 25% | 28% | +2.8 | < 6.7 pt floor |
-| p4_bq_ca | 1 | 36 | 75% | 75% | +0.0 | < 6.7 pt floor |
-| p4_looker_ca | 0 | 36 | 14% | 11% | -2.8 | < 6.7 pt floor |
-| p4_looker_ca | 1 | 36 | 33% | 42% | +8.3 | yes |
+| arm | tier | pairs | graded | base | model-38flash | delta (pts) | resolved |
+|---|---|---|---|---|---|---|---|
+| p1_managed | 0 | 36 | 27 | 48% | 44% | -3.7 | < 8.9 pt floor |
+| p1_managed | 1 | 36 | 27 | 89% | 93% | +3.7 | < 8.9 pt floor |
+| p1_matched | 0 | 36 | 27 | 48% | 44% | -3.7 | < 8.9 pt floor |
+| p1_matched | 1 | 36 | 27 | 89% | 89% | +0.0 | < 8.9 pt floor |
+| p1_toolbox | 0 | 36 | 27 | 44% | 41% | -3.7 | < 8.9 pt floor |
+| p1_toolbox | 1 | 36 | 27 | 100% | 100% | +0.0 | < 8.9 pt floor |
+| p2_managed | 0 | 36 | 27 | 44% | 56% | +11.1 | yes |
+| p2_managed | 1 | 36 | 27 | 100% | 100% | +0.0 | < 8.9 pt floor |
+| p2_toolbox | 0 | 36 | 27 | 41% | 52% | +11.1 | yes |
+| p2_toolbox | 1 | 36 | 27 | 100% | 100% | +0.0 | < 8.9 pt floor |
+| p3_managed | 0 | 36 | 27 | 48% | 44% | -3.7 | < 8.9 pt floor |
+| p3_managed | 1 | 36 | 27 | 100% | 100% | +0.0 | < 8.9 pt floor |
+| p3_matched | 0 | 36 | 27 | 44% | 44% | +0.0 | < 8.9 pt floor |
+| p3_matched | 1 | 36 | 27 | 100% | 100% | +0.0 | < 8.9 pt floor |
+| p3_toolbox | 0 | 36 | 27 | 44% | 44% | +0.0 | < 8.9 pt floor |
+| p3_toolbox | 1 | 36 | 27 | 100% | 100% | +0.0 | < 8.9 pt floor |
+| p4_bq_ca | 0 | 36 | 27 | 33% | 37% | +3.7 | < 8.9 pt floor |
+| p4_bq_ca | 1 | 36 | 27 | 100% | 100% | +0.0 | < 8.9 pt floor |
+| p4_looker_ca | 0 | 36 | 27 | 15% | 15% | +0.0 | < 8.9 pt floor |
+| p4_looker_ca | 1 | 36 | 27 | 44% | 56% | +11.1 | yes |
 
 Unpaired cells excluded: 720 in base, 0 in model-38flash. Arms only in base: p4_bq_direct, p4_bq_direct_ctx.
 
@@ -40,7 +40,7 @@ Unpaired cells excluded: 720 in base, 0 in model-38flash. Arms only in base: p4_
 | tier | concordant | inverted | unresolved | tau (resolved only) |
 |---|---|---|---|---|
 | 0 | 10 | 0 | 35 | +1.00 |
-| 1 | 21 | 0 | 24 | +1.00 |
+| 1 | 16 | 0 | 29 | +1.00 |
 
 **No ordering reversed** above the noise floor.
 

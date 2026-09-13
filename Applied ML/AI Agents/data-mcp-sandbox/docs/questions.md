@@ -100,14 +100,23 @@ is set by the data, not by the tolerance.
 
 It bites the trailing-window questions whose answer is an **extensive** quantity
 (`governed-q1`, `governed-q3`, `semantic-q2` — a count or a sum) and spares the
-intensive one (`governed-q2`, an average, which barely moves). These questions
-therefore report a question-design defect on top of whatever they report about
-the agent, and
+intensive one (`governed-q2`, an average, which barely moves).
+
+**All three are therefore marked `scoreable: false`**, each carrying the reason
+in `unscoreable_reason` next to the question it disqualifies. Every accuracy,
+trap, application-loss and equivalence rate in this repo is computed over the
+**nine** that remain; the excluded cells still ran, are still in the capture, and
+still carry a `correct` a reader can inspect. This is a rubric change and not a
+re-run — scores live beside the capture rather than inside it, so `make score`
+republished five existing captures on the new basis without issuing a query.
 [paths](paths.md#the-trailing-window-questions-are-anchor-ambiguous) sets out
-what it does and does not change. The fix is to pin the anchor in the question
-wording; it is not applied here because changing a question invalidates
-comparison with every capture already published, which is the more expensive
-loss.
+which published numbers moved.
+
+The cost is paid by one category: `governed-logic` had three questions and now
+has one, so the sharpest claim in the project rests on `governed-q2` alone.
+The real fix is to pin the anchor in the question wording; it is not applied here
+because changing a question invalidates comparison with every capture already
+published, which is the more expensive loss.
 
 ---
 
@@ -180,7 +189,7 @@ and it is why the design runs five replicates rather than one.
 
 ## Unmeasured is not zero
 
-The rule that governs every table and every chart here. Two things are
+The rule that governs every table and every chart here. Three things are
 deliberately left blank rather than scored:
 
 - **Evidence on opaque paths.** Conversational Analytics narrates itself in
@@ -189,6 +198,12 @@ deliberately left blank rather than scored:
   ignores the semantic layer" when the truth is "Path 4 does not show its work."
 - **Acquisition at tier 0.** There is no governed description to acquire, so the
   check returns False by construction. That is the intended reading, not a gap.
+- **The three anchor-ambiguous questions.** `governed-q1`, `governed-q3` and
+  `semantic-q2` admit two defensible windows, so the oracle would be arbitrating
+  a coin-flip rather than grading. They carry `scoreable: false`, and
+  `scoring.graded()` is the single place that decision is applied — every rate in
+  the repo runs over its output. Marking them zero would have reported our
+  corpus's defect as the agents' error.
 
 Ranking an arm bottom on a metric it was never eligible for is a false finding,
 not a conservative one. The report prints `--`; the charts drop the arm and say

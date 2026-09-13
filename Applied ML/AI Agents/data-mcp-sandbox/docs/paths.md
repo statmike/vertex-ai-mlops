@@ -116,17 +116,18 @@ same server, same model, same questions:
 
 | Path 3 | tools | schema chars | tool calls | tokens in / correct | accuracy |
 |---|---:|---:|---:|---:|---:|
-| `p3_matched` · tier 0 | 8 | 6,809 | 18.5 | 763,580 | 35% |
-| `p3_toolbox` · tier 0 | 23 | 18,865 | 17.0 | **574,456** | 33% |
-| `p3_matched` · tier 1 | 8 | 6,809 | 5.0 | **113,687** | 75% |
-| `p3_toolbox` · tier 1 | 23 | 18,865 | 7.0 | 121,638 | 75% |
+| `p3_matched` · tier 0 | 8 | 6,809 | 18.5 | 554,297 | 47% |
+| `p3_toolbox` · tier 0 | 23 | 18,865 | 17.0 | **417,432** | 44% |
+| `p3_matched` · tier 1 | 8 | 6,809 | 5.0 | **46,360** | 100% |
+| `p3_toolbox` · tier 1 | 23 | 18,865 | 7.0 | 53,979 | 100% |
 
-Identical accuracy at tier 1, two points apart at tier 0, and cost within ±7% —
-going the *wrong* way at tier 0, where the larger surface is cheaper because it
-resolved in fewer turns and turn count absorbed the schema. So the eleven inert
-Dataplex tools discussed under Path 3 are a real cost on paper and not a
-measurable one in the result. *(Caveat: `p3_matched` tier 1 excluded 14 of 60
-cells, the most in the capture, so that 7% rests on 46 clean cells against 60.)*
+Identical accuracy at tier 1 — 45/45 each — and under three points apart at tier
+0. Cost splits: the larger surface is **25% cheaper** at tier 0, the *wrong*
+direction, because it resolved in fewer turns and turn count absorbed the schema;
+at tier 1 it is 16% dearer. So the eleven inert Dataplex tools discussed under
+Path 3 are a real cost on paper and a small and unsigned one in the result.
+*(Caveat: `p3_matched` tier 1 needed a quota retry on 14 of its 60 cells, the
+most in the capture, so its cost figures carry the most retry overhead.)*
 
 The two together are why the headline is about **schema verbosity, not tool
 count** — and why trimming `p3_toolbox` to match would change the framing without
@@ -140,17 +141,23 @@ wrapper around it. The two disagree:
 
 | Same service, same corpus, same model | accuracy | median s | tokens in / cell | sec / correct |
 |---|---:|---:|---:|---:|
-| `p4_bq_ca` · tier 0 | 23% | 62.4 | 8,867 | 287 |
-| `p4_bq_direct` · tier 0 | 22% | **10.0** | 0 | **51** |
-| `p4_bq_ca` · tier 1 | 75% | 32.8 | 4,634 | 54 |
-| `p4_bq_direct` · tier 1 | **88%** | **10.3** | 0 | **13** |
+| `p4_bq_ca` · tier 0 | 31% | 62.4 | 8,867 | 213 |
+| `p4_bq_direct` · tier 0 | 29% | **10.0** | 0 | **38** |
+| `p4_bq_ca` · tier 1 | **100%** | 32.8 | 4,634 | 35 |
+| `p4_bq_direct` · tier 1 | 98% | **10.3** | 0 | **10** |
 
-Thirteen accuracy points and 3.2× the wall clock at tier 1, for the transport
-alone. The tokens column is not a saving: the direct arm runs no local model, so
-its 0 is what the harness records rather than what the question costs, and CA's
-own loop is billed where neither arm can read it (see
+**The transport costs 3.2× the wall clock at tier 1 and does not cost accuracy.**
+On the nine gradeable questions the wrapper is 45/45 and the direct client 44/45
+— one cell apart, which is inside any floor this experiment can measure. The
+**thirteen-point** lead this table gave the direct client before 2026-09-13 was
+made entirely of the three anchor-ambiguous questions, and is withdrawn. See
+[the trailing-window
+questions](#the-trailing-window-questions-are-anchor-ambiguous). The tokens
+column is not a saving either: the direct arm runs no local model, so its 0 is
+what the harness records rather than what the question costs, and CA's own loop
+is billed where neither arm can read it (see
 [below](#p4_bq_ca-reports-nothing-which-is-not-the-same-as-spending-nothing)).
-The latency and the accuracy are real.
+The latency is the one difference that survives — and it is large.
 
 So the Path 4 rows on every other table describe the wrapper as much as the
 service. That is a limit on what this experiment can say about Conversational
@@ -166,18 +173,29 @@ to discover. The two arms therefore send **byte-identical requests** across all
 
 | | tier 0 (identical requests) | tier 1 (glossary injected) |
 |---|---:|---:|
-| `p4_bq_direct` | 22% | 88% |
-| `p4_bq_direct_ctx` | 23% | **95%** |
+| `p4_bq_direct` | 29% | 98% |
+| `p4_bq_direct_ctx` | 31% | 98% |
 
-One point apart when nothing differs; seven points apart when the glossary does.
-The tier-1 effect is seven times the noise floor the same pair measured for
-itself on the same day against the same endpoint — which is a stronger claim than
-a 7-point delta usually gets to make.
+One cell apart when nothing differs — 13/45 against 14/45, which is what a
+within-run floor looks like. And **one cell apart when the glossary does differ**:
+44/45 both. On the nine gradeable questions, injecting the glossary is worth
+nothing measurable.
+
+That is not what this pair reported before 2026-09-13, which was seven points.
+The whole of the old seven belongs to the three anchor-ambiguous questions, and
+it is worth saying what the glossary actually did to them: `governed-q1` 4/5 →
+5/5, `governed-q3` 3/5 → 5/5, `semantic-q2` 2/5 → 3/5. The glossary moved the
+agent onto the *same anchoring the oracle happens to use*. That is a real effect
+and it is not accuracy — a glossary that pins an ambiguous definition is doing
+its job, but our oracle cannot distinguish "pinned it correctly" from "pinned it
+the way we did." So the honest statement is narrower and more useful than the old
+one: **on questions this corpus can grade, the glossary changes nothing; on the
+three it cannot, the glossary is the entire effect.**
 
 That "same day, same endpoint" is load-bearing, and this floor does not travel.
 It is a **within-run** figure: the two arms share a sweep, an oracle, and an hour
 of the service's weather. Comparing numbers across two *different* captures gets
-a much larger floor — [~7 points, measured](#the-cross-capture-noise-floor-is-7-points-not-1).
+a much larger floor — [~9 points, measured](#the-cross-capture-noise-floor-is-9-points-not-2).
 
 ### What this does not cover
 
@@ -217,44 +235,59 @@ rungs × twelve questions × five replicates = **1,800 cells, zero failures**,
 
 ### Accuracy, by rung
 
+Over the **nine questions the oracle can grade** — three of the twelve are
+excluded as anchor-ambiguous, [below](#the-trailing-window-questions-are-anchor-ambiguous):
+
 | arm | 0 | 1 · descriptions | 2 · profiles | 3 · rules | 4 · the rest |
 |---|---:|---:|---:|---:|---:|
-| `p1_managed` | 32% | 73% | 72% | 75% | 75% |
-| `p1_matched` | 33% | 73% | 70% | 73% | 75% |
-| `p3_managed` | 33% | 72% | 73% | **100%** | 100% |
-| `p3_matched` | 33% | 68% | 68% | **93%** | 95% |
-| `p3_toolbox` | 33% | 65% | 67% | **92%** | 92% |
-| `p4_bq_ca` | 20% | 67% | 67% | 67% | **92%** |
+| `p1_managed` | 42% | 89% | 89% | 89% | 89% |
+| `p1_matched` | 44% | 91% | 89% | 87% | 89% |
+| `p3_managed` | 44% | 87% | 87% | **100%** | 100% |
+| `p3_matched` | 44% | 89% | 89% | **100%** | 98% |
+| `p3_toolbox` | 44% | 87% | 89% | **100%** | 100% |
+| `p4_bq_ca` | 27% | 89% | 89% | 89% | **100%** |
 
-**That pooled table is the one to be most careful with,** because the twelve
+**That pooled table is the one to be most careful with,** because the nine
 questions are not one population. Eight of them — row counts, schema questions,
-the naming trap — need no governed definition at all. Four turn on one. Split
+the naming trap — need no governed definition at all. One turns on one. Split
 them and the pooled curve resolves into two unrelated shapes:
 
 **The eight that need no definition.** Every arm goes 30–50% at rung 0 to
-**98–100% at rung 1**, and rungs 2, 3 and 4 do nothing at all. Column
+**97.5–100% at rung 1**, and rungs 2, 3 and 4 do nothing at all. Column
 descriptions solve this population completely and immediately.
 
-**The ones that need a governed definition.** Three of the four are scoreable
-here; `semantic-q2` is dropped because its answers scatter across anchorings the
-oracle cannot arbitrate ([below](#the-trailing-window-questions-are-anchor-ambiguous)).
-On those three, the result is not a curve. It is a step function:
+**The one that needs a governed definition.** `governed-q2` — the average net
+transaction value for Active users — is the only question in the battery that
+turns on a governed rule *and* whose answer the oracle can arbitrate. The other
+three define Active, or a revenue window, over an unanchored "trailing 30 days"
+and are excluded. On `governed-q2` the result is not a curve. It is a step:
 
 | arm | 0 | 1 · descriptions | 2 · profiles | 3 · rules | 4 · the rest |
 |---|---:|---:|---:|---:|---:|
 | `p1_managed` | 0% | 0% | 0% | 0% | 0% |
-| `p1_matched` | 0% | 7% | 0% | 0% | 0% |
+| `p1_matched` | 0% | 20% | 0% | 0% | 0% |
 | `p3_managed` | 0% | 0% | 0% | **100%** | 100% |
 | `p3_matched` | 0% | 0% | 0% | **100%** | 100% |
 | `p3_toolbox` | 0% | 0% | 0% | **100%** | 100% |
 | `p4_bq_ca` | 0% | 0% | 0% | 0% | **100%** |
 
-Zeros, then hundreds. n=15 per cell, five replicates, no partial credit anywhere
-in the table. Four things follow, and the pooled view states three of them
-wrongly:
+Zeros, then hundreds. The one cell that is neither — `p1_matched` at rung 1, 1/5
+— is the single correct Path 1 cell in the whole table, and it does not recur at
+any higher rung.
+
+**State the basis plainly: this is one question at five replicates per cell.**
+It was three questions before the anchoring defect was found, and dropping two
+of them cut the evidence for the sharpest claim on this page by two thirds. The
+step is unambiguous in the sense that 29 of the 30 cells are 0/5 or 5/5 — but a
+step measured on one question is a step measured on one question, and the honest
+reading is "one governed definition, tested five times per rung, six arms, and
+the boundary lands in the same place every time" rather than "governance works".
+Pinning the anchor in the corpus wording and re-running would restore the other
+two; that is queued and not done, and it is the single largest open item on this
+page. Four things follow, and the pooled view states three of them wrongly:
 
 **1. Column descriptions do nothing for governed definitions.** 0% → 0%. The
-+35 to +47 points they are worth in the pooled table is entirely the eight easy
++43 to +62 points they are worth in the pooled table is entirely the eight easy
 questions. Descriptions are the best-value rung on the ladder and they are not
 governance — they are documentation, and they buy exactly what documentation
 buys.
@@ -263,17 +296,39 @@ buys.
 channels this is the one whose absence would not have been visible anywhere.
 
 **3. Business rules are the whole governance effect, and only Path 3 can use
-them.** All three Path 3 arms go 0% → 100% at rung 3. Not "+25 points" — the
-entire population, from none to all. Rung 3 changes nothing else on the ladder
+them.** All three Path 3 arms go 0/5 → 5/5 at rung 3. Not "+11 points" — the
+whole question, from never to always. Rung 3 changes nothing else on the ladder
 for anyone.
 
-**4. Path 1 never answers a governed-definition question correctly. At any
-rung.** Both arms, every rung, 0% but for a single cell out of 150. Schema plus
-SQL plus the rule written down in front of it still produces the ungoverned
-answer — `p1_managed` replies **5000** for the Active-user count, which is the
-total user count, and **4,032,361** for revenue from Active users, which is
-all-time revenue. It is not approximating the governed number. It is answering a
-different question.
+**4. Path 1 never answers the governed-definition question correctly. At any
+rung.** Both arms, every rung, 0% but for a single cell out of 50. Schema plus
+SQL plus the rule written down in front of it still produces an ungoverned
+answer, and the captured SQL says exactly which part of the rule it drops. At
+the top rung `p1_managed` writes
+
+```sql
+AND t.user_id IN (SELECT DISTINCT user_id FROM ...raw_events_2026)
+```
+
+— the right table, and no window. "Had an event in the trailing 30 days"
+becomes "appears in the event log at all," which is every user in the corpus.
+Path 3 at the same rung writes the `TIMESTAMP_SUB(..., INTERVAL 30 DAY)` filter
+and lands on the oracle's **119.36**; Path 1 lands on **99.34**.
+
+That is one mechanism, and it explains the two excluded governed questions too.
+`p1_managed` answers **5000** for the Active-user count — `COUNT(DISTINCT
+user_id)` over the unwindowed event table, which is the whole user base — and
+**4,032,361** for revenue from Active users, the same unwindowed population
+summed. Both are wrong under *either* anchoring, which is why they are reported
+here as observed behaviour rather than folded into a rate.
+
+One caveat on the trap column: 99.34 sits 0.17% from the recorded trap value of
+99.176, inside the 0.5% tolerance, so the scorer marks `governed-q2` as having
+sprung the *"trusted the raw `is_active` flag"* trap. At the bottom rung that
+label is literally right — Path 1 answers 99.18, the flag exactly. At the top
+rung it is a coincidence of arithmetic: dropping the window selects nearly the
+same population the stale flag does. Traps are detected numerically, so a
+distinct wrong route that lands on the trap's number is recorded as the trap.
 
 `p4_bq_ca` sits between: 0% until the top rung, then 100%. Conversational
 Analytics is the one arm for which the glossary and quality artifacts — not the
@@ -294,11 +349,11 @@ across the wider rules-required population:
 
 | arm | application loss, rung 1 | rung 3 |
 |---|---:|---:|
-| `p1_managed` | 32% | 30% |
-| `p1_matched` | 32% | 32% |
-| `p3_managed` | 34% | **0%** |
-| `p3_matched` | 38% | **8%** |
-| `p3_toolbox` | 42% | **10%** |
+| `p1_managed` | 14% | 14% |
+| `p1_matched` | 11% | 17% |
+| `p3_managed` | 17% | **0%** |
+| `p3_matched` | 14% | **0%** |
+| `p3_toolbox` | 17% | **0%** |
 
 **A semantic layer is not an optimisation here. On this corpus it is the only
 thing that makes a written business rule executable.**
@@ -312,6 +367,13 @@ at rung 3: the Path 3 arms jump to 78–80% while both Path 1 arms stay at 50%.
 `p4_bq_ca` stays at 50% until rung 4, then reaches 80%. Three methods — the
 oracle, the acquisition/application split, and a blind judge — put the same
 boundary in the same place.
+
+The judge's figures are stated over all twelve questions, deliberately. It scores
+whether the answer *adhered to the definition*, not whether a number matched, and
+the anchoring defect is a property of the numeric comparison rather than of the
+definition — an agent that anchors to the latest event has still applied the rule.
+So the one method whose verdicts the rubric change does not touch is the one that
+agrees with it.
 
 ### The trailing-window questions are anchor-ambiguous
 
@@ -353,25 +415,39 @@ quantity — a count or a sum — and not the intensive one:
 | `semantic-q2` | sum of trailing-30d revenue | **yes** |
 | `governed-q2` | *average* txn value for Active users | no — an average barely moves |
 
-**What this does and does not change.** It does not touch the eight time-stable
-questions, and it does not touch the qualitative finding, because Path 1's
-failure is categorical rather than marginal: `5000` is the total user count and
-`4,032,361` is all-time revenue, and no choice of anchor turns either into ~2,800
-or ~2.7M. The rung-3 step is Path 3 moving from a different-question answer to a
-right-population answer, and that is robust.
+**What was done about it.** All three are marked `scoreable: false` in
+`examples/questions.json`, with the reason stored next to the question, and every
+rate in this repo is computed over the nine that remain. The cells still ran,
+are still in the capture, and still carry a `correct` a reader can inspect — they
+are *unmeasured*, not zero, the same way an opaque path's evidence reads `--`.
+Scores live beside the capture rather than inside it, so this was a re-score of
+five existing captures and not a re-run: `make score` republished every number on
+the nine-question basis for the cost of reading the files.
 
-What it does mean is that the **`100%` in the step-function table is flattered by
-an oracle whose anchor happened to agree**, and the published capture's `0%` on
-these questions is correspondingly harsh — its agents were computing a defensible
-window that its oracle did not share. Read those cells as "the governed
-population, up to the anchor" rather than as a perfect score. `semantic-q2` is
-excluded outright above because its anchorings are further apart than the other
-two and no reading dominates.
+**What it changed.** Three published headlines moved, all in the same direction —
+toward a smaller claim:
 
-The fix is to pin the anchor in the question wording. It is deliberately not
-applied here: changing a question invalidates comparison with every capture
-already published, which is the more expensive loss. It is the first thing to
-change in the next corpus version.
+| claim, as published | on nine gradeable questions |
+|---|---|
+| Context injection is worth 7 points at tier 1 | **0 points** — the whole effect was the three |
+| The direct client beats the CA wrapper by 13 points | **−2.2** — the wrapper is 45/45, direct 44/45 |
+| The ladder's replication check fails at tier 1 | **passes**, largest drift 6.7 against an 8.9 floor |
+
+**What it does not change.** It does not touch the eight time-stable questions,
+and it does not touch the qualitative finding, because Path 1's failure is
+categorical rather than marginal: `5000` is the total user count and `4,032,361`
+is all-time revenue, and no choice of anchor turns either into ~2,800 or ~2.7M.
+The rung-3 step is Path 3 moving from a different-question answer to a
+right-population answer, and that is robust. The price is paid in a different
+currency: the governed-definition category drops from three questions to one, so
+the step function is now measured on `governed-q2` alone.
+
+The real fix is to pin the anchor in the question wording. It is deliberately
+**not** applied here: changing a question invalidates comparison with every
+capture already published, which is the more expensive loss on this timescale.
+It is the first thing to change in the next corpus version, and re-running the
+main capture against a pinned corpus is the single largest open item this page
+knows about.
 
 ### Governance is also cheaper
 
@@ -381,18 +457,20 @@ arm spent at a rung and dividing by the number of answers it got right:
 
 | arm | tokens per correct answer, rung 0 | at its most accurate rung | saving |
 |---|---:|---:|---:|
-| `p1_managed` | 2,493,824 | 610,648 (rung 3) | 4.1× |
-| `p1_matched` | 364,013 | 79,262 (rung 4) | 4.6× |
-| `p3_managed` | 3,747,217 | 376,537 (rung 3) | **10.0×** |
-| `p3_matched` | 925,118 | 96,913 (rung 4) | 9.5× |
-| `p3_toolbox` | 626,408 | 103,579 (rung 4) | 6.0× |
-| `p4_bq_ca` | 73,328 | 7,813 (rung 4) | 9.4× † |
+| `p1_managed` | 2,493,824 | 694,549 (rung 4) | 3.6× |
+| `p1_matched` | 364,013 | 83,481 (rung 1) | 4.4× |
+| `p3_managed` | 3,747,217 | 573,622 (rung 4) | 6.5× |
+| `p3_matched` | 925,118 | 114,656 (rung 3) | **8.1×** |
+| `p3_toolbox` | 626,408 | 126,597 (rung 4) | 4.9× |
+| `p4_bq_ca` | 73,327 | 9,549 (rung 4) | 7.7× † |
 
-Every arm gets cheaper, but the two that reach 100% get cheapest: the arms whose
-accuracy steps at rung 3 are also the ones whose cost drops by an order of
-magnitude, because a rule that resolves the question first time replaces a dozen
+Every arm gets several times cheaper, and the two largest savings belong to arms
+that reach 100% — a rule that resolves the question first time replaces a dozen
 exploratory queries. Median tool calls fall with it (`p3_managed` 23.0 → 8.0) and
-so does median latency (92.4s → 32.9s).
+so does median latency (92.4s → 32.9s). The denominator here is correct answers
+on the nine gradeable questions, so these ratios moved when the rubric did; the
+numerators are the same tokens they always were. Where an arm ties itself for
+most-accurate across rungs, the **highest** rung is shown.
 
 Read the ratios, not the absolute levels: cross-arm token counts are not
 comparable, since the managed arms return far larger tool payloads per call.
@@ -414,35 +492,35 @@ frozen oracle, and compared as an A/A:
 
 | arm | rung 0, in the ladder | rung 0, re-run after | drift |
 |---|---:|---:|---:|
-| `p1_managed` | 32% | 33% | +1.7 |
-| `p1_matched` | 33% | 32% | −1.7 |
-| `p3_managed` | 33% | 33% | 0.0 |
-| `p3_matched` | 33% | 33% | 0.0 |
-| `p3_toolbox` | 33% | 28% | −5.0 |
-| `p4_bq_ca` | 20% | 23% | +3.3 |
-| **pooled** | **31%** | **31%** | **−0.3** |
+| `p1_managed` | 42% | 44% | +2.2 |
+| `p1_matched` | 44% | 42% | −2.2 |
+| `p3_managed` | 44% | 44% | 0.0 |
+| `p3_matched` | 44% | 44% | 0.0 |
+| `p3_toolbox` | 44% | 38% | −6.7 |
+| `p4_bq_ca` | 27% | 31% | +4.4 |
+| **pooled** | **41%** | **41%** | **−0.4** |
 
-Largest drift 5.0 points, under the 6.7-point floor, across a 45-hour gap — the
+Largest drift 6.7 points, under the 8.9-point floor, across a 45-hour gap — the
 widest interval any A/A here has spanned, which makes that floor look
 conservative rather than lucky. The ungoverned baseline lands where it landed,
 so the rung deltas above are governance and not the clock.
 
-It also settles one arm's oddity: `p4_bq_ca`'s low 20% at rung 0 **reproduces**
-(23% on the re-run) rather than being an artifact of a stale oracle. It is real,
+It also settles one arm's oddity: `p4_bq_ca`'s low 27% at rung 0 **reproduces**
+(31% on the re-run) rather than being an artifact of a stale oracle. It is real,
 and it is localised — `metadata-q2` and `trap-q1`, two of the four questions
 every other ungoverned arm passes.
 
-### The replication check against the published capture, and why it fails
+### The replication check against the published capture, and why it failed
 
 Rungs 0 and 4 are the published tiers 0 and 1 re-run, so
 [reproducing](reproducing.md#running-the-governance-ladder) prescribes an A/A
 against `capture.json.gz` before reading anything into the rungs between. **That
-check fails, and it is worth showing rather than burying.** Tier 0 agrees
-(−5.0 to 0.0, inside the floor). Tier 1 does not — every arm scores higher in
-the ladder, by +8.3 to +25.0.
+check failed on the twelve-question rubric and passes on the nine.** It is worth
+showing both, because the failure is what found the defect.
 
-Chasing it is what turned up the anchoring defect above, and the check decomposes
-into two causes with no residual:
+On twelve questions, tier 0 agreed (−5.0 to 0.0, inside the floor) and tier 1
+did not: every arm scored higher in the ladder, by +8.3 to +25.0. The check
+decomposed into two causes with no residual:
 
 - **The anchor-ambiguous questions score near-arbitrarily in each capture.**
   Note this is *not* a matter of grading one capture against the other's oracle —
@@ -450,8 +528,8 @@ into two causes with no residual:
   against its own. Both sides are scored fairly and they still disagree, because
   in the published capture the oracle's anchor sits 1.05% and 4.98% from the two
   answers its agents actually gave, and in the ladder it sits 0.32% and 0.00%
-  from theirs. The published capture therefore scores **0/30 at tier 1** on
-  `governed-q1`, `governed-q3` and `semantic-q2` while the ladder scores 60–67%
+  from theirs. The published capture therefore scored **0/30 at tier 1** on
+  `governed-q1`, `governed-q3` and `semantic-q2` while the ladder scored 60–67%
   on the same questions with the same arms. That gap is the oracle's anchor, not
   the architecture.
 - **The published tier 1 has no Dataplex quality scans and the ladder's rung 4
@@ -462,24 +540,29 @@ into two causes with no residual:
   `lookup_context` is called by the three Path 3 arms and by nobody else. The
   documented scoping holds.
 
-Drop the four trailing-window questions and the check passes cleanly. On the
-eight anchor-free ones, tier 1 is **100% against 100%** on five of six arms and
-−2.5 on the sixth, against a 6.7-point floor:
+Marking those three questions unscoreable is not a patch applied to this check —
+it is a rubric change applied to every capture in the repo. Re-scored on the nine
+questions the oracle can grade, both tiers now agree, every arm, with the largest
+drift 6.7 points against an 8.9-point floor:
 
-| arm | published t1 | ladder rung 4 | drift |
-|---|---:|---:|---:|
-| `p1_managed` | 100% | 100% | 0.0 |
-| `p1_matched` | 100% | 100% | 0.0 |
-| `p3_managed` | 100% | 100% | 0.0 |
-| `p3_matched` | 100% | 98% | −2.5 |
-| `p3_toolbox` | 100% | 100% | 0.0 |
-| `p4_bq_ca` | 100% | 100% | 0.0 |
+| arm | published t0 | ladder rung 0 | drift | published t1 | ladder rung 4 | drift |
+|---|---:|---:|---:|---:|---:|---:|
+| `p1_managed` | 49% | 42% | −6.7 | 89% | 89% | 0.0 |
+| `p1_matched` | 47% | 44% | −2.2 | 89% | 89% | 0.0 |
+| `p3_managed` | 47% | 44% | −2.2 | 100% | 100% | 0.0 |
+| `p3_matched` | 47% | 44% | −2.2 | 100% | 98% | −2.2 |
+| `p3_toolbox` | 44% | 44% | 0.0 | 100% | 100% | 0.0 |
+| `p4_bq_ca` | 31% | 27% | −4.4 | 100% | 100% | 0.0 |
 
-So the ladder measured the same apparatus the published capture did, and the
-disagreement is confined to the questions whose oracle cannot pin its own window.
+Tier 1 is the stricter half and it is nearly exact: five arms identical, one off
+by a single cell. So the ladder measured the same apparatus the published capture
+did, and the disagreement was confined to the questions whose oracle cannot pin
+its own window. The quality-scan difference remains real and remains documented;
+it does not show up here because tier 1 is saturated on the gradeable set, which
+is a ceiling effect and not evidence the scans do nothing.
 
 The lesson for anyone reusing this harness is more useful than "the check
-failed": **an A/A that fails is worth more than one that passes.** This one was
+passed": **an A/A that fails is worth more than one that passes.** This one was
 run because the method prescribed it, it refused to be explained away, and
 chasing it found a measurement defect that four earlier captures had already
 been quietly carrying. Two habits fall out of it. Give every question an anchor
@@ -489,6 +572,52 @@ anchorings is set by the data, not by the tolerance. And when a comparison fails
 decompose it per question before attributing it to anything architectural: the
 per-question view showed three questions at exactly 0/30, which is the signature
 of a grading mismatch and never of an agent that is merely worse.
+
+---
+
+## Does the ranking survive a new model?
+
+Every number on this page comes from one model, which makes "is this a fact about
+architectures or a fact about `gemini-3.7-flash`?" the obvious objection. It is
+answerable, so it was answered: all ten MCP arms were re-run on
+**`gemini-3.8-flash`**, both tiers, n=3, 720 cells, zero failures.
+
+`agent_model` is in `traces.MUST_AGREE`, so this is a separate capture compared
+*across*, never merged in — `results/model-38flash/` carries its report, scores
+and the cross-capture delta.
+
+**The ordering does not move.** Pairing 36 cells per arm/tier — 27 of them
+gradeable — gives Kendall tau of **+1.00 at both tiers with zero inversions**
+above the 8.9-point floor: 10 concordant pairs at tier 0, 16 at tier 1, and the
+rest unresolved because both arms sit inside the floor of each other. Absolute
+accuracy moves by a few points in both directions; which arm beats which does
+not move at all.
+
+Three deltas resolve above the floor, and two of them are the same finding:
+
+| arm | tier | 3.7-flash | 3.8-flash | delta |
+|---|---:|---:|---:|---:|
+| `p2_managed` | 0 | 44% | 56% | **+11.1** |
+| `p2_toolbox` | 0 | 41% | 52% | **+11.1** |
+| `p4_looker_ca` | 1 | 44% | 56% | **+11.1** |
+
+Both Path 2 arms gaining the same amount at the ungoverned tier, while every Path
+1 and Path 3 arm sits inside the floor, is either a real model improvement on the
+semantic-router path or eight days of capture drift. Those two explanations make
+different predictions, so a control was run rather than argued: **the same two
+arms, the same 3.7-flash model, re-swept eight days after the published capture**
+(144 cells, zero failures, `results/control-p2/`).
+
+It reproduces the published numbers **exactly — +0.0 points on all four
+arm/tier cells**, tier 0 included. The clock explains none of it. The Path 2
+tier-0 gain is the model.
+
+Tier 1 shows the opposite and is worth stating: eight of the ten arms score
+*identically* under both models and a ninth moves 3.7 points, because governance
+has already pushed them to a ceiling.
+`p4_looker_ca` is the only arm where tier 1 still discriminates, and it is the
+one arm governance barely rescues. **Governance compresses the model difference
+to nothing; the ungoverned condition is where a model generation still shows.**
 
 ---
 
@@ -593,8 +722,8 @@ difference against `p3_managed`. The two arms answer different questions:
 | `p3_managed` vs `p3_toolbox` | What do you actually get from each one as you would deploy it? |
 
 And the handicap is priced: [Is that fair?](#is-that-fair) measures `p3_toolbox`
-against `p3_matched` directly. Carrying the eleven costs within 7% and identical
-tier-1 accuracy.
+against `p3_matched` directly. Carrying the eleven is 25% *cheaper* at tier 0 and
+16% dearer at tier 1, with identical tier-1 accuracy.
 
 ## Path 4 — Managed Agent
 
@@ -667,19 +796,20 @@ by one mode querying more.
 
 **On accuracy, almost nothing survives the noise floor.** Two effects clear it:
 
-* **FAST costs ~12 points at tier 0** on both arms (28% → 17%), where there is
-  no governance to lean on. At tier 1 it is indistinguishable from the default
-  (+1.7, +3.3 — both inside the floor) while running ~30% faster. On a governed
-  warehouse, FAST is close to free.
-* **THINKING costs 10 points on `p4_bq_direct_ctx` at tier 1** (90% → 80%), and
-  13 against FAST. This is the one large, well-resolved accuracy effect in the
-  axis, and it is worth understanding before reading it as "deliberation is
-  bad".
+* **FAST costs ~16 points at tier 0** on both arms (37.8% → 22.2%), where there
+  is no governance to lean on. At tier 1 it *gains* (+2.2 and +6.7 — both inside
+  the floor) while running ~30% faster. On a governed warehouse, FAST is close to
+  free.
+* **THINKING costs ~16 points against FAST on `p4_bq_direct_ctx` at tier 1**
+  (100% → 84.4%). Against the *default* mode the same arm loses 8.9, which lands
+  exactly on the floor rather than clearing it — so FAST-vs-THINKING is the pair
+  that carries this finding. It is worth understanding before reading it as
+  "deliberation is bad".
 
 #### The one place deliberation hurts, and why it is not what it looks like
 
-All of the tier-1 loss is on the **trap** questions: `trap-q1` goes 5/5 to 0/5.
-The obvious reading — that more reasoning talks the model out of the governed
+All seven cells of the tier-1 loss are on the **trap** questions, and nowhere
+else: `trap-q1` goes 5/5 to 0/5 and `trap-q2` 5/5 to 3/5. The obvious reading — that more reasoning talks the model out of the governed
 definition — is wrong. It applies the definition *harder*:
 
 > "I excluded refunded transactions, as the business definition of net revenue
@@ -706,17 +836,23 @@ the measured interaction, and the rule is deliberately left as-is: it is read by
 every governed arm, so editing it would invalidate every capture taken against
 the old wording.
 
-#### The cross-capture noise floor is ~7 points, not 1
+#### The cross-capture noise floor is ~9 points, not 2
 
-This sandbox's headline A/A floor is 1 point, from two arms at tier 0 that send
-byte-identical requests. That is a **within-run** figure — those arms share a
-sweep, an oracle and an hour of the service's weather.
+This sandbox's headline A/A floor is 2.2 points — one cell out of 45 — from two
+arms at tier 0 that send byte-identical requests. That is a **within-run**
+figure: those arms share a sweep, an oracle and an hour of the service's weather.
 
-Re-running one configuration unchanged a day later moves it up to **6.7 points**
-(`p4_bq_direct` tier 0, 21.7% → 28.3%). Nothing varied but the date. So any
+Re-running one configuration unchanged a day later moves it up to **8.9 points**
+(`p4_bq_direct` tier 0, 28.9% → 37.8%). Nothing varied but the date. So any
 comparison *between* captures needs the larger floor, and `compare.NOISE_FLOOR`
-uses it. Under the 1-point floor, several deltas in this axis read as findings
+uses it. Under the within-run floor, several deltas in this axis read as findings
 that are in fact day-to-day drift.
+
+The floor is **measured, not chosen**, which means it is re-measured whenever the
+rubric is. Marking the three anchor-ambiguous questions unscoreable moved it from
+6.7 to 8.9 points — the same A/A swings were now counted over 45 cells instead of
+60, so each disagreeing cell is worth more. `make compare-aa` is how to re-derive
+it on your own captures.
 
 ---
 
@@ -725,7 +861,7 @@ that are in fact day-to-day drift.
 This surprised us, so it is worth stating precisely.
 
 **Behaviourally, they are near-identical.** Across paths 1–3, the managed and
-Toolbox arms reach the *same verdict* on 94–99% of paired cells — while agreeing
+Toolbox arms reach the *same verdict* on 92–99% of paired cells — while agreeing
 on the exact tool-call sequence 0–7% of the time. Two different routes, same
 destination.
 
@@ -855,35 +991,35 @@ speed with accuracy, and separates the field much further than either alone:
 
 | Arm | Tier 0 | Tier 1 |
 |---|---:|---:|
-| `p4_bq_direct_ctx` | **50s** | **12s** |
-| `p4_bq_direct` | **51s** | **13s** |
-| `p2_toolbox` | 279s | 44s |
-| `p4_bq_ca` | 287s | 54s |
-| `p2_managed` | 269s | 62s |
-| `p1_toolbox` | 212s | 63s |
-| `p3_toolbox` | 287s | 69s |
-| `p3_managed` | 341s | 80s |
-| `p1_managed` | 273s | 85s |
-| `p1_matched` | 226s | 91s |
-| `p3_matched` | 297s | 91s |
-| `p4_looker_ca` | **1,113s** | **240s** |
+| `p4_bq_direct` | **38s** | **10s** |
+| `p4_bq_direct_ctx` | **39s** | **10s** |
+| `p2_toolbox` | 215s | 33s |
+| `p1_toolbox` | 160s | 34s |
+| `p4_bq_ca` | 213s | 35s |
+| `p3_toolbox` | 190s | 39s |
+| `p1_managed` | 190s | 41s |
+| `p1_matched` | 162s | 44s |
+| `p3_matched` | 208s | 45s |
+| `p3_managed` | 239s | 46s |
+| `p2_managed` | 214s | 48s |
+| `p4_looker_ca` | **1,068s** | **197s** |
 
-The two direct arms are in a class of their own on this axis: **12–13 seconds per
-correct answer at tier 1, against 44s for the best MCP arm** and 54s for the same
-service reached as a tool. They are fast *and* the most accurate, which is the
-combination the rest of the field has to trade between. At tier 0 they are
-4–7× ahead of everything else for the same reason — one round trip instead of
-thirteen to twenty.
+The two direct arms are in a class of their own on this axis: **10 seconds per
+correct answer at tier 1, against 33s for the best MCP arm** and 35s for the same
+service reached as a tool. Note what this is *not* saying — on accuracy the
+direct arms and the wrapper are a cell apart, so the whole of this gap is the
+clock, and the clock is enough. At tier 0 they are 4–6× ahead of every other MCP
+arm for the same reason: one round trip instead of thirteen to twenty.
 
-Among the MCP arms the tier-0 field is tight, 212s to 341s, except `p4_looker_ca`,
-which needs **19 minutes of wall clock per right answer** — 3–5× worse than any
+Among the MCP arms the tier-0 field is tight, 160s to 239s, except `p4_looker_ca`,
+which needs **18 minutes of wall clock per right answer** — 4–7× worse than any
 other MCP arm. It is not merely the slowest per call; it is also the least
 accurate, and the two multiply.
 
 Governance is the biggest lever on this axis too. Every arm improves from tier 0
-to tier 1, by 2.5× (`p1_matched`) to 6.3× (`p2_toolbox`), and almost none of that
+to tier 1, by 3.7× (`p1_matched`) to 6.5× (`p2_toolbox`), and almost none of that
 is the model getting faster — it is fewer wasted turns and more of them landing
-correct. On the direct arms, which take one turn either way, the 4× improvement
+correct. On the direct arms, which take one turn either way, the 3.8× improvement
 is *entirely* accuracy: same clock, more of the answers right.
 
 ---
@@ -1112,8 +1248,8 @@ serve as evidence that governance was delivered — only a tool result can.
 
 ## Where CA does its arithmetic decides whether it is right
 
-`p4_looker_ca` is the one arm governance barely rescues: 15% → 35%, against
-75% for every other tier-1 arm. The tier-1 replicates say why, and it is not
+`p4_looker_ca` is the one arm governance barely rescues: 16% → 47%, against
+89–100% for every other tier-1 arm. The tier-1 replicates say why, and it is not
 randomness.
 
 | Question (tier 1) | Governed measure available? | Five runs | Truth |
@@ -1122,6 +1258,12 @@ randomness.
 | `semantic-q2` | `total_revenue` + date filter | 241,972 ×5 | 241,972 |
 | `governed-q1` | none — governed dimension only | 2,699 ×4, **805** ×1 | 2,699 |
 | `direct-q1` | none | 1,000 ×4, **5,000** ×1 | 5,000 |
+
+Two of those four questions (`semantic-q2`, `governed-q1`) are the
+anchor-ambiguous ones and contribute to no rate in this repo. They are kept here
+because this finding does not rest on the oracle: 2,699 four times and 805 once,
+from the same arm on the same question, is a self-contradiction no anchoring
+choice can produce.
 
 Where a measure exists, CA is exact and stable across all five replicates. Where
 none exists it has to assemble the answer itself, and then it sometimes retrieves
