@@ -167,12 +167,24 @@ variables is not a result.
 So the project produces a **family** of captures, each varying one axis and each
 self-describing through its own header — own oracle, own freeze time, own commit:
 
-| File | Varies |
-|---|---|
-| `results/capture.json.gz` | the published twelve-arm factorial |
-| `capture-thinking-fast.json.gz`, `capture-thinking-thinking.json.gz`, `capture-thinking-default.json.gz` | `thinking_mode` on the direct arms |
-| `capture-ladder.json.gz` | governance rungs |
-| `capture-model-<id>.json.gz` | the client model |
+Everything in `results/`, and what each one is for. Read `arms × tiers × runs ×
+questions` as the shape; the counts are what shipped, not what was planned.
+
+| File | Cells | Shape | Varies, and why it exists |
+|---|---|---|---|
+| `capture.json.gz` | 1,440 | 12 arms × 2 tiers × n=5 | **The published factorial.** Every headline number. Itself merged from two runs under two oracles — `report.provenance` names them. |
+| `capture-ladder.json.gz` | 1,800 | 6 arms × 5 tiers × n=5 | Governance rungs. Splits tier 1's six simultaneous channels into five cumulative ones — *which rung pays*. |
+| `capture-ladder-rung0-last.json.gz` | 360 | 6 arms × 1 tier × n=5 | The ladder's own control: rung 0 re-run **after** the other four, so a rising curve cannot be the day getting better. |
+| `capture-model-38flash.json.gz` | 720 | 10 arms × 2 tiers × n=3 | The client model. Does the *ordering* survive a model generation. |
+| `capture-control-p2.json.gz` | 144 | 2 arms × 2 tiers × n=3 | The model capture's control: the two arms that moved, re-swept on the **original** model eight days later. Separates model from drift. |
+| `capture-thinking-fast.json.gz` | 240 | 2 arms × 2 tiers × n=5 | `thinking_mode=FAST` on the direct arms. |
+| `capture-thinking-thinking.json.gz` | 240 | 2 arms × 2 tiers × n=5 | `thinking_mode=THINKING`. |
+| `capture-thinking-default.json.gz` | 240 | 2 arms × 2 tiers × n=5 | No `thinking_mode` — the contemporaneous baseline for the two above, and an A/A against the published capture. |
+
+**5,184 cells, and three of the eight files are controls.** That ratio is the
+method: a delta with no control beside it is a hypothesis, and every axis here
+that produced a headline also produced the capture that tries to explain it
+away.
 
 Note the third thinking capture. It re-runs the *published* setting — no
 `thinking_mode` at all — in the same window as the other two, and it is not
