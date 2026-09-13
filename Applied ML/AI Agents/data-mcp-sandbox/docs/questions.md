@@ -247,6 +247,45 @@ by more than 2 points. The deterministic scores were byte-identical. That is the
 ratio to keep in mind before reading anything into a small adherence difference,
 and it is why the design runs five replicates rather than one.
 
+### 4. The 0/n scan — `scoring.zero_scan`
+
+Not a score. A check on the three above, printed in every report under
+**Questions no arm got right**, and it exists because the anchor defect sat in
+plain sight for a week: three questions at exactly 0/n across ten arms, which
+nobody decomposed until a replication check failed.
+
+It reads **per arm**, not per question. The defect did not shut out the whole
+factorial — the two direct arms, merged in from a second run under a second
+oracle, graded normally on the same questions — so a check that only fired on a
+unanimous zero would have stayed silent on the one case it was needed for.
+
+The discriminator is whether the shut-out arms **agree with each other**, at the
+same 0.5% tolerance the oracle grades with. Three readings, and they are
+different problems:
+
+| What the shut-out arms look like | What it means |
+|---|---|
+| Most of them on the trap value | The corpus working. That is the finding, not a bug. |
+| Spread across many different numbers | Ordinary failure on a hard question. |
+| Clustered on one number the oracle rejects | A claim about the rubric, not the agents. |
+
+The third is the one that gets flagged, and it has two repairs that are not
+interchangeable. Either the golden computes the wrong thing, or the question
+admits two answers and belongs in `scoreable: false` — *or* the question simply
+records no trap value, in which case textbook naive behaviour is landing in the
+same bucket as genuine error. `Score.trap_known` keeps those apart so the report
+cannot print the first diagnosis when it means the last.
+
+This is not a hypothetical. On its first run against the published capture it
+cleared four tier-0 shutouts as by-design and flagged `metadata-q1`, where seven
+arms answer **0** — because the generator never writes a NULL into the column
+*named* `revenue_amount`, so profiling the plausible column reports "nothing is
+missing". That is T1, which the trap table above already claims is in play for
+that question, and the golden had no trap value for it. It has one now. The
+published capture freezes its oracle at sweep time, so it keeps flagging until
+the affected arms are re-swept, and the report says so rather than implying the
+fix reaches backwards.
+
 ---
 
 ## Unmeasured is not zero
