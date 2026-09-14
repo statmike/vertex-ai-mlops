@@ -191,44 +191,55 @@ claim. Start here for the shape; go there for the evidence.
 
 ### The scoreboard
 
-All twelve arms on one screen, sorted by governed accuracy. This is the whole
-field.
+All twelve arms on one screen, grouped by path. This is the whole field.
 
-| Arm | Path | Ungoverned | **Governed** | Tokens in / correct | Sec / correct | Cost figure is |
-|---|:--:|---:|---:|---:|---:|---|
-| `p4_bq_ca` | 4 | 23% | **100%** | 5,190 | 36s | a floor |
-| `p1_toolbox` | 1 | 33% | **100%** ⚠️ | 29,837 | 39s | complete |
-| `p3_matched` | 3 | 35% | **100%** | 55,548 | 43s | complete |
-| `p3_toolbox` | 3 | 33% | **100%** | 65,805 | 38s | complete |
-| `p3_managed` | 3 | 35% | **100%** | 361,420 | 51s | complete |
-| `p4_bq_direct` | 4 | 22% | 97% | — | **11s** | unmetered |
-| `p4_bq_direct_ctx` | 4 | 23% | 95% | — | **11s** | unmetered |
-| `p2_managed` | 2 | 33% | 93% | 63,792 | 55s | complete |
-| `p2_toolbox` | 2 | 32% | 90% | 88,067 | 43s | complete |
-| `p1_managed` | 1 | 37% | 75% | 471,289 | 64s | complete |
-| `p1_matched` | 1 | 35% | 75% | 68,236 | 60s | complete |
-| `p4_looker_ca` | 4 | 12% | 43% | 17,937 | 199s | a floor — [392,158 once metered](#6-the-managed-agent-was-not-actually-the-cheapest) |
+| Arm | What it is | Ungoverned | **Governed** | Tokens in / correct | Sec / correct | Cost figure is |
+|---|---|---:|---:|---:|---:|---|
+| **Path 1 — Raw Data Builder** | *schema plus SQL, no governance surface* | | | | | |
+| `p1_managed` | Google's BigQuery MCP endpoint | 37% | 75% | 471,289 | 64s | complete |
+| `p1_toolbox` | self-hosted Toolbox, 8 tools | 33% | **100%** ⚠️ | 29,837 | 39s | complete |
+| `p1_matched` | self-hosted, cut to the managed tool list | 35% | 75% | 68,236 | 60s | complete |
+| **Path 2 — Semantic Router** | *Looker is the only data access* | | | | | |
+| `p2_managed` | **Looker's own** MCP endpoint | 33% | 93% | 63,792 | 55s | complete |
+| `p2_toolbox` | self-hosted Toolbox, same LookML | 32% | 90% | 88,067 | 43s | complete |
+| **Path 3 — Governed Context** | *SQL plus the Knowledge Catalog* | | | | | |
+| `p3_managed` | Google's BigQuery **+ Dataplex** endpoints | 35% | **100%** | 361,420 | 51s | complete |
+| `p3_toolbox` | self-hosted Toolbox, 23 tools | 33% | **100%** | 65,805 | 38s | complete |
+| `p3_matched` | self-hosted, cut to the managed tool lists | 35% | **100%** | 55,548 | 43s | complete |
+| **Path 4 — Managed Agent** | *Conversational Analytics owns the loop* | | | | | |
+| `p4_bq_ca` | CA over BigQuery, reached as an MCP tool | 23% | **100%** | 5,190 | 36s | a floor |
+| `p4_looker_ca` | CA over **Looker**, reached as an MCP tool | 12% | 43% | 17,937 | 199s | a floor — [392,158 once metered](#6-the-managed-agent-was-not-actually-the-cheapest) |
+| `p4_bq_direct` | CA over BigQuery, called as an API | 22% | 97% | — | **11s** | unmetered |
+| `p4_bq_direct_ctx` | the same call, glossary injected | 23% | 95% | — | **11s** | unmetered |
 
 ⚠️ **`p1_toolbox`'s 100% is borrowed.** On 39% of its governed cells it stopped
 writing SQL and called Conversational Analytics through Toolbox's tool surface —
 on *exactly* the two questions that need a governed definition. It is not a
 Path 1 result; it is Path 4 wearing a Path 1 name. See finding 3.
 
-**Four things to read off it:**
+**Read down the Ungoverned column first — then across the paths:**
 
 1. **Ungoverned, the architecture choice is unmeasurable.** All eight MCP arms
    land between **32% and 37%** — a 5-point spread, well inside the 8.9-point
-   noise floor. Without governance it does not matter what you build.
+   noise floor. Whatever you build, without governance it lands in the same
+   place.
 2. **Governed, the same choice decides everything** — a 43%–100% range. The
    variable that looked irrelevant becomes the only one that matters.
-3. **Five arms tie at 100%, and cost 12× apart.** Among those with a complete
-   cost figure, `p1_toolbox` spends 29,837 tokens per correct answer and
-   `p3_managed` spends 361,420 — for identical accuracy. **Accuracy stops
-   discriminating at the top; cost and latency are where the decision actually
-   lives.**
-4. **Path 3 is the only path where every arm reaches 100%.** Path 1 splits
-   75/75/100, Path 2 tops out at 93%, Path 4 ranges 43% to 100%. Giving an agent
-   SQL *plus* the catalog works no matter who hosts the tools.
+3. **Path 3 is the only path where every arm reaches 100%.** Path 1's honest
+   result is 75%, Path 2 tops out at 93%, Path 4 ranges 43% to 100% depending on
+   which warehouse is behind it. Giving an agent SQL *plus* the catalog works no
+   matter who hosts the tools.
+4. **Within a path, accuracy stops discriminating and cost takes over.** All
+   three Path 3 arms score 100% — and spend 55,548, 65,805 and **361,420**
+   tokens per correct answer doing it. Same path, same score, **6.5× apart.**
+   The two Path 2 arms tie at 93/90 and sit 1.4× apart. Once you have picked a
+   path, the remaining decision is not accuracy; it is who hosts the tools.
+5. **Nothing is best at everything.** `p4_bq_ca` is the cheapest and fastest
+   100% on the board — but its cost is a floor, not a measurement, and its
+   sibling on Looker is the worst arm here. `p4_bq_direct` answers in **11
+   seconds** against 36–64s for every MCP arm — at least 3.3× faster than
+   anything else on the board — and gives up 3 points and all token visibility
+   to do it. There is no dominant row.
 
 The rest of this section is how those numbers came about.
 
