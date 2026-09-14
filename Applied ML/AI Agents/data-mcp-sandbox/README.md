@@ -76,9 +76,17 @@ Two byte-identical copies of the data.
 | business rule, as a catalog `overview` aspect | — | ✅ |
 | glossary with term-to-column links | — | ✅ |
 | profile + data-quality scans | — | ✅ |
-| LookML semantic model | — | ✅ |
+| LookML semantic model | raw passthrough | ✅ field descriptions + governed measures |
 
 When this repo says **governed**, it means those five, together.
+
+Both tiers have a LookML model — Path 2 would have no data access at all
+otherwise. Tier 0's is a passthrough: every column a dimension, **no measures**,
+no descriptions. Tier 1's adds the two fields that carry the rules, and that
+difference is the whole of Path 2's tier variable. The first five rows are the
+BigQuery Knowledge Catalog; the last is Looker. They are **parallel channels
+that never read each other** — both are generated from `src/corpus.py`, which is
+why they agree, not because Looker consumes the catalog.
 
 The tiers are separated by **IAM, not by prompt**. Each arm runs as a per-tier
 service account that can read exactly one tier's dataset — because catalog search
@@ -193,24 +201,32 @@ claim. Start here for the shape; go there for the evidence.
 
 All twelve arms on one screen, grouped by path. This is the whole field.
 
-| Arm | What it is | Ungoverned | **Governed** | Tokens in / correct | Sec / correct | Cost figure is |
-|---|---|---:|---:|---:|---:|---|
-| **Path 1 — Raw Data Builder** | *schema plus SQL, no governance surface* | | | | | |
-| `p1_managed` | Google's BigQuery MCP endpoint | 37% | 75% | 471,289 | 64s | complete |
-| `p1_toolbox` | self-hosted Toolbox, 8 tools | 33% | **100%** ⚠️ | 29,837 | 39s | complete |
-| `p1_matched` | self-hosted, cut to the managed tool list | 35% | 75% | 68,236 | 60s | complete |
-| **Path 2 — Semantic Router** | *Looker is the only data access* | | | | | |
-| `p2_managed` | **Looker's own** MCP endpoint | 33% | 93% | 63,792 | 55s | complete |
-| `p2_toolbox` | self-hosted Toolbox, same LookML | 32% | 90% | 88,067 | 43s | complete |
-| **Path 3 — Governed Context** | *SQL plus the Knowledge Catalog* | | | | | |
-| `p3_managed` | Google's BigQuery **+ Dataplex** endpoints | 35% | **100%** | 361,420 | 51s | complete |
-| `p3_toolbox` | self-hosted Toolbox, 23 tools | 33% | **100%** | 65,805 | 38s | complete |
-| `p3_matched` | self-hosted, cut to the managed tool lists | 35% | **100%** | 55,548 | 43s | complete |
-| **Path 4 — Managed Agent** | *Conversational Analytics owns the loop* | | | | | |
-| `p4_bq_ca` | CA over BigQuery, reached as an MCP tool | 23% | **100%** | 5,190 | 36s | a floor |
-| `p4_looker_ca` | CA over **Looker**, reached as an MCP tool | 12% | 43% | 17,937 | 199s | a floor — [392,158 once metered](#6-the-managed-agent-was-not-actually-the-cheapest) |
-| `p4_bq_direct` | CA over BigQuery, called as an API | 22% | 97% | — | **11s** | unmetered |
-| `p4_bq_direct_ctx` | the same call, glossary injected | 23% | 95% | — | **11s** | unmetered |
+**Ungoverned** (tier 0) is the tables and nothing else. **Governed** (tier 1) is
+the same bytes plus all five surfaces from [Variable 1](#variable-1--governance-as-a-tier).
+Every arm was run against both.
+
+Each cell reads **accuracy** on top, then **tokens per correct answer · seconds
+per correct answer**. Exact unrounded values are in
+[`results/report.md`](results/report.md).
+
+| Arm | What it is | Ungoverned | **Governed** | Cost figure is |
+|---|---|---|---|---|
+| **Path 1 — Raw Data Builder** | *schema plus SQL, no governance surface* | | | |
+| `p1_managed` | Google's BigQuery MCP endpoint | 37%<br/>1.87M · 261s | 75%<br/>471k · 64s | complete |
+| `p1_toolbox` | self-hosted Toolbox, 8 tools | 33%<br/>273k · 211s | **100%** ⚠️<br/>30k · 39s | complete |
+| `p1_matched` | self-hosted, cut to the managed tool list | 35%<br/>354k · 211s | 75%<br/>68k · 60s | complete |
+| **Path 2 — Semantic Router** | *Looker is the only data access* | | | |
+| `p2_managed` | **Looker's own** MCP endpoint | 33%<br/>414k · 291s | 93%<br/>64k · 55s | complete |
+| `p2_toolbox` | self-hosted Toolbox, same LookML | 32%<br/>981k · 302s | 90%<br/>88k · 43s | complete |
+| **Path 3 — Governed Context** | *SQL plus the Knowledge Catalog* | | | |
+| `p3_managed` | Google's BigQuery **+ Dataplex** endpoints | 35%<br/>3.17M · 319s | **100%**<br/>361k · 51s | complete |
+| `p3_toolbox` | self-hosted Toolbox, 23 tools | 33%<br/>609k · 252s | **100%**<br/>66k · 38s | complete |
+| `p3_matched` | self-hosted, cut to the managed tool lists | 35%<br/>825k · 271s | **100%**<br/>56k · 43s | complete |
+| **Path 4 — Managed Agent** | *Conversational Analytics owns the loop* | | | |
+| `p4_bq_ca` | CA over BigQuery, reached as an MCP tool | 23%<br/>52k · 277s | **100%**<br/>5k · 36s | a floor |
+| `p4_looker_ca` | CA over **Looker**, reached as an MCP tool | 12%<br/>213k · 1,435s | 43%<br/>18k · 199s | a floor — [392,158 once metered](#6-the-managed-agent-was-not-actually-the-cheapest) |
+| `p4_bq_direct` | CA over BigQuery, called as an API | 22%<br/>— · 51s | 97%<br/>— · **11s** | unmetered |
+| `p4_bq_direct_ctx` | the same call, glossary injected | 23%<br/>— · 49s | 95%<br/>— · **11s** | unmetered |
 
 ⚠️ **`p1_toolbox`'s 100% is borrowed.** On 39% of its governed cells it stopped
 writing SQL and called Conversational Analytics through Toolbox's tool surface —
@@ -225,16 +241,22 @@ Path 1 result; it is Path 4 wearing a Path 1 name. See finding 3.
    place.
 2. **Governed, the same choice decides everything** — a 43%–100% range. The
    variable that looked irrelevant becomes the only one that matters.
-3. **Path 3 is the only path where every arm reaches 100%.** Path 1's honest
+3. **Governance does not cost accuracy — it refunds cost.** Read the two cost
+   figures in each row against each other: *every* arm gets both cheaper and
+   faster when governed, by **4.0×–14.8× fewer tokens** and **3.5×–7.7× fewer
+   seconds** per correct answer. There is no tradeoff to manage on this board.
+   The two things you would expect to trade off move together, every time. See
+   finding 1.
+4. **Path 3 is the only path where every arm reaches 100%.** Path 1's honest
    result is 75%, Path 2 tops out at 93%, Path 4 ranges 43% to 100% depending on
    which warehouse is behind it. Giving an agent SQL *plus* the catalog works no
    matter who hosts the tools.
-4. **Within a path, accuracy stops discriminating and cost takes over.** All
+5. **Within a path, accuracy stops discriminating and cost takes over.** All
    three Path 3 arms score 100% — and spend 55,548, 65,805 and **361,420**
    tokens per correct answer doing it. Same path, same score, **6.5× apart.**
    The two Path 2 arms tie at 93/90 and sit 1.4× apart. Once you have picked a
    path, the remaining decision is not accuracy; it is who hosts the tools.
-5. **Nothing is best at everything.** `p4_bq_ca` is the cheapest and fastest
+6. **Nothing is best at everything.** `p4_bq_ca` is the cheapest and fastest
    100% on the board — but its cost is a floor, not a measurement, and its
    sibling on Looker is the worst arm here. `p4_bq_direct` answers in **11
    seconds** against 36–64s for every MCP arm — at least 3.3× faster than
@@ -253,6 +275,27 @@ On questions that turn on a governed **definition**, the separation is total:
 
 > **0 correct out of 180 cells at tier 0** — across all twelve arms — against
 > 138/180 at tier 1.
+
+**And it is the cheapest thing on the board, not the most expensive.** Every
+token-spending arm needs 4.0×–14.8× fewer tokens and 3.5×–7.7× fewer seconds per
+correct answer when governed. The obvious objection is that this is just the
+accuracy denominator — more correct answers, so a smaller number. It is not,
+or not only. Holding the denominator fixed at *attempts* rather than successes,
+an ungoverned agent still burns **1.6×–3.6× more tokens on each individual
+question**:
+
+| | tokens per attempt, ungoverned | governed | |
+|---|---:|---:|---:|
+| `p2_toolbox` | 271,473 | 76,178 | 3.6× |
+| `p3_matched` | 294,687 | 87,504 | 3.4× |
+| `p3_managed` | 1,172,966 | 495,386 | 2.4× |
+| `p1_managed` | 704,304 | 445,846 | 1.6× |
+
+So roughly half the per-correct gap is the denominator and half is this: without
+a rule to resolve the question, an agent explores — more tool calls, more
+speculative SQL, larger payloads dragged back into context — and then gets it
+wrong anyway. Governance is not a tax on an agent's budget. It is what stops the
+agent from spending the budget guessing.
 
 ### 2. Only two parts of governance actually pay
 
