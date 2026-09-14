@@ -333,6 +333,22 @@ def grading_mismatch(scores: dict[str, scoring.Score]) -> str:
         "the trap existed will keep flagging until it is re-swept.",
         "",
     ]
+    # Which of the two a given row needs is not a judgement call whenever another
+    # tier answered the same question correctly: a golden that is reachable is not
+    # a golden that is wrong. Saying so here keeps a reader from editing a correct
+    # oracle, which is the more expensive mistake of the two — it silently moves
+    # every accuracy number computed against it.
+    proven = [scan for scan in suspect if scan.graded_elsewhere]
+    if proven:
+        which = ", ".join(f"`{scan.question_id}` tier {scan.tier}" for scan in proven)
+        lines += [
+            f"For {which} the second is the one to reach for. The same question is "
+            "answered correctly at another tier, so the golden computes a number that "
+            "is reachable from the corpus — what the shut-out arms found is a naive "
+            "answer with no trap recorded against it, not evidence that the oracle is "
+            "wrong.",
+            "",
+        ]
     return "\n".join(lines)
 
 

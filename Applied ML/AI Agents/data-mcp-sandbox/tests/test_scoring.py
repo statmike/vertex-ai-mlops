@@ -320,3 +320,33 @@ def test_the_scan_never_looks_at_a_question_the_rubric_already_excluded():
     for score in scores:
         score.scoreable = False
     assert scoring.zero_scan(scores) == []
+
+
+def test_a_golden_another_tier_reaches_is_not_reported_as_a_bad_golden():
+    # The anchored governed questions: tier 1 answers them correctly while tier 0
+    # converges on a compound naive answer. Telling a reader to fix the golden
+    # there sends them to edit a correct oracle — which moves every accuracy
+    # number computed against it, silently.
+    arms = ["p1_managed", "p2_toolbox", "p3_toolbox"]
+    scans = scoring.zero_scan(
+        _zero_scores("governed-q3a", 0, arms, [21961256.0] * 3, trap_value=2815167.0)
+        + _zero_scores("governed-q3a", 1, arms, [2702782.0] * 3,
+                       correct_arms=tuple(arms), trap_value=2815167.0)
+    )
+    flagged = [scan for scan in scans if scan.tier == 0]
+    assert [scan.suspect for scan in flagged] == [True]
+    assert flagged[0].graded_elsewhere == 15
+    assert "another tier" in flagged[0].reason
+    assert "suspect the golden" not in flagged[0].reason
+
+
+def test_a_question_wrong_at_every_tier_still_points_at_the_golden():
+    # The exoneration has to be evidence, not a default. No tier answering the
+    # question is exactly when the oracle is the thing to suspect.
+    arms = ["p1_managed", "p2_toolbox", "p3_toolbox"]
+    scans = scoring.zero_scan(
+        _zero_scores("governed-q3a", 0, arms, [21961256.0] * 3, trap_value=2815167.0)
+        + _zero_scores("governed-q3a", 1, arms, [21961256.0] * 3, trap_value=2815167.0)
+    )
+    assert all(scan.graded_elsewhere == 0 for scan in scans)
+    assert all("suspect the golden" in scan.reason for scan in scans)

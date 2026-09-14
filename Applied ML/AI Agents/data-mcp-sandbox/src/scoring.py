@@ -33,6 +33,7 @@ existing capture instead of re-running it.
 
 import json
 import re
+from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 
@@ -602,6 +603,12 @@ class ZeroScan:
     modal_value: float | None = None
     modal_share: int = 0
     modal_arms: int = 0
+    # Cells that got this same question right at some *other* tier. A golden the
+    # governed tier hits repeatedly is a golden that computes a reachable number,
+    # which rules out the first of the two repairs below and leaves the second.
+    # Nothing else in this scan can see across tiers, because every other
+    # question it asks is about arms agreeing within one condition.
+    graded_elsewhere: int = 0
 
     @property
     def shutouts(self) -> int:
@@ -650,6 +657,13 @@ class ZeroScan:
             f"{self.modal_arms} shut-out arms agree on {self.modal_value:,.0f} and the "
             f"oracle rejects it{partial}"
         )
+        if self.graded_elsewhere:
+            return (
+                f"{agreement} — but the same question is answered correctly "
+                f"{self.graded_elsewhere} time(s) at another tier, so the golden computes "
+                "a reachable number. Read this as a naive answer the oracle has no trap "
+                "recorded for, not as a bad golden"
+            )
         if not self.trap_known:
             return (
                 f"{agreement} — and this question's oracle records **no trap value**, so a "
@@ -692,9 +706,12 @@ def zero_scan(scores: Iterable[Score], min_arms: int = MIN_ARMS_FOR_ZERO_SCAN) -
     anything hard, and counting it would flood the scan with noise from pilots.
     """
     buckets: dict[tuple[str, int], dict[str, list[Score]]] = {}
+    correct_by_question: dict[str, Counter[int]] = {}
     for score in graded(scores):
         by_arm = buckets.setdefault((score.question_id, score.tier), {})
         by_arm.setdefault(score.config, []).append(score)
+        if score.correct:
+            correct_by_question.setdefault(score.question_id, Counter())[score.tier] += 1
 
     results = []
     for (question_id, tier), by_arm in sorted(buckets.items()):
@@ -714,6 +731,11 @@ def zero_scan(scores: Iterable[Score], min_arms: int = MIN_ARMS_FOR_ZERO_SCAN) -
             answered=len(answered),
             sprang_trap=sum(1 for score in misses if score.sprang_trap),
             trap_known=any(score.trap_known for score in misses),
+            graded_elsewhere=sum(
+                count
+                for other_tier, count in correct_by_question.get(question_id, {}).items()
+                if other_tier != tier
+            ),
         )
         clusters = _cluster([score.value for score in answered if score.value is not None])
         if clusters:
