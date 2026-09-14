@@ -46,11 +46,13 @@ The separation is enforced by IAM, not by prompt; see [scoping](scoping.md).
 
 ---
 
-## The twelve questions
+## The fifteen questions
 
-`examples/questions.json`, which holds fifteen entries: these twelve, and the
-three anchored re-issues below that replace the three this corpus turned out
-not to be able to grade. Five categories, chosen so that a single accuracy
+`examples/questions.json`. Twelve original questions, listed here, plus the
+three anchored re-issues below that replace the three this corpus turned out not
+to be able to grade — so twelve of the fifteen are gradeable, and the three
+originals they replace stay in the file as the documented defect. Five
+categories, chosen so that a single accuracy
 number cannot hide a lopsided result — two of them are answerable without any
 governance at all, which is how you tell a broken arm from a governed one.
 
@@ -106,9 +108,12 @@ intensive one (`governed-q2`, an average, which barely moves).
 
 **All three are therefore marked `scoreable: false`**, each carrying the reason
 in `unscoreable_reason` next to the question it disqualifies. Every accuracy,
-trap, application-loss and equivalence rate computed over the twelve is computed
-over the **nine** that remain; the excluded cells still ran, are still in the
-capture, and still carry a `correct` a reader can inspect. This is a rubric
+trap, application-loss and equivalence rate skips them: the published capture
+grades **twelve of its fifteen** questions, and a capture taken before the
+anchored trio existed grades **nine of its twelve**. Same rule, two denominators,
+because the rule is about the question and not about the file. The excluded
+cells still ran, are still in the capture, and still carry a `correct` a reader
+can inspect. This is a rubric
 change and not a re-run — scores live beside the capture rather than inside it,
 so `make score` republished five existing captures on the new basis without
 issuing a query.
@@ -158,7 +163,8 @@ trio simply contributes nothing to those three rows.
 
 **The originals stay in the corpus, `scoreable: false`.** They are the documented
 defect. Deleting them would erase the evidence for why the anchored ones exist,
-and would silently re-baseline 1,440 cells that did run.
+and would silently re-baseline cells that did run, in every capture taken before
+the anchored trio existed.
 
 The anchor itself is `golden.AS_OF = "2026-09-09 00:00:00+00"` — a clean midnight
 just past the last row the generator wrote (`2026-09-08 11:55 UTC`, identical in
@@ -235,8 +241,9 @@ conflates two failures that need different fixes:
 - **Application** — the rule arrived and the answer is still wrong.
 
 At tier 1 acquisition runs at 100% on every inspectable arm, and application
-loss is 30–40%. Getting metadata to an agent is close to solved. Getting the
-agent to use it is not.
+loss ranges from 0% to 30% depending on the arm. Getting metadata to an agent is
+close to solved. Getting the agent to use it is not — and *how* the metadata
+arrives decides how much of it survives the trip.
 
 ### 3. The judge — `src/judge.py`
 
@@ -250,7 +257,7 @@ told it is looking at "the governed context arm" will find governance in it.
 
 It does **not** re-decide the number; accuracy is already settled against the
 oracle. A judge call that errors returns `unclear` rather than raising, so one
-bad response cannot void a pass over 1,440 cells.
+bad response cannot void a pass over 1,800 cells.
 
 **Expect it to wobble.** `gemini-3.7-flash` is a reasoning model, so temperature
 0 is not determinism. Re-judging the same capture moved 13 of 1,000 verdicts

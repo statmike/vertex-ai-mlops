@@ -103,7 +103,7 @@ RESOURCE_PREFIX = os.getenv("RESOURCE_PREFIX", "data_mcp_sandbox")
 #
 # The ladder (Amendment C.2) adds three intermediate tiers between them. It is
 # opt-in because turning it on triples the provisioned surface and would change
-# what `make sweep` means: the published 1,440-cell factorial is two tiers, and a
+# what `make sweep` means: the published 1,800-cell factorial is two tiers, and a
 # five-tier default would silently stop reproducing it.
 LADDER = os.getenv("LADDER", "false").lower() in ("1", "true", "yes")
 
@@ -132,7 +132,7 @@ LADDER_RUNGS: tuple[int, ...] = (2, 3, 4)
 # part of it did.
 #
 # **The tier integers are deliberately not the rung positions.**
-# `traces.cell_key` embeds the tier, and 1,440 published cells are keyed on
+# `traces.cell_key` embeds the tier, and 1,800 published cells are keyed on
 # `tier0` / `tier1`. Renumbering so the rungs read 0..4 in order would make every
 # published key unreadable to new code, and a second file in which `tier1` means
 # something else would be worse still. So the new rungs are *appended* as 2, 3, 4

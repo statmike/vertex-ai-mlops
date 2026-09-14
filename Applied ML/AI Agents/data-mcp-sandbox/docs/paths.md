@@ -4,7 +4,7 @@ The *what* of the comparison. [method](method.md) is how the sweep is run,
 [questions](questions.md) is what counts as a right answer.
 
 The experiment's independent variable. Every arm is the **same model**
-(`gemini-3.7-flash`, temperature 0) asking the **same twelve questions** against
+(`gemini-3.7-flash`, temperature 0) asking the **same fifteen questions** against
 the **same corpus**. Only the tool surface changes, so a score difference is
 attributable to architecture rather than to the model.
 
@@ -141,14 +141,15 @@ wrapper around it. The two disagree:
 
 | Same service, same corpus, same model | accuracy | median s | tokens in / cell | sec / correct |
 |---|---:|---:|---:|---:|
-| `p4_bq_ca` · tier 0 | 31% | 62.4 | 8,867 | 213 |
-| `p4_bq_direct` · tier 0 | 29% | **10.0** | 0 | **38** |
-| `p4_bq_ca` · tier 1 | **100%** | 32.8 | 4,634 | 35 |
-| `p4_bq_direct` · tier 1 | 98% | **10.3** | 0 | **10** |
+| `p4_bq_ca` · tier 0 | 23% | 61.2 | 12,363 | 277 |
+| `p4_bq_direct` · tier 0 | 22% | **10.0** | 0 | **51** |
+| `p4_bq_ca` · tier 1 | **100%** | 32.6 | 5,941 | 36 |
+| `p4_bq_direct` · tier 1 | 97% | **10.5** | 0 | **11** |
 
-**The transport costs 3.2× the wall clock at tier 1 and does not cost accuracy.**
-On the nine gradeable questions the wrapper is 45/45 and the direct client 44/45
-— one cell apart, which is inside any floor this experiment can measure. The
+**The transport costs 3.1× the wall clock at tier 1 and does not cost accuracy.**
+On the twelve gradeable questions the wrapper is 60/60 and the direct client
+58/60 — two cells apart, which is inside any floor this experiment can measure,
+and the sign is against the direct client rather than for it. The
 **thirteen-point** lead this table gave the direct client before 2026-09-13 was
 made entirely of the three anchor-ambiguous questions, and is withdrawn. See
 [the trailing-window
@@ -173,13 +174,13 @@ to discover. The two arms therefore send **byte-identical requests** across all
 
 | | tier 0 (identical requests) | tier 1 (glossary injected) |
 |---|---:|---:|
-| `p4_bq_direct` | 29% | 98% |
-| `p4_bq_direct_ctx` | 31% | 98% |
+| `p4_bq_direct` | 22% | 97% |
+| `p4_bq_direct_ctx` | 23% | 95% |
 
-One cell apart when nothing differs — 13/45 against 14/45, which is what a
-within-run floor looks like. And **one cell apart when the glossary does differ**:
-44/45 both. On the nine gradeable questions, injecting the glossary is worth
-nothing measurable.
+One cell apart when nothing differs — 13/60 against 14/60, which is what a
+within-run floor looks like. And **one cell apart when the glossary does
+differ**, in the other direction: 58/60 against 57/60. On the twelve gradeable
+questions, injecting the glossary is worth nothing measurable.
 
 That is not what this pair reported before 2026-09-13, which was seven points.
 The whole of the old seven belongs to the three anchor-ambiguous questions, and
@@ -191,6 +192,13 @@ its job, but our oracle cannot distinguish "pinned it correctly" from "pinned it
 the way we did." So the honest statement is narrower and more useful than the old
 one: **on questions this corpus can grade, the glossary changes nothing; on the
 three it cannot, the glossary is the entire effect.**
+
+**Re-asking those three with the anchor pinned settled it.** On
+`governed-q1a` and `governed-q3a` at tier 1 both arms score **5/5** — with the
+glossary and without it. There is nothing left for the glossary to fix once the
+question says when *now* is, which is the cleanest available evidence that the
+old seven points were an anchoring artefact and never a governance effect. (On
+`semantic-q2a` the pair is 4/5 without and 3/5 with, one cell, the wrong way.)
 
 That "same day, same endpoint" is load-bearing, and this floor does not travel.
 It is a **within-run** figure: the two arms share a sweep, an oracle, and an hour
@@ -223,7 +231,10 @@ cumulative rungs
 ([method](method.md#governance-is-one-switch-by-default-and-six-channels-on-request),
 [reproducing](reproducing.md#running-the-governance-ladder)). Six arms × five
 rungs × twelve questions × five replicates = **1,800 cells, zero failures**,
-`gemini-3.7-flash` at temperature 0.
+`gemini-3.7-flash` at temperature 0. That is the same total as the main capture
+and a different sweep — the ladder trades arms and questions for rungs, and it
+predates the three anchored questions, so it asks twelve where the main capture
+asks fifteen.
 
 | rung | adds | cumulative |
 |---|---|---|
@@ -235,8 +246,8 @@ rungs × twelve questions × five replicates = **1,800 cells, zero failures**,
 
 ### Accuracy, by rung
 
-Over the **nine questions the oracle can grade** — three of the twelve are
-excluded as anchor-ambiguous, [below](#the-trailing-window-questions-are-anchor-ambiguous):
+Over the **nine questions the oracle can grade** — three of the ladder's twelve
+are excluded as anchor-ambiguous, [below](#the-trailing-window-questions-are-anchor-ambiguous):
 
 | arm | 0 | 1 · descriptions | 2 · profiles | 3 · rules | 4 · the rest |
 |---|---:|---:|---:|---:|---:|
@@ -358,6 +369,33 @@ across the wider rules-required population:
 **A semantic layer is not an optimisation here. On this corpus it is the only
 thing that makes a written business rule executable.**
 
+#### The third Path 1 arm looks like a counterexample, and is the opposite of one
+
+The ladder runs six arms and `p1_toolbox` is not among them, so the sentence
+above is a ladder finding and the main capture is where it gets tested against
+the arm that could break it. It does not break it. On the three anchored
+questions at tier 1, `p1_toolbox` scores **15/15** where `p1_managed` and
+`p1_matched` score 5/15 — and the capture says how:
+
+| question | `p1_toolbox` tier-1 cells calling `ask_data_insights` | correct |
+|---|---:|---:|
+| `governed-q1a` — count of Active users | 5 / 5 | 5 / 5 |
+| `governed-q3a` — revenue from Active users | 5 / 5 | 5 / 5 |
+| `semantic-q2a` — 30-day net revenue, no governed rule needed | 0 / 5 | 5 / 5 |
+
+`ask_data_insights` is Conversational Analytics, reachable through the Toolbox's
+tool surface. On exactly the two questions that need a governed definition, the
+arm stopped writing SQL and handed the question to a service that already has
+the rule behind it; on the one that needs no rule, it never reached for it and
+was right with plain SQL. The other two Path 1 arms never call it, in any cell,
+and answer a different question instead. So the arm that appears to disprove the
+claim is an instance of it: what made the rule executable was not Path 1's tool
+surface but the thing it borrowed. Stated precisely — **for an agent writing its
+own SQL against descriptions alone, no amount of governance text was enough on
+this corpus; every arm that got the governed answer had something underneath it
+that already encoded the rule.** `p3_toolbox` and `p3_matched` never call
+`ask_data_insights` either; theirs is the semantic layer.
+
 A blind LLM judge, scoring adherence without seeing the arm or the tier, reaches
 the same shape by an independent route. Invented definitions collapse from 60–86%
 at rung 0 to 0–4% at rung 1 — descriptions stop the model making a definition up,
@@ -368,7 +406,8 @@ at rung 3: the Path 3 arms jump to 78–80% while both Path 1 arms stay at 50%.
 oracle, the acquisition/application split, and a blind judge — put the same
 boundary in the same place.
 
-The judge's figures are stated over all twelve questions, deliberately. It scores
+The judge's figures are stated over all twelve of the ladder's questions,
+deliberately. It scores
 whether the answer *adhered to the definition*, not whether a number matched, and
 the anchoring defect is a property of the numeric comparison rather than of the
 definition — an agent that anchors to the latest event has still applied the rule.
@@ -416,22 +455,40 @@ quantity — a count or a sum — and not the intensive one:
 | `governed-q2` | *average* txn value for Active users | no — an average barely moves |
 
 **What was done about it.** All three are marked `scoreable: false` in
-`examples/questions.json`, with the reason stored next to the question, and every
-rate in this repo is computed over the nine that remain. The cells still ran,
-are still in the capture, and still carry a `correct` a reader can inspect — they
-are *unmeasured*, not zero, the same way an opaque path's evidence reads `--`.
+`examples/questions.json`, with the reason stored next to the question, and no
+rate in this repo is computed over them. The cells still ran, are still in the
+capture, and still carry a `correct` a reader can inspect — they are
+*unmeasured*, not zero, the same way an opaque path's evidence reads `--`.
 Scores live beside the capture rather than inside it, so this was a re-score of
-five existing captures and not a re-run: `make score` republished every number on
-the nine-question basis for the cost of reading the files.
+five existing captures and not a re-run: `make score` republished every number
+without a query.
+
+**Then the three questions were re-asked with the anchor pinned.** The main
+capture was swept a third time on 2026-09-13 with `semantic-q2a`,
+`governed-q1a` and `governed-q3a` — same asks, same traps, a frozen `as-of`
+timestamp written into both the question text and the golden SQL
+([questions](questions.md#the-three-anchored-questions)). So the denominators
+differ by capture, and deliberately so: the **main capture grades twelve of its
+fifteen** questions, while the ladder and the other captures, taken before the
+anchored trio existed, still grade **nine of their twelve**. The three excluded
+ids are the same three everywhere; only the file they sit in has changed size.
+`compare_captures.py --shared-questions` is how the two are compared without one
+side's extra questions being counted as agreement.
 
 **What it changed.** Three published headlines moved, all in the same direction —
 toward a smaller claim:
 
-| claim, as published | on nine gradeable questions |
-|---|---|
-| Context injection is worth 7 points at tier 1 | **0 points** — the whole effect was the three |
-| The direct client beats the CA wrapper by 13 points | **−2.2** — the wrapper is 45/45, direct 44/45 |
-| The ladder's replication check fails at tier 1 | **passes**, largest drift 6.7 against an 8.9 floor |
+| claim, as published | on nine gradeable questions | re-asked, anchored, twelve questions |
+|---|---|---|
+| Context injection is worth 7 points at tier 1 | **0 points** — the whole effect was the three | **−1.7** — 57/60 with context, 58/60 without |
+| The direct client beats the CA wrapper by 13 points | **−2.2** — the wrapper is 45/45, direct 44/45 | **−3.3** — the wrapper is 60/60, direct 58/60 |
+| The ladder's replication check fails at tier 1 | **passes**, largest drift 6.7 against an 8.9 floor | unchanged — a ladder claim, and the ladder was not re-swept |
+
+The middle column is the withdrawal; the right column is what the re-ask found
+when the same comparison was run on questions the oracle *can* grade. Both
+negative effects are inside the 8.9-point cross-capture noise floor, so the
+honest reading is that neither context injection nor the choice of client moves
+tier-1 accuracy at all.
 
 **What it does not change.** It does not touch the eight time-stable questions,
 and it does not touch the qualitative finding, because Path 1's failure is

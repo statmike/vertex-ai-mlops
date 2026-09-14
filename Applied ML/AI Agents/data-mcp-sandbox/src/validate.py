@@ -112,7 +112,7 @@ def ladder_problems() -> list[str]:
         found.append(f"ladder: RUNG_ORDER repeats a tier: {order}")
 
     # The published tiers keep their published meaning, or every existing capture
-    # is silently re-interpreted: 1,440 shipped cells are keyed on tier0/tier1.
+    # is silently re-interpreted: 1,800 shipped cells are keyed on tier0/tier1.
     if order and order[0] != 0:
         found.append(f"ladder: rung 0 must be tier 0 (the published control), not {order[0]}")
     if order and order[-1] != 1:

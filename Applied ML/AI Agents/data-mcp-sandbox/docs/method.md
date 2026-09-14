@@ -2,7 +2,7 @@
 
 The protocol. [paths](paths.md) is *what* is compared and [questions](questions.md)
 is *what counts as right*; this page is the part in between — how a cell runs, why
-they run one at a time, what the capture records, and how 1,440 cells become the
+they run one at a time, what the capture records, and how 1,800 cells become the
 handful of numbers in `results/report.md`.
 
 ---
@@ -25,18 +25,20 @@ cannot inherit context — or a token count — from the one before it.
 | Factor | Levels | |
 |---|---|---|
 | Arm | 12 | `src/mcp_clients.py` `CONFIGS` |
-| Question | 12 | `examples/questions.json` |
+| Question | 15 | `examples/questions.json` — 12 gradeable, 3 kept unscoreable ([questions](questions.md)) |
 | Governance tier | 2 | tier 0 ungoverned, tier 1 governed (5 with `LADDER=1`, below) |
 | Replicate | 5 | `battery.DEFAULT_RUNS` |
 
-**1,440 cells**, about 26 hours. `make plan` prints the estimate for whatever
+**1,800 cells**, about 26 hours. `make plan` prints the estimate for whatever
 subset you select; `--questions`, `--configs`, `--tiers` and `--runs` cut it down,
-and `make smoke` (12 cells) and `make pilot` (288) are the pre-cut rungs.
+and `make smoke` (12 cells) and `make pilot` (360) are the pre-cut rungs.
 
-The published capture covers **all 1,440**, merged from two runs: ten arms on
-2026-09-05 and the two direct-API arms on 2026-09-07. `make plan` now prices every
-shipped arm off its own measurement — `estimate.PENDING_MEASUREMENT` is empty for
-the first time.
+The published capture covers **all 1,800**, merged from three runs: ten arms on
+2026-09-05, the two direct-API arms on 2026-09-07, and the three anchored
+questions across all twelve arms on 2026-09-13. Each run carries its own frozen
+oracle and its own `git_commit`; `report.provenance` names all three. `make plan`
+prices every shipped arm off its own measurement — `estimate.PENDING_MEASUREMENT`
+is empty.
 
 ### Governance is one switch by default, and six channels on request
 
@@ -56,7 +58,7 @@ amounts of effort to produce.
 | 3 | `tier4` | + business rules |
 | 4 | `tier1` | + glossary, quality scans, LookML — the published governed tier |
 
-**The tier integer is not the rung position, and that is deliberate.** 1,440
+**The tier integer is not the rung position, and that is deliberate.** 1,800
 published cells are keyed on `tier0`/`tier1`, so renumbering would silently
 re-interpret every one of them; rungs are *appended* as 2, 3, 4 and the two
 published tiers keep their meaning. `config.RUNG_ORDER = (0, 2, 3, 4, 1)` states
@@ -83,21 +85,24 @@ the interesting claim is not "the line rises" but "*this* rung is the one that
 pays", which is a per-step comparison against the noise floor, and at n=3 most
 single-rung steps would have to be published as unresolved.
 
-### Merging two runs without flattening them
+### Merging runs without flattening them
 
 A merged capture is not a concatenation. Three things have to survive the join,
 and `scripts/merge_captures.py` refuses rather than guesses when they cannot:
 
 * **Provenance.** No single `git_commit` may stand for cells it never produced,
   so the header keeps one entry per run and the report prints all of them.
-* **The oracle.** Four of the twelve goldens are trailing windows over data
+* **The oracle.** Four of the fifteen goldens are trailing windows over data
   anchored at build time, so the right answer moves with the calendar. Between
-  the two runs, `active_user_count` went from 2,671 to 2,786 — a 4.3% drift
+  the first two runs, `active_user_count` went from 2,671 to 2,786 — a 4.3% drift
   against a 0.5% tolerance. Carrying the first run's oracle onto the second would
   have marked correct answers wrong on four questions × two arms × five
   replicates, and it would have looked like the direct API being inaccurate. Each
   run therefore keeps the oracle frozen when *it* ran, and a run that froze none
-  is refused rather than scored against today's.
+  is refused rather than scored against today's. Three of those four questions
+  now have anchored twins whose answer cannot move at all ([questions](questions.md));
+  the fourth, `governed-q2`, is an average rather than a sum, and its per-run
+  freeze is what keeps it gradeable.
 * **Everything that must not differ.** Model, temperature, replicate count, tier
   fence, question set, project, Toolbox version: a disagreement on any of these
   means the two runs measured different things, and the merge fails with the
@@ -172,8 +177,8 @@ questions` as the shape; the counts are what shipped, not what was planned.
 
 | File | Cells | Shape | Varies, and why it exists |
 |---|---|---|---|
-| `capture.json.gz` | 1,440 | 12 arms × 2 tiers × n=5 | **The published factorial.** Every headline number. Itself merged from two runs under two oracles — `report.provenance` names them. |
-| `capture-ladder.json.gz` | 1,800 | 6 arms × 5 tiers × n=5 | Governance rungs. Splits tier 1's six simultaneous channels into five cumulative ones — *which rung pays*. |
+| `capture.json.gz` | 1,800 | 12 arms × 2 tiers × 15 questions × n=5 | **The published factorial.** Every headline number. Itself merged from three runs under three oracles — `report.provenance` names them. |
+| `capture-ladder.json.gz` | 1,800 | 6 arms × 5 tiers × 12 questions × n=5 | Governance rungs. Splits tier 1's six simultaneous channels into five cumulative ones — *which rung pays*. The same total as the row above by coincidence, over a different shape and the 12 pre-anchor questions. |
 | `capture-ladder-rung0-last.json.gz` | 360 | 6 arms × 1 tier × n=5 | The ladder's own control: rung 0 re-run **after** the other four, so a rising curve cannot be the day getting better. |
 | `capture-model-38flash.json.gz` | 720 | 10 arms × 2 tiers × n=3 | The client model. Does the *ordering* survive a model generation. |
 | `capture-control-p2.json.gz` | 144 | 2 arms × 2 tiers × n=3 | The model capture's control: the two arms that moved, re-swept on the **original** model eight days later. Separates model from drift. |
@@ -252,7 +257,7 @@ were graded twice rather than because they measured different things.
 ### The oracle is frozen when the sweep starts
 
 Scoring is deferred, but the *right answers* cannot be. The corpus anchors its
-timestamps to build time, so four of the twelve goldens are trailing windows
+timestamps to build time, so four of the fifteen goldens are trailing windows
 whose correct value moves with the calendar — measured drift is ~2% a day against
 a 0.5% tolerance. Resolve them at scoring time and you grade Monday's cells
 against Wednesday's answers.

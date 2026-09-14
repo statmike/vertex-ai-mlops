@@ -1,13 +1,16 @@
 """What a sweep will cost, before it is run.
 
 `--dry-run` prints this. The point is that the expensive decision — commit to
-1,440 live model calls, or not — should be made against measured numbers rather
+1,800 live model calls, or not — should be made against measured numbers rather
 than against a shrug, and that a reader on someone else's project can see the
 order of magnitude before their first cell.
 
-Every rate here is a **median observed on the published capture** (1,440 cells,
-`gemini-3.7-flash` @ `global`, this corpus, 2026-09-05 and 2026-09-07), not a
-vendor figure and not a guess. Medians rather than means because the token
+Every rate here is a **median observed on the published capture's first two
+runs** (1,440 cells, `gemini-3.7-flash` @ `global`, this corpus, 2026-09-05 and
+2026-09-07), not a vendor figure and not a guess. The third run — the 360
+anchored cells of 2026-09-13 — is deliberately not folded in: it is one question
+per category rather than the whole battery, so its per-arm medians would be a
+narrower mix wearing the same name. Medians rather than means because the token
 distribution has a long right tail: a handful of cells where the agent looped
 burn 10x the typical cell, and a mean lets those set an expectation almost no
 cell meets.
@@ -42,7 +45,8 @@ from dataclasses import dataclass
 import config
 
 MEASURED_ON = (
-    "published capture, 1,440 cells, gemini-3.7-flash @ global, 2026-09-05 and 2026-09-07"
+    "published capture's first two runs, 1,440 cells, gemini-3.7-flash @ global, "
+    "2026-09-05 and 2026-09-07"
 )
 
 # Empty, and worth keeping empty rather than deleting. The matched arms once sat

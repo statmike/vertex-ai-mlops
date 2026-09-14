@@ -14,7 +14,7 @@ Two different things you might want, which need very different amounts of work:
 `results/capture.json.gz` is the raw sweep: every question, every tool call with
 its arguments and result, every answer, every token count. It carries **no
 scores** — that split is deliberate, because the rubric is the part
-most worth arguing with, and re-running 1,440 live cells to try a different
+most worth arguing with, and re-running 1,800 live cells to try a different
 metric would be absurd.
 
 ```bash
@@ -116,8 +116,8 @@ make plan                     # what a sweep would cost, in time and tokens. Fre
 make smoke                    # 12 cells, ~10 min. Proves the wiring end to end.
 ```
 
-Then walk down the rungs — `make smoke` → `make pilot` (288 cells, ~5h) →
-`make sweep` (1,440 cells, ~26h). Each is the same harness at a different size,
+Then walk down the rungs — `make smoke` → `make pilot` (360 cells, ~5h) →
+`make sweep` (1,800 cells, ~26h). Each is the same harness at a different size,
 so a broken credential shows up on the ten-minute rung.
 
 ### Without Looker
@@ -254,8 +254,13 @@ at all, which makes it an A/A test.
 
 ```bash
 make compare-aa BASE=results/capture.json.gz \
-                AGAINST=results/capture-thinking-default.json.gz
+                AGAINST=results/capture-thinking-default.json.gz SHARED=1
 ```
+
+`SHARED=1` narrows both sides to the questions they both asked, and is needed
+against *our* sibling captures because the published capture has since gained
+three anchored questions they predate — [below](#comparing-against-a-capture-that-asked-different-questions).
+It is a no-op on a sibling you sweep yourself today.
 
 This is the mode where two identical captures are the *valid* input — a
 `MUST_AGREE` difference is fatal instead, since an A/A that varied something
@@ -283,7 +288,7 @@ arm is guessing more:
 
 ```bash
 make compare-aa BASE=results/capture.json.gz \
-                AGAINST=results/capture-thinking-default.json.gz TIER=0
+                AGAINST=results/capture-thinking-default.json.gz TIER=0 SHARED=1
 ```
 
 **A new question is the other cheap increment**, and it goes the other way: an
@@ -331,7 +336,7 @@ vary:
 ```bash
 make export RESULTS=results/raw/ladder.json OUT=results/capture-ladder.json.gz
 make compare-aa BASE=results/capture.json.gz \
-                AGAINST=results/capture-ladder.json.gz TIER="0 1"
+                AGAINST=results/capture-ladder.json.gz TIER="0 1" SHARED=1
 ```
 
 That is the ladder's replication check: its rungs 0 and 4 are the published tiers
@@ -339,6 +344,23 @@ That is the ladder's replication check: its rungs 0 and 4 are the published tier
 thing the published capture did before you read anything into the rungs between.
 Tiers 2, 3 and 4 exist in only one of the two files and asking for them is
 refused rather than paired against nothing.
+
+### Comparing against a capture that asked different questions
+
+`SHARED=1` is the same idea on the question axis, and it is needed here because
+the published capture has since been re-swept with three anchored questions the
+ladder was taken before ([the defect
+→](paths.md#the-trailing-window-questions-are-anchor-ambiguous)). It relaxes
+`question_ids` from equality to presence, narrows both sides to the questions
+they both asked, and **prints which ones it dropped** — narrowing a comparison
+changes what it measures, and a reader who does not know three questions left
+will read the floor as covering the whole battery. Without it the command above
+refuses, which is the right default: two captures that asked different things
+are not an A/A until you say which part of them is.
+
+You need it when one side predates a question the other has. A sibling capture
+you sweep yourself today asks the same fifteen the published capture does, so
+`SHARED=1` is a no-op on it and harmless to leave on.
 
 ---
 

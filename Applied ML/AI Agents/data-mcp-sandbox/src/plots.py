@@ -132,7 +132,7 @@ def accuracy_by_tier(scores: dict[str, scoring.Score]) -> Figure:
     ax.set_ylabel("correct answers")
     ax.set_ylim(0, 1)
     ax.yaxis.set_major_formatter(lambda y, _: f"{y:.0%}")
-    ax.set_title("Governance roughly doubles accuracy, on every path")
+    ax.set_title("Governance roughly triples accuracy, on every path")
     ax.legend(frameon=False)
     return fig
 

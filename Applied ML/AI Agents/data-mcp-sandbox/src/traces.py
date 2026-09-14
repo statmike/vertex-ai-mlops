@@ -2,7 +2,7 @@
 
 `run_battery.py` captures; `build_results.py` scores. These dataclasses are the
 contract between the two, and they hold **no scores** — only what happened. That
-split is deliberate: the rubric will change, and re-running 1,440 live cells to
+split is deliberate: the rubric will change, and re-running 1,800 live cells to
 try a new metric would be absurd (docs/method.md).
 
 Everything a scorer could need must therefore be captured here, including tool
@@ -142,7 +142,7 @@ def load(path: Path) -> dict[str, Cell]:
 def save(path: Path, cells: dict[str, Cell], header: dict[str, Any]) -> None:
     """Write every cell plus the reproducibility header (docs/method.md).
 
-    Rewrites the whole file each time rather than appending. At 1,440 cells the
+    Rewrites the whole file each time rather than appending. At 1,800 cells the
     file is a few MB, and a single valid JSON document is worth far more than
     the saved I/O when the run is interrupted halfway.
     """
@@ -288,7 +288,7 @@ def _runs_of(header: dict[str, Any]) -> list[dict[str, Any]]:
     The published capture is itself a merge of two sweeps under two oracles
     (Amendment B.6). Merging *into* it therefore starts by taking it apart:
     treated as a single run it would arrive with no `goldens` of its own — a
-    merged header deliberately carries none — and 1,440 cells would come out the
+    merged header deliberately carries none — and 1,800 cells would come out the
     far side ungradeable. Each record is re-inflated against the fields the
     parent holds for every run, so a run view is a header like any other.
     """

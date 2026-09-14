@@ -80,11 +80,11 @@ do](reproducing.md#what-you-need-to-be-before-you-start) against your actual pro
 rather than making you read a table. `make bootstrap` creates service accounts and IAM
 bindings, and finding out you cannot halfway through is the annoying way to learn it.
 
-Walk the rungs: `make smoke` (12 cells, ~10 min) → `make pilot` (288, ~5 h) →
-`make sweep` (1,440, ~26 h).
+Walk the rungs: `make smoke` (12 cells, ~10 min) → `make pilot` (360, ~5 h) →
+`make sweep` (1,800, ~26 h).
 
-**No Looker instance?** Add `SKIP_LOOKER=1` to any target — 9 arms, 1,080 cells,
-~20 h. Looker is the one component behind an annual-commitment purchase, so no
+**No Looker instance?** Add `SKIP_LOOKER=1` to any target — 9 arms, 1,350 cells,
+~17 h. Looker is the one component behind an annual-commitment purchase, so no
 script here creates an instance. What you give up is Path 2 entirely (the
 semantic-layer arms `p2_managed`, `p2_toolbox`, and `p4_looker_ca`); what you keep
 is both tiers on every BigQuery path, which is where the largest measured effect
