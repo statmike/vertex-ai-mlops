@@ -243,7 +243,10 @@ All twelve arms on one screen, grouped by path. This is the whole field.
 
 **Ungoverned** (tier 0) is the tables and nothing else. **Governed** (tier 1) is
 the same bytes plus all five surfaces from [Variable 1](#variable-1--governance-as-a-tier).
-Every arm was run against both.
+Every arm was run against both — but each path reaches a different subset of
+those surfaces, so the path header rows below restate what the two words mean
+*for that path*. The [long version](#where-the-two-variables-meet-governed-means-something-different-on-each-path)
+is above.
 
 Each cell reads **accuracy** on top, then **tokens per correct answer · seconds
 per correct answer**. Exact unrounded values are in
@@ -251,18 +254,18 @@ per correct answer**. Exact unrounded values are in
 
 | Arm | What it is | Ungoverned | **Governed** | Cost figure is |
 |---|---|---|---|---|
-| **Path 1 — Raw Data Builder** | *schema plus SQL, no governance surface* | | | |
+| **Path 1 — Raw Data Builder** | *schema plus SQL, no governance surface* | *bare tables* | *+ column descriptions.<br/>The rule is in Dataplex, which Path 1 cannot call.* | |
 | `p1_managed` | Google's BigQuery MCP endpoint | 37%<br/>1.87M · 261s | 75%<br/>471k · 64s | complete |
 | `p1_toolbox` | self-hosted Toolbox, 8 tools | 33%<br/>273k · 211s | **100%** ⚠️<br/>30k · 39s | complete |
 | `p1_matched` | self-hosted, cut to the managed tool list | 35%<br/>354k · 211s | 75%<br/>68k · 60s | complete |
-| **Path 2 — Semantic Router** | *Looker is the only data access* | | | |
+| **Path 2 — Semantic Router** | *Looker is the only data access* | *passthrough LookML,<br/>no measures* | *+ governed fields.<br/>The rule is a field you select.* | |
 | `p2_managed` | **Looker's own** MCP endpoint | 33%<br/>414k · 291s | 93%<br/>64k · 55s | complete |
 | `p2_toolbox` | self-hosted Toolbox, same LookML | 32%<br/>981k · 302s | 90%<br/>88k · 43s | complete |
-| **Path 3 — Governed Context** | *SQL plus the Knowledge Catalog* | | | |
+| **Path 3 — Governed Context** | *SQL plus the Knowledge Catalog* | *bare tables,<br/>empty catalog* | *+ rule text, glossary, scans.<br/>The rule is a document to re-express.* | |
 | `p3_managed` | Google's BigQuery **+ Dataplex** endpoints | 35%<br/>3.17M · 319s | **100%**<br/>361k · 51s | complete |
 | `p3_toolbox` | self-hosted Toolbox, 23 tools | 33%<br/>609k · 252s | **100%**<br/>66k · 38s | complete |
 | `p3_matched` | self-hosted, cut to the managed tool lists | 35%<br/>825k · 271s | **100%**<br/>56k · 43s | complete |
-| **Path 4 — Managed Agent** | *Conversational Analytics owns the loop* | | | |
+| **Path 4 — Managed Agent** | *Conversational Analytics owns the loop* | *bare tables,<br/>reached by CA* | *+ the same surfaces, retrieved<br/>however CA chooses to.* | |
 | `p4_bq_ca` | CA over BigQuery, reached as an MCP tool | 23%<br/>52k · 277s | **100%**<br/>5k · 36s | a floor |
 | `p4_looker_ca` | CA over **Looker**, reached as an MCP tool | 12%<br/>213k · 1,435s | 43%<br/>18k · 199s | a floor — [392,158 once metered](#3-cost-is-tool-schema-verbosity--and-some-of-it-is-invisible) |
 | `p4_bq_direct` | CA over BigQuery, called as an API | 22%<br/>— · 51s | 97%<br/>— · **11s** | unmetered |
