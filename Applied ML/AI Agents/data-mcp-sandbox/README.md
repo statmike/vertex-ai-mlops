@@ -24,6 +24,23 @@ that reads the schema and writes the obvious SQL gets a confident wrong answer.
 
 ---
 
+## Four findings, in one screen
+
+1. **Governance is the biggest lever there is.** Accuracy roughly triples on
+   every path. On questions that turn on a governed *definition*, no arm gets a
+   single one right without it — **0 of 180 cells**.
+2. **Governance is not sufficient.** Every arm that shows its work *acquires*
+   the rule; an agent writing its own SQL still fails to *apply* it. Only an arm
+   with the rule already encoded executes it.
+3. **Cost is tool schema verbosity, not tool count.** One vendor tool
+   declaration is 120× its self-hosted equivalent and two thirds of its arm's
+   prompt floor, re-sent every turn.
+4. **Latency is a separate axis, and the ordering is stable.** Wall clock tracks
+   turn count, not tokens; swapping the model moves absolute accuracy a few
+   points and changes no rankings at all.
+
+Every one of those is a link away below, with the cells behind it.
+
 ## The headline
 
 | Question | Answer |
