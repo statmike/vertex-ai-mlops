@@ -136,7 +136,78 @@ def freeze_goldens(cells: dict[str, traces.Cell]) -> dict[str, dict[str, dict[st
     return golden.freeze(tiers)
 
 
-def embed_goldens(header: dict[str, Any], cells: dict[str, traces.Cell]) -> None:
+def golden_keys_for(question_ids: list[str] | None) -> set[str] | None:
+    """The golden keys the named questions use, or None for "no restriction"."""
+    if not question_ids:
+        return None
+    asked = set(question_ids)
+    return {
+        question.golden_key
+        for question in battery.load_questions()
+        if question.id in asked and question.golden_key
+    }
+
+
+def refrozen(
+    existing: dict[str, Any], cells: dict[str, traces.Cell], question_ids: list[str] | None
+) -> dict[str, dict[str, dict[str, Any]]]:
+    """Re-resolve a run's oracle, refusing if any shared value has moved.
+
+    Re-freezing is normally the one thing an export must not do — a trailing
+    window measured today is not the number that graded a sweep last week. The
+    guard is what makes it safe to offer at all: every golden key present in both
+    the old block and the new one must still agree within its own tolerance, and
+    a single drifted value aborts the export naming it. So this succeeds exactly
+    when the oracle is **stable**, which is the property an `AS_OF`-anchored
+    question buys and a bare trailing window does not.
+
+    Its reason for existing is the other half of an oracle: traps. A trap added
+    after a sweep — a compound miss nobody had named yet — changes no correct
+    answer and cannot reach the capture any other way, because the frozen block
+    is preferred over the live corpus precisely so a reader with no project can
+    re-score.
+
+    The result is also restricted to the golden keys this run's own questions
+    use. `battery.freeze_oracle` freezes all of `GOLDENS` however few questions
+    `--questions` named, so a three-question run otherwise carries twelve values
+    that are unreachable, stale, and indistinguishable from values that matter.
+    """
+    tiers = sorted({cell.tier for cell in cells.values()})
+    wanted = golden_keys_for(question_ids)
+    fresh = golden.freeze(tiers)
+    if wanted is not None:
+        fresh = {
+            tier: {key: entry for key, entry in entries.items() if key in wanted}
+            for tier, entries in fresh.items()
+        }
+
+    drifted = []
+    for tier, entries in fresh.items():
+        for key, entry in entries.items():
+            was = (existing.get(tier) or {}).get(key)
+            if not was:
+                continue
+            old_value, new_value = was.get("value"), entry.get("value")
+            if old_value in (None, 0) or new_value is None:
+                continue
+            if abs(new_value - old_value) / abs(old_value) > entry.get("tolerance", 0.005):
+                drifted.append(f"tier {tier} {key}: {old_value:,.2f} -> {new_value:,.2f}")
+    if drifted:
+        raise SystemExit(
+            "Refusing to re-freeze: "
+            + "; ".join(drifted)
+            + ". These goldens have moved since the sweep, so re-freezing would grade "
+            "its answers against numbers that were not true when it ran. Only an oracle "
+            "that is stable — every window anchored to a stated as-of — can be re-frozen."
+        )
+    kept = sum(len(entries) for entries in fresh.values())
+    print(f"    re-frozen: {kept} value(s) across tier(s) {', '.join(sorted(fresh))}, none drifted")
+    return fresh
+
+
+def embed_goldens(
+    header: dict[str, Any], cells: dict[str, traces.Cell], refreeze: bool = False
+) -> None:
     """Put a frozen oracle on the capture, in place, without overwriting one.
 
     Resolving live is only correct for a run that just finished. A merged
@@ -145,21 +216,30 @@ def embed_goldens(header: dict[str, Any], cells: dict[str, traces.Cell]) -> None
     answers with today's. Each run therefore keeps whatever it arrived with, and
     only a run that has none gets one — which, in the merge path, is none of
     them, because every capture is exported before it is merged.
+
+    `refreeze` is the deliberate exception, and it polices itself: see
+    `refrozen`.
     """
     runs = header.get("merged_from")
     if not isinstance(runs, list) or not runs:
-        if header.get("goldens"):
+        if header.get("goldens") and not refreeze:
             print("    already frozen; keeping the oracle this capture arrived with")
+            return
+        if header.get("goldens"):
+            header["goldens"] = refrozen(header["goldens"], cells, header.get("question_ids"))
             return
         header["goldens"] = freeze_goldens(cells)
         return
 
     by_config = {key: run for run in runs for key in run.get("configs", [])}
     for run in runs:
-        if run.get("goldens"):
-            print(f"    {', '.join(run.get('configs', []))}: already frozen, kept")
-            continue
         owned = {k: c for k, c in cells.items() if by_config.get(c.config) is run}
+        if run.get("goldens"):
+            if not refreeze:
+                print(f"    {', '.join(run.get('configs', []))}: already frozen, kept")
+                continue
+            run["goldens"] = refrozen(run["goldens"], owned, run.get("question_ids"))
+            continue
         print(f"    {', '.join(run.get('configs', []))}: no oracle on file, resolving live")
         run["goldens"] = freeze_goldens(owned)
 
@@ -217,6 +297,10 @@ def main() -> int:
                         help="Where to write the publishable capture.")
     parser.add_argument("--check", type=Path, default=None,
                         help="Verify an already-exported file instead of writing one.")
+    parser.add_argument("--refreeze", action="store_true",
+                        help="Re-resolve an oracle the capture already carries, and refuse "
+                             "if any value moved. For adding traps to a sweep whose goldens "
+                             "are anchored and therefore stable.")
     args = parser.parse_args()
 
     pairs = substitutions()
@@ -237,7 +321,7 @@ def main() -> int:
     print(f"Exporting {len(cells)} cells from {args.results}")
 
     print("  freezing goldens against live BigQuery:")
-    embed_goldens(raw.setdefault("header", {}), cells)
+    embed_goldens(raw.setdefault("header", {}), cells, refreeze=args.refreeze)
 
     print(f"  scrubbing {len(pairs)} identifiers")
     # The substitution map itself must not be scrubbed away, so it goes back in

@@ -17,6 +17,8 @@ import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
+import pytest
+
 import config
 import estimate
 import export_capture
@@ -470,3 +472,52 @@ def test_every_notebook_call_into_src_still_exists():
 
     assert checked, "no notebook imported a module from src/ - this test is vacuous"
     assert not missing, f"notebooks call names that no longer exist: {sorted(missing)}"
+
+
+def _frozen(value: float, tolerance: float = 0.005):
+    return {"0": {"active_user_count_as_of": {
+        "key": "active_user_count_as_of", "value": value, "trap_value": 3520.0,
+        "tolerance": tolerance, "trap_name": "trusted the raw is_active flag",
+    }}}
+
+
+def _one_cell():
+    # `governed-q1a` is the question whose golden key is `active_user_count_as_of`,
+    # so the restriction test below has something it is allowed to keep.
+    return {"k": traces.Cell(
+        cell_key="k", question_id="governed-q1a", category="governed",
+        question="how many?", config="p1_managed", tier=0, run=1, answer="2804",
+    )}
+
+
+def test_refreezing_refuses_an_oracle_that_moved(monkeypatch):
+    # The whole safety argument for re-freezing at all: it succeeds only when the
+    # oracle is stable. A value that drifted means re-freezing would grade a
+    # sweep's answers against numbers that were not true when it ran.
+    monkeypatch.setattr(export_capture.golden, "freeze", lambda tiers: _frozen(2950.0))
+    with pytest.raises(SystemExit, match="2,804.00 -> 2,950.00"):
+        export_capture.refrozen(_frozen(2804.0), _one_cell(), None)
+
+
+def test_refreezing_a_stable_oracle_carries_the_new_traps_in(monkeypatch):
+    # What it is for. An anchored question resolves to the same number days
+    # later, so a trap added since the sweep can reach a capture that would
+    # otherwise keep grading against an oracle that never heard of it.
+    fresh = _frozen(2804.0)
+    compound = [[3600.0, "raw is_active flag, and counted every row not every user"]]
+    fresh["0"]["active_user_count_as_of"]["more_traps"] = compound
+    monkeypatch.setattr(export_capture.golden, "freeze", lambda tiers: fresh)
+    out = export_capture.refrozen(_frozen(2804.0), _one_cell(), None)
+    assert out["0"]["active_user_count_as_of"]["more_traps"] == compound
+
+
+def test_refreezing_keeps_only_the_goldens_the_run_asked_about(monkeypatch):
+    # `freeze_oracle` freezes all of GOLDENS however few questions ran, so a
+    # three-question run would otherwise carry a dozen values that are stale,
+    # unreachable, and indistinguishable from the ones that matter.
+    fresh = _frozen(2804.0)
+    fresh["0"]["total_users"] = {"key": "total_users", "value": 1.0, "trap_value": None,
+                                 "tolerance": 0.005, "trap_name": ""}
+    monkeypatch.setattr(export_capture.golden, "freeze", lambda tiers: fresh)
+    out = export_capture.refrozen(_frozen(2804.0), _one_cell(), ["governed-q1a"])
+    assert set(out["0"]) == {"active_user_count_as_of"}
