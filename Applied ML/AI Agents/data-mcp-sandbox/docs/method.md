@@ -328,5 +328,5 @@ report cannot read. Those columns print `--` and the coverage column reads
 list of arm names. A capture that predates that field records `None`, which means
 *not recorded* and keeps its numbers. See
 [Unmeasured is not zero](questions.md#unmeasured-is-not-zero) for the cases and
-[Reading Path 4's numbers fairly](paths.md#reading-path-4s-numbers-fairly) for the
+[Reading Path 4's numbers fairly](results.md#reading-path-4s-numbers-fairly) for the
 arm it bites hardest.

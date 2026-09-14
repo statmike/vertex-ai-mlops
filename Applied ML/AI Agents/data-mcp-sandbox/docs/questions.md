@@ -117,7 +117,7 @@ can inspect. This is a rubric
 change and not a re-run — scores live beside the capture rather than inside it,
 so `make score` republished five existing captures on the new basis without
 issuing a query.
-[paths](paths.md#the-trailing-window-questions-are-anchor-ambiguous) sets out
+[paths](results.md#the-trailing-window-questions-are-anchor-ambiguous) sets out
 which published numbers moved.
 
 The cost is paid by one category: `governed-logic` had three questions and, over
@@ -330,7 +330,7 @@ deliberately left blank rather than scored:
 Ranking an arm bottom on a metric it was never eligible for is a false finding,
 not a conservative one. The report prints `--`; the charts drop the arm and say
 so in the subtitle, or draw it as a bound. See
-[Reading Path 4's numbers fairly](paths.md#reading-path-4s-numbers-fairly).
+[Reading Path 4's numbers fairly](results.md#reading-path-4s-numbers-fairly).
 
 ---
 

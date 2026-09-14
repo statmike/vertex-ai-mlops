@@ -3,105 +3,278 @@
 **Does data governance actually make an AI agent more accurate — and what does
 each way of connecting one to BigQuery cost?**
 
-This is a controlled experiment, not a demo. The same model asks the same fifteen
-questions against the same data through **twelve different ways of reaching the
-warehouse**, at **two governance tiers** over byte-identical corpora, five times
-each. Every answer is scored against a live oracle.
-
-The published capture is **1,800 live cells over all twelve arms**, merged from
-three runs over nine days. Each run keeps the oracle that was true when it ran:
-several questions are trailing windows over data anchored at build time, so the
-right answer moves with the calendar and a shared oracle would have graded
-correct answers wrong. Twelve of the fifteen questions are gradeable; the other
-three are the documented defect described below, kept in the capture and left
-unscored rather than deleted.
-
-The corpus is built to be hostile in the ways real warehouses are hostile:
-columns named `txn_amt_x2` that are gross-not-net, a `status_flg` boolean whose
-`TRUE` means refunded, an `is_active` flag that disagrees with the governed
-definition of "active", and a `revenue_amount` column that is wrong. An agent
-that reads the schema and writes the obvious SQL gets a confident wrong answer.
+This is a controlled experiment, not a demo. One model asks fifteen questions
+against one dataset through **twelve different ways of reaching the warehouse**,
+at **two governance tiers over byte-identical copies of the data**, five times
+each. Every answer is scored against a live oracle. The published capture is
+**1,800 live cells**.
 
 ---
 
-## Four findings, in one screen
+## Why this needs an experiment
 
-1. **Governance is the biggest lever there is.** Accuracy roughly triples on
-   every path. On questions that turn on a governed *definition*, no arm gets a
-   single one right without it — **0 of 180 cells**.
-2. **Governance is not sufficient.** Every arm that shows its work *acquires*
-   the rule; an agent writing its own SQL still fails to *apply* it. Only an arm
-   with the rule already encoded executes it.
-3. **Cost is tool schema verbosity, not tool count.** One vendor tool
-   declaration is 120× its self-hosted equivalent and two thirds of its arm's
-   prompt floor, re-sent every turn.
-4. **Latency is a separate axis, and the ordering is stable.** Wall clock tracks
-   turn count, not tokens; swapping the model moves absolute accuracy a few
-   points and changes no rankings at all.
+The dataset is built to be hostile in the ways real warehouses are hostile:
 
-Every one of those is a link away below, with the cells behind it.
+- a column named `txn_amt_x2` that is gross, not net
+- a `status_flg` boolean whose `TRUE` means **refunded**
+- an `is_active` flag that disagrees with the business's own definition of "active"
+- a `revenue_amount` column that is simply wrong
 
-## The headline
+An agent that reads the schema and writes the obvious SQL gets a **confident
+wrong answer**. Nothing about the query looks like a mistake. That is the
+failure mode worth measuring, and it is invisible unless you grade against an
+oracle that knows the intended answer.
 
-| Question | Answer |
-|---|---|
-| Does governance help? | **Yes, and it is the largest effect measured.** Accuracy roughly triples from tier 0 to tier 1 on every path — 33%→100% on `p1_toolbox`, 12%→43% on `p4_looker_ca`. On the questions that turn on a **governed definition** the separation is total: **0 correct out of 180 cells at tier 0**, across every one of the twelve arms, against 138/180 at tier 1. |
-| Which *part* of it pays? | **Two rungs matter, for two different populations.** `LADDER=1` splits tier 1 into five cumulative rungs. On the eight questions needing no governed definition, **column descriptions alone** take every arm from 30–50% to 97.5–100% and nothing after that moves them — documentation is the best-value rung. On the questions that turn on a governed definition, descriptions are worth **0 points** and business rules take all three Path 3 arms from **0% to 100%** — a step, not a curve. Profile scans move nothing either way, and governance pays for itself: tokens per correct answer drop 3.6–8.1×. [Full ladder →](docs/paths.md#which-rung-pays) |
-| Is it enough? | **No — and for an agent writing its own SQL, no amount of it is.** From rung 1 every arm that shows its work acquires the governed rule on 100% of cells, read from the tool results rather than the answer. Yet **`p1_managed` and `p1_matched` answer the governed-definition questions correctly 0 times in 20** at tier 1, and 1 time in 50 at every ladder rung including the top. The captured SQL says why: it selects Active users but writes no time window at all, so "an event in the trailing 30 days" becomes "appears in the log." It is not approximating the governed answer; it is answering a different question. Only an arm that already *encodes* the rule — a semantic layer, or a service with one behind it — executes it. [Why the third Path 1 arm is not a counterexample →](docs/paths.md#the-third-path-1-arm-looks-like-a-counterexample-and-is-the-opposite-of-one) |
-| Managed or self-hosted MCP? | **Behaviourally the same, up to 12× apart on cost.** They reach the same verdict on 86–99% of paired cells while sharing a tool-call sequence 0–5% of the time. The gap is 6.9–7.7× on Path 1 and 4.8–4.9× on Path 3 — but only 1.1–1.3× on Path 2, and the schema sizes say why. |
-| Where does the cost come from? | **Tool schema verbosity, not tool count.** Schema characters predict an arm's median tokens at r = 0.95 (tier 0) and r = 0.99 (tier 1); tool count predicts nothing at r = 0.12 and r = 0.11. One managed `get_table_info` declaration is 78,214 chars — 64% of its arm's prompt floor, and 120× the self-hosted equivalent that does the same job. `p1_managed` spends **1,870,343 input tokens per correct answer against 5,934 output**: essentially none of the bill is the model thinking. It is tool definitions, re-sent every turn. |
-| How long does it take? | **Latency is a separate axis — it does not track cost.** Every MCP arm spends 4.3–5.5s per tool call whatever its schema size, so latency is turn count times a constant; tokens against wall clock correlate at only r = 0.28 and r = 0.33. Path 4 takes 1–3 calls and pays 20–70s for each, because the loop moved server-side. Per **correct** answer at tier 1 — what a user actually waits — that is 36–64s for every MCP arm, 199s for `p4_looker_ca`, and 11s for the two direct arms. At tier 0 the Looker arm needs **24 minutes per right answer**. |
-| Does wrapping a service in MCP cost anything? | **Yes — 3.1× the wall clock. Not accuracy.** `p4_bq_ca` and `p4_bq_direct` put the same questions to the same Conversational Analytics API over the same BigQuery corpus; one reaches it as a tool inside an ADK agent, the other calls it. At tier 1 they land two cells apart — the wrapper 60/60, the direct client 58/60 — and the direct client answers in a **10.5s median against 32.6s**. The wrapper also runs a local model loop the direct call does not: 5,941 input tokens per tier-1 cell against none. This is the one pair where the data, the service and the model are all identical and only the transport differs. |
-| Does injecting business context help, and by how much more than noise? | **Nothing the oracle can measure — and the control is what tells us so.** `p4_bq_direct` and `p4_bq_direct_ctx` differ only by a glossary payload, and at tier 0 that payload is empty by design: those 120 cells send byte-identical requests and are an accidental A/A control. They land **one cell apart** (13/60 vs 14/60). At tier 1, with the glossary injected, they land **one cell apart again** (58/60 vs 57/60). Most published context-injection deltas have no control next to them at all. |
-| Going direct — what does it actually buy you? | **Not a choice of model. A choice of how hard it thinks, and that knob is worth ~2.4× on latency.** `ChatRequest.model` is an enum with one selectable value, so neither route lets you pick a model; only the direct route exposes `thinking_mode`. Across three more captures (720 cells), `FAST` runs a **7.4s median against `THINKING`'s 18.4s** — and `FAST` is *flat*, 6.5–7.7s whatever you ask, where the default and `THINKING` scale with difficulty. On a governed warehouse `FAST` costs no measurable accuracy; ungoverned it costs ~16 points. [The surprise: `THINKING` loses ~16 points at tier 1 →](docs/paths.md#what-the-thinking-knob-is-actually-worth) |
-| Is the managed agent really cheapest? | **No — that was an accounting artifact, and it inverts once you meter it.** Conversational Analytics bills its own Gemini loop to a line item the API never returns. Read it back from Cloud Monitoring and `p4_looker_ca` goes from 18,045 tokens per cell to **392,158** — a 22× understatement that moves it from the cheapest arm to the third most expensive. Its 207 turns ran 1,220 server-side model calls. `p4_bq_ca` reports nothing on that meter, yet made **306 successful CA calls** on the same API in the same window: its cost is on no meter this project can read, which is not the same as being zero. |
-| Does any of this survive a new model? | **The ordering does, exactly.** Every MCP arm re-run on `gemini-3.8-flash` — both tiers, 720 cells, zero failures — pairs against the published `gemini-3.7-flash` capture at Kendall tau **+1.00 at both tiers with zero inversions**. Absolute accuracy shifts a few points in both directions; which architecture beats which does not move. Only three deltas clear the noise floor, two of them both Path 2 arms at tier 0 (+11.1 each) — so those two arms were re-swept on the *original* model eight days later and reproduced the published numbers **+0.0 on every cell**. That is the model, not capture drift. [Full result →](docs/paths.md#does-the-ranking-survive-a-new-model) |
+So the question is not "can an agent query BigQuery." It is: *which of the
+things we could spend effort on — documenting the data, buying a semantic layer,
+handing the whole problem to a managed service — actually changes the answer,
+and what does each one cost?*
+
+---
+
+## The vocabulary, once
+
+Four words carry the whole repo. This is the only place they are defined.
+
+**Tier** — the governance variable. Two byte-identical copies of the same data.
+**Tier 0** gets nothing but the tables. **Tier 1** gets five things added:
+column descriptions, a catalog `overview` aspect carrying the business rule, a
+glossary with term-to-column links, profile and data-quality scans, and a LookML
+semantic model. When this repo says *governed*, it means those five, together.
+The tiers are separated by **IAM, not by prompt** — each arm runs as a per-tier
+service account that can read exactly one tier's dataset.
+
+**Path** — one of four architectures for putting a model in front of data.
+
+| Path | Name | The idea |
+|:--:|---|---|
+| 1 | Raw Data Builder | Schema plus SQL. The agent writes its own queries. No governance surface at all. |
+| 2 | Semantic Router | A Looker semantic layer is the *only* data access. No raw SQL, no table names. |
+| 3 | Governed Context | Raw SQL **plus** the Knowledge Catalog — the agent can look the business rule up before querying. |
+| 4 | Managed Agent | Hand the whole question to Conversational Analytics. The reasoning loop moves into the cloud. |
+
+**Arm** — a path plus a decision about *who runs the tool server*. Twelve arms,
+and the suffix is the decision:
+
+| Arm | Who runs the tool server | What the model can reach |
+|---|---|---|
+| `p1_managed` | Google — `bigquery.googleapis.com/mcp` | raw BigQuery, 5 tools |
+| `p1_toolbox` | you — MCP Toolbox, `bigquery` source | raw BigQuery, 8 tools |
+| `p1_matched` | you — Toolbox cut down to the managed tool list | raw BigQuery, 5 tools |
+| `p2_managed` | **Looker** — your instance's own `/mcp` endpoint | Looker semantic layer, 7 tools |
+| `p2_toolbox` | you — Toolbox, `looker` source, same LookML models | Looker semantic layer, 7 tools |
+| `p3_managed` | Google — the BigQuery **and** Dataplex MCP endpoints | BigQuery + Knowledge Catalog, 8 tools |
+| `p3_toolbox` | you — Toolbox, `bigquery` + `dataplex` sources | BigQuery + Knowledge Catalog, 23 tools |
+| `p3_matched` | you — Toolbox cut down to the managed tool lists | BigQuery + Knowledge Catalog, 8 tools |
+| `p4_bq_ca` | you — Toolbox, one tool: `ask_data_insights` | CA over BigQuery |
+| `p4_looker_ca` | you — Toolbox, one tool: `looker_conversational_analytics` | CA over Looker |
+| `p4_bq_direct` | nobody — the CA API is called directly, no MCP | CA over BigQuery |
+| `p4_bq_direct_ctx` | nobody — same call, with the tier's glossary injected | CA over BigQuery |
+
+Two things the suffix does **not** tell you, and both have tripped up readers:
+
+- **`managed` names a different vendor's server depending on the path.** On
+  Paths 1 and 3 it is Google's BigQuery/Dataplex MCP endpoint. On Path 2 it is
+  **Looker's own MCP server**, hosted on your Looker instance at
+  `{LOOKER_BASE_URL}/mcp`. Same suffix, different product.
+- **Looker is in three arms, and only one of them says so in its name.**
+  `p2_managed` (Looker's MCP), `p2_toolbox` (self-hosted, same LookML), and
+  `p4_looker_ca` (Conversational Analytics over Looker Explores). The other nine
+  arms need no Looker instance at all.
+
+**Deeper:** [`docs/paths.md`](docs/paths.md) — every arm's exact tool list, the
+full option space including the combinations we *didn't* run, and the measured
+answer to "is this comparison fair?"
+
+---
+
+## How it was measured
+
+Every arm is the **same model** (`gemini-3.7-flash`, temperature 0) asking the
+**same fifteen questions** against the **same data**, five replicates, both
+tiers. Only the tool surface changes, so a score difference is attributable to
+architecture rather than to the model.
+
+Capture and scoring are separate programs. `run_battery.py` records what
+happened — every tool call with its arguments and results, every answer, every
+token count — and never judges it. `build_results.py` judges and never re-runs
+an agent. That split is why you can re-score the published capture on a laptop
+with no cloud account.
+
+The 1,800 cells are merged from three runs over nine days, each keeping the
+oracle that was true when it ran, because several questions are trailing windows
+whose right answer moves with the calendar. **Twelve of the fifteen questions are
+gradeable**; three are a documented defect, kept in the capture and left unscored
+rather than deleted — see the caveat under the results.
+
+**Cost is reported in units consumed, never dollars** — tokens in, tokens out,
+seconds, BigQuery jobs, MiB scanned — and always per *correct* answer, because
+an arm that is cheap and wrong is not cheap. Units you can check against your own
+invoice; a dollar figure needs a rate card and would be wrong for most readers.
+Prices are opt-in via `prices.json`.
+
+**Deeper:** [`docs/method.md`](docs/method.md) — the protocol, why cells run
+strictly one at a time, what each capture records about the conditions it ran
+under, and how two captures are compared rather than merged.
+
+---
+
+## What was asked
+
+Fifteen questions over four traps. Some are ordinary aggregations the schema can
+answer. Some turn on a **governed definition** — a rule that exists in the
+business but nowhere in the column names — and those are the ones that separate
+the arms. The rest are distractors that punish an agent for trusting a
+plausible-looking column.
+
+**Deeper:** [`docs/questions.md`](docs/questions.md) — all fifteen questions, the
+four traps, the 0.5% match tolerance, and why two metrics are deliberately left
+blank rather than scored zero.
+
+---
+
+## What we found
+
+### Governance is the largest effect measured — and it is not sufficient
+
+**Accuracy roughly triples on every path**, tier 0 to tier 1: 33%→100% on
+`p1_toolbox`, 12%→43% on `p4_looker_ca`. On the questions that turn on a governed
+definition the separation is total — **0 correct out of 180 cells at tier 0**,
+across all twelve arms, against 138/180 at tier 1.
+
+**Which part of it pays is two rungs, for two different populations.** Splitting
+tier 1 into five cumulative rungs: on the eight questions needing no governed
+definition, **column descriptions alone** take every arm from 30–50% to
+97.5–100% and nothing after that moves them. On the questions that turn on a
+governed definition, descriptions are worth **0 points** and business rules take
+all three Path 3 arms from **0% to 100%** — a step, not a curve. Profile scans
+move nothing either way. Governance also pays for itself: tokens per correct
+answer drop 3.6–8.1×.
+
+**But no amount of it fixes an agent writing its own SQL.** From the first rung,
+every arm that shows its work acquires the governed rule on 100% of cells — we
+can read it in the tool results. Yet `p1_managed` and `p1_matched` answer the
+governed-definition questions correctly **0 times in 20** at tier 1, and 1 time
+in 50 at every ladder rung including the top. The captured SQL says why: it
+selects Active users but writes no time window at all, so "an event in the
+trailing 30 days" quietly becomes "appears in the log." It is not approximating
+the governed answer; it is answering a different question. Only an arm that
+already *encodes* the rule — a semantic layer, or a service with one behind it —
+executes it.
+
+### Cost is tool schema verbosity, not tool count
+
+Schema characters predict an arm's median token spend at **r = 0.95** (tier 0)
+and **r = 0.99** (tier 1). Tool count predicts nothing: **r = 0.12** and
+**r = 0.11**. One managed `get_table_info` declaration is **78,214 characters** —
+64% of its arm's prompt floor, and **120× the self-hosted equivalent** that does
+the same job, re-sent every turn. `p1_managed` spends **1,870,343 input tokens
+per correct answer against 5,934 output**: essentially none of the bill is the
+model thinking.
+
+**Managed and self-hosted behave the same and cost up to 12× apart.** They reach
+the same verdict on 86–99% of paired cells while sharing a tool-call sequence
+only 0–5% of the time. The cost gap is 6.9–7.7× on Path 1 and 4.8–4.9× on Path 3
+— but only 1.1–1.3× on Path 2, and the schema sizes say exactly why.
+
+**The managed agent was not actually cheapest.** Conversational Analytics bills
+its own Gemini loop to a line item the API never returns. Read it back from Cloud
+Monitoring and `p4_looker_ca` goes from 18,045 tokens per cell to **392,158** — a
+22× understatement that moves it from the cheapest arm to the third most
+expensive. Its 207 turns ran 1,220 server-side model calls. `p4_bq_ca` reports
+nothing on that meter yet made **306 successful CA calls** on the same API in the
+same window: its cost is on no meter this project can read, which is not the same
+as being zero.
+
+### Latency is a separate axis, and it does not track cost
+
+Every MCP arm spends **4.3–5.5s per tool call** whatever its schema size, so
+latency is turn count times a constant. Tokens against wall clock correlate at
+only r = 0.28 and r = 0.33. Path 4 takes 1–3 calls and pays 20–70s for each,
+because the loop moved server-side. Per **correct** answer at tier 1 — what a
+user actually waits — that is 36–64s for every MCP arm, 199s for `p4_looker_ca`,
+and 11s for the two direct arms. At tier 0 the Looker arm needs **24 minutes per
+right answer**.
+
+**Wrapping a service in MCP costs 3.1× the wall clock and no accuracy.**
+`p4_bq_ca` and `p4_bq_direct` put the same questions to the same CA API over the
+same data; one reaches it as a tool inside an agent, the other just calls it. At
+tier 1 they land two cells apart — 60/60 against 58/60 — and the direct client
+answers in a **10.5s median against 32.6s**. The wrapper also runs a local model
+loop the direct call does not: 5,941 input tokens per tier-1 cell against none.
+This is the one pair where data, service and model are identical and only the
+transport differs.
+
+**Going direct buys a thinking knob, not a model choice.** `ChatRequest.model` is
+an enum with one selectable value. Only the direct route exposes `thinking_mode`,
+and across three more captures (720 cells) `FAST` runs a **7.4s median against
+`THINKING`'s 18.4s** — and `FAST` is *flat*, 6.5–7.7s whatever you ask, where the
+default and `THINKING` scale with difficulty. On a governed warehouse `FAST`
+costs no measurable accuracy; ungoverned it costs ~16 points.
+
+### Does any of it hold up
+
+**A new model changes the scores and not the ordering.** Every MCP arm re-run on
+`gemini-3.8-flash` — both tiers, 720 cells, zero failures — pairs against the
+published `gemini-3.7-flash` capture at Kendall tau **+1.00 at both tiers, zero
+inversions**. Absolute accuracy shifts a few points in both directions; which
+architecture beats which does not move. Only three deltas clear the noise floor,
+two of them both Path 2 arms at tier 0 (+11.1 each) — so those two arms were
+re-swept on the *original* model eight days later and reproduced the published
+numbers **+0.0 on every cell**. That is the model, not capture drift.
+
+**There is an accidental A/A control, and it holds.** `p4_bq_direct` and
+`p4_bq_direct_ctx` differ only by a glossary payload, and at tier 0 that payload
+is empty by design — so those 120 cells send byte-identical requests. They land
+**one cell apart** (13/60 vs 14/60). At tier 1, with the glossary actually
+injected, they land **one cell apart again** (58/60 vs 57/60). Most published
+context-injection deltas have no control next to them at all.
 
 > **One caveat, stated up front.** Chasing a failed replication check found a
 > defect in our own corpus: "trailing 30 days" pins a window's *length* and never
 > its *anchor*, so three questions scored near-arbitrarily depending on where the
 > oracle's window happened to fall. Those three are marked unscoreable and
 > **re-issued as three new questions that pin the anchor**, swept across all
-> twelve arms and merged in — so the main capture grades **twelve of fifteen**
-> questions and the governed-definition population is three questions rather than
-> one. The ladder capture was not re-swept, so the step-function result above
-> still rests on **one** question at five replicates, which is why it is stated
-> separately from everything else.
-> [The defect →](docs/paths.md#the-trailing-window-questions-are-anchor-ambiguous)
+> twelve arms and merged in — which is why the main capture grades **twelve of
+> fifteen** questions and the governed-definition population is three questions
+> rather than one. The five-rung ladder capture was *not* re-swept, so the
+> step-function result above still rests on **one** question at five replicates.
+> That is why it is stated separately from everything else.
 
-**Cost is reported in units consumed, not dollars** — tokens in, tokens out,
-seconds, BigQuery jobs, MiB scanned, all per *correct* answer, because an arm that
-is cheap and wrong is not cheap. Those you can check against your own invoice; a
-dollar figure needs a rate card and would be wrong for most readers. Prices are
-opt-in via `prices.json`.
+> **These numbers are perishable.** They are specific to a pinned model version, a
+> pinned MCP Toolbox, and vendor tool schemas that can change without notice — and
+> that last one dominates the cost result.
 
-### Read it in order
-
-| To ask | Read |
-|---|---|
-| What are my actual options, and which of them did you run? | [`docs/paths.md`](docs/paths.md#the-option-space-and-which-of-it-we-ran) — the option space and the empty cells |
-| Is the comparison fair? | [`docs/paths.md`](docs/paths.md#is-that-fair) — the endpoint is worth 40×, the tool list a few percent either way, both measured |
-| Why is it built this way, and what does it *not* claim? | [`docs/design.md`](docs/design.md) |
-| What was asked, and what counts as right? | [`docs/questions.md`](docs/questions.md) |
-| What happened? | [`results/report.md`](results/report.md) — full tables |
-| How do I re-run exactly this? | [`docs/reproducing.md`](docs/reproducing.md) |
-| How do I run it on my own data? | [`docs/adapting.md`](docs/adapting.md) |
-
-> **These numbers are perishable.** They are specific to a pinned model version,
-> a pinned MCP Toolbox, and vendor tool schemas that can change without notice —
-> and that last one dominates the cost result. See
-> [`docs/reproducing.md`](docs/reproducing.md) for what will and will not
-> reproduce.
-
-**Want it on your own warehouse?** [`docs/adapting.md`](docs/adapting.md) walks it
-in eight rungs — re-score our capture with no cloud account, run it unchanged in
-your project, then move it toward your data one verifiable step at a time, ending
-at your own tables and your own Looker for all twelve arms. Start anywhere; stop
-anywhere. Nine of the twelve arms need no Looker instance at all.
+**Deeper:** [`docs/results.md`](docs/results.md) — every result above with the
+cells behind it, plus what is *unmeasurable* on Path 4 and why the report prints
+`--` there rather than 0%. The generated tables are in
+[`results/report.md`](results/report.md).
 
 ---
 
-## Setup
+## Check the work without a cloud account
+
+`results/capture.json.gz` is the raw sweep — every tool call with its arguments
+and result, every answer, every token count — and it holds **no scores**. The
+rubric is the part most worth arguing with, so it ships separately:
+
+```bash
+uv sync
+uv run python examples/build_results.py \
+  --results results/capture.json.gz --out /tmp/mine --no-judge --no-cost
+```
+
+No project, no corpus, no credentials; the goldens are frozen into the capture's
+header. Change `src/scoring.py` and re-run — a rubric change costs a minute
+instead of a day.
+
+**Deeper:** [`notebooks/03_results.ipynb`](notebooks/03_results.ipynb) scores the
+published capture and draws the charts. It ships with its outputs filled in, so
+you can read the entire result without running anything.
+
+---
+
+## Run it yourself
 
 Self-contained `uv` project. Run everything from inside this folder.
 
@@ -117,7 +290,7 @@ Requires [`uv`](https://docs.astral.sh/uv/) and the
 [Google Cloud CLI](https://cloud.google.com/sdk/docs/install). Never use `pip` —
 `uv` manages all dependencies, environments, and the lockfile.
 
-Then provision and walk down the cost ladder:
+Then walk down the cost ladder:
 
 ```bash
 make preflight        # can you provision this? two read-only IAM calls, free
@@ -127,142 +300,37 @@ make plan             # what a sweep would cost, in time and tokens. Free.
 make smoke            # 12 cells, ~10 min. Proves the wiring end to end.
 ```
 
-`make help` lists everything.
+`make help` lists everything. Provisioning creates billable BigQuery storage and
+Dataplex scans, and a full sweep is hours of live model calls; `make plan`
+estimates before you spend and `make teardown` deletes everything `setup`
+created.
 
-### Without Looker
-
-Looker is the only component behind an annual-commitment purchase, and
-`make bootstrap` deliberately **will not create an instance** — a setup script
-must not be able to start an annual charge. Add `SKIP_LOOKER=1` to any target:
+**Without Looker.** Looker is the only component behind an annual-commitment
+purchase, and `make bootstrap` deliberately **will not create an instance** — a
+setup script must not be able to start an annual charge. Add `SKIP_LOOKER=1` to
+any target and nine of the twelve arms remain, at both tiers:
 
 ```bash
 make bootstrap SKIP_LOOKER=1
 make sweep SKIP_LOOKER=1     # 1,350 cells instead of 1,800
 ```
 
-Nine of twelve arms remain, at both governance tiers. The central governed-vs-
-ungoverned result survives; you lose the semantic-layer path.
+The central governed-versus-ungoverned result survives; you lose Path 2 and the
+Looker half of Path 4.
+
+**Deeper:** [`docs/reproducing.md`](docs/reproducing.md) — the exact commands for
+each capture, what will and will not reproduce, and how to compare two captures
+that asked different questions.
 
 ---
 
-## Notebooks
+## Run it on your own data
 
-The same steps with the reasoning in between. They import `src/` and call the
-functions the `make` targets call, so the two paths cannot drift apart.
-
-| | | |
-|---|---|---|
-| [`01_provision.ipynb`](notebooks/01_provision.ipynb) | build the corpus, apply governance, prove the fence | costs money |
-| [`02_walkthrough.ipynb`](notebooks/02_walkthrough.ipynb) | one arm, one question, both tiers — tool call by tool call | live model calls |
-| [`03_results.ipynb`](notebooks/03_results.ipynb) | score the published capture and draw the charts | free, offline |
-
-Notebook 3 needs nothing but `uv sync` — it reads `results/capture.json.gz` and
-ships with its outputs, so you can read the whole result without a Google Cloud
-project. Start there if you are only here to check the work.
-
----
-
-## Re-scoring without a cloud account
-
-`results/capture.json.gz` is the raw sweep — every tool call with its arguments
-and result, every answer, every token count — and it holds **no scores**. The
-rubric is the part most worth arguing with, so it ships separately:
-
-```bash
-uv run python examples/build_results.py \
-  --results results/capture.json.gz --out /tmp/mine --no-judge --no-cost
-```
-
-No project, no corpus, no credentials. The goldens are frozen into the capture's
-header. Change `src/scoring.py` and re-run; a rubric change costs a minute
-instead of a day.
-
-[`docs/questions.md`](docs/questions.md) is the map before you start: the four
-traps, all fifteen questions, the 0.5% match tolerance, and why two metrics are
-deliberately left blank rather than scored zero.
-
----
-
-## How it works
-
-**Four independent choices, not one.** Where the reasoning runs — a local agent
-loop (paths 1–3) or a cloud service that owns the loop (path 4). How you reach it
-— as an MCP tool an agent calls, or as an API you call yourself. Who hosts the
-tools — a Google-managed MCP endpoint or a self-hosted MCP Toolbox. And which
-tools you bind under that server's ceiling, which is 9 on the managed side and 32
-on Toolbox. Path 1 is raw BigQuery, Path 2 routes through a Looker semantic
-layer, Path 3 adds the Knowledge Catalog, Path 4 hands the whole question to
-Conversational Analytics — which is not a fourth server but a *single tool* on one
-you already run, and also an API you can call with no server at all. The grid, and
-why some of its cells are empty, is in
-[`docs/paths.md`](docs/paths.md#the-option-space-and-which-of-it-we-ran).
-
-**Fairness is decomposed, not asserted.** Managed and self-hosted differ on two
-things at once — the endpoint and the tool list — so the `_matched` arms hold the
-tool list constant and vary only the endpoint. `p1_managed` and `p1_matched` bind
-the same five tools and differ **40×** on schema size. `p3_toolbox` and
-`p3_matched` share an endpoint with 23 tools against 8 and differ by **25% the
-cheap way at tier 0 and 16% the dear way at tier 1**, at identical tier-1
-accuracy — a gap with no consistent sign. The endpoint is the whole cost story;
-the tool count is not. The same decomposition runs one layer down on Path 4:
-`p4_bq_direct` reaches Conversational Analytics without Toolbox's tool in
-between, so "the service" and "the wrapper we reached it through" stop being one
-variable.
-
-**Tiers are separated by IAM, not by prompt.** Knowledge Catalog search is
-project-wide and content-addressed — `search_entries` takes a query, not a scope
-— so a tier-0 agent asking for "revenue" was handed the tier-1 governed entry and
-answered from it. No MCP parameter can prevent that; catalog search being
-ACL-filtered per caller can. Each arm runs as a per-tier service account,
-keylessly impersonated from your own ADC. `make verify-isolation` is what tells a
-real fence from an assumed one. See [`docs/scoping.md`](docs/scoping.md).
-
-**Capture and scoring are separate programs.** `run_battery.py` records what
-happened and never judges it; `build_results.py` judges and never re-runs an
-agent. Three scoring passes, independently skippable because they have different
-costs: deterministic (free), BigQuery cost attribution (one
-`INFORMATION_SCHEMA` query), and a blind LLM judge for semantic adherence (one
-model call per governed cell). The protocol — 1,800 cells, five replicates, why
-they run strictly one at a time, and what each capture records about the
-conditions it ran under — is in [`docs/method.md`](docs/method.md).
-
-**Unmeasured is never reported as zero.** No Path 4 cell lets us watch the agent
-*read* a governed rule, because there is no tool call to watch, so rule
-acquisition is *unmeasurable* on those arms and the report prints `--` rather
-than 0%. Ranking an arm bottom on a metric it was never eligible for is a false
-finding, not a conservative one.
-
-Evidence was in the same position and is no longer. Reaching Conversational
-Analytics through an MCP tool leaves only its prose to scrape, which is why
-`p4_looker_ca` discloses no query on 42% of its cells. That is a limit of the
-tool, not of CA: called directly, the API streams the generated SQL and the
-BigQuery job id, which we
-[verified live](docs/paths.md#what-is-opaque-and-what-that-costs-the-measurement).
-`p4_bq_direct` is that call, and now that it has been swept the arm scores
-through the existing rubric at **0% undisclosed** and 1.00 median recall at tier
-1. Going direct buys back evidence; it does not buy back acquisition, and the
-report keeps those two apart. Conversational Analytics also spends model tokens
-server-side that it does not report, so its cost is published as a floor.
-
-**A floor is a debt, not a conclusion.** That Path 4 floor turned out to be
-readable after all — not from the API, but from Cloud Monitoring, which meters
-CA's own Gemini loop:
-
-```bash
-uv run python examples/service_tokens.py --results results/capture.json.gz
-uv run python examples/service_tokens.py --baseline 2026-08-25 2026-09-01
-```
-
-It cost `p4_looker_ca` its first-place finish on cost. Run `--baseline` first: the
-metric has no caller label, so it attributes by time window and only holds if
-nothing else in the project is using CA.
-
-**A zero needs a second meter.** `p4_bq_ca` reads zero on every CA usage metric,
-which could mean the arm did nothing or that nothing was counting. The `CA calls`
-column settles it from the API front-end rather than from CA itself, and the
-`on our quota` column shows Vertex metering only our own agent, so the missing
-spend is not hiding there either. Both arms do the work; only one of them is billed where we
-can see it. [docs/paths.md](docs/paths.md#p4_bq_ca-reports-nothing-which-is-not-the-same-as-spending-nothing)
+The point of the harness is that the questions, the corpus and the LookML are
+*inputs*. [`docs/adapting.md`](docs/adapting.md) walks it in eight rungs:
+re-score our capture with no cloud account, run it unchanged in your project,
+then move it toward your data one verifiable step at a time, ending at your own
+tables and your own Looker across all twelve arms. Start anywhere; stop anywhere.
 
 ---
 
@@ -273,28 +341,33 @@ can see it. [docs/paths.md](docs/paths.md#p4_bq_ca-reports-nothing-which-is-not-
 | `src/` | All logic — flat, single-responsibility modules |
 | `examples/` | Runners: the sweep, the scorer, isolation and inventory probes |
 | `scripts/` | Provisioning, teardown, capture export |
-| `docs/` | [design](docs/design.md) · [paths](docs/paths.md) · [questions & rubric](docs/questions.md) · [method](docs/method.md) · [reproducing](docs/reproducing.md) · [**adapting**](docs/adapting.md) · [scoping](docs/scoping.md) · [Looker setup](docs/looker_setup.md) · [runbook](docs/looker_runbook.md) |
 | `results/` | The report, the scores, and the publishable capture |
 | `tests/` | pytest; imports flat modules from `src/` by name |
 | `notebooks/` | [provision](notebooks/01_provision.ipynb) · [walkthrough](notebooks/02_walkthrough.ipynb) · [results](notebooks/03_results.ipynb) — narrative and execution only, no business logic |
 
-The reasoning that did not fit here is in the module docstrings, which are written
-to be read: [`src/cost.py`](src/cost.py) on why cost is reported in three parts
-that are never silently summed, [`src/service_tokens.py`](src/service_tokens.py)
-on metering the part the API will not report, and
-[`src/scoring.py`](src/scoring.py) on the rubric.
+Every document, in reading order:
 
-## Checks
+| Document | What it answers |
+|---|---|
+| [`docs/paths.md`](docs/paths.md) | What each of the twelve arms *is*, and what we chose not to run |
+| [`docs/method.md`](docs/method.md) | How the sweep runs and what each capture records |
+| [`docs/questions.md`](docs/questions.md) | What was asked, and what counts as right |
+| [`docs/results.md`](docs/results.md) | Every measured result, with the cells behind it |
+| [`docs/design.md`](docs/design.md) | Why it is built this way, and what it does not claim |
+| [`docs/reproducing.md`](docs/reproducing.md) | Re-running exactly this |
+| [`docs/adapting.md`](docs/adapting.md) | Running it on your own data |
+| [`docs/scoping.md`](docs/scoping.md) | Why the tier fence is IAM and not a prompt |
+| [`docs/looker_setup.md`](docs/looker_setup.md) · [`docs/looker_runbook.md`](docs/looker_runbook.md) | Standing up the Looker side |
+
+The reasoning that did not fit anywhere is in the module docstrings, which are
+written to be read: [`src/cost.py`](src/cost.py) on why cost is reported in three
+parts that are never silently summed,
+[`src/service_tokens.py`](src/service_tokens.py) on metering the part the API will
+not report, and [`src/scoring.py`](src/scoring.py) on the rubric.
 
 ```bash
 make check    # ruff + mypy + pytest
 ```
-
-## Cost and teardown
-
-Provisioning creates billable BigQuery storage and Dataplex scans; a full sweep
-is hours of live model calls. `make plan` estimates before you spend, and
-`make teardown` deletes everything `setup` created.
 
 ---
 

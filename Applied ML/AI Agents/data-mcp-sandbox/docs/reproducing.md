@@ -350,7 +350,7 @@ refused rather than paired against nothing.
 `SHARED=1` is the same idea on the question axis, and it is needed here because
 the published capture has since been re-swept with three anchored questions the
 ladder was taken before ([the defect
-→](paths.md#the-trailing-window-questions-are-anchor-ambiguous)). It relaxes
+→](results.md#the-trailing-window-questions-are-anchor-ambiguous)). It relaxes
 `question_ids` from equality to presence, narrows both sides to the questions
 they both asked, and **prints which ones it dropped** — narrowing a comparison
 changes what it measures, and a reader who does not know three questions left

@@ -113,7 +113,7 @@ whole sweep holds one model constant so it measures *architecture*, and varying 
 tests whether the path ranking is model-dependent at all. We ran that one — the
 ranking held at Kendall tau +1.00 across a model generation, with a matched
 control ruling out capture drift, so [the ordering survives a new
-model](paths.md#does-the-ranking-survive-a-new-model). Worth re-running on
+model](results.md#does-the-ranking-survive-a-new-model). Worth re-running on
 whatever you actually deploy, since that is the claim you would be relying on.
 
 `USE_TIER_SA=false` deserves its own warning. It does not weaken isolation, it
