@@ -218,6 +218,21 @@ it is what `--resume` is for. Complete, so you cannot ask one question of one
 arm and a different question of another and have the union published as a
 factorial with half its cells missing.
 
+That check reads what each run **declared** it would cover, because that is the
+only thing a capture states unambiguously. Whether the cells actually *ran* is a
+second question, and the merge answers it separately: it compares the planned
+cell count against the captured one and prints
+
+```
+NOTE: header says 1800 planned cells but 1651 were captured - some cells did not run.
+```
+
+It is a note rather than a refusal, because a sweep with a handful of genuinely
+failed cells is still worth merging and still scores honestly — "unmeasured is
+not zero" applies to a missing cell too. But if you see it after merging a run
+you thought was complete, you merged a sweep that was still going. Re-run with
+`--resume` and merge again.
+
 Each run keeps the oracle it froze, and the oracle is looked up per *(arm,
 question)*. This is the part that matters if your goldens are trailing windows:
 the capture you are merging into was graded days ago against numbers that have
