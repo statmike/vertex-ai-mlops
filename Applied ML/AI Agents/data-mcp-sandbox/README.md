@@ -82,11 +82,11 @@ When this repo says **governed**, it means those five, together.
 
 Both tiers have a LookML model — Path 2 would have no data access at all
 otherwise. Tier 0's is a passthrough: every column a dimension, **no measures**,
-no descriptions. Tier 1's adds the two fields that carry the rules, and that
-difference is the whole of Path 2's tier variable. The first five rows are the
-BigQuery Knowledge Catalog; the last is Looker. They are **parallel channels
-that never read each other** — both are generated from `src/corpus.py`, which is
-why they agree, not because Looker consumes the catalog.
+no descriptions.
+
+The five rows are published to every tier-1 dataset. But no path can reach all
+five — [each one uses a different subset](#where-the-two-variables-meet-governed-means-something-different-on-each-path),
+which turns out to matter more than anything else on this page.
 
 The tiers are separated by **IAM, not by prompt**. Each arm runs as a per-tier
 service account that can read exactly one tier's dataset — because catalog search
@@ -189,6 +189,46 @@ into the cloud, so there is no local agent to watch.
 full option space including what we chose *not* to run, and the measured answer
 to "is this comparison fair?"
 
+### Where the two variables meet: *governed* means something different on each path
+
+This is the part that is easy to miss. Tier 1 publishes all five surfaces to
+every path — but **a path can only use the surfaces its tools can reach.** So
+"governed" is not one treatment applied four times. It is four different
+treatments, and that is most of why the paths separate at all.
+
+| | Path 1 | Path 2 | Path 3 | Path 4 |
+|---|---|---|---|---|
+| **Ungoverned, it sees** | bare tables — column names and types | passthrough LookML: every column a dimension, **no measures** | bare tables, and a catalog with nothing in it | whatever CA can find, which is the bare tables |
+| **Governed, it gains** | table + column descriptions | field descriptions, `total_revenue`, `active_user_status` | descriptions **plus** the rule text, glossary, profile + quality scans | the same surfaces, reached by CA's own retrieval |
+| **Reached with** | `get_table_info` | `get_dimensions`, `get_measures` | `get_table_info` **+** `lookup_context`, `search_entries` | nothing you control |
+| **So the rule arrives as** | a warning | **a field you select** | a document to read and re-express in SQL | the service's business |
+| **Definition questions, tier 1** | **33%** ⚠️ | 60–80% | **100%** | 33–100% |
+
+⚠️ Both honest Path 1 arms. `p1_toolbox` scores 100% by calling Conversational
+Analytics instead of writing SQL — see the scoreboard note below.
+
+Read the bottom two rows together — they are the whole experiment in miniature:
+
+- **Path 1 is told it is wrong and not told what is right.** Its tier-1 column
+  description reads *"Raw account-status flag. NOT the governed definition of an
+  Active user — see the Active User business rule."* The rule it is pointed at
+  lives in Dataplex, and **Path 1 has no Dataplex tool** — its five-to-eight
+  tools are BigQuery-only. So it learns the flag is a trap and still has nothing
+  to replace it with. `p1_managed` and `p1_matched` both go **0/5 and 0/5** on
+  the two rule-dependent questions at tier 1, while scoring 89% on everything
+  else. That is not a weak model; it is a dangling pointer.
+- **Path 2 does not have to read anything.** The rule is compiled into
+  `active_user_status`, a field the agent selects. No acquisition step, so no
+  application step to fail.
+- **Path 3 can reach the rule, but must re-express it in SQL** — and that second
+  step is where the conjunction gets dropped. See finding 2.
+
+One more thing this table settles: **Looker never reads the Knowledge Catalog,
+and the catalog never reads Looker.** They agree with each other because
+`src/corpus.py` generates both from the same rule text — not because they are
+integrated. They are two parallel channels, and Path 2 vs. Path 3 is the
+measurement of which one an agent uses better.
+
 ---
 
 ## What we found
@@ -224,14 +264,15 @@ per correct answer**. Exact unrounded values are in
 | `p3_matched` | self-hosted, cut to the managed tool lists | 35%<br/>825k · 271s | **100%**<br/>56k · 43s | complete |
 | **Path 4 — Managed Agent** | *Conversational Analytics owns the loop* | | | |
 | `p4_bq_ca` | CA over BigQuery, reached as an MCP tool | 23%<br/>52k · 277s | **100%**<br/>5k · 36s | a floor |
-| `p4_looker_ca` | CA over **Looker**, reached as an MCP tool | 12%<br/>213k · 1,435s | 43%<br/>18k · 199s | a floor — [392,158 once metered](#6-the-managed-agent-was-not-actually-the-cheapest) |
+| `p4_looker_ca` | CA over **Looker**, reached as an MCP tool | 12%<br/>213k · 1,435s | 43%<br/>18k · 199s | a floor — [392,158 once metered](#3-cost-is-tool-schema-verbosity--and-some-of-it-is-invisible) |
 | `p4_bq_direct` | CA over BigQuery, called as an API | 22%<br/>— · 51s | 97%<br/>— · **11s** | unmetered |
 | `p4_bq_direct_ctx` | the same call, glossary injected | 23%<br/>— · 49s | 95%<br/>— · **11s** | unmetered |
 
 ⚠️ **`p1_toolbox`'s 100% is borrowed.** On 39% of its governed cells it stopped
 writing SQL and called Conversational Analytics through Toolbox's tool surface —
 on *exactly* the two questions that need a governed definition. It is not a
-Path 1 result; it is Path 4 wearing a Path 1 name. See finding 3.
+Path 1 result; it is Path 4 wearing a Path 1 name. Cells and tool traces:
+[`docs/results.md`](docs/results.md#the-third-path-1-arm-looks-like-a-counterexample-and-is-the-opposite-of-one).
 
 **Read down the Ungoverned column first — then across the paths:**
 
@@ -263,7 +304,14 @@ Path 1 result; it is Path 4 wearing a Path 1 name. See finding 3.
    anything else on the board — and gives up 3 points and all token visibility
    to do it. There is no dominant row.
 
-The rest of this section is how those numbers came about.
+The rest of this section is how those numbers came about — five findings in
+three acts:
+
+| | |
+|---|---|
+| **What governance is worth** | 1 · it is the largest effect here, and it refunds cost<br/>2 · only two of the five surfaces pay, and neither is sufficient alone |
+| **What you actually spend** | 3 · cost is tool schema verbosity, and some of it is invisible<br/>4 · latency is a separate axis and does not track cost |
+| **Whether to believe it** | 5 · it survives a model change, and there is an A/A control |
 
 ### 1. Governance is the largest effect measured
 
@@ -297,7 +345,7 @@ speculative SQL, larger payloads dragged back into context — and then gets it
 wrong anyway. Governance is not a tax on an agent's budget. It is what stops the
 agent from spending the budget guessing.
 
-### 2. Only two parts of governance actually pay
+### 2. Two of the five surfaces pay — and neither is sufficient alone
 
 Split tier 1 into five cumulative rungs and the populations separate cleanly:
 
@@ -306,24 +354,33 @@ Split tier 1 into five cumulative rungs and the populations separate cleanly:
 | Ordinary aggregations (8 questions) | **column descriptions alone**: 30–50% → 97.5–100% | everything after that |
 | Governed definitions | **business rules**: 0% → 100% on all three Path 3 arms | descriptions (worth 0 points) |
 
-A step, not a curve. Profile scans move nothing either way. And governance pays
-for itself — tokens per correct answer drop **3.6–8.1×**.
+A step, not a curve. Profile scans move nothing either way. Of the five surfaces
+you would pay to build, two carry the entire effect.
 
-### 3. Governance is necessary, not sufficient
+**But reaching a rule is not the same as applying it.** From the first rung,
+*every* arm that shows its work acquires the rule on **100% of cells** — we can
+read it in the tool results. `p1_managed` and `p1_matched` still answer the
+governed-definition questions correctly **0 times in 20** at tier 1, and 1 time
+in 50 at every ladder rung including the top. The worked example at the top of
+this page is that failure: the rule is a conjunction, and the agent applies one
+conjunct.
 
-From the first rung, **every arm that shows its work acquires the rule on 100% of
-cells** — we can read it in the tool results.
+So the two failure modes are different, and only one of them is a governance
+problem:
 
-`p1_managed` and `p1_matched` still answer the governed-definition questions
-correctly **0 times in 20** at tier 1, and 1 time in 50 at every ladder rung
-including the top. The worked example at the top of this page is that failure:
-the rule is a conjunction, and the agent applies one conjunct.
+| | Path 1 | Path 3 |
+|---|---|---|
+| Can it reach the rule? | **no** — no Dataplex tool | yes |
+| Does it apply the rule? | n/a | yes |
+| Definition questions, tier 1 | 33% | **100%** |
 
-Only an arm that already *encodes* the rule — a semantic layer, or a service with
-one behind it — executes it. On this corpus a semantic layer is not an
-optimisation; it is the thing that works.
+Path 1 fails on acquisition, Path 3 succeeds at both, and Path 2 skips the
+problem entirely by never making the agent re-express anything. Only an arm that
+*encodes* the rule — a semantic layer, or a service with one behind it — reliably
+executes it. On this corpus a semantic layer is not an optimisation; it is the
+thing that works.
 
-### 4. Cost is tool schema verbosity, not tool count
+### 3. Cost is tool schema verbosity — and some of it is invisible
 
 | Predictor of an arm's token spend | tier 0 | tier 1 |
 |---|---:|---:|
@@ -342,7 +399,23 @@ verdict on 86–99% of paired cells, while sharing a tool-call sequence only 0�
 of the time. The gap is 6.9–7.7× on Path 1, 4.8–4.9× on Path 3, and only 1.1–1.3×
 on Path 2 — and the schema sizes say exactly why.
 
-### 5. Latency is a separate axis, and it does not track cost
+**And the cheapest-looking arm is not cheap.** Conversational Analytics bills its
+own Gemini loop to a line item the API never returns. Read it back from Cloud
+Monitoring:
+
+| `p4_looker_ca` tokens per cell | |
+|---|---:|
+| as the API reports it | 18,045 |
+| as Cloud Monitoring meters it | **392,158** |
+
+A 22× understatement — enough to move it from the cheapest arm to the third most
+expensive. Its 207 turns ran 1,220 server-side model calls. `p4_bq_ca` reports
+nothing on that meter, yet made **306 successful CA calls** on the same API in
+the same window. Its cost is on no meter this project can read, which is not the
+same as zero. This is why four rows of the scoreboard are marked *a floor* rather
+than *complete*: never rank a managed agent on the number it hands you.
+
+### 4. Latency is a separate axis, and it does not track cost
 
 Every MCP arm spends **4.3–5.5s per tool call** whatever its schema size, so
 latency is just turn count times a constant. Tokens against wall clock correlate
@@ -372,24 +445,7 @@ and `FAST` is *flat* — 6.5–7.7s whatever you ask, where the other modes scal
 with difficulty. On a governed warehouse it costs no measurable accuracy;
 ungoverned it costs ~16 points.
 
-### 6. The managed agent was not actually the cheapest
-
-Conversational Analytics bills its own Gemini loop to a line item the API never
-returns. Read it back from Cloud Monitoring:
-
-| `p4_looker_ca` tokens per cell | |
-|---|---:|
-| as the API reports it | 18,045 |
-| as Cloud Monitoring meters it | **392,158** |
-
-A 22× understatement — enough to move it from the cheapest arm to the third most
-expensive. Its 207 turns ran 1,220 server-side model calls.
-
-`p4_bq_ca` reports nothing on that meter, yet made **306 successful CA calls** on
-the same API in the same window. Its cost is on no meter this project can read,
-which is not the same as zero.
-
-### 7. It survives a model change
+### 5. It survives a model change
 
 Every MCP arm re-run on `gemini-3.8-flash` — both tiers, 720 cells, zero failures
 — pairs against the published `gemini-3.7-flash` capture at Kendall tau **+1.00
