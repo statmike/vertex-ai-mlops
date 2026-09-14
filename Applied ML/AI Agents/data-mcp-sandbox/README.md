@@ -185,10 +185,58 @@ to "is this comparison fair?"
 
 ## What we found
 
+📊 **Every number below comes from [`docs/results.md`](docs/results.md)**, which
+carries the full tables, the per-question breakdowns, and the cells behind each
+claim. Start here for the shape; go there for the evidence.
+
+### The scoreboard
+
+All twelve arms on one screen, sorted by governed accuracy. This is the whole
+field.
+
+| Arm | Path | Ungoverned | **Governed** | Tokens in / correct | Sec / correct | Cost figure is |
+|---|:--:|---:|---:|---:|---:|---|
+| `p4_bq_ca` | 4 | 23% | **100%** | 5,190 | 36s | a floor |
+| `p1_toolbox` | 1 | 33% | **100%** ⚠️ | 29,837 | 39s | complete |
+| `p3_matched` | 3 | 35% | **100%** | 55,548 | 43s | complete |
+| `p3_toolbox` | 3 | 33% | **100%** | 65,805 | 38s | complete |
+| `p3_managed` | 3 | 35% | **100%** | 361,420 | 51s | complete |
+| `p4_bq_direct` | 4 | 22% | 97% | — | **11s** | unmetered |
+| `p4_bq_direct_ctx` | 4 | 23% | 95% | — | **11s** | unmetered |
+| `p2_managed` | 2 | 33% | 93% | 63,792 | 55s | complete |
+| `p2_toolbox` | 2 | 32% | 90% | 88,067 | 43s | complete |
+| `p1_managed` | 1 | 37% | 75% | 471,289 | 64s | complete |
+| `p1_matched` | 1 | 35% | 75% | 68,236 | 60s | complete |
+| `p4_looker_ca` | 4 | 12% | 43% | 17,937 | 199s | a floor — [392,158 once metered](#6-the-managed-agent-was-not-actually-the-cheapest) |
+
+⚠️ **`p1_toolbox`'s 100% is borrowed.** On 39% of its governed cells it stopped
+writing SQL and called Conversational Analytics through Toolbox's tool surface —
+on *exactly* the two questions that need a governed definition. It is not a
+Path 1 result; it is Path 4 wearing a Path 1 name. See finding 3.
+
+**Four things to read off it:**
+
+1. **Ungoverned, the architecture choice is unmeasurable.** All eight MCP arms
+   land between **32% and 37%** — a 5-point spread, well inside the 8.9-point
+   noise floor. Without governance it does not matter what you build.
+2. **Governed, the same choice decides everything** — a 43%–100% range. The
+   variable that looked irrelevant becomes the only one that matters.
+3. **Five arms tie at 100%, and cost 12× apart.** Among those with a complete
+   cost figure, `p1_toolbox` spends 29,837 tokens per correct answer and
+   `p3_managed` spends 361,420 — for identical accuracy. **Accuracy stops
+   discriminating at the top; cost and latency are where the decision actually
+   lives.**
+4. **Path 3 is the only path where every arm reaches 100%.** Path 1 splits
+   75/75/100, Path 2 tops out at 93%, Path 4 ranges 43% to 100%. Giving an agent
+   SQL *plus* the catalog works no matter who hosts the tools.
+
+The rest of this section is how those numbers came about.
+
 ### 1. Governance is the largest effect measured
 
-Accuracy roughly triples, tier 0 → tier 1, on every path: 33%→100% on
-`p1_toolbox`, 12%→43% on `p4_looker_ca`.
+Accuracy roughly triples, tier 0 → tier 1, on every path — 33%→100% on
+`p3_toolbox`, 35%→100% on `p3_managed`, and even the worst arm on the board
+moves 12%→43%.
 
 On questions that turn on a governed **definition**, the separation is total:
 
@@ -301,9 +349,20 @@ apart (13/60 vs 14/60). At tier 1, with the glossary actually injected, one cell
 apart again (58/60 vs 57/60). Most published context-injection deltas have no
 control next to them at all.
 
-**Deeper:** [`docs/results.md`](docs/results.md) — every number above with the
-cells behind it. The generated tables are in
-[`results/report.md`](results/report.md).
+---
+
+### 📊 Go deeper: [`docs/results.md`](docs/results.md)
+
+Every claim in this section, with the cells behind it — the five-rung ladder
+arm by arm, the acquisition-versus-application split, the blind-judge pass that
+reaches the same boundary by an independent route, how Path 4's numbers should
+and should not be read, and the failed replication that found the anchoring
+defect.
+
+The generated tables it is all derived from are in
+[`results/report.md`](results/report.md), and the raw capture behind *those* is
+`results/capture.json.gz` — which you can re-score yourself in six seconds
+without a cloud account (next section).
 
 ---
 
