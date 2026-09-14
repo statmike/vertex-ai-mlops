@@ -51,7 +51,7 @@ MODEL_LOCATION = os.getenv("MODEL_LOCATION", "global")
 os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "TRUE"
 os.environ["GOOGLE_CLOUD_LOCATION"] = MODEL_LOCATION
 
-# The one model knob Conversational Analytics actually exposes (Amendment C.4).
+# The one model knob Conversational Analytics actually exposes.
 # Enumerated against SDK 0.13.2, not read from documentation:
 #
 #   ChatRequest.ThinkingMode   THINKING_MODE_UNSPECIFIED=0, FAST=1, THINKING=2
@@ -101,7 +101,7 @@ RESOURCE_PREFIX = os.getenv("RESOURCE_PREFIX", "data_mcp_sandbox")
 # governance. T0 is the ungoverned control; T1 carries descriptions, catalog
 # enrichment, and a semantic LookML model. See docs/paths.md.
 #
-# The ladder (Amendment C.2) adds three intermediate tiers between them. It is
+# The ladder adds three intermediate tiers between them. It is
 # opt-in because turning it on triples the provisioned surface and would change
 # what `make sweep` means: the published 1,800-cell factorial is two tiers, and a
 # five-tier default would silently stop reproducing it.
@@ -299,7 +299,7 @@ def tier_service_account(tier: int) -> str:
 # Looker is not laddered, whatever `TIERS` says. LookML arrives as one lump at
 # rung 4, and splitting it into rungs means semantic-model surgery on a shared
 # instance this project is a guest on — out of scope by the standing rule against
-# touching content that is not ours (Amendment C.2 excludes `p2_*` and
+# touching content that is not ours (the ladder excludes `p2_*` and
 # `p4_looker_ca` for exactly this reason).
 LOOKER_TIERS: tuple[int, ...] = (0, 1)
 

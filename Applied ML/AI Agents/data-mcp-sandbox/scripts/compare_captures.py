@@ -34,7 +34,7 @@ the published two-tier capture at all.
 The counterpart to `merge_captures.py`, for the case merging is right to refuse.
 `traces.MUST_AGREE` holds `agent_model` and `tiers`, so a cross-model sweep and a
 governance-ladder sweep can never join the published capture — they are
-different experiments, and Amendment C compares them instead of flattening them.
+different experiments, and this compares them instead of flattening them.
 
 **Exits non-zero when the captures cannot be compared**, and prints why rather
 than printing a delta with a warning above it. A caveat above a table of numbers

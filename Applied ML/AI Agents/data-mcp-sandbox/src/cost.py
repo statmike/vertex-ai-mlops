@@ -214,7 +214,7 @@ def attribute(cells: list[traces.Cell], jobs: list[Job]) -> Attribution:
 
     **By id.** A cell that recorded `bq_job_ids` is not guessing: the direct
     Conversational Analytics arms are handed the job id by the service itself
-    (Amendment B.2), so those jobs are claimed by name and never enter the
+   , so those jobs are claimed by name and never enter the
     window match. This is not merely tidier — it is the only exact attribution
     available for an arm whose warehouse work happens inside somebody else's
     process.

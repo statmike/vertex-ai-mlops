@@ -1,4 +1,4 @@
-"""Offline invariants for the governance ladder (Amendment C.2).
+"""Offline invariants for the governance ladder.
 
 The ladder splits governance from one switch into six channels and adds three
 tiers between the two published ones. Every failure mode here is quiet: a rung

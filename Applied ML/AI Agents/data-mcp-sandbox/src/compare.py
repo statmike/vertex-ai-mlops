@@ -1,7 +1,7 @@
 """Compare captures that differ on exactly one axis.
 
 `report.py` aggregates *within* one capture. This is its sibling for the case
-Amendment C creates: a **family** of captures, each varying one thing, compared
+this experiment creates: a **family** of captures, each varying one thing, compared
 against each other.
 
 The family exists because the harness insisted on it. `traces.MUST_AGREE` holds

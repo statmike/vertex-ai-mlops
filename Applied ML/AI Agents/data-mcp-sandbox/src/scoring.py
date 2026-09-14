@@ -247,7 +247,7 @@ def evidence_text(cell: traces.Cell) -> str:
     `emitted_sql` comes first and short-circuits, because it is the only one of
     the four that is not an inference. The other three are the trace we scraped;
     this one is the query the service says it ran, carried alongside the job id
-    that ran it (Amendment B.4.3). It is empty on every arm that predates the
+    that ran it. It is empty on every arm that predates the
     direct transport, so the fallback below is what scores the published capture
     — unchanged, and re-scoring it must keep producing the same numbers.
     """
@@ -408,7 +408,7 @@ def score_cell(
         # with no tool call to detect it by, so the config is what identifies it
         # — without this, a direct cell that disclosed nothing would fall to the
         # branch below and be scored 0.0 for having "skipped the data", which is
-        # the exact confusion Amendment A.3 built this split to prevent.
+        # the exact confusion this split exists to prevent.
         result.notes.append("no inspectable query - CA did not disclose one")
     else:
         # A transparent path that wrote no query at all really did skip the data

@@ -48,7 +48,7 @@ MANAGED_BIGQUERY_TOOLS = [
 MANAGED_DATAPLEX_TOOLS = ["search_entries", "lookup_entry", "lookup_context"]
 
 # The Toolbox names for exactly what the managed endpoints expose, for the matched
-# arms (Amendment A.3.3). The only name that differs across the two servers is the
+# arms. The only name that differs across the two servers is the
 # executor — managed calls it `execute_sql_readonly`, Toolbox `execute_sql` under
 # `writeMode: blocked` — so these are equivalent surfaces, not identical strings.
 MATCHED_BIGQUERY_TOOLS = [
@@ -123,7 +123,7 @@ class PathConfig:
     needs_looker: bool = False
     # "mcp" for every arm that reaches its data through a tool an ADK agent
     # calls; "direct" for the arms that call a service's own API and have no
-    # tool surface at all (Amendment B.3). A discriminator rather than a new URL
+    # tool surface at all. A discriminator rather than a new URL
     # field because the two transports differ in *who runs the loop*, not in
     # where the endpoint is: a direct arm builds no Agent and no runner.
     transport: str = "mcp"
@@ -183,7 +183,7 @@ CONFIGS: dict[str, PathConfig] = {
         summary="Self-hosted dataplex + bigquery sources, including aspect-type search.",
         toolbox_tools=TOOLBOX_DATAPLEX_TOOLS + TOOLBOX_BIGQUERY_TOOLS,
     ),
-    # --- Matched arms (Amendment A.3.3) --------------------------------------
+    # --- Matched arms --------------------------------------
     #
     # Identical tool *lists* to their managed twins, so the only variable left is
     # whose endpoint serves the schema. Needed because `p1_managed` vs
@@ -227,7 +227,7 @@ CONFIGS: dict[str, PathConfig] = {
         toolbox_tools=["looker_conversational_analytics"],
         needs_looker=True,
     ),
-    # --- Direct-API arms (Amendment B.3) -------------------------------------
+    # --- Direct-API arms -------------------------------------
     #
     # Same service as `p4_bq_ca`, reached without the MCP tool in between. They
     # exist because Toolbox's `bigquery-conversational-analytics` takes a
@@ -271,7 +271,7 @@ def is_direct(config_key: str) -> bool:
     A direct arm has no toolset, so anything derived from a tool surface —
     schema characters, tool count, the tool-call sequence the Equivalence check
     compares — is *undefined* for it rather than zero. Callers must print `--`,
-    the same discipline Amendment A.3 applied to Path 4's unmeasurable metrics.
+    the same discipline the report applies to Path 4's unmeasurable metrics.
     """
     spec = CONFIGS.get(config_key)
     return spec is not None and spec.transport == "direct"

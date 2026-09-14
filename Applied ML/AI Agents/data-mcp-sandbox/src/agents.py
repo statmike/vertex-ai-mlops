@@ -81,7 +81,7 @@ class Outcome:
     # Empty for every MCP arm, where SQL is already visible in the tool results
     # and jobs are attributed by time window. Populated by the direct
     # Conversational Analytics arms, which are the only place a service hands
-    # back its query plan (Amendment B.4.2). Defaulted so the published capture
+    # back its query plan. Defaulted so the published capture
     # deserializes and re-scores unchanged.
     emitted_sql: list[str] = field(default_factory=list)
     bq_job_ids: list[str] = field(default_factory=list)

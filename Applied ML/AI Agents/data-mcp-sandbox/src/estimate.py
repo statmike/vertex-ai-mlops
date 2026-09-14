@@ -53,7 +53,7 @@ MEASURED_ON = (
 # here mapped to their managed twins, on the assumption that copying a tool
 # surface copies its cost. The sweep measured them and the assumption was wrong
 # by 7x: `p1_matched` tier 0 was predicted at 554,528 tokens and came in at
-# 78,003, right next to `p1_toolbox`. That is Amendment A.3.3's question
+# 78,003, right next to `p1_toolbox`. That is the matched arms' question
 # answered — the cost lives in the schema text, not in the endpoint's name — and
 # it is why an analogy is a placeholder for a measurement, never a substitute.
 BY_ANALOGY: dict[str, str] = {}
@@ -63,11 +63,11 @@ BY_ANALOGY: dict[str, str] = {}
 # it here and price it at the worst observed arm, or measure it. What is not on
 # offer is quietly pricing it off a twin — see BY_ANALOGY above for how that went.
 #
-# Empty since the B.6 sweep. The direct-API arms sat here from the day Amendment
-# B added them until 240 cells measured them, and the reason they were never
+# Empty since the direct-API arms were swept. They sat here from the day they
+# were added until 240 cells measured them, and the reason they were never
 # priced off `p4_bq_ca` in the meantime is now visible in OBSERVED: `p4_bq_ca`
 # pays for a local ADK loop these arms do not have, and its tier-1 median is
-# 32.8s against their 10.3s. An analogy would have over-predicted by 3x.
+# 32.6s against their 10.5s. An analogy would have over-predicted by 3x.
 PENDING_MEASUREMENT: frozenset[str] = frozenset()
 
 # Arms that record no tokens because no model runs in this process at all — the
@@ -129,7 +129,7 @@ FALLBACK = max(OBSERVED.values(), key=lambda rate: rate.tokens)
 
 # The ladder's intermediate rungs have never been swept, and pricing them at
 # FALLBACK — the worst arm on the whole table — would put `make plan` off by
-# several multiples and make a real budget unreadable (Amendment C.2).
+# several multiples and make a real budget unreadable.
 #
 # A rung is the *same arm* at an adjacent governance level, which is a much
 # tighter analogy than the twin-arm one below: the arm's tool surface, transport

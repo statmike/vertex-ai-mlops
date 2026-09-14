@@ -1,6 +1,6 @@
 """Turn a capture back into scores — the deterministic pass, reusable.
 
-Lifted out of `examples/build_results.py` when Amendment C.0 gave it a second
+Lifted out of `examples/build_results.py` once it had a second
 caller. Cross-capture comparison needs exactly this and nothing else from the
 scorer: resolve the oracle each capture froze at its own sweep start, then grade
 every cell against it.

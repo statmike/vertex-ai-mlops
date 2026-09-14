@@ -45,7 +45,7 @@ def test_an_unknown_config_is_not_direct():
 
 
 def test_a_direct_arm_records_zero_tools_rather_than_being_dropped():
-    # Amendment B.4.5. The schema-size-versus-cost correlation is computed over
+    # The schema-size-versus-cost correlation is computed over
     # whatever rows this returns, so omitting an arm silently changes a published
     # result's denominator.
     assert ca_direct.tool_surface("p4_bq_direct") == {"tools": 0, "schema_chars": 0}
@@ -59,7 +59,7 @@ def test_an_mcp_arm_cannot_be_assumed_to_have_zero_tools():
     raise AssertionError("tool_surface silently zeroed an arm that really binds tools")
 
 
-# --- the one model knob the service exposes (Amendment C.4) -------------------
+# --- the one model knob the service exposes -----------------------------------
 
 
 def test_an_unconfigured_sweep_sends_what_the_published_cells_sent(monkeypatch):
@@ -139,7 +139,7 @@ def test_the_thinking_axis_is_recorded_and_guarded(monkeypatch):
 
 
 def test_the_pair_differs_only_in_its_glossary(monkeypatch):
-    # This is the whole design of the pair (Amendment B.3): `p4_bq_direct_ctx`
+    # This is the whole design of the pair: `p4_bq_direct_ctx`
     # isolates the context payload. If the instruction or the datasources drift
     # apart, the arm stops measuring governance and starts measuring prompt.
     plain = _request(monkeypatch, "p4_bq_direct", 1)
@@ -189,7 +189,7 @@ def test_the_request_names_the_tier_dataset_and_nothing_else(monkeypatch):
 
 def test_the_arm_is_stateless(monkeypatch):
     # One question per cell, no history. A conversation resource would add state
-    # to manage without changing what is measured (Amendment B.3, deferred).
+    # to manage without changing what is measured (deferred).
     request = _request(monkeypatch, "p4_bq_direct", 1)
     assert gda.ChatRequest.pb(request).WhichOneof("context_provider") == "inline_context"
     assert len(request.messages) == 1
@@ -362,7 +362,7 @@ def _cell(**overrides):
 
 
 def test_a_capture_written_before_these_fields_still_loads(tmp_path):
-    # Hard constraint, not a preference (Amendment B.4.2): `results/capture.json.gz`
+    # Hard constraint, not a preference: `results/capture.json.gz`
     # is published, and every field added here must default rather than be required.
     new = {f.name for f in dataclasses.fields(traces.Cell)}
     record = {

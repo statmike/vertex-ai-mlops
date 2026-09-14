@@ -44,7 +44,7 @@ import corpus
 # Which tiers get which governance is `config.RUNG_CHANNELS`, asked per channel
 # at each call site rather than held in one constant here. That constant was
 # `tier >= 1`, which is true while governance is one switch and quietly wrong the
-# moment the ladder splits it into six (Amendment C.2) — every rung would have
+# moment the ladder splits it into six — every rung would have
 # been provisioned with everything instead of its own increment, and the ladder
 # would have measured a flat line.
 #

@@ -6,7 +6,7 @@
 The normal way to add arms to a capture is `run_battery.py --resume` against the
 same file, which merges as it goes. This exists for the case that is not: a
 sweep run into its own file, deliberately, so a defect in a new arm could not
-corrupt a published one. Amendment B.6 was exactly that — 240 direct-API cells
+corrupt a published one. The direct-API sweep was exactly that — 240 cells
 captured separately, then merged once they had been inspected.
 
 A capture may also add *questions* to arms already swept, which is how the three

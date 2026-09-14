@@ -408,7 +408,7 @@ def latency(scores: dict[str, scoring.Score]) -> str:
 
     A quota-retried cell carries up to ~300s of backoff sleep in `latency_s`.
     Pooling those with clean cells publishes a fake number, so they are excluded
-    and counted in a column of their own (Amendment A.3.2).
+    and counted in a column of their own.
     """
     rows = []
     for key, tier in _arms(scores):

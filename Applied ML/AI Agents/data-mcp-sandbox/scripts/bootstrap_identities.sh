@@ -31,7 +31,7 @@ PROJECT="${1:-$(gcloud config get-value project 2>/dev/null)}"
 OPERATOR="$(gcloud config get-value account 2>/dev/null)"
 PREFIX="${TIER_SA_PREFIX:-mcp-sandbox}"
 # The ladder's intermediate rungs need identities too, and the fence is only a
-# fence if every tier has one. Set LADDER=1 to create all five (Amendment C.2).
+# fence if every tier has one. Set LADDER=1 to create all five.
 if [[ "${LADDER:-false}" =~ ^(1|true|yes)$ ]]; then
   TIERS=(0 1 2 3 4)
 else

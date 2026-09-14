@@ -208,7 +208,7 @@ def schema_size_vs_cost(
     """Measured tool-schema size against observed median tokens, both log.
 
     `schemas` is the `tool_schemas` block from a capture header. This is the
-    Amendment A.1 finding as a picture: declarations are re-sent every turn, so
+    cost finding as a picture: declarations are re-sent every turn, so
     their serialized size sets a prompt-token floor — and it predicts observed
     cost almost exactly, across arms that differ in nothing else.
     """

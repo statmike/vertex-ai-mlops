@@ -1,4 +1,4 @@
-"""Offline invariants for cross-capture comparison (Amendment C.0).
+"""Offline invariants for cross-capture comparison.
 
 The comparator's job is mostly to *refuse*, so most of these assert that it
 does. A comparator that happily subtracts two captures taken on different

@@ -137,14 +137,14 @@ def header(current: Plan) -> dict[str, Any]:
 
     `ca_model` is a constant `""` today — the enum has exactly one selectable
     value, so there is nothing to choose and the request omits the field
-    (Amendment C.4). It is recorded, and in `MUST_AGREE`, so that the day a
+   . It is recorded, and in `MUST_AGREE`, so that the day a
     second value appears the guard is already in place rather than being invented
     after a capture has silently mixed two of them.
 
     `tier_semantics` declares the *vocabulary* the `tiers` list is written in.
     The ladder appends rungs as tiers 2, 3, 4 rather than renumbering, so two
     captures can both hold `tier1` and mean the same thing while one of them also
-    holds tiers the other has never heard of (Amendment C.2). A file that states
+    holds tiers the other has never heard of. A file that states
     its vocabulary can be read without inferring it from which integers are
     present — and because the field is in `MUST_AGREE`, the comparator refuses to
     difference two files that number their tiers differently instead of pairing
@@ -189,7 +189,7 @@ async def measure_schemas(config_keys: list[str]) -> dict[str, dict[str, int]]:
     This is a *result*, not diagnostics. Tool schemas are re-sent on every turn,
     so their size sets a per-call floor on prompt tokens — and it turned out to
     predict observed cost almost exactly, with one vendor endpoint's
-    `get_table_info` alone accounting for 65% of an arm's surface (Amendment A.1).
+    `get_table_info` alone accounting for 65% of an arm's surface.
     Recorded in the header because it is a vendor detail that can change without
     notice, which would silently move every cost number in the report.
     """

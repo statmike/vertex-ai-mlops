@@ -123,7 +123,7 @@ def test_jobs_view_follows_the_configured_region():
 
 
 def test_a_declared_job_id_beats_the_time_window():
-    # The direct CA arms are handed the job id by the service (Amendment B.2).
+    # The direct CA arms are handed the job id by the service.
     # A job that ran inside a neighbour's window must still be charged to the
     # cell that declared it — otherwise CA's warehouse work, which starts inside
     # our call and can finish after it, lands on whichever cell came next.

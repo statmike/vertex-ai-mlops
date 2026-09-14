@@ -35,7 +35,7 @@ class ToolCall:
     # Wall clock inside the tool, so a cell's latency can be split into
     # time-in-model and time-in-tool. Without it a slow path cannot be told apart
     # from a slow *warehouse*, which is a different procurement conclusion
-    # (Amendment A.3.2).
+    #.
     duration_s: float = 0.0
 
 
@@ -59,19 +59,19 @@ class Cell:
     # BigQuery jobs run under the tier SA, and CA's warehouse work runs under our
     # identity too. The sweep is sequential (§7), so a [started_at, ended_at]
     # window attributes jobs to a cell unambiguously. Cannot be backfilled: the
-    # M3 capture can only ever be attributed in aggregate (Amendment A.2).
+    # M3 capture can only ever be attributed in aggregate.
     started_at: str = ""
     ended_at: str = ""
     # How many times `agents.ask` had to try. >1 means quota backoff inflated
     # `latency_s` by up to ~300s, so latency is only comparable across cells with
-    # `attempts == 1` (Amendment A.3.2).
+    # `attempts == 1`.
     attempts: int = 1
     # What a service disclosed about its own work. Empty on every MCP arm, where
     # SQL already sits in a tool result and BigQuery jobs are attributed by the
     # window above. Populated by the direct Conversational Analytics arms, which
     # are the only place the service hands back its query plan and the job id
     # that ran it, making Path 4's BigQuery cost exact per cell rather than
-    # estimated per block (Amendment B.4.2). Both default to empty so the
+    # estimated per block. Both default to empty so the
     # published capture, written before these fields existed, still deserializes
     # and re-scores unchanged.
     emitted_sql: list[str] = field(default_factory=list)
@@ -225,7 +225,7 @@ MUST_AGREE = (
     "ca_model",
     "runs",
     # What the integers in `tiers` mean. Ladder captures append rungs as tiers
-    # 2, 3, 4 rather than renumbering (Amendment C.2), so shared integers keep
+    # 2, 3, 4 rather than renumbering, so shared integers keep
     # their published meaning — but a file that did renumber would pair `tier1`
     # against a different condition and report a finding. This field is what
     # makes that refusable instead of invisible.
@@ -286,7 +286,7 @@ def _runs_of(header: dict[str, Any]) -> list[dict[str, Any]]:
     """One header per sweep the file holds, flattening a capture that is already a merge.
 
     The published capture is itself a merge of two sweeps under two oracles
-    (Amendment B.6). Merging *into* it therefore starts by taking it apart:
+   . Merging *into* it therefore starts by taking it apart:
     treated as a single run it would arrive with no `goldens` of its own — a
     merged header deliberately carries none — and 1,800 cells would come out the
     far side ungradeable. Each record is re-inflated against the fields the

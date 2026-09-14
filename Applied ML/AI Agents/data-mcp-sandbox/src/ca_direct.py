@@ -10,14 +10,14 @@ runner — it builds a `ChatRequest` and reads the stream.
 prose. The capture therefore holds no SQL for Path 4, and evidence recall, rule
 acquisition, and per-cell BigQuery cost all print `--`. The API beneath the tool
 streams a `DataMessage` carrying `generated_sql` and the `big_query_job` that
-ran it — so the opacity was the transport's, not the service's (Amendment B.1).
+ran it — so the opacity was the transport's, not the service's.
 Calling it directly fills those cells with the *existing* rubric, unchanged.
 
 **What is still a floor.** Nothing in the response reports the Gemini calls the
 service makes on our behalf, so token usage here is not merely unmeasured — it
 is structurally absent, and there is no local model turn to stand in for it.
 `mcp_clients.has_unmeasured_service` is true for every Path 4 arm, which is what
-keeps these numbers labelled `floor` downstream (Amendment A.3.1).
+keeps these numbers labelled `floor` downstream.
 
 Pinned to `google-cloud-geminidataanalytics` 0.13.2. The `Context` fields read
 below are the measurement surface, and they can move between releases exactly as
@@ -51,8 +51,8 @@ CA_LOCATION = "global"
 #
 # It is held IDENTICAL across both direct arms. `p4_bq_direct_ctx` differs from
 # `p4_bq_direct` by its glossary payload and nothing else — one variable per
-# pair, as with the `_matched` arms. (Amendment B.3 listed the instruction as
-# part of the context payload; separating them is what keeps that pair a clean
+# pair, as with the `_matched` arms. (The instruction could have ridden inside
+# the context payload instead; keeping it out is what makes that pair a clean
 # A/B, and it says nothing the ungoverned arm does not already know.)
 ANSWER_FORMAT = """Finish with a short, direct answer. When the answer is a number, state that
 number plainly. Do not hedge between two candidate numbers — commit to one."""
@@ -84,11 +84,11 @@ def _glossary_terms(config_key: str, tier: int) -> list[dict[str, str]]:
     rules there would hand the agent the answer the experiment measures it
     discovering, and would break the tier comparison on this arm alone.
 
-    `example_queries` is NOT sent, though `Context` accepts it and Amendment B.3
-    proposed it. `ExampleQuery` carries a `sql_query`, and the only queries we
-    have that are both correct and relevant are the golden oracle's — sending
-    one would leak the answer into the prompt. There is no way to supply that
-    field honestly, so the field goes unused.
+    `example_queries` is NOT sent, though `Context` accepts it. `ExampleQuery`
+    carries a `sql_query`, and the only queries we have that are both correct
+    and relevant are the golden oracle's — sending one would leak the answer
+    into the prompt. There is no way to supply that field honestly, so the
+    field goes unused.
     """
     if config_key != "p4_bq_direct_ctx" or tier == 0:
         return []
@@ -145,11 +145,11 @@ def build_request(config_key: str, tier: int, question: str) -> gda.ChatRequest:
     `inline_context` rather than a `Conversation` or a `DataAgent`: the battery
     asks one question per cell with no history, so a stateful provider would add
     a resource to manage without changing what is measured. CA's stateful modes
-    are held for the multi-turn work (Amendment B.3, deferred).
+    are held for the multi-turn work (deferred).
 
     `model` is never set. It is an enum whose only selectable value is
     `LATEST_GA_MODEL`, so setting it would pin nothing while implying a choice
-    exists (Amendment C.4). `thinking_mode` is the one real knob, and an
+    exists. `thinking_mode` is the one real knob, and an
     unconfigured sweep sends the same bytes the published direct cells did.
     """
     context = gda.Context(
@@ -289,9 +289,9 @@ def tool_surface(config_key: str) -> dict[str, int]:
     """Zero tools, zero schema characters — recorded, not omitted.
 
     A direct arm genuinely binds nothing, and that is the point of the
-    comparison: the schema-size-versus-cost correlation in Amendment A.1 needs
+    comparison: the schema-size-versus-cost correlation needs
     this row present at zero. Dropping it instead would quietly change the
-    denominator of a published result (Amendment B.4.5).
+    denominator of a published result.
     """
     if not mcp_clients.is_direct(config_key):
         raise ValueError(f"{config_key} binds MCP tools; measure them, do not assume zero")

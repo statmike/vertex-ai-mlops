@@ -173,7 +173,7 @@ pilot:
 sweep:
 	uv run python examples/run_battery.py $(LOOKER_FLAG)
 
-# The `thinking_mode` axis (Amendment C.4). 240 cells, ~40m, no local tokens —
+# The `thinking_mode` axis. 240 cells, ~40m, no local tokens —
 # the direct arms spend their model budget inside the service. Its own capture
 # file, never merged: a different thinking mode is a different experiment, and
 # `make compare AXIS=ca_thinking_mode` is how it is read against the published
@@ -195,7 +195,7 @@ sweep-thinking:
 		--configs p4_bq_direct p4_bq_direct_ctx \
 		--out results/raw/thinking-$(shell echo $(MODE) | tr A-Z a-z).json
 
-# The governance ladder (Amendment C.2). Five rungs across six arms, 1,800 cells,
+# The governance ladder. Five rungs across six arms, 1,800 cells,
 # 24h21m estimated. Needs LADDER=1 on `make identities` and `make setup` first —
 # the three intermediate rungs are real datasets with real service accounts, and
 # a sweep against unprovisioned rungs measures an empty dataset rather than
@@ -253,7 +253,7 @@ export:
 		$(if $(RESULTS),--results $(RESULTS)) $(if $(OUT),--out $(OUT))
 
 # Compare two captures that differ on one declared axis. Refuses rather than
-# subtracting captures that disagree on anything else (Amendment C.0).
+# subtracting captures that disagree on anything else.
 compare:
 	uv run python scripts/compare_captures.py --base $(BASE) --against $(AGAINST) --axis $(AXIS) \
 		$(foreach t,$(TIER),--tier $(t)) $(if $(SHARED),--shared-questions)
