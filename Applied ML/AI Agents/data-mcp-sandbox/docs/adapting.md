@@ -257,8 +257,35 @@ make your own results unreadable: designed behaviour lands in the same bucket as
 genuine error, and the arm looks broken rather than ungoverned. We shipped
 `null_revenue_count` without one and the 0/n scan caught it — seven arms
 answering `0` because the column *named* revenue is never null, scored as
-ordinary wrongness for four captures. One golden per trap value, so a miss that
-springs two traps at once can only be recorded as one of them.
+ordinary wrongness for four captures.
+
+**A question with two traps in play has a third wrong answer.** If your metric
+sits behind more than one piece of governance, the naive query misses all of
+them at once and lands on a number that is neither trap value. Name it in
+`more_traps`:
+
+```python
+Golden(
+    key="net_revenue_from_active_users",
+    ...
+    trap_sql=lambda t: f"...",                    # the designed miss
+    trap_name="trusted the raw is_active flag",
+    more_traps=(
+        Trap(
+            sql=lambda t: f"SELECT SUM(x.revenue_amount) AS v FROM ... WHERE u.is_active",
+            name="raw is_active flag, gross list price, refunds kept",
+        ),
+    ),
+)
+```
+
+Same shape as `trap_sql`, one column named `v`, resolved on the same pass. The
+designed trap stays first, so `Score.trap_name` tells you *which* wrong answer
+an arm landed on rather than only that it landed on one. Skipping this is not
+fatal the way skipping `trap_sql` is, but it is what stands between "this arm is
+wrong" and "this arm read the raw schema straight through" — and the 0/n scan
+will otherwise flag a whole arm clustered on the compound answer as a suspect
+golden, which sends you to edit an oracle that is correct.
 
 Never cache a golden value. The generator anchors timestamps to build time, so a
 stored number rots — we watched the active-user count drift 2,671 → 2,768 → 2,804

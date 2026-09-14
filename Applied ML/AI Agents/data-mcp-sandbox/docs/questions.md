@@ -198,6 +198,18 @@ number a naive query produces. This is what makes a failure legible. "Wrong" and
 "wrong in exactly the way the corpus set out to catch" are different results,
 and only the second tells you the governance was the missing piece.
 
+**Traps compose.** A question with two traps in play has a third wrong answer:
+the one that springs both. `governed-q3a` asks for net revenue from active
+users, so T1 (gross for net), T2 (refunds kept) and T3 (the raw `is_active`
+flag) each produce their own number — and an agent that reads the raw schema
+straight through produces a fourth, 21,961,256, which is none of them. A golden
+names these in `more_traps` beside its designed `trap_sql`, and `Score.trap_name`
+records which one an answer actually hit. Without them a compound miss scores as
+ordinary wrongness, and the 0/n scan reads a whole arm clustered on one number
+as a claim about the rubric. Naming the two compound answers in this corpus
+moves most of the tier-0 misses on the anchored questions from "wrong" to
+"diagnosed"; the exact share is in the report.
+
 **The oracle is recomputed live**, never cached, because the generator anchors
 timestamps to build time and a stored number rots as the sandbox ages. The
 anchored goldens are the exception by construction — their window is pinned to
