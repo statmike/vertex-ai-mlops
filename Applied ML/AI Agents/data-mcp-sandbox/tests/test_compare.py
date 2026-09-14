@@ -491,3 +491,76 @@ def test_an_undeclared_scheme_pairing_shares_nothing_rather_than_guessing():
     # compatible.
     assert compare.shared_tiers(["ladder-v1", "someone-elses-v9"]) == set()
     assert compare.shared_tiers(["", "renumbered-v2"]) == set()
+
+
+# --- the question restriction ---------------------------------------------------
+
+
+def test_a_capture_that_added_questions_cannot_be_compared_without_a_restriction():
+    # The wall this hit for real. Adding the three anchored re-issues to the
+    # published capture made it un-A/A-able against every capture taken before
+    # them — including the ladder, which is where `compare.NOISE_FLOOR` comes
+    # from. A published number stopped being reproducible by its own command.
+    grew = _header(question_ids=["q1", "q2", "q3a"])
+    assert "question_ids" in compare.align([_header(), grew], axes=(), aa=True).conflicts
+
+
+def test_restricting_to_the_shared_questions_makes_that_comparison_possible():
+    grew = _header(question_ids=["q1", "q2", "q3a"])
+    alignment = compare.align(
+        [_header(), grew], axes=(), aa=True, asked=("q1", "q2")
+    )
+    assert alignment.ok
+    assert alignment.asked == ("q1", "q2")
+
+
+def test_asking_for_a_question_a_capture_never_ran_is_refused_not_scored_as_zero_drift():
+    # Same failure mode as an absent tier: a question only one side asked pairs
+    # no cells, and no cells reports no difference — for a question that may be
+    # the only one that discriminates the arms.
+    alignment = compare.align([_header(), _header()], axes=(), aa=True, asked=("q9",))
+    assert "question_ids" in alignment.conflicts
+    text = compare.render(alignment, compare.Deltas(), [], ("base", "new"))
+    assert "missing question(s) ['q9']" in text
+
+
+def test_the_question_restriction_relaxes_question_ids_and_nothing_else():
+    grew = _header(question_ids=["q1", "q2", "q3a"], agent_model="other")
+    conflicts = compare.align(
+        [_header(), grew], axes=(), aa=True, asked=("q1", "q2")
+    ).conflicts
+    assert "agent_model" in conflicts
+    assert "question_ids" not in conflicts
+
+
+def test_restrict_drops_the_other_questions_cells_rather_than_pooling_them():
+    scores = _scores({
+        ("q1", "p1_managed", 0, 1): True,
+        ("q2", "p1_managed", 0, 1): False,
+        ("q3a", "p1_managed", 0, 1): False,
+    })
+    kept = compare.restrict(scores, (), ("q1", "q2"))
+    assert {score.question_id for score in kept.values()} == {"q1", "q2"}
+    assert compare.restrict(scores, (), ()) == scores
+
+
+def test_the_two_restrictions_compose():
+    scores = _scores({
+        ("q1", "p1_managed", 0, 1): True,
+        ("q1", "p1_managed", 1, 1): True,
+        ("q3a", "p1_managed", 0, 1): False,
+    })
+    kept = compare.restrict(scores, (0,), ("q1",))
+    assert len(kept) == 1
+    assert next(iter(kept.values())).tier == 0
+
+
+def test_a_question_restricted_report_says_so():
+    # Same reason the tier restriction says so. A floor measured on twelve of
+    # fifteen questions is a floor for those twelve, and the three left out are
+    # the ones the governance claim now rests on.
+    a = _scores({("q1", "p1_managed", 0, 1): True})
+    result = compare.deltas(a, dict(a))
+    alignment = compare.align([_header(), _header()], axes=(), aa=True, asked=("q1", "q2"))
+    text = compare.render(alignment, result, [], ("base", "new"))
+    assert "2 question(s) both captures asked" in text

@@ -76,6 +76,12 @@ def parse_args() -> argparse.Namespace:
              "check from equality to presence, which is what lets a ladder capture be "
              "compared against the two-tier published one.",
     )
+    parser.add_argument(
+        "--shared-questions", action="store_true",
+        help="Compare only the questions both captures asked. Relaxes the `question_ids` "
+             "header check from equality to presence, which is what lets a capture that "
+             "added questions be compared against one taken before they existed.",
+    )
     parser.add_argument("--out", type=Path, default=None, help="Write markdown here as well.")
     return parser.parse_args()
 
@@ -86,6 +92,27 @@ def scored(path: Path) -> tuple[dict, dict]:
     meta = traces.read_header(path)
     print(f"{path}: {len(cells)} cells")
     return meta, rescore.score_all(cells, rescore.resolve_goldens(cells, meta))
+
+
+def shared_questions(meta_a: dict, meta_b: dict) -> tuple[str, ...]:
+    """The questions both captures asked, in the first capture's order.
+
+    Printed rather than applied silently. Narrowing a comparison is a change to
+    what it measures, and a reader who does not know three questions dropped out
+    will read the floor as covering the whole battery.
+    """
+    a = list(meta_a.get("question_ids") or ())
+    b = set(meta_b.get("question_ids") or ())
+    both = tuple(question for question in a if question in b)
+    if not both:
+        raise SystemExit(
+            "--shared-questions leaves nothing: these captures have no question in "
+            "common, so there is no condition they both measured."
+        )
+    dropped = sorted((set(a) | b) - set(both))
+    if dropped:
+        print(f"  comparing {len(both)} shared question(s); excluding {dropped}")
+    return both
 
 
 def main() -> int:
@@ -122,10 +149,16 @@ def main() -> int:
     meta_a, scores_a = scored(args.base)
     meta_b, scores_b = scored(args.against)
 
+    asked: tuple[str, ...] = ()
+    if args.shared_questions:
+        asked = shared_questions(meta_a, meta_b)
+
     labels = (_label(args.base), _label(args.against))
-    alignment = compare.align([meta_a, meta_b], axes, aa=args.aa, restricted=tiers)
+    alignment = compare.align(
+        [meta_a, meta_b], axes, aa=args.aa, restricted=tiers, asked=asked
+    )
     result = compare.deltas(
-        compare.restrict(scores_a, tiers), compare.restrict(scores_b, tiers)
+        compare.restrict(scores_a, tiers, asked), compare.restrict(scores_b, tiers, asked)
     )
     checks = compare.rank_stability(result.entries)
     text = compare.render(alignment, result, checks, labels)

@@ -109,6 +109,10 @@ class Alignment:
     `restricted` names the tiers the comparison was narrowed to, and is carried
     here rather than left to the caller because it changes what the numbers
     below mean. A floor measured on tier 0 alone is a tier-0 floor.
+
+    `asked` does the same for questions, for the same reason and with the same
+    consequence: a floor measured on nine of twelve questions is a floor for
+    those nine.
     """
 
     axes: tuple[str, ...]
@@ -117,6 +121,7 @@ class Alignment:
     conflicts: dict[str, list[Any]] = field(default_factory=dict)
     aa: bool = False
     restricted: tuple[int, ...] = ()
+    asked: tuple[str, ...] = ()
 
     @property
     def ok(self) -> bool:
@@ -125,11 +130,22 @@ class Alignment:
         return not self.conflicts and not self.inert
 
 
-def restrict(scores: dict[str, scoring.Score], tiers: tuple[int, ...]) -> dict[str, scoring.Score]:
-    """The subset of a capture's scores at the named tiers. Empty means all of them."""
-    if not tiers:
-        return scores
-    return {key: score for key, score in scores.items() if score.tier in tiers}
+def restrict(
+    scores: dict[str, scoring.Score],
+    tiers: tuple[int, ...],
+    questions: tuple[str, ...] = (),
+) -> dict[str, scoring.Score]:
+    """The subset of a capture's scores at the named tiers and questions.
+
+    Empty means all of them, independently for each: a comparison may narrow one
+    axis without narrowing the other.
+    """
+    kept = scores
+    if tiers:
+        kept = {key: score for key, score in kept.items() if score.tier in tiers}
+    if questions:
+        kept = {key: score for key, score in kept.items() if score.question_id in questions}
+    return kept
 
 
 def align(
@@ -137,6 +153,7 @@ def align(
     axes: tuple[str, ...],
     aa: bool = False,
     restricted: tuple[int, ...] = (),
+    asked: tuple[str, ...] = (),
 ) -> Alignment:
     """Check that captures differ on the declared axes and nothing else that matters.
 
@@ -173,10 +190,23 @@ def align(
     Unrestricted, both stay under plain equality. Comparing two whole captures
     that ran different tier sets is still refused, because then the tier sets
     are part of what is being claimed to match.
+
+    **`asked` does the same for `question_ids`**, and exists for the same reason
+    one capture grew that the other did not. A run that adds questions to an
+    existing factorial (`docs/adapting.md`) makes its capture un-A/A-able against
+    every capture taken before it, including the one whose noise floor the whole
+    repo cites. The twelve questions both sides asked still describe the same
+    condition. So `question_ids` goes from equality to **presence** on the named
+    questions — a question asked for and absent from either side is a conflict,
+    never an empty result, for the same reason an absent tier is.
     """
-    result = Alignment(axes=axes, aa=aa, restricted=restricted)
+    result = Alignment(axes=axes, aa=aa, restricted=restricted, asked=asked)
     for name in traces.MUST_AGREE:
         values = [header.get(name) for header in headers]
+        if name == "question_ids" and asked:
+            if any(set(asked) - set(value or ()) for value in values):
+                result.conflicts[name] = values
+            continue
         if name == "tiers" and restricted:
             if any(set(restricted) - _tier_set(value) for value in values):
                 result.conflicts[name] = values
@@ -431,9 +461,27 @@ def _restriction_hint(alignment: Alignment) -> list[str]:
     table shows `[0, 2, 3, 4, 1]` against `[0, 1]` and leaves the reader to
     work out which of the five was the problem.
     """
-    if not alignment.restricted:
-        return []
     hint: list[str] = []
+
+    if alignment.asked and "question_ids" in alignment.conflicts:
+        missing_lines = []
+        for value in alignment.conflicts["question_ids"]:
+            missing = sorted(set(alignment.asked) - set(value or ()))
+            if missing:
+                missing_lines.append(f"- a capture is missing question(s) {missing}")
+        hint += [
+            "The restriction asked for questions that are not in both captures:",
+            "",
+            *missing_lines,
+            "",
+            "Restrict to questions both sides actually asked. A question absent from "
+            "one capture pairs zero cells for it, and the arms it was going to "
+            "discriminate would report no difference at all.",
+            "",
+        ]
+
+    if not alignment.restricted:
+        return hint
 
     if "tiers" in alignment.conflicts:
         missing_lines = []
@@ -495,6 +543,14 @@ def render(
             f"Restricted to **tier {tiers}**. Cells at every other tier are excluded "
             "from the pairing, so the numbers below describe that tier and no other — "
             "a floor measured here is a tier-specific floor.",
+            "",
+        ]
+
+    if alignment.asked:
+        lines += [
+            f"Restricted to the **{len(alignment.asked)} question(s) both captures "
+            "asked**. One side has questions the other never ran; their cells pair "
+            "with nothing and are excluded rather than counted as agreement.",
             "",
         ]
 

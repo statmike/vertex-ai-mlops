@@ -47,6 +47,7 @@ help:
 	@echo "  make compare BASE=.. AGAINST=.. AXIS=..   Delta on one declared axis"
 	@echo "  make compare-aa BASE=.. AGAINST=..        Noise floor from two identical runs"
 	@echo "      Add TIER=\"0 1\" to either, to compare captures that ran different tiers"
+	@echo "      Add SHARED=1 to either, to compare captures that asked different questions"
 	@echo ""
 	@echo "Inspect"
 	@echo "  make golden     Print live golden-truth values for every tier"
@@ -253,7 +254,7 @@ export:
 # subtracting captures that disagree on anything else (Amendment C.0).
 compare:
 	uv run python scripts/compare_captures.py --base $(BASE) --against $(AGAINST) --axis $(AXIS) \
-		$(foreach t,$(TIER),--tier $(t))
+		$(foreach t,$(TIER),--tier $(t)) $(if $(SHARED),--shared-questions)
 
 # Measure the noise floor: two captures that varied NOTHING, differenced. This
 # is where `compare.NOISE_FLOOR` comes from, and re-running it in your own
@@ -268,6 +269,14 @@ compare:
 #
 #     make compare-aa BASE=results/capture.json.gz \
 #                     AGAINST=results/capture-ladder.json.gz TIER="0 1"
+#
+# SHARED=1 does the same for questions, and the published capture now needs it:
+# it holds the three anchored re-issues, the ladder does not, and `question_ids`
+# is in MUST_AGREE. The comparison then runs on the twelve both sides asked and
+# says so in its output.
+#
+#     make compare-aa BASE=results/capture.json.gz \
+#                     AGAINST=results/capture-ladder.json.gz TIER="0 1" SHARED=1
 compare-aa:
 	uv run python scripts/compare_captures.py --base $(BASE) --against $(AGAINST) --aa \
-		$(foreach t,$(TIER),--tier $(t))
+		$(foreach t,$(TIER),--tier $(t)) $(if $(SHARED),--shared-questions)
