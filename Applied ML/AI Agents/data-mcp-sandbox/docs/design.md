@@ -47,7 +47,8 @@ against an oracle.
   anything about Gemini versus anything else.
 - **Not a latency optimisation study.** Latency is recorded and reported; it is
   never scored, and it is reported as a *separate axis* from cost because the two
-  do not correlate (r = 0.10).
+  barely correlate (r = 0.28 and r = 0.33, against r = 0.95+ for schema size
+  against tokens).
 - **Not a Looker or Dataplex tutorial.** Provisioning is scripted, not taught.
 - **Not a dollar comparison.** Cost is in units consumed — tokens in, tokens out,
   seconds, jobs, MiB — because a dollar figure needs a rate card and would be

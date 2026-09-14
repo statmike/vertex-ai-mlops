@@ -962,8 +962,8 @@ them — the chart names them rather than dropping them silently):
 
 | Predictor | tier 0 | tier 1 |
 |---|---:|---:|
-| schema characters | **r = 0.97** | **r = 0.99** |
-| tool count | r = 0.14 | r = 0.10 |
+| schema characters | **r = 0.95** | **r = 0.99** |
+| tool count | r = 0.12 | r = 0.11 |
 
 Tool count is uncorrelated with what an arm costs. Schema size is very nearly the
 whole story, on both tiers independently.
@@ -976,13 +976,15 @@ predicts nothing on its own; the bytes on the wire predict it precisely.
 
 One tool dominates:
 
-| `get_table_info` | chars | share of arm |
+| `get_table_info`, as declared by | chars | share of its own arm |
 |---|---:|---:|
-| managed endpoint | 78,197 | 65.2% |
-| self-hosted Toolbox | 653 | 0.6% |
+| managed endpoint (`p1_managed`, 122,343 chars of tools) | 78,214 | 63.9% |
+| self-hosted Toolbox (`p1_matched`, 3,019 chars of tools) | 653 | 21.6% |
 
-A single vendor tool declaration, resent every turn, is two thirds of an arm's
-entire prompt floor and 120× its self-hosted equivalent.
+Same five tools bound either side, so this is one declaration of one tool
+described two ways. A single vendor tool declaration, resent every turn, is
+two thirds of an arm's entire prompt floor and **120×** its self-hosted
+equivalent.
 
 This is exactly why `p1_matched` and `p3_matched` exist. The
 as-shipped comparison varies two things at once — which tools are bound, and
@@ -999,8 +1001,9 @@ cost result. Every capture records its own measured sizes for that reason. See
 ## Latency is a separate axis from cost
 
 Tokens do not predict wall clock. Across the ten arms that spend tokens locally,
-median tokens against median latency correlates at **r = 0.10 (tier 0)** and
-**r = -0.09 (tier 1)** — no relationship in either direction. An arm that costs
+median tokens against median latency correlates at **r = 0.28 (tier 0)** and
+**r = 0.33 (tier 1)** — weakly positive, against **r = 0.95 and r = 0.99** for
+schema size against tokens on the same ten arms. An arm that costs
 100× more does not take 100× longer, and the cheapest arm on tokens is the
 slowest on the clock. The two direct-API arms are the limiting case: they spend
 no local tokens at all and are the fastest arms in the experiment.
@@ -1011,34 +1014,34 @@ is counted):
 
 | Arm | Schema chars | Median tokens | Median latency | Tool calls | s / call |
 |---|---:|---:|---:|---:|---:|
-| `p3_managed` | 143,814 | 930,883 | 96.4s | 20.5 | 4.7 |
-| `p1_managed` | 120,009 | 554,528 | 76.7s | 16.5 | 4.6 |
-| `p3_toolbox` | 18,865 | 193,550 | 82.3s | 17.0 | 4.8 |
-| `p2_managed` | 11,721 | 79,744 | 76.1s | 14.0 | 5.4 |
-| `p1_toolbox` | 7,030 | 79,841 | 64.3s | 13.0 | 4.9 |
-| `p3_matched` | 6,809 | 207,233 | 89.7s | 19.5 | 4.6 |
-| `p2_toolbox` | 5,602 | 71,362 | 64.0s | 15.5 | 4.1 |
-| `p1_matched` | 3,019 | 78,004 | 71.9s | 14.0 | 5.1 |
-| `p4_bq_ca` | 882 | 8,867 | 62.4s | 3.0 | **20.8** |
-| `p4_looker_ca` | 817 | 16,829 | **146.0s** | 2.0 | **73.0** |
+| `p3_managed` | 146,148 | 1,120,646 | 111.8s | 22.0 | 5.1 |
+| `p1_managed` | 122,343 | 601,656 | 78.9s | 18.0 | 4.4 |
+| `p3_toolbox` | 18,865 | 198,899 | 86.6s | 17.0 | 5.1 |
+| `p2_managed` | 11,721 | 95,152 | 82.5s | 15.0 | 5.5 |
+| `p1_toolbox` | 7,030 | 81,767 | 67.0s | 13.0 | 5.2 |
+| `p3_matched` | 6,809 | 253,643 | 91.1s | 21.0 | 4.3 |
+| `p2_toolbox` | 5,602 | 95,536 | 72.3s | 16.0 | 4.5 |
+| `p1_matched` | 3,019 | 83,308 | 74.0s | 14.5 | 5.1 |
+| `p4_bq_ca` | 882 | 8,946 | 61.1s | 3.0 | **20.4** |
+| `p4_looker_ca` | 817 | 15,980 | **140.1s** | 2.0 | **70.0** |
 | `p4_bq_direct` | 0 | 0 | **10.0s** | 0.0 | n/a |
-| `p4_bq_direct_ctx` | 0 | 0 | **10.1s** | 0.0 | n/a |
+| `p4_bq_direct_ctx` | 0 | 0 | **9.8s** | 0.0 | n/a |
 
-Every MCP arm sits between 4.1 and 5.4 seconds per tool call regardless of how
-verbose its schemas are — a 47× spread in schema size and a 13× spread in tokens
+Every MCP arm sits between 4.3 and 5.5 seconds per tool call regardless of how
+verbose its schemas are — a 48× spread in schema size and a 14× spread in tokens
 produce no spread at all in the per-turn rate. Latency is turn count times a
 constant, so the way to make one of these arms faster is to make it take fewer
 steps, not to make its prompt smaller.
 
 **Path 4 is the exception, and that is the finding.** Both CA *tool* arms take
-one to three calls and pay 21s and 73s for each. The agent loop did not disappear
+one to three calls and pay 20s and 70s for each. The agent loop did not disappear
 when the token count dropped — it moved into someone else's process. Latency is
 the part of that hidden loop we can still see from outside.
 
 The direct arms have no per-call rate because they make no tool call: one API
 round-trip, 10 seconds, done. That is the same hidden loop `p4_bq_ca` invokes,
 reached without the local agent wrapped around it — and it runs **6× faster**.
-The 52 seconds in between are the wrapper.
+The 51 seconds in between are the wrapper.
 
 ### Seconds per *correct* answer, which is what a user waits
 
