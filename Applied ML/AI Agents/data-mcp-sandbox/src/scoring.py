@@ -382,7 +382,7 @@ def score_cell(
         ),
     )
     result.rules_required = rules_for(evidence)
-    result.trap_known = resolved is not None and resolved.trap_value is not None
+    result.trap_known = resolved is not None and bool(golden.traps_of(resolved))
 
     if not cell.ok:
         # §9.4: an error cell is a failure, not a missing observation. Dropping
@@ -426,9 +426,13 @@ def score_cell(
     result.value = extract_number(cell.answer)
     if resolved is not None and result.value is not None:
         result.correct = golden.matches(resolved, result.value)
-        result.sprang_trap = golden.sprang_trap(resolved, result.value)
-        if result.sprang_trap:
-            result.trap_name = resolved.trap_name
+        # Which trap, not just whether one — a question with two traps in it has a
+        # compound miss that springs both, and "sprang the trap" would name the
+        # wrong failure. `trap_name` is what the report prints.
+        sprung = golden.trap_sprung(resolved, result.value)
+        result.sprang_trap = sprung is not None
+        if sprung:
+            result.trap_name = sprung
     elif resolved is not None:
         result.notes.append("no extractable number - needs judge")
 

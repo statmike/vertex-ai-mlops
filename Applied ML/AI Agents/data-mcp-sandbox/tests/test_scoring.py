@@ -5,6 +5,7 @@ number against the real published capture. None of them were caught by the code
 running cleanly — each one printed a tidy table with a wrong finding in it.
 """
 
+import golden
 import scoring
 import traces
 
@@ -350,3 +351,33 @@ def test_a_question_wrong_at_every_tier_still_points_at_the_golden():
     )
     assert all(scan.graded_elsewhere == 0 for scan in scans)
     assert all("suspect the golden" in scan.reason for scan in scans)
+
+
+def test_a_compound_miss_is_named_rather_than_counted_as_ordinary_wrongness():
+    # Two traps in one question produce a third wrong answer that springs both,
+    # and it is a different number from either. Before `more_traps` it scored as
+    # an arm that cannot add up.
+    resolved = golden.Resolved(
+        key="net_revenue_30d_as_of", value=299808.0, trap_value=340013.0,
+        tolerance=0.005, trap_name="included refunded transactions",
+        more_traps=((2580231.0, "summed gross list price and kept the refunds"),),
+    )
+    assert golden.trap_sprung(resolved, 340013.0) == "included refunded transactions"
+    assert golden.trap_sprung(resolved, 2580231.0) == (
+        "summed gross list price and kept the refunds"
+    )
+    assert golden.trap_sprung(resolved, 12345.0) is None
+    assert golden.matches(resolved, 299808.0)
+
+
+def test_an_oracle_frozen_before_compound_traps_grades_exactly_as_it_did():
+    # `Resolved(**value)` is how a published capture's frozen block comes back.
+    # A field without a default there would break every capture in results/.
+    old = golden.Resolved(**{
+        "key": "active_user_count", "value": 2804.0, "trap_value": 3520.0,
+        "tolerance": 0.005, "trap_name": "trusted the raw is_active flag",
+    })
+    assert old.more_traps == ()
+    assert golden.traps_of(old) == [(3520.0, "trusted the raw is_active flag")]
+    assert golden.sprang_trap(old, 3520.0)
+    assert not golden.sprang_trap(old, 21961256.0)

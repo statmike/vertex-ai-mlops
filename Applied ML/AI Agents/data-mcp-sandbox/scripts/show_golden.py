@@ -22,9 +22,12 @@ def main() -> int:
         print(f"\n{config.tier_label(tier)}  ({config.tier_dataset(tier)})")
         for key, r in golden.resolve_all(client, tier).items():
             print(f"  {key:32s} {r.value:>16,.2f}")
-            if r.trap_value is not None:
-                gap = abs(r.trap_value - r.value) / abs(r.value) if r.value else float("inf")
-                print(f"  {'  trap: ' + r.trap_name:32s} {r.trap_value:>16,.2f}  ({gap:.0%} off)")
+            # Every trap, not just the designed one. A compound trap that sits
+            # close to the golden is the same discrimination failure as a plain
+            # one sitting close, and it would be invisible here otherwise.
+            for value, name in golden.traps_of(r):
+                gap = abs(value - r.value) / abs(r.value) if r.value else float("inf")
+                print(f"  {'  trap: ' + name:32s} {value:>16,.2f}  ({gap:.0%} off)")
     return 0
 
 

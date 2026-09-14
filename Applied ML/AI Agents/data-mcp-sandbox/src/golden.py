@@ -35,26 +35,54 @@ DEFAULT_TOLERANCE = 0.005
 
 
 @dataclass(frozen=True)
+class Trap:
+    """One named wrong answer worth diagnosing rather than merely counting."""
+
+    sql: Callable[[int], str]
+    name: str
+
+
+@dataclass(frozen=True)
 class Golden:
-    """One oracle entry: the right answer, and the wrong one worth naming."""
+    """One oracle entry: the right answer, and the wrong ones worth naming.
+
+    `trap_sql` is the *designed* trap — the single miss the question was built to
+    bait. `more_traps` is for the ones the corpus turns out to produce anyway,
+    which in practice means **compound** misses: a question with two traps in it
+    has a third wrong answer that springs both, and it is a different number from
+    either. Naming them is not bookkeeping. An unnamed naive answer is scored as
+    ordinary wrongness, which reads in the report as an arm that cannot count
+    rather than as an arm that took the bait — and 0/n of those in a row reads as
+    a broken oracle (`scoring.zero_scan`).
+    """
 
     key: str
     description: str
     sql: Callable[[int], str]
     trap_sql: Callable[[int], str] | None = None
     trap_name: str = ""
+    more_traps: tuple[Trap, ...] = ()
     tolerance: float = DEFAULT_TOLERANCE
 
 
 @dataclass(frozen=True)
 class Resolved:
-    """A golden entry evaluated against a live tier."""
+    """A golden entry evaluated against a live tier.
+
+    `trap_value` and `trap_name` stay first-class rather than folding into
+    `more_traps`, because a capture frozen before compound traps existed
+    deserializes straight through `Resolved(**value)` and must keep grading
+    exactly as it did. `more_traps` defaults empty for the same reason.
+    """
 
     key: str
     value: float
     trap_value: float | None
     tolerance: float
     trap_name: str
+    # Pairs of (value, name). A list after a JSON round-trip, which is why every
+    # reader here iterates rather than indexes.
+    more_traps: tuple[tuple[float, str], ...] = ()
 
 
 def _t(tier: int, table: str) -> str:
@@ -234,6 +262,21 @@ GOLDENS: list[Golden] = [
             f"WHERE txn_ts >= {_window_as_of()[0]} AND txn_ts < {_window_as_of()[1]}"
         ),
         trap_name="included refunded transactions",
+        # What the ungoverned arms actually converge on, measured rather than
+        # guessed: 2,580,231 against a golden of 299,808. Both traps at once —
+        # the column *named* revenue (T1, gross list price, outliers included)
+        # and no refund filter (T3). The designed trap covers only the second and
+        # lands at 340,013, so without this every tier-0 arm reads as ordinary
+        # wrongness and the 0/n scan reads the set as a broken oracle.
+        more_traps=(
+            Trap(
+                sql=lambda t: (
+                    f"SELECT SUM(revenue_amount) AS v FROM {_txn(t)} "
+                    f"WHERE txn_ts >= {_window_as_of()[0]} AND txn_ts < {_window_as_of()[1]}"
+                ),
+                name="summed gross list price and kept the refunds",
+            ),
+        ),
     ),
     Golden(
         key="active_user_count_as_of",
@@ -258,6 +301,23 @@ GOLDENS: list[Golden] = [
             WHERE u.is_active AND NOT x.status_flg
         """,
         trap_name="trusted the raw is_active flag",
+        # The three-trap miss, and the most common tier-0 answer in the anchored
+        # sweep: 21,961,256 against a golden of 2,702,782. Raw `is_active`, gross
+        # list price, refunds kept. This is the question that made compound traps
+        # worth expressing — one `trap_value` cannot name a miss that is three
+        # misses, and the number is otherwise indistinguishable from an arm that
+        # simply cannot add up.
+        more_traps=(
+            Trap(
+                sql=lambda t: f"""
+                    SELECT SUM(x.revenue_amount) AS v
+                    FROM {_txn(t)} x
+                    JOIN {_users(t)} u USING (user_id)
+                    WHERE u.is_active
+                """,
+                name="raw is_active flag, gross list price, refunds kept",
+            ),
+        ),
     ),
     # metadata — profiling and data quality (T4).
     Golden(
@@ -330,6 +390,9 @@ def resolve(client: bigquery.Client, key: str, tier: int) -> Resolved:
         trap_value=_scalar(client, g.trap_sql(tier)) if g.trap_sql else None,
         tolerance=g.tolerance,
         trap_name=g.trap_name,
+        more_traps=tuple(
+            (_scalar(client, trap.sql(tier)), trap.name) for trap in g.more_traps
+        ),
     )
 
 
@@ -371,11 +434,23 @@ def matches(resolved: Resolved, answer: float) -> bool:
     return _within(answer, resolved.value, resolved.tolerance)
 
 
+def traps_of(resolved: Resolved) -> list[tuple[float, str]]:
+    """Every named wrong answer this entry records, designed one first."""
+    traps = [] if resolved.trap_value is None else [(resolved.trap_value, resolved.trap_name)]
+    return traps + [(float(value), str(name)) for value, name in resolved.more_traps or ()]
+
+
 def sprang_trap(resolved: Resolved, answer: float) -> bool:
-    """True when an answer matches the *wrong* number the trap is designed to produce."""
-    if resolved.trap_value is None:
-        return False
-    return _within(answer, resolved.trap_value, resolved.tolerance)
+    """True when an answer matches any *wrong* number this entry names."""
+    return trap_sprung(resolved, answer) is not None
+
+
+def trap_sprung(resolved: Resolved, answer: float) -> str | None:
+    """Which trap an answer sprang, or None. Names the miss instead of counting it."""
+    for value, name in traps_of(resolved):
+        if _within(answer, value, resolved.tolerance):
+            return name
+    return None
 
 
 def _within(actual: float, expected: float, tolerance: float) -> bool:
