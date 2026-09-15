@@ -71,13 +71,7 @@ FROM AI.GENERATE_EMBEDDING(
   MODEL `PROJECT_ID.DATASET.embedding_multimodal`,
   (SELECT
     doc_name,
-    OBJ.GET_ACCESS_URL(
-      OBJ.FETCH_METADATA(
-        OBJ.MAKE_REF(
-          CONCAT('gs://BUCKET/path/to/', doc_name),
-          'PROJECT_ID.LOCATION.CONNECTION_ID'
-        )
-      ), 'r') AS content
+    OBJ.MAKE_REF(CONCAT('gs://BUCKET/path/to/', doc_name), 'PROJECT_ID.LOCATION.CONNECTION_ID') AS content
   FROM UNNEST([
     'invoice_1.png', 'invoice_2.png', 'receipt_1.png'
   ]) AS doc_name)
@@ -95,13 +89,7 @@ FROM AI.GENERATE_EMBEDDING(
   MODEL `PROJECT_ID.DATASET.embedding_multimodal`,
   (SELECT
     doc_name,
-    OBJ.GET_ACCESS_URL(
-      OBJ.FETCH_METADATA(
-        OBJ.MAKE_REF(
-          CONCAT('gs://BUCKET/path/to/', doc_name),
-          'PROJECT_ID.LOCATION.CONNECTION_ID'
-        )
-      ), 'r') AS content
+    OBJ.MAKE_REF(CONCAT('gs://BUCKET/path/to/', doc_name), 'PROJECT_ID.LOCATION.CONNECTION_ID') AS content
   FROM UNNEST(['invoice_1.png', 'invoice_2.png', 'invoice_3.png']) AS doc_name),
   STRUCT(256 AS output_dimensionality)
 );

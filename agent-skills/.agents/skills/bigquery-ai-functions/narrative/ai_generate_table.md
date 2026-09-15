@@ -14,7 +14,7 @@
 
 **Featured in:** `workflows/content_analysis` (Content Analysis Pipeline) | `workflows/rag_pipeline` (RAG Pipeline) | `workflows/content_moderation` (Content Moderation) | `workflows/log_analysis` (Log Analysis)
 
-**Multimodal:** Supports document, image, and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT prompt with ObjectRefRuntime fields to extract structured data from unstructured files.
+**Multimodal:** Supports document, image, and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT prompt with `ObjectRef` fields to extract structured data from unstructured files.
 
 **References:** `RESOURCES.md` (Full syntax reference) | [Official documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-generate-table) | `setup` (Setup guide)
 
@@ -263,15 +263,13 @@ client.query(query).to_dataframe()
 ---
 ## Examples — Multimodal with ObjectRef
 
-`AI.GENERATE_TABLE` can extract structured data from documents, images, and video stored in Cloud Storage. Use the **ObjectRef pipeline** to create a STRUCT prompt with signed references:
+`AI.GENERATE_TABLE` can extract structured data from documents, images, and video stored in Cloud Storage. Build the reference with `OBJ.MAKE_REF` and pass it in a STRUCT prompt:
 
 ```
-OBJ.MAKE_REF(uri, connection)        → ObjectRef
-  → OBJ.FETCH_METADATA(objectref)    → adds content type and size
-    → OBJ.GET_ACCESS_URL(ref, 'r')   → ObjectRefRuntime (signed URL)
+OBJ.MAKE_REF(uri, connection)   → ObjectRef — pass this straight to the function
 ```
 
-The STRUCT prompt replaces the STRING prompt in the input table. See the `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
+The STRUCT prompt replaces the STRING prompt in the input table. `OBJ.FETCH_METADATA` (content type and size) and `OBJ.GET_ACCESS_URL` (a signed `ObjectRefRuntime` URL) still have their uses — displaying an object, delegated access, an explicit TTL — but the AI functions take the `ObjectRef` itself. See the `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
 
 ```python
 from google.cloud import storage as _storage
@@ -298,7 +296,7 @@ for subdir, filename in [('invoices', 'invoice_001.pdf'), ('receipts', 'receipt_
 
 ### 8. Extract structured data from a document
 
-Pass a document via ObjectRef in the prompt column and extract typed fields with `output_schema`. The STRUCT prompt contains both text and `object_ref_runtime`.
+Pass a document via `ObjectRef` in the prompt column and extract typed fields with `output_schema`. The STRUCT prompt contains both text and `object_refs`.
 
 ```python
 query = f"""
@@ -307,14 +305,10 @@ FROM AI.GENERATE_TABLE(
   MODEL `{PROJECT_ID}.{DATASET_ID}.gemini_flash`,
   (SELECT STRUCT(
     'Extract the key fields from this invoice.' AS prompt,
-    [OBJ.GET_ACCESS_URL(
-      OBJ.FETCH_METADATA(
-        OBJ.MAKE_REF(
-          'gs://{BUCKET}/bq_ai_functions/ai_generate_table/invoice_001.pdf',
-          '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
-        )
-      ), 'r'
-    )] AS object_ref_runtime
+    [OBJ.MAKE_REF(
+      'gs://{BUCKET}/bq_ai_functions/ai_generate_table/invoice_001.pdf',
+      '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
+    )] AS object_refs
   ) AS prompt),
   STRUCT('vendor_name STRING, invoice_number STRING, total_amount FLOAT64, currency STRING, invoice_date STRING, line_item_count INT64' AS output_schema)
 )
@@ -341,14 +335,7 @@ FROM AI.GENERATE_TABLE(
     uri,
     STRUCT(
       'Identify the document type and extract all details.' AS prompt,
-      [OBJ.GET_ACCESS_URL(
-        OBJ.FETCH_METADATA(
-          OBJ.MAKE_REF(
-            uri,
-            '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
-          )
-        ), 'r'
-      )] AS object_ref_runtime
+      [OBJ.MAKE_REF(uri, '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}')] AS object_refs
     ) AS prompt
    FROM UNNEST([
      'gs://{BUCKET}/bq_ai_functions/ai_generate_table/invoice_001.pdf',

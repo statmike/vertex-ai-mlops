@@ -85,8 +85,9 @@ FROM UNNEST([
 -- =============================================================================
 -- Example 5: Classify a document with ObjectRef
 -- =============================================================================
--- Create an object table, then use EXTERNAL_OBJECT_TRANSFORM to get a signed
--- ref that AI.CLASSIFY can read directly.
+-- Create an object table and pass its ref column -- an ObjectRef -- straight
+-- to AI.CLASSIFY. EXTERNAL_OBJECT_TRANSFORM(TABLE t, ['SIGNED_URL']) rewrites
+-- that column into a signed ObjectRefRuntime; the function does not need it.
 --
 -- Requires: Object table with Cloud resource connection
 
@@ -104,8 +105,7 @@ SELECT
     ['invoice', 'receipt', 'contract', 'report']
   ) AS document_type
 FROM
-  EXTERNAL_OBJECT_TRANSFORM(TABLE `PROJECT_ID.DATASET.ai_classify_docs`,
-                            ['SIGNED_URL']) AS docs;
+  `PROJECT_ID.DATASET.ai_classify_docs` AS docs;
 
 
 -- =============================================================================
@@ -123,5 +123,4 @@ SELECT
      ('report', 'An analytical document with findings, data, or recommendations')]
   ) AS document_type
 FROM
-  EXTERNAL_OBJECT_TRANSFORM(TABLE `PROJECT_ID.DATASET.ai_classify_docs`,
-                            ['SIGNED_URL']) AS docs;
+  `PROJECT_ID.DATASET.ai_classify_docs` AS docs;

@@ -53,13 +53,6 @@ SELECT
   (AI.GENERATE_BOOL(
     STRUCT(
       'Does this invoice total exceed $5,000?' AS prompt,
-      [OBJ.GET_ACCESS_URL(
-        OBJ.FETCH_METADATA(
-          OBJ.MAKE_REF(
-            'gs://BUCKET/path/to/invoice.pdf',
-            'PROJECT_ID.LOCATION.CONNECTION_ID'
-          )
-        ), 'r'
-      )] AS object_ref_runtime
+      [OBJ.MAKE_REF('gs://BUCKET/path/to/invoice.pdf', 'PROJECT_ID.LOCATION.CONNECTION_ID')] AS object_refs
     )
   )).result AS exceeds_5000;

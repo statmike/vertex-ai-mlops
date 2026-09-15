@@ -72,7 +72,7 @@ SELECT
   uri,
   AI.SCORE(
     ('Rate the professionalism and formality of this document on a scale of 0 to 1',
-     OBJ.GET_ACCESS_URL(ref, 'r'))
+     ref)
   ) AS professionalism
 FROM
   `PROJECT_ID.DATASET.ai_score_docs`;

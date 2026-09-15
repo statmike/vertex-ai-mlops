@@ -660,6 +660,124 @@ Four `ML.*` functions that call a pre-trained Google API through a remote model.
 
 ---
 
+### Phase 12: Round close — the ObjectRef surface is now documented (planned 2026-09-15)
+
+**Purpose.** Close this round of building so the next one, scheduled **2026-10-15**, only has to cover what shipped in between. Everything below came out of one sweep on 2026-09-15: the 13 reference pages re-read against what we publish, plus a live probe set. It is split into what the sweep *settles*, what it *adds*, and the one build it *triggers*.
+
+**Nothing here is inferred from a release note.** Every capability claim in this phase was run against `statmike-mlops-349915.bq_ai_functions` on 2026-09-15 with `--nouse_cache`, on a `tmpprobe_objref` object table over 205 public cymbal-pets PNGs and on one private-bucket PDF. The probe table was dropped the same day.
+
+#### 12a. The headline: the reference pages now document bare `ObjectRef` input
+
+The *Tracked upcoming enhancements* row that read *"Announced GA 2026-06-12; reference docs contradict the announcement"* is **resolved, in the announcement's favor.** As of 2026-09-15 every AI function page that takes multimodal input documents its input type as `ObjectRef` **or** `ARRAY<ObjectRef>` — *"An `ObjectRef` literal, array of `ObjectRef` literals, or the name of an `ObjectRef` column"* — with `OBJ.MAKE_REF('gs://my_image.jpg')` as the worked example. `ObjectRefRuntime` and `OBJ.GET_ACCESS_URL` are gone from the input contract on all eleven of them:
+
+`AI.GENERATE` · `AI.GENERATE_BOOL` · `AI.GENERATE_INT` · `AI.GENERATE_DOUBLE` · `AI.IF` · `AI.SCORE` · `AI.CLASSIFY` · `AI.EMBED` · `AI.SIMILARITY` · `AI.GENERATE_TEXT` · `AI.GENERATE_EMBEDDING`
+
+**`AI.AGG` is the one holdout.** Its page still defines the input as *"`ObjectRefRuntime` values … created by the `OBJ.GET_ACCESS_URL` function"*, and its Known Issues still read *"Input rows with arrays of `ObjectRefRuntime` objects that call the `OBJ.GET_ACCESS_URL` function might be skipped"* and *"might fail to process some `ObjectRefRuntime` image objects that are created by the `OBJ.GET_ACCESS_URL` function."* That is the documented basis for the commented-out multimodal cell in `functions/ai_agg/` — and it points at the wrapper, not at the function.
+
+**Measured, 2026-09-15 — the simplification ladder.** All four rungs return a correct answer, on a public bucket and on this project's private bucket, for `AI.GENERATE`, `AI.EMBED` and `AI.GENERATE_EMBEDDING`:
+
+| Rung | Form | Verdict |
+|---|---|---|
+| A | `OBJ.GET_ACCESS_URL(OBJ.FETCH_METADATA(OBJ.MAKE_REF(uri, conn)), 'r')` | Works. **What every notebook does today** |
+| B | `OBJ.FETCH_METADATA(OBJ.MAKE_REF(uri, conn))` | Works |
+| C | `OBJ.MAKE_REF(uri, conn)` | Works. **Recommended target** |
+| D | `OBJ.MAKE_REF(uri)` | Works — **but it changes the access principal**, see below |
+
+**Rung D is not just shorter.** With no `authorizer`, the object is read under the *query runner's* own IAM rather than the connection's service account. It succeeded here only because the running identity happens to have `storage.objectViewer` on the private bucket. A reader who copies rung D and relies on the connection grant this project's `setup/` tells them to make will get a permission error. **Target rung C, and document D as available with that caveat** — do not silently drop the connection from teaching content.
+
+**`OBJ.FETCH_METADATA` is droppable for the AI call, not for display.** It populates content type and size; the AI functions do not need them. Keep it wherever a notebook *shows* object metadata.
+
+**Object tables take the bare `ref` column.** `OBJ.GET_ACCESS_URL(ref, 'r')` → `ref`, measured OK for `AI.GENERATE`/`_BOOL`/`_INT`/`_DOUBLE`, `AI.IF`, `AI.SCORE`, `AI.AGG`, `AI.GENERATE_TABLE`, `AI.SIMILARITY`. One exception with a documented cause: `AI.GENERATE_EMBEDDING` rejects `SELECT ref AS content FROM <object table>` with *"Column rename is not supported when the input is an object table"* — that is an object-table restriction on renaming, not an `ObjectRef` restriction. `SELECT OBJ.FETCH_METADATA(ref) AS content` works, because it is an expression rather than a rename.
+
+**A false finding that was caught and is deliberately not published:** the first `AI.SCORE` probe returned 0.0 wrapped against 0.6 bare, which looked like the wrapper silently failing to deliver the image. Three repeats (0.5/0.5, 0.3/0.4, 0.35/0.35) showed it was model noise.
+
+#### 12b. Rows this sweep settles
+
+| Row | Today | Change | Files |
+|---|---|---|---|
+| Enhancement — bare `ObjectRef` | *"docs contradict the announcement … not yet measured"* | **Resolved.** Move to the audit log with the ladder table and the `AI.AGG` holdout | *Tracked upcoming enhancements*, `reference/unstructured-data-infrastructure.md`, audit log |
+| Enhancement — `OBJ.GET_READ_URL` | *"GA per release notes; absent from the reference page … observed-not-documented"* | **Resolved.** Now on the ObjectRef functions page: returns `STRUCT<url STRING, status STRING>`, URL expires after 45 minutes, requires delegated access. Our measured "returns a plain `STRING`, unlike `OBJ.GET_ACCESS_URL`'s JSON" matches the published output shape | *Tracked upcoming enhancements*, a new `## OBJ.GET_READ_URL` section in `reference/unstructured-data-infrastructure.md` (it is currently mentioned twice as observed-not-documented) |
+| `README.md:199` — `AI.EVALUATE` | *"GA (TabFM branch Preview)"* | **Wrong today.** The page carries no Preview banner and its opening sentence covers both the TimesFM and the TabFM branch. Correct to plain **GA** | `README.md`, `reference/predictive-ai.md` |
+| `README.md:142` — `AI.SEARCH` | *"GA (`mode` Preview)"* | **Confirmed correct, no edit.** The page still labels `mode` Preview | — |
+
+#### 12c. What the sweep adds (new content, not status flips)
+
+| # | Finding | Where it lands |
+|---|---|---|
+| N1 | **`OBJ.MAKE_REF` grew.** `authorizer` is now optional, and there are two new named arguments — `version => version_value` and `details => gcs_metadata_json` — plus two new overloads: `OBJ.MAKE_REF(objectref_json)` and `OBJ.MAKE_REF(objectref, authorizer)` (the top-level authorizer overwrites the one in the value) | `reference/unstructured-data-infrastructure.md` |
+| N2 | **`OBJ.GET_ACCESS_URL` grew.** Optional third `duration` argument (`OBJ.GET_ACCESS_URL(poster, 'r', INTERVAL 45 MINUTE)`) and an `ARRAY<objectref>` overload | `reference/unstructured-data-infrastructure.md` |
+| N3 | **`OBJ.FETCH_METADATA` grew.** An `ARRAY<objectref>` overload | `reference/unstructured-data-infrastructure.md` |
+| N4 | **`AI.PREDICT` now publishes its limits:** at most **20 feature columns** and at most **10 classes**. This is adjacent to watch-list row **P4**, whose whole point is that the 8,000-row/10,000-row failure is *not* a documented cap — it still is not. The new caps are on columns and classes, not rows, so **P4 stands unchanged**; say so explicitly rather than letting the new limits read as the answer | `reference/predictive-ai.md`, watch-list P4 note |
+| N5 | **TabFM pricing changes on 2026-10-30** — token-based from that date, in addition to slots or bytes for the rest of the query. That is *after* the next scheduled sweep, so the sweep must carry it | `reference/predictive-ai.md`, next-sweep row |
+| N6 | **"Your input can contain at most one video object"** — documented on `AI.GENERATE` and `AI.GENERATE_TEXT` | `reference/unstructured-data-infrastructure.md` |
+| N7 | **VPC Service Controls cannot process delegated-access `ObjectRef`s**, including an object table's `ref` column, because delegated access mints a signed HTTPS URL. This is a *reason to prefer inline `OBJ.MAKE_REF` over object tables* in some environments, which our "Object tables vs inline ObjectRef" guidance does not currently give | `reference/unstructured-data-infrastructure.md` |
+| N8 | **`AI.AGG`'s Known Issues name `OBJ.GET_ACCESS_URL` directly** (see 12a). Our commented-out multimodal `AI.AGG` cell now has a documented cause to cite, and unwrapping is the thing most likely to make it work | `functions/ai_agg/`, `reference/managed-functions.md` |
+
+#### 12d. The build this triggers — the unwrap sweep
+
+**Scope, set by the user:** everything, including the notebook re-executions. **17 notebooks, 46 `OBJ.GET_ACCESS_URL` occurrences**, counted 2026-09-15.
+
+**The scope grew by three notebooks during the build.** `ai_classify` and `document_intelligence` reach object data through `EXTERNAL_OBJECT_TRANSFORM(TABLE t, ['SIGNED_URL'])` rather than `OBJ.GET_ACCESS_URL`, so the original grep missed them — same defect (an unnecessary signing step), different spelling. Probed live 2026-09-15 over a 10-PDF object table: `AI.CLASSIFY(ref, ...)` on the bare column and on the transformed column returned identical classifications, so the transform came out of both. `ml_generate_embedding` and `ml_generate_text` carry the narrative change only. **Final: 20 notebooks touched, 18 re-executed.**
+
+This is *not* a wrapper deletion. Three things change together, and the third is the one that makes it a build rather than an edit:
+
+1. **Code** — rung A collapses to rung C (inline) or to bare `ref` (object table).
+2. **Field name** — the 13 notebooks with a multimodal STRUCT array use `object_ref_runtime` as the field name. With the runtime type gone from the input contract the name is now misleading. The field is matched *positionally*, not by name — verified 2026-09-15 by running the same call under both `object_refs` and `object_ref_runtime` for `AI.GENERATE`/`_BOOL`/`_INT`/`_DOUBLE`, `AI.IF` and `AI.GENERATE_TABLE`, with identical results. Pick the replacement name once and apply it across all 13.
+3. **Narrative** — ten notebooks *teach* the pipeline in prose: `OBJ.MAKE_REF(uri, connection) → ObjectRef → OBJ.FETCH_METADATA(objectref) → adds content type and size → OBJ.GET_ACCESS_URL(ref, 'r') → ObjectRefRuntime (signed URL)`. That block is the point of those cells, not decoration. It has to be rewritten to teach the current contract *and* explain when you still reach for `OBJ.GET_ACCESS_URL` (display, delegated access, an explicit TTL).
+
+| Notebook | Sites | Code | Narrative | Re-run |
+|---|---|---|---|---|
+| `functions/ai_generate/` | 4 | inline → C | pipeline block | yes |
+| `functions/ai_generate_bool/` | 2 | inline → C | pipeline block | yes |
+| `functions/ai_generate_int/` | 2 | inline → C | pipeline block | yes |
+| `functions/ai_generate_double/` | 2 | inline → C | pipeline block | yes |
+| `functions/ai_if/` | 2 | inline → C | pipeline block | yes |
+| `functions/ai_generate_table/` | 3 | inline → C | pipeline block | yes |
+| `functions/ai_generate_text/` | 2 | inline → C | pipeline block | yes |
+| `functions/ai_embed/` | 3 | inline → C | pipeline sentence | yes |
+| `functions/ai_similarity/` | 3 | inline → C | — | yes |
+| `functions/ai_generate_embedding/` | 2 | inline → C | — | yes |
+| `functions/ai_score/` | 3 | object table → bare `ref` | prose names the wrapper | yes |
+| `functions/ai_agg/` | 2 | object table → bare `ref`; **retest the commented-out multimodal cell unwrapped (N8)** | prose names the wrapper | yes |
+| `functions/ml_annotate_image/` | 2 | inline → C | pipeline sentence | yes |
+| `functions/ml_transcribe/` | 4 | inline → C | pipeline sentence | yes |
+| `workflows/document_intelligence/` | 4 + 1 × `EXTERNAL_OBJECT_TRANSFORM` | object table → bare `ot.ref` | two fenced snippets + the "three input patterns" bullet | yes |
+| `workflows/image_deduplication/` | 1 | inline → C | — | yes |
+| `workflows/multimodal_analysis/` | 5 | inline → C | pipeline bullet | yes |
+| `functions/ai_classify/` | 0 (2 × `EXTERNAL_OBJECT_TRANSFORM`) | object table → bare `ref` | transform diagram + header line | yes |
+| `functions/ml_generate_embedding/` | 0 | — | header line | no |
+| `functions/ml_generate_text/` | 0 | — | header line | no |
+
+**Execution rule:** one at a time. These notebooks share one virtual environment, so two `install()` cells must never run concurrently.
+
+**Also carries the change** (no execution): the matching `.sql` files, `README.md`'s Multimodal Input section and per-function input-method labels, `reference/unstructured-data-infrastructure.md`'s four Multimodal Input Patterns, the `bigquery-ai-functions` skill's `SKILL.md` + reference pages, the regenerated `narrative/*.md` for all 20, and `skill.manifest.json`.
+
+**Sweep command to confirm nothing was missed:**
+
+```bash
+grep -rn "OBJ\.GET_ACCESS_URL\|object_ref_runtime\|ObjectRefRuntime\|EXTERNAL_OBJECT_TRANSFORM" \
+  --include=*.ipynb --include=*.md --include=*.sql data+ai/bq-ai-functions agent-skills
+```
+
+Surviving hits are expected and must each be justified: the `AI.AGG` holdout, the `OBJ.GET_ACCESS_URL` and `OBJ.GET_READ_URL` reference sections themselves, the `EXTERNAL_OBJECT_TRANSFORM` signed-URL documentation in the object-tables section, the display/TTL/delegated-access cases, and this plan.
+
+**Run after execution, 2026-09-15 — clean.** All 18 notebooks executed sequentially with `rc=0`, no error outputs and no unexecuted code cells. The grep leaves **10 hits across the notebooks**, every one of them deliberate: eight are the shared closing sentence that keeps `OBJ.FETCH_METADATA` and `OBJ.GET_ACCESS_URL` on the page as the tools they still are, one is `ai_classify`'s explanation of what `EXTERNAL_OBJECT_TRANSFORM` actually does, and one is `ai_agg`'s note that its own reference page is the last holdout. The markdown hits are the reference sections themselves. **Prose-number scan, the defect class execution cannot catch:** every number in every markdown cell of the 18 was checked against the notebook's own rendered outputs and code. After discarding the header cell's tracking-pixel and icon IDs, which trip a naive scan in all 18, the survivors were documented constants (`max_error_ratio`'s 0.0–1.0 range, the ~3,000-row distilled-mode threshold, the 128/256/512/1408/3072 embedding dimensions, 8192 tokens) and one real defect: `ai_if` stated the distilled mode reduces token usage *by up to 230x* as though it were ours. It is the reference page's number, the notebook explicitly does not demo the mode, and it is now attributed. Three counting contradictions were also fixed — three places said *all twelve* reference pages document `ObjectRef` and then named `AI.AGG` as the exception; they now say **eleven of the twelve**.
+
+#### 12e. Bookkeeping closed at the same time
+
+- [x] **The *Notebook update plan (May 2026 audit)* was finished but still shaped as a live 31-row queue** stating a superseded one-at-a-time cadence. All 11 "Revise + verify" items were spot-checked against notebook contents on 2026-09-15 and are done. **Collapsed 2026-09-15** to a completion note that also records the two superseded parts — the one-at-a-time cadence and the per-notebook tracking tables.
+- [ ] **`functions/evaluation/` is queued but has been skipped by both review passes** — it has sat in the shared [*Pending Reviews*](../bq-ml/PLANS.md#pending-reviews) table with an empty Reviewed cell since 2026-09-11, while notebooks added after it were reviewed and closed. It is not missing from the queue; it is being passed over. Call it out by name in the next review round rather than assuming position in the table is enough.
+
+#### 12f. Next scheduled sweep
+
+| Next scheduled sweep | Procedure | Owner |
+|---|---|---|
+| **2026-10-15** | 1. Release notes since **2026-09-15**. 2. Re-read the 13 reference pages listed in *Documentation URLs* against what we publish. 3. Re-run the live probe set: the four Gemini endpoints via `AI.GENERATE`'s `full_response.model_version` (**snake_case**), the `thinking_level` form inside `model_params`, and — now that the ladder is resolved and the notebooks are unwrapped — the two ObjectRef checks that remain live: **does `AI.AGG`'s reference page still specify `ObjectRefRuntime`** (it is the last one that does, and the notebooks already pass it bare), and **does a bare `ObjectRef` still work across all eleven functions** (a regression here would break 20 notebooks, so it is the cheapest high-value probe in the set). 4. **Carry N5** — TabFM token pricing starts **2026-10-30**, two weeks after this sweep, so it will still be pending; do not mark it landed. 5. Re-check every *Preview watch list* row, and re-check that omitting `endpoint` still resolves to `gemini-2.5-flash` | This project |
+
+The point of the date is that the next round is a **diff, not a re-derivation** — steps 1–3 are the exact procedure that produced Phase 12, so anything they surface is by construction new since 2026-09-15.
+
+---
+
 ## Resolved Questions
 
 ### 1. BigFrames API Coverage Audit
@@ -1111,8 +1229,8 @@ Capabilities observed in training labs or announcements but not yet in published
 |----------|------------|--------|--------|-------|
 | AI.PARSE_DOCUMENT | Gemini model endpoint (`endpoint => 'gemini-2.5-flash'`) | Blocked — the whole function is offline and its docs are withdrawn | [L400 Lab 1](../../../ds-l400/lab-1/teacher/lab_1_parse_2_extraction.ipynb) | Currently only Layout Parser processor endpoints are documented. Gemini endpoints would eliminate the Document AI processor setup entirely — just `endpoint => 'model-name'` with a connection. When available: add Example 7 to notebook, update RESOURCES.md endpoint description, update README.md ("No" for Requires Model). |
 | All generative functions | `gemini-3.1-flash-lite` and `gemini-3.5-flash` | **GA 2026-08-10 — documented in [RESOURCES.md](RESOURCES.md#choosing-a-gemini-model-endpoint) as of 2026-09-02.** No notebook change needed | [Release notes](https://docs.cloud.google.com/bigquery/docs/release-notes) | **The default did not move** — omitting `endpoint` still gives `gemini-2.5-flash`, so every stored output in this project remains valid and no re-execution is required. The 3.x family is multi-regional-endpoint only, and `europe-west2`/`europe-west6` silently resolve to the **global** endpoint. **Re-check the default on every audit** — a default change *would* invalidate every generative notebook's stored output at once. |
-| AI functions taking multimodal input | Accepting an `ObjectRef` column directly, without wrapping it in `OBJ.GET_ACCESS_URL` | **Announced GA 2026-06-12; reference docs contradict the announcement.** Measurable — not yet measured | [Release notes](https://docs.cloud.google.com/bigquery/docs/release-notes) · [ObjectRef functions](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/objectref_functions) | The generative AI overview and the `AI.GENERATE_*` pages still say `OBJ.GET_ACCESS_URL` is required; `AI.SCORE`'s prompt spec accepts "an `ObjectRef` column" and `AI.IF`'s example passes `images.ref` bare. **This project can settle it by running it** — try the unwrapped form on one generative and one managed function against an existing object table. Until measured, every notebook keeps `OBJ.GET_ACCESS_URL(col, 'r')`. Recorded in [Unstructured Data Infrastructure](reference/unstructured-data-infrastructure.md). |
-| ObjectRef utilities | `OBJ.GET_READ_URL` | **GA 2026-03-31 per release notes; absent from the ObjectRef functions reference page.** Documented here as observed-not-documented | [Release notes](https://docs.cloud.google.com/bigquery/docs/release-notes) | Appears only in a tutorial snippet, returning a signed URL for display while the AI function is still fed `OBJ.GET_ACCESS_URL`. Add a worked example when the reference page lists it. |
+
+**Resolved 2026-09-15 — both ObjectRef rows.** *AI functions accepting an `ObjectRef` directly* and *`OBJ.GET_READ_URL`* were tracked here because the release notes and the reference pages disagreed. Both disagreements closed at the same sweep: eleven of the twelve multimodal `AI.*` pages now document `ObjectRef` / `ARRAY<ObjectRef>` as the input type (`AI.AGG` is the twelfth and still says `ObjectRefRuntime`, and it accepts the bare form anyway — measured), and `OBJ.GET_READ_URL` is now a documented function on the ObjectRef functions page with a fixed 45-minute TTL and a delegated-access requirement. Both are written up in [Unstructured Data Infrastructure](reference/unstructured-data-infrastructure.md) and the notebooks were unwrapped in the Phase 12d sweep. See the audit-log rows dated 2026-09-15.
 
 ### Tracked open questions — the Preview watch list
 
@@ -1252,63 +1370,21 @@ grep -rl "AI\.PREDICT\|AI\.EVALUATE\|TimesFM\|TabFM" \
 | 2026-09-14 | Phase 11 review closeout — the four Cloud AI service model folders | User reviewed the 2026-09-11 build round notebook by notebook and accepted all four as-is: `functions/ml_translate/`, `functions/ml_understand_text/`, `functions/ml_annotate_image/`, `functions/ml_transcribe/`. No changes requested; marked reviewed in the shared queue at [`bq-ml`'s *Pending Reviews*](../bq-ml/PLANS.md#pending-reviews), which is where this phase's reviews live. The user singled out the overview markdown cells' cross-references between the folders as the thing that works — carry that pattern forward. Nothing in this project changed; the round's follow-up work landed in `bq-ml` (`functions/data_quality/` renamed to `functions/model_monitoring/` with a new metric-mechanics step, and a bare-call opening for `functions/exploration/`). |
 | 2026-09-15 | Link policy refined in step with the sibling — the violation is a *relative* path out of the project | Same edit as [`bq-ml`'s *Link policy*](../bq-ml/PLANS.md#link-policy), applied here so the two projects state one rule; that project's audit log carries the finding that prompted it. A fourth allowed link target is now listed — elsewhere in this repository, **as an absolute public GitHub URL only** — on the user's reasoning that GitHub hosts the content publicly, so such a link resolves for a reader who has only the extracted skill, while a relative path out of the project does not. `check-links` already implements exactly this (relative outward paths flagged, `https://` allowed) and needed no change; this project remains at 0 violations across 91 files. Policy text only. |
 | 2026-09-15 | Cross-link backlog items 5–8 and the DiD/synthetic-control bookkeeping mismatch | **Item 5** added a fifth step to `workflows/metric_diagnostics/` — and shipped the *opposite* of what the plan row asked for. The row wanted `AI.CAUSAL_EFFECT` used to "quantify whether a known intervention caused" the metric move; there is **no known intervention** in the Citi Bike data, so doing that would have published the exact error the step should teach against. It is a **placebo test** instead: a 426-day daily-hours series, six dates chosen only for spacing, post window pinned at 60 points. **One of the six clears `p < 0.05` — 2017-10-01 at 0.044108 — with nothing behind it**, because a counterfactual fitted on a spring-and-summer ramp reads the autumn seasonal turn as an intervention. Generalized: a univariate counterfactual only carries forward patterns already in its pre-window, so an annual cycle needs more than a year of pre-intervention history. **A data-shape constraint found the hard way:** `citibike_trips` has **no rows Oct 2016 – Mar 2017**, and `AI.CAUSAL_EFFECT` reports zero pre-intervention points as *"Time series data col is empty"* rather than as a row-count problem — three type variations were ruled out before the gap was found. Continuous stretches: 2013-07→2016-09 and 2017-04→2018-05. **Items 6, 7 and 8** added one *Alternatives* bullet each to `ai_key_drivers` (which-segments vs. whether-an-intervention, plus the trap the shared "Augmented analytics" heading invites), `ai_forecast` (the same forecasting idea aimed backwards — `ARIMA_PLUS`, not TimesFM, forecasting past a point *inside* the data), and `ai_evaluate` (regenerates the prediction on every call vs. `ML.METRICS` scoring a saved artifact; MAE and MSE are the only shared names). **The two 16-digit AI.EVALUATE/ML.METRICS measurements deliberately stayed in this file rather than the notebook** — they came from a probe, no cell renders them, and `AI.EVALUATE` is measured non-reproducible even with `model` pinned, so a live identity cell could not be relied on. Prose-only numbers go where their provenance is stated. **Bookkeeping:** the DiD/synthetic-control bridge row was done in `bq-ml` on 2026-09-11 and left unchecked here until today — the hazard of a row tracked in two files. Sibling-side in the same commit: seven p-value constructions replacing six throughout, the `Step 9` → `Step 10` gotchas pointer, and the placebo lesson filed in `reference/driver-analysis.md` so the routing page carries the warning and not just the notebook. |
+| 2026-09-15 | ObjectRef unwrap sweep — the wrapper is no longer the documented input, and 20 notebooks came off it | **Two tracked rows closed at once, and the premise of the sweep inverted while doing it.** The working assumption going in was that dropping `OBJ.GET_ACCESS_URL` was largely stylistic. Re-reading the twelve multimodal reference pages showed otherwise: eleven of them now document the input type as `ObjectRef` / `ARRAY<ObjectRef>` with `OBJ.MAKE_REF('gs://my_image.jpg')` as the worked example, so the wrapped form this project taught had become the *undocumented* one. **`AI.AGG` is the sole page still specifying `ObjectRefRuntime`** — it was unwrapped anyway, because its own Known Issues say rows with arrays of `ObjectRefRuntime` "might be skipped" and some `OBJ.GET_ACCESS_URL` image objects "might fail to process," and the bare form was measured working. **Measured before changing anything:** a full wrapped-vs-bare matrix over `AI.GENERATE`, `_BOOL`, `_INT`, `_DOUBLE`, `_TABLE`, `AI.IF`, `AI.SCORE`, `AI.CLASSIFY`, `AI.AGG`, `AI.EMBED`, `AI.SIMILARITY` — all pass both ways. The matrix earned its cost twice: it exposed that the notebooks use the field name `object_ref_runtime` (so the first matrix had tested the wrong name) and that they build refs with `OBJ.MAKE_REF`/`OBJ.FETCH_METADATA` rather than object-table `ref` columns. **Shipped:** 20 notebooks and 14 `.sql` files unwrapped to `OBJ.MAKE_REF(uri, connection)` or a bare `ref`; the STRUCT field renamed `object_ref_runtime` → `object_refs` (matched positionally, verified under both names); `ai_agg`'s commented-out multimodal example made live (see the next row); 18 notebooks re-executed one at a time on the shared venv. `reference/unstructured-data-infrastructure.md` rewritten — the OPEN question replaced with the resolution, the four "Multimodal Input Patterns" reframed as four *call shapes* over one input type, and new sections for `OBJ.GET_READ_URL`, the `ARRAY<objectref>` overloads, the direct-vs-delegated access distinction, and the one-video/two-minute content limits. `README.md`, `reference/managed-functions.md`, `reference/general-purpose-functions.md`, `reference/embedding-generation-and-semantic-search.md` follow. **Nothing was deprecated** — `ObjectRefRuntime` still works everywhere, so this is a teaching change, not a migration. |
+| 2026-09-15 | `EXTERNAL_OBJECT_TRANSFORM` is not required for `AI.CLASSIFY` either — the sweep's grep had missed two notebooks | The unwrap grep matched `OBJ.GET_ACCESS_URL`, so it never saw `functions/ai_classify/` or `workflows/document_intelligence/`, which reach object data through `EXTERNAL_OBJECT_TRANSFORM(TABLE t, ['SIGNED_URL'])` instead. Same defect, different spelling: an unnecessary signing step between the object table and the model. Probed live over a 10-PDF object table — `AI.CLASSIFY(ref, ...)` on the bare column, on the transformed column, and on an inline `OBJ.MAKE_REF` all returned the same classifications. Both notebooks now query the object table directly, along with `functions/ai_classify/ai_classify.sql` and a commented `AI.AGG` example in `functions/ai_agg/ai_agg.sql`. `reference/unstructured-data-infrastructure.md`'s "Pattern 3: Object Table with EXTERNAL_OBJECT_TRANSFORM" became "Shape 3: Direct Argument," and the transform is now documented where it belongs — under object tables, as the way to *get a signed URL*, which is a real need that simply is not an AI-function need. **Lesson for the next sweep:** grep the defect, not the function name; the same wrong idea can be spelled more than one way. |
+| 2026-09-15 | `AI.AGG`'s multimodal example was commented out on a claim that had gone stale | The notebook's multimodal cell carried the note "PDF support returns NULL (preview limitation)" and was disabled. Tested against a fresh 50-PDF object table: both the wrapped and the bare form returned real summaries. The claim no longer holds, whatever its origin — a fixed limitation, a model-version change, or a wrapper interaction of the kind `AI.AGG`'s Known Issues describe; the measurement does not distinguish between them. `functions/ai_agg/ai_agg.ipynb` cells 30–33 are now live: upload six PDFs, create the object table, `AI.AGG(STRUCT(ref), ...)`, drop. The narrative states the one thing that is certainly true — that `AI.AGG` is the only `AI.*` page still specifying `ObjectRefRuntime`, and that its own Known Issues argue for passing `ObjectRef` anyway. |
+| 2026-09-15 | A near-miss `AI.SCORE` finding, deliberately not published | The first wrapped-vs-bare pass returned `AI.SCORE` 0.0 wrapped against 0.6 bare, which reads like a real behavioral difference and would have been the most quotable result of the sweep. Three repeats — 0.5/0.5, 0.3/0.4, 0.35/0.35 — showed it was model noise on a single document. Recorded here rather than in the reference, because the useful artifact is the procedure: a one-shot difference from a non-deterministic function is not a finding until it repeats. |
 
-### Notebook update plan (May 2026 audit)
+### Notebook update plan (May 2026 audit) — closed 2026-09-15
 
-Notebook updates following the 2026-05-10 documentation audit. Two categories per group:
-- **Revise + verify**: Needs content edits (new cells, updated descriptions) before a Restart & Run All
-- **Verify only**: No content changes expected — just confirm it still runs clean
+**Complete.** This was a 31-row queue following the 2026-05-10 documentation audit: 11 notebooks needing content edits ("Revise + verify") and 20 needing only a clean Restart & Run All ("Verify only"). Every row landed, and the 11 revise items were spot-checked against notebook contents on 2026-09-15 to confirm it.
 
-Each notebook is touched exactly once: revise (if needed) → Restart & Run All → review. Workflow: Claude edits → Mike does Restart & Run All → Claude reviews outputs. One notebook at a time, checked off as completed.
+Two things it specified have since been superseded and should not be copied into a new round:
 
-#### Function notebooks — Revise + verify
+- **The one-at-a-time cadence** ("Claude edits → Mike does Restart & Run All → Claude reviews outputs, one notebook at a time"). Notebooks now ship with outputs already populated by a pre-execution run, and the user's Restart & Run All is a **review** pass rather than the execution step. Batches are queued for *reading*, not for running.
+- **Its per-notebook tables** as a tracking shape. Outstanding review work now lives in the shared [*Pending Reviews*](../bq-ml/PLANS.md#pending-reviews) table with the sibling project, so there is one queue rather than two.
 
-| # | Notebook | Changes Needed | Priority |
-|---|----------|---------------|----------|
-| 1 | `functions/ai_embed/ai_embed.ipynb` | New `model` param, built-in `embeddinggemma-300m`, 4 new embedding models (esp. `gemini-embedding-2-preview` multimodal) | High |
-| 2 | `functions/ai_similarity/ai_similarity.ipynb` | New `model` param, same new models as AI.EMBED | Medium |
-| 3 | `functions/ai_generate_embedding/ai_generate_embedding.ipynb` | New `gemini-embedding-2-preview` model support | Medium |
-| 4 | `functions/ai_if/ai_if.ipynb` | New `examples`, `optimization_mode` (Preview), `embeddings` (Preview), `max_error_ratio` params | High |
-| 5 | `functions/ai_classify/ai_classify.ipynb` | Same new params as AI.IF | High |
-| 6 | `functions/ai_score/ai_score.ipynb` | New `max_error_ratio` param | Medium |
-| 7 | `functions/ai_detect_anomalies/ai_detect_anomalies.ipynb` | Status Preview → GA, new `context_window` param | Medium |
-| 8 | `functions/ai_evaluate/ai_evaluate.ipynb` | New `context_window` param, new MASE output metric | Medium |
-| 9 | `functions/ai_forecast/ai_forecast.ipynb` | New `forecast_end_timestamp` alternative to `horizon` | Low |
-| 10 | `functions/ai_generate/ai_generate.ipynb` | `thinking_level` for Gemini 3.0+ | Low |
-| 11 | `functions/ml_process_document/ml_process_document.ipynb` | Page limit 100→130, 120s timeout, batch size of 10 | Low |
-
-#### Function notebooks — Verify only
-
-| # | Notebook | Notes |
-|---|----------|-------|
-| 12 | `functions/ai_agg/ai_agg.ipynb` | AI.AGG re-enabled. Warning removed. Expanded with examples 8-11 (connection_id, quantitative, AI.AGG vs AI.GENERATE, multimodal ObjectRef). Examples 8-10 verified. **Example 11 (multimodal):** AI.AGG returns NULL with PDF input via ObjectRef — commented out. Docs say "images via ObjectRef" so PDFs may not be supported. Future: retry with PNG images or wait for PDF support. |
-| 12b | `functions/ai_parse_document/ai_parse_document.ipynb` | New notebook (2026-05-23). Needs initial Restart & Run All to verify all cells run clean. |
-| 13 | `functions/ai_generate_text/ai_generate_text.ipynb` | USE_CHAT_MODE is Open-models-only; verify existing examples still run |
-| 14 | `functions/ai_generate_table/ai_generate_table.ipynb` | No doc changes |
-| 15 | `functions/ai_generate_bool/ai_generate_bool.ipynb` | No doc changes |
-| 16 | `functions/ai_generate_double/ai_generate_double.ipynb` | No doc changes |
-| 17 | `functions/ai_generate_int/ai_generate_int.ipynb` | No doc changes |
-| 18 | `functions/ml_generate_text/ml_generate_text.ipynb` | No doc changes |
-| 19 | `functions/ml_generate_embedding/ml_generate_embedding.ipynb` | No doc changes |
-| 20 | `functions/ai_search/ai_search.ipynb` | No doc changes |
-| 21 | `functions/vector_search/vector_search.ipynb` | No doc changes |
-| 22 | `overview.ipynb` | No doc changes — verify interactive tour still runs |
-
-#### Workflow notebooks — Verify only
-
-All workflows use functions that were updated. Verify they still run clean. If a workflow would benefit from demoing a new capability (e.g., optimized mode in Content Moderation), promote it to "Revise + verify" during review.
-
-| # | Notebook | Functions with changes |
-|---|----------|-----------------------|
-| 23 | `workflows/content_analysis/content_analysis.ipynb` | AI.AGG re-enabled. Warning removed. Needs Restart & Run All. |
-| 24 | `workflows/content_moderation/content_moderation.ipynb` | AI.AGG re-enabled. Warning removed. Includes Step 2b (AI.IF few-shot examples). Needs Restart & Run All. |
-| 25 | `workflows/data_enrichment/data_enrichment.ipynb` | AI.GENERATE |
-| 26 | `workflows/document_intelligence/document_intelligence.ipynb` | AI.AGG re-enabled. Warning removed. Needs Restart & Run All. |
-| 27 | `workflows/log_analysis/log_analysis.ipynb` | AI.AGG re-enabled. Warning removed. Needs Restart & Run All. |
-| 28 | `workflows/multimodal_analysis/multimodal_analysis.ipynb` | AI.EMBED, AI.SIMILARITY |
-| 29 | `workflows/rag_pipeline/rag_pipeline.ipynb` | AI.EMBED |
-| 30 | `workflows/semantic_search/semantic_search.ipynb` | AI.EMBED, AI.SEARCH |
-| 31 | `workflows/time_series_intelligence/time_series_intelligence.ipynb` | AI.FORECAST, AI.DETECT_ANOMALIES, AI.EVALUATE |
+The audit's findings themselves are in the [Audit log](#audit-log) rows dated 2026-05-10 through 2026-05-23.
 
 ---
 

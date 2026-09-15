@@ -272,7 +272,7 @@ client.query(query).to_dataframe()
 
 Below we render invoice and receipt PDFs from this project's `data/documents` (document set) to PNG images, upload them to GCS, then embed and compare them. The embeddings should show that documents of the same type cluster together.
 
-The ObjectRef pattern: `OBJ.MAKE_REF` → `OBJ.FETCH_METADATA` → `OBJ.GET_ACCESS_URL` creates a signed reference inline — no object table needed.
+The ObjectRef pattern: `OBJ.MAKE_REF(uri, connection)` builds the reference inline — no object table needed, and nothing to sign.
 
 ```python
 import shutil, subprocess
@@ -322,17 +322,17 @@ print(f'Rendered and uploaded {len(docs)} document images to gs://{BUCKET}/{pref
 
 ### 8. Embed a document image
 
-Use the inline ObjectRef pipeline to embed an invoice image with `multimodalembedding@001`. The `connection_id` parameter authorizes GCS access.
+Use an inline `OBJ.MAKE_REF` to embed an invoice image with `multimodalembedding@001`. The `connection_id` parameter authorizes GCS access.
 
 ```python
 query = f"""
 SELECT
   'invoice_1.png' AS document,
   ARRAY_LENGTH((AI.EMBED(
-    content => OBJ.GET_ACCESS_URL(
-      OBJ.FETCH_METADATA(
-        OBJ.MAKE_REF('gs://{BUCKET}/bq_ai_functions/ai_embed/invoice_1.png', '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}')
-      ), 'r'),
+    content => OBJ.MAKE_REF(
+      'gs://{BUCKET}/bq_ai_functions/ai_embed/invoice_1.png',
+      '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
+    ),
     endpoint => 'multimodalembedding@001',
     connection_id => '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
   )).result) AS embedding_dimensions
@@ -350,13 +350,10 @@ WITH doc_embeddings AS (
   SELECT
     doc_name,
     (AI.EMBED(
-      content => OBJ.GET_ACCESS_URL(
-        OBJ.FETCH_METADATA(
-          OBJ.MAKE_REF(
-            CONCAT('gs://{BUCKET}/bq_ai_functions/ai_embed/', doc_name),
-            '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
-          )
-        ), 'r'),
+      content => OBJ.MAKE_REF(
+        CONCAT('gs://{BUCKET}/bq_ai_functions/ai_embed/', doc_name),
+        '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
+      ),
       endpoint => 'multimodalembedding@001',
       connection_id => '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
     )).result AS vec

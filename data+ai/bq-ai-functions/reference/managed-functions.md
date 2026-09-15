@@ -68,7 +68,7 @@ These are higher-level "managed" AI functions that provide **simplified interfac
 | **Auto-batching** | No | No | No | Yes (multi-level) |
 | **Prompt Optimization** | Yes (auto-structures prompts) | Yes (auto-generates scoring rubric) | Yes (auto-structures for classification) | Yes (auto-batches and aggregates) |
 | **Model Parameter Control** | No | No | No | No |
-| **Multimodal Support** | Yes (STRUCT prompt) | Yes (STRUCT prompt) | Yes (STRUCT prompt) | Yes (STRUCT input with ObjectRefRuntime) |
+| **Multimodal Support** | Yes (STRUCT prompt) | Yes (tuple: `(text, ref)`) | Yes (direct: `AI.CLASSIFY(ref, ...)`) | Yes (`STRUCT(ref)`) |
 | **Few-shot Examples** | Yes (`examples` param) | No | Yes (`examples` param) | No |
 | **Optimized Mode** | Yes (`optimization_mode`, `embeddings` — Preview) | No | Yes (`optimization_mode`, `embeddings` — Preview) | No |
 | **Error Ratio Control** | Yes (`max_error_ratio`) | Yes (`max_error_ratio`) | Yes (`max_error_ratio`) | No |
@@ -102,7 +102,7 @@ AI.IF(
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `PROMPT` | STRING or STRUCT | Required (must be first argument) | The prompt value to send to the model. STRING or STRUCT with STRING/ARRAY\<STRING\>/ObjectRefRuntime/ARRAY\<ObjectRefRuntime\> fields. At most one video object. |
+| `PROMPT` | STRING or STRUCT | Required (must be first argument) | The prompt value to send to the model. STRING or STRUCT with STRING/ARRAY\<STRING\>/ObjectRef/ARRAY\<ObjectRef\> fields. At most one video object. |
 | `EXAMPLES` | ARRAY\<STRUCT\<STRING, BOOL\>\> | Optional | Few-shot examples to guide the model. Each struct maps an example input string to an expected BOOL output. Example: `[("I love this product", TRUE), ("The product performed well", FALSE)]`. |
 | `CONNECTION` | STRING | Optional | Connection to use, format: `[PROJECT_ID].LOCATION.CONNECTION_ID`. If not specified, end-user credentials are used. |
 | `ENDPOINT` | STRING | Optional | Vertex AI endpoint. Any GA or preview Gemini model. If not specified, BigQuery ML dynamically chooses a model for best cost-to-quality tradeoff. |
@@ -153,7 +153,7 @@ AI.SCORE(
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `PROMPT` | STRING or STRUCT | Required (must be first argument) | The prompt describing the scoring criteria. STRING or STRUCT with STRING/ARRAY\<STRING\>/ObjectRefRuntime/ARRAY\<ObjectRefRuntime\> fields. At most one video object. |
+| `PROMPT` | STRING or STRUCT | Required (must be first argument) | The prompt describing the scoring criteria. STRING or STRUCT with STRING/ARRAY\<STRING\>/ObjectRef/ARRAY\<ObjectRef\> fields. At most one video object. For a document plus its criteria, the tuple form `('criteria text', ref)` is the usual shape. |
 | `CONNECTION` | STRING | Optional | Connection to use, format: `[PROJECT_ID].LOCATION.CONNECTION_ID`. |
 | `ENDPOINT` | STRING | Optional | Vertex AI endpoint. If not specified, BigQuery dynamically chooses a model. |
 | `MAX_ERROR_RATIO` | FLOAT64 | Optional | Range 0.0–1.0, default 1.0. If the error ratio exceeds this threshold, the query fails with an error. |
@@ -208,7 +208,7 @@ AI.CLASSIFY(
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `INPUT` | STRING or STRUCT | Required (must be first argument) | The input to classify. STRING or STRUCT with STRING/ARRAY\<STRING\>/ObjectRefRuntime/ARRAY\<ObjectRefRuntime\> fields. At most one video object. |
+| `INPUT` | STRING or STRUCT | Required (must be first argument) | The input to classify. STRING, an `ObjectRef`, or a STRUCT with STRING/ARRAY\<STRING\>/ObjectRef/ARRAY\<ObjectRef\> fields. At most one video object. An object table's `ref` column goes in directly — `EXTERNAL_OBJECT_TRANSFORM` is not required (verified live 2026-09-15). |
 | `CATEGORIES` | ARRAY\<STRING\> or ARRAY\<STRUCT\<STRING, STRING\>\> | Required (must be second argument) | The categories to classify into. Without descriptions: `['positive', 'neutral', 'negative']`. With descriptions: `[('green', 'positive'), ('yellow', 'neutral'), ('red', 'negative')]`. Must be string literals (or use a DECLARE variable from a table column). |
 | `EXAMPLES` | ARRAY\<STRUCT\<STRING, STRING\>\> (single) or ARRAY\<STRUCT\<STRING, ARRAY\<STRING\>\>\> (multi) | Optional | Few-shot examples. For single mode: maps input to expected category. For multi mode: maps input to expected array of categories. Example: `[("This is a great phone", "tech"), ("The match was exciting", "sport")]`. |
 | `CONNECTION` | STRING | Optional | Connection to use, format: `[PROJECT_ID].LOCATION.CONNECTION_ID`. |
@@ -275,7 +275,7 @@ AI.AGG(
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `DISTINCT` | keyword | Optional | When specified, deduplicates input values before aggregating. |
-| `INPUT` | STRING or STRUCT | Required (must be first argument) | The data to aggregate. STRING value, or STRUCT consisting of STRING values, ObjectRefRuntime values, and arrays of STRING and ObjectRefRuntime values. ObjectRefRuntime values reference text or image data in Cloud Storage (generated by `OBJ.GET_ACCESS_URL`). |
+| `INPUT` | STRING or STRUCT | Required (must be first argument) | The data to aggregate. STRING value, or STRUCT consisting of STRING values, object references, and arrays of either. **The reference page still specifies `ObjectRefRuntime` here — it is the only `AI.*` page that does.** A bare `ObjectRef` works anyway: `AI.AGG(STRUCT(ref), instruction)` over an object table returns real summaries (verified live 2026-09-15 over 50 PDFs), and the Known Issues below argue for it. |
 | `INSTRUCTION` | STRING | Required (must be second argument) | Natural language aggregation prompt describing what to extract or summarize from the input data. Can be a string literal or query parameter. |
 | `CONNECTION` | STRING | Optional | Connection to use, format: `[PROJECT_ID.]LOCATION.CONNECTION_ID`. If not specified, end-user credentials are used. |
 | `ENDPOINT` | STRING | Optional | Vertex AI endpoint. Any Gemini model that doesn't require thinking budget. If not specified, BigQuery chooses a model for you. |
@@ -303,6 +303,10 @@ AI.AGG(
 **Known issues:**
 - Input rows with 10 or more images in a single row might be skipped.
 - Input rows with arrays of ObjectRefRuntime objects that call `OBJ.GET_ACCESS_URL` might be skipped.
+- Some ObjectRefRuntime **image** objects created by `OBJ.GET_ACCESS_URL` might fail to process.
+- Both of the above are about `ObjectRefRuntime` specifically. Passing the `ObjectRef` sidesteps them — the practical argument for the unwrapped form even though this page's `INPUT` row still names the runtime type.
+- Individual rows larger than **10 MiB** might fail with an internal error.
+- Mixing `AI.AGG()` without `DISTINCT` and another aggregate function *with* `DISTINCT` in the same query might return an internal error.
 - Workforce Identity Federation without a specified Cloud resource connection may cause failures on long-running queries.
 - Queries using Gemini 3.0 or 3.1 with connection-based authentication might receive an unauthenticated error.
 

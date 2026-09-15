@@ -16,7 +16,7 @@
 
 **Featured in:** `workflows/content_analysis` (Content Analysis Pipeline) | `workflows/document_intelligence` (Document Intelligence) | `workflows/content_moderation` (Content Moderation) | `workflows/log_analysis` (Log Analysis)
 
-**Multimodal:** Supports document, image, and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT input with ObjectRefRuntime fields to classify documents, images, or video.
+**Multimodal:** Supports document, image, and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT input with `ObjectRef` fields to classify documents, images, or video.
 
 **References:** `RESOURCES.md` (Full syntax reference) | [Official documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-classify) | `setup` (Setup guide)
 
@@ -250,16 +250,15 @@ FROM `my_dataset.support_tickets`  -- needs ~3,000+ rows
 ---
 ## Examples — Multimodal with ObjectRef
 
-`AI.CLASSIFY` can classify documents, images, and video stored in Cloud Storage. Create an **object table** to reference GCS files, then use `EXTERNAL_OBJECT_TRANSFORM` to get signed references that `AI.CLASSIFY` can read.
+`AI.CLASSIFY` can classify documents, images, and video stored in Cloud Storage. Create an **object table** to reference GCS files and pass its `ref` column — an `ObjectRef` — straight to the function.
 
 ```
 Object table (GCS URIs + connection)
-  → EXTERNAL_OBJECT_TRANSFORM(TABLE, ['SIGNED_URL'])
-    → ref column (ObjectRef with signed URL)
-      → AI.CLASSIFY(ref, categories)
+  → ref column (ObjectRef)
+    → AI.CLASSIFY(ref, categories)
 ```
 
-See the `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
+`EXTERNAL_OBJECT_TRANSFORM(TABLE t, ['SIGNED_URL'])` rewrites that column into a signed `ObjectRefRuntime`. It is worth reaching for when something downstream needs a fetchable URL — a display link, delegated access, an explicit TTL — but `AI.CLASSIFY` does not need it. See the `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
 
 ### Multimodal setup — connection, documents, and object table
 
@@ -333,7 +332,7 @@ print('Object table ai_classify_docs ready')
 
 ### 8. Classify a document
 
-Use `EXTERNAL_OBJECT_TRANSFORM` to get a signed `ref` from the object table, then pass it directly to `AI.CLASSIFY`.
+Pass the object table's `ref` column directly to `AI.CLASSIFY`.
 
 ```python
 query = f"""
@@ -344,8 +343,7 @@ SELECT
     ['invoice', 'receipt', 'contract', 'report']
   ) AS document_type
 FROM
-  EXTERNAL_OBJECT_TRANSFORM(TABLE `{PROJECT_ID}.{DATASET_ID}.ai_classify_docs`,
-                            ['SIGNED_URL']) AS docs
+  `{PROJECT_ID}.{DATASET_ID}.ai_classify_docs` AS docs
 """
 client.query(query).to_dataframe()
 ```
@@ -366,8 +364,7 @@ SELECT
      ('report', 'An analytical document with findings, data, or recommendations')]
   ) AS document_type
 FROM
-  EXTERNAL_OBJECT_TRANSFORM(TABLE `{PROJECT_ID}.{DATASET_ID}.ai_classify_docs`,
-                            ['SIGNED_URL']) AS docs
+  `{PROJECT_ID}.{DATASET_ID}.ai_classify_docs` AS docs
 """
 client.query(query).to_dataframe()
 ```

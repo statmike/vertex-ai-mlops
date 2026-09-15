@@ -148,7 +148,9 @@ FROM UNNEST([
 -- =============================================================================
 -- Example 7: Multimodal — summarize image contents with ObjectRef
 -- =============================================================================
--- Use a STRUCT with ObjectRefRuntime to aggregate image data.
+-- Wrap the object table's ref column in a one-field STRUCT. AI.AGG's reference
+-- page is the last one still specifying ObjectRefRuntime; the ObjectRef works
+-- and avoids the known issues its own page lists for the wrapped form.
 -- Requires: Object table with Cloud resource connection
 
 -- CREATE OR REPLACE EXTERNAL TABLE `PROJECT_ID.DATASET.ai_agg_images`
@@ -160,7 +162,7 @@ FROM UNNEST([
 
 SELECT
   AI.AGG(
-    STRUCT(OBJ.GET_ACCESS_URL(ref, 'r')),
+    STRUCT(ref),
     'What are the major categories of items shown in these images?'
   ) AS category_summary
 FROM
@@ -176,10 +178,9 @@ FROM
 -- SELECT
 --   REGEXP_EXTRACT(uri, r'gs://[^/]+/([^/]+)/') AS folder,
 --   AI.AGG(
---     STRUCT(OBJ.GET_ACCESS_URL(ref, 'r')),
+--     STRUCT(ref),
 --     'Describe the common visual themes in these images.'
 --   ) AS visual_themes
 -- FROM
---   EXTERNAL_OBJECT_TRANSFORM(TABLE `PROJECT_ID.DATASET.ai_agg_images`,
---                             ['SIGNED_URL']) AS docs
+--   `PROJECT_ID.DATASET.ai_agg_images` AS docs
 -- GROUP BY folder;

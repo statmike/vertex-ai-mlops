@@ -559,7 +559,7 @@ Three names outside the documented eight are accepted and one is rejected by nam
 
 ### 9. Vision against `AI.GENERATE` on the same images
 
-`AI.GENERATE` reads an image through an `ObjectRef` — `OBJ.MAKE_REF` names the file and the connection, `OBJ.FETCH_METADATA` resolves it, `OBJ.GET_ACCESS_URL` gives the model a readable URL. Both halves of this query run through the same connection.
+`AI.GENERATE` reads an image through an `ObjectRef` — `OBJ.MAKE_REF` names the file and the connection, and the function resolves it. Both halves of this query run through the same connection.
 
 Ask both for the same thing — five labels — and read the two columns against each other.
 
@@ -583,9 +583,8 @@ SELECT
   vision_labels,
   AI.GENERATE(STRUCT(
     'List the five most prominent labels for this image, comma separated, no other text.' AS prompt,
-    [OBJ.GET_ACCESS_URL(
-       OBJ.FETCH_METADATA(OBJ.MAKE_REF(uri, '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}')), 'r')
-    ] AS object_ref_runtime
+    [OBJ.MAKE_REF(uri, '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}')
+    ] AS object_refs
   )).result AS gemini_labels
 FROM vision
 ORDER BY image

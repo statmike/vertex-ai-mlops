@@ -63,14 +63,8 @@ LIMIT 1;
 -- Same-type documents should score higher than cross-type pairs
 SELECT
   AI.SIMILARITY(
-    content1 => OBJ.GET_ACCESS_URL(
-      OBJ.FETCH_METADATA(
-        OBJ.MAKE_REF('gs://BUCKET/path/to/invoice_1.png', 'PROJECT_ID.LOCATION.CONNECTION_ID')
-      ), 'r'),
-    content2 => OBJ.GET_ACCESS_URL(
-      OBJ.FETCH_METADATA(
-        OBJ.MAKE_REF('gs://BUCKET/path/to/receipt_1.png', 'PROJECT_ID.LOCATION.CONNECTION_ID')
-      ), 'r'),
+    content1 => OBJ.MAKE_REF('gs://BUCKET/path/to/invoice_1.png', 'PROJECT_ID.LOCATION.CONNECTION_ID'),
+    content2 => OBJ.MAKE_REF('gs://BUCKET/path/to/receipt_1.png', 'PROJECT_ID.LOCATION.CONNECTION_ID'),
     endpoint => 'multimodalembedding@001',
     connection_id => 'PROJECT_ID.LOCATION.CONNECTION_ID'
   ) AS similarity;
@@ -85,13 +79,7 @@ SELECT
   doc_name,
   ROUND(AI.SIMILARITY(
     content1 => description,
-    content2 => OBJ.GET_ACCESS_URL(
-      OBJ.FETCH_METADATA(
-        OBJ.MAKE_REF(
-          CONCAT('gs://BUCKET/path/to/', doc_name),
-          'PROJECT_ID.LOCATION.CONNECTION_ID'
-        )
-      ), 'r'),
+    content2 => OBJ.MAKE_REF(CONCAT('gs://BUCKET/path/to/', doc_name), 'PROJECT_ID.LOCATION.CONNECTION_ID'),
     endpoint => 'multimodalembedding@001',
     connection_id => 'PROJECT_ID.LOCATION.CONNECTION_ID'
   ), 4) AS similarity

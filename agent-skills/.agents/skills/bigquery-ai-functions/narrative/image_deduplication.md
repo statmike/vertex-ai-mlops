@@ -310,9 +310,7 @@ SELECT
   uri,
   REGEXP_EXTRACT(uri, r'/([^/]+)$') AS image_name,
   (AI.EMBED(
-    content => OBJ.GET_ACCESS_URL(
-      OBJ.FETCH_METADATA(OBJ.MAKE_REF(uri, '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}')),
-      'r'),
+    content => OBJ.MAKE_REF(uri, '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'),
     endpoint => 'gemini-embedding-2-preview',
     connection_id => '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
   )).result AS embedding

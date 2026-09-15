@@ -13,7 +13,7 @@ An end-to-end document analysis pipeline that composes AI functions with multimo
 - Document-to-document similarity via embedding distance — same-type documents cluster together
 - Cross-modal text-to-image similarity — text and images share a vector space
 - Visual description with multimodal `AI.GENERATE`
-- The inline ObjectRef pipeline: `OBJ.MAKE_REF` → `OBJ.FETCH_METADATA` → `OBJ.GET_ACCESS_URL`
+- The inline ObjectRef pattern: `OBJ.MAKE_REF(uri, connection)`, passed straight to the function
 
 **Functions used:** `functions/ai_embed` (`AI.EMBED`) | `functions/ai_similarity` (`AI.SIMILARITY`) | `functions/ai_generate` (`AI.GENERATE`)
 
@@ -133,7 +133,7 @@ print(f'Rendered and uploaded {len(docs)} document images to gs://{BUCKET}/{pref
 ---
 ## Step 2 — Embed documents with AI.EMBED
 
-Create document image embeddings using `multimodalembedding@001` via the inline ObjectRef pipeline. Each image gets a 1408-dimension vector. Save results to a table for similarity computation.
+Create document image embeddings using `multimodalembedding@001` via an inline `OBJ.MAKE_REF`. Each image gets a 1408-dimension vector. Save results to a table for similarity computation.
 
 ```python
 query = f"""
@@ -141,13 +141,10 @@ CREATE OR REPLACE TABLE `{PROJECT_ID}.{DATASET_ID}.workflow_mm_embeddings` AS
 SELECT
   doc_name,
   (AI.EMBED(
-    content => OBJ.GET_ACCESS_URL(
-      OBJ.FETCH_METADATA(
-        OBJ.MAKE_REF(
-          CONCAT('gs://{BUCKET}/bq_ai_functions/multimodal_analysis/', doc_name),
-          '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
-        )
-      ), 'r'),
+    content => OBJ.MAKE_REF(
+      CONCAT('gs://{BUCKET}/bq_ai_functions/multimodal_analysis/', doc_name),
+      '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
+    ),
     endpoint => 'multimodalembedding@001',
     connection_id => '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
   )).result AS embedding
@@ -202,13 +199,10 @@ SELECT
   doc_name,
   ROUND(AI.SIMILARITY(
     content1 => description,
-    content2 => OBJ.GET_ACCESS_URL(
-      OBJ.FETCH_METADATA(
-        OBJ.MAKE_REF(
-          CONCAT('gs://{BUCKET}/bq_ai_functions/multimodal_analysis/', doc_name),
-          '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
-        )
-      ), 'r'),
+    content2 => OBJ.MAKE_REF(
+      CONCAT('gs://{BUCKET}/bq_ai_functions/multimodal_analysis/', doc_name),
+      '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
+    ),
     endpoint => 'multimodalembedding@001',
     connection_id => '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
   ), 4) AS similarity
@@ -252,9 +246,15 @@ query = f"""
 SELECT (AI.GENERATE(
   STRUCT(
     'Describe these two document images and explain what makes them visually similar. Be concise (2-3 sentences).' AS prompt,
-    [OBJ.GET_ACCESS_URL(OBJ.FETCH_METADATA(OBJ.MAKE_REF('gs://{BUCKET}/bq_ai_functions/multimodal_analysis/{doc_a}', '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}')), 'r'),
-     OBJ.GET_ACCESS_URL(OBJ.FETCH_METADATA(OBJ.MAKE_REF('gs://{BUCKET}/bq_ai_functions/multimodal_analysis/{doc_b}', '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}')), 'r')
-    ] AS object_ref_runtime
+    [OBJ.MAKE_REF(
+      'gs://{BUCKET}/bq_ai_functions/multimodal_analysis/{doc_a}',
+      '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
+    ),
+     OBJ.MAKE_REF(
+       'gs://{BUCKET}/bq_ai_functions/multimodal_analysis/{doc_b}',
+       '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
+     )
+    ] AS object_refs
   )
 )).result AS description
 """

@@ -1,10 +1,10 @@
 {
   "name": "bigquery-ai-functions",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "source_project": "data+ai/bq-ai-functions",
   "narrative_sources": {},
   "generated_date": "2026-09-15",
-  "source_commit": "fb67bf48",
+  "source_commit": "000956c9",
   "reference_files": [
     "classification-and-scoring.md",
     "cloud-ai-service-models.md",

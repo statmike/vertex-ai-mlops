@@ -12,7 +12,7 @@
 - `functions/ai_embed` (`AI.EMBED`) — Scalar function, no model required, for inline embedding. Supports a built-in model (`embeddinggemma-300m`) with no Vertex AI charges.
 - `functions/ml_generate_embedding` (`ML.GENERATE_EMBEDDING`) — Legacy predecessor with ml_generate_embedding_ column prefixes
 
-**Multimodal:** Supports image and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass ObjectRef or ObjectRefRuntime values in the `content` column. `gemini-embedding-2-preview` (Preview) extends this to audio and PDFs.
+**Multimodal:** Supports image and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass `ObjectRef` values in the `content` column. `gemini-embedding-2-preview` (Preview) extends this to audio and PDFs.
 
 **References:** `RESOURCES.md` (Full syntax reference) | [Official documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate-embedding) | `setup` (Setup guide)
 
@@ -296,7 +296,7 @@ print(f'Rendered and uploaded {len(docs)} document images to gs://{BUCKET}/{pref
 
 ### 6. Batch embed documents
 
-Use `AI.GENERATE_EMBEDDING` with the multimodal model on a subquery that builds ObjectRef values inline. The subquery must produce a `content` column with ObjectRefRuntime values. Each document image gets a 1408-dimension embedding.
+Use `AI.GENERATE_EMBEDDING` with the multimodal model on a subquery that builds ObjectRef values inline. The subquery must produce a `content` column with `ObjectRef` values. Each document image gets a 1408-dimension embedding.
 
 ```python
 query = f'''
@@ -307,13 +307,10 @@ FROM AI.GENERATE_EMBEDDING(
   MODEL `{PROJECT_ID}.{DATASET_ID}.embedding_multimodal`,
   (SELECT
     doc_name,
-    OBJ.GET_ACCESS_URL(
-      OBJ.FETCH_METADATA(
-        OBJ.MAKE_REF(
-          CONCAT('gs://{BUCKET}/bq_ai_functions/ai_generate_embedding/', doc_name),
-          '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
-        )
-      ), 'r') AS content
+    OBJ.MAKE_REF(
+      CONCAT('gs://{BUCKET}/bq_ai_functions/ai_generate_embedding/', doc_name),
+      '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
+    ) AS content
   FROM UNNEST([
     'invoice_1.png', 'invoice_2.png', 'invoice_3.png',
     'receipt_1.png', 'receipt_2.png', 'receipt_3.png'
@@ -336,13 +333,10 @@ FROM AI.GENERATE_EMBEDDING(
   MODEL `{PROJECT_ID}.{DATASET_ID}.embedding_multimodal`,
   (SELECT
     doc_name,
-    OBJ.GET_ACCESS_URL(
-      OBJ.FETCH_METADATA(
-        OBJ.MAKE_REF(
-          CONCAT('gs://{BUCKET}/bq_ai_functions/ai_generate_embedding/', doc_name),
-          '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
-        )
-      ), 'r') AS content
+    OBJ.MAKE_REF(
+      CONCAT('gs://{BUCKET}/bq_ai_functions/ai_generate_embedding/', doc_name),
+      '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
+    ) AS content
   FROM UNNEST([
     'invoice_1.png', 'invoice_2.png', 'invoice_3.png'
   ]) AS doc_name),

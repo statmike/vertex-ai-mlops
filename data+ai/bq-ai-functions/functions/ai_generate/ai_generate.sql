@@ -201,21 +201,14 @@ FROM selected_reviews;
 -- =============================================================================
 -- The ObjectRef pipeline turns a GCS URI into a signed reference that
 -- AI.GENERATE can read. Pass it in a STRUCT with prompt and
--- object_ref_runtime fields.
+-- object_refs fields.
 --
 -- Requires: Cloud resource connection with roles/storage.objectViewer
 SELECT
   (AI.GENERATE(
     STRUCT(
       'Describe what this document is and summarize its key details.' AS prompt,
-      [OBJ.GET_ACCESS_URL(
-        OBJ.FETCH_METADATA(
-          OBJ.MAKE_REF(
-            'gs://BUCKET/path/to/document.pdf',
-            'PROJECT_ID.LOCATION.CONNECTION_ID'
-          )
-        ), 'r'
-      )] AS object_ref_runtime
+      [OBJ.MAKE_REF('gs://BUCKET/path/to/document.pdf', 'PROJECT_ID.LOCATION.CONNECTION_ID')] AS object_refs
     )
   )).result AS description;
 
@@ -236,14 +229,7 @@ FROM UNNEST([
   AI.GENERATE(
     STRUCT(
       'Extract the key fields from this invoice.' AS prompt,
-      [OBJ.GET_ACCESS_URL(
-        OBJ.FETCH_METADATA(
-          OBJ.MAKE_REF(
-            'gs://BUCKET/path/to/invoice.pdf',
-            'PROJECT_ID.LOCATION.CONNECTION_ID'
-          )
-        ), 'r'
-      )] AS object_ref_runtime
+      [OBJ.MAKE_REF('gs://BUCKET/path/to/invoice.pdf', 'PROJECT_ID.LOCATION.CONNECTION_ID')] AS object_refs
     ),
     output_schema => 'vendor_name STRING, invoice_number STRING, total_amount FLOAT64, currency STRING, invoice_date STRING, line_item_count INT64'
   )
@@ -270,14 +256,7 @@ FROM
     AI.GENERATE(
       STRUCT(
         'Identify the document type and extract key details.' AS prompt,
-        [OBJ.GET_ACCESS_URL(
-          OBJ.FETCH_METADATA(
-            OBJ.MAKE_REF(
-              uri,
-              'PROJECT_ID.LOCATION.CONNECTION_ID'
-            )
-          ), 'r'
-        )] AS object_ref_runtime
+        [OBJ.MAKE_REF(uri, 'PROJECT_ID.LOCATION.CONNECTION_ID')] AS object_refs
       ),
       output_schema => 'document_type STRING, total_amount FLOAT64, date STRING, summary STRING'
     )

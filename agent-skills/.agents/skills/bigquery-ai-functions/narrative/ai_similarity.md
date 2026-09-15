@@ -208,7 +208,7 @@ client.query(query).to_dataframe()
 ---
 ## Multimodal — Document and Cross-Modal Similarity
 
-`AI.SIMILARITY` supports image-to-image and text-to-image comparison using `multimodalembedding@001`. A `connection_id` is required. The function uses the inline ObjectRef pipeline to access images from GCS.
+`AI.SIMILARITY` supports image-to-image and text-to-image comparison using `multimodalembedding@001`. A `connection_id` is required. The function takes an inline `OBJ.MAKE_REF` to access images from GCS.
 
 > **New:** `gemini-embedding-2-preview` (Preview) supports PDF comparison directly — no rendering to PNG needed. The examples below use the GA `multimodalembedding@001` approach with rendered PNGs.
 
@@ -271,14 +271,14 @@ for label, doc_a, doc_b in [
     query = f"""
     SELECT
       AI.SIMILARITY(
-        content1 => OBJ.GET_ACCESS_URL(
-          OBJ.FETCH_METADATA(
-            OBJ.MAKE_REF('gs://{BUCKET}/bq_ai_functions/ai_similarity/{doc_a}', '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}')
-          ), 'r'),
-        content2 => OBJ.GET_ACCESS_URL(
-          OBJ.FETCH_METADATA(
-            OBJ.MAKE_REF('gs://{BUCKET}/bq_ai_functions/ai_similarity/{doc_b}', '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}')
-          ), 'r'),
+        content1 => OBJ.MAKE_REF(
+          'gs://{BUCKET}/bq_ai_functions/ai_similarity/{doc_a}',
+          '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
+        ),
+        content2 => OBJ.MAKE_REF(
+          'gs://{BUCKET}/bq_ai_functions/ai_similarity/{doc_b}',
+          '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
+        ),
         endpoint => 'multimodalembedding@001',
         connection_id => '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
       ) AS similarity
@@ -298,13 +298,10 @@ SELECT
   doc_name,
   ROUND(AI.SIMILARITY(
     content1 => description,
-    content2 => OBJ.GET_ACCESS_URL(
-      OBJ.FETCH_METADATA(
-        OBJ.MAKE_REF(
-          CONCAT('gs://{BUCKET}/bq_ai_functions/ai_similarity/', doc_name),
-          '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
-        )
-      ), 'r'),
+    content2 => OBJ.MAKE_REF(
+      CONCAT('gs://{BUCKET}/bq_ai_functions/ai_similarity/', doc_name),
+      '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
+    ),
     endpoint => 'multimodalembedding@001',
     connection_id => '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
   ), 4) AS similarity

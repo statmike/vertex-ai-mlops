@@ -18,7 +18,7 @@
 
 **Featured in:** `workflows/content_analysis` (Content Analysis Pipeline) | `workflows/content_moderation` (Content Moderation) | `workflows/document_intelligence` (Document Intelligence) | `workflows/log_analysis` (Log Analysis)
 
-**Multimodal:** Supports image input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT input with ObjectRefRuntime fields to aggregate over images.
+**Multimodal:** Supports image input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT input with `ObjectRef` fields to aggregate over images.
 
 **References:** `RESOURCES.md` (Full syntax reference) | [Official documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-agg) | `setup` (Setup guide)
 
@@ -382,70 +382,70 @@ client.query(query).to_dataframe()
 
 ### 11. Multimodal — aggregate documents with ObjectRef
 
-`AI.AGG` supports multimodal input via ObjectRef. Pass a `STRUCT` containing `OBJ.GET_ACCESS_URL(ref, 'r')` to aggregate over files stored in Cloud Storage.
+`AI.AGG` takes multimodal input as a `STRUCT` wrapping an `ObjectRef`. An object table's `ref` column goes in directly.
 
-> **Note:** Multimodal `AI.AGG` currently works with images. PDF support returns NULL (preview limitation). The syntax below shows the pattern — uncomment and run when image-based object tables are available.
+> **`AI.AGG` is the one multimodal function whose reference page still specifies `ObjectRefRuntime`** — every other `AI.*` page documents the input type as `ObjectRef` or `ARRAY<ObjectRef>`. The bare column works here anyway, and the page's own Known Issues argue for it: rows carrying arrays of `ObjectRefRuntime` objects "might be skipped," and some image objects created by `OBJ.GET_ACCESS_URL` "might fail to process." Passing `ref` sidesteps both.
 
 ```python
-# from google.cloud import storage
-# from pathlib import Path
-#
-# gcs = storage.Client(project=PROJECT_ID)
-# bucket = gcs.bucket(BUCKET)
-# prefix = 'bq_ai_functions/ai_agg_docs'
-#
-# data_dir = Path('../../data/documents')
-# if not data_dir.exists():
-#     data_dir = Path('data/documents')
-#
-# files_to_upload = [
-#     ('invoices/invoice_001.pdf', 'invoice_001.pdf'),
-#     ('invoices/invoice_002.pdf', 'invoice_002.pdf'),
-#     ('invoices/invoice_003.pdf', 'invoice_003.pdf'),
-#     ('receipts/receipt_001.pdf', 'receipt_001.pdf'),
-#     ('receipts/receipt_002.pdf', 'receipt_002.pdf'),
-#     ('receipts/receipt_003.pdf', 'receipt_003.pdf'),
-# ]
-#
-# for src, dst in files_to_upload:
-#     blob = bucket.blob(f'{prefix}/{dst}')
-#     if not blob.exists():
-#         blob.upload_from_filename(str(data_dir / src))
-# print(f'{len(files_to_upload)} documents uploaded to gs://{BUCKET}/{prefix}/')
-#
-# client.query(f"""
-# CREATE OR REPLACE EXTERNAL TABLE `{PROJECT_ID}.{DATASET_ID}.ai_agg_docs`
-# WITH CONNECTION `{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}`
-# OPTIONS (
-#   object_metadata = 'SIMPLE',
-#   uris = ['gs://{BUCKET}/{prefix}/*.pdf']
-# )
-# """).result()
-# print('Object table ai_agg_docs ready')
+from google.cloud import storage
+from pathlib import Path
+
+gcs = storage.Client(project=PROJECT_ID)
+bucket = gcs.bucket(BUCKET)
+prefix = 'bq_ai_functions/ai_agg_docs'
+
+data_dir = Path('../../data/documents')
+if not data_dir.exists():
+    data_dir = Path('data/documents')
+
+files_to_upload = [
+    ('invoices/invoice_001.pdf', 'invoice_001.pdf'),
+    ('invoices/invoice_002.pdf', 'invoice_002.pdf'),
+    ('invoices/invoice_003.pdf', 'invoice_003.pdf'),
+    ('receipts/receipt_001.pdf', 'receipt_001.pdf'),
+    ('receipts/receipt_002.pdf', 'receipt_002.pdf'),
+    ('receipts/receipt_003.pdf', 'receipt_003.pdf'),
+]
+
+for src, dst in files_to_upload:
+    blob = bucket.blob(f'{prefix}/{dst}')
+    if not blob.exists():
+        blob.upload_from_filename(str(data_dir / src))
+print(f'{len(files_to_upload)} documents uploaded to gs://{BUCKET}/{prefix}/')
+
+client.query(f"""
+CREATE OR REPLACE EXTERNAL TABLE `{PROJECT_ID}.{DATASET_ID}.ai_agg_docs`
+WITH CONNECTION `{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}`
+OPTIONS (
+  object_metadata = 'SIMPLE',
+  uris = ['gs://{BUCKET}/{prefix}/*.pdf']
+)
+""").result()
+print('Object table ai_agg_docs ready')
 ```
 
 ```python
-# query = f"""
-# SELECT
-#   AI.AGG(
-#     STRUCT(OBJ.GET_ACCESS_URL(ref, 'r')),
-#     'These are financial documents (invoices and receipts). Summarize the types of documents, the vendors/stores involved, and the typical transaction amounts.',
-#     connection_id => '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
-#   ) AS document_summary
-# FROM
-#   `{PROJECT_ID}.{DATASET_ID}.ai_agg_docs`
-# """
-# df = client.query(query).to_dataframe()
-# print(df.iloc[0]['document_summary'])
+query = f"""
+SELECT
+  AI.AGG(
+    STRUCT(ref),
+    'These are financial documents (invoices and receipts). Summarize the types of documents, the vendors/stores involved, and the typical transaction amounts.',
+    connection_id => '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
+  ) AS document_summary
+FROM
+  `{PROJECT_ID}.{DATASET_ID}.ai_agg_docs`
+"""
+df = client.query(query).to_dataframe()
+print(df.iloc[0]['document_summary'])
 ```
 
 ```python
-# # Cleanup multimodal resources
-# client.query(f'DROP EXTERNAL TABLE IF EXISTS `{PROJECT_ID}.{DATASET_ID}.ai_agg_docs`').result()
-# blobs = list(bucket.list_blobs(prefix=prefix))
-# for blob in blobs:
-#     blob.delete()
-# print(f'Cleaned up object table and {len(blobs)} GCS files')
+# Cleanup multimodal resources
+client.query(f'DROP EXTERNAL TABLE IF EXISTS `{PROJECT_ID}.{DATASET_ID}.ai_agg_docs`').result()
+blobs = list(bucket.list_blobs(prefix=prefix))
+for blob in blobs:
+    blob.delete()
+print(f'Cleaned up object table and {len(blobs)} GCS files')
 ```
 
 ---

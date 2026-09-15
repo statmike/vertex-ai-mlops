@@ -94,19 +94,25 @@ Every function has two example files:
 
 ### Multimodal Input — Documents, Images, Audio, Video
 
-Functions marked in the **Multimodal** column below can process files from Cloud Storage alongside text. Two mechanisms enable this:
+Functions marked in the **Multimodal** column below can process files from Cloud Storage alongside text. They all take the same thing — an **`ObjectRef`** — and there are two ways to get one:
 
-- **ObjectRef pipeline** — Create signed references inline (no table needed): `OBJ.MAKE_REF → OBJ.FETCH_METADATA → OBJ.GET_ACCESS_URL`. Most functions accept these in a **STRUCT prompt** or as an **ObjectRef content** parameter.
-- **Object tables** — External tables over Cloud Storage objects with a `ref` column. Required by some managed functions and ML.PROCESS_DOCUMENT. Best for processing many files at scale.
+- **Inline** — `OBJ.MAKE_REF('gs://bucket/file.pdf', 'project.region.connection')`. No table needed.
+- **Object tables** — External tables over Cloud Storage objects whose `ref` column already *is* an `ObjectRef`. Best for processing many files at scale, and the only input for `ML.PROCESS_DOCUMENT`.
+
+The **Multimodal** column says where the reference goes in the call, not how you built it:
 
 | Multimodal Label | How It Works |
 |------------------|--------------|
-| STRUCT prompt | Replace the STRING prompt with `STRUCT(text AS prompt, [refs] AS object_ref_runtime)` — works inline, no table needed |
-| Object table | Query an object table with the `ref` column — function-specific syntax varies (see each notebook) |
-| ObjectRef | Pass ObjectRef or ObjectRefRuntime directly as the content parameter |
+| STRUCT prompt | Replace the STRING prompt with `STRUCT(text AS prompt, [refs] AS object_refs)` |
+| Tuple | Pass `('scoring text', ref)` as a single tuple argument |
+| Direct | Pass the reference as an ordinary argument: `AI.CLASSIFY(ref, categories)`, or `AI.AGG(STRUCT(ref), instruction)` in a one-field STRUCT |
+| Content param | Pass the reference as the content argument of an embedding or similarity function |
+| Object table | The function reads object table rows directly |
 | — | Text/numeric only — no unstructured data input |
 
-See the [Unstructured Data Infrastructure](reference/unstructured-data-infrastructure.md) section in the Detailed Function Reference for the full ObjectRef pipeline, object table syntax, and schema details.
+> **You do not need `OBJ.GET_ACCESS_URL`.** Every function labelled with one of the first five rows above accepts the `ObjectRef` itself; wrapping it in a signed `ObjectRefRuntime` is still accepted but no longer required by any of them. Reach for `OBJ.GET_ACCESS_URL` when something *other* than the AI call needs a fetchable URL — writing a transformation output back to Cloud Storage, delegated access, an explicit TTL — or for `OBJ.GET_READ_URL` to display an object in query results.
+
+See the [Unstructured Data Infrastructure](reference/unstructured-data-infrastructure.md) section in the Detailed Function Reference for the `OBJ.*` functions, object table syntax, and schema details.
 
 ### Generation — Send prompts to GenAI models, get text or structured output
 
@@ -126,18 +132,18 @@ See the [Unstructured Data Infrastructure](reference/unstructured-data-infrastru
 | Function | Examples | Type | Status | Returns | Multimodal | What It Does |
 |----------|----------|------|--------|---------|------------|--------------|
 | `AI.IF` | [notebook](functions/ai_if/ai_if.ipynb) · [sql](functions/ai_if/ai_if.sql) | Scalar | Preview | BOOL | STRUCT prompt | Evaluate a natural language condition. Optimizes query plan to reduce Gemini calls. |
-| `AI.SCORE` | [notebook](functions/ai_score/ai_score.ipynb) · [sql](functions/ai_score/ai_score.sql) | Scalar | Preview | FLOAT64 | STRUCT prompt | Rate inputs on a scale you describe. Auto-generates a scoring rubric. |
-| `AI.CLASSIFY` | [notebook](functions/ai_classify/ai_classify.ipynb) · [sql](functions/ai_classify/ai_classify.sql) | Scalar | Preview | STRING or ARRAY | STRUCT prompt | Classify inputs into categories you provide. Supports multi-label. |
-| `AI.AGG` | [notebook](functions/ai_agg/ai_agg.ipynb) · [sql](functions/ai_agg/ai_agg.sql) | Aggregate | Preview | STRING | STRUCT input | Aggregate data with natural language instructions. Auto-batches beyond context window. |
+| `AI.SCORE` | [notebook](functions/ai_score/ai_score.ipynb) · [sql](functions/ai_score/ai_score.sql) | Scalar | Preview | FLOAT64 | Tuple | Rate inputs on a scale you describe. Auto-generates a scoring rubric. |
+| `AI.CLASSIFY` | [notebook](functions/ai_classify/ai_classify.ipynb) · [sql](functions/ai_classify/ai_classify.sql) | Scalar | Preview | STRING or ARRAY | Direct | Classify inputs into categories you provide. Supports multi-label. |
+| `AI.AGG` | [notebook](functions/ai_agg/ai_agg.ipynb) · [sql](functions/ai_agg/ai_agg.sql) | Aggregate | Preview | STRING | Direct | Aggregate data with natural language instructions. Auto-batches beyond context window. |
 
 ### Embeddings & Search — Create vectors, compute similarity, search semantically
 
 | Function | Examples | Type | Status | Requires Model | Multimodal | What It Does |
 |----------|----------|------|--------|----------------|------------|--------------|
-| `AI.EMBED` | [notebook](functions/ai_embed/ai_embed.ipynb) · [sql](functions/ai_embed/ai_embed.sql) | Scalar | Preview | No | ObjectRef | Create text or image embeddings. Specify endpoint directly. |
-| `AI.GENERATE_EMBEDDING` | [notebook](functions/ai_generate_embedding/ai_generate_embedding.ipynb) · [sql](functions/ai_generate_embedding/ai_generate_embedding.sql) | TVF | GA | Yes | ObjectRef | Create embeddings from text, images, or video via a remote model. |
-| `ML.GENERATE_EMBEDDING` | [notebook](functions/ml_generate_embedding/ml_generate_embedding.ipynb) · [sql](functions/ml_generate_embedding/ml_generate_embedding.sql) | TVF | GA | Yes | ObjectRef | Legacy predecessor to AI.GENERATE_EMBEDDING. Use AI.GENERATE_EMBEDDING for new work. |
-| `AI.SIMILARITY` | [notebook](functions/ai_similarity/ai_similarity.ipynb) · [sql](functions/ai_similarity/ai_similarity.sql) | Scalar | Preview | No | ObjectRef | Cosine similarity between two inputs. Generates embeddings at runtime. |
+| `AI.EMBED` | [notebook](functions/ai_embed/ai_embed.ipynb) · [sql](functions/ai_embed/ai_embed.sql) | Scalar | Preview | No | Content param | Create text or image embeddings. Specify endpoint directly. |
+| `AI.GENERATE_EMBEDDING` | [notebook](functions/ai_generate_embedding/ai_generate_embedding.ipynb) · [sql](functions/ai_generate_embedding/ai_generate_embedding.sql) | TVF | GA | Yes | Content param | Create embeddings from text, images, or video via a remote model. |
+| `ML.GENERATE_EMBEDDING` | [notebook](functions/ml_generate_embedding/ml_generate_embedding.ipynb) · [sql](functions/ml_generate_embedding/ml_generate_embedding.sql) | TVF | GA | Yes | Content param | Legacy predecessor to AI.GENERATE_EMBEDDING. Use AI.GENERATE_EMBEDDING for new work. |
+| `AI.SIMILARITY` | [notebook](functions/ai_similarity/ai_similarity.ipynb) · [sql](functions/ai_similarity/ai_similarity.sql) | Scalar | Preview | No | Content param | Cosine similarity between two inputs. Generates embeddings at runtime. |
 | `VECTOR_SEARCH` | [notebook](functions/vector_search/vector_search.ipynb) · [sql](functions/vector_search/vector_search.sql) | TVF | GA (single-search/hybrid syntax Preview) | No | — | Top-K nearest neighbor search on pre-computed embeddings. Supports vector indexes and hybrid (semantic + keyword) search. |
 | `AI.SEARCH` | [notebook](functions/ai_search/ai_search.ipynb) · [sql](functions/ai_search/ai_search.sql) | TVF | GA (`mode` Preview) | No | — | Semantic or hybrid search on tables with autonomous embedding generation. |
 

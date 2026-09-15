@@ -644,7 +644,7 @@ Whether this particular run happens to return one string or several, the count i
 
 ### 10. Speech-to-Text against `AI.GENERATE` on the same audio
 
-Gemini reads audio through an `ObjectRef` — `OBJ.MAKE_REF` names the file and the connection, `OBJ.FETCH_METADATA` resolves it, `OBJ.GET_ACCESS_URL` gives the model a readable URL. Both halves of this query run through the same connection.
+Gemini reads audio through an `ObjectRef` — `OBJ.MAKE_REF` names the file and the connection, and the function resolves it. Both halves of this query run through the same connection.
 
 Ask it for the same thing `ML.TRANSCRIBE` produces, and then for something `ML.TRANSCRIBE` cannot produce at all — with `chirp`, diarization is one of the rejected features from Example 6.
 
@@ -663,14 +663,12 @@ SELECT
   transcripts AS ml_transcribe,
   AI.GENERATE(STRUCT(
     'Transcribe this audio. Return only the words spoken.' AS prompt,
-    [OBJ.GET_ACCESS_URL(
-       OBJ.FETCH_METADATA(OBJ.MAKE_REF(uri, '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}')), 'r')
-    ] AS object_ref_runtime)).result AS ai_generate,
+    [OBJ.MAKE_REF(uri, '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}')
+    ] AS object_refs)).result AS ai_generate,
   AI.GENERATE(STRUCT(
     'How many distinct speakers are in this recording? Answer with a number and nothing else.' AS prompt,
-    [OBJ.GET_ACCESS_URL(
-       OBJ.FETCH_METADATA(OBJ.MAKE_REF(uri, '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}')), 'r')
-    ] AS object_ref_runtime)).result AS ai_speaker_count
+    [OBJ.MAKE_REF(uri, '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}')
+    ] AS object_refs)).result AS ai_speaker_count
 FROM transcribed
 ORDER BY audio_file
 '''
@@ -689,9 +687,8 @@ no_cache = bigquery.QueryJobConfig(use_query_cache=False)
 sql = f'''
 SELECT AI.GENERATE(STRUCT(
   'How many distinct speakers are in this recording? Answer with a number and nothing else.' AS prompt,
-  [OBJ.GET_ACCESS_URL(
-     OBJ.FETCH_METADATA(OBJ.MAKE_REF(uri, '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}')), 'r')
-  ] AS object_ref_runtime)).result AS speaker_count
+  [OBJ.MAKE_REF(uri, '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}')
+  ] AS object_refs)).result AS speaker_count
 FROM `{PROJECT_ID}.{DATASET_ID}.ml_transcribe_audio`
 WHERE uri LIKE '%commercial_mono%'
 '''

@@ -92,15 +92,15 @@ FROM UNNEST([
 -- Example 6: Embed a document image (multimodal)
 -- =============================================================================
 -- Requires: connection with aiplatform.user + storage.objectViewer roles
--- Uses inline ObjectRef pipeline: OBJ.MAKE_REF → OBJ.FETCH_METADATA → OBJ.GET_ACCESS_URL
+-- Passes the ObjectRef straight in: OBJ.MAKE_REF(uri, connection) → content =>
 -- Returns 1408-dimension vectors by default with multimodalembedding@001
 SELECT
   'invoice_1.png' AS document,
   ARRAY_LENGTH((AI.EMBED(
-    content => OBJ.GET_ACCESS_URL(
-      OBJ.FETCH_METADATA(
-        OBJ.MAKE_REF('gs://BUCKET/bq_ai_functions/ai_embed/invoice_1.png', 'PROJECT_ID.LOCATION.CONNECTION_ID')
-      ), 'r'),
+    content => OBJ.MAKE_REF(
+      'gs://BUCKET/bq_ai_functions/ai_embed/invoice_1.png',
+      'PROJECT_ID.LOCATION.CONNECTION_ID'
+    ),
     endpoint => 'multimodalembedding@001',
     connection_id => 'PROJECT_ID.LOCATION.CONNECTION_ID'
   )).result) AS embedding_dimensions;
@@ -115,13 +115,10 @@ WITH doc_embeddings AS (
   SELECT
     doc_name,
     (AI.EMBED(
-      content => OBJ.GET_ACCESS_URL(
-        OBJ.FETCH_METADATA(
-          OBJ.MAKE_REF(
-            CONCAT('gs://BUCKET/bq_ai_functions/ai_embed/', doc_name),
-            'PROJECT_ID.LOCATION.CONNECTION_ID'
-          )
-        ), 'r'),
+      content => OBJ.MAKE_REF(
+        CONCAT('gs://BUCKET/bq_ai_functions/ai_embed/', doc_name),
+        'PROJECT_ID.LOCATION.CONNECTION_ID'
+      ),
       endpoint => 'multimodalembedding@001',
       connection_id => 'PROJECT_ID.LOCATION.CONNECTION_ID'
     )).result AS vec

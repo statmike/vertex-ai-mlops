@@ -12,7 +12,7 @@
 - `functions/ai_generate_bool` (`AI.GENERATE_BOOL`) — BOOL output for true/false questions
 - `functions/ai_generate` (`AI.GENERATE`) — Full control with output_schema for any structured output
 
-**Multimodal:** Supports document, image, and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT prompt with ObjectRefRuntime fields to extract integer values from unstructured data.
+**Multimodal:** Supports document, image, and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT prompt with `ObjectRef` fields to extract integer values from unstructured data.
 
 **References:** `RESOURCES.md` (Full syntax reference) | [Official documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate-int) | `setup` (Setup guide)
 
@@ -135,15 +135,13 @@ client.query(query).to_dataframe()
 ---
 ## Examples — Multimodal with ObjectRef
 
-`AI.GENERATE_INT` can analyze documents, images, and video stored in Cloud Storage. Use the **ObjectRef pipeline** to create a STRUCT prompt with signed references:
+`AI.GENERATE_INT` can analyze documents, images, and video stored in Cloud Storage. Build the reference with `OBJ.MAKE_REF` and pass it in a STRUCT prompt:
 
 ```
-OBJ.MAKE_REF(uri, connection)        → ObjectRef
-  → OBJ.FETCH_METADATA(objectref)    → adds content type and size
-    → OBJ.GET_ACCESS_URL(ref, 'r')   → ObjectRefRuntime (signed URL)
+OBJ.MAKE_REF(uri, connection)   → ObjectRef — pass this straight to the function
 ```
 
-The STRUCT replaces the STRING prompt. See the `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
+The STRUCT replaces the STRING prompt. `OBJ.FETCH_METADATA` (content type and size) and `OBJ.GET_ACCESS_URL` (a signed `ObjectRefRuntime` URL) still have their uses — displaying an object, delegated access, an explicit TTL — but the AI functions take the `ObjectRef` itself. See the `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
 
 ```python
 import subprocess as _sp, json as _json
@@ -194,14 +192,10 @@ SELECT
   (AI.GENERATE_INT(
     STRUCT(
       'How many line items are on this invoice?' AS prompt,
-      [OBJ.GET_ACCESS_URL(
-        OBJ.FETCH_METADATA(
-          OBJ.MAKE_REF(
-            'gs://{BUCKET}/bq_ai_functions/ai_generate_int/invoice_001.pdf',
-            '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
-          )
-        ), 'r'
-      )] AS object_ref_runtime
+      [OBJ.MAKE_REF(
+        'gs://{BUCKET}/bq_ai_functions/ai_generate_int/invoice_001.pdf',
+        '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
+      )] AS object_refs
     )
   )).result AS line_item_count
 """

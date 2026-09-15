@@ -106,7 +106,7 @@ AI.EMBED(
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `content` | STRING, ObjectRef, ObjectRefRuntime, or STRUCT | Required | The data to embed. For text: string literal, column name, or expression. For images: ObjectRef/ObjectRefRuntime. For `gemini-embedding-2-preview`: can be a STRUCT containing STRING, ARRAY\<STRING\>, ObjectRef, and ARRAY\<ObjectRef\> (text, images, audio, video, PDFs). |
+| `content` | STRING, ObjectRef, ObjectRefRuntime, or STRUCT | Required | The data to embed. For text: string literal, column name, or expression. For images and documents: an `ObjectRef` — `OBJ.MAKE_REF(uri, connection)` or an object table's `ref` column. (`ObjectRefRuntime` is still accepted; it is not required.) For `gemini-embedding-2-preview`: can be a STRUCT containing STRING, ARRAY\<STRING\>, ObjectRef, and ARRAY\<ObjectRef\> (text, images, audio, video, PDFs). |
 | `endpoint` | STRING | Required (unless `model` specified) | Vertex AI embedding model endpoint. Must include model version (e.g., `text-embedding-005`, `multimodalembedding@001`, `gemini-embedding-2-preview`). BigQuery auto-resolves full endpoint from model name. |
 | `model` | STRING | Optional (Preview) | Built-in text embedding model. Only supported value: `embeddinggemma-300m` (768 dims, 2048 tokens). When specified, cannot use `endpoint`, `title`, `model_params`, or `connection_id`. Data stays in BigQuery — no Vertex AI charges, uses BQ slots. |
 | `task_type` | STRING literal | Optional (text only) | Intended downstream application. Values: `RETRIEVAL_QUERY`, `RETRIEVAL_DOCUMENT`, `SEMANTIC_SIMILARITY`, `CLASSIFICATION`, `CLUSTERING`, `QUESTION_ANSWERING`, `FACT_VERIFICATION`, `CODE_RETRIEVAL_QUERY` |
@@ -136,7 +136,7 @@ Returns a STRUCT with:
 
 **Best practices:**
 - If you need to reuse embeddings across many queries, save results to a table.
-- For multimodal input, use the inline ObjectRef pipeline (`OBJ.MAKE_REF` → `OBJ.FETCH_METADATA` → `OBJ.GET_ACCESS_URL`) to pass image content. This avoids needing an object table or BigQuery reservation.
+- For multimodal input, pass an inline `OBJ.MAKE_REF(uri, connection)` as the content. This avoids needing an object table or BigQuery reservation.
 - `multimodalembedding@001` supports images only (JPEG, PNG, BMP, GIF) — **not PDFs**. Render PDFs to images first (e.g., using `pdftoppm`).
 
 **Limitations:** Image content must be in supported formats (JPEG, PNG, BMP, GIF — not PDF). For multimodal embeddings, `connection_id` is required and the connection's service account needs `roles/aiplatform.user` and `roles/storage.objectViewer`. Incurs Vertex AI charges per call.
@@ -242,7 +242,7 @@ Additional output columns exist for multimodal (video_start_sec, video_end_sec),
 Also supports PCA, autoencoder, and matrix factorization models.
 
 **Best practices:**
-- For multimodal input, prefer inline ObjectRef subqueries (`OBJ.MAKE_REF` → `OBJ.FETCH_METADATA` → `OBJ.GET_ACCESS_URL` as the `content` column) over object tables. Inline ObjectRef queries do not require a BigQuery reservation, while object tables used with remote models do.
+- For multimodal input, prefer inline ObjectRef subqueries (`OBJ.MAKE_REF(uri, connection)` as the `content` column) over object tables. Inline ObjectRef queries do not require a BigQuery reservation, while object tables used with remote models do.
 - `multimodalembedding@001` supports images only (JPEG, PNG, BMP, GIF) — **not PDFs**. Render PDFs to images first.
 
 **Limitations:** Model and input table must be in the same region. Resource exhausted errors possible when API volume exceeds quota. Videos: only first 2 minutes processed. Object tables used with remote models require a BigQuery reservation — use inline ObjectRef to avoid this requirement.
@@ -328,7 +328,7 @@ AI.SIMILARITY(
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `content1` | STRING, ObjectRef, or ObjectRefRuntime | Required | First value to compare. For `gemini-embedding-2-preview`: can be a STRUCT (text, images, audio, video, PDFs). |
+| `content1` | STRING, ObjectRef, or ObjectRefRuntime | Required | First value to compare. An `ObjectRef` is enough — no signing step. For `gemini-embedding-2-preview`: can be a STRUCT (text, images, audio, video, PDFs). |
 | `content2` | STRING, ObjectRef, or ObjectRefRuntime | Required | Second value to compare. Same types as `content1`. |
 | `endpoint` | STRING | Required (unless `model` specified) | Vertex AI embedding model endpoint (e.g., `text-embedding-005`, `multimodalembedding@001`, `gemini-embedding-2-preview`). |
 | `model` | STRING | Optional (Preview) | Built-in text embedding model. Only supported value: `embeddinggemma-300m`. When specified, cannot use `endpoint`, `model_params`, or `connection_id`. No Vertex AI charges. |

@@ -14,7 +14,7 @@
 - `functions/ai_if` (`AI.IF`), `functions/ai_score` (`AI.SCORE`), `functions/ai_classify` (`AI.CLASSIFY`) — simplified interfaces for common tasks with auto-optimized prompts
 - `functions/ai_generate_bool` (`AI.GENERATE_BOOL`), `functions/ai_generate_double` (`AI.GENERATE_DOUBLE`), `functions/ai_generate_int` (`AI.GENERATE_INT`) — typed scalar variants returning `BOOL`, `FLOAT64`, `INT64`
 
-**Multimodal:** Supports document, image, and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT prompt with ObjectRefRuntime fields to analyze unstructured data from Cloud Storage.
+**Multimodal:** Supports document, image, and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT prompt with `ObjectRef` fields to analyze unstructured data from Cloud Storage.
 
 **Thinking:** Supports extended reasoning via `model_params` — use `thinking_budget` (Gemini 2.5) or `thinking_level` (Gemini 3.0+) to control reasoning depth.
 
@@ -330,15 +330,13 @@ client.query(query).to_dataframe()
 ---
 ## Examples — Multimodal with ObjectRef
 
-`AI.GENERATE` can process documents, images, and video stored in Cloud Storage. The **ObjectRef pipeline** creates a secure, temporary reference to a GCS object:
+`AI.GENERATE` can process documents, images, and video stored in Cloud Storage. `OBJ.MAKE_REF` turns a GCS URI into an **ObjectRef** — a pointer the function resolves for you:
 
 ```
-OBJ.MAKE_REF(uri, connection)        → ObjectRef (pointer to the object)
-  → OBJ.FETCH_METADATA(objectref)    → adds content type and size
-    → OBJ.GET_ACCESS_URL(ref, 'r')   → ObjectRefRuntime (signed URL)
+OBJ.MAKE_REF(uri, connection)   → ObjectRef — pass this straight to the function
 ```
 
-Pass `ObjectRefRuntime` values in a STRUCT prompt with `prompt` and `object_ref_runtime` fields. See the `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
+Pass `ObjectRef` values in a STRUCT prompt with `prompt` and `object_refs` fields. `OBJ.FETCH_METADATA` (content type and size) and `OBJ.GET_ACCESS_URL` (a signed `ObjectRefRuntime` URL) still have their uses — displaying an object, delegated access, an explicit TTL — but the AI functions take the `ObjectRef` itself. See the `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
 
 ### Multimodal setup — connection and sample documents
 
@@ -399,7 +397,7 @@ for subdir, filename in [('invoices', 'invoice_001.pdf'), ('receipts', 'receipt_
 
 ### 11. Describe a document with ObjectRef
 
-The ObjectRef pipeline turns a GCS URI into a signed reference that `AI.GENERATE` can read. Pass it in a STRUCT with `prompt` (text) and `object_ref_runtime` (array of signed references) fields.
+`OBJ.MAKE_REF` turns a GCS URI into an `ObjectRef` that `AI.GENERATE` can read. Pass it in a STRUCT with `prompt` (text) and `object_refs` (array of references) fields.
 
 ```python
 query = f"""
@@ -407,14 +405,10 @@ SELECT
   (AI.GENERATE(
     STRUCT(
       'Describe what this document is and summarize its key details.' AS prompt,
-      [OBJ.GET_ACCESS_URL(
-        OBJ.FETCH_METADATA(
-          OBJ.MAKE_REF(
-            'gs://{BUCKET}/bq_ai_functions/ai_generate/invoice_001.pdf',
-            '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
-          )
-        ), 'r'
-      )] AS object_ref_runtime
+      [OBJ.MAKE_REF(
+        'gs://{BUCKET}/bq_ai_functions/ai_generate/invoice_001.pdf',
+        '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
+      )] AS object_refs
     )
   )).result AS description
 """
@@ -439,14 +433,10 @@ FROM UNNEST([
   AI.GENERATE(
     STRUCT(
       'Extract the key fields from this invoice.' AS prompt,
-      [OBJ.GET_ACCESS_URL(
-        OBJ.FETCH_METADATA(
-          OBJ.MAKE_REF(
-            'gs://{BUCKET}/bq_ai_functions/ai_generate/invoice_001.pdf',
-            '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
-          )
-        ), 'r'
-      )] AS object_ref_runtime
+      [OBJ.MAKE_REF(
+        'gs://{BUCKET}/bq_ai_functions/ai_generate/invoice_001.pdf',
+        '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
+      )] AS object_refs
     ),
     output_schema => 'vendor_name STRING, invoice_number STRING, total_amount FLOAT64, currency STRING, invoice_date STRING, line_item_count INT64'
   )
@@ -476,14 +466,7 @@ FROM
     AI.GENERATE(
       STRUCT(
         'Identify the document type and extract key details.' AS prompt,
-        [OBJ.GET_ACCESS_URL(
-          OBJ.FETCH_METADATA(
-            OBJ.MAKE_REF(
-              uri,
-              '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
-            )
-          ), 'r'
-        )] AS object_ref_runtime
+        [OBJ.MAKE_REF(uri, '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}')] AS object_refs
       ),
       output_schema => 'document_type STRING, total_amount FLOAT64, date STRING, summary STRING'
     )

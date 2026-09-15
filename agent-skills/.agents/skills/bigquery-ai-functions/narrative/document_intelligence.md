@@ -9,7 +9,7 @@ An end-to-end document processing pipeline that composes four AI functions:
 
 **What this demonstrates:**
 - Processing real documents (PDFs) from Cloud Storage — not generated sample data
-- Three distinct multimodal input patterns: EXTERNAL_OBJECT_TRANSFORM, STRUCT prompt, tuple syntax
+- Three multimodal call shapes — a bare `ObjectRef` argument, a STRUCT prompt, and tuple syntax — all fed by the object table's `ref` column
 - Composing classification → extraction → scoring → summarization in one pipeline
 - Validating AI classification accuracy against ground truth
 - Comparing manual aggregation (`STRING_AGG` + `AI.GENERATE`) vs purpose-built `AI.AGG`
@@ -155,10 +155,10 @@ verify
 ---
 ## Step 2 — Classify documents with AI.CLASSIFY
 
-Use `AI.CLASSIFY` with the **EXTERNAL_OBJECT_TRANSFORM** pattern to classify each document as "invoice" or "receipt". This pattern transforms the object table to add signed URLs, then passes the `ref` column directly to `AI.CLASSIFY`.
+Use `AI.CLASSIFY` to classify each document as "invoice" or "receipt". The object table's `ref` column is an `ObjectRef`, which is the input type the function takes — pass it straight in.
 
 ```
-Object table → EXTERNAL_OBJECT_TRANSFORM(TABLE, ['SIGNED_URL']) → ref → AI.CLASSIFY
+Object table → ref → AI.CLASSIFY
 ```
 
 ```python
@@ -167,8 +167,7 @@ CREATE OR REPLACE TABLE `{PROJECT_ID}.{DATASET_ID}.workflow_di_classified` AS
 SELECT
   docs.uri,
   AI.CLASSIFY(docs.ref, ['invoice', 'receipt']) AS doc_type
-FROM EXTERNAL_OBJECT_TRANSFORM(
-  TABLE `{PROJECT_ID}.{DATASET_ID}.workflow_di_docs`, ['SIGNED_URL']) AS docs
+FROM `{PROJECT_ID}.{DATASET_ID}.workflow_di_docs` AS docs
 """
 client.query(query).result()
 
@@ -233,7 +232,7 @@ Use `AI.GENERATE` with the **STRUCT prompt** pattern and `output_schema` to extr
 
 ```
 AI.GENERATE(
-  STRUCT(prompt AS prompt, [OBJ.GET_ACCESS_URL(ref, 'r')] AS object_ref_runtime),
+  STRUCT(prompt AS prompt, [ref] AS object_refs),
   output_schema => '...'
 )
 ```
@@ -255,7 +254,7 @@ CROSS JOIN UNNEST([AI.GENERATE(
       WHEN 'invoice' THEN 'Extract from this invoice: the company/vendor name, invoice number, total amount due, and due date.'
       WHEN 'receipt' THEN 'Extract from this receipt: the store name, receipt/transaction number, total amount, and purchase date.'
     END AS prompt,
-    [OBJ.GET_ACCESS_URL(ot.ref, 'r')] AS object_ref_runtime
+    [ot.ref] AS object_refs
   ),
   output_schema => 'entity_name STRING, reference_number STRING, total_amount STRING, document_date STRING'
 )]) AS result
@@ -350,7 +349,7 @@ comparison[['doc', 'type', 'entity_name', 'expected_name', 'total', 'expected_to
 Use `AI.SCORE` with the **tuple syntax** to rate each document's completeness for accounting purposes — whether it contains all necessary details (amounts, dates, vendor info, reference numbers) to be processed without follow-up. This criterion produces more varied scores than visual quality alone, since receipts and invoices have different levels of structured detail.
 
 ```sql
-AI.SCORE(('scoring criteria', OBJ.GET_ACCESS_URL(ref, 'r')))
+AI.SCORE(('scoring criteria', ref))
 ```
 
 ```python
@@ -361,7 +360,7 @@ SELECT
   c.doc_type,
   AI.SCORE(
     ('Rate whether this document contains all information needed for accounting: clear line items, tax breakdown, payment terms, vendor contact details, and reference numbers. Score 0 for missing most details, 1 for fully complete.',
-     OBJ.GET_ACCESS_URL(ot.ref, 'r'))
+     ot.ref)
   ) AS quality_score
 FROM `{PROJECT_ID}.{DATASET_ID}.workflow_di_classified` c
 JOIN `{PROJECT_ID}.{DATASET_ID}.workflow_di_docs` ot ON c.uri = ot.uri

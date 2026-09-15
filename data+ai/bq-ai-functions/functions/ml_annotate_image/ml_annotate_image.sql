@@ -217,9 +217,9 @@ ORDER BY score DESC;
 -- =============================================================================
 -- Example 8: Vision against AI.GENERATE on the same images
 -- =============================================================================
--- OBJ.MAKE_REF names the file and the connection, OBJ.FETCH_METADATA resolves
--- it, OBJ.GET_ACCESS_URL hands the model a readable URL. Vision returns
--- taxonomy terms from a fixed vocabulary; the LLM names the specific thing.
+-- OBJ.MAKE_REF names the file and the connection, and that ObjectRef goes
+-- straight into the prompt STRUCT. Vision returns taxonomy terms from a fixed
+-- vocabulary; the LLM names the specific thing.
 -- AI.GENERATE through this connection also needs roles/aiplatform.user.
 WITH vision AS (
   SELECT
@@ -239,9 +239,8 @@ SELECT
   vision_labels,
   AI.GENERATE(STRUCT(
     'List the five most prominent labels for this image, comma separated, no other text.' AS prompt,
-    [OBJ.GET_ACCESS_URL(
-       OBJ.FETCH_METADATA(OBJ.MAKE_REF(uri, 'PROJECT_ID.US.CONNECTION_ID')), 'r')
-    ] AS object_ref_runtime
+    [OBJ.MAKE_REF(uri, 'PROJECT_ID.US.CONNECTION_ID')
+    ] AS object_refs
   )).result AS gemini_labels
 FROM vision
 ORDER BY image;

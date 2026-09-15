@@ -229,9 +229,8 @@ SELECT
   transcripts AS ml_transcribe,
   AI.GENERATE(STRUCT(
     'Transcribe this audio. Return only the words spoken.' AS prompt,
-    [OBJ.GET_ACCESS_URL(
-       OBJ.FETCH_METADATA(OBJ.MAKE_REF(uri, 'PROJECT_ID.US.CONNECTION_ID')), 'r')
-    ] AS object_ref_runtime)).result AS ai_generate
+    [OBJ.MAKE_REF(uri, 'PROJECT_ID.US.CONNECTION_ID')
+    ] AS object_refs)).result AS ai_generate
 FROM transcribed
 ORDER BY audio_file;
 

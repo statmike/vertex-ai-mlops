@@ -59,13 +59,6 @@ SELECT
   (AI.GENERATE_DOUBLE(
     STRUCT(
       'What is the total dollar amount on this invoice?' AS prompt,
-      [OBJ.GET_ACCESS_URL(
-        OBJ.FETCH_METADATA(
-          OBJ.MAKE_REF(
-            'gs://BUCKET/path/to/invoice.pdf',
-            'PROJECT_ID.LOCATION.CONNECTION_ID'
-          )
-        ), 'r'
-      )] AS object_ref_runtime
+      [OBJ.MAKE_REF('gs://BUCKET/path/to/invoice.pdf', 'PROJECT_ID.LOCATION.CONNECTION_ID')] AS object_refs
     )
   )).result AS total_amount;

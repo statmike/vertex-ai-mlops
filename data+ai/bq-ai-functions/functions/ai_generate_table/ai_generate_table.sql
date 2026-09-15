@@ -86,7 +86,7 @@ FROM AI.GENERATE_TABLE(
 -- Example 7: Extract structured data from a document with ObjectRef
 -- =============================================================================
 -- Pass a document via ObjectRef in the prompt column. The STRUCT prompt
--- contains both text and object_ref_runtime fields.
+-- contains both text and object_refs fields.
 --
 -- Requires: Cloud resource connection with roles/storage.objectViewer
 SELECT vendor_name, invoice_number, total_amount, currency, invoice_date, line_item_count
@@ -94,14 +94,7 @@ FROM AI.GENERATE_TABLE(
   MODEL `PROJECT_ID.DATASET.gemini_flash`,
   (SELECT STRUCT(
     'Extract the key fields from this invoice.' AS prompt,
-    [OBJ.GET_ACCESS_URL(
-      OBJ.FETCH_METADATA(
-        OBJ.MAKE_REF(
-          'gs://BUCKET/path/to/invoice.pdf',
-          'PROJECT_ID.LOCATION.CONNECTION_ID'
-        )
-      ), 'r'
-    )] AS object_ref_runtime
+    [OBJ.MAKE_REF('gs://BUCKET/path/to/invoice.pdf', 'PROJECT_ID.LOCATION.CONNECTION_ID')] AS object_refs
   ) AS prompt),
   STRUCT('vendor_name STRING, invoice_number STRING, total_amount FLOAT64, currency STRING, invoice_date STRING, line_item_count INT64' AS output_schema)
 );
@@ -118,14 +111,7 @@ FROM AI.GENERATE_TABLE(
     uri,
     STRUCT(
       'Identify the document type and extract all details.' AS prompt,
-      [OBJ.GET_ACCESS_URL(
-        OBJ.FETCH_METADATA(
-          OBJ.MAKE_REF(
-            uri,
-            'PROJECT_ID.LOCATION.CONNECTION_ID'
-          )
-        ), 'r'
-      )] AS object_ref_runtime
+      [OBJ.MAKE_REF(uri, 'PROJECT_ID.LOCATION.CONNECTION_ID')] AS object_refs
     ) AS prompt
    FROM UNNEST([
      'gs://BUCKET/path/to/invoice.pdf',

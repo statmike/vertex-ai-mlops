@@ -14,7 +14,7 @@
 - `functions/ai_generate` (`AI.GENERATE`) — Full control with output_schema for custom structured output
 - `functions/ai_classify` (`AI.CLASSIFY`) — Multi-category classification instead of boolean
 
-**Multimodal:** Supports document, image, and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT condition with ObjectRefRuntime fields to evaluate conditions on unstructured data.
+**Multimodal:** Supports document, image, and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass a STRUCT condition with `ObjectRef` fields to evaluate conditions on unstructured data.
 
 **Featured in:** `workflows/content_moderation` (Content Moderation)
 
@@ -204,7 +204,7 @@ client.query(query).to_dataframe()
 
 ### Optimized mode: `optimization_mode` and `embeddings` (Preview)
 
-For large-scale evaluation (≥3,000 rows), `AI.IF` supports an optimized mode that trains a local distilled model using embeddings — reducing token usage by up to **230x**:
+For large-scale evaluation (≥3,000 rows), `AI.IF` supports an optimized mode that trains a local distilled model using embeddings. The reference page claims a reduction in token usage of up to **230x** — that is the documentation's number, not one measured here, and the last bullet explains why:
 
 ```sql
 SELECT
@@ -226,15 +226,13 @@ FROM `my_dataset.reviews`  -- needs ~3,000+ rows
 ---
 ## Examples — Multimodal with ObjectRef
 
-`AI.IF` can analyze documents, images, and video stored in Cloud Storage. Use the **ObjectRef pipeline** to create a STRUCT prompt with signed references:
+`AI.IF` can analyze documents, images, and video stored in Cloud Storage. Build the reference with `OBJ.MAKE_REF` and pass it in a STRUCT prompt:
 
 ```
-OBJ.MAKE_REF(uri, connection)        → ObjectRef
-  → OBJ.FETCH_METADATA(objectref)    → adds content type and size
-    → OBJ.GET_ACCESS_URL(ref, 'r')   → ObjectRefRuntime (signed URL)
+OBJ.MAKE_REF(uri, connection)   → ObjectRef — pass this straight to the function
 ```
 
-The STRUCT replaces the STRING prompt. See the `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
+The STRUCT replaces the STRING prompt. `OBJ.FETCH_METADATA` (content type and size) and `OBJ.GET_ACCESS_URL` (a signed `ObjectRefRuntime` URL) still have their uses — displaying an object, delegated access, an explicit TTL — but the AI functions take the `ObjectRef` itself. See the `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
 
 ```python
 import subprocess as _sp, json as _json
@@ -285,14 +283,10 @@ SELECT
   AI.IF(
     STRUCT(
       'This document is a financial invoice' AS prompt,
-      [OBJ.GET_ACCESS_URL(
-        OBJ.FETCH_METADATA(
-          OBJ.MAKE_REF(
-            'gs://{BUCKET}/bq_ai_functions/ai_if/invoice_001.pdf',
-            '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
-          )
-        ), 'r'
-      )] AS object_ref_runtime
+      [OBJ.MAKE_REF(
+        'gs://{BUCKET}/bq_ai_functions/ai_if/invoice_001.pdf',
+        '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
+      )] AS object_refs
     )
   ) AS is_invoice
 """

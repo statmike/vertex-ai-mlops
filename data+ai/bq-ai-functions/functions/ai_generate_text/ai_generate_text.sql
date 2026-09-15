@@ -112,13 +112,6 @@ FROM AI.GENERATE_TEXT(
   MODEL `PROJECT_ID.DATASET.gemini_flash`,
   (SELECT STRUCT(
     'Summarize this document in 2-3 sentences.' AS prompt,
-    [OBJ.GET_ACCESS_URL(
-      OBJ.FETCH_METADATA(
-        OBJ.MAKE_REF(
-          'gs://BUCKET/path/to/invoice.pdf',
-          'PROJECT_ID.LOCATION.CONNECTION_ID'
-        )
-      ), 'r'
-    )] AS object_ref_runtime
+    [OBJ.MAKE_REF('gs://BUCKET/path/to/invoice.pdf', 'PROJECT_ID.LOCATION.CONNECTION_ID')] AS object_refs
   ) AS prompt)
 );
