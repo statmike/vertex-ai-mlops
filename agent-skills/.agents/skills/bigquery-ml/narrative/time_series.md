@@ -8,7 +8,7 @@ Three table-valued functions that pull a time series apart **without training a 
 > |---|---|---|
 > | Is *this row* an outlier? | `ML.DETECT_ANOMALIES` | `models/arima_plus` (ARIMA_PLUS), `models/kmeans` (K-Means), `models/pca` (PCA), `models/autoencoder` (Autoencoder) |
 > | Did the series *shift* here? | `ML.DETECT_CHANGE_POINTS` | this notebook |
-> | Has the *whole dataset* moved? | `ML.VALIDATE_DATA_DRIFT` | `functions/data_quality` (Data Quality) |
+> | Has the *whole dataset* moved? | `ML.VALIDATE_DATA_DRIFT` | `functions/model_monitoring` (Model Monitoring) |
 
 **When to use these:**
 - `ML.TREND` — get the underlying direction of a series without committing to a model artifact.

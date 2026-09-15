@@ -1435,7 +1435,7 @@ FROM ML.DETECT_ANOMALIES(
 - `data+ai/bq-ml/models/autoencoder/autoencoder.sql` (Example 8) — reconstruction-based detection; its Example 6 shows the manual `ML.RECONSTRUCTION_LOSS` view of the same underlying signal.
 - `data+ai/bq-ml/models/arima_plus/arima_plus.sql` (Example 11) — the time-series form, `STRUCT(0.95 AS anomaly_prob_threshold)` with `is_anomaly` / `anomaly_probability`. `models/arima_plus_xreg/` carries the covariate variant.
 - **The ground-truth check the mechanism demos can't give you:** `data+ai/bq-ml/workflows/anomaly_fraud_detection/anomaly_fraud_detection.sql` runs PCA and AUTOENCODER detection on `ulb_fraud_detection` (284,807 rows, 492 real frauds at 0.17%) trained on features only, then scores real precision/recall against the withheld `Class` label and contrasts it with a supervised `BOOSTED_TREE_CLASSIFIER` trained *with* the label. That file is also the source of the PCA variable-component-count instability documented under `ML.PRINCIPAL_COMPONENT_INFO`.
-- **Not the same thing as data-quality monitoring, despite the name.** `ML.DETECT_ANOMALIES` finds row-level outliers *within* one dataset; `ML.VALIDATE_DATA_SKEW` / `ML.VALIDATE_DATA_DRIFT` in `functions/data_quality/` compare whole datasets or time windows to each other. Different concept, similar name.
+- **Not the same thing as data-quality monitoring, despite the name.** `ML.DETECT_ANOMALIES` finds row-level outliers *within* one dataset; `ML.VALIDATE_DATA_SKEW` / `ML.VALIDATE_DATA_DRIFT` in `functions/model_monitoring/` compare whole datasets or time windows to each other. Different concept, similar name.
 
 ---
 

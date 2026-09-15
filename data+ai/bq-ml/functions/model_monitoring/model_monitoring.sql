@@ -1,4 +1,4 @@
--- Data Quality / Model Monitoring — Progressive SQL Examples (BigQuery ML model-free functions)
+-- Model Monitoring — Progressive SQL Examples (BigQuery ML model-free functions)
 -- =============================================================
 -- Four functions for training/serving skew and data-drift monitoring.
 -- Basic tier: ML.VALIDATE_DATA_SKEW, ML.VALIDATE_DATA_DRIFT (tabular
@@ -33,7 +33,7 @@
 -- =============================================================================
 -- Setup: train a small scratch model (feeds ML.VALIDATE_DATA_SKEW below)
 -- =============================================================================
-CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.data_quality_scratch_model`
+CREATE OR REPLACE MODEL `PROJECT_ID.DATASET.model_monitoring_scratch_model`
 OPTIONS(
   model_type = 'LOGISTIC_REG',
   input_label_cols = ['income_bracket'],
@@ -56,7 +56,7 @@ FROM `bigquery-public-data.ml_datasets.census_adult_income`;
 -- alarm but is actually a sampling bug, not a real serving-data problem.
 SELECT input, metric, ROUND(value, 4) AS value, threshold, is_anomaly
 FROM ML.VALIDATE_DATA_SKEW(
-  MODEL `PROJECT_ID.DATASET.data_quality_scratch_model`,
+  MODEL `PROJECT_ID.DATASET.model_monitoring_scratch_model`,
   (SELECT age, workclass, education, education_num, marital_status, occupation,
           relationship, race, sex, hours_per_week, native_country
    FROM `bigquery-public-data.ml_datasets.census_adult_income`
@@ -69,7 +69,7 @@ ORDER BY is_anomaly DESC, input;
 -- Fix: sample randomly instead of grabbing "the first N rows."
 SELECT input, metric, ROUND(value, 4) AS value, threshold, is_anomaly
 FROM ML.VALIDATE_DATA_SKEW(
-  MODEL `PROJECT_ID.DATASET.data_quality_scratch_model`,
+  MODEL `PROJECT_ID.DATASET.model_monitoring_scratch_model`,
   (SELECT age, workclass, education, education_num, marital_status, occupation,
           relationship, race, sex, hours_per_week, native_country
    FROM `bigquery-public-data.ml_datasets.census_adult_income`
@@ -85,20 +85,25 @@ ORDER BY is_anomaly DESC, input;
 -- Example 2: ML.VALIDATE_DATA_DRIFT -- real drift between two genuinely
 -- different populations (not a sampling artifact this time)
 -- =============================================================================
+-- Both populations are WHERE clauses on workclass, so they are disjoint and
+-- deterministic -- the same two sets of rows on every run. Example 4 below
+-- reproduces these exact values by hand, which a RAND() sample could not
+-- support across two separate queries.
 SELECT input, metric, ROUND(value, 4) AS value, threshold, is_anomaly
 FROM ML.VALIDATE_DATA_DRIFT(
   (SELECT age, education_num, hours_per_week
    FROM `bigquery-public-data.ml_datasets.census_adult_income`
-   WHERE RAND() < 0.3),
+   WHERE workclass != ' Self-emp-inc'),
   (SELECT age, education_num, hours_per_week
    FROM `bigquery-public-data.ml_datasets.census_adult_income`
    WHERE workclass = ' Self-emp-inc'),
   STRUCT(0.1 AS numerical_default_threshold)
 );
--- Verified: education_num flags real drift (JS divergence ~0.18 > 0.1
--- threshold) -- incorporated self-employed workers skew toward more
--- education than the general population. A genuine, explainable finding,
--- not a sampling bug.
+-- Verified: age 0.0811 (FALSE), education_num 0.1813 (TRUE, above the 0.1
+-- threshold), hours_per_week 0.0954 (FALSE) -- incorporated self-employed
+-- workers do skew toward more education than everyone else. The direction is
+-- real; Example 4 shows the magnitude is an artifact of how the numeric
+-- metric is computed.
 
 -- categorical_metric_type: the metric choice changes which features get
 -- flagged, at the identical threshold.
@@ -106,7 +111,7 @@ SELECT input, metric, ROUND(value, 4) AS value, threshold, is_anomaly
 FROM ML.VALIDATE_DATA_DRIFT(
   (SELECT sex, relationship, race
    FROM `bigquery-public-data.ml_datasets.census_adult_income`
-   WHERE RAND() < 0.3),
+   WHERE workclass != ' Self-emp-inc'),
   (SELECT sex, relationship, race
    FROM `bigquery-public-data.ml_datasets.census_adult_income`
    WHERE workclass = ' Self-emp-inc'),
@@ -118,25 +123,25 @@ SELECT input, metric, ROUND(value, 4) AS value, threshold, is_anomaly
 FROM ML.VALIDATE_DATA_DRIFT(
   (SELECT sex, relationship, race
    FROM `bigquery-public-data.ml_datasets.census_adult_income`
-   WHERE RAND() < 0.3),
+   WHERE workclass != ' Self-emp-inc'),
   (SELECT sex, relationship, race
    FROM `bigquery-public-data.ml_datasets.census_adult_income`
    WHERE workclass = ' Self-emp-inc'),
   STRUCT(0.05 AS categorical_default_threshold, 'JENSEN_SHANNON_DIVERGENCE' AS categorical_metric_type)
 )
 ORDER BY input;
--- Verified: at threshold 0.05, L_INFTY flags race (0.082), relationship
--- (0.300), and sex (0.212) as anomalies. JENSEN_SHANNON_DIVERGENCE flags
--- only relationship (0.073) -- race (0.023) and sex (0.048) drop below
--- threshold. Real, not a documentation footnote: switching metric changes
--- alerting behavior.
+-- Verified: at threshold 0.05, L_INFTY flags race (0.0804), relationship
+-- (0.3097), and sex (0.2173) as anomalies. JENSEN_SHANNON_DIVERGENCE flags
+-- only relationship (0.0792) -- race (0.0244) and sex (0.0497) drop below
+-- threshold, sex by three ten-thousandths. Real, not a documentation
+-- footnote: switching metric redraws the alert boundary.
 
 -- thresholds: per-column override, independent of the defaults.
 SELECT input, metric, ROUND(value, 4) AS value, threshold, is_anomaly
 FROM ML.VALIDATE_DATA_DRIFT(
   (SELECT age, race
    FROM `bigquery-public-data.ml_datasets.census_adult_income`
-   WHERE RAND() < 0.3),
+   WHERE workclass != ' Self-emp-inc'),
   (SELECT age, race
    FROM `bigquery-public-data.ml_datasets.census_adult_income`
    WHERE workclass = ' Self-emp-inc'),
@@ -144,8 +149,8 @@ FROM ML.VALIDATE_DATA_DRIFT(
 )
 ORDER BY input;
 -- Verified: race's override (threshold=0.01) flags TRUE even though its
--- actual divergence (~0.08) would pass under the categorical_default_threshold
--- =0.3 that age still uses -- lets you tighten/loosen sensitivity per column.
+-- L_INFTY of 0.0804 would pass comfortably under the default of 0.3 that age
+-- (0.0811) still uses -- lets you tighten/loosen sensitivity per column.
 
 
 -- =============================================================================
@@ -158,7 +163,7 @@ SELECT dataset_feature_statistics_list
 FROM ML.TFDV_DESCRIBE(
   (SELECT age, education_num, hours_per_week
    FROM `bigquery-public-data.ml_datasets.census_adult_income`
-   WHERE RAND() < 0.05)
+   WHERE workclass != ' Self-emp-inc')
 );
 
 -- ML.TFDV_VALIDATE compares two such protos and returns a TFDV Anomalies
@@ -168,7 +173,7 @@ WITH base AS (
   FROM ML.TFDV_DESCRIBE(
     (SELECT age, education_num, hours_per_week
      FROM `bigquery-public-data.ml_datasets.census_adult_income`
-     WHERE RAND() < 0.3)
+     WHERE workclass != ' Self-emp-inc')
   )
 ),
 compare AS (
@@ -181,7 +186,7 @@ compare AS (
 )
 SELECT ML.TFDV_VALIDATE(base.stats, compare.stats, 'DRIFT') AS anomalies
 FROM base, compare;
--- Same education_num drift signal as Example 2 (~0.18), confirmed by
+-- Same education_num drift signal as Example 2 (0.181256), confirmed by
 -- parsing the JSON and inspecting anomalies.drift_skew_info -- expressed as
 -- a TFDV Anomalies proto instead of a tabular row -- feed this to
 -- tfdv.display_anomalies() in a full TFDV Python environment (see
@@ -195,7 +200,7 @@ WITH training_stats AS (
   FROM ML.TFDV_DESCRIBE(
     (SELECT age, education_num, hours_per_week
      FROM `bigquery-public-data.ml_datasets.census_adult_income`
-     WHERE RAND() < 0.3)
+     WHERE workclass != ' Self-emp-inc')
   )
 ),
 serving_stats AS (
@@ -209,13 +214,82 @@ serving_stats AS (
 SELECT ML.TFDV_VALIDATE(training_stats.stats, serving_stats.stats, 'SKEW') AS anomalies
 FROM training_stats, serving_stats;
 -- Verified: identical output structure to 'DRIFT' mode (same
--- drift_skew_info array, same divergence values, ~0.18 for education_num)
+-- drift_skew_info array, same divergence values, 0.181256 for education_num)
 -- -- 'SKEW' vs 'DRIFT' mode changes the baseline schema's comparator type
 -- (skew_comparator vs drift_comparator) and semantic framing, not the
 -- underlying computation.
 
 
 -- =============================================================================
+-- Example 4: what a numeric drift value is actually computed from
+-- =============================================================================
+-- The categorical metrics are statistics of the data: L_INFTY is the largest
+-- absolute difference in category proportion, and Jensen-Shannon divergence
+-- (base-2 logs, no square root) is the average of the two KL divergences from
+-- the mixture distribution. Both reproduce by hand, exactly.
+--
+-- The numeric metric is not. It is the Jensen-Shannon divergence of two
+-- ten-bucket equal-width histograms -- and each input's bucket edges span
+-- that input's own MIN to its own MAX. When the two ranges differ, the grids
+-- are offset, the histograms are realigned onto the union of both edge sets
+-- assuming uniform density inside a bucket, and the realignment manufactures
+-- a difference the values themselves do not hold.
+--
+-- The ranges that set those edges:
+SELECT
+  workclass = ' Self-emp-inc' AS is_compare,
+  COUNT(*) AS n,
+  MIN(education_num) AS min_education_num,
+  MAX(education_num) AS max_education_num
+FROM `bigquery-public-data.ml_datasets.census_adult_income`
+GROUP BY is_compare
+ORDER BY is_compare;
+-- Verified: 31,445 base rows spanning 1 to 16, and 1,116 comparison rows
+-- spanning 2 to 16. Ten buckets over 1..16 is 1.5 wide; ten over 2..16 is
+-- 1.4 wide. The two grids share exactly one edge.
+
+-- Add one row holding a value the base population already has 51 of, chosen
+-- only so the two ranges match, and the alarm clears.
+SELECT input, ROUND(value, 6) AS value, threshold, is_anomaly
+FROM ML.VALIDATE_DATA_DRIFT(
+  (SELECT education_num
+   FROM `bigquery-public-data.ml_datasets.census_adult_income`
+   WHERE workclass != ' Self-emp-inc'),
+  (SELECT education_num
+   FROM `bigquery-public-data.ml_datasets.census_adult_income`
+   WHERE workclass = ' Self-emp-inc'
+   UNION ALL
+   SELECT 1),
+  STRUCT(0.1 AS numerical_default_threshold)
+);
+-- Verified: 0.181256 / is_anomaly=TRUE becomes 0.036175 / is_anomaly=FALSE,
+-- from one added row in 1,116. The row is not an outlier -- it matters only
+-- because it is the comparison population's new minimum, which re-cuts all
+-- ten bucket edges onto the base population's.
+--
+-- This is TFDV semantics, not a bug: the metric is defined on the statistics
+-- proto rather than on the data, and the proto's histogram is a fixed-size
+-- summary. Three properties combine -- ten buckets regardless of cardinality,
+-- per-dataset edges, and uniform density assumed inside a bucket.
+--
+-- Three consequences, in increasing order of effort:
+--   1. On categorical columns, both metrics are statistics of the data. No
+--      histogram is involved. Read them as they come.
+--   2. A numeric drift value is only meaningful alongside the two ranges it
+--      was computed from -- ML.DESCRIBE_DATA's min/max in ../exploration/ is
+--      the cheapest way to see them.
+--   3. Where a numeric column's range moves between windows for reasons that
+--      are not drift, bucketize it yourself (ML.BUCKETIZE with fixed split
+--      points, or a CASE) and monitor the bucket label as a categorical
+--      column. Then the edges are yours and identical in every window.
+--
+-- The notebook (model_monitoring.ipynb, Step 5) reproduces all of this
+-- numerically: both categorical metrics by hand to the last bit, the
+-- histograms pulled out of the ML.TFDV_DESCRIBE proto, and BigQuery's three
+-- numeric values reproduced from them.
+
+
+-- =============================================================================
 -- Cleanup
 -- =============================================================================
--- DROP MODEL IF EXISTS `PROJECT_ID.DATASET.data_quality_scratch_model`;
+-- DROP MODEL IF EXISTS `PROJECT_ID.DATASET.model_monitoring_scratch_model`;

@@ -5,7 +5,7 @@ The real ground-truth validation the 5 existing `ML.DETECT_ANOMALIES` demos — 
 **Models used:** `PCA`, `AUTOENCODER`, `BOOSTED_TREE_CLASSIFIER`
 **Functions used:** `ML.DETECT_ANOMALIES`, `ML.EVALUATE`
 
-> **GOTCHA — distinct from `functions/data_quality` (`functions/data_quality/`):** this is **row-level** anomaly detection within one dataset (is *this transaction* unusual?). `ML.VALIDATE_DATA_SKEW`/`ML.VALIDATE_DATA_DRIFT` are **dataset-level** distribution comparisons (has *the whole dataset* shifted?). Different concept, similar-sounding name.
+> **GOTCHA — distinct from `functions/model_monitoring` (`functions/model_monitoring/`):** this is **row-level** anomaly detection within one dataset (is *this transaction* unusual?). `ML.VALIDATE_DATA_SKEW`/`ML.VALIDATE_DATA_DRIFT` are **dataset-level** distribution comparisons (has *the whole dataset* shifted?). Different concept, similar-sounding name.
 
 `ML.DETECT_ANOMALIES`'s basic mechanics (the required 3-argument form, `contamination`) are already covered in the 5 notebooks above and not repeated here — **this workflow's real content is the honest precision/recall measurement against real labels.**
 
@@ -175,7 +175,7 @@ client.query(query).to_dataframe()
 ---
 ## Related content
 
-- `functions/data_quality` (`functions/data_quality/`) — the dataset-level counterpart: `ML.VALIDATE_DATA_SKEW`/`ML.VALIDATE_DATA_DRIFT` ask "has the whole dataset shifted?" rather than "is this one row unusual?"
+- `functions/model_monitoring` (`functions/model_monitoring/`) — the dataset-level counterpart: `ML.VALIDATE_DATA_SKEW`/`ML.VALIDATE_DATA_DRIFT` ask "has the whole dataset shifted?" rather than "is this one row unusual?"
 - `models/pca` (`models/pca/`), `models/autoencoder` (`models/autoencoder/`), `models/kmeans` (`models/kmeans/`) — `ML.DETECT_ANOMALIES` mechanics in depth (the 3-argument requirement, `contamination`, per-row reconstruction loss).
 - `models/arima_plus` (`models/arima_plus/`), `models/arima_plus_xreg` (`models/arima_plus_xreg/`) — the time-series form of `ML.DETECT_ANOMALIES`, where the input-data argument is optional.
 - `models/boosted_tree_classifier` (`models/boosted_tree_classifier/`) — full `BOOSTED_TREE_CLASSIFIER` mechanics.

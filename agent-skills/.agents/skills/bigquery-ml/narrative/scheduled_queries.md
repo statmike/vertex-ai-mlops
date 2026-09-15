@@ -277,6 +277,6 @@ print(run.error_status.message if run.error_status else '(none)')
 ## Related content
 
 - `pipelines/sql_scripting` (`pipelines/sql_scripting/`) — the script this pipeline schedules, and where its drift-check/retrain design is explained in full.
-- `functions/data_quality` (`functions/data_quality/`) — `ML.VALIDATE_DATA_DRIFT`'s full mechanics.
+- `functions/model_monitoring` (`functions/model_monitoring/`) — `ML.VALIDATE_DATA_DRIFT`'s full mechanics.
 - [MLOps/Model Monitoring/bqml-model-monitoring-tutorial.ipynb](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Model%20Monitoring/bqml-model-monitoring-tutorial.ipynb) — the legacy tutorial this pipeline modernizes, including the `@run_date`-based rolling-window pattern for live serving tables.
 - `workflows/ga4_churn_prediction` (`workflows/ga4_churn_prediction/`) — the workflow this pipeline operationalizes.

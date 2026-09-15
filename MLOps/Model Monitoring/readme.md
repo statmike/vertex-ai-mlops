@@ -63,6 +63,9 @@ These resources help get started with BQML based model monitoring:
             - Automation with scheduled BigQuery Jobs
             - Email notifications for alerts
 
+**Function mechanics:**
+This folder owns the production loop. The four model-free monitoring functions themselves — every argument, and what the numbers they return are computed from — are covered in [`data+ai/bq-ml/functions/model_monitoring/`](../../data+ai/bq-ml/functions/model_monitoring/), which reproduces both metrics by hand against the function on real columns (see [Understanding Monitoring Metrics](#understanding-monitoring-metrics) below). Two orchestrations of the drift check as a scheduled loop live there as well: [`pipelines/sql_scripting/`](../../data+ai/bq-ml/pipelines/sql_scripting/) and [`pipelines/scheduled_queries/`](../../data+ai/bq-ml/pipelines/scheduled_queries/).
+
 **Planning:**
 - Automate Monitoring With:
     - Dataform
@@ -171,5 +174,14 @@ Finally, sum the `JSD` values across all categories for the overall value of the
 <p align="center"><center>
     <img src="../resources/images/created/monitoring/jsd.png" width="60%">
 </center><p>
+
+---
+### These two calculations, checked against the function
+
+[`data+ai/bq-ml/functions/model_monitoring/`](../../data+ai/bq-ml/functions/model_monitoring/) Step 5 runs the arithmetic above as live cells and puts the result beside what `ML.VALIDATE_DATA_DRIFT` returns for the same columns. Three things come out of that:
+
+- **For categorical features the formulas above are the whole algorithm.** `L_INFTY` and Jensen-Shannon divergence both reproduce exactly on `race`, `relationship`, and `sex`. Two details decide whether a hand calculation matches: the logarithm is base 2, and the reported quantity is the *divergence*, not the Jensen-Shannon distance — no square root.
+- **For numeric features the metric is not computed on the values.** It is the Jensen-Shannon divergence of two ten-bucket equal-width histograms, and each input's bucket edges span that input's own minimum to its own maximum. When the two ranges differ, the grids are offset, the histograms are realigned onto the union of both edge sets, and the realignment manufactures a difference the values themselves do not hold. This is TFDV semantics — the metric is defined on the statistics proto, and the proto's histogram is a fixed-size summary — not a defect.
+- **The consequence is operational.** On `census_adult_income`, adding one row to a 1,116-row comparison set, holding a value the baseline already has 51 of, moves `education_num` from 0.181256 (`is_anomaly` TRUE) to 0.036175 (FALSE). The row is not an outlier; it is the comparison population's new minimum, which re-cuts all ten bucket edges. Read a numeric drift value alongside the two ranges it came from, or bucketize the column yourself and monitor the bucket label as a categorical.
 
 ---

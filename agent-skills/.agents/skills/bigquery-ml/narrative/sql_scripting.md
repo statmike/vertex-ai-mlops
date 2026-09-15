@@ -7,7 +7,7 @@ Modernizes [MLOps/Model Monitoring/model_monitoring_job.sql](https://github.com/
 **Workflow operationalized:** `workflows/ga4_churn_prediction` (`workflows/ga4_churn_prediction/`)
 **Functions used:** `ML.VALIDATE_DATA_DRIFT`, `ML.EVALUATE` · **Scripting:** `DECLARE`, `SET`, `IF...THEN...END IF`, `BEGIN...END`, `SELECT ERROR()`
 
-`ML.VALIDATE_DATA_DRIFT`'s own mechanics (categorical vs. numerical metrics, `thresholds` overrides) are already covered in `functions/data_quality` (`functions/data_quality/`) and not repeated here — **this notebook's real content is composing drift detection + conditional retraining + alerting into one deployable script.**
+`ML.VALIDATE_DATA_DRIFT`'s own mechanics (categorical vs. numerical metrics, `thresholds` overrides) are already covered in `functions/model_monitoring` (`functions/model_monitoring/`) and not repeated here — **this notebook's real content is composing drift detection + conditional retraining + alerting into one deployable script.**
 
 **Data:** [`bigquery-public-data.ga4_obfuscated_sample_ecommerce`](https://console.cloud.google.com/marketplace/product/bigquery-public-datasets)
 
@@ -147,7 +147,7 @@ print('Model ga4_churn_pipeline_model created (trained on TRAIN_INITIAL only)')
 
 Submitted as **one multi-statement script** (a single BigQuery job). Compares the model's original training population (`TRAIN_INITIAL`) against everyone who has arrived since (`NEW_ARRIVALS`) on the model's own input features — label excluded, since a real serving-time drift check wouldn't have it either (this static historical dataset happens to have every label already observed, but the check is written as if it didn't).
 
-`ML.VALIDATE_DATA_DRIFT`'s 3-argument form is used here (base query, compare query, options) rather than passing a `MODEL` as a 4th argument — verified live that a plain `CREATE MODEL`-trained `BOOSTED_TREE_CLASSIFIER` doesn't qualify as the "Model Registry MODEL" that 4th argument requires; the 3-argument form (already established in `functions/data_quality/`) works universally.
+`ML.VALIDATE_DATA_DRIFT`'s 3-argument form is used here (base query, compare query, options) rather than passing a `MODEL` as a 4th argument — verified live that a plain `CREATE MODEL`-trained `BOOSTED_TREE_CLASSIFIER` doesn't qualify as the "Model Registry MODEL" that 4th argument requires; the 3-argument form (already established in `functions/model_monitoring/`) works universally.
 
 If drift is detected, the script retrains on the full cohort, re-evaluates, and reports via `SELECT ERROR()` — a deliberate BigQuery scripting idiom (also used in the legacy `model_monitoring_job.sql`): the report string becomes the query job's error message, which the calling code catches and treats as the alert payload rather than a real failure.
 
@@ -236,6 +236,6 @@ This notebook ran the script once, interactively, from Python. The script itself
 ---
 ## Related content
 
-- `functions/data_quality` (`functions/data_quality/`) — `ML.VALIDATE_DATA_DRIFT`'s full mechanics (categorical vs. numerical metrics, per-column `thresholds` overrides).
+- `functions/model_monitoring` (`functions/model_monitoring/`) — `ML.VALIDATE_DATA_DRIFT`'s full mechanics (categorical vs. numerical metrics, per-column `thresholds` overrides).
 - [MLOps/Model Monitoring/model_monitoring_job.sql](https://github.com/statmike/vertex-ai-mlops/blob/main/MLOps/Model%20Monitoring/model_monitoring_job.sql) — the legacy script this pipeline modernizes.
 - `workflows/ga4_churn_prediction` (`workflows/ga4_churn_prediction/`) — the workflow this pipeline operationalizes.

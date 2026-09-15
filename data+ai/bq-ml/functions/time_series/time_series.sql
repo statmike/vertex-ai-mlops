@@ -14,7 +14,7 @@
 -- questions, three different functions:
 --   row-level outlier      -> ML.DETECT_ANOMALIES     (models/arima_plus/, kmeans, pca, autoencoder)
 --   sustained shift        -> ML.DETECT_CHANGE_POINTS (this file)
---   dataset-level drift    -> ML.VALIDATE_DATA_DRIFT  (functions/data_quality/)
+--   dataset-level drift    -> ML.VALIDATE_DATA_DRIFT  (functions/model_monitoring/)
 --
 -- GOTCHA all three functions gap-fill a series to a regular frequency before
 -- doing anything else, and on gapped data that is not a detail. Example 5 shows

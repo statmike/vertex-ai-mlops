@@ -9,7 +9,7 @@
 -- supervised BOOSTED_TREE_CLASSIFIER trained WITH the label.
 --
 -- GOTCHA this is row-level anomaly detection within one dataset -- distinct
--- from functions/data_quality/'s ML.VALIDATE_DATA_SKEW/DRIFT, which compare
+-- from functions/model_monitoring/'s ML.VALIDATE_DATA_SKEW/DRIFT, which compare
 -- whole datasets/time windows to each other (dataset-level distribution
 -- shift). Different concept, similar-sounding name.
 --

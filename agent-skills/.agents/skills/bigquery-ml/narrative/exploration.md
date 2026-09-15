@@ -6,18 +6,20 @@ They belong together because the second one is only trustworthy after the first.
 
 **What this notebook establishes, all measured here rather than quoted:**
 
-1. `ML.DESCRIBE_DATA` reports `num_nulls = 0` for a column whose missing values are the string `' ?'` — the profile is honest and still misleading.
-2. `ML.CORRELATION`'s `PEARSON` is BigQuery's own `CORR()`, agreeing to ~15 significant digits.
-3. `SPEARMAN` is **not** the textbook Spearman on tied data. It ranks with SQL `RANK()` (competition ranks), not mid-ranks, and the two answers differ in the second decimal place on this table.
-4. `KENDALL` **is** the tie-corrected tau-b, matching SciPy to floating-point noise. So one method in this function corrects for ties and the other does not.
-5. Kendall's cost is quadratic and it is not close: measured, then extrapolated from the measurement.
-6. `dimension_cols` is exactly `GROUP BY CUBE`, down to the row count.
-7. `segment_size` is not the number of rows the correlation was computed from.
-8. Selecting the `segment` column changes the value of `correlation` in its last three digits.
+1. The defaults are conservative and hide things: `top_k` is 1 and `num_quantiles` is 2, so a bare call returns one top value and three quantile boundaries per column.
+2. `ML.DESCRIBE_DATA`'s quantiles are approximate — the same call on this static table has returned different interior boundaries across runs.
+3. `ML.DESCRIBE_DATA` reports `num_nulls = 0` for a column whose missing values are the string `' ?'` — the profile is honest and still misleading.
+4. `ML.CORRELATION`'s `PEARSON` is BigQuery's own `CORR()`, agreeing to ~15 significant digits.
+5. `SPEARMAN` is **not** the textbook Spearman on tied data. It ranks with SQL `RANK()` (competition ranks), not mid-ranks, and the two answers differ in the second decimal place on this table.
+6. `KENDALL` **is** the tie-corrected tau-b, matching SciPy to floating-point noise. So one method in this function corrects for ties and the other does not.
+7. Kendall's cost is quadratic and it is not close: measured, then extrapolated from the measurement.
+8. `dimension_cols` is exactly `GROUP BY CUBE`, down to the row count.
+9. `segment_size` is not the number of rows the correlation was computed from.
+10. Selecting the `segment` column changes the value of `correlation` in its last three digits.
 
-**Data:** [`bigquery-public-data.ml_datasets.census_adult_income`](https://console.cloud.google.com/marketplace/product/bigquery-public-datasets) — the same table as `models/logistic_regression` (Logistic Regression) and `functions/data_quality` (Data Quality).
+**Data:** [`bigquery-public-data.ml_datasets.census_adult_income`](https://console.cloud.google.com/marketplace/product/bigquery-public-datasets) — the same table as `models/logistic_regression` (Logistic Regression) and `functions/model_monitoring` (Model Monitoring).
 
-**Related content:** `functions/data_quality` (`functions/data_quality/`) takes profiling forward into monitoring — `ML.VALIDATE_DATA_SKEW`, `ML.VALIDATE_DATA_DRIFT`, and the TFDV pair. Profile here, monitor there. `functions/feature_engineering` (`functions/feature_engineering/`) is the next step once you know which columns matter, and `functions/bucketizing` (`functions/bucketizing/`) is what you need before a continuous column can serve as a dimension here.
+**Related content:** `functions/model_monitoring` (`functions/model_monitoring/`) takes profiling forward into monitoring — `ML.VALIDATE_DATA_SKEW`, `ML.VALIDATE_DATA_DRIFT`, and the TFDV pair. Profile here, monitor there. `functions/feature_engineering` (`functions/feature_engineering/`) is the next step once you know which columns matter, and `functions/bucketizing` (`functions/bucketizing/`) is what you need before a continuous column can serve as a dimension here.
 
 **References:** `reference/model-free-functions.md` (Full reference) | [`ML.DESCRIBE_DATA`](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-describe-data) | [`ML.CORRELATION`](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-correlation) | `setup` (Setup guide)
 
@@ -59,7 +61,102 @@ print(f'Dataset {PROJECT_ID}.{DATASET_ID} ready')
 ---
 ## Step 1 — `ML.DESCRIBE_DATA`: profile before anything else
 
-One row per input column. `top_k` controls how many top categorical values come back (default **1**); `num_quantiles` controls numeric quantile granularity (default **2**, which returns three boundaries: min, median, max). Numeric columns populate `mean`/`stddev`/`median`/`quantiles`/`num_zeros`; categorical columns populate `unique`/`top_values`/`avg_string_length` instead. Every column gets `num_rows`, `num_values`, `num_nulls`, `min`, and `max`.
+The whole function is one line of SQL against a table. No options, no column list, no model, no connection.
+
+```python
+query = """
+SELECT * FROM ML.DESCRIBE_DATA(TABLE `bigquery-public-data.ml_datasets.census_adult_income`) ORDER BY name
+"""
+
+profile = client.query(query).to_dataframe()
+print(f'{profile.shape[0]} rows (one per input column) x {profile.shape[1]} output columns')
+profile
+```
+
+One row per input column, and the same twenty output columns for every one of them — the function does not vary its schema by type, it leaves the fields that do not apply empty.
+
+- **Every column** gets `name`, `num_rows`, `num_values`, `num_nulls`, `min`, `max`, and `dimension`.
+- **Numeric columns** fill `num_zeros`, `mean`, `stddev`, `median`, and `quantiles`; their `unique` and `top_values` come back `NULL`/empty.
+- **Categorical columns** fill `unique`, `avg_string_length`, and `top_values`; their `quantiles` come back empty. Note that `min` and `max` are populated for these too — alphabetically.
+- **`ARRAY` columns** fill the four `*_array_length` fields and `array_length_quantiles`. This table has none, so those are empty throughout.
+
+That output came from the default settings, and the two that matter are set conservatively: **`top_k` defaults to 1** and **`num_quantiles` defaults to 2**. So every categorical column above reported exactly one top value, and every numeric column reported three quantile boundaries — which are just the minimum, the median, and the maximum.
+
+### The same call, with the two settings turned up
+
+`top_k` is how many of a categorical column's most frequent values come back. `num_quantiles` is how many equal-sized pieces to cut a numeric column into, and the `quantiles` array holds the boundaries, so it is always one longer than the number you ask for.
+
+One column of each type, at the defaults and then at two higher settings.
+
+```python
+TABLE_NAME = '`bigquery-public-data.ml_datasets.census_adult_income`'
+
+
+def describe(options=''):
+    """ML.DESCRIBE_DATA on two columns, tagged with the settings that produced the row."""
+    settings = f', STRUCT({options})' if options else ''
+    frame = client.query(f"""
+    SELECT name, quantiles, top_values
+    FROM ML.DESCRIBE_DATA(TABLE {TABLE_NAME}{settings})
+    WHERE name IN ('education_num', 'workclass')
+    ORDER BY name
+    """).to_dataframe()
+    frame.insert(0, 'settings', options or '(none) -- top_k => 1, num_quantiles => 2')
+    return frame
+
+
+pd.concat([describe(),
+           describe('3 AS top_k, 4 AS num_quantiles'),
+           describe('9 AS top_k, 10 AS num_quantiles')], ignore_index=True)
+```
+
+`education_num` goes from three boundaries to five to eleven — the same column, cut finer each time. At `num_quantiles => 10` several boundaries repeat, which is the profile telling you the column has only sixteen distinct values and most of its mass sits on a few of them. Asking for more pieces than the data can distinguish is not an error; it returns duplicate boundaries.
+
+These are **approximate** quantiles. Repeated runs of this exact call against this static public table have returned both `12.0` and `13.0` for the same interior boundary, so read them as the shape of a distribution rather than as numbers to key logic to. Where an exact cut point matters, compute it with `PERCENTILE_CONT`.
+
+`workclass` goes from one top value to three to nine. Nine is also its `unique` count, so that last call returned the entire category list with counts — a full frequency table out of the profiling function. The fourth-ranked value in it is worth a second look, and it gets one below.
+
+Both settings have limits, and the error message states them rather than making you look them up.
+
+```python
+for options in ['0 AS top_k', '0 AS num_quantiles', '3 AS topk']:
+    try:
+        client.query(f'SELECT name FROM ML.DESCRIBE_DATA(TABLE {TABLE_NAME}, STRUCT({options}))').result()
+        print(f'{options:20s} -> accepted')
+    except Exception as e:
+        print(f"{options:20s} -> {str(e).split('; reason:')[0].splitlines()[-1].strip()}")
+```
+
+`top_k` runs to 10,000 and `num_quantiles` to 100,000, so neither is a practical ceiling — and an unrecognized setting name fails loudly instead of being ignored.
+
+### The two argument forms
+
+The first argument is either `TABLE table_name` or a parenthesized query, and the choice is not cosmetic.
+
+`TABLE` profiles the table as stored: every column, every row. A subquery profiles exactly what it selects — so it is how you narrow to the columns you care about, filter the rows, or profile an expression that does not exist in the table yet.
+
+```python
+query = """
+SELECT name, num_rows, num_values, num_nulls, min, max
+FROM ML.DESCRIBE_DATA((
+  SELECT education_num, NULLIF(TRIM(workclass), '?') AS workclass
+  FROM `bigquery-public-data.ml_datasets.census_adult_income`
+  WHERE age >= 25
+))
+ORDER BY name
+"""
+client.query(query).to_dataframe()
+```
+
+Three things changed at once, and each one is a different reason to use this form.
+
+`num_rows` is 26,991 rather than 32,561 — **the `WHERE` filtered the rows being profiled**. Two columns came back instead of fifteen — **the `SELECT` chose them**. And `workclass` now reports 1,204 nulls against 25,787 values, with `min` of `Federal-gov` instead of `?` — **the expression was profiled, not the stored column**.
+
+That last one is the difference between `num_rows` and `num_values`: `num_rows` counts rows the function saw, `num_values` counts non-null ones, and their difference is `num_nulls`. On the stored table those three are 32,561 / 32,561 / 0 for every column, which is the setup for the next section.
+
+### Back to the stored table, one type at a time
+
+The rest of Step 1 reads the full-table profile column by column, with `top_k` and `num_quantiles` raised enough to see something. Numeric columns first.
 
 ```python
 query = """

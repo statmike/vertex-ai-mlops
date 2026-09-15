@@ -11,7 +11,7 @@
 -- Modernizes: MLOps/Model Monitoring/model_monitoring_job.sql (same
 -- DECLARE/IF/BEGIN...END + SELECT ERROR() alerting pattern, ML.VALIDATE_DATA_DRIFT
 -- signature simplified to the 3-argument form already established in
--- functions/data_quality/ -- no live BQML model qualifies as a Model
+-- functions/model_monitoring/ -- no live BQML model qualifies as a Model
 -- Registry MODEL for VALIDATE_DATA_DRIFT's optional 4th argument here).
 --
 -- Workflow operationalized: ../../workflows/ga4_churn_prediction/

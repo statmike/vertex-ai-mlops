@@ -1,13 +1,13 @@
 {
   "name": "bigquery-ml",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "source_project": "data+ai/bq-ml",
   "narrative_sources": {
     "feature_store.md": "functions/feature_store/feature_store.ipynb",
     "feature_store_workflow.md": "workflows/feature_store/feature_store.ipynb"
   },
-  "generated_date": "2026-09-11",
-  "source_commit": "a280b037",
+  "generated_date": "2026-09-15",
+  "source_commit": "acf901ac",
   "reference_files": [
     "classification.md",
     "model-management.md",
@@ -34,7 +34,6 @@
     "contribution_analysis.md",
     "cross_validation.md",
     "customer_segmentation.md",
-    "data_quality.md",
     "dataform.md",
     "dbt.md",
     "difference_in_differences.md",
@@ -58,6 +57,7 @@
     "linear_regression.md",
     "logistic_regression.md",
     "matrix_factorization.md",
+    "model_monitoring.md",
     "pca.md",
     "price_elasticity_dml.md",
     "propensity_score_matching.md",

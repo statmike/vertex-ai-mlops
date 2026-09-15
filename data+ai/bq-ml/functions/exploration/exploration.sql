@@ -12,6 +12,10 @@
 -- output column `stdev`. The function returns `stddev`. Selecting `stdev`
 -- errors with "Unrecognized name: stdev; Did you mean stddev?".
 --
+-- GOTCHA ML.DESCRIBE_DATA's quantiles are APPROXIMATE. Repeated runs of the
+-- same call against a static table can return different interior boundaries.
+-- Use PERCENTILE_CONT where an exact cut point matters.
+--
 -- GOTCHA ML.DESCRIBE_DATA's `num_nulls` is honest and still misleading when
 -- missing values are string-encoded. On census_adult_income, `workclass`
 -- reports num_nulls = 0 while its `min` is ' ?' and 1,836 rows carry that
@@ -42,7 +46,7 @@
 -- ML.CORRELATION output across queries with `=`; round first.
 --
 -- Data: bigquery-public-data.ml_datasets.census_adult_income (same dataset
---       as models/logistic_regression/ and functions/data_quality/)
+--       as models/logistic_regression/ and functions/model_monitoring/)
 --
 -- Full reference: ../../reference/model-free-functions.md
 -- Official docs:
@@ -53,9 +57,67 @@
 -- =============================================================================
 -- Example 1: ML.DESCRIBE_DATA -- descriptive stats, numeric and categorical
 -- =============================================================================
--- One row per input column. top_k = how many top categorical values to
--- return (default 1); num_quantiles = numeric quantile granularity
--- (default 2, which returns three boundaries: min, median, max).
+-- The whole function is one line of SQL. No options, no column list, no
+-- model, no connection.
+SELECT * FROM ML.DESCRIBE_DATA(TABLE `bigquery-public-data.ml_datasets.census_adult_income`)
+ORDER BY name;
+-- Verified: 15 rows (one per input column) x 20 output columns. The schema
+-- does not vary by type -- fields that do not apply come back empty.
+--   every column:      name, num_rows, num_values, num_nulls, min, max, dimension
+--   numeric columns:   num_zeros, mean, stddev, median, quantiles
+--   categorical:       unique, avg_string_length, top_values (min/max are
+--                      populated too, alphabetically)
+--   ARRAY columns:     min/max/avg/total_array_length, array_length_quantiles
+--
+-- The two settings that matter default conservatively: top_k defaults to 1
+-- (one top value per categorical column) and num_quantiles defaults to 2
+-- (three boundaries: min, median, max). Turn them up to see anything.
+SELECT name, quantiles, top_values
+FROM ML.DESCRIBE_DATA(
+  TABLE `bigquery-public-data.ml_datasets.census_adult_income`,
+  STRUCT(9 AS top_k, 10 AS num_quantiles)
+)
+WHERE name IN ('education_num', 'workclass')
+ORDER BY name;
+-- Verified: education_num goes from 3 boundaries to 11, several of them
+-- repeated -- the column has only 16 distinct values, so asking for more
+-- pieces than the data can distinguish returns duplicate boundaries rather
+-- than an error. workclass goes from 1 top value to 9, which is its full
+-- `unique` count -- a complete frequency table out of the profiling
+-- function, including the ' ?' placeholder at rank 4 with 1,836 rows that
+-- the default top_k => 1 never shows.
+--
+-- These quantiles are APPROXIMATE. Repeated runs of the same call against
+-- this static public table have returned both 12.0 and 13.0 for the same
+-- interior boundary. Read them as distribution shape; use PERCENTILE_CONT
+-- where an exact cut point matters.
+--
+-- Both settings are bounded, and the error message states the bound:
+--   top_k must be an integer between [1, 10000]
+--   num_quantiles must be an integer between [1, 100000]
+-- An unrecognized setting name fails loudly ("Found unsupported setting
+-- field `topk`") rather than being silently ignored.
+
+-- The two argument forms. TABLE profiles the table as stored: every column,
+-- every row. A parenthesized query profiles exactly what it selects -- which
+-- is how you narrow columns, filter rows, or profile an expression that does
+-- not exist in the table yet.
+SELECT name, num_rows, num_values, num_nulls, min, max
+FROM ML.DESCRIBE_DATA((
+  SELECT education_num, NULLIF(TRIM(workclass), '?') AS workclass
+  FROM `bigquery-public-data.ml_datasets.census_adult_income`
+  WHERE age >= 25
+))
+ORDER BY name;
+-- Verified: three things change at once. num_rows is 26,991 rather than
+-- 32,561 (the WHERE filtered the profiled rows), two columns come back
+-- instead of 15 (the SELECT chose them), and workclass reports 1,204 nulls
+-- against 25,787 values with min = 'Federal-gov' instead of '?' (the
+-- expression was profiled, not the stored column). num_rows counts rows
+-- seen, num_values counts non-null ones, and the difference is num_nulls.
+
+-- The rest of Example 1 reads the stored table one type at a time, with the
+-- settings raised enough to see something.
 SELECT name, num_rows, num_values, num_nulls, num_zeros,
        min, max, mean, stddev, median, quantiles
 FROM ML.DESCRIBE_DATA(
