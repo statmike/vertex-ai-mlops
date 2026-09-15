@@ -1179,6 +1179,18 @@ FROM ML.FORECAST(
 | `prediction_interval_lower_bound` / `prediction_interval_upper_bound` | FLOAT64 | Prediction interval bounds (depend on `standard_error` and `confidence_level`). |
 | `confidence_interval_lower_bound` / `confidence_interval_upper_bound` | FLOAT64 | Confidence interval bounds (legacy columns; equal the prediction bounds). |
 
+**Measured:** the prediction interval is **not** `forecast_value ± Φ⁻¹((1+confidence_level)/2) · standard_error`. The multiplier it actually uses is constant across horizons but differs from the exact normal quantile, and the difference **changes sign** with the confidence level:
+
+| `confidence_level` | multiplier used | normal quantile | difference |
+|---|---|---|---|
+| 0.80 | 1.282287 | 1.281552 | +0.000735 |
+| 0.90 | 1.643071 | 1.644854 | −0.001782 |
+| 0.95 | 1.956458 | 1.959964 | −0.003506 |
+| 0.98 | 2.327237 | 2.326348 | +0.000889 |
+| 0.99 | 2.587695 | 2.575829 | +0.011866 |
+
+A Student *t* quantile is ruled out by direction — *t* is always wider than normal. A constant scale factor is ruled out by the sign change. The pattern is that of an approximation to the inverse normal CDF: small, non-monotone, worst in the tail. **Practical rule: never back a standard error out of the rendered bounds.** Dividing a 95% width by `2 × 1.959964` returns a value 0.18% too small — invisible on a chart, and enough to swamp any arithmetic check built on it. The `standard_error` column is the quantity itself. Verified 2026-09-15 on an `ARIMA_PLUS` model in [`workflows/causal_effect/`](../workflows/causal_effect/).
+
 **Best practices:** Set `horizon` (and `holiday_region`) at `CREATE MODEL` time. Use the forecast-with-`LIMIT` pattern instead of post-filtering large outputs.
 **Limitations:** Adding computation on top of large outputs (min/max, arithmetic, filters) can raise "Resources exceeded during query execution". `ARIMA_PLUS_XREG` requires future feature values to forecast.
 **BigFrames API:** `bigframes.ml.forecasting.ARIMAPlus().predict(X)`.

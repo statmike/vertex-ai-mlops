@@ -15,6 +15,7 @@
 - `functions/ai_evaluate` (`AI.EVALUATE`) — Evaluate forecast accuracy against actual values
 - `bq-ml/models/arima_plus` (`ARIMA_PLUS`) — the trainable, in-BigQuery classical statistical alternative: supports custom holiday effects, external regressors (`ARIMA_PLUS_XREG`), hierarchical reconciliation across a real dimension hierarchy, and forecast bounds — none of which this zero-setup TimesFM model exposes. Use `AI.FORECAST` for a fast, no-training baseline; reach for `ARIMA_PLUS` when you need that level of control.
 - `bq-ml/functions/time_series` (`ML.TREND` / `ML.SEASONALITY` / `ML.DETECT_CHANGE_POINTS`) — model-free decomposition rather than forecasting: trend, seasonal components, and sustained structural change points, with no `CREATE MODEL` and no foundation model. Reach for these when the question is *what has this series been doing* rather than *what will it do next*.
+- `bq-ml/workflows/causal_effect` (`AI.CAUSAL_EFFECT`) — **the same forecasting idea aimed backwards.** It is not TimesFM: it wraps `ARIMA_PLUS`, and the sibling notebook reproduces its counterfactual bit-for-bit with a plain `CREATE MODEL ... ARIMA_PLUS`. Instead of forecasting past the end of the data, it forecasts past a point *inside* the data — the intervention date — and reports how far the observed values ran from that counterfactual. Reach for it when the question is *what would have happened without the change*, and for `AI.FORECAST` when the question is *what happens next*.
 
 **Featured in:** `workflows/time_series_intelligence` (Time Series Intelligence)
 

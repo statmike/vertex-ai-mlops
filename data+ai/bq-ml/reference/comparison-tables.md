@@ -136,3 +136,27 @@ A `trial_id` column is prepended for hyperparameter-tuned models.
 | Imported (TF / TFLite / ONNX / XGBoost) | No for `ML.PREDICT`; **Yes** (Cloud Resource + reservation) only for object-table serving |
 | Remote (custom Vertex AI endpoint) | **Yes** — Cloud Resource Connection |
 | `EXPORT MODEL` to GCS | No (writer needs GCS write IAM, not a BQ connection) |
+
+## 6. Which model-free function? (no `CREATE MODEL`, no connection)
+
+| You want to know | Function | Notes |
+|---|---|---|
+| What is in this table — types, nulls, ranges, quantiles, top values | [`ML.DESCRIBE_DATA`](model-free-functions.md#mldescribe_data) | One relation, one row per column. `top_k` defaults to **1** and `num_quantiles` to **2**; both are usually too low. Quantiles are `APPROX_QUANTILES` and **not stable across runs**. |
+| What moves with my target, across many candidate features at once | [`ML.CORRELATION`](model-free-functions.md#mlcorrelation) | One target against many numeric columns, plus `dimension_cols` for per-segment coefficients in the same query. **Preview.** |
+| The correlation of exactly one pair | `CORR()` | Same number as `ML.CORRELATION`'s `PEARSON` (to ~15 significant digits). Reach for the function when you want many columns, many segments, or a rank method. |
+| Whether two datasets have drifted apart | [`ML.VALIDATE_DATA_DRIFT`](model-management-monitoring.md#mlvalidate_data_drift) | Two relations. Categorical metrics are statistics of the data; the numeric metric is a divergence over two fixed-size histograms — read it next to the two ranges. |
+| Whether serving data has drifted from what a model was trained on | [`ML.VALIDATE_DATA_SKEW`](model-management-monitoring.md#mlvalidate_data_skew) | One relation plus a model's stored training statistics — no copy of the training data needed. |
+| How good a saved set of predictions is | [`ML.METRICS`](model-free-functions.md#mlmetrics) | See *Which evaluator?* above. |
+| What a feature table knew about each entity at a past moment | [`ML.FEATURES_AT_TIME` / `ML.ENTITY_FEATURES_AT_TIME`](model-free-functions.md#point-in-time-feature-retrieval-mlfeatures_at_time-mlentity_features_at_time) | See the next table. |
+
+> **Which rank method?** `ML.CORRELATION`'s `SPEARMAN` uses SQL `RANK()` — **competition (min) ranks** — where SciPy, R and pandas default to mid-ranks, so tied data disagrees in the second decimal (`0.172612` against `0.167215` on one census pair). Reproduce it with `pandas.Series.rank(method='min')`. `KENDALL` in the same function *is* tie-corrected (tau-b) and is genuinely **O(n²)** — sample before reaching for it.
+
+## 7. Point-in-time feature retrieval: which of the two?
+
+| You need | Function |
+|---|---|
+| One shared cutoff for every entity — serving *now*, or one snapshot date | [`ML.FEATURES_AT_TIME`](model-free-functions.md#mlfeatures_at_time) |
+| A different cutoff per entity — a training set, an audit sample | [`ML.ENTITY_FEATURES_AT_TIME`](model-free-functions.md#mlentity_features_at_time) |
+| Both against one feature table | That is offline/online parity — see [`workflows/feature_store/`](../workflows/feature_store/) |
+
+> **`ignore_feature_nulls` is a property of the table's shape, not a default to copy.** On a **sparse** history it repairs entities whose latest row simply did not carry that feature; on a **dense** one it invents a value from an older, different event. Neither call errors and neither output looks wrong — [`functions/feature_store/`](../functions/feature_store/) measures both directions on the same table.

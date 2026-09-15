@@ -149,6 +149,8 @@ client.query(query).to_dataframe()
 
 BQML's `ML.EVALUATE` only applies cleanly to Example 1's simple train/test split. Examples 2–4 build their own actual-vs-predicted tables, so the same four metrics (MAE, RMSE, MAPE, pMAE) are computed directly in pandas here — applied identically to every technique for a fair final comparison.
 
+A saved actual-vs-predicted table is also exactly what `functions/evaluation` (`functions/evaluation/`)'s `ML.METRICS` takes — no model argument, so it works on Examples 2–4 where `ML.EVALUATE` cannot. It would supply `mean_absolute_error` here (plus `mean_squared_error`, `r2_score` and three more), but not RMSE, MAPE or pMAE, and it returns one row per call rather than one row per technique. Four metrics in a single pandas pass is the simpler thing to compare across techniques; reach for `ML.METRICS` when the predictions live in BigQuery and the scoring has to stay in SQL.
+
 ```python
 def compute_metrics(df, actual_col='actual', pred_col='predicted'):
     errors = df[actual_col] - df[pred_col]

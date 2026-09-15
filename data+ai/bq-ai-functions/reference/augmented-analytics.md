@@ -72,6 +72,8 @@ This is a deliberate exception to the usual rule that every `AI.*` function is d
 
 It stays listed in this project's [function catalog](../README.md#augmented-analytics--find-what-drives-metric-changes) so that catalog remains a complete inventory of the `AI.*` surface.
 
+**Where it appears in this project anyway:** [`workflows/metric_diagnostics/`](../workflows/metric_diagnostics/) runs it as a **placebo test** at the end of an `AI.KEY_DRIVERS` → `AI.PREDICT` diagnostic. There is no intervention in that dataset, which is the point: six dates chosen only for spacing, and one of them returns a significant cumulative effect with nothing behind it, because a counterfactual fitted on a spring-and-summer ramp reads the autumn seasonal turn as an intervention. That is the discipline the shared heading makes easy to skip — the same trap as reading `AI.KEY_DRIVERS` on before/after periods as causal, arriving from the other direction.
+
 ---
 
 ## `AI.KEY_DRIVERS`

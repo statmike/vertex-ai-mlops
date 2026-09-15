@@ -381,6 +381,8 @@ client.query(query).to_dataframe()
 
 Both approaches produce a reconciled forecast at every level. Evaluate both against the real TEST-period actuals, at every level, using the same MAE/MAPE metrics.
 
+The metrics are written out by hand here because this is a *saved* actual-vs-forecast join, not a model plus an eval set — `ML.EVALUATE` needs a model, and it scores one model's own fit rather than a reconciled forecast assembled from two techniques. `functions/evaluation` (`functions/evaluation/`)'s `ML.METRICS` is the model-free alternative for exactly this shape: hand it a relation with an actual column and a predicted column and it returns `mean_absolute_error` without the hand-written `AVG(ABS(...))`. It does **not** return MAPE, which is the metric this step's near-zero-denominator gotcha is about, so the arithmetic below stays explicit and covers both at once.
+
 ```python
 query = f"""
 WITH actuals AS (

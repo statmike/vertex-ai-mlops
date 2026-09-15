@@ -218,6 +218,39 @@ pd.DataFrame({
 
 **Verified finding:** `absolute_effect = SUM(actual - expected)` and `relative_effect = SUM(actual - expected) / SUM(expected)`, both reproduced exactly. Everything interesting the function does is therefore concentrated in two places: the counterfactual (Step 5) and the p-value (Step 7).
 
+```python
+no_cache = bigquery.QueryJobConfig(use_query_cache=False)
+
+def tx_effects(expr):
+    """Run the same call on a transformed copy of the Texas series."""
+    return client.query(f"""
+    SELECT absolute_effect, relative_effect, p_value
+    FROM AI.CAUSAL_EFFECT(
+      (SELECT TIMESTAMP(wk) AS wk_ts, {expr} AS rate
+       FROM `{PROJECT_ID}.{DATASET_ID}.causal_effect_panel`
+       WHERE subregion1_code = 'TX'),
+      timestamp_col => 'wk_ts', data_col => 'rate',
+      intervention_timestamp => TIMESTAMP '{INTERVENTION}')
+    """, job_config=no_cache).to_dataframe().iloc[0]
+
+pd.DataFrame({
+    'rate (as published)': tx_effects('rate'),
+    'rate * 10':           tx_effects('rate * 10'),
+    'rate + 100':          tx_effects('rate + 100'),
+    '-rate':               tx_effects('-rate'),
+}).T
+```
+
+**Verified finding — `relative_effect` is not a unit-free summary, and the sign does not mean what it looks like.**
+
+`absolute_effect` behaves exactly as a sum of differences must: multiply the series by 10 and it multiplies by 10; add a constant to every point and it does not move, because the constant lands in the counterfactual too.
+
+`relative_effect` is invariant to *scale* but **not to the origin**. Shifting the series by a constant changes it from `-0.2205` to `-0.1586` — the numerator is unchanged and the denominator, `SUM(expected)`, absorbed the shift. So `relative_effect` only means "a 22% reduction" when the metric sits on a ratio scale with a true zero. On an index, a temperature, a mean-centred residual, or anything with an arbitrary offset, the percentage is an artifact of where zero happens to be, and the number to quote is `absolute_effect`.
+
+Negating the series is the sharper trap. `absolute_effect` flips sign, as expected — and `relative_effect` **does not**, because the numerator and the denominator negate together. On a metric where down is good, `relative_effect`'s sign describes the deviation relative to the counterfactual's own sign, not the direction of improvement. Read it against `absolute_effect`, never alone.
+
+The p-value is invariant to all three transformations, which is the expected behaviour of a standardized statistic and a useful check on the reconstruction attempted in Step 7.
+
 ---
 ## Step 5 — Reproduce the counterfactual: plain `ARIMA_PLUS`, default options
 
@@ -298,21 +331,66 @@ This is the real cost of the one-call convenience. For a *causal* claim you are 
 
 `absolute_effect` and `relative_effect` are sums (Step 4) and the counterfactual is `ARIMA_PLUS` (Step 5). That leaves the p-value as the only genuinely new quantity the function computes — so it is worth trying to rebuild it.
 
-Back out the pointwise standard errors from the reported intervals, then test six plausible constructions of a cumulative-effect test statistic against the value the function actually returned.
+Step 5 pays off here. `AI.CAUSAL_EFFECT` renders interval bounds and nothing else, but the model behind them is one this notebook has already reproduced, and `ML.FORECAST` reports the pointwise standard error as a column. Take the exact standard errors from there, check what the rendered bounds do with them, recover the moving-average (`psi`) weights the errors encode, then test seven plausible constructions of a cumulative-effect test statistic against the value the function actually returned.
 
 ```python
 from scipy import stats
 
-z95 = stats.norm.ppf(0.975)
-se = (post['upper_bound'].values - post['lower_bound'].values) / (2 * z95)
+# AI.CAUSAL_EFFECT publishes interval bounds but no standard error. Step 5 established that its
+# counterfactual is the ARIMA_PLUS model bit for bit, and ML.FORECAST does publish one - so the
+# exact quantity is available without reconstructing it from the rendered bounds.
+fc_se = client.query(f"""
+SELECT standard_error,
+       prediction_interval_upper_bound - prediction_interval_lower_bound AS width
+FROM ML.FORECAST(MODEL `{PROJECT_ID}.{DATASET_ID}.causal_effect_arima`,
+                 STRUCT(5 AS horizon, 0.95 AS confidence_level))
+ORDER BY forecast_timestamp
+""").to_dataframe()
+
+se   = fc_se['standard_error'].values
+z95  = stats.norm.ppf(0.975)
+print('Standard errors reported by ML.FORECAST:       ', np.round(se, 3))
+print('Backed out of the intervals with z = 1.959964: ', np.round(
+    (post['upper_bound'].values - post['lower_bound'].values) / (2 * z95), 3))
+print('Multiplier the rendered intervals actually use:', np.round(fc_se['width'].values / (2 * se), 7))
+print(f'Normal 97.5th percentile:                       {z95:.7f}')
+print('How far the rendered bounds fall short:         '
+      f'{(fc_se["width"].values / (2 * se))[0] / z95 - 1:+.2%}')
+
 gap = (post['rate'] - post['predicted_rate']).values
 cum, H = gap.sum(), len(gap)
 
-print('Pointwise standard errors backed out of the 95% intervals:')
-print(np.round(se, 3), '\n')
-print('Ratio to the one-step se:      ', np.round(se / se[0], 3))
+print('\nRatio to the one-step se:      ', np.round(se / se[0], 3))
 print('sqrt(cumulative sum of j^2):   ', np.round(np.sqrt(np.cumsum(np.arange(1, H + 1) ** 2)), 3))
+
+# The se sequence encodes the model's psi weights: se_h^2 = sigma^2 * sum(psi_0..psi_{h-1})^2,
+# so each weight can be read straight back out of it. psi_0 is 1 by construction.
+psi = np.concatenate([[1.0], np.sqrt(np.diff(se ** 2) / se[0] ** 2)])
+print('\nPsi weights recovered from the se: ', np.round(psi, 9))
 ```
+
+```python
+# Is the multiplier a different distribution, or an approximation to the normal quantile?
+rows = []
+for cl in [0.80, 0.90, 0.95, 0.98, 0.99]:
+    q_used = client.query(f"""
+    SELECT AVG((prediction_interval_upper_bound - prediction_interval_lower_bound)
+               / (2 * standard_error)) AS q
+    FROM ML.FORECAST(MODEL `{PROJECT_ID}.{DATASET_ID}.causal_effect_arima`,
+                     STRUCT(5 AS horizon, {cl} AS confidence_level))
+    """).to_dataframe()['q'][0]
+    z = stats.norm.ppf(0.5 + cl / 2)
+    rows.append({'confidence_level': cl, 'multiplier used': q_used,
+                 'normal quantile': z, 'difference': q_used - z,
+                 'Student t, df = 7': stats.t.ppf(0.5 + cl / 2, df=H + 2)})
+pd.DataFrame(rows).set_index('confidence_level')
+```
+
+**Verified finding — `ML.FORECAST`'s prediction interval is not `forecast ± z · standard_error`.** At `confidence_level => 0.95` the rendered bounds are exactly `1.9564581 × standard_error` wide on each side, identical to seven decimal places at all five horizons. The normal 97.5th percentile is `1.9599640`. The bounds are 0.18% narrower than the textbook interval.
+
+The sweep says what that multiplier is not. A Student *t* quantile is ruled out by direction alone — *t* is always **wider** than normal, at every confidence level in the table and by a wide margin at 7 degrees of freedom. A constant scale factor is ruled out because the difference from the normal quantile **changes sign**: `+0.0007` at `0.80`, `-0.0018` at `0.90`, `-0.0035` at `0.95`, `+0.0009` at `0.98`, `+0.0119` at `0.99`. That is the signature of an approximation to the inverse normal CDF — small, non-monotone error that grows in the tail — not of a different distribution.
+
+The practical consequence is narrow and worth knowing: **do not back a standard error out of the rendered bounds.** Dividing a 95% interval width by `2 × 1.959964` returns a number 0.18% too small — invisible on a chart, and large enough to swamp the comparison the rest of this step is about. The `standard_error` column is the quantity itself, and everything below uses it.
 
 ```python
 def two_sided(sd):
@@ -325,6 +403,7 @@ constructions = {
     "the last step's se alone":                    two_sided(se[-1]),
     'H x the last step\'s se':                     two_sided(H * se[-1]),
     'sum of the se (perfectly correlated errors)': two_sided(se.sum()),
+    'cumulative ARIMA forecast error (psi weights)': two_sided(se[0] * np.sqrt((np.cumsum(psi) ** 2).sum())),
 }
 tbl = pd.DataFrame(constructions, index=['implied sd', 'z', 'p']).T
 
@@ -352,11 +431,48 @@ print(f'\nDegrees of freedom that would close it instead:     {implied_df:.0f}')
 print(f'Pre-intervention points available:                  {(~ts["is_post_intervention"]).sum()}')
 ```
 
-**Verified finding — no construction reproduces it.** The closest is the perfectly-correlated-errors sum of the pointwise standard errors, and it misses by well under a percent — near enough to show the reported p-value is *about* what a cumulative test with fully correlated forecast errors would give, and far enough to prove that is not the formula.
+**Verified finding — no construction reproduces it, including the statistically correct one.** The seven candidates split into three groups, and the split is the informative part.
 
-Working backwards gives two ways to describe the residual gap, and neither points at a mechanism. Holding the distribution normal, the reported p-value implies a standard deviation slightly larger than the sum of the standard errors. Holding the standard deviation at that sum instead, closing the gap takes a t distribution with the degrees of freedom printed below — a number with no counterpart in a 9-point pre-period.
+The **`psi`-weight cumulation is the right answer to the textbook question** — given an `ARIMA(0, 2, 0)` counterfactual, `266.695866` *is* the standard deviation of the sum of its five forecast errors, and it is built from weights recovered from the model's own reported standard errors rather than assumed. It is not the closest match. The **sum of the pointwise standard errors** is closer, at `0.304355` against the reported `0.304812`, and that quantity is the variance you get only if the five forecast errors are *perfectly* correlated — the ceiling of the family, not a member of it.
 
-Two measured constraints narrow what any explanation has to satisfy — both checked in the next two cells.
+So the reported p-value sits *outside* the range that any correlation structure among these forecast errors can produce, on the far side of the ceiling. That rules out a whole family of explanations at once: whatever the function is doing, the cumulative-effect variance is not a linear combination of the model's own pointwise forecast errors. Something else is in it — parameter-estimation uncertainty on top of innovation variance would be the ordinary candidate, and it would push in the right direction.
+
+Working backwards gives two ways to describe the residual gap, and neither points at a mechanism. Holding the distribution normal, the reported p-value implies a standard deviation 0.09% larger than the sum of the standard errors. Holding the standard deviation at that sum instead, closing the gap takes a t distribution with the degrees of freedom printed above — 543, a number with no counterpart in a 9-point pre-period.
+
+Three measured constraints narrow what any explanation has to satisfy — the horizon sweep below, then `confidence_level` and determinism in the two cells after it.
+
+```python
+# num_post_intervention_points shortens the post window without changing the pre window,
+# so the counterfactual is untouched and only the number of points being summed moves.
+rows = []
+for h in [2, 3, H]:
+    r = client.query(f"""
+    SELECT absolute_effect, p_value FROM AI.CAUSAL_EFFECT(
+      {TX_SERIES},
+      timestamp_col => 'wk_ts', data_col => 'rate',
+      intervention_timestamp => TIMESTAMP '{INTERVENTION}',
+      num_post_intervention_points => {h})
+    """, job_config=no_cache).to_dataframe().iloc[0]
+    implied = abs(r['absolute_effect']) / abs(stats.norm.ppf(r['p_value'] / 2))
+    rows.append({
+        'post points':          h,
+        'same counterfactual':  np.isclose(r['absolute_effect'], gap[:h].sum(), rtol=0, atol=1e-9),
+        'p_value':              r['p_value'],
+        'sd implied by p':      implied,
+        'sum of se (ceiling)':  se[:h].sum(),
+        'psi cumulation':       se[0] * np.sqrt((np.cumsum(psi[:h]) ** 2).sum()),
+        'implied / ceiling':    implied / se[:h].sum(),
+    })
+pd.DataFrame(rows).set_index('post points')
+```
+
+**Verified finding — the near-miss holds at three horizons, and it changes sign.** Shortening the post window with `num_post_intervention_points` leaves the pre window and therefore the counterfactual untouched (the `same counterfactual` column confirms the reported effect is still the sum of the same pointwise gaps), which turns one comparison into three.
+
+At every horizon the standard deviation implied by the reported p-value lands within a tenth of a percent of the sum of the standard errors, and at every horizon it is further from the `psi` cumulation. But the residual is **below** the ceiling at two horizons (`0.999418`, `0.999073`) and **above** it at the third (`1.000946`). A constant multiplicative correction, a different fixed variance formula, or a t distribution with fixed degrees of freedom would all leave a residual with a consistent sign. This one does not.
+
+That the residual straddles zero is only meaningful because these are the model's *reported* standard errors. Had the comparison used errors reconstructed from the rendered bounds, the 0.18% narrowing measured two cells above would have pushed all three ratios to the same side and manufactured exactly the consistent sign this rules out.
+
+**Mechanisms that fit, none of them established:** the internal variance includes a parameter-estimation term neither the bounds nor the `standard_error` column expose; the tail area is evaluated with an approximation to the normal CDF rather than the function itself — the interval multiplier above is direct evidence that at least one such approximation is in the code path; or it comes from a deterministic sample, since seeded simulation would produce exactly this, a residual on the order of a ten-thousandth that wanders in sign, and the determinism measured below is consistent with a fixed seed as well as with a closed form. Nothing here distinguishes between these.
 
 ```python
 rows = []
@@ -377,7 +493,6 @@ pd.DataFrame(rows)
 ```
 
 ```python
-no_cache = bigquery.QueryJobConfig(use_query_cache=False)
 q = f"""
 SELECT absolute_effect, relative_effect, p_value FROM AI.CAUSAL_EFFECT(
   {TX_SERIES},
@@ -392,7 +507,7 @@ print(f'\nDistinct p_value across 3 cache-disabled runs: {repeats["p_value"].nun
 
 **Verified finding — the p-value is invariant to `confidence_level` and deterministic across runs.**
 
-The interval width changes as expected when `confidence_level` moves, and the p-value does not move at all. So it is computed from the model's internal variance, not from the rendered bounds — which also means the standard errors reconstructed above are a *derived* view of that variance, not the quantity itself, and that alone may account for the residual gap.
+The interval width changes as expected when `confidence_level` moves, and the p-value does not move at all. So it is computed from the model’s internal variance, not from the rendered bounds. That closes one escape hatch on the Step 7 residual: the standard errors used above are the ones `ML.FORECAST` reports, not a derived view of them, so the gap is not an artifact of reading numbers off an interval.
 
 Determinism is worth stating because it is not the norm here: the TimesFM-backed `AI.*` functions are not reproducible even with the model version pinned, and separate cache-disabled calls are the only way to establish it, since the query cache will happily return the same row four times. A closed form, not a posterior sample — which is a genuine difference from the R `CausalImpact` package, whose tail area comes from MCMC.
 
@@ -464,7 +579,54 @@ The plot shows why, and it is not a defect in any of the three. Georgia and the 
 **And the significance test is doing its job.** The p-value on this data does not clear 0.05. Read together, the honest summary is not "the mandate cut cases by 56 per 100k per week"; it is that a 9-week pre-period and a 5-week post-period cannot separate a mandate effect from a cresting epidemic wave, and the function says as much if you read past the point estimate.
 
 ---
-## Step 9 — Arguments, limits, and gotchas
+## Step 9 — `id_cols`: many series in one call
+
+The signature accepts `id_cols`, and the obvious question is what the function does with several series at once: fit them jointly, borrow strength across them, or simply fan out. Run three states through one call and the same three states through three calls, then compare.
+
+```python
+THREE = ['TX', 'CO', 'GA']
+
+many = client.query(f"""
+SELECT subregion1_code, absolute_effect, relative_effect, p_value
+FROM AI.CAUSAL_EFFECT(
+  (SELECT subregion1_code, TIMESTAMP(wk) AS wk_ts, rate
+   FROM `{PROJECT_ID}.{DATASET_ID}.causal_effect_panel`
+   WHERE subregion1_code IN UNNEST({THREE})),
+  timestamp_col          => 'wk_ts',
+  data_col               => 'rate',
+  intervention_timestamp => TIMESTAMP '{INTERVENTION}',
+  id_cols                => ['subregion1_code'])
+ORDER BY subregion1_code
+""", job_config=no_cache).to_dataframe()
+
+alone = pd.concat([
+    client.query(f"""
+    SELECT '{s}' AS subregion1_code, absolute_effect, relative_effect, p_value
+    FROM AI.CAUSAL_EFFECT(
+      (SELECT TIMESTAMP(wk) AS wk_ts, rate
+       FROM `{PROJECT_ID}.{DATASET_ID}.causal_effect_panel`
+       WHERE subregion1_code = '{s}'),
+      timestamp_col => 'wk_ts', data_col => 'rate',
+      intervention_timestamp => TIMESTAMP '{INTERVENTION}')
+    """, job_config=no_cache).to_dataframe()
+    for s in sorted(THREE)
+], ignore_index=True)
+
+cols = ['absolute_effect', 'relative_effect', 'p_value']
+print('One call with id_cols:')
+print(many.to_string(index=False))
+print(f'\nLargest disagreement against three separate calls: '
+      f'{(many[cols].values - alone[cols].values).__abs__().max()!r}')
+```
+
+**Verified finding — `id_cols` fans out, it does not pool.** Every value from the three-series call is *bit-identical* to the value from a call on that state alone: the largest disagreement across all nine numbers is exactly zero. Nothing is shared between series — no common trend, no pooled variance, no hierarchical shrinkage. Each `id_cols` combination gets its own `ARIMA_PLUS` fit, its own counterfactual, and its own significance test, and the only thing they have in common is the intervention timestamp.
+
+That is worth knowing in both directions. It makes `id_cols` safe — a badly-behaved series cannot contaminate its neighbours, and one row's `status` can carry an error while the rest succeed. It also means `id_cols` buys convenience and one job's worth of overhead rather than any statistical benefit, so there is no reason to prefer it over separate calls except operational tidiness, and no reason to avoid it either.
+
+Note the three states disagree sharply on the same date: Colorado's effect is positive, Georgia's is nearly twice Texas's in magnitude, and none of the three clears `p_value < 0.05`. Three independent univariate counterfactuals through one nationwide summer wave is precisely the situation Step 8 warns about.
+
+---
+## Step 10 — Arguments, limits, and gotchas
 
 **The full signature**, verified live:
 
@@ -474,7 +636,7 @@ The plot shows why, and it is not a defect in any of the three. Georgia and the 
 | `timestamp_col` | `STRING`, required | column holding the `TIMESTAMP` |
 | `data_col` | `STRING`, required | the metric |
 | `intervention_timestamp` | `TIMESTAMP` **literal**, required | splits pre from post |
-| `id_cols` | `ARRAY<STRING>`, optional | `STRING`/`INT64` columns identifying separate series; each combination is analyzed independently and returns its own row |
+| `id_cols` | `ARRAY<STRING>`, optional | `STRING`/`INT64` columns identifying separate series; each combination is analyzed independently and returns its own row — demonstrated in Step 9 |
 | `num_post_intervention_points` | `INT64`, optional | cap on post-intervention points; defaults to everything through the end of the series |
 | `confidence_level` | `FLOAT64` in `[0, 1)`, default `0.95` | affects `lower_bound`/`upper_bound` only — **not** `p_value`, as Step 7 measured |
 | `output_time_series` | `BOOL`, default `FALSE` | `TRUE` adds the pointwise columns |

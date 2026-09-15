@@ -6,7 +6,8 @@ An end-to-end "why did my metric move?" pipeline:
 2. **Confirm** the headline shift with a plain SQL aggregate
 3. **Explain** the change with `AI.KEY_DRIVERS` — find the segments that drove it
 4. **Project** what each segment should have done with `AI.PREDICT` — a counterfactual built from reference-period behavior
-5. **Narrate** the findings in plain language with `AI.GENERATE`
+5. **Test for cause** with `AI.CAUSAL_EFFECT` — and run the placebo check that any causal claim has to survive
+6. **Narrate** the findings in plain language with `AI.GENERATE`
 
 **What this demonstrates:**
 - Root-cause analysis of a metric change entirely in BigQuery SQL
@@ -17,7 +18,7 @@ An end-to-end "why did my metric move?" pipeline:
 - Two independent notions of "unexpected": statistical deviation and learned projection residual
 - Composing augmented analytics with generative AI for an executive summary
 
-**Functions used:** `functions/ai_key_drivers` (`AI.KEY_DRIVERS`) | `functions/ai_predict` (`AI.PREDICT`) | `functions/ai_generate` (`AI.GENERATE`)
+**Functions used:** `functions/ai_key_drivers` (`AI.KEY_DRIVERS`) | `functions/ai_predict` (`AI.PREDICT`) | `bq-ml/workflows/causal_effect` (`AI.CAUSAL_EFFECT`) | `functions/ai_generate` (`AI.GENERATE`)
 
 **Prerequisites:** `setup` (Setup guide) | `RESOURCES.md` (Function reference)
 
@@ -61,7 +62,7 @@ print(f'Dataset {PROJECT_ID}.{DATASET_ID} ready')
 
 ### Connection for AI.GENERATE
 
-`AI.GENERATE` (Step 5) needs a BigQuery Cloud resource connection with the Vertex AI User role. This is idempotent — skip if you already created it in another notebook.
+`AI.GENERATE` (Step 6) needs a BigQuery Cloud resource connection with the Vertex AI User role. This is idempotent — skip if you already created it in another notebook.
 
 ```python
 import subprocess as _sp, json as _json
@@ -195,7 +196,7 @@ stability
 
 One of those rows is not a segment: `AI.KEY_DRIVERS` also emits an `all` row carrying the population-level move. That row is a free cross-check — its `difference` should equal the `difference` Step 2 computed in plain SQL — and it is excluded from the segment rankings that follow.
 
-We persist the result so Step 5 can summarize it.
+We persist the result so Step 6 can summarize it.
 
 ```python
 query = f"""
@@ -303,7 +304,7 @@ The projection trains on the **reference** rows and predicts on the **interest**
 - **Deliberately absent from the prediction input:** the actual `total_duration`. The prediction input is allowed to carry extra columns, but handing the model the answer it is predicting is a risk with no upside — the actuals are joined back afterward on the segment keys.
 - **Which rows come back:** the returned passthrough columns are the *prediction* relation's rows, one per prediction row. The reference page says they come from the training table; the observed behavior — and Google's own worked examples — say otherwise, and this notebook depends on the behavior. It is why `p.trips` and the join keys in the queries below are April 2017 values, and why joining `p` to the interest-period segments is correct rather than backwards. See `functions/ai_predict` (`AI.PREDICT`) for the discrepancy.
 
-`AI.PREDICT` is in Preview and takes tens of seconds per call regardless of input size. Materializing the result lets the ranking below and the narration in Step 5 both read it without paying for inference twice. Its output is also not reproducible run to run, which is a second reason to materialize rather than re-issue the call.
+`AI.PREDICT` is in Preview and takes tens of seconds per call regardless of input size. Materializing the result lets the ranking below and the narration in Step 6 both read it without paying for inference twice. Its output is also not reproducible run to run, which is a second reason to materialize rather than re-issue the call.
 
 ```python
 query = f"""
@@ -411,12 +412,80 @@ client.query(f"""
 
 `residual` is a *learned* expectation error: actual minus what a model of reference-period behavior expects at interest-period volume. `unexpected_difference` from Step 3 is a *statistical* expectation error: how far a segment moved from what the population-wide trend implied for it.
 
-The two rankings disagree on purpose. A segment can be unremarkable to `AI.KEY_DRIVERS` — it moved with everyone else — and still miss its projection badly because its riders changed how long they ride. Reading both separates "this segment is large" from "this segment behaves differently now", and Step 5 hands both to the narrator.
+The two rankings disagree on purpose. A segment can be unremarkable to `AI.KEY_DRIVERS` — it moved with everyone else — and still miss its projection badly because its riders changed how long they ride. Reading both separates "this segment is large" from "this segment behaves differently now", and Step 6 hands both to the narrator.
 
 Before drawing that behavioral reading, though, check `max_trip_share` on every row you plan to act on. Only a residual backed by a small `max_trip_share` is a statement about riders; a large one is a statement about a single record, and no amount of modeling downstream will fix it.
 
 ---
-## Step 5 — Narrate the findings with AI.GENERATE
+## Step 5 — Was anything *caused*? `AI.CAUSAL_EFFECT` and the placebo test
+
+Everything so far describes the move. `AI.KEY_DRIVERS` said **where** it concentrated; `AI.PREDICT` said **which segments missed a projection built from their own past**. Neither is a causal statement, and neither becomes one by being run on before-and-after periods.
+
+`AI.CAUSAL_EFFECT` is the function that asks the causal question, and it wants a different shape of data: **one series, a time axis, and a dated intervention**. It fits an `ARIMA_PLUS` counterfactual on the pre-intervention stretch, projects it forward, and reports the cumulative gap with a p-value. It takes no control group and no covariates, so its entire identifying assumption is *the series would have continued its own pattern*. The mechanics are measured end to end in the sibling project's `bq-ml/workflows/causal_effect` (`bq-ml/workflows/causal_effect/`) — including the finding that its counterfactual is reproducible bit-for-bit with a plain `CREATE MODEL ... ARIMA_PLUS`.
+
+**There is no known intervention in this dataset**, which makes it the right place to demonstrate the check that belongs next to every causal claim rather than the claim itself. A **placebo test** runs the same analysis at dates where nothing happened. If the function reports an effect there too, the design cannot distinguish an intervention from the series' own behaviour, and no p-value from it means what it appears to mean.
+
+One data note first: `citibike_trips` has a gap from October 2016 through March 2017, so a continuous daily series cannot span both comparison periods. The placebo test runs on the continuous stretch that does exist, **2017-04-01 through 2018-05-31**.
+
+```python
+query = f"""
+CREATE OR REPLACE TABLE `{PROJECT_ID}.{DATASET_ID}.workflow_metricdiag_daily` AS
+SELECT
+  TIMESTAMP(DATE(starttime)) AS day_ts,
+  SUM(tripduration) / 3600.0 AS total_hours
+FROM `bigquery-public-data.new_york_citibike.citibike_trips`
+WHERE DATE(starttime) BETWEEN '2017-04-01' AND '2018-05-31'
+  AND tripduration IS NOT NULL
+  -- the same outlier guard as Step 1, for the same reason
+  AND tripduration BETWEEN 60 AND 86400
+GROUP BY day_ts
+"""
+client.query(query).result()
+
+client.query(f"""
+  SELECT
+    COUNT(*) AS days,
+    MIN(day_ts) AS first_day,
+    MAX(day_ts) AS last_day,
+    ROUND(AVG(total_hours)) AS avg_daily_hours
+  FROM `{PROJECT_ID}.{DATASET_ID}.workflow_metricdiag_daily`
+""").to_dataframe()
+```
+
+```python
+# Six dates chosen only for spacing across the series. None is a real intervention.
+# num_post_intervention_points holds the post window at 60 days so the six tests are comparable.
+no_cache = bigquery.QueryJobConfig(use_query_cache=False)
+
+def placebo(intervention, post_points=60):
+    return client.query(f"""
+    SELECT absolute_effect, relative_effect, p_value
+    FROM AI.CAUSAL_EFFECT(
+      (SELECT day_ts, total_hours
+       FROM `{PROJECT_ID}.{DATASET_ID}.workflow_metricdiag_daily`),
+      timestamp_col                => 'day_ts',
+      data_col                     => 'total_hours',
+      intervention_timestamp       => TIMESTAMP '{intervention}',
+      num_post_intervention_points => {post_points})
+    """, job_config=no_cache).to_dataframe().iloc[0]
+
+dates = ['2017-07-01', '2017-09-01', '2017-10-01', '2017-12-01', '2018-01-01', '2018-03-01']
+tests = pd.DataFrame({d: placebo(d) for d in dates}).T
+tests.index.name = 'placebo intervention date'
+tests['significant at 0.05'] = tests['p_value'] < 0.05
+tests
+```
+
+**Verified finding — one placebo date out of six clears `p < 0.05`, and it is the one the seasonality predicts.** Nothing happened on any of these dates. Five return effects the function itself declines to call significant. **2017-10-01 does not** — it reports a large negative cumulative effect at a p-value under 0.05, because a counterfactual fitted on a spring-and-summer ramp cannot know that ridership falls every autumn, so it carries the summer level forward and reads the seasonal decline as an intervention.
+
+That is the whole lesson in one row. The function is behaving exactly as documented; the failure is in the design around it. A univariate counterfactual can only carry forward patterns it has already seen, and an annual cycle needs more than a year of pre-intervention data before it is one of them. Point the same call at a date just before a seasonal turn, with a pre-window shorter than the cycle, and it will hand you a significant result with no cause behind it.
+
+**What this means for the diagnostic above.** `AI.KEY_DRIVERS` and `AI.PREDICT` earned their findings without claiming cause, and that restraint is not a limitation to be fixed by adding a causal function — it is the honest reading of two-period data with no intervention in it. When a real dated intervention *does* exist, `AI.CAUSAL_EFFECT` is the right tool, and the discipline that makes its answer usable is this table: run the placebo dates first, and treat the real date's p-value as informative only if the placebos stay quiet.
+
+Two other defences are worth knowing, both demonstrated in the sibling project: give the pre-window enough history to contain a full seasonal cycle, and where a credible control unit exists, prefer a method that uses one — `bq-ml/workflows/difference_in_differences` (`difference_in_differences`) or `bq-ml/workflows/synthetic_control` (`synthetic_control`), which net out shocks a univariate counterfactual has no way to see.
+
+---
+## Step 6 — Narrate the findings with AI.GENERATE
 
 `AI.KEY_DRIVERS` gives us the contributions and `AI.PREDICT` gives us the projection residuals; `AI.GENERATE` turns both into a plain-language executive summary. We aggregate the top driver rows and the largest residuals into a single prompt and ask Gemini to explain what drove the metric change.
 

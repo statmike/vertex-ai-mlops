@@ -60,6 +60,8 @@ What to know before you route there:
 | Output | One row per segment (`drivers`, `difference`, `contribution`) | `absolute_effect` (**cumulative**, not per-period), `relative_effect`, `p_value`, `prob_causal_effect` |
 | Engine | Apriori-style segment search | Verified bit-for-bit as `ARIMA_PLUS` + `ML.FORECAST` on defaults; the `p_value` is not reconstructable and does not move with `confidence_level` |
 
+**One demonstration of it does live in this skill, and it is a negative one.** `narrative/metric_diagnostics.md` closes with a **placebo test**: six intervention dates on a series where nothing happened, and one returns a significant cumulative effect anyway, because a counterfactual fitted on a spring-and-summer ramp reads the autumn seasonal turn as an intervention. Two rules follow. A univariate counterfactual can only carry forward patterns already in its pre-window, so **an annual cycle needs more than a year of pre-intervention history**. And `AI.CAUSAL_EFFECT` applies **no multiple-comparison adjustment** — `id_cols` fans out into independent analyses, so N series means N chances to clear 0.05 by accident. Run placebo dates before quoting a real one.
+
 Both are Preview and neither creates a model artifact.
 
 ## Go deeper

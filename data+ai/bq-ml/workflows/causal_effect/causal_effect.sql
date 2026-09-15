@@ -154,6 +154,24 @@ FROM ts;
 -- the reported values exactly.
 --   absolute_effect = SUM(actual - expected)
 --   relative_effect = SUM(actual - expected) / SUM(expected)
+--
+-- Those two formulas make four predictions about transformed inputs. Run the
+-- same call on `rate * 10`, `rate + 100` and `-rate` and every one holds:
+--
+--   transform        absolute_effect   relative_effect   p_value
+--   rate              -282.606186      -0.220533         0.304812
+--   rate * 10        -2826.061858      -0.220533         0.304812
+--   rate + 100        -282.606186      -0.158637         0.304812
+--   -rate              282.606186      -0.220533         0.304812
+--
+-- Reading the table: scaling moves absolute_effect and leaves relative_effect
+-- alone, because the scale cancels in the ratio. A constant SHIFT does not
+-- cancel -- it inflates the denominator SUM(expected) and drags
+-- relative_effect toward zero (-0.2205 -> -0.1586), so relative_effect is only
+-- interpretable on a ratio scale with a meaningful zero. Negation flips
+-- absolute_effect but NOT relative_effect, since numerator and denominator flip
+-- together. And p_value never moves under any of them: the test statistic is
+-- scale- and location-free, exactly as a z on a standardized gap should be.
 
 
 -- =============================================================================
@@ -200,24 +218,78 @@ ORDER BY forecast_timestamp;
 -- absolute_effect and relative_effect are sums (Example 3). p_value is the one
 -- genuinely new quantity, and it is the one that resists reconstruction.
 --
--- Six constructions tried against the observed 0.30481216822794477, using the
--- pointwise standard errors backed out of the intervals
--- (se_h = (upper_h - lower_h) / (2 * 1.959964) = 13.82, 30.91, 51.71, 75.70, 102.50):
+-- FIRST, GET THE STANDARD ERRORS RIGHT. AI.CAUSAL_EFFECT renders interval
+-- bounds and no standard error, so the tempting move is to divide the width by
+-- 2 * 1.959964. Do not: ML.FORECAST on the Example 4 model reports the quantity
+-- directly, and the rendered bounds are NOT forecast +/- z * standard_error.
+SELECT standard_error,
+       (prediction_interval_upper_bound - prediction_interval_lower_bound)
+         / (2 * standard_error) AS multiplier_actually_used
+FROM ML.FORECAST(MODEL `PROJECT_ID.DATASET.causal_effect_arima`,
+                 STRUCT(5 AS horizon, 0.95 AS confidence_level))
+ORDER BY forecast_timestamp;
+-- Verified: multiplier_actually_used = 1.9564581 at all five horizons, against
+-- a normal 97.5th percentile of 1.9599640. The bounds are 0.18% narrower than
+-- the textbook interval, so back-solved standard errors come out 0.18% small
+-- (13.82 / 30.91 / 51.71 / 75.70 / 102.50 instead of the true
+-- 13.85 / 30.96 / 51.81 / 75.84 / 102.69).
 --
---   construction                                        z         p
---   independent sum of pointwise variances           -1.9954   0.045997
---   random-walk cumulation  sigma^2*H(H+1)(2H+1)/6   -2.7571   0.005832
---   last step's se alone                             -2.7571   0.005832
---   H * last se                                      -0.5514   0.581349
---   sum of the se's (perfectly correlated errors)    -1.0290   0.303489  <-- closest
---   t-test on the 5 pointwise gaps                   -1.7404   0.081795
+-- Sweeping confidence_level says what that multiplier is not:
 --
--- The closest is 0.303489 against 0.304812 -- 0.4% off, near but not equal.
--- Working backwards, the observed p implies a standard deviation of 275.40 on
--- the cumulative effect; the sum of the se's is 274.65. Fitting a t
--- distribution to close the gap needs df ~ 200, which is not a natural
--- quantity for 9 pre-period points, so that is coincidence rather than
--- mechanism.
+--   confidence_level  multiplier used  normal quantile  difference
+--   0.80              1.282287         1.281552         +0.000735
+--   0.90              1.643071         1.644854         -0.001782
+--   0.95              1.956458         1.959964         -0.003506
+--   0.98              2.327237         2.326348         +0.000889
+--   0.99              2.587695         2.575829         +0.011866
+--
+-- Not a Student t -- t is always WIDER than normal (2.3646 at df=7, cl=0.95).
+-- Not a constant scale factor -- the difference changes sign. That pattern is
+-- an approximation to the inverse normal CDF: small, non-monotone, worst in
+-- the tail.
+--
+-- NOW THE P-VALUE. Seven constructions tried against the observed
+-- 0.30481216822794477, using the reported standard errors above:
+--
+--   construction                                       sd         z         p
+--   independent sum of pointwise variances         141.881   -1.9919   0.046387
+--   random-walk cumulation sigma^2*H(H+1)(2H+1)/6  102.686   -2.7521   0.005921
+--   last step's se alone                           102.686   -2.7521   0.005921
+--   H * last se                                    513.429   -0.5504   0.582025
+--   psi-weight cumulation (the textbook answer)    266.696   -1.0597   0.289301
+--   sum of the se's (perfectly correlated errors)  275.139   -1.0271   0.304355  <-- closest
+--   t-test on the 5 pointwise gaps                       -   -1.7404   0.156772
+--
+-- The psi weights are recovered from the standard errors themselves, not
+-- assumed: se_h^2 = sigma^2 * sum(psi_0..psi_{h-1})^2 gives psi = [1,2,3,4,5]
+-- exactly, which is what an ARIMA(0,2,0) must produce. So the psi row IS the
+-- correct standard deviation of the sum of five forecast errors -- and it is
+-- not the closest match. The closest is the sum of the se's, which is the
+-- variance you get only if those errors are PERFECTLY correlated: the ceiling
+-- of the family, not a member of it. The reported p-value therefore sits
+-- outside the range any correlation structure among these errors can produce.
+-- Whatever the function computes, the cumulative variance is not a linear
+-- combination of the model's own pointwise forecast errors.
+--
+-- The residual gap is 0.09% in standard-deviation terms (275.399 implied by the
+-- reported p, against 275.139). Closing it with a t distribution instead needs
+-- df ~ 543, which has no counterpart in a 9-point pre-period.
+--
+-- THE GAP CHANGES SIGN. num_post_intervention_points shortens the post window
+-- without touching the pre window, so the counterfactual is unchanged and only
+-- the number of points summed moves -- one comparison becomes three:
+--
+--   post points  p_value   sd implied by p  sum of se (ceiling)  ratio
+--   2            0.511079   44.781           44.807              0.999418
+--   3            0.735735   96.525           96.615              0.999073
+--   5            0.304812  275.399          275.139              1.000946
+--
+-- Below the ceiling twice, above it once. A constant multiplicative
+-- correction, a different fixed variance formula, or a t with fixed df would
+-- all leave a consistently signed residual. This one does not. Note this
+-- conclusion depends on using the REPORTED standard errors: the 0.18% narrowing
+-- measured above would have pushed all three ratios to the same side and
+-- manufactured the consistent sign this rules out.
 --
 -- Two further constraints on any explanation, both measured:
 --   * p_value is INVARIANT to confidence_level. 0.80, 0.95 and 0.99 all return
@@ -273,7 +345,61 @@ ORDER BY forecast_timestamp;
 
 
 -- =============================================================================
--- Example 7: The arguments in full
+-- Example 7: id_cols -- many series in one call
+-- =============================================================================
+-- id_cols analyses each unique combination independently and returns one row
+-- per series. The panel already holds 14 states, so three of them cost one call.
+WITH pop AS (
+  SELECT subregion1_code, ANY_VALUE(population) AS population
+  FROM `bigquery-public-data.covid19_open_data.covid19_open_data`
+  WHERE country_code = 'US' AND aggregation_level = 1
+    AND subregion1_code IN ('TX', 'CO', 'GA')
+  GROUP BY subregion1_code
+),
+base AS (
+  SELECT subregion1_code, DATE_TRUNC(date, WEEK(MONDAY)) AS wk,
+         SUM(new_confirmed) AS wk_cases, COUNT(*) AS n_days
+  FROM `bigquery-public-data.covid19_open_data.covid19_open_data`
+  WHERE country_code = 'US' AND aggregation_level = 1
+    AND subregion1_code IN ('TX', 'CO', 'GA')
+    AND date BETWEEN '2020-05-04' AND '2020-08-09'
+  GROUP BY subregion1_code, wk
+),
+panel AS (
+  SELECT b.subregion1_code, TIMESTAMP(b.wk) AS wk_ts,
+         b.wk_cases / p.population * 100000 AS rate
+  FROM base b JOIN pop p USING (subregion1_code)
+  WHERE b.n_days = 7
+)
+SELECT subregion1_code, absolute_effect, relative_effect, p_value
+FROM AI.CAUSAL_EFFECT(
+  (SELECT * FROM panel),
+  timestamp_col => 'wk_ts', data_col => 'rate',
+  intervention_timestamp => TIMESTAMP '2020-07-03',
+  id_cols => ['subregion1_code'])
+ORDER BY subregion1_code;
+-- Verified:
+--   CO   133.603549    0.868572   0.093329
+--   GA  -535.898927   -0.321624   0.141167
+--   TX  -282.606186   -0.220533   0.304812
+--
+-- FINDING: id_cols FANS OUT, it does not pool. Every one of these nine numbers
+-- is bit-identical to the value from a call on that state alone -- largest
+-- disagreement across all nine is exactly 0.0. Nothing is shared between
+-- series: no common trend, no pooled variance, no multiple-comparison
+-- adjustment. It is N independent analyses with one job's overhead, which is
+-- the cost saving and also the caveat. Three states here, three p-values, and
+-- nothing in the output warns that testing more series raises the chance one of
+-- them clears 0.05 by accident.
+--
+-- Note Colorado's +0.87 relative_effect. A positive "effect" in a state whose
+-- mask mandate this analysis is not about is the univariate counterfactual's
+-- weakness stated in one number: it charges the nationwide summer 2020 surge to
+-- whatever happened at the intervention timestamp. See Example 6.
+
+
+-- =============================================================================
+-- Example 8: The arguments in full
 -- =============================================================================
 -- Verified live against the function signature.
 --
@@ -283,7 +409,9 @@ ORDER BY forecast_timestamp;
 --   id_cols                     ARRAY<STRING>, optional. STRING/INT64 columns
 --                               identifying separate series; each unique
 --                               combination is analysed independently and
---                               returns its own row.
+--                               returns its own row -- demonstrated, and shown
+--                               to be bit-identical to separate calls, in
+--                               Example 7.
 --   num_post_intervention_points INT64, optional. Cap on post-intervention
 --                               points included. Defaults to everything from
 --                               intervention_timestamp to the end of the series.

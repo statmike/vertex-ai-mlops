@@ -10,6 +10,8 @@
 | Two columns: actual and predicted | `ML.METRICS` | this notebook |
 | Raw data, and no model at all yet | `AI.EVALUATE` (trains TabFM/TimesFM internally) | `bq-ai-functions/functions/ai_evaluate` (`ai_evaluate`) |
 
+**Where this project already scores saved predictions by hand.** `workflows/hierarchical_forecasting` (`workflows/hierarchical_forecasting/`) joins TEST-period actuals to two reconciled forecasts, and `workflows/regression_based_forecasting` (`workflows/regression_based_forecasting/`) builds its own actual-vs-predicted table for three of its four techniques — `ML.METRICS` fits both shapes. Both keep the hand-written arithmetic anyway, because they report MAPE and RMSE and `ML.METRICS` returns neither.
+
 **What this notebook measures, not just describes:**
 - **Step 2** — the six regression metrics from `ML.METRICS` against `ML.EVALUATE` on the same predictions: they agree to at least 13 significant digits.
 - **Step 4** — the **BOOL/STRING trap**. One table, one set of predictions: precision reads **0.5238** as `BOOL` and **0.7497** as `STRING`. Neither is wrong; they answer different questions.

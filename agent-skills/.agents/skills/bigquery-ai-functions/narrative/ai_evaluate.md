@@ -13,6 +13,7 @@
 - `functions/ai_forecast` (`AI.FORECAST`) — Generate forecasts (no evaluation)
 - `functions/ai_detect_anomalies` (`AI.DETECT_ANOMALIES`) — Detect anomalies instead of evaluating accuracy
 - `functions/ai_predict` (`AI.PREDICT`) — Generate the TabFM predictions themselves; `AI.EVALUATE` returns aggregate metrics only, never per-row predictions
+- `bq-ml/functions/evaluation` (`ML.METRICS`) — the sibling project's model-free scorer, and the closest thing to a direct counterpart. The structural difference matters more than the metric lists: **`AI.EVALUATE` regenerates the forecast or prediction internally on every call; `ML.METRICS` scores a saved artifact** you already hold, so it works after the model is gone and returns the same number every time. The two metric sets barely overlap — MAE and MSE are the only names in common (measured once as identical on one saved forecast, with the reproducibility caveat below attached). `AI.EVALUATE` alone gives RMSE, MAPE, sMAPE and MASE; `ML.METRICS` alone gives r², MSLE, median absolute error and explained variance.
 
 **Launch stage:** the TimesFM branch is GA. The TabFM branch is Preview per the 2026-08-31 BigQuery release note, though the reference page carries no Preview banner.
 
