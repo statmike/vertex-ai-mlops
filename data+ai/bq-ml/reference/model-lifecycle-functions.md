@@ -1179,17 +1179,21 @@ FROM ML.FORECAST(
 | `prediction_interval_lower_bound` / `prediction_interval_upper_bound` | FLOAT64 | Prediction interval bounds (depend on `standard_error` and `confidence_level`). |
 | `confidence_interval_lower_bound` / `confidence_interval_upper_bound` | FLOAT64 | Confidence interval bounds (legacy columns; equal the prediction bounds). |
 
-**Measured:** the prediction interval is **not** `forecast_value ± Φ⁻¹((1+confidence_level)/2) · standard_error`. The multiplier it actually uses is constant across horizons but differs from the exact normal quantile, and the difference **changes sign** with the confidence level:
+**Measured:** the prediction interval is **not** `forecast_value ± Φ⁻¹((1+confidence_level)/2) · standard_error`. The multiplier it actually uses is constant across horizons and differs from the exact normal quantile. It is the inverse of **Abramowitz & Stegun 26.2.18** — the Hastings quartic approximation to the normal CDF, `P(x) = 1 − ½(1 + 0.196854x + 0.115194x² + 0.000344x³ + 0.019527x⁴)⁻⁴`, with `\|error\| < 2.5e-4` — which reproduces every multiplier to about a millionth, the precision at which they print:
 
-| `confidence_level` | multiplier used | normal quantile | difference |
-|---|---|---|---|
-| 0.80 | 1.282287 | 1.281552 | +0.000735 |
-| 0.90 | 1.643071 | 1.644854 | −0.001782 |
-| 0.95 | 1.956458 | 1.959964 | −0.003506 |
-| 0.98 | 2.327237 | 2.326348 | +0.000889 |
-| 0.99 | 2.587695 | 2.575829 | +0.011866 |
+| `confidence_level` | multiplier used | A&S 26.2.18 inverse | A&S error | normal quantile | normal error |
+|---|---|---|---|---|---|
+| 0.80 | 1.282287 | 1.282284 | −0.000002 | 1.281552 | −0.000735 |
+| 0.90 | 1.643071 | 1.643074 | +0.000003 | 1.644854 | +0.001782 |
+| 0.95 | 1.956458 | 1.956457 | −0.000001 | 1.959964 | +0.003506 |
+| 0.98 | 2.327237 | 2.327236 | −0.000001 | 2.326348 | −0.000889 |
+| 0.99 | 2.587695 | 2.587694 | −0.000002 | 2.575829 | −0.011866 |
 
-A Student *t* quantile is ruled out by direction — *t* is always wider than normal. A constant scale factor is ruled out by the sign change. The pattern is that of an approximation to the inverse normal CDF: small, non-monotone, worst in the tail. **Practical rule: never back a standard error out of the rendered bounds.** Dividing a 95% width by `2 × 1.959964` returns a value 0.18% too small — invisible on a chart, and enough to swamp any arithmetic check built on it. The `standard_error` column is the quantity itself. Verified 2026-09-15 on an `ARIMA_PLUS` model in [`workflows/causal_effect/`](../workflows/causal_effect/).
+Errors are *candidate minus multiplier used*. A Student *t* quantile is ruled out by direction — *t* is always wider than normal. A constant scale factor is ruled out by the sign change in the `normal error` column: non-monotone error that grows in the tail is what a fixed-degree polynomial approximation does, not what a different distribution does. **Word this carefully** — what is established is that the rendered multipliers are numerically *indistinguishable* from that published approximation at every level tested. It is a claim about arithmetic, not about what BigQuery's source contains.
+
+**Practical rule: never back a standard error out of the rendered bounds.** Dividing a 95% width by `2 × 1.959964` returns a value 0.18% too small — invisible on a chart, and enough to swamp any arithmetic check built on it. The `standard_error` column is the quantity itself.
+
+The same approximation, used forward rather than inverted, reproduces `AI.CAUSAL_EFFECT`'s p-value exactly — see [`model-free-functions.md#aicausal_effect`](model-free-functions.md#aicausal_effect). Verified 2026-09-16 on an `ARIMA_PLUS` model in [`workflows/causal_effect/`](../workflows/causal_effect/).
 
 **Best practices:** Set `horizon` (and `holiday_region`) at `CREATE MODEL` time. Use the forecast-with-`LIMIT` pattern instead of post-filtering large outputs.
 **Limitations:** Adding computation on top of large outputs (min/max, arithmetic, filters) can raise "Resources exceeded during query execution". `ARIMA_PLUS_XREG` requires future feature values to forecast.

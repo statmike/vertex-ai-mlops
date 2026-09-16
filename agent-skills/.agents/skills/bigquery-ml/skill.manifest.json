@@ -1,13 +1,13 @@
 {
   "name": "bigquery-ml",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "source_project": "data+ai/bq-ml",
   "narrative_sources": {
     "feature_store.md": "functions/feature_store/feature_store.ipynb",
     "feature_store_workflow.md": "workflows/feature_store/feature_store.ipynb"
   },
-  "generated_date": "2026-09-15",
-  "source_commit": "fb67bf48",
+  "generated_date": "2026-09-16",
+  "source_commit": "cc0e8a50",
   "reference_files": [
     "classification.md",
     "model-management.md",

@@ -7,9 +7,10 @@
 --
 -- This file measures what the function does rather than restating the docs.
 -- The headline: the counterfactual is reproducible BIT-FOR-BIT with a plain
--- ARIMA_PLUS model and ML.FORECAST, so the counterfactual is not what you are
--- paying for. The p-value is, and that is the one piece that does NOT
--- reproduce under any construction tried here.
+-- ARIMA_PLUS model and ML.FORECAST, and the p-value is reproducible EXACTLY
+-- from two measured quantities. Every column of the output row can be rebuilt
+-- from documented BigQuery pieces. What the function sells is the packaging
+-- and one defensible modelling choice, not a capability you were missing.
 --
 -- Data: bigquery-public-data.covid19_open_data.covid19_open_data -- the SAME
 --       Texas weekly per-100k case-rate series used by
@@ -213,10 +214,11 @@ ORDER BY forecast_timestamp;
 
 
 -- =============================================================================
--- Example 5: The p-value does NOT reproduce
+-- Example 5: Rebuilding the p-value from two measured quantities
 -- =============================================================================
 -- absolute_effect and relative_effect are sums (Example 3). p_value is the one
--- genuinely new quantity, and it is the one that resists reconstruction.
+-- genuinely new quantity, so it is the one worth reconstructing. It takes two
+-- ingredients, and neither is the one a textbook reaches for first.
 --
 -- FIRST, GET THE STANDARD ERRORS RIGHT. AI.CAUSAL_EFFECT renders interval
 -- bounds and no standard error, so the tempting move is to divide the width by
@@ -234,19 +236,31 @@ ORDER BY forecast_timestamp;
 -- (13.82 / 30.91 / 51.71 / 75.70 / 102.50 instead of the true
 -- 13.85 / 30.96 / 51.81 / 75.84 / 102.69).
 --
--- Sweeping confidence_level says what that multiplier is not:
+-- Sweeping confidence_level IDENTIFIES the multiplier rather than merely
+-- bounding it. It is the inverse of Abramowitz & Stegun 26.2.18, the Hastings
+-- quartic approximation to the normal CDF:
 --
---   confidence_level  multiplier used  normal quantile  difference
---   0.80              1.282287         1.281552         +0.000735
---   0.90              1.643071         1.644854         -0.001782
---   0.95              1.956458         1.959964         -0.003506
---   0.98              2.327237         2.326348         +0.000889
---   0.99              2.587695         2.575829         +0.011866
+--   P(x) = 1 - 0.5*(1 + 0.196854x + 0.115194x^2 + 0.000344x^3 + 0.019527x^4)^-4
+--
+-- with |error| < 2.5e-4. Inverting it reproduces every multiplier to about a
+-- millionth, which is the precision at which they print:
+--
+--   conf_level  multiplier used  A&S inverse  A&S err    normal    normal err
+--   0.80        1.282287         1.282284     -0.000002  1.281552  -0.000735
+--   0.90        1.643071         1.643074     +0.000003  1.644854  +0.001782
+--   0.95        1.956458         1.956457     -0.000001  1.959964  +0.003506
+--   0.98        2.327237         2.327236     -0.000001  2.326348  -0.000889
+--   0.99        2.587695         2.587694     -0.000002  2.575829  -0.011866
+--
+--   (errors are candidate minus multiplier used)
 --
 -- Not a Student t -- t is always WIDER than normal (2.3646 at df=7, cl=0.95).
--- Not a constant scale factor -- the difference changes sign. That pattern is
--- an approximation to the inverse normal CDF: small, non-monotone, worst in
--- the tail.
+-- Not a constant scale factor -- the normal error changes sign. Non-monotone
+-- error that grows in the tail is what a fixed-degree polynomial approximation
+-- does, not what a different distribution does. Say this carefully: the
+-- rendered multipliers are numerically INDISTINGUISHABLE from that published
+-- approximation at every level tested. That is a claim about arithmetic, not
+-- about what BigQuery's source code contains.
 --
 -- NOW THE P-VALUE. Seven constructions tried against the observed
 -- 0.30481216822794477, using the reported standard errors above:
@@ -257,41 +271,61 @@ ORDER BY forecast_timestamp;
 --   last step's se alone                           102.686   -2.7521   0.005921
 --   H * last se                                    513.429   -0.5504   0.582025
 --   psi-weight cumulation (the textbook answer)    266.696   -1.0597   0.289301
---   sum of the se's (perfectly correlated errors)  275.139   -1.0271   0.304355  <-- closest
+--   sum of the se's (perfectly correlated errors)  275.139   -1.0271   0.304355  <-- the one used
 --   t-test on the 5 pointwise gaps                       -   -1.7404   0.156772
 --
 -- The psi weights are recovered from the standard errors themselves, not
 -- assumed: se_h^2 = sigma^2 * sum(psi_0..psi_{h-1})^2 gives psi = [1,2,3,4,5]
 -- exactly, which is what an ARIMA(0,2,0) must produce. So the psi row IS the
 -- correct standard deviation of the sum of five forecast errors -- and it is
--- not the closest match. The closest is the sum of the se's, which is the
+-- not the one the function uses. The function uses the sum of the se's, the
 -- variance you get only if those errors are PERFECTLY correlated: the ceiling
--- of the family, not a member of it. The reported p-value therefore sits
--- outside the range any correlation structure among these errors can produce.
--- Whatever the function computes, the cumulative variance is not a linear
--- combination of the model's own pointwise forecast errors.
+-- of the family rather than a member of it. That is deliberate and it is
+-- conservative -- the widest interval and the largest p-value any correlation
+-- structure among these errors can justify. The function is built not to
+-- overstate significance.
 --
--- The residual gap is 0.09% in standard-deviation terms (275.399 implied by the
--- reported p, against 275.139). Closing it with a t distribution instead needs
--- df ~ 543, which has no counterpart in a 9-point pre-period.
+-- PUT THE TWO TOGETHER AND THE P-VALUE IS EXACT:
 --
--- THE GAP CHANGES SIGN. num_post_intervention_points shortens the post window
--- without touching the pre window, so the counterfactual is unchanged and only
--- the number of points summed moves -- one comparison becomes three:
+--   Z = absolute_effect / sum(se) = -282.606186 / 275.139104 = -1.027139297
 --
---   post points  p_value   sd implied by p  sum of se (ceiling)  ratio
---   2            0.511079   44.781           44.807              0.999418
---   3            0.735735   96.525           96.615              0.999073
---   5            0.304812  275.399          275.139              1.000946
+--   reported by AI.CAUSAL_EFFECT          0.304812168   difference  0
+--   2 * (1 - A&S_CDF(|Z|))                0.304812168   difference  0
+--   2 * (1 - exact normal CDF(|Z|))       0.304354877   difference -4.57e-04
+--   exact normal on the psi cumulation    0.289300596   difference -1.55e-02
 --
--- Below the ceiling twice, above it once. A constant multiplicative
--- correction, a different fixed variance formula, or a t with fixed df would
--- all leave a consistently signed residual. This one does not. Note this
--- conclusion depends on using the REPORTED standard errors: the 0.18% narrowing
--- measured above would have pushed all three ratios to the same side and
--- manufactured the consistent sign this rules out.
+-- No fitted constant and no free parameter: both ingredients were measured
+-- before the comparison. Sizes matter here. The conservative variance choice is
+-- worth 0.015054 of p-value (it inflates the sd by 3.17%); the CDF
+-- approximation is worth 0.000457, 33x smaller. The MODELLING decision does the
+-- work; the numerics are a rounding convention.
 --
--- Two further constraints on any explanation, both measured:
+-- IT HOLDS AT THREE HORIZONS. num_post_intervention_points shortens the post
+-- window without touching the pre window, so the counterfactual is unchanged
+-- and only the number of points summed moves:
+--
+--   post points  p_value   Z = effect/sum(se)  2*(1-A&S(|Z|))  exact normal  A&S err
+--   2            0.511079  +0.656775           0.511079        0.511325      0
+--   3            0.735735  -0.337194           0.735735        0.735970      4.4e-16
+--   5            0.304812  -1.027139           0.304812        0.304355      0
+--
+-- Z is POSITIVE at two post weeks: Texas ran above its counterfactual before it
+-- ran below, so the cumulative gap changes sign as the window lengthens and the
+-- reconstruction tracks it through the turn.
+--
+-- WHY THE EXACT-NORMAL RESIDUAL STRADDLES. Measured against the EXACT normal, the
+-- implied sd lands at 0.999418 / 0.999073 / 1.000946 times the ceiling -- below
+-- it twice, above it once. That sign change looks like evidence about the
+-- variance and is not: the variance is exactly the ceiling at every horizon.
+-- The straddle is the quartic's own error against the function it approximates,
+-- which changes sign as |Z| moves -- the same oscillation the normal-error
+-- column shows for the interval multiplier, seen through a second lens. The
+-- transferable lesson: when a reproduction misses by a margin far smaller than
+-- the quantity being reproduced, suspect the EVALUATION of the formula before
+-- concluding the formula is wrong. A 0.09% residual on a standard deviation is
+-- the size of a rounding convention, not of a missing variance component.
+--
+-- Two further measured facts, both consistent with the closed form:
 --   * p_value is INVARIANT to confidence_level. 0.80, 0.95 and 0.99 all return
 --     0.30481216822794477. So the p-value is computed from the model's internal
 --     variance, not from the rendered interval widths.
@@ -299,12 +333,26 @@ ORDER BY forecast_timestamp;
 --     a posterior sample -- unlike the R CausalImpact package, which obtains
 --     its tail area by MCMC.
 --
--- NO MECHANISM CLAIMED. What is established: the counterfactual is plain
--- ARIMA_PLUS, the two effect columns are plain sums, and the p-value is the
--- only part of AI.CAUSAL_EFFECT that is not reconstructible from documented
--- BigQuery pieces. That is the honest answer to "what does this function buy
--- me" -- the cumulative significance test, which is also the part that is
--- easiest to get wrong by hand.
+-- THE INTERVAL THE FUNCTION DOES NOT RETURN. lower_bound and upper_bound bound
+-- the COUNTERFACTUAL at each timestamp, not the cumulative gap, so the summary
+-- row hands you a threshold verdict and no range. The same two ingredients
+-- build the missing one:
+--
+--   absolute_effect +/- A&S_inverse((1+cl)/2) * sum(se)
+--
+--   cl     on the function's terms   textbook normal        half-width diff
+--   0.80   [-635.413,   70.200]      [-635.211,   69.999]   +0.202
+--   0.95   [-820.904,  255.692]      [-821.869,  256.657]   -0.965
+--   0.99   [-994.582,  429.369]      [-991.318,  426.105]   +3.264
+--
+-- Use the ceiling variance, because that is what the reported p-value uses; a
+-- psi-based interval would be narrower and would quietly contradict the p-value
+-- printed beside it. Then report the interval, not the threshold verdict alone.
+-- A five-week cumulative effect of -282.6 per 100k that is consistent with
+-- anything from -821 to +256 says far more than "p > 0.05": that range holds a
+-- large reduction, no change, and a moderate increase. The interval straddling
+-- zero IS p > 1 - cl, so the p-value is recoverable from the interval and the
+-- interval is not recoverable from the p-value.
 
 
 -- =============================================================================
@@ -330,10 +378,24 @@ ORDER BY forecast_timestamp;
 -- through the same surge; a straight-line extrapolation of Texas's own June
 -- did not.
 --
--- Significance: AI.CAUSAL_EFFECT reports p = 0.3048, well short of 0.05.
--- Whatever the magnitude disagreement, this estimator does not clear
--- conventional significance on this data, and the notebook says so rather than
--- leading with the point estimate.
+-- The trade runs BOTH ways, and this data makes only one direction visible. A
+-- control unit removes the common shock, but it also imports whatever else is
+-- happening in the control. If the control is itself touched by the
+-- intervention -- a neighbouring state whose residents change behaviour because
+-- Texas did, a holdout market the same campaign reaches -- that spillover lands
+-- in the counterfactual and biases the estimate toward zero. If the control's
+-- own trajectory diverges for unrelated reasons, the divergence is charged to
+-- the treatment. A univariate counterfactual cannot be contaminated either way,
+-- because no other unit is in it. Here the common shock is large and the
+-- spillover plausibly small, so the control-based estimates are the better
+-- ones; reverse those two magnitudes and the ranking reverses with them. The
+-- choice is which bias you would rather carry, not which method is correct.
+--
+-- Significance: AI.CAUSAL_EFFECT reports p = 0.3048, well short of 0.05, and
+-- the 95% interval built in Example 5 runs from -820.9 to +255.7 cumulative.
+-- Whatever the magnitude disagreement, this estimator cannot separate a mandate
+-- effect from a cresting epidemic wave on 9 pre-period weeks -- and the
+-- interval says that far more usefully than the threshold does.
 --
 -- The wider map of what each causal method in this project identifies off:
 --   ../propensity_score_matching/  covariates (matched comparable units)
@@ -415,12 +477,22 @@ ORDER BY subregion1_code;
 --   num_post_intervention_points INT64, optional. Cap on post-intervention
 --                               points included. Defaults to everything from
 --                               intervention_timestamp to the end of the series.
---   confidence_level            FLOAT64 in [0, 1), default 0.95. Affects
---                               lower_bound/upper_bound only -- NOT p_value.
+--   confidence_level            FLOAT64 in [0, 1), default 0.95. Affects the
+--                               pointwise lower_bound/upper_bound only -- NOT
+--                               p_value.
 --   output_time_series          BOOL, default FALSE. TRUE adds the pointwise
 --                               columns shown in Example 2.
 --
 -- NOT accepted: `model` (see the header GOTCHA), `horizon`.
+--
+-- NOT RETURNED: an interval on the effect itself. lower_bound/upper_bound bound
+-- the COUNTERFACTUAL at each timestamp, not the cumulative gap. Example 5 builds
+-- the missing one.
+--
+-- NOT PRODUCED: a model artifact. The function fits its counterfactual and
+-- discards it, so there is nothing to inspect, re-use, grant access to, or
+-- apply to later data, and ML.EXPLAIN_FORECAST has nothing to point at.
+-- Example 4's rebuild is the only way to get one.
 --
 -- status is '' on success and carries the error string otherwise; the common
 -- one is "The time series data is too short," which needs at least three
