@@ -128,11 +128,14 @@ def _cmd_sweep(args: argparse.Namespace) -> int:
             failures.append(name)
 
     step("validate --all", _cmd_validate(argparse.Namespace(skill_dir=str(skills_root), all=True)))
-    # The allow list lives beside the skills collection (agent-skills/pinned-models.json); find the
-    # nearest one walking up from the skills root so the layout can move without touching this code.
-    allow_file = next((p / "pinned-models.json" for p in [skills_root.resolve(), *skills_root.resolve().parents] if (p / "pinned-models.json").exists()), None)
-    if allow_file is None:
-        print("---- check-pinned-models: skipped (no pinned-models.json found above the skills root)")
+    # The allow list lives beside the real collection (agent-skills/pinned-models.json). The skills
+    # root may be the repo-root symlink directory, so discovery also walks up from each resolved skill.
+    from agent_skills_tooling.pinned_models import find_allow_file
+
+    allow_file = find_allow_file(skills_root)
+    if allow_file is None and projects:
+        print("ERROR check-pinned-models: no pinned-models.json found beside the skills collection")
+        failures.append("check-pinned-models (allow list missing)")
     for project in projects:
         siblings = [str(repo_root / p) for p in projects if p != project]
         step(

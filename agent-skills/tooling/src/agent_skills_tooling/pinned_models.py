@@ -155,3 +155,26 @@ def load_allow_list(allow_file: Path, project_root: Path, repo_root: Path) -> se
     allowed: set[str] = set(data.get("*", []))
     allowed |= set(data.get(key, []))
     return allowed
+
+
+def find_allow_file(skills_root: Path, filename: str = "pinned-models.json") -> Path | None:
+    """Locate the allow list for a skills collection.
+
+    The file lives beside the real collection (`agent-skills/pinned-models.json`), but the skills
+    root handed to the tooling may be the repo-root symlink directory (`.agents/skills/`), whose
+    own parents never reach it. So the search walks up from the skills root *and* from the resolved
+    location of each skill directory inside it, and returns the first hit.
+    """
+    starts = [skills_root.resolve()]
+    if skills_root.is_dir():
+        starts += [child.resolve() for child in sorted(skills_root.iterdir()) if child.is_dir()]
+    seen: set[Path] = set()
+    for start in starts:
+        for candidate_dir in [start, *start.parents]:
+            if candidate_dir in seen:
+                continue
+            seen.add(candidate_dir)
+            candidate = candidate_dir / filename
+            if candidate.is_file():
+                return candidate
+    return None

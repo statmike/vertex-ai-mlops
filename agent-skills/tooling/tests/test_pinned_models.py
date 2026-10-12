@@ -84,3 +84,29 @@ def test_source_projects_discovered_from_manifests(tmp_path):
         (skills / name).mkdir(parents=True)
         (skills / name / MANIFEST_FILENAME).write_text(json.dumps({"name": name, "source_project": project}))
     assert source_projects(skills) == ["data+ai/x", "data+ai/y"]
+
+
+def test_allow_file_found_through_symlinked_skills_root(tmp_path):
+    """Repo layout: agent-skills/.agents/skills/<skill> is real; .agents/skills/<skill> at the repo root
+    is a symlink into it. The allow list sits beside the real collection. Walking up from the symlink
+    root alone never reaches it (that was the bug); walking up from a resolved skill does."""
+    from agent_skills_tooling.pinned_models import find_allow_file
+
+    repo = tmp_path
+    real_root = repo / "agent-skills" / ".agents" / "skills"
+    (real_root / "some-skill").mkdir(parents=True)
+    (repo / "agent-skills" / "pinned-models.json").write_text("{}")
+    link_root = repo / ".agents" / "skills"
+    link_root.mkdir(parents=True)
+    (link_root / "some-skill").symlink_to(real_root / "some-skill", target_is_directory=True)
+
+    assert find_allow_file(real_root) == repo / "agent-skills" / "pinned-models.json"
+    assert find_allow_file(link_root) == repo / "agent-skills" / "pinned-models.json"
+
+
+def test_allow_file_absent_returns_none(tmp_path):
+    from agent_skills_tooling.pinned_models import find_allow_file
+
+    root = tmp_path / "skills"
+    (root / "a").mkdir(parents=True)
+    assert find_allow_file(root) is None
