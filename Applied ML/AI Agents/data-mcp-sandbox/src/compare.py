@@ -486,10 +486,10 @@ def _restriction_hint(alignment: Alignment) -> list[str]:
     if "tiers" in alignment.conflicts:
         missing_lines = []
         for value in alignment.conflicts["tiers"]:
-            missing = sorted(set(alignment.restricted) - _tier_set(value))
-            if missing:
+            missing_tiers = sorted(set(alignment.restricted) - _tier_set(value))
+            if missing_tiers:
                 missing_lines.append(
-                    f"- a capture declaring `tiers = {value}` is missing tier(s) {missing}"
+                    f"- a capture declaring `tiers = {value}` is missing tier(s) {missing_tiers}"
                 )
         hint += [
             "The restriction asked for tiers that are not in both captures:",
