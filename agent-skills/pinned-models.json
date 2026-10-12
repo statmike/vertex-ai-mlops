@@ -1,0 +1,28 @@
+{
+  "_comment": "Allow list for `agent-skills check-pinned-models` (also run by `agent-skills sweep`). Keys are repo-relative project paths; `*` applies to every project. A model or endpoint literal pinned anywhere in a project (notebook code cells, .sql, fenced code in markdown, .py) that is not listed here fails the check. Add a value when a new model is adopted; remove it when the model is retired, and the check then lists every file still naming it.",
+  "*": [
+    "text-embedding-005",
+    "text-multilingual-embedding-002",
+    "gemini-embedding-001",
+    "gemini-embedding-2",
+    "multimodalembedding@001",
+    "embeddinggemma-300m"
+  ],
+  "data+ai/bq-ai-functions": [
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-2.5-flash-lite",
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3.6-flash",
+    "gemini-3.7-flash",
+    "gemini-3.8-flash",
+    "TimesFM 2.5",
+    "TimesFM 3.0",
+    "claude-sonnet-4-20250514"
+  ],
+  "data+ai/bq-ml": [
+    "TimesFM 2.5"
+  ]
+}

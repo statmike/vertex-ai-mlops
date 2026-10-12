@@ -79,3 +79,19 @@ def write_manifest(skill_dir: Path, version: str | None = None, source_project: 
     manifest_path = skill_dir / MANIFEST_FILENAME
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
     return manifest_path, manifest["version"]
+
+
+def source_projects(skills_root: Path) -> list[str]:
+    """Return the distinct repo-relative `source_project` values declared by the skills under
+    `skills_root`, in sorted order. Skills without a manifest or without the field are skipped.
+    Used by `sweep` to discover which projects to check without a hand-maintained list."""
+    projects: set[str] = set()
+    for manifest_path in sorted(skills_root.glob(f"*/{MANIFEST_FILENAME}")):
+        try:
+            data = json.loads(manifest_path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        project = data.get("source_project")
+        if project:
+            projects.add(project)
+    return sorted(projects)

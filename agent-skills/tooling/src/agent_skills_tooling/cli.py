@@ -6,15 +6,19 @@ import argparse
 import sys
 from pathlib import Path
 
-from agent_skills_tooling.convert_notebook import convert_notebook_to_file
 from agent_skills_tooling.link_policy import check_project
 from agent_skills_tooling.manifest import write_manifest
-from agent_skills_tooling.narrative_drift import check_all_narratives
 from agent_skills_tooling.reference_structure import check_reference
 from agent_skills_tooling.validate import validate_all, validate_skill
 
+# `convert-notebook` and `check-narratives` read .ipynb files and need nbformat; everything else is
+# standard library only. Those two import their modules on demand so the rest of the CLI runs on a
+# bare interpreter.
+
 
 def _cmd_convert_notebook(args: argparse.Namespace) -> int:
+    from agent_skills_tooling.convert_notebook import convert_notebook_to_file
+
     convert_notebook_to_file(
         notebook_path=Path(args.notebook),
         subproject_root=Path(args.subproject_root),
@@ -63,6 +67,8 @@ def _cmd_check_reference(args: argparse.Namespace) -> int:
 
 
 def _cmd_check_narratives(args: argparse.Namespace) -> int:
+    from agent_skills_tooling.narrative_drift import check_all_narratives
+
     results = check_all_narratives(Path(args.skills_root), Path(args.repo_root))
     exit_code = 0
     for name, result in results.items():
@@ -84,6 +90,69 @@ def _cmd_manifest(args: argparse.Namespace) -> int:
         Path(args.skill_dir), version=args.version, source_project=args.source_project
     )
     print(f"Wrote {path} (version {version})")
+    return 0
+
+
+def _cmd_check_pinned_models(args: argparse.Namespace) -> int:
+    from agent_skills_tooling.pinned_models import check_pinned_models, load_allow_list
+
+    allowed = set(args.allow)
+    if args.allow_file:
+        allowed |= load_allow_list(Path(args.allow_file), Path(args.project_root), Path(args.repo_root))
+    result = check_pinned_models(Path(args.project_root), allowed)
+    for finding in result.unlisted:
+        print(f"UNLISTED {finding.format(result.project_root)}")
+    label = result.project_root.name
+    summary = ", ".join(f"{value} ×{count}" for value, count in sorted(result.counts.items(), key=lambda kv: -kv[1]))
+    print(f"{'OK   ' if result.ok else 'FAIL '} [{label}] {result.scanned} files scanned; pinned: {summary or 'none'}")
+    return 0 if result.ok else 1
+
+
+def _cmd_sweep(args: argparse.Namespace) -> int:
+    """Run every check in one go and return non-zero if any of them fails.
+
+    Source projects come from each skill's `skill.manifest.json` (`source_project`), so a new
+    skill is picked up without touching this command. Each project is checked with the other
+    discovered projects as link siblings.
+    """
+    from agent_skills_tooling.manifest import source_projects
+
+    skills_root = Path(args.skills_root)
+    repo_root = Path(args.repo_root)
+    projects = source_projects(skills_root)
+    failures: list[str] = []
+
+    def step(name: str, code: int) -> None:
+        print(f"---- {name}: {'ok' if code == 0 else 'FAIL'}")
+        if code != 0:
+            failures.append(name)
+
+    step("validate --all", _cmd_validate(argparse.Namespace(skill_dir=str(skills_root), all=True)))
+    # The allow list lives beside the skills collection (agent-skills/pinned-models.json); find the
+    # nearest one walking up from the skills root so the layout can move without touching this code.
+    allow_file = next((p / "pinned-models.json" for p in [skills_root.resolve(), *skills_root.resolve().parents] if (p / "pinned-models.json").exists()), None)
+    if allow_file is None:
+        print("---- check-pinned-models: skipped (no pinned-models.json found above the skills root)")
+    for project in projects:
+        siblings = [str(repo_root / p) for p in projects if p != project]
+        step(
+            f"check-links {project}",
+            _cmd_check_links(argparse.Namespace(project_root=str(repo_root / project), sibling=siblings, repo_root=str(repo_root))),
+        )
+        step(f"check-reference {project}", _cmd_check_reference(argparse.Namespace(project_root=str(repo_root / project))))
+        if allow_file is not None:
+            step(
+                f"check-pinned-models {project}",
+                _cmd_check_pinned_models(
+                    argparse.Namespace(project_root=str(repo_root / project), allow=[], allow_file=str(allow_file), repo_root=str(repo_root))
+                ),
+            )
+    step("check-narratives", _cmd_check_narratives(argparse.Namespace(skills_root=str(skills_root), repo_root=str(repo_root))))
+
+    if failures:
+        print(f"SWEEP FAIL — {len(failures)} step(s) failed: {', '.join(failures)}")
+        return 1
+    print(f"SWEEP OK — {len(projects)} project(s), all checks green")
     return 0
 
 
@@ -134,6 +203,23 @@ def main(argv: list[str] | None = None) -> int:
     p_narratives.add_argument("skills_root", help="Parent of the skill directories")
     p_narratives.add_argument("--repo-root", required=True, help="Repository root that source_project resolves against")
     p_narratives.set_defaults(func=_cmd_check_narratives)
+
+    p_pinned = subparsers.add_parser(
+        "check-pinned-models",
+        help="List every model/endpoint literal a project pins and fail on any not in the allow list",
+    )
+    p_pinned.add_argument("project_root", help="e.g. data+ai/bq-ai-functions")
+    p_pinned.add_argument("--allow", action="append", default=[], help="An allowed literal (repeatable)")
+    p_pinned.add_argument("--allow-file", default=None, help="JSON allow list keyed by repo-relative project path")
+    p_pinned.add_argument("--repo-root", default=".", help="Repository root, used to key the allow file")
+    p_pinned.set_defaults(func=_cmd_check_pinned_models)
+
+    p_sweep = subparsers.add_parser(
+        "sweep", help="Run validate, check-links, check-reference, check-pinned-models and check-narratives together"
+    )
+    p_sweep.add_argument("skills_root", help="Parent of the skill directories")
+    p_sweep.add_argument("--repo-root", required=True, help="Repository root that source_project resolves against")
+    p_sweep.set_defaults(func=_cmd_sweep)
 
     args = parser.parse_args(argv)
     return args.func(args)
