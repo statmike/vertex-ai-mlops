@@ -44,11 +44,12 @@ These are not AI functions themselves, but the infrastructure that enables AI fu
 
 **Key relationships:**
 - **Object tables** are read-only external tables over Cloud Storage objects with metadata columns (`uri`, `content_type`, `size`, etc.) and an optional `ref` column containing `ObjectRef` values.
-- `OBJ.MAKE_REF` creates `ObjectRef` values from URI strings — the entry point for referencing Cloud Storage objects.
+- `OBJ.MAKE_REF` creates `ObjectRef` values from URI strings — the entry point for referencing Cloud Storage objects you already know by name.
+- `OBJ.LIST` (GA) discovers objects under a wildcard path and returns their metadata **and** a ready `ObjectRef` per object — an object table's listing without the object table.
 - `OBJ.FETCH_METADATA` enriches partial `ObjectRef` values with Cloud Storage metadata (content type, size, MD5 hash).
 - `OBJ.GET_ACCESS_URL` converts `ObjectRef` into `ObjectRefRuntime` with signed URLs — a tool for handing a URL to something outside the AI call, not a step on the way into one.
 - `OBJ.GET_READ_URL` returns a 45-minute read URL as `STRUCT<url, status>`, for displaying an object in query results.
-- **Typical pipeline:** URI → `OBJ.MAKE_REF` → any multimodal `AI.*` function. From an object table, the `ref` column replaces even the `OBJ.MAKE_REF` step.
+- **Typical pipeline:** URI → `OBJ.MAKE_REF` → any multimodal `AI.*` function. From an object table or from `OBJ.LIST`, the `ref` column replaces even the `OBJ.MAKE_REF` step.
 - **`AI.PARSE_DOCUMENT` is stricter about the column name:** its subquery must alias the reference as `ref` specifically. (That function has been offline since 2026-06-01 with its reference docs withdrawn.)
 
 **RESOLVED (2026-09-15) -- AI functions take an `ObjectRef` directly; `OBJ.GET_ACCESS_URL` is not required.** The 2026-06-12 release note said so, the reference pages disagreed, and this project kept the wrapper because it was the one form documented everywhere. Both halves of that disagreement have now closed:
@@ -61,7 +62,8 @@ These are not AI functions themselves, but the infrastructure that enables AI fu
 
 Every notebook in this project now passes the `ObjectRef`. **Nothing was deprecated** — `ObjectRefRuntime` is still accepted everywhere, so existing queries keep working. See [Multimodal Input Patterns](#multimodal-input-patterns-by-function) for where the reference goes in each function's call.
 
-**Object tables vs inline ObjectRef:**
+**Three ways to get an `ObjectRef`** — object table, `OBJ.LIST`, inline `OBJ.MAKE_REF`:
+- **`OBJ.LIST`** (GA) is the middle option: one wildcard path in the `FROM` clause yields `uri`, `content_type`, `size`, `md5_hash`, `updated`, `generation`, `metadata` and a `ref` column, with no DDL, no persistent table and no reservation. Pass `ref` straight to any multimodal `AI.*` function. Reach for an object table instead when you need a persistent, self-updating listing that tracks arrivals over time, or `ML.PROCESS_DOCUMENT`, which reads object tables only.
 - **Object tables** with remote models (e.g., `AI.GENERATE_EMBEDDING` reading from an object table) require a BigQuery reservation. Best for large-scale processing where you have reservations configured.
 - **Inline ObjectRef** (`OBJ.MAKE_REF(uri, connection)` in a subquery) does **not** require a reservation. Best for ad-hoc multimodal queries and prototyping. All embedding and similarity function notebooks in this project use inline ObjectRef.
 - **Inside a VPC Service Controls perimeter, inline is the only option that works.** An object table's `ref` column uses delegated access, which mints a signed HTTPS URL that Agent Platform blocks inside a perimeter. Single-argument `OBJ.MAKE_REF(uri)` uses direct access and sends the Cloud Storage URI itself. See the note under [`OBJ.MAKE_REF`](#objmake_ref).
@@ -172,6 +174,38 @@ Signed URLs expire after 6 hours. Row-level access policies restrict which URLs 
 - Signed URLs expire after 6 hours.
 
 **Locations:** Any BigQuery region or multi-region. Connection must be colocated with the dataset.
+
+---
+
+## `OBJ.LIST`
+- **Description:** (GA) Table-valued function that lists Cloud Storage objects matching a URI with one `*` wildcard per path segment and returns their metadata plus an `ObjectRef` for each — ad-hoc discovery of unstructured data without creating an object table. Works across all Cloud Storage storage classes.
+- **Use cases:** Point an `AI.*` function at "every PDF in this prefix" in one query, feed `AI.AGG` a set of images, build an extract-and-load pipeline over a landing bucket without DDL, prototype against a public sample bucket.
+- [documentation](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/objectref_functions#objlist)
+- **Type:** Table-valued function — GA
+
+**Syntax:**
+```sql
+SELECT uri, content_type, size, ref
+FROM OBJ.LIST(
+  uri
+  [, authorizer]
+)
+```
+
+**Inputs:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `uri` | STRING literal | Required | Cloud Storage path with at most one `*` per segment, e.g. `gs://bucket/images/*.png`. Must be a literal — scalar subqueries and `CONCAT` are rejected. Must not end in `/` or contain `//` (`gs://bucket/images/` fails with *"GCS paths cannot end with a slash"* and suggests the `/*` form). |
+| `authorizer` | STRING | Optional | Cloud resource connection for **delegated access**, e.g. `project.us.connection`. Omit it and every returned `ref` uses **direct access** — fetched as the identity running the query. |
+
+**Outputs:** one row per object: `uri` STRING, `content_type` STRING, `size` INT64, `md5_hash` STRING, `updated` TIMESTAMP, `metadata` ARRAY\<STRUCT\<name STRING, value STRING\>\>, `generation` INT64, and `ref` — an `ObjectRef` whose `authorizer` is populated only when you passed one.
+
+**Measured 2026-10-09** against `gs://cloud-samples-data/bigquery/tutorials/cymbal-pets/images/*.png` (205 objects): the no-authorizer form and the authorizer form both feed `AI.GENERATE`, the typed variants, `AI.IF`/`AI.SCORE`/`AI.CLASSIFY`, `AI.AGG`, `AI.EMBED` and `AI.SIMILARITY` directly via `ref`, with an empty `status` on every row. Direct access worked here because the bucket is public; on a private bucket it works only if the query runner holds `storage.objectViewer`, and inside a VPC Service Controls perimeter it is the form that works (see the note under [`OBJ.MAKE_REF`](#objmake_ref)).
+
+**Limitations:** Shares the object-table limitations because it generates the same metadata dynamically. The listing is computed per query — there is no persistence and no change tracking; use an object table for that. `ML.PROCESS_DOCUMENT` still reads object tables only.
+
+**Locations:** All BigQuery regions supporting Cloud resource connections.
 
 ---
 

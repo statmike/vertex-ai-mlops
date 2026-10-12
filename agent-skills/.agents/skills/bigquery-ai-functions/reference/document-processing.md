@@ -10,6 +10,7 @@
 | `AI.PARSE_DOCUMENT` | **CURRENTLY OFFLINE (as of 2026-06-01), taken down by Google for revision — does not execute.** When working, it's a Preview table-valued function that runs OCR + layout parsing + chunking against a Document AI Layout Parser processor with no `CREATE MODEL` step needed. | Do not recommend right now — it is non-functional. When it returns: for straightforward OCR + chunking workflows (e.g., feeding a RAG pipeline) without the overhead of creating a remote model. |
 | Object Tables | Read-only external SQL tables over Cloud Storage objects (PDFs, images, audio, video), exposing metadata columns (`uri`, `content_type`, `size`, etc.) and an optional `ref` (ObjectRef) column. | You want to index/query a whole GCS prefix as rows and feed many objects into AI functions or `ML.PROCESS_DOCUMENT` at scale. |
 | `OBJ.MAKE_REF` | Scalar function that builds a partial `ObjectRef` STRUCT (`uri` + `authorizer`) from a URI string and a connection — no object table required. | You need a one-off reference to a single (or small UNNEST list of) GCS file(s) without registering a whole Object Table. |
+| `OBJ.LIST` (GA 2026-09-30) | Table-valued function: one wildcard path (`gs://bucket/prefix/*.pdf`, optional connection) returns every matching object's metadata plus a ready `ref` `ObjectRef`. An object table's listing with no DDL and no persistence. | You want "every file under this prefix" in an AI call right now — discovery, prototyping, or a load pipeline — and do not need a table that keeps tracking new arrivals. |
 | `OBJ.FETCH_METADATA` | Scalar function that fills in the `details` field of a partial `ObjectRef` with GCS metadata (content type, size, MD5 hash, updated time). | You need actual object metadata (size, content-type, hash) attached to an ObjectRef, or need it before generating an access URL. |
 | `OBJ.GET_ACCESS_URL` | Scalar function that converts an `ObjectRef` into `ObjectRefRuntime` JSON containing signed read **or** write URLs, with a caller-chosen TTL. Has an `ARRAY<objectref>` overload. | You need a signed URL — to hand an object to something outside BigQuery, to write, or to control the expiry. **Not** required to call an AI function: those take the `ObjectRef` itself. |
 | `OBJ.GET_READ_URL` | Scalar function returning `STRUCT<url, status>` — a read-only signed URL on a fixed 45-minute TTL, requiring delegated access. | You want to display an object (a BigQuery Studio image preview, say) and do not need a write URL or a custom TTL. |
@@ -17,8 +18,8 @@
 ## Choosing among them
 
 - **"I need to extract structured fields from PDFs/scanned documents at scale"** → `ML.PROCESS_DOCUMENT`. (Note: `AI.PARSE_DOCUMENT` would normally be the lighter-weight alternative for Layout-Parser-only OCR+chunking, but it is currently unavailable — do not route users to it until the outage clears.)
-- **"I need to pass images/PDFs/audio/video into `AI.GENERATE` or other generative functions"** → build an `ObjectRef` via an Object Table's `ref` column (bulk) or `OBJ.MAKE_REF(uri, connection)` (inline/ad hoc) and pass it **straight to the function**. No `OBJ.GET_ACCESS_URL`, no `EXTERNAL_OBJECT_TRANSFORM`.
-- **"I just need a one-off reference to a single GCS file without registering a whole Object Table"** → `OBJ.MAKE_REF`.
+- **"I need to pass images/PDFs/audio/video into `AI.GENERATE` or other generative functions"** → build an `ObjectRef` via an Object Table's `ref` column (bulk, persistent), `OBJ.LIST(path)`'s `ref` column (bulk, ad hoc), or `OBJ.MAKE_REF(uri, connection)` (single file) and pass it **straight to the function**. No `OBJ.GET_ACCESS_URL`, no `EXTERNAL_OBJECT_TRANSFORM`.
+- **"I just need a one-off reference to a single GCS file without registering a whole Object Table"** → `OBJ.MAKE_REF`. **"…or every file under a prefix, still without an Object Table"** → `OBJ.LIST`. Measured 2026-10-09: its `ref` feeds `AI.GENERATE`, the typed variants, `AI.IF`/`AI.SCORE`/`AI.CLASSIFY`, `AI.AGG`, `AI.EMBED` and `AI.SIMILARITY` directly, with or without the connection argument (without it, the objects are read as the query runner — fine on a public bucket, needs `storage.objectViewer` otherwise). The path must be a literal with at most one `*` per segment and must not end in `/`; `ML.PROCESS_DOCUMENT` still needs a real object table.
 - **"I need metadata (size, content-type, etc.) about a GCS object"** → `OBJ.FETCH_METADATA`.
 - **"I need a signed/temporary URL to a GCS object"** → `OBJ.GET_ACCESS_URL` (read or write, your TTL), `OBJ.GET_READ_URL` (read-only, fixed 45 minutes, for display), or `EXTERNAL_OBJECT_TRANSFORM(... ['SIGNED_URL'])` when working from an Object Table. **This is the one genuine use for all three** — it is not a step on the way to an AI function.
 
@@ -67,6 +68,10 @@ SELECT (AI.GENERATE(
     [OBJ.MAKE_REF('gs://mybucket/documents/one.pdf', 'myproject.us.myconnection')] AS object_refs
   )
 )).result AS summary;
+
+-- Option B2: every PDF under a prefix, still no Object Table (OBJ.LIST, GA)
+SELECT uri, (AI.GENERATE(('Summarize this document in 3 bullet points.', ref))).result AS summary
+FROM OBJ.LIST('gs://mybucket/documents/*.pdf', 'myproject.us.myconnection');
 
 -- Option C: signed URL — the remaining job for OBJ.GET_ACCESS_URL.
 -- Note this is NOT a step toward calling an AI function; it is for handing

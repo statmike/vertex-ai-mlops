@@ -10,11 +10,11 @@
 **Alternatives:**
 - `functions/ai_forecast` (`AI.FORECAST`) — the built-in TimesFM model for time series: use it when you are extending a value forward in time rather than labeling rows
 - `functions/ai_evaluate` (`AI.EVALUATE`) — the companion metrics function; its TabFM branch takes the same training and prediction inputs and returns accuracy metrics instead of predictions
-- `CREATE MODEL` plus `ML.PREDICT` in `bq-ml/models` (`../bq-ml/models/`) — trained BigQuery ML models: use them when you need a persisted, reusable model, more than 20 features, more than 10 classes, explainability, or control over the algorithm and its hyperparameters
+- `CREATE MODEL` plus `ML.PREDICT` in `bq-ml/models` (`../bq-ml/models/`) — trained BigQuery ML models: use them when you need a persisted, reusable model, more than 50 features, more than 10 classes, explainability, or control over the algorithm and its hyperparameters
 
 **The task type comes from the label column's type, not from an argument:** a `STRING` or `BOOL` label runs classification, and an `INT64`, `FLOAT64`, `NUMERIC`, or `BIGNUMERIC` label runs regression. A categorical label stored as `0`/`1` therefore runs as regression — cast it to `STRING` first. Example 6 runs one label both ways and prints what each call returns.
 
-**Preview (verified 2026-09-01):** the documented limits are 20 feature columns and 10 classes. Feature and label columns must be `STRING`, `BOOL`, `INT64`, `FLOAT64`, `NUMERIC`, or `BIGNUMERIC`; `DATE`, `TIMESTAMP`, `BYTES`, `JSON`, `GEOGRAPHY`, `ARRAY`, and `STRUCT` are rejected. The predictions are not reproducible: repeating an identical call returns slightly different numbers, so materialize results instead of re-running (example 7). Row-count ceilings and `NULL` handling are undocumented too — examples 5 through 8 measure what they can and label the rest as observation.
+**Preview (verified 2026-10-12):** the documented limits are 50 feature columns and 10 classes. Feature and label columns must be `STRING`, `BOOL`, `INT64`, `FLOAT64`, `NUMERIC`, or `BIGNUMERIC`; `DATE`, `TIMESTAMP`, `BYTES`, `JSON`, `GEOGRAPHY`, `ARRAY`, and `STRUCT` are rejected. The predictions are not reproducible: repeating an identical call returns slightly different numbers, so materialize results instead of re-running (example 7). Row-count ceilings and `NULL` handling are undocumented too — examples 5 through 8 measure what they can and label the rest as observation.
 
 **Featured in:** `workflows/tabular_prediction` (Zero-Shot Tabular Prediction) | `workflows/metric_diagnostics` (Metric Diagnostics) | `workflows/data_enrichment` (Data Enrichment)
 
@@ -251,19 +251,19 @@ LIMIT 10
 client.query(query).to_dataframe()
 ```
 
-### 5. The limits — 20 feature columns, and six allowed column types
+### 5. The limits — 50 feature columns, and six allowed column types
 
 Both of these are enforced while the query is analyzed, so they fail instantly and cost nothing: no model inference runs.
 
-- **20 feature columns.** Penguins has six. The first block pads the training input out to 21 and reads the error back. The documented escalation path is an email to `bqml-feedback@google.com`.
+- **50 feature columns.** Penguins has six. The first block pads the training input out to 51 and reads the error back; 50 runs (measured 2026-10-12). The documented escalation path is an email to `bqml-feedback@google.com`.
 - **Column types.** Feature and label columns must be `STRING`, `BOOL`, `INT64`, `FLOAT64`, `NUMERIC`, or `BIGNUMERIC`. `DATE`, `TIMESTAMP`, `BYTES`, `JSON`, `GEOGRAPHY`, `ARRAY`, and `STRUCT` are all rejected (verified 2026-09-01). The second block adds a `DATE` column and shows the rejection; the third `EXTRACT`s that date into integer parts and runs.
 
-Encoding a date is a modeling decision as much as a workaround. Year, month, and day-of-week are periodic features; a day offset from a fixed origin is a trend feature. Pick the ones that match the pattern you expect, and keep an eye on the 20-column budget while you add them.
+Encoding a date is a modeling decision as much as a workaround. Year, month, and day-of-week are periodic features; a day offset from a fixed origin is a trend feature. Pick the ones that match the pattern you expect, and keep an eye on the 50-column budget while you add them.
 
 ```python
-# (a) 21 feature columns — one over the documented cap of 20
+# (a) 51 feature columns — one over the documented cap of 50
 extra_features = ',\n    '.join(
-    f'culmen_depth_mm * {i} AS extra_feature_{i:02d}' for i in range(1, 16)
+    f'culmen_depth_mm * {i} AS extra_feature_{i:02d}' for i in range(1, 46)
 )
 too_wide = f"""
 WITH wide AS (

@@ -6,8 +6,8 @@
 - You want to detect unusual spikes or drops in time series data
 - You need anomaly probability scores for each data point
 - You want to detect anomalies across multiple time series simultaneously
-- You can choose between TimesFM 2.5 (the current default) and TimesFM 2.0 via the `model` parameter
-- You can control how much history the model sees with `context_window` (64–15,360 depending on model)
+- You can choose between TimesFM 2.5 (the default) and TimesFM 3.0 (Preview) via the `model` parameter
+- You can control how much history the model sees with `context_window` (64–15,360 on TimesFM 2.5; 64–2,048 on TimesFM 3.0)
 
 **Alternatives:**
 - `functions/ai_forecast` (`AI.FORECAST`) — Generate forecasts without anomaly detection
@@ -209,10 +209,10 @@ client.query(query).to_dataframe()
 ### 4. Setting the context window
 
 The `context_window` controls how many historical time points the model uses to learn patterns. Supported values depend on the model:
-- **TimesFM 2.0:** 64, 128, 256, 512, 1024, 2048
-- **TimesFM 2.5:** 64, 128, 256, 512, 1024, 2048, 4096, 8192, 15360
+- **TimesFM 2.5** (default): 64, 128, 256, 512, 1024, 2048, 4096, 8192, 15360 — the smallest window covering your input data is auto-selected when unspecified
+- **TimesFM 3.0** (Preview): any multiple of 32 from 64 to 2048 — the maximum, 2048, is used when unspecified
 
-By default, the smallest window covering your input data is auto-selected. A larger window can capture longer-term patterns but uses more resources.
+A larger window can capture longer-term patterns but uses more resources.
 
 ```python
 query = f'''
@@ -236,11 +236,11 @@ client.query(query).to_dataframe()
 
 ### 5. Pinning the TimesFM model version
 
-The `model` parameter selects which TimesFM version to use. **The default is TimesFM 2.5** — it was TimesFM 2.0, and Google changed it on the reference pages with no release note, so an unpinned query written before the change now returns different anomaly probabilities than it used to. Pin `model` explicitly so a future default move cannot shift your numbers.
+The `model` parameter selects which TimesFM version to use. **The default is TimesFM 2.5**; `'TimesFM 3.0'` (Preview) is the other accepted value. Pin `model` explicitly so a future default move cannot shift your anomaly probabilities.
 
 Pinning does not make the function reproducible, though. `AI.DETECT_ANOMALIES` returns a different result on a minority of runs even with `model` and `context_window` both pinned and the query cache off — the same behavior measured in detail on `functions/ai_evaluate` (`AI.EVALUATE`), where 2 of 16 pinned runs moved the reported error by ~32%. Materialize the anomaly table once and read the stored rows rather than re-running the function.
 
-TimesFM 2.5 also supports larger context windows (up to 15,360 against 2.0's 2,048).
+TimesFM 3.0 takes the same arguments on this function; its reach is shorter (at most 2,048 history points against 2.5's 15,360).
 
 ```python
 query = f'''

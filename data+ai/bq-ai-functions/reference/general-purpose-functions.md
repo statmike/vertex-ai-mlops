@@ -43,7 +43,7 @@
 These functions send prompts to generative AI models and return generated text or structured output. They differ primarily in **function type** (scalar vs table-valued), **whether they require a pre-created model object**, and **output type** (free-form text, structured schema, or typed scalar values).
 
 **Key relationships:**
-- `AI.GENERATE` is the newest scalar function -- no model object needed, supports structured output via `output_schema`, defaults to `gemini-2.5-flash`.
+- `AI.GENERATE` is the newest scalar function -- no model object needed, supports structured output via `output_schema`, defaults to `gemini-3.5-flash-lite`.
 - `AI.GENERATE_TEXT` is the recommended table-valued function -- requires a pre-created remote model (`CREATE MODEL`), supports Gemini, Claude, Llama, Mistral, and open models.
 - `AI.GENERATE_TABLE` is like `AI.GENERATE_TEXT` but requires an `output_schema` for structured output columns (Gemini only).
 - `AI.GENERATE_BOOL`, `AI.GENERATE_DOUBLE`, `AI.GENERATE_INT` are typed scalar variants of `AI.GENERATE` that return `BOOL`, `FLOAT64`, and `INT64` respectively (all Preview).
@@ -57,7 +57,7 @@ These functions send prompts to generative AI models and return generated text o
 | **Requires CREATE MODEL** | No | Yes | Yes | No | No | No | Yes |
 | **Result Type** | STRING or custom schema | STRING | Custom schema | BOOL | FLOAT64 | INT64 | STRING (or JSON) |
 | **Supports output_schema** | Yes | No | Yes (required) | No | No | No | No |
-| **Default model** | gemini-2.5-flash | Set at CREATE MODEL | Set at CREATE MODEL | gemini-2.5-flash | gemini-2.5-flash | gemini-2.5-flash | Set at CREATE MODEL |
+| **Default model** | gemini-3.5-flash-lite | Set at CREATE MODEL | Set at CREATE MODEL | gemini-3.5-flash-lite | gemini-3.5-flash-lite | gemini-3.5-flash-lite | Set at CREATE MODEL |
 | **Non-Gemini models** | No | Yes (Claude, Llama, Mistral, Open) | No | No | No | No | Yes (Claude, Llama, Mistral, Open) |
 | **Grounding** | Yes (via model_params) | Yes (ground_with_google_search) | No | No | No | No | Yes (ground_with_google_search) |
 | **Provisioned Throughput** | Yes (request_type) | Yes (request_type) | Yes (request_type) | Yes (request_type) | Yes (request_type) | Yes (request_type) | Yes (request_type) |
@@ -87,7 +87,7 @@ AI.GENERATE(
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `prompt` (positional, must be first) | STRING or STRUCT | Required | -- | The prompt to send to the model. Can be a STRING value or a STRUCT containing one or more fields of type STRING, ARRAY\<STRING\>, ObjectRef, or ARRAY\<ObjectRef\>. STRUCT fields are concatenated in order (like CONCAT), so the field *names* carry no meaning. At most one video object is allowed. |
-| `endpoint` | STRING | Optional | `gemini-2.5-flash` | The Vertex AI endpoint for the model. Specify any GA or preview Gemini model by name (BigQuery auto-resolves the full endpoint). Can also specify a full global endpoint URL. |
+| `endpoint` | STRING | Optional | `gemini-3.5-flash-lite` | The model endpoint on the Gemini Enterprise Agent Platform (formerly Vertex AI). Specify any GA or preview Gemini model by name (BigQuery auto-resolves the full endpoint). Can also specify a full global endpoint URL. The default is measured, not inferred -- see [Choosing a Gemini Model Endpoint](../RESOURCES.md#choosing-a-gemini-model-endpoint). |
 | `model_params` | JSON literal | Optional | -- | Additional parameters conforming to the `generateContent` request body format. Can set any field except `contents`. Supports `thinking_config` (use `thinking_budget` for Gemini 2.5 models, `thinking_level` for Gemini 3.0+), `cachedContent`, `tools` (e.g., `googleSearch` — requires Gemini 2.0+, `googleMaps`), `generation_config`, etc. |
 | `output_schema` | STRING | Optional | -- | Schema for structured output as comma-separated fields. Each field has a name, data type, and optional `OPTIONS(description = '...')`. Supported types: `STRING`, `INT64`, `FLOAT64`, `BOOL`, `ARRAY`, `STRUCT`. When specified, replaces the `result` field in output with custom schema fields. |
 | `connection_id` | STRING | Optional | End-user credentials | Connection for model communication, in format `[PROJECT_ID].LOCATION.CONNECTION_ID`. |
@@ -109,7 +109,7 @@ Returns a STRUCT with:
 | `full_response` | JSON | Full response from `projects.locations.endpoints.generateContent`. |
 | `status` | STRING | API response status. Empty if successful. |
 
-**Supported models:** Any GA or preview Gemini model. Default: `gemini-2.5-flash`. Can use global endpoint for cross-region processing.
+**Supported models:** Any GA or preview Gemini model; the reference page lists the Gemini 3.x family. Default: `gemini-3.5-flash-lite`. Can use global endpoint for cross-region processing.
 
 **Best practices:**
 - Function incurs Vertex AI charges each time it is called. Track costs accordingly.
@@ -380,7 +380,7 @@ AI.GENERATE_BOOL(
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `prompt` (positional, must be first) | STRING or STRUCT | Required | -- | Same semantics as AI.GENERATE: STRING or STRUCT with STRING/ARRAY\<STRING\>/ObjectRef/ARRAY\<ObjectRef\> fields. At most one video. |
-| `endpoint` | STRING | Optional | `gemini-2.5-flash` | Any GA or preview Gemini model. BigQuery auto-resolves the full endpoint from model name -- see [Choosing a Gemini Model Endpoint](../RESOURCES.md#choosing-a-gemini-model-endpoint) for the 3.x multi-regional restriction. |
+| `endpoint` | STRING | Optional | `gemini-3.5-flash-lite` | Any GA or preview Gemini model. BigQuery auto-resolves the full endpoint from model name -- see [Choosing a Gemini Model Endpoint](../RESOURCES.md#choosing-a-gemini-model-endpoint) for the 3.x multi-regional restriction. |
 | `model_params` | JSON literal | Optional | -- | Conforms to generateContent request body (all fields except `contents`). Supports thinking_config, etc. |
 | `connection_id` | STRING | Optional | End-user credentials | Format: `[PROJECT_ID].LOCATION.CONNECTION_ID` |
 | `request_type` | STRING | Optional | UNSPECIFIED | `SHARED`, `DEDICATED`, `UNSPECIFIED` |
@@ -395,7 +395,7 @@ Returns a STRUCT per row:
 | `full_response` | JSON | Full response from `projects.locations.endpoints.generateContent`. |
 | `status` | STRING | API response status (empty = success). |
 
-**Supported models:** Any GA or preview Gemini model. Default: `gemini-2.5-flash`.
+**Supported models:** Any GA or preview Gemini model. Default: `gemini-3.5-flash-lite`.
 
 **Best practices:** Incurs Vertex AI charges each call. Materialize data to a table before calling with LIMIT to minimize charges.
 
@@ -438,7 +438,7 @@ Returns a STRUCT per row:
 | `full_response` | JSON | Full response from generateContent. |
 | `status` | STRING | API response status (empty = success). |
 
-**Supported models:** Any GA or preview Gemini model. Default: `gemini-2.5-flash`.
+**Supported models:** Any GA or preview Gemini model. Default: `gemini-3.5-flash-lite`.
 
 **Best practices:** Same as AI.GENERATE_BOOL.
 
@@ -481,7 +481,7 @@ Returns a STRUCT per row:
 | `full_response` | JSON | Full response from generateContent. |
 | `status` | STRING | API response status (empty = success). |
 
-**Supported models:** Any GA or preview Gemini model. Default: `gemini-2.5-flash`.
+**Supported models:** Any GA or preview Gemini model. Default: `gemini-3.5-flash-lite`.
 
 **Best practices:** Same as AI.GENERATE_BOOL.
 

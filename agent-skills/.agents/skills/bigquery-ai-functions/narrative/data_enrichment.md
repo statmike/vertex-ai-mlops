@@ -280,7 +280,7 @@ Because the label column is a `STRING`, this is a classification task, and the o
 
 **Feature selection matters.** The training query deliberately passes only `state`, `founded_year`, and `employees_thousands`. Every column left out — `name`, `address`, `city`, `zip_code`, `phone` — is a unique-per-row identifier with no signal that transfers to a new row. The prediction query adds `name` back purely as a passthrough so the results are readable; `AI.PREDICT` allows the prediction side to carry extra columns beyond the feature set.
 
-Two documented limits shape the design: at most **20 feature columns** and at most **10 classes**. This example uses 3 features and 6 sectors.
+Two documented limits shape the design: at most **50 feature columns** and at most **10 classes**. This example uses 3 features and 6 sectors.
 
 Here is what someone who knows these companies would write in. The cell after the prediction scores both routes against this key instead of leaving you to eyeball them:
 

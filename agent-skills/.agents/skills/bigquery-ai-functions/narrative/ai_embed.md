@@ -15,7 +15,7 @@
 
 **Featured in:** `workflows/semantic_search` (Semantic Search System) | `workflows/rag_pipeline` (RAG Pipeline) | `workflows/multimodal_analysis` (Multimodal Analysis) | `workflows/document_rag` (Document RAG Pipeline) | `workflows/log_analysis` (Log Analysis) | `workflows/catalog_search` (Catalog Search) | `workflows/image_deduplication` (Image Deduplication)
 
-**Multimodal:** Supports image input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef) with `multimodalembedding@001`. For PDFs, use `gemini-embedding-2-preview` (Preview) which embeds PDFs directly without rendering to images.
+**Multimodal:** Supports image input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef) with `multimodalembedding@001`. For PDFs, use `gemini-embedding-2` (GA), which embeds PDFs directly without rendering to images.
 
 **References:** `RESOURCES.md` (Full syntax reference) | [Official documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-embed) | `setup` (Setup guide)
 
@@ -268,7 +268,7 @@ client.query(query).to_dataframe()
 
 `AI.EMBED` supports image input via ObjectRef with `multimodalembedding@001`. A `connection_id` is required for multimodal. Returns 1408-dimension vectors by default (configurable: 128, 256, 512, 1408).
 
-> **New:** `gemini-embedding-2-preview` (Preview) can embed PDFs directly — no rendering to PNG needed. It also supports audio and video. See `RESOURCES.md` (RESOURCES.md) for details. The examples below use the GA `multimodalembedding@001` approach with rendered PNGs.
+> **Also GA:** `gemini-embedding-2` embeds PDFs directly — no rendering to PNG needed — plus audio, video, and a STRUCT that mixes text with files, at up to 3072 dimensions. It rejects `task_type` and `title`, returns no `statistics` column, and is served from multi-regional endpoints only. See `reference/embedding-generation-and-semantic-search.md` (Embedding Generation and Semantic Search) for details. The examples below use `multimodalembedding@001` with rendered PNGs.
 
 Below we render invoice and receipt PDFs from this project's `data/documents` (document set) to PNG images, upload them to GCS, then embed and compare them. The embeddings should show that documents of the same type cluster together.
 

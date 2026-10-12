@@ -1,6 +1,6 @@
 # AI.FORECAST — BigQuery AI Functions
 
-`AI.FORECAST` is a table-valued function that forecasts future time series values using BigQuery ML's built-in TimesFM model. No model creation or training required.
+`AI.FORECAST` is a table-valued function that forecasts future time series values using BigQuery ML's built-in TimesFM model. No model creation or training required. Univariate forecasting is GA; multivariate forecasting and the TimesFM 3.0 model are Preview.
 
 **When to use it:**
 - You want to forecast future values from historical time series data
@@ -8,12 +8,13 @@
 - You want to forecast multiple independent time series at once
 - You need a zero-setup forecasting solution (no CREATE MODEL)
 - You can specify a target date with `forecast_end_timestamp` instead of a numeric `horizon`
-- You can control how much history the model sees with `context_window` (64–15,360 depending on model)
+- You can control how much history the model sees with `context_window` (64–15,360 on TimesFM 2.5; 64–2,048 on TimesFM 3.0)
+- You have related series to forecast together, or covariates that should shape the forecast — TimesFM 3.0 (Preview) adds multivariate forecasting with `target_cols`, `past_covariate_cols` and `future_covariate_cols`
 
 **Alternatives:**
 - `functions/ai_detect_anomalies` (`AI.DETECT_ANOMALIES`) — Detect anomalies by comparing data against a forecast baseline
 - `functions/ai_evaluate` (`AI.EVALUATE`) — Evaluate forecast accuracy against actual values
-- `bq-ml/models/arima_plus` (`ARIMA_PLUS`) — the trainable, in-BigQuery classical statistical alternative: supports custom holiday effects, external regressors (`ARIMA_PLUS_XREG`), hierarchical reconciliation across a real dimension hierarchy, and forecast bounds — none of which this zero-setup TimesFM model exposes. Use `AI.FORECAST` for a fast, no-training baseline; reach for `ARIMA_PLUS` when you need that level of control.
+- `bq-ml/models/arima_plus` (`ARIMA_PLUS`) — the trainable, in-BigQuery classical statistical alternative: custom holiday effects, hierarchical reconciliation across a real dimension hierarchy, decomposable and explainable components (`ML.EXPLAIN_FORECAST`), and forecast bounds — none of which the TimesFM functions expose. External regressors are no longer the dividing line: `bq-ml/models/arima_plus_xreg` (`ARIMA_PLUS_XREG`) and TimesFM 3.0's covariates (section 9 below) both take them. Use `AI.FORECAST` for a fast, no-training baseline — with 3.0, a covariate-aware one; reach for `ARIMA_PLUS` when you need that level of control and explanation.
 - `bq-ml/functions/time_series` (`ML.TREND` / `ML.SEASONALITY` / `ML.DETECT_CHANGE_POINTS`) — model-free decomposition rather than forecasting: trend, seasonal components, and sustained structural change points, with no `CREATE MODEL` and no foundation model. Reach for these when the question is *what has this series been doing* rather than *what will it do next*.
 - `bq-ml/workflows/causal_effect` (`AI.CAUSAL_EFFECT`) — **the same forecasting idea aimed backwards.** It is not TimesFM: it wraps `ARIMA_PLUS`, and the sibling notebook reproduces its counterfactual bit-for-bit with a plain `CREATE MODEL ... ARIMA_PLUS`. Instead of forecasting past the end of the data, it forecasts past a point *inside* the data — the intervention date — and reports how far the observed values ran from that counterfactual. Reach for it when the question is *what would have happened without the change*, and for `AI.FORECAST` when the question is *what happens next*.
 
@@ -202,9 +203,9 @@ client.query(query).to_dataframe()
 
 ### 5. Confidence level and TimesFM model version
 
-Control prediction interval width and model version.
+Control prediction interval width with `confidence_level`, and pin the model version with `model`.
 
-**The default is TimesFM 2.5.** It was TimesFM 2.0, and Google changed it on the reference pages with no release note — so an unpinned forecast written before the change now returns different values. The call below pins `'TimesFM 2.0'` to show the older model explicitly; pin whichever version you need whenever the numbers have to be reproducible.
+**The default is TimesFM 2.5.** The other accepted value is `'TimesFM 3.0'` (Preview) — section 8 covers what it adds. Pin `model` whenever the numbers have to be reproducible: an unpinned call follows the default, and the default moves when Google advances it.
 
 ```python
 query = f'''
@@ -215,7 +216,7 @@ FROM AI.FORECAST(
   timestamp_col => 'date',
   horizon => 14,
   confidence_level => 0.99,
-  model => 'TimesFM 2.0'
+  model => 'TimesFM 2.5'
 )
 '''
 client.query(query).to_dataframe()
@@ -242,11 +243,10 @@ df
 
 ### 7. Setting the context window
 
-The `context_window` controls how many historical time points the model uses to learn patterns. By default, the smallest window covering your data is auto-selected.
+The `context_window` controls how many of the most recent historical points the model sees. The two model versions handle it differently:
 
-Supported values:
-- **TimesFM 2.0:** 64, 128, 256, 512, 1024, 2048
-- **TimesFM 2.5:** 64, 128, 256, 512, 1024, 2048, 4096, 8192, 15360
+- **TimesFM 2.5** (default): 64, 128, 256, 512, 1024, 2048, 4096, 8192 or 15360. When unspecified, the smallest window covering your data is auto-selected. Any other value is rejected.
+- **TimesFM 3.0**: a multiple of 32 from 64 to 2048. When unspecified, the **maximum** (2048) is used, and points older than that are ignored. A value above 2048 is rejected; a value that is not a multiple of 32 is accepted rather than rejected, so stay on the documented grid if you want to know what the model saw.
 
 ```python
 query = f'''
@@ -262,6 +262,121 @@ FROM AI.FORECAST(
   horizon => 7,
   context_window => 128
 )
+'''
+client.query(query).to_dataframe()
+```
+
+### 8. TimesFM 3.0 (Preview): multivariate forecasting with `target_cols`
+
+TimesFM 3.0 is selected with `model => 'TimesFM 3.0'`. On a single series it is a drop-in alternative to 2.5 with the same output columns, and a shorter reach: `horizon` is capped at 1,024 and the context window at 2,048 points.
+
+What it adds is **multivariate forecasting**: pass `target_cols` (an array of column names) instead of `data_col`, and the model forecasts the series jointly. This syntax requires `model => 'TimesFM 3.0'` — with any other model, or with no `model` at all, the call fails with the generic `Invalid table-valued function AI.FORECAST`.
+
+The output is restructured for multiple targets:
+- the timestamp column **keeps its input name** (`date` here, not `forecast_timestamp`) and comes back as a `TIMESTAMP`
+- each target becomes a `STRUCT<value, prediction_interval_lower_bound, prediction_interval_upper_bound>` under its own name
+- `time_series_type` (`forecast`, or `history` when `output_historical_time_series => TRUE`), `confidence_level` and `ai_forecast_status` complete the row
+
+`forecast_end_timestamp` is accepted in this form too, although the documented multivariate syntax lists only `horizon`.
+
+First, a second table with two related daily series — sales and web visits — plus two columns that will serve as covariates in section 9. It covers 2024 as history and includes **14 future dates with the targets left NULL**; section 9 explains why.
+
+```python
+# Two related daily series (sales, web visits) plus two covariates (promo flag, weekend flag).
+# History: 2024. Future: 14 days with the targets NULL and the future covariates populated.
+query = f'''
+CREATE OR REPLACE TABLE `{PROJECT_ID}.{DATASET_ID}.ai_forecast_sales_mv` AS
+WITH days AS (
+  SELECT date,
+    EXTRACT(DAYOFWEEK FROM date) AS dow,
+    DATE_DIFF(date, DATE '2024-01-01', DAY) AS t
+  FROM UNNEST(GENERATE_DATE_ARRAY('2024-01-01', '2025-01-14')) AS date
+)
+SELECT
+  date,
+  IF(date <= '2024-12-31', GREATEST(0,
+    1000 + t * 2
+    + CASE dow WHEN 1 THEN -200 WHEN 7 THEN 300 WHEN 6 THEN 200 ELSE 0 END
+    + IF(MOD(t + 20, 30) < 3, 400, 0)            -- promotion lift
+    + CAST(200 * (RAND() - 0.5) AS INT64)), NULL) AS daily_sales,
+  IF(date <= '2024-12-31', GREATEST(0,
+    5000 + t * 5
+    + CASE dow WHEN 1 THEN -800 WHEN 7 THEN 1200 WHEN 6 THEN 800 ELSE 0 END
+    + CAST(600 * (RAND() - 0.5) AS INT64)), NULL) AS web_visits,
+  IF(MOD(t + 20, 30) < 3, 1, 0) AS promo_flag,   -- known in advance: the promotion calendar
+  IF(dow IN (1, 7), 1, 0) AS is_weekend          -- known in advance: the calendar
+FROM days
+'''
+client.query(query).result()
+
+# The seam between history and future: targets stop, future covariates continue
+df = client.query(f'''
+SELECT * FROM `{PROJECT_ID}.{DATASET_ID}.ai_forecast_sales_mv`
+WHERE date BETWEEN '2024-12-29' AND '2025-01-03' ORDER BY date''').to_dataframe()
+df
+```
+
+Forecast both series jointly from the history rows. Each target comes back as its own `STRUCT`; the query below flattens the fields it wants.
+
+```python
+query = f'''
+SELECT
+  date,
+  ROUND(daily_sales.value) AS sales_forecast,
+  ROUND(daily_sales.prediction_interval_lower_bound) AS sales_lower,
+  ROUND(daily_sales.prediction_interval_upper_bound) AS sales_upper,
+  ROUND(web_visits.value) AS visits_forecast,
+  time_series_type,
+  ai_forecast_status
+FROM AI.FORECAST(
+  (SELECT date, daily_sales, web_visits
+   FROM `{PROJECT_ID}.{DATASET_ID}.ai_forecast_sales_mv`
+   WHERE date <= '2024-12-31'),
+  target_cols => ['daily_sales', 'web_visits'],
+  timestamp_col => 'date',
+  model => 'TimesFM 3.0',
+  horizon => 7
+)
+ORDER BY date
+'''
+client.query(query).to_dataframe()
+```
+
+### 9. Past and future covariates
+
+Covariates are extra columns the model may use to shape the forecast. TimesFM 3.0 distinguishes two kinds by *when they are known*:
+
+- **`past_covariate_cols`** — known only historically. Web visits influence sales, but tomorrow's visits are not known today: populated for history rows, NULL for the future rows.
+- **`future_covariate_cols`** — known for the past *and* the future. The promotion calendar and the day of the week are fixed in advance: populated on every row, including the 14 future dates.
+
+That is why the input table carries future rows with NULL targets: the future covariates have to be supplied for every timestamp you want forecast. Covariates require the `target_cols` form — `data_col` plus a covariate argument is rejected. Three things measured here that the syntax does not say:
+
+- `horizon` is **capped by the future rows you supply** — ask for 30 with 14 future rows and you get 14, silently.
+- Without `horizon`, the default of 10 applies even when more future rows are available.
+- A past covariate alone, with no future rows at all, also works — it simply conditions the forecast on the history.
+
+```python
+query = f'''
+WITH forecast AS (
+  SELECT
+    date,
+    ROUND(daily_sales.value) AS sales_forecast,
+    ROUND(daily_sales.prediction_interval_lower_bound) AS lower,
+    ROUND(daily_sales.prediction_interval_upper_bound) AS upper
+  FROM AI.FORECAST(
+    TABLE `{PROJECT_ID}.{DATASET_ID}.ai_forecast_sales_mv`,
+    target_cols => ['daily_sales'],
+    timestamp_col => 'date',
+    model => 'TimesFM 3.0',
+    horizon => 14,
+    past_covariate_cols => ['web_visits'],
+    future_covariate_cols => ['promo_flag', 'is_weekend']
+  )
+)
+SELECT f.date, f.sales_forecast, f.lower, f.upper, c.promo_flag, c.is_weekend
+FROM forecast f
+JOIN `{PROJECT_ID}.{DATASET_ID}.ai_forecast_sales_mv` c ON DATE(f.date) = c.date
+ORDER BY f.date
 '''
 client.query(query).to_dataframe()
 ```
@@ -292,7 +407,7 @@ FROM AI.FORECAST(
 ---
 ## Examples — BigFrames
 
-BigFrames wraps `AI.FORECAST` via `bbq.ai.forecast()`. No model object needed.
+BigFrames wraps `AI.FORECAST` via `bbq.ai.forecast()`. No model object needed. Pass `model` explicitly: the wrapper's own default is `'TimesFM 2.0'`, a version the SQL reference page no longer lists, so an unpinned wrapper call and an unpinned SQL call run different models.
 
 ```python
 import bigframes.pandas as bpd
@@ -313,7 +428,8 @@ forecast = bbq.ai.forecast(
     df,
     data_col='daily_sales',
     timestamp_col='date',
-    horizon=14
+    horizon=14,
+    model='TimesFM 2.5'
 )
 forecast.to_pandas()
 ```

@@ -2,13 +2,13 @@
 
 ## What it is
 
-`AI.KEY_DRIVERS` is a (Preview) table-valued function that identifies which segments of your data are statistically driving a change in a summable metric between an interest set and a reference set — key-driver / contribution analysis. It requires no `CREATE MODEL` step, no connection, and no Gemini endpoint; it runs directly over a table or subquery. It's the simplified, model-free equivalent of creating a BigQuery ML contribution analysis model and calling `ML.GET_INSIGHTS`.
+`AI.KEY_DRIVERS` is a GA table-valued function that identifies which segments of your data are statistically driving a change in a summable metric between an interest set and a reference set — key-driver / contribution analysis. It requires no `CREATE MODEL` step, no connection, and no Gemini endpoint; it runs directly over a table or subquery. It's the simplified, model-free equivalent of creating a BigQuery ML contribution analysis model and calling `ML.GET_INSIGHTS`.
 
 ## When to use it
 
 - Reach for `AI.KEY_DRIVERS` when you're answering "why did this metric move?" questions — e.g., comparing this month vs. last, test vs. control, or attributing a revenue/usage change to segments, geographies, or product categories — and you have **12 or fewer dimension columns** and a **summable metric** (expressed as `SUM(column)` or a bare `column` reference). It's simpler syntax, faster results, automatic redundancy pruning, and no model lifecycle to manage.
 - Reach for `../../bq-ml/models/contribution_analysis/` (`CREATE MODEL ... OPTIONS(model_type='CONTRIBUTION_ANALYSIS')` + `ML.GET_INSIGHTS`) instead when you need **more than 12 dimensions**, or a metric type other than plain-summable — contribution analysis models additionally support **summable-by-ratio** and **summable-by-category** metrics, which `AI.KEY_DRIVERS` does not support at all.
-- `AI.KEY_DRIVERS` is Preview and scoped to **US and EU multi-regions only** — check region availability before defaulting to it in a pipeline that runs elsewhere.
+- `AI.KEY_DRIVERS` is GA (2026-09-29) and its reference page no longer lists a region restriction; a call against an `asia-northeast1` dataset succeeded on 2026-10-09. The US/EU-only limit that applied in Preview is gone.
 - Don't confuse it with `AI.CAUSAL_EFFECT`, the other (Preview) model-free augmented-analytics TVF. `AI.KEY_DRIVERS` asks **which segments** account for a metric change, comparing an interest set against a reference set drawn from the same table. `AI.CAUSAL_EFFECT` asks **how big** a single intervention's effect was on one time series, comparing the observed post-intervention path against a forecast counterfactual. Different question, different input shape, different output. See the routing note below.
 
 ## Gotchas verified in this repo
@@ -62,7 +62,7 @@ What to know before you route there:
 
 **One demonstration of it does live in this skill, and it is a negative one.** `narrative/metric_diagnostics.md` closes with a **placebo test**: six intervention dates on a series where nothing happened, and one returns a significant cumulative effect anyway, because a counterfactual fitted on a spring-and-summer ramp reads the autumn seasonal turn as an intervention. Two rules follow. A univariate counterfactual can only carry forward patterns already in its pre-window, so **an annual cycle needs more than a year of pre-intervention history**. And `AI.CAUSAL_EFFECT` applies **no multiple-comparison adjustment** — `id_cols` fans out into independent analyses, so N series means N chances to clear 0.05 by accident. Run placebo dates before quoting a real one.
 
-Both are Preview and neither creates a model artifact.
+`AI.KEY_DRIVERS` is GA, `AI.CAUSAL_EFFECT` is Preview, and neither creates a model artifact.
 
 ## Go deeper
 

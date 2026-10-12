@@ -106,8 +106,8 @@ AI.EMBED(
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `content` | STRING, ObjectRef, ObjectRefRuntime, or STRUCT | Required | The data to embed. For text: string literal, column name, or expression. For images and documents: an `ObjectRef` — `OBJ.MAKE_REF(uri, connection)` or an object table's `ref` column. (`ObjectRefRuntime` is still accepted; it is not required.) For `gemini-embedding-2-preview`: can be a STRUCT containing STRING, ARRAY\<STRING\>, ObjectRef, and ARRAY\<ObjectRef\> (text, images, audio, video, PDFs). |
-| `endpoint` | STRING | Required (unless `model` specified) | Vertex AI embedding model endpoint. Must include model version (e.g., `text-embedding-005`, `multimodalembedding@001`, `gemini-embedding-2-preview`). BigQuery auto-resolves full endpoint from model name. |
+| `content` | STRING, ObjectRef, ObjectRefRuntime, or STRUCT | Required | The data to embed. For text: string literal, column name, or expression. For images and documents: an `ObjectRef` — `OBJ.MAKE_REF(uri, connection)` or an object table's `ref` column. (`ObjectRefRuntime` is still accepted; it is not required.) For `gemini-embedding-2`: can be a STRUCT containing STRING, ARRAY\<STRING\>, ObjectRef, and ARRAY\<ObjectRef\> (text, images, audio, video, PDFs). |
+| `endpoint` | STRING | Required (unless `model` specified) | Embedding model endpoint on the Gemini Enterprise Agent Platform (formerly Vertex AI). Must include model version (e.g., `text-embedding-005`, `multimodalembedding@001`, `gemini-embedding-2`). BigQuery auto-resolves full endpoint from model name; `gemini-embedding-2` is served from multi-regional endpoints only and resolves `us` / `eu` / `global` by the same rule as the Gemini 3.x models (see [Choosing a Gemini Model Endpoint](../RESOURCES.md#choosing-a-gemini-model-endpoint)). |
 | `model` | STRING | Optional (Preview) | Built-in text embedding model. Only supported value: `embeddinggemma-300m` (768 dims, 2048 tokens). When specified, cannot use `endpoint`, `title`, `model_params`, or `connection_id`. Data stays in BigQuery — no Vertex AI charges, uses BQ slots. |
 | `task_type` | STRING literal | Optional (text only) | Intended downstream application. Values: `RETRIEVAL_QUERY`, `RETRIEVAL_DOCUMENT`, `SEMANTIC_SIMILARITY`, `CLASSIFICATION`, `CLUSTERING`, `QUESTION_ANSWERING`, `FACT_VERIFICATION`, `CODE_RETRIEVAL_QUERY` |
 | `title` | STRING | Optional (text only) | Document title to improve embedding quality. Can only be used when `task_type` is `RETRIEVAL_DOCUMENT`. |
@@ -131,7 +131,7 @@ Returns a STRUCT with:
 | `endpoint => 'gemini-embedding-001'` | Text | up to 3072 | 2048 | Multilingual |
 | `endpoint => 'text-embedding-005'` | Text | up to 768 | 2048 | English |
 | `endpoint => 'text-multilingual-embedding-002'` | Text | up to 768 | 2048 | Multilingual |
-| `endpoint => 'gemini-embedding-2-preview'` (Preview) | Multimodal | up to 3072 | 8192 | Text, images, audio, video, PDF. US and us-central1 only. `task_type`/`title` not compatible. |
+| `endpoint => 'gemini-embedding-2'` (GA) | Multimodal | up to 3072 | 8192 | Text, images, audio, video, PDF, or a STRUCT mixing them. Multi-regional (`us`/`eu`/`global`) endpoints only. `task_type` and `title` are rejected outright (*"not supported for gemini-embedding-2 model"*). The `-preview` suffix still resolves to the same model. |
 | `endpoint => 'multimodalembedding@001'` | Multimodal | 128, 256, 512, 1408 | — | Images only (JPEG, PNG, BMP, GIF — not PDF) |
 
 **Best practices:**
@@ -225,7 +225,7 @@ Additional syntaxes exist for PCA, Autoencoder, and Matrix factorization models.
 
 Additional output columns exist for multimodal (video_start_sec, video_end_sec), PCA, autoencoder (trial_id), and matrix factorization (trial_id, processed_input, feature).
 
-> **Note:** The `statistics` column is returned by text embedding models and by `gemini-embedding-2-preview` (with per-modality token counts). `multimodalembedding@001` does NOT return it — queries that SELECT `statistics` from `multimodalembedding@001` will error.
+> **Note:** The `statistics` column is returned by the text embedding models only. Neither `multimodalembedding@001` nor `gemini-embedding-2` returns it (measured 2026-10-09: `gemini-embedding-2`'s output is `STRUCT<result ARRAY<FLOAT64>, status STRING>`) — queries that SELECT `statistics` against either will error with *"Field name statistics does not exist"*.
 
 **Supported models:**
 
@@ -237,7 +237,7 @@ Additional output columns exist for multimodal (video_start_sec, video_end_sec),
 | `multilingual-e5-small` (Preview) | up to 384 | 512 tokens | Multilingual |
 | `multilingual-e5-large` (Preview) | up to 1024 | 512 tokens | Multilingual |
 | `multimodalembedding@001` | 128, 256, 512, 1408 | -- | -- |
-| `gemini-embedding-2-preview` (Preview) | up to 3072 | 8192 | Multimodal (text, image, video, audio, PDF). Returns `statistics` with per-modality token counts. US and us-central1 only. |
+| `gemini-embedding-2` (GA) | up to 3072 | 8192 | Multimodal (text, image, video, audio, PDF, or a STRUCT mixing them). No `statistics` column. Multi-regional endpoints only. Measured: `model_params => JSON '{"dimension": 256}'` still returned 3072 dimensions through `AI.EMBED`. |
 
 Also supports PCA, autoencoder, and matrix factorization models.
 
@@ -281,7 +281,7 @@ All other inputs are the same as AI.GENERATE_EMBEDDING. Additionally, when using
 | `ml_generate_embedding_start_sec` | INT64 | Video only (NULL for images) |
 | `ml_generate_embedding_end_sec` | INT64 | Video only (NULL for images) |
 
-**Supported models / Limitations / Locations / Provisioned throughput:** Same as AI.GENERATE_EMBEDDING. Note: `gemini-embedding-001` has a default output dimensionality of 3072 (vs 768 for `text-embedding-005`). `gemini-embedding-2-preview` (Preview) is also supported for multimodal, same as AI.GENERATE_EMBEDDING.
+**Supported models / Limitations / Locations / Provisioned throughput:** Same as AI.GENERATE_EMBEDDING. Note: `gemini-embedding-001` has a default output dimensionality of 3072 (vs 768 for `text-embedding-005`). `gemini-embedding-2` (GA) is also supported for multimodal, same as AI.GENERATE_EMBEDDING.
 
 **BigFrames API:** No direct `ML.GENERATE_EMBEDDING` wrapper. BigFrames routes through `AI.GENERATE_EMBEDDING` instead. Use `bbq.ai.generate_embedding()` or `TextEmbeddingGenerator`/`MultimodalEmbeddingGenerator` classes.
 
@@ -328,9 +328,9 @@ AI.SIMILARITY(
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `content1` | STRING, ObjectRef, or ObjectRefRuntime | Required | First value to compare. An `ObjectRef` is enough — no signing step. For `gemini-embedding-2-preview`: can be a STRUCT (text, images, audio, video, PDFs). |
+| `content1` | STRING, ObjectRef, or ObjectRefRuntime | Required | First value to compare. An `ObjectRef` is enough — no signing step. For `gemini-embedding-2`: can be a STRUCT (text, images, audio, video, PDFs). |
 | `content2` | STRING, ObjectRef, or ObjectRefRuntime | Required | Second value to compare. Same types as `content1`. |
-| `endpoint` | STRING | Required (unless `model` specified) | Vertex AI embedding model endpoint (e.g., `text-embedding-005`, `multimodalembedding@001`, `gemini-embedding-2-preview`). |
+| `endpoint` | STRING | Required (unless `model` specified) | Embedding model endpoint (e.g., `text-embedding-005`, `multimodalembedding@001`, `gemini-embedding-2`). |
 | `model` | STRING | Optional (Preview) | Built-in text embedding model. Only supported value: `embeddinggemma-300m`. When specified, cannot use `endpoint`, `model_params`, or `connection_id`. No Vertex AI charges. |
 | `model_params` | JSON literal | Optional | For text: any parameters object fields including `outputDimensionality`. For multimodal: only `dimension`. |
 | `connection_id` | STRING | Optional for text; Required for multimodal | Connection in format `PROJECT_ID.LOCATION.CONNECTION_ID`. |
@@ -347,12 +347,12 @@ AI.SIMILARITY(
 | Indexing | No vector indexes | Designed to use vector indexes for ANN search |
 | Use case | Small comparisons, prototyping | Large-scale semantic search, RAG |
 
-**Supported models:** Same models as AI.EMBED: `embeddinggemma-300m` (built-in, Preview), `gemini-embedding-001`, `text-embedding-005`, `text-multilingual-embedding-002`, `gemini-embedding-2-preview` (multimodal, Preview), `multimodalembedding@001`.
+**Supported models:** Same models as AI.EMBED: `embeddinggemma-300m` (built-in, Preview), `gemini-embedding-001`, `text-embedding-005`, `text-multilingual-embedding-002`, `gemini-embedding-2` (multimodal, GA), `multimodalembedding@001`.
 
 **Best practices:**
 - Use for small comparisons and prototyping. Use VECTOR_SEARCH for large-scale searches.
-- Supports **cross-modal** comparisons: `content1` can be text while `content2` is an image (or vice versa) when using `multimodalembedding@001` or `gemini-embedding-2-preview`. Text and image embeddings share the same vector space, so text descriptions can be matched against document images.
-- `multimodalembedding@001` supports images only (JPEG, PNG, BMP, GIF) — **not PDFs**. Use `gemini-embedding-2-preview` for PDF support, or render PDFs to images first.
+- Supports **cross-modal** comparisons: `content1` can be text while `content2` is an image (or vice versa) when using `multimodalembedding@001` or `gemini-embedding-2` (measured 2026-10-09 on `gemini-embedding-2`: image/image 0.79, text/image 0.28 on the same pet-store product photo). Text and image embeddings share the same vector space, so text descriptions can be matched against document images.
+- `multimodalembedding@001` supports images only (JPEG, PNG, BMP, GIF) — **not PDFs** (status: *"Unsupported content type application/pdf for AI.EMBED MULTIMODAL_EMBEDDING endpoint"*). Use `gemini-embedding-2` for PDF support, or render PDFs to images first.
 
 **Limitations:** Incurs charges for two embedding generations per call. For multimodal, `connection_id` is required and the connection's service account needs `roles/aiplatform.user` and `roles/storage.objectViewer`.
 

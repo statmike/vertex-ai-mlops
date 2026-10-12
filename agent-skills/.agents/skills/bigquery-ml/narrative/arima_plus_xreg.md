@@ -11,6 +11,8 @@ Train a **multivariate time series forecasting** model with `CREATE MODEL` (mode
 - Covariate values are known/available for the forecast horizon (required at forecast time — see Step 6).
 - You want ARIMA_PLUS automation (holidays, seasonality, anomaly handling) but with explanatory regressors and per-regressor attribution.
 
+**The zero-training alternative now takes covariates too.** The sibling project's `bq-ai-functions/functions/ai_forecast` (`AI.FORECAST`) with `model => 'TimesFM 3.0'` (Preview) accepts `past_covariate_cols` and `future_covariate_cols` with no `CREATE MODEL` step. What this model still offers that it does not: `ML.EXPLAIN_FORECAST`'s per-regressor attribution and `ML.ARIMA_COEFFICIENTS`' regression weights, custom holidays, a horizon beyond 1,024 steps, and GA status.
+
 **Modernized from the old repo notebook:** it predates GA multi-series support for this model type and works around it with an `EXECUTE IMMEDIATE` loop / async Python jobs. This notebook uses native `time_series_id_col` directly (Step 2) — the same approach as `models/arima_plus` (`models/arima_plus/`).
 
 **Data:** Same 5 Citi Bike stations and TEST window (last 28 days, `horizon = 28`) as `models/arima_plus` (`models/arima_plus/`), for direct forecast-accuracy comparison — plus 3 covariates computed per station/day: `avg_tripduration`, `pct_subscriber` (fraction `usertype='Subscriber'`), `ratio_gender` (fraction `gender='female'` among known genders). `capacity` (used by the old repo notebook) is deliberately dropped — it needs a join to a separate, current-only stations table and was NULL for some stations there too.

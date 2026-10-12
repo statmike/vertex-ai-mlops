@@ -16,7 +16,7 @@
 ## Choosing among them
 
 - **"I want free-form text back."**
-  - One-off / no remote model set up yet → `AI.GENERATE` (scalar, works immediately, defaults to `gemini-2.5-flash`).
+  - One-off / no remote model set up yet → `AI.GENERATE` (scalar, works immediately, defaults to `gemini-3.5-flash-lite` — measured 2026-10-09 via `full_response.modelVersion`; the default has moved before without a release note, so pin `endpoint` for anything that must reproduce).
   - Batch over a table, or need a non-Gemini model (Claude/Llama/Mistral/open) → `AI.GENERATE_TEXT` (requires `CREATE MODEL` first).
   - Already have `ML.GENERATE_TEXT` calls in an existing pipeline → leave them if working, but write new queries against `AI.GENERATE_TEXT`.
 

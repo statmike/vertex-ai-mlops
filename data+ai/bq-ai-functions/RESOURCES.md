@@ -65,22 +65,26 @@ Function Name
 - **[Augmented Analytics](reference/augmented-analytics.md)** — `AI.KEY_DRIVERS` — model-free contribution analysis, plus the pointer to `AI.CAUSAL_EFFECT`, which is [documented in `bq-ml`](../bq-ml/reference/model-free-functions.md#aicausal_effect) alongside the other causal estimators
 - **[Document Processing](reference/document-processing.md)** — `ML.PROCESS_DOCUMENT` and `AI.PARSE_DOCUMENT`
 - **[Cloud AI Service Models](reference/cloud-ai-service-models.md)** — `ML.TRANSLATE`, `ML.UNDERSTAND_TEXT`, `ML.ANNOTATE_IMAGE`, `ML.TRANSCRIBE` and `ML.PROCESS_DOCUMENT` — remote models over pre-trained Cloud AI services rather than Gemini, with the per-service API and IAM matrix
-- **[Unstructured Data Infrastructure](reference/unstructured-data-infrastructure.md)** — object tables, the `OBJ.*` functions, the ObjectRef / ObjectRefRuntime schema reference, and the four call shapes that all take an `ObjectRef` directly
+- **[Unstructured Data Infrastructure](reference/unstructured-data-infrastructure.md)** — object tables, the `OBJ.*` functions (including `OBJ.LIST`, the wildcard listing that returns ready `ObjectRef`s with no object table), the ObjectRef / ObjectRefRuntime schema reference, and the four call shapes that all take an `ObjectRef` directly
 
 ---
 
 ## Choosing a Gemini Model Endpoint
 
-Every generative function documents its supported models as "any GA or preview Gemini model." That is accurate but hides two things worth knowing before you pick one. This section is the single place they are recorded; the per-function entries do not repeat them.
+Every generative function documents its supported models as "any GA or preview Gemini model." That is accurate but hides a few things worth knowing before you pick one. This section is the single place they are recorded; the per-function entries do not repeat them.
 
-**The default has not moved.** Omit `endpoint` and you get `gemini-2.5-flash`, on every function that takes the argument. Newer models being available does not change the default -- every example in this project runs on `gemini-2.5-flash` and its outputs reflect that model.
+**The default is `gemini-3.5-flash-lite`.** Omit `endpoint` and that is what you get, on every function that takes the argument. Measured 2026-10-09 with the query cache off, reading `modelVersion` out of `full_response` on `AI.GENERATE` and `AI.GENERATE_BOOL` -- five runs, five times `gemini-3.5-flash-lite`. The default has moved before and nothing in the release notes announces it when it does, so an unpinned call is a different model from one month to the next. Every unpinned example in this project runs on the current default and its stored outputs reflect that model; pin `endpoint` whenever an output has to stay reproducible.
 
-**Gemini 3.x models are available and are not the default.** `gemini-3.1-flash-lite` and `gemini-3.5-flash` reached GA on 2026-08-10 and work in all generative AI functions. To use one, pass it explicitly:
+**Gemini 3.x is the documented family.** The `AI.GENERATE` reference page lists `gemini-3.1-flash-lite`, `gemini-3.5-flash`, `gemini-3.5-flash-lite`, `gemini-3.6-flash`, `gemini-3.7-flash` and `gemini-3.8-flash` as the supported models. All six resolve (measured 2026-10-09). The 2.5 family -- `gemini-2.5-flash`, `gemini-2.5-pro`, `gemini-2.5-flash-lite` -- is no longer on that list but still resolves and returns its own `modelVersion`; `gemini-2.0-flash` does not (*"Unsupported endpoint: Publisher model ... was not found"*). The examples in this project that pin an endpoint pin `gemini-2.5-flash` or `gemini-2.5-pro`; expect to move them the day those stop resolving. To use a 3.x model, pass it explicitly:
 
 ```sql
 SELECT AI.GENERATE(('Summarize: ', body), endpoint => 'gemini-3.5-flash').result
 FROM `PROJECT_ID.DATASET_ID.TABLE_ID`;
 ```
+
+**Thinking controls differ by generation.** Gemini 2.5 takes `thinking_budget` inside `model_params.generation_config.thinking_config`; for Gemini 3.0 and later the documented control is `thinking_level` (`LOW`, `MEDIUM`, `HIGH`) in the same place. `thinking_budget: 0` is still accepted on `gemini-3.5-flash` (measured), but write `thinking_level` for 3.x.
+
+**A naming note.** The reference pages now call the model host the **Gemini Enterprise Agent Platform** -- "Agent Platform" for short -- where they used to say Vertex AI. Endpoints, connections, IAM roles and the `aiplatform.googleapis.com` hostnames are unchanged; only the product name moved. This project adopts the new name as pages are touched.
 
 **GOTCHA -- Gemini 3.x is multi-regional only.** Unlike the 2.5 family, the 3.x models are not served from regional endpoints, only from the `us`, `eu`, and global multi-regional endpoints. If you pass a short model name, BigQuery resolves the endpoint for you, and the rule is not obvious:
 

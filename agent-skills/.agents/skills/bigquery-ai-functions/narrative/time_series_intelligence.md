@@ -331,13 +331,13 @@ metrics
 
 ### Compare TimesFM model versions
 
-Evaluate both TimesFM 2.0 and 2.5 to see which performs better on this data.
+Evaluate both accepted TimesFM versions — 2.5 (the default) and 3.0 (Preview) — to see which performs better on this data.
 
 Read the gap between the two versions as indicative, not exact. `AI.EVALUATE` is not reproducible run to run — a minority of runs return a materially different metric even with `model` and `context_window` pinned and the query cache off (2 of 16 in the measured case, a ~32% swing). A single draw from each version can overstate or even reverse a small difference, so re-run the comparison before acting on a narrow margin.
 
 ```python
 results = []
-for model_version in ['TimesFM 2.0', 'TimesFM 2.5']:
+for model_version in ['TimesFM 2.5', 'TimesFM 3.0']:
     query = f'''
     SELECT
       '{model_version}' AS model,
@@ -378,7 +378,7 @@ plt.show()
 
 `context_window` controls how many historical data points the TimesFM model uses. The model auto-selects the smallest window that covers the input, but you can override this — a larger window gives the model more history to learn patterns from, while a smaller window focuses on recent trends.
 
-Supported values for TimesFM 2.0: 64, 128, 256, 512, 1024, 2048. TimesFM 2.5 — the default — adds: 4096, 8192, 15360. The sweep below pins the model so the comparison isolates `context_window`. The reproducibility caveat above applies here too — a small gap between two windows can be a draw rather than a real effect.
+Supported values for TimesFM 2.5 — the default — are 64, 128, 256, 512, 1024, 2048, 4096, 8192 and 15360; TimesFM 3.0 (Preview) takes any multiple of 32 from 64 to 2048 and defaults to the maximum. The sweep below pins the model so the comparison isolates `context_window`. The reproducibility caveat above applies here too — a small gap between two windows can be a draw rather than a real effect.
 
 ```python
 results = []

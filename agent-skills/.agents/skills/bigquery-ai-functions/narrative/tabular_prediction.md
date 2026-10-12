@@ -136,7 +136,7 @@ The label column is allowed to be present in the prediction relation too. TabFM 
 
 Because `body_mass_g` is `FLOAT64`, this is a regression. The output is every column of the prediction relation plus one new column, `predicted_body_mass_g`. Task selection is type-driven and implicit: there is no `task_type` argument, so a categorical label stored as `INT64` would silently be regressed. Cast that kind of label to `STRING` first.
 
-> **Size ceiling.** The training relation is carried in-context, so it is memory-bound rather than disk-bound. Around 10,000 training rows the call fails with `Resources exceeded during query execution: The query could not be executed in the allotted memory.` Keep the training relation at **5,000 rows or fewer**; sample or aggregate anything larger before handing it to TabFM. This split uses 239 rows, well inside the ceiling. The two documented limits are 20 feature columns and 10 classes; a call takes 30–95 seconds regardless of how small the data is.
+> **Size ceiling.** The training relation is carried in-context, so it is memory-bound rather than disk-bound. Around 10,000 training rows the call fails with `Resources exceeded during query execution: The query could not be executed in the allotted memory.` Keep the training relation at **5,000 rows or fewer**; sample or aggregate anything larger before handing it to TabFM. This split uses 239 rows, well inside the ceiling. The two documented limits are 50 feature columns and 10 classes; a call takes 30–95 seconds regardless of how small the data is.
 
 ```python
 query = f"""

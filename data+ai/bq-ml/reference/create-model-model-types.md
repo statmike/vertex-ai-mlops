@@ -1252,7 +1252,7 @@ AS (
 - **Status:** GA. Multiple-series support via `time_series_id_col` and `ML.DETECT_ANOMALIES` support were both added after the original 2023 Preview; both are exercised live in [`models/arima_plus_xreg/`](../models/arima_plus_xreg/) (Example 2 trains all five stations as one multi-series model; Example 10 runs `ML.DETECT_ANOMALIES` against it).
 - **documentation:** [CREATE MODEL for ARIMA_PLUS_XREG](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-create-multivariate-time-series) · journey/tutorials: [single series tutorial](https://cloud.google.com/bigquery/docs/arima-plus-xreg-single-time-series-forecasting-tutorial), [multiple series tutorial](https://cloud.google.com/bigquery/docs/arima-plus-xreg-multiple-time-series-forecasting-tutorial), [E2E user journey](https://cloud.google.com/bigquery/docs/e2e-journey). Related univariate model: [`ARIMA_PLUS`](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-create-time-series).
 
-> Built-in foundation forecasting (TimesFM via `AI.FORECAST`) is owned by `../bq-ai-functions/` — see [AI.FORECAST / AI.DETECT_ANOMALIES there](../../bq-ai-functions/RESOURCES.md). `ARIMA_PLUS_XREG` is the in-scope BQML *trained-model* forecaster.
+> Built-in foundation forecasting (TimesFM via `AI.FORECAST`) is owned by `../bq-ai-functions/` — see [AI.FORECAST / AI.DETECT_ANOMALIES there](../../bq-ai-functions/RESOURCES.md). `ARIMA_PLUS_XREG` is the in-scope BQML *trained-model* forecaster; since TimesFM 3.0 (Preview) `AI.FORECAST` also takes past and future covariates, so choose `ARIMA_PLUS_XREG` for the trained model's explainability (`ML.EXPLAIN_FORECAST` per-regressor attribution, `ML.ARIMA_COEFFICIENTS` weights), holidays and GA status rather than for covariate support alone.
 
 **CREATE MODEL syntax:**
 ```sql
@@ -1860,12 +1860,12 @@ Input column names must match the names in the model's `TRANSFORM` clause, with 
 
 ## TimesFM (built-in foundation forecaster) — see `bq-ai-functions`
 
-> **Cross-link only.** The TimesFM univariate forecaster is a *pretrained* foundation model invoked through the `AI.*` function family, which is owned by the sibling project. For the full entry (syntax, options, inputs/outputs, status), see **[`../bq-ai-functions/RESOURCES.md`](../../bq-ai-functions/RESOURCES.md)** → `AI.FORECAST`, `AI.EVALUATE`, `AI.DETECT_ANOMALIES`.
+> **Cross-link only.** The TimesFM forecaster is a *pretrained* foundation model invoked through the `AI.*` function family, which is owned by the sibling project. For the full entry (syntax, options, inputs/outputs, status), see **[`../bq-ai-functions/RESOURCES.md`](../../bq-ai-functions/RESOURCES.md)** → `AI.FORECAST`, `AI.EVALUATE`, `AI.DETECT_ANOMALIES`.
 
-- **What it is:** A built-in, pretrained univariate time-series foundation model ([Google Research TimesFM](https://docs.cloud.google.com/bigquery/docs/timesfm-model)). Unlike `ARIMA_PLUS` / `ARIMA_PLUS_XREG`, there is **no `CREATE MODEL` step** — you call `AI.FORECAST` directly on a table or query. Supported model versions: TimesFM 2.0 (default) and TimesFM 2.5.
+- **What it is:** A built-in, pretrained univariate time-series foundation model ([Google Research TimesFM](https://docs.cloud.google.com/bigquery/docs/timesfm-model)). Unlike `ARIMA_PLUS` / `ARIMA_PLUS_XREG`, there is **no `CREATE MODEL` step** — you call `AI.FORECAST` directly on a table or query. Supported model versions: TimesFM 2.5 (default) and TimesFM 3.0 (Preview). **TimesFM 3.0 adds multivariate forecasting with covariates** — `target_cols`, `past_covariate_cols`, `future_covariate_cols` — so "I have external regressors" no longer routes to `ARIMA_PLUS_XREG` by itself; the differences that remain are listed in the table below.
 - **Category:** time-series (foundation model). Belongs to the `AI.*` family, **not** the BQML `CREATE MODEL` + `ML.*` lifecycle documented in this project.
 - **Connection required:** No.
-- **Status:** `AI.FORECAST` and `AI.EVALUATE` — **GA** (Nov 2025). `AI.DETECT_ANOMALIES` — **Preview**.
+- **Status:** `AI.FORECAST`, `AI.EVALUATE` and `AI.DETECT_ANOMALIES` — **GA**; multivariate `AI.FORECAST` and the TimesFM 3.0 model option — **Preview**.
 
 **Why it lives in `bq-ai-functions`, not here:** TimesFM is not a `model_type` you train with `CREATE MODEL`, and it does **not** use the `ML.*` lifecycle functions (`ML.FORECAST`, `ML.EVALUATE`, `ML.EXPLAIN_FORECAST`, `ML.DETECT_ANOMALIES`). It has no feature preprocessing, no hyperparameter tuning, no model weights, and AI-explanation is N/A. Those `ML.*` lifecycle functions ARE in scope here, but only for the trainable forecasters below.
 
@@ -1875,7 +1875,7 @@ Input column names must match the names in the model's `TRANSFORM` clause, with 
 |---|---|---|
 | Zero-training forecast, no `CREATE MODEL` | TimesFM via `AI.FORECAST` → cross-link out | foundation model; `AI.*` family |
 | Trained univariate model, full `ML.*` lifecycle + explainability | `ARIMA_PLUS` | supports `ML.FORECAST`, `ML.EVALUATE`, `ML.EXPLAIN_FORECAST`, `ML.DETECT_ANOMALIES` |
-| Trained model with external regressors (covariates) | `ARIMA_PLUS_XREG` | adds side features to the ARIMA_PLUS workflow |
+| Trained model with external regressors (covariates) | `ARIMA_PLUS_XREG` | adds side features to the ARIMA_PLUS workflow. The zero-training counterpart is `AI.FORECAST` with `model => 'TimesFM 3.0'` (Preview): same idea, no training, no `ML.EXPLAIN_FORECAST`-style per-regressor attribution, no custom holidays, horizon capped at 1,024 and context at 2,048 points, and the future covariates must be supplied as input rows with the target NULL |
 
 **documentation:**
 - End-to-end forecasting journey: <https://docs.cloud.google.com/bigquery/docs/e2e-journey-forecast>

@@ -19,9 +19,9 @@
 -- Note: the task type follows the label column's type. STRING or BOOL runs
 --   classification; INT64, FLOAT64, NUMERIC or BIGNUMERIC runs regression.
 --   label_col defaults to 'label'.
--- Limits: at most 20 feature columns and at most 10 classes. Feature and label
+-- Limits: at most 50 feature columns and at most 10 classes. Feature and label
 --   columns must be STRING, BOOL, INT64, FLOAT64, NUMERIC or BIGNUMERIC.
---   Preview as of 2026-09-01.
+--   Preview as of 2026-10-12.
 --
 -- Full reference: ../../RESOURCES.md
 -- Official docs: https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-predict
@@ -206,14 +206,15 @@ LIMIT 10;
 
 
 -- =============================================================================
--- Example 5: The limits — 20 feature columns, and five allowed column types
+-- Example 5: The limits — 50 feature columns, and six allowed column types
 -- =============================================================================
 -- Both limits are enforced while the query is analyzed, so they fail instantly
 -- and cost nothing — no model inference runs.
 --
--- (a) Penguins has six features; padding to 21 fails with:
---       The number of features 21 exceeds the maximum allowed number of
---       features 20.
+-- (a) Penguins has six features; padding to 51 fails with:
+--       The number of features 51 exceeds the maximum allowed number of
+--       features 50.
+--     (50 runs — measured 2026-10-12.)
 --     The documented escalation path is an email to bqml-feedback@google.com.
 WITH wide AS (
   SELECT
@@ -232,7 +233,37 @@ WITH wide AS (
     culmen_depth_mm * 12 AS extra_feature_12,
     culmen_depth_mm * 13 AS extra_feature_13,
     culmen_depth_mm * 14 AS extra_feature_14,
-    culmen_depth_mm * 15 AS extra_feature_15
+    culmen_depth_mm * 15 AS extra_feature_15,
+    culmen_depth_mm * 16 AS extra_feature_16,
+    culmen_depth_mm * 17 AS extra_feature_17,
+    culmen_depth_mm * 18 AS extra_feature_18,
+    culmen_depth_mm * 19 AS extra_feature_19,
+    culmen_depth_mm * 20 AS extra_feature_20,
+    culmen_depth_mm * 21 AS extra_feature_21,
+    culmen_depth_mm * 22 AS extra_feature_22,
+    culmen_depth_mm * 23 AS extra_feature_23,
+    culmen_depth_mm * 24 AS extra_feature_24,
+    culmen_depth_mm * 25 AS extra_feature_25,
+    culmen_depth_mm * 26 AS extra_feature_26,
+    culmen_depth_mm * 27 AS extra_feature_27,
+    culmen_depth_mm * 28 AS extra_feature_28,
+    culmen_depth_mm * 29 AS extra_feature_29,
+    culmen_depth_mm * 30 AS extra_feature_30,
+    culmen_depth_mm * 31 AS extra_feature_31,
+    culmen_depth_mm * 32 AS extra_feature_32,
+    culmen_depth_mm * 33 AS extra_feature_33,
+    culmen_depth_mm * 34 AS extra_feature_34,
+    culmen_depth_mm * 35 AS extra_feature_35,
+    culmen_depth_mm * 36 AS extra_feature_36,
+    culmen_depth_mm * 37 AS extra_feature_37,
+    culmen_depth_mm * 38 AS extra_feature_38,
+    culmen_depth_mm * 39 AS extra_feature_39,
+    culmen_depth_mm * 40 AS extra_feature_40,
+    culmen_depth_mm * 41 AS extra_feature_41,
+    culmen_depth_mm * 42 AS extra_feature_42,
+    culmen_depth_mm * 43 AS extra_feature_43,
+    culmen_depth_mm * 44 AS extra_feature_44,
+    culmen_depth_mm * 45 AS extra_feature_45
   FROM `bigquery-public-data.ml_datasets.penguins` AS p
   WHERE body_mass_g IS NOT NULL
 )

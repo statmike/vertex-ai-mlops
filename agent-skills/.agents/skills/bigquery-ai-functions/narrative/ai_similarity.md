@@ -13,7 +13,7 @@
 - `functions/ai_embed` (`AI.EMBED`) — Create embeddings yourself and compute distance manually
 - `functions/ai_search` (`AI.SEARCH`) — Simplified semantic search with autonomous embedding generation
 
-**Multimodal:** Supports image input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef) with `multimodalembedding@001`. For PDFs, use `gemini-embedding-2-preview` (Preview) which compares PDFs directly without rendering to images.
+**Multimodal:** Supports image input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef) with `multimodalembedding@001`. For PDFs, use `gemini-embedding-2` (GA), which compares PDFs directly without rendering to images.
 
 **Featured in:** `workflows/multimodal_analysis` (Multimodal Analysis)
 
@@ -210,7 +210,7 @@ client.query(query).to_dataframe()
 
 `AI.SIMILARITY` supports image-to-image and text-to-image comparison using `multimodalembedding@001`. A `connection_id` is required. The function takes an inline `OBJ.MAKE_REF` to access images from GCS.
 
-> **New:** `gemini-embedding-2-preview` (Preview) supports PDF comparison directly — no rendering to PNG needed. The examples below use the GA `multimodalembedding@001` approach with rendered PNGs.
+> **Also GA:** `gemini-embedding-2` supports PDF comparison directly — no rendering to PNG needed — and the same cross-modal text-to-image comparison. The examples below use `multimodalembedding@001` with rendered PNGs.
 
 Below we render invoice and receipt PDFs from this project's `data/documents` (document set) to PNG images, then compare them directly and cross-modally with text.
 

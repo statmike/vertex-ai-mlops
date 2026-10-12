@@ -30,7 +30,7 @@
 --          ../../../bq-ml/functions/evaluation/evaluation.sql
 -- Note: the TabFM branch returns no ai_evaluate_status column and no RMSE.
 --
--- TabFM limits (documented on the AI.PREDICT page): at most 20 feature columns
+-- TabFM limits (documented on the AI.PREDICT page): at most 50 feature columns
 --   and at most 10 classes. Keep the training relation to a few thousand rows.
 --
 -- Reproducibility: this function is NOT reproducible run to run, on either
@@ -39,9 +39,11 @@
 --   off, 2 of 16 runs returned mean_absolute_error 0.5913808905590097 where the
 --   other 14 returned 0.8652198481135486 -- a ~32% swing. The majority value is
 --   the correct one: it equals MAE computed by hand from AI.FORECAST output
---   over the same history and horizon. AI.FORECAST itself is stable. Not
+--   over the same history and horizon. AI.FORECAST is steadier but not
+--   bit-stable (10 pinned runs: 2.5 gave 2 vectors differing in the 3rd
+--   significant figure; 3.0 gave 2 differing from the 7th). Not
 --   explained by context window (every legal value swept), horizon truncation,
---   or version mixing -- it occurs on TimesFM 2.0 and 2.5 alike. Mechanism
+--   or version mixing. Mechanism
 --   unknown. Materialize the metric once rather than re-running this function,
 --   and when a number must be defensible recompute it from AI.FORECAST output
 --   with ordinary SQL, which is deterministic.
@@ -78,15 +80,27 @@ FROM AI.EVALUATE(
 -- =============================================================================
 -- Example 3: Comparing model versions
 -- =============================================================================
--- TimesFM 2.0
-SELECT 'TimesFM 2.0' AS model,
+-- The default is TimesFM 2.5; 'TimesFM 3.0' (Preview) is the other accepted value.
+-- TimesFM 2.5
+SELECT 'TimesFM 2.5' AS model,
   ROUND(mean_absolute_error, 2) AS mae,
   ROUND(root_mean_squared_error, 2) AS rmse
 FROM AI.EVALUATE(
   (SELECT * FROM `PROJECT_ID.DATASET.ai_evaluate_full` WHERE date < '2024-11-01'),
   (SELECT * FROM `PROJECT_ID.DATASET.ai_evaluate_full` WHERE date >= '2024-11-01'),
   data_col => 'daily_sales', timestamp_col => 'date',
-  horizon => 30, model => 'TimesFM 2.0'
+  horizon => 30, model => 'TimesFM 2.5'
+);
+
+-- TimesFM 3.0 (Preview): same arguments; horizon capped at 1,024, context at 2,048
+SELECT 'TimesFM 3.0' AS model,
+  ROUND(mean_absolute_error, 2) AS mae,
+  ROUND(root_mean_squared_error, 2) AS rmse
+FROM AI.EVALUATE(
+  (SELECT * FROM `PROJECT_ID.DATASET.ai_evaluate_full` WHERE date < '2024-11-01'),
+  (SELECT * FROM `PROJECT_ID.DATASET.ai_evaluate_full` WHERE date >= '2024-11-01'),
+  data_col => 'daily_sales', timestamp_col => 'date',
+  horizon => 30, model => 'TimesFM 3.0'
 );
 
 
@@ -94,8 +108,8 @@ FROM AI.EVALUATE(
 -- Example 4: Setting the context window
 -- =============================================================================
 -- context_window controls how many historical points the model reads.
--- TimesFM 2.0: 64, 128, 256, 512, 1024, 2048
--- TimesFM 2.5: 64, 128, 256, 512, 1024, 2048, 4096, 8192, 15360
+-- TimesFM 2.5: 64, 128, 256, 512, 1024, 2048, 4096, 8192, 15360 (default: smallest covering window)
+-- TimesFM 3.0: any multiple of 32 from 64 to 2048 (default: 2048, the maximum)
 SELECT 64 AS context_window,
   ROUND(mean_absolute_error, 2) AS mae,
   ROUND(root_mean_squared_error, 2) AS rmse

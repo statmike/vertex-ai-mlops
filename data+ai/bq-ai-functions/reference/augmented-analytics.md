@@ -77,10 +77,10 @@ It stays listed in this project's [function catalog](../README.md#augmented-anal
 ---
 
 ## `AI.KEY_DRIVERS`
-- **Description:** (Preview) Table-valued function that identifies segments of data causing statistically significant changes to a summable metric between an interest set and a reference set (key driver / contribution analysis). No `CREATE MODEL` step, connection, or endpoint required — it operates directly on a table or subquery.
+- **Description:** (GA) Table-valued function that identifies segments of data causing statistically significant changes to a summable metric between an interest set and a reference set (key driver / contribution analysis). No `CREATE MODEL` step, connection, or endpoint required — it operates directly on a table or subquery.
 - **Use cases:** Explaining why a metric moved between two periods (e.g., this month vs last), comparing test vs control groups, attributing revenue/usage changes to customer segments, geographies, or product categories, root-cause analysis for KPI shifts.
 - [documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-key-drivers)
-- **Type:** Table-valued function — Preview
+- **Type:** Table-valued function — GA
 
 **Syntax:**
 ```sql
@@ -134,7 +134,7 @@ AI.KEY_DRIVERS(
 - Supports **summable metrics only** (contribution analysis models additionally support summable-by-ratio and summable-by-category metrics).
 - `min_apriori_support` and `top_k` cannot be used together.
 
-**Locations:** US and EU multi-regions.
+**Locations:** The reference page no longer carries a Locations section. Measured 2026-10-09: a call against a dataset in `asia-northeast1` succeeds, so the earlier US/EU multi-region restriction has lifted.
 
 **Provisioned throughput:** Not specified.
 

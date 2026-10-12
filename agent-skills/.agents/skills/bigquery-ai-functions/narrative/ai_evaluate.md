@@ -6,7 +6,7 @@
 - You want to measure how accurate a forecast is before deploying it
 - You need standard forecasting metrics (MAE, RMSE, MAPE, MASE, etc.)
 - You want to compare different model configurations or context windows
-- You can control how much history the model sees with `context_window` (64–15,360 depending on model)
+- You can control how much history the model sees with `context_window` (64–15,360 on TimesFM 2.5; 64–2,048 on TimesFM 3.0)
 - You want to score a zero-shot TabFM regression or classification setup before rolling it out
 
 **Alternatives:**
@@ -15,7 +15,7 @@
 - `functions/ai_predict` (`AI.PREDICT`) — Generate the TabFM predictions themselves; `AI.EVALUATE` returns aggregate metrics only, never per-row predictions
 - `bq-ml/functions/evaluation` (`ML.METRICS`) — the sibling project's model-free scorer, and the closest thing to a direct counterpart. The structural difference matters more than the metric lists: **`AI.EVALUATE` regenerates the forecast or prediction internally on every call; `ML.METRICS` scores a saved artifact** you already hold, so it works after the model is gone and returns the same number every time. The two metric sets barely overlap — MAE and MSE are the only names in common (measured once as identical on one saved forecast, with the reproducibility caveat below attached). `AI.EVALUATE` alone gives RMSE, MAPE, sMAPE and MASE; `ML.METRICS` alone gives r², MSLE, median absolute error and explained variance.
 
-**Launch stage:** the TimesFM branch is GA. The TabFM branch is Preview per the 2026-08-31 BigQuery release note, though the reference page carries no Preview banner.
+**Launch stage:** the TimesFM branch is GA, with the `TimesFM 3.0` model option in Preview. The TabFM branch is Preview per the 2026-08-31 BigQuery release note, though the reference page carries no Preview banner.
 
 **Featured in:** `workflows/time_series_intelligence` (Time Series Intelligence) | `workflows/tabular_prediction` (Zero-Shot Tabular Prediction)
 
@@ -106,9 +106,9 @@ print('Full time series created (365 days)')
 
 Split at November 1 — use Jan-Oct as history, Nov-Dec as actuals.
 
-Every TimesFM example in this notebook pins `model => 'TimesFM 2.5'`. The argument is optional, and the default is TimesFM 2.5 today — it was TimesFM 2.0 and moved with no release note. An unpinned call therefore evaluates whatever version is current, so any metric you record from one can shift without your query changing. Pin the version whenever the number matters.
+Every TimesFM example in this notebook pins `model => 'TimesFM 2.5'`. The argument is optional: the default is TimesFM 2.5, and `'TimesFM 3.0'` (Preview) is the other accepted value. An unpinned call evaluates whatever version is current, so any metric you record from one can shift without your query changing. Pin the version whenever the number matters.
 
-Pinning is not the same as reproducibility, though. `AI.EVALUATE` returns a different answer on a minority of runs even with `model` **and** `context_window` both pinned and the query cache off — measured at 2 of 16 runs on a deterministic synthetic series, a ~32% swing in `mean_absolute_error`. The majority value is the correct one: it matches MAE computed by hand from `AI.FORECAST` output over the same history and horizon, and `AI.FORECAST` itself is stable across runs. So pin `model` to protect against a future default move, and **materialize the metric once** rather than re-running this function whenever the number has to be defensible.
+Pinning is not the same as reproducibility, though. `AI.EVALUATE` returns a different answer on a minority of runs even with `model` **and** `context_window` both pinned and the query cache off — measured at 2 of 16 runs on a deterministic synthetic series, a ~32% swing in `mean_absolute_error`. The majority value is the correct one: it matches MAE computed by hand from `AI.FORECAST` output over the same history and horizon. `AI.FORECAST` is the steadier of the two but not bit-stable either — with the cache off, 10 pinned TimesFM 2.5 runs on one synthetic series produced 2 distinct forecast vectors (9 + 1) differing in the third significant figure; 10 TimesFM 3.0 runs produced 2 (7 + 3) that differ only from the seventh. So pin `model` to protect against a future default move, and **materialize the metric once** rather than re-running this function whenever the number has to be defensible.
 
 ```python
 query = f'''
@@ -148,23 +148,11 @@ client.query(query).to_dataframe()
 
 ### 3. Comparing TimesFM model versions
 
-Evaluate the same data with different TimesFM versions. The newer version is not automatically the more accurate one on a given series, and the base table here is `RAND()`-generated, so the gap and even its direction move between runs — the cell computes and prints which version wins rather than stating it.
+Evaluate the same data with both accepted versions — TimesFM 2.5 (the default) and TimesFM 3.0 (Preview). The newer version is not automatically the more accurate one on a given series, and the base table here is `RAND()`-generated, so the gap and even its direction move between runs — the cell computes and prints which version wins rather than stating it.
+
+On this branch the two versions take the same arguments. The differences are in reach: TimesFM 3.0 caps `horizon` at 1,024 and reads at most 2,048 history points (TimesFM 2.5: 10,000 and 15,360). Multivariate evaluation is not available — `AI.EVALUATE` has no `target_cols` argument, so a multivariate `AI.FORECAST` is scored one target at a time.
 
 ```python
-# TimesFM 2.0
-query_20 = f'''
-SELECT 'TimesFM 2.0' AS model,
-  ROUND(mean_absolute_error, 2) AS mae,
-  ROUND(root_mean_squared_error, 2) AS rmse,
-  ROUND(mean_absolute_percentage_error, 4) AS mape
-FROM AI.EVALUATE(
-  (SELECT * FROM `{PROJECT_ID}.{DATASET_ID}.ai_evaluate_full` WHERE date < '2024-11-01'),
-  (SELECT * FROM `{PROJECT_ID}.{DATASET_ID}.ai_evaluate_full` WHERE date >= '2024-11-01'),
-  data_col => 'daily_sales', timestamp_col => 'date',
-  horizon => 30, model => 'TimesFM 2.0'
-)
-'''
-
 # TimesFM 2.5
 query_25 = f'''
 SELECT 'TimesFM 2.5' AS model,
@@ -179,11 +167,25 @@ FROM AI.EVALUATE(
 )
 '''
 
-df_20 = client.query(query_20).to_dataframe()
+# TimesFM 3.0 (Preview)
+query_30 = f'''
+SELECT 'TimesFM 3.0' AS model,
+  ROUND(mean_absolute_error, 2) AS mae,
+  ROUND(root_mean_squared_error, 2) AS rmse,
+  ROUND(mean_absolute_percentage_error, 4) AS mape
+FROM AI.EVALUATE(
+  (SELECT * FROM `{PROJECT_ID}.{DATASET_ID}.ai_evaluate_full` WHERE date < '2024-11-01'),
+  (SELECT * FROM `{PROJECT_ID}.{DATASET_ID}.ai_evaluate_full` WHERE date >= '2024-11-01'),
+  data_col => 'daily_sales', timestamp_col => 'date',
+  horizon => 30, model => 'TimesFM 3.0'
+)
+'''
+
 df_25 = client.query(query_25).to_dataframe()
+df_30 = client.query(query_30).to_dataframe()
 import pandas as pd
 
-comparison = pd.concat([df_20, df_25]).reset_index(drop=True)
+comparison = pd.concat([df_25, df_30]).reset_index(drop=True)
 best = comparison.loc[comparison['mae'].idxmin()]
 other = comparison.loc[comparison['mae'].idxmax()]
 gap = (other['mae'] - best['mae']) / other['mae']
@@ -197,10 +199,10 @@ comparison
 The `context_window` controls how many historical time points the model uses. Compare evaluation metrics across different context sizes to find the best fit for your data.
 
 Supported values:
-- **TimesFM 2.0:** 64, 128, 256, 512, 1024, 2048
-- **TimesFM 2.5:** 64, 128, 256, 512, 1024, 2048, 4096, 8192, 15360
+- **TimesFM 2.5:** 64, 128, 256, 512, 1024, 2048, 4096, 8192, 15360 — auto-selects the smallest window covering the history when unspecified
+- **TimesFM 3.0:** any multiple of 32 from 64 to 2048 — uses the maximum, 2048, when unspecified
 
-The legal set depends on the model, so `context_window` and `model` belong together — the sweep below pins `model => 'TimesFM 2.5'`. The four windows it uses are legal on both versions, but the three largest windows are 2.5-only: `context_window => 4096` with `model => 'TimesFM 2.0'` is rejected before the query runs, with `context_window of AI.EVALUATE is expected to be a Int64 literal with value in {64, 128, 256, 512, 1024, 2048} for model TimesFM 2.0`. A window larger than the history you pass in is not an error — the model simply sees all of it, and the metrics stop changing once the window covers the whole relation.
+The legal set depends on the model, so `context_window` and `model` belong together — the sweep below pins `model => 'TimesFM 2.5'`. The four windows it uses are legal on both versions; `4096` and above are 2.5-only, and a value off the 2.5 grid (`96`, say) is rejected on 2.5 but accepted on 3.0. A window larger than the history you pass in is not an error — the model simply sees all of it, and the metrics stop changing once the window covers the whole relation.
 
 ```python
 import pandas as pd
@@ -263,7 +265,7 @@ Same two relations, same call — only `label_col` changes. `sex` is a `STRING`,
 
 `precision`, `recall`, and `f1_score` are **macro-averaged across classes** *when the label column is a `STRING`*: the metric is computed per class and then averaged with equal weight, so a rare class counts exactly as much as a common one. **A `BOOL` label is not averaged at all** — it is scored as binary, reporting the positive (`TRUE`) class alone. Same rows, same predictions, different numbers: measured side by side in `bq-ml/functions/evaluation` (Evaluation Without a Model), where an imbalanced problem reads precision **0.5217** as `BOOL` and **0.7609** as `STRING`. `accuracy` is the plain fraction of correct predictions across all rows and is identical under either type. There is no `log_loss` and no `roc_auc` here — `ML.EVALUATE` on a trained classification model returns those two, the TabFM branch does not.
 
-**Limits:** at most 20 feature columns and at most 10 classes. Both are documented on the `AI.PREDICT` reference page and are not restated on the `AI.EVALUATE` page, but the TabFM branch runs the same model on the same inputs. Penguins has 6 feature columns, and `sex` has 2 classes.
+**Limits:** at most 50 feature columns and at most 10 classes. Both are documented on the `AI.PREDICT` reference page and are not restated on the `AI.EVALUATE` page, but the TabFM branch runs the same model on the same inputs. Penguins has 6 feature columns, and `sex` has 2 classes.
 
 ```python
 query = """

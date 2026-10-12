@@ -336,7 +336,7 @@ client.query(query).to_dataframe()
 OBJ.MAKE_REF(uri, connection)   → ObjectRef — pass this straight to the function
 ```
 
-Pass `ObjectRef` values in a STRUCT prompt with `prompt` and `object_refs` fields. `OBJ.FETCH_METADATA` (content type and size) and `OBJ.GET_ACCESS_URL` (a signed `ObjectRefRuntime` URL) still have their uses — displaying an object, delegated access, an explicit TTL — but the AI functions take the `ObjectRef` itself. See the `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
+Pass `ObjectRef` values in a STRUCT prompt with `prompt` and `object_refs` fields. `OBJ.MAKE_REF` is for files you already know by URI; an object table's `ref` column covers a bucket you keep tracking; and `OBJ.LIST` (GA) — example 14 below — covers the middle case, every file under a wildcard path, with no table at all. `OBJ.FETCH_METADATA` (content type and size) and `OBJ.GET_ACCESS_URL` (a signed `ObjectRefRuntime` URL) still have their uses — displaying an object, delegated access, an explicit TTL — but the AI functions take the `ObjectRef` itself. See the `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef reference) for details.
 
 ### Multimodal setup — connection and sample documents
 
@@ -471,6 +471,37 @@ FROM
       output_schema => 'document_type STRING, total_amount FLOAT64, date STRING, summary STRING'
     )
   ]) AS result
+"""
+client.query(query).to_dataframe()
+```
+
+### 14. Discover documents with `OBJ.LIST`
+
+Example 13 hand-built the URI list. `OBJ.LIST` builds it for you: one wildcard path (at most one `*` per segment, no trailing `/`) returns every matching object's metadata — `uri`, `content_type`, `size`, `md5_hash`, `updated`, `generation` — plus a `ref` column that already *is* an `ObjectRef`, so the AI call takes it directly. No object table, no DDL, nothing to clean up.
+
+The second argument is the connection. Omit it and the returned references use **direct access** — the objects are read as whoever runs the query, which works on a public bucket and on any bucket where you hold `storage.objectViewer`; pass it, as here, for delegated access through the connection's service account. Use an object table instead when you need a persistent listing that keeps tracking new arrivals.
+
+```python
+query = f"""
+SELECT
+  uri,
+  content_type,
+  size,
+  result.document_type,
+  result.total_amount,
+  result.summary
+FROM
+  OBJ.LIST('gs://{BUCKET}/bq_ai_functions/ai_generate/*.pdf', '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'),
+  UNNEST([
+    AI.GENERATE(
+      STRUCT(
+        'Identify the document type and extract key details.' AS prompt,
+        [ref] AS object_refs
+      ),
+      output_schema => 'document_type STRING, total_amount FLOAT64, summary STRING'
+    )
+  ]) AS result
+ORDER BY uri
 """
 client.query(query).to_dataframe()
 ```

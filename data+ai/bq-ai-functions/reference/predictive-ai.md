@@ -59,19 +59,19 @@ Two model families sit behind this section:
 
 | Attribute | AI.FORECAST | AI.DETECT_ANOMALIES | AI.PREDICT | AI.EVALUATE |
 |-----------|-------------|---------------------|------------|-------------|
-| **Status** | GA | GA | Preview | GA (TabFM branch Preview) |
+| **Status** | GA (multivariate forecasting and the TimesFM 3.0 model are Preview) | GA (TimesFM 3.0 option Preview) | Preview | GA (TabFM branch Preview; TimesFM 3.0 option Preview) |
 | **Model family** | TimesFM | TimesFM | TabFM | TimesFM or TabFM |
 | **Purpose** | Forecast future values | Detect anomalies | Predict a label for unlabeled rows | Evaluate a forecast or a prediction |
 | **Input data sources** | 1 (history) | 2 (history + target) | 2 (training + prediction) | 2 (history + actuals, or training + prediction) |
-| **Supported Models** | TimesFM 2.5 (default), TimesFM 2.0 | TimesFM 2.5 (default), TimesFM 2.0 | TabFM (not selectable) | TimesFM 2.5 (default), TimesFM 2.0; TabFM on the prediction branch |
+| **Supported Models** | TimesFM 2.5 (default), TimesFM 3.0 (Preview; required for multivariate) | TimesFM 2.5 (default), TimesFM 3.0 (Preview) | TabFM (not selectable) | TimesFM 2.5 (default), TimesFM 3.0 (Preview); TabFM on the prediction branch |
 | **Default Horizon** | 10 | N/A | N/A | 1024 |
 | **Min Data Points** | 3 | 3 | Not specified | 3 |
-| **Max Data Points** | 2,048 (2.0) / 15,360 (2.5) | 1,024 (most recent) | See AI.PREDICT limitations | Not specified |
-| **Context Window** | Yes (auto-selected) | Yes (auto-selected) | N/A | Yes (auto-selected) |
+| **Max Data Points** | 15,360 (2.5) / 2,048 (3.0) | 1,024 (most recent) | See AI.PREDICT limitations | Not specified |
+| **Context Window** | Yes (2.5: smallest covering window; 3.0: maximum, 2,048) | Yes (same rule) | N/A | Yes (same rule) |
 
-> **Default model version changed.** All three TimesFM functions -- `AI.FORECAST`, `AI.EVALUATE` and `AI.DETECT_ANOMALIES` -- now default to **TimesFM 2.5** (previously TimesFM 2.0). Google made this change on the reference pages without a release note. Confirmed against live queries with the query cache off, one variant per job: an unpinned call returns values identical to `model => 'TimesFM 2.5'` and different from `model => 'TimesFM 2.0'`, on all three functions. Any existing unpinned query silently changes behavior -- pin `model` explicitly so a future default move cannot shift your numbers.
+> **Two model versions, one default -- pin it.** All three TimesFM functions -- `AI.FORECAST`, `AI.EVALUATE` and `AI.DETECT_ANOMALIES` -- default to **TimesFM 2.5** and accept `model => 'TimesFM 3.0'` (Preview). Confirmed against live queries with the query cache off, one variant per job: an unpinned call returns values identical to `model => 'TimesFM 2.5'` on all three functions. The default has moved before and nothing announces it when it does, so an unpinned query silently changes behavior -- pin `model` explicitly. **TimesFM 3.0 moves to token-based pricing on 2026-12-01** (tokens consumed by the model, plus slots or bytes for the rest of the query); until then it bills like 2.5.
 
-> **Pinning `model` does not make `AI.EVALUATE` or `AI.DETECT_ANOMALIES` reproducible.** These two return a different answer on a minority of runs even with `model` **and** `context_window` pinned, the query cache off, and a deterministic input. Measured on a synthetic 335-point series forecast 31 points ahead: 2 of 16 `AI.EVALUATE` runs returned a `mean_absolute_error` of `0.5913808905590097` where the other 14 returned `0.8652198481135486` -- a ~32% swing in the headline metric at roughly 1 in 8. The **majority value is the correct one**: MAE computed by hand from `AI.FORECAST` output over the same history and horizon equals `0.8652198481135486` to the last digit. `AI.DETECT_ANOMALIES` behaves the same way; `AI.FORECAST` itself is stable across runs. Not explained by the context window (every legal value was swept), by horizon truncation, or by version mixing -- it occurs on 2.0 and 2.5 alike. The mechanism is not known and is not guessed at here.
+> **Pinning `model` does not make `AI.EVALUATE` or `AI.DETECT_ANOMALIES` reproducible.** These two return a different answer on a minority of runs even with `model` **and** `context_window` pinned, the query cache off, and a deterministic input. Measured on a synthetic 335-point series forecast 31 points ahead: 2 of 16 `AI.EVALUATE` runs returned a `mean_absolute_error` of `0.5913808905590097` where the other 14 returned `0.8652198481135486` -- a ~32% swing in the headline metric at roughly 1 in 8. The **majority value is the correct one**: MAE computed by hand from `AI.FORECAST` output over the same history and horizon equals `0.8652198481135486` to the last digit. `AI.DETECT_ANOMALIES` behaves the same way. `AI.FORECAST` is the steadier function but not immune: 10 pinned `TimesFM 2.5` runs on one synthetic series, cache off, returned 2 distinct forecast vectors (9 + 1) differing in the third significant figure; 10 `TimesFM 3.0` runs returned 2 (7 + 3) that differ only from the seventh significant figure -- floating-point noise rather than a different answer. Not explained by the context window (every legal value was swept), by horizon truncation, or by version mixing -- it occurs on every version tested. The mechanism is not known and is not guessed at here.
 >
 > **What to do about it.** Treat any `AI.EVALUATE` or `AI.DETECT_ANOMALIES` metric as a *draw*, not a value. Materialize the result once and read the stored table rather than re-running the function, exactly as with `AI.PREDICT`. When a number has to be defensible, recompute it from `AI.FORECAST` output with ordinary SQL -- that path is deterministic and it is how the correct value above was established. If you must re-run, run several times and take the mode rather than the last answer.
 >
@@ -85,7 +85,7 @@ Two model families sit behind this section:
 - [documentation](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-forecast)
 - **Type:** Table-valued function
 
-**Syntax:**
+**Syntax (univariate -- GA):**
 ```sql
 SELECT *
 FROM AI.FORECAST(
@@ -101,6 +101,26 @@ FROM AI.FORECAST(
 )
 ```
 
+**Syntax (multivariate -- Preview, TimesFM 3.0 only):**
+```sql
+SELECT *
+FROM AI.FORECAST(
+  { TABLE TABLE | (QUERY_STATEMENT) },
+  target_cols => [TARGET_COLS],
+  timestamp_col => 'TIMESTAMP_COL',
+  model => 'TimesFM 3.0'
+  [, id_cols => [ID_COLS]]
+  [, horizon => HORIZON]
+  [, confidence_level => CONFIDENCE_LEVEL]
+  [, context_window => CONTEXT_WINDOW]
+  [, past_covariate_cols => [PAST_COVARIATE_COLS]]
+  [, future_covariate_cols => [FUTURE_COVARIATE_COLS]]
+  [, output_historical_time_series => OUTPUT_HISTORICAL_TIME_SERIES]
+)
+```
+
+`target_cols` replaces `data_col`; the two forms are exclusive. `model => 'TimesFM 3.0'` is mandatory on this form -- omit it, or name another version, and the call fails with the generic `Invalid table-valued function AI.FORECAST`. The documented multivariate syntax lists only `horizon`, but `forecast_end_timestamp` is accepted here too (measured).
+
 **Inputs:**
 
 | Parameter | Type | Required | Default | Range | Description |
@@ -108,22 +128,25 @@ FROM AI.FORECAST(
 | `TABLE` / `QUERY_STATEMENT` | Table/Query | Required | -- | -- | Input data to forecast |
 | `data_col` | STRING | Required | -- | -- | Name of the data column. Must be INT64, NUMERIC, BIGNUMERIC, or FLOAT64. |
 | `timestamp_col` | STRING | Required | -- | -- | Name of the timestamp column. Must be TIMESTAMP, DATE, or DATETIME. |
-| `model` | STRING | Optional | `'TimesFM 2.5'` | -- | `'TimesFM 2.0'` or `'TimesFM 2.5'`. Recommended: TimesFM 2.5 for all new work. |
+| `model` | STRING | Optional | `'TimesFM 2.5'` | -- | `'TimesFM 2.5'` or `'TimesFM 3.0'` (Preview). Required, and must be 3.0, for the multivariate form. |
+| `target_cols` | ARRAY\<STRING\> | Multivariate only | -- | -- | One or more data columns to forecast jointly (INT64, NUMERIC, BIGNUMERIC, FLOAT64). Replaces `data_col`. |
+| `past_covariate_cols` | ARRAY\<STRING\> | Optional (multivariate) | -- | -- | Numeric columns known only historically (e.g. visits that drive sales). NULL on any future rows. |
+| `future_covariate_cols` | ARRAY\<STRING\> | Optional (multivariate) | -- | -- | Numeric columns known for past *and* future (e.g. a promotion calendar, weekend flag). Must be populated on a row for every future timestamp to forecast; targets are NULL on those rows. **`horizon` is capped by the future rows supplied** -- 30 requested with 14 future rows returns 14, silently. |
 | `id_cols` | ARRAY\<STRING\> | Optional | -- | -- | ID columns identifying unique time series. Must be STRING, INT64, ARRAY\<STRING\>, or ARRAY\<INT64\>. |
-| `horizon` | INT64 | Optional | 10 | [1, 10000] | Number of time series data points to forecast. Mutually exclusive with `forecast_end_timestamp`. |
+| `horizon` | INT64 | Optional | 10 | [1, 10000] on 2.5; [1, 1024] on 3.0 | Number of time series data points to forecast. Mutually exclusive with `forecast_end_timestamp`. |
 | `forecast_end_timestamp` | TIMESTAMP | Optional | -- | -- | End timestamp for forecasted values. Horizon is calculated from the end timestamp and input frequency. Mutually exclusive with `horizon`. Valid calculated horizon range: [1, 10000]. |
 | `confidence_level` | FLOAT64 | Optional | 0.95 | [0, 1) | Percentage of future values that fall in the prediction interval |
 | `output_historical_time_series` | BOOL | Optional | FALSE | -- | When TRUE, returns input data along with forecasted data |
-| `context_window` | INT64 | Optional | Auto-selected | See below | Context window length for the TimesFM model |
+| `context_window` | INT64 | Optional | Per model, see below | See below | Context window length for the TimesFM model |
 
 **Context Window Supported Values:**
 
-| Model | Supported Context Window Lengths |
-|-------|----------------------------------|
-| TimesFM 2.0 | 64, 128, 256, 512, 1024, 2048 |
-| TimesFM 2.5 | 64, 128, 256, 512, 1024, 2048, 4096, 8192, 15360 |
+| Model | Supported Context Window Lengths | Default when unspecified |
+|-------|----------------------------------|--------------------------|
+| TimesFM 2.5 | 64, 128, 256, 512, 1024, 2048, 4096, 8192, 15360 | The smallest window covering the input data |
+| TimesFM 3.0 | `n * 32` for `n` in [2, 64] -- i.e. 64 to 2048 | The maximum, 2048; older points are ignored |
 
-When not specified, the smallest window covering the input data points is auto-selected.
+Measured: 2.5 rejects a value off its grid (`96` fails); 3.0 rejects a value above 2048 but accepts one that is not a multiple of 32 (`100` runs), so stay on the documented grid if you want to know what the model saw.
 
 **Outputs (when `output_historical_time_series = FALSE`):**
 
@@ -150,19 +173,30 @@ When not specified, the smallest window covering the input data points is auto-s
 | `prediction_interval_upper_bound` | FLOAT64 | Upper bound (NULL for historical points) |
 | `ai_forecast_status` | STRING | Status |
 
-**Supported models:** TimesFM 2.5 (default), TimesFM 2.0.
+**Outputs (multivariate form):** the schema is restructured around the targets.
 
-**Best practices:** Set `output_historical_time_series` to TRUE to compare historical values with forecasted values. Minimum 3 data points required.
+| Column | Type | Description |
+|--------|------|-------------|
+| *id_cols* | (inherited) | Time series identifiers |
+| *timestamp column* | TIMESTAMP | **Keeps the input column's name** (`date`, not `forecast_timestamp`) |
+| *one per target* | STRUCT\<`value` FLOAT64, `prediction_interval_lower_bound` FLOAT64, `prediction_interval_upper_bound` FLOAT64\> | Named after the target column. Bounds are NULL on `history` rows |
+| `time_series_type` | STRING | `'forecast'`, or `'history'` when `output_historical_time_series = TRUE` |
+| `confidence_level` | FLOAT64 | The confidence level value |
+| `ai_forecast_status` | STRING | Empty string on success; error string otherwise |
 
-**Limitations:** TimesFM 2.0 max context: 2,048 data points. TimesFM 2.5 max context: 15,360 data points. Additional data points beyond the max are ignored. Minimum 3 data points.
+**Supported models:** TimesFM 2.5 (default), TimesFM 3.0 (Preview). Multivariate forecasting requires TimesFM 3.0.
+
+**Best practices:** Set `output_historical_time_series` to TRUE to compare historical values with forecasted values. Minimum 3 data points required. With future covariates, supply one input row per future timestamp with the targets NULL and the covariates populated -- the forecast cannot run past the rows you give it.
+
+**Limitations:** TimesFM 2.5 max context: 15,360 data points; TimesFM 3.0 max context: 2,048 data points and max horizon 1,024. Additional data points beyond the max are ignored. Minimum 3 data points. Covariates require the `target_cols` form -- `data_col` plus a covariate argument is rejected. `AI.EVALUATE` has no multivariate branch, so a multivariate forecast is scored one target at a time.
 
 **Locations:** All supported BigQuery ML locations.
 
-**Provisioned throughput:** Not specified. Billed at the evaluation, inspection, and prediction rate (BigQuery ML on-demand pricing).
+**Provisioned throughput:** Not specified. Billed at the evaluation, inspection, and prediction rate (BigQuery ML on-demand pricing). TimesFM 3.0 moves to token-based pricing on **2026-12-01**; the pricing page publishes the formula (each data point is one token): `input tokens = S * (L * (N_target + N_past_cov) + (L + H) * N_fut_cov)` and `output tokens = S * H * (N_target + N_past_cov)` -- `S` series, `L` context length, `H` horizon, `N_*` the target / past-covariate / future-covariate column counts -- at $0.05 / mtok input and $0.20 / mtok output. Note that 3.0's default context is the full 2,048 points, so an unspecified `context_window` also maximizes `L`.
 
 **BigFrames API:** `bigframes.bigquery.ai.forecast(df, data_col=..., timestamp_col=...)` — Wraps `AI.FORECAST` SQL directly. No model object needed. Supports `id_cols`, `horizon`, `confidence_level`, `context_window`, and `model` parameters. Note: `bigframes.ml.forecasting.ARIMAPlus` is a different model (ARIMA_PLUS, not TimesFM).
 
-> **Wrapper skew:** the BigFrames wrapper still declares `model: str = "TimesFM 2.0"` and its docstring claims 2.0 is the only supported value. The SQL function now defaults to TimesFM 2.5 and accepts both. Calling `bbq.ai.forecast()` without specifying `model` therefore gives you **2.0**, while the equivalent SQL gives you **2.5**. Pass `model` explicitly from BigFrames.
+> **Wrapper skew:** the BigFrames wrapper (`bigframes` 2.39.0) declares `model: str = "TimesFM 2.0"` -- a version the SQL reference page no longer lists -- while the SQL function defaults to TimesFM 2.5. Calling `bbq.ai.forecast()` without `model` therefore runs a different model than the equivalent SQL; measured 2026-10-09, the unpinned wrapper call still executes, and `model="TimesFM 3.0"` passes through to the univariate form. The wrapper has no `target_cols` or covariate arguments. Pass `model` explicitly from BigFrames, and use SQL for the multivariate form.
 
 ---
 
@@ -195,7 +229,7 @@ FROM AI.DETECT_ANOMALIES(
 | `TARGET_TABLE` / `TARGET_QUERY_STATEMENT` | Table/Query | Required | -- | -- | Data in which to detect anomalies. Schema must match historical data. |
 | `data_col` | STRING | Required | -- | -- | Data column name. Must be INT64, NUMERIC, BIGNUMERIC, or FLOAT64. |
 | `timestamp_col` | STRING | Required | -- | -- | Timestamp column name. Must be TIMESTAMP, DATE, or DATETIME. |
-| `model` | STRING | Optional | `'TimesFM 2.5'` | -- | `'TimesFM 2.0'` or `'TimesFM 2.5'`. Recommended: TimesFM 2.5 for all new work. |
+| `model` | STRING | Optional | `'TimesFM 2.5'` | -- | `'TimesFM 2.5'` or `'TimesFM 3.0'` (Preview). |
 | `id_cols` | ARRAY\<STRING\> | Optional | -- | -- | ID columns identifying unique time series |
 | `anomaly_prob_threshold` | FLOAT64 | Optional | 0.95 | [0, 1) | Threshold for anomaly detection. A target value is anomalous if its anomaly probability exceeds this threshold. |
 | `context_window` | INT64 | Optional | Auto-selected | See AI.FORECAST | Context window length for the TimesFM model. Same supported values as AI.FORECAST per model version. |
@@ -213,7 +247,7 @@ FROM AI.DETECT_ANOMALIES(
 | `anomaly_probability` | FLOAT64 | Probability that the value is an anomaly |
 | `ai_detect_anomalies_status` | STRING | **`NULL` on success** -- not an empty string (verified live 2026-09-02); error string if unsuccessful. Test with `IS NOT NULL`, not `<> ''` -- see the note under [`AI.EVALUATE`](#aievaluate)'s forecast outputs. |
 
-**Supported models:** TimesFM 2.5 (default), TimesFM 2.0.
+**Supported models:** TimesFM 2.5 (default), TimesFM 3.0 (Preview).
 
 **Best practices:** Historical and target data schemas must match. Use `id_cols` to break anomalies down by dimensions.
 
@@ -269,11 +303,11 @@ The `label` subfield of `predicted_<label>_probs` is typed `STRING` even when th
 
 **Supported models:** TabFM only. Not selectable -- there is no `model` argument and no version pinning.
 
-**Best practices:** Keep the feature set tight; the 20-column cap is a hard limit, not a guideline. Split train/predict deterministically (e.g. `FARM_FINGERPRINT`) so that the same rows train and predict on every run -- note this pins the *split* only; the predictions themselves are not reproducible (see Limitations). Pair every AI.PREDICT call with `AI.EVALUATE` on a held-out set -- without a metric you have no idea whether the zero-shot prediction is any good. Use it as a baseline: if a trained `CREATE MODEL` beats it materially, the training cost is justified; if not, you have saved a model lifecycle.
+**Best practices:** Keep the feature set tight; the 50-column cap is a hard limit, not a guideline. Split train/predict deterministically (e.g. `FARM_FINGERPRINT`) so that the same rows train and predict on every run -- note this pins the *split* only; the predictions themselves are not reproducible (see Limitations). Pair every AI.PREDICT call with `AI.EVALUATE` on a held-out set -- without a metric you have no idea whether the zero-shot prediction is any good. Use it as a baseline: if a trained `CREATE MODEL` beats it materially, the training cost is justified; if not, you have saved a model lifecycle.
 
 **Limitations:**
 - **Output is not deterministic.** Repeating a byte-identical `AI.PREDICT` call over the same `FARM_FINGERPRINT` split returns slightly different predictions -- consistent with the model averaging shuffled ensemble passes (`n_ensembles`, whose value Google does not document). Demonstrated by `functions/ai_predict/ai_predict.ipynb` cells 25 and 28, whose top-5 multisets differ (`5760` vs `5728` in one slot) despite identical SQL and an `ORDER BY value DESC LIMIT 5`, so tie-breaking cannot explain it. The `workflows/tabular_prediction/` notebook shows the downstream consequence: `AI.EVALUATE` scores its *own* fresh TabFM predictions rather than the rows you materialized, so the two disagree (measured across four runs: regression MAE 236.52 / 236.35 / 235.84, classification accuracy 0.9468 / 0.9362 / 0.9468 -- regression drift well under 1%, classification drift about 1pp, or 2 rows in 94). **Materialize results once and join to them; do not re-run the prediction to reproduce a number.** Drift appears to be input-dependent -- `workflows/data_enrichment/` reproduced exactly across two runs on a 6-row prediction relation -- so absence of drift on a small input is not evidence of determinism.
-- **20 feature columns** maximum (documented). Escalation path is emailing bqml-feedback@google.com.
+- **50 feature columns** maximum (documented; was 20 until October 2026 — measured 2026-10-12: 50 runs, 51 fails with *The number of features 51 exceeds the maximum allowed number of features 50*). Escalation path is emailing bqml-feedback@google.com.
 - **10 classification categories** maximum (documented).
 - **Practical row ceiling, undocumented but observed:** a call with 10,000 training rows fails with `Resources exceeded ... allotted memory`; 8,000 rows succeeds. Budget for roughly 5,000 training rows on on-demand slots. Re-checked 2026-09-15: the two caps above are on **columns and classes**, not rows — the page still documents no row limit, so this remains an observation of ours rather than a published figure.
 - **Latency is flat and high:** 30--95 seconds per call regardless of input size. A notebook with several AI.PREDICT calls takes minutes, not seconds.
@@ -289,7 +323,9 @@ Input tokens  = (train_rows * columns + predict_rows * (columns - 1)) * n_ensemb
 Output tokens = predict_rows * n_ensembles
 ```
 
-at $0.05 / mtok input and $0.20 / mtok output. Note that `n_ensembles` -- the number of shuffled passes the model averages -- is a multiplier on your bill that Google does not document the value of.
+at $0.05 / mtok input and $0.20 / mtok output (re-read on the pricing page 2026-10-12; formula and rates unchanged). Note that `n_ensembles` -- the number of shuffled passes the model averages -- is a multiplier on your bill that Google does not document the value of.
+
+> **A `COUNT(*)` over `AI.PREDICT` does not run the model.** Measured 2026-10-12: `SELECT COUNT(*) FROM AI.PREDICT(...)` returned in under 2 seconds with the right row count, while the same call selecting `predicted_<label>` took the usual 45-50 seconds -- the planner prunes the inference when no predicted column is referenced. Two consequences: a row-count smoke test proves nothing about whether the call *works* (the 10-class cap, for one, is only enforced once inference runs), and a probe that references a predicted column is what you need to see an error or pay for a prediction.
 
 **Provisioned throughput:** Not specified.
 
@@ -343,9 +379,9 @@ FROM AI.EVALUATE(
 | `ACTUAL_TABLE` / `ACTUAL_QUERY_STATEMENT` | Table/Query | Required | -- | -- | Actual time series data to evaluate the forecast against |
 | `data_col` | STRING | Required | -- | -- | Data column name. Must be INT64, NUMERIC, BIGNUMERIC, or FLOAT64. |
 | `timestamp_col` | STRING | Required | -- | -- | Timestamp column name. Must be TIMESTAMP, DATE, or DATETIME. |
-| `model` | STRING | Optional | `'TimesFM 2.5'` | -- | `'TimesFM 2.0'` or `'TimesFM 2.5'`. Recommended: TimesFM 2.5 for all new work. |
+| `model` | STRING | Optional | `'TimesFM 2.5'` | -- | `'TimesFM 2.5'` or `'TimesFM 3.0'` (Preview). |
 | `id_cols` | ARRAY\<STRING\> | Optional | -- | -- | ID columns identifying unique time series |
-| `horizon` | INT64 | Optional | 1024 | [1, 10000] | Number of forecasted time points to evaluate |
+| `horizon` | INT64 | Optional | 1024 | [1, 10000] on 2.5; [1, 1024] on 3.0 | Number of forecasted time points to evaluate |
 | `context_window` | INT64 | Optional | Auto-selected | See AI.FORECAST | Context window length for the TimesFM model. Same supported values as AI.FORECAST per model version. |
 
 **Inputs -- TabFM:**
@@ -397,11 +433,11 @@ The TabFM branch accepts no `model`, `horizon`, `id_cols`, `context_window`, `da
 
 > Note what is **missing** relative to `ML.EVALUATE` on a trained classification model: TabFM's AI.EVALUATE returns no `log_loss` and no `roc_auc`, and no confusion matrix. If you need threshold-tuning or ranking metrics, this function will not give them to you.
 
-**Supported models:** TimesFM 2.5 (default), TimesFM 2.0 on the forecast branch. TabFM on the prediction branch, where the `model` argument is not accepted.
+**Supported models:** TimesFM 2.5 (default), TimesFM 3.0 (Preview) on the forecast branch -- univariate only; there is no `target_cols` argument. TabFM on the prediction branch, where the `model` argument is not accepted.
 
 **Best practices:** For forecasting, split data into historical (for forecasting) and actual (for comparison) portions using date-based filtering, and use `id_cols` to evaluate across multiple time series. For prediction, pass AI.EVALUATE exactly the same training and holdout inputs you passed AI.PREDICT -- the pair is only meaningful if the split matches.
 
-**Limitations:** **Not reproducible run to run on either branch, and pinning `model` does not fix it** -- a minority of runs (measured at 2 of 16, with `model` and `context_window` both pinned and the query cache off) return a materially different metric, a ~32% swing in `mean_absolute_error` in the measured case. The majority value is the correct one, verified by recomputing MAE from `AI.FORECAST` output. See the reproducibility note at the top of this section for the full measurement and the workaround. Minimum 3 data points required on the forecast branch. Default horizon is 1,024 (unlike AI.FORECAST which defaults to 10). TimesFM silently ignores data points beyond the max context (2,048 for 2.0, 15,360 for 2.5). On the TabFM branch, AI.PREDICT's documented caps -- **20 feature columns** and **10 classification categories** -- apply to the same model, though the AI.EVALUATE page has no Limitations section and does not restate them.
+**Limitations:** **Not reproducible run to run on either branch, and pinning `model` does not fix it** -- a minority of runs (measured at 2 of 16, with `model` and `context_window` both pinned and the query cache off) return a materially different metric, a ~32% swing in `mean_absolute_error` in the measured case. The majority value is the correct one, verified by recomputing MAE from `AI.FORECAST` output. See the reproducibility note at the top of this section for the full measurement and the workaround. Minimum 3 data points required on the forecast branch. Default horizon is 1,024 (unlike AI.FORECAST which defaults to 10). TimesFM silently ignores data points beyond the max context (15,360 for 2.5, 2,048 for 3.0). On the TabFM branch, AI.PREDICT's documented caps -- **50 feature columns** and **10 classification categories** -- apply to the same model, though the AI.EVALUATE page has no Limitations section and does not restate them.
 
 **Locations:** All supported BigQuery ML locations.
 

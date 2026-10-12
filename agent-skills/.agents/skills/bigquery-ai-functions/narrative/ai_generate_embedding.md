@@ -12,7 +12,7 @@
 - `functions/ai_embed` (`AI.EMBED`) — Scalar function, no model required, for inline embedding. Supports a built-in model (`embeddinggemma-300m`) with no Vertex AI charges.
 - `functions/ml_generate_embedding` (`ML.GENERATE_EMBEDDING`) — Legacy predecessor with ml_generate_embedding_ column prefixes
 
-**Multimodal:** Supports image and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass `ObjectRef` values in the `content` column. `gemini-embedding-2-preview` (Preview) extends this to audio and PDFs.
+**Multimodal:** Supports image and video input via `reference/unstructured-data-infrastructure.md#objectref-and-objectrefruntime-schema-reference` (ObjectRef). Pass `ObjectRef` values in the `content` column. `gemini-embedding-2` (GA) extends this to audio and PDFs.
 
 **References:** `RESOURCES.md` (Full syntax reference) | [Official documentation](https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-ai-generate-embedding) | `setup` (Setup guide)
 
@@ -230,7 +230,7 @@ client.query(query).to_dataframe()
 
 `AI.GENERATE_EMBEDDING` supports image and video input via `multimodalembedding@001`. Input: a query with a `content` column containing ObjectRef values. Supports `output_dimensionality` (128, 256, 512, 1408 — default 1408).
 
-> **New:** `gemini-embedding-2-preview` (Preview) supports text, images, audio, video, and PDFs — up to 3072 dimensions and 8192 tokens. It also returns `statistics` with per-modality token counts (unlike `multimodalembedding@001`). Currently US and us-central1 only. The examples below use the GA `multimodalembedding@001` approach.
+> **Also GA:** `gemini-embedding-2` supports text, images, audio, video, and PDFs — up to 3072 dimensions and 8192 tokens — and is served from multi-regional endpoints only (`us`, `eu`, `global`). Like `multimodalembedding@001`, it returns no `statistics` column. The examples below use `multimodalembedding@001`.
 
 Below we render invoice and receipt PDFs from this project's `data/documents` (document set) to PNG images, upload them to GCS, then embed them in batch.
 

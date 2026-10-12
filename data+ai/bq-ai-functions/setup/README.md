@@ -144,10 +144,10 @@ Not all AI functions require the same setup. Here's a quick reference:
 
 | Function | Connection | Remote Model | Endpoint | Notes |
 |----------|:----------:|:------------:|:--------:|-------|
-| `AI.GENERATE` | Optional | No | Optional (default: gemini-2.5-flash) | Uses end-user credentials by default |
-| `AI.GENERATE_BOOL` | Optional | No | Optional (default: gemini-2.5-flash) | |
-| `AI.GENERATE_DOUBLE` | Optional | No | Optional (default: gemini-2.5-flash) | |
-| `AI.GENERATE_INT` | Optional | No | Optional (default: gemini-2.5-flash) | |
+| `AI.GENERATE` | Optional | No | Optional (default: gemini-3.5-flash-lite) | Uses end-user credentials by default |
+| `AI.GENERATE_BOOL` | Optional | No | Optional (default: gemini-3.5-flash-lite) | |
+| `AI.GENERATE_DOUBLE` | Optional | No | Optional (default: gemini-3.5-flash-lite) | |
+| `AI.GENERATE_INT` | Optional | No | Optional (default: gemini-3.5-flash-lite) | |
 | `AI.IF` | Optional | No | Optional (auto-selected) | |
 | `AI.SCORE` | Optional | No | Optional (auto-selected) | |
 | `AI.CLASSIFY` | Optional | No | Optional (auto-selected) | |
@@ -321,7 +321,7 @@ The remote model and the data it processes must be in the same region or multi-r
 
 ### What is an endpoint?
 
-An endpoint identifies which AI model to use. For Gemini models, you can specify just the model name (e.g., `gemini-2.5-flash`) and BigQuery auto-resolves the full Vertex AI endpoint URL.
+An endpoint identifies which AI model to use. For Gemini models, you can specify just the model name (e.g., `gemini-2.5-flash`) and BigQuery auto-resolves the full endpoint URL on the Gemini Enterprise Agent Platform (formerly Vertex AI). The default when you omit the endpoint is `gemini-3.5-flash-lite` — see [Choosing a Gemini Model Endpoint](../RESOURCES.md#choosing-a-gemini-model-endpoint).
 
 ### Where endpoints are specified
 

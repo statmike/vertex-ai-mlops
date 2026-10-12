@@ -4,7 +4,7 @@ Group near-duplicate images using embedding similarity to maintain train/test sp
 
 1. **Render & Transform** — Convert document PDFs to PNGs, create transformed variants (crop, rotate, brightness, noise, JPEG compression, color shift) to simulate same-source frames
 2. **Visualize** — Display originals and variants side-by-side to see what "near-duplicate" looks like
-3. **Embed** — Create multimodal embeddings with `AI.EMBED` using `gemini-embedding-2-preview`
+3. **Embed** — Create multimodal embeddings with `AI.EMBED` using `gemini-embedding-2`
 4. **Find Similar Pairs** — Use `VECTOR_SEARCH` to identify near-duplicates by cosine distance
 5. **Analyze Threshold** — Plot distance distributions and sensitivity to pick the right threshold
 6. **Group Images** — Compare two approaches: direct grouping (single-pass) vs connected components (transitive)
@@ -14,7 +14,7 @@ Group near-duplicate images using embedding similarity to maintain train/test sp
 **The Problem:** When training a classification model on images extracted from videos, frames from the same video are nearly identical. If some land in training and others in test, the model appears to generalize but is actually recognizing scenes it already saw. The solution: group similar images together, then assign entire groups to train or test — never both.
 
 **What this demonstrates:**
-- Multimodal embeddings with `gemini-embedding-2-preview` (images + PDFs, 3072 dims)
+- Multimodal embeddings with `gemini-embedding-2` (images + PDFs, 3072 dims)
 - Batch similarity detection with `VECTOR_SEARCH`
 - Threshold selection via distance distribution analysis
 - Two grouping algorithms: single-pass direct assignment vs iterative connected components
@@ -31,7 +31,7 @@ Group near-duplicate images using embedding similarity to maintain train/test sp
 
 Set your project and location, authenticate, and create shared resources.
 
-> This workflow uses `AI.EMBED` with `gemini-embedding-2-preview` (multimodal, Preview) and `VECTOR_SEARCH`. A connection is required for GCS access and the embedding endpoint. See the `setup` (Setup Reference) for details.
+> This workflow uses `AI.EMBED` with `gemini-embedding-2` (multimodal, GA) and `VECTOR_SEARCH`. A connection is required for GCS access and the embedding endpoint. See the `setup` (Setup Reference) for details.
 
 ```python
 PROJECT_ID = 'statmike-mlops-349915'  # <-- Replace with your project ID
@@ -299,9 +299,9 @@ print(f'Object table ready: {total} images')
 ---
 ## Step 4 — Embed images with AI.EMBED
 
-Create embeddings for all images using `gemini-embedding-2-preview`. This multimodal model supports images and PDFs directly, returning 3072-dimension vectors.
+Create embeddings for all images using `gemini-embedding-2`. This multimodal model supports images and PDFs directly, returning 3072-dimension vectors.
 
-> **Note:** `gemini-embedding-2-preview` does not support the `task_type` parameter. The embeddings are general-purpose and work well for similarity-based grouping without explicit clustering configuration.
+> **Note:** `gemini-embedding-2` does not support the `task_type` parameter (it is rejected, not ignored). The embeddings are general-purpose and work well for similarity-based grouping without explicit clustering configuration.
 
 ```python
 query = f'''
@@ -311,7 +311,7 @@ SELECT
   REGEXP_EXTRACT(uri, r'/([^/]+)$') AS image_name,
   (AI.EMBED(
     content => OBJ.MAKE_REF(uri, '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'),
-    endpoint => 'gemini-embedding-2-preview',
+    endpoint => 'gemini-embedding-2',
     connection_id => '{PROJECT_ID}.{LOCATION}.{CONNECTION_ID}'
   )).result AS embedding
 FROM `{PROJECT_ID}.{DATASET_ID}.workflow_dedup_images`

@@ -261,3 +261,31 @@ FROM
       output_schema => 'document_type STRING, total_amount FLOAT64, date STRING, summary STRING'
     )
   ]) AS result;
+
+
+-- =============================================================================
+-- Example 16: Discover documents with OBJ.LIST (GA)
+-- =============================================================================
+-- One wildcard path returns every matching object's metadata plus a ready
+-- ObjectRef in the ref column -- no hand-built URI list, no object table.
+-- The connection argument is optional: omit it for direct access (read as the
+-- query runner), pass it for delegated access through the connection.
+SELECT
+  uri,
+  content_type,
+  size,
+  result.document_type,
+  result.total_amount,
+  result.summary
+FROM
+  OBJ.LIST('gs://BUCKET/path/to/*.pdf', 'PROJECT_ID.LOCATION.CONNECTION_ID'),
+  UNNEST([
+    AI.GENERATE(
+      STRUCT(
+        'Identify the document type and extract key details.' AS prompt,
+        [ref] AS object_refs
+      ),
+      output_schema => 'document_type STRING, total_amount FLOAT64, summary STRING'
+    )
+  ]) AS result
+ORDER BY uri;

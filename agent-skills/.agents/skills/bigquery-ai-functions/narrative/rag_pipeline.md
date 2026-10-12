@@ -94,6 +94,8 @@ Use `AI.GENERATE_TABLE` to create a realistic FAQ knowledge base for a fictional
 
 One further entry is appended as a literal row instead of being generated. Step 5 needs a document that carries an opaque status code *verbatim*, and a model rewrites its wording on every run — it may reformat the code, or leave it out. Spelling that one entry out makes the token a fixed property of the corpus rather than something to hope for, and the cell prints how many entries actually carry it.
 
+The generated rows are filtered on `question IS NOT NULL`. A generation can come back empty for one input row — the model returns nothing usable and the typed columns are `NULL` — and an empty entry would reach Step 2 as a zero-length embedding, which then breaks `VECTOR_SEARCH` with *Array inputs are not equal in length*. Dropping it here keeps the corpus honest; the printed count shows how many entries the model actually produced.
+
 ```python
 output_schema = """question STRING OPTIONS(description = "The FAQ question"),
        answer STRING OPTIONS(description = "Detailed answer with technical specifics"),
@@ -135,6 +137,7 @@ FROM AI.GENERATE_TABLE(
     """{output_schema}""" AS output_schema
   )
 )
+WHERE question IS NOT NULL AND answer IS NOT NULL
 UNION ALL
 SELECT '{status_code_question}', '{status_code_answer}', 'DevOps'
 '''
@@ -144,7 +147,7 @@ kb = client.query(
     f'SELECT * FROM `{PROJECT_ID}.{DATASET_ID}.workflow_rag_knowledge`'
 ).to_dataframe()
 carries_token = int((kb['question'] + ' ' + kb['answer']).str.contains(status_code).sum())
-print(f'{len(kb)} FAQ entries: {len(kb) - 1} written by the model, 1 written out above')
+print(f'{len(kb)} FAQ entries: {len(kb) - 1} written by the model (of 12 requested), 1 written out above')
 print(f'Entries carrying the token "{status_code}" verbatim: {carries_token}')
 kb[['category', 'question']]
 ```

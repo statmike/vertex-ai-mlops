@@ -6,9 +6,9 @@
 -- Returns: time_series_timestamp, time_series_data, is_anomaly,
 --          lower/upper_bound, anomaly_probability, status
 --
--- Model version: the default is TimesFM 2.5 (it was 2.0 and moved with no
---   release note). Pin `model` so a future default move cannot shift your
---   numbers -- but pinning does NOT make this function reproducible. A
+-- Model version: the default is TimesFM 2.5; 'TimesFM 3.0' (Preview) is the
+--   other accepted value. Pin `model` so a future default move cannot shift
+--   your numbers -- but pinning does NOT make this function reproducible. A
 --   minority of runs return a different result with `model` and
 --   `context_window` both pinned and the query cache off; the same behavior is
 --   measured in detail on AI.EVALUATE, where 2 of 16 pinned runs moved the
