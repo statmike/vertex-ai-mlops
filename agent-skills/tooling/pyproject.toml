@@ -6,7 +6,11 @@ build-backend = "setuptools.build_meta"
 name = "agent-skills-tooling"
 version = "0.1.0"
 description = "Build, validate, and package the Agent Skills in this repo's agent-skills/.agents/skills/"
+license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+]
 dependencies = [
     "nbformat>=5.10",
 ]

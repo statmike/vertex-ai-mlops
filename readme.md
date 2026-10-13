@@ -147,3 +147,19 @@ These notebooks are designed to be readable, adaptable starting points — not p
 - GitHub: [GoogleCloudPlatform/vertex-ai-samples](https://github.com/GoogleCloudPlatform/vertex-ai-samples)
 - GitHub: [GoogleCloudPlatform/mlops-with-vertex-ai](https://github.com/GoogleCloudPlatform/mlops-with-vertex-ai)
 - [Overview of Data Science on Google Cloud](https://cloud.google.com/data-science)
+
+---
+
+## Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).
+
+---
+
+## License
+
+Apache 2.0 — see [LICENSE](./LICENSE).
+
+This is not an officially supported Google product. It is built on Google products and is neither
+endorsed nor supported by Google.
+

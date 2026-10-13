@@ -567,4 +567,12 @@ This is my personal repository of demonstrations I use for learning and sharing 
 - GitHub [GoogleCloudPlatform/mlops-with-vertex-ai](https://github.com/GoogleCloudPlatform/mlops-with-vertex-ai)
 - [Overview of Data Science on Google Cloud](https://cloud.google.com/data-science)
 
+---
+
+## License
+
+Apache 2.0 — see [LICENSE](./LICENSE).
+
+This is not an officially supported Google product. It is built on Google products and is neither
+endorsed nor supported by Google.
 

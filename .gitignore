@@ -16,3 +16,12 @@ uv.lock
 !.claude/skills/
 .coverage
 .antigravitycli
+
+# Service account keys & local credential overrides (ADC only — never commit credentials)
+*-key.json
+*_key.json
+*.json.key
+service-account*.json
+*credentials*.json
+application_default_credentials.json
+.env.local
