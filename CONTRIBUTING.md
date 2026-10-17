@@ -1,6 +1,6 @@
-# Contributing to `vertex-ai-mlops`
+# Contributing to `gcp-mlops`
 
-Thank you for your interest in contributing to `vertex-ai-mlops`. This repository is a collection of **470+ interactive notebooks**, end-to-end reference workflows, solution prototypes, and packaged [Agent Skills](./agent-skills/README.md) across Google Cloud's AI and data ecosystem (Gemini Enterprise, Vertex AI, BigQuery ML, BigQuery AI Functions, Agent Development Kit, Dataflow, Dataproc, Managed Airflow, AlloyDB, Spanner, Bigtable, and more).
+Thank you for your interest in contributing to `gcp-mlops`. This repository is a collection of **470+ interactive notebooks**, end-to-end reference workflows, solution prototypes, and packaged [Agent Skills](./agent-skills/README.md) across Google Cloud's AI and data ecosystem (Gemini Enterprise, Vertex AI, BigQuery ML, BigQuery AI Functions, Agent Development Kit, Dataflow, Dataproc, Managed Airflow, AlloyDB, Spanner, Bigtable, and more).
 
 Issues and pull requests for bug fixes, documentation improvements, link updates, and workflow enhancements are welcome.
 
@@ -9,7 +9,7 @@ Issues and pull requests for bug fixes, documentation improvements, link updates
 ## 1. Before You Open a Pull Request
 
 - **Small fixes (typos, broken links, API parameter updates):** Feel free to open a pull request directly with a clear description of the fix.
-- **New notebooks, subprojects, or major restructuring:** Please open an [issue](https://github.com/statmike/vertex-ai-mlops/issues) first to discuss scope and directory placement so it aligns with the repository's structure.
+- **New notebooks, subprojects, or major restructuring:** Please open an [issue](https://github.com/statmike/gcp-mlops/issues) first to discuss scope and directory placement so it aligns with the repository's structure.
 
 ---
 
@@ -58,6 +58,6 @@ If you have not already done so, please complete your CLA at <https://cla.develo
 
 This project follows [Google's Open Source Community Guidelines](https://opensource.google/conduct/) and [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md).
 
-By contributing to `vertex-ai-mlops`, you agree that your contributions will be licensed under the [Apache License 2.0](./LICENSE).
+By contributing to `gcp-mlops`, you agree that your contributions will be licensed under the [Apache License 2.0](./LICENSE).
 
 This is not an officially supported Google product. It is built on Google products and is neither endorsed nor supported by Google.

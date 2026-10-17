@@ -1,13 +1,13 @@
 cff-version: 1.2.0
-title: "vertex-ai-mlops: Applied ML, Generative AI, and MLOps Workflows on Google Cloud"
+title: "gcp-mlops: Applied ML, Generative AI, and MLOps Workflows on Google Cloud"
 message: "If you use workflows, notebooks, or agent skills from this repository in your work or research, please cite it using the metadata below."
 type: software
 authors:
   - given-names: Mike
     family-names: Henderson
     alias: statmike
-repository-code: "https://github.com/statmike/vertex-ai-mlops"
-url: "https://github.com/statmike/vertex-ai-mlops"
+repository-code: "https://github.com/statmike/gcp-mlops"
+url: "https://github.com/statmike/gcp-mlops"
 license: Apache-2.0
 keywords:
   - google-cloud

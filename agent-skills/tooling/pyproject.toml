@@ -15,6 +15,9 @@ dependencies = [
     "nbformat>=5.10",
 ]
 
+[project.urls]
+Repository = "https://github.com/statmike/gcp-mlops"
+
 [project.scripts]
 agent-skills = "agent_skills_tooling.cli:main"
 
